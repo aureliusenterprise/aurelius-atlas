@@ -48,14 +48,6 @@
         "./tools/plugins/tls.ts",
         {
             "options": {
-                "buildTargetName": "build",
-                "classesTargetName": "classes",
-                "testTargetName": "test"
-            },
-            "plugin": "@nx/gradle"
-        },
-        {
-            "options": {
                 "targetName": "lint"
             },
             "plugin": "@nx/eslint/plugin"
