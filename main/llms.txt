@@ -146,5 +146,3 @@
 - [Stakeholder Analysis](<https://aureliusenterprise.github.io/main/architecture/vision-and-strategy/stakeholder-analysis/index.md>)
 
 ## Changelog
-
-- [Changelog](<https://aureliusenterprise.github.io/main/CHANGELOG/index.md>)

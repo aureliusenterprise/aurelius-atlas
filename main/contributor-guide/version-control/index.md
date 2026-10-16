@@ -124,7 +124,7 @@ Next, push your changes to the repository:
 git push
 ```
 
-Finally, [create a pull request on GitHub](<https://github.com/aureliusenterprise/project-template/compare>). Select your branch as the source and the `main` branch as the base.
+Finally, [create a pull request on GitHub](<https://github.com/aureliusenterprise/aurelius-atlas/compare>). Select your branch as the source and the `main` branch as the base.
 
 Give your pull request a descriptive title that summarizes the changes you have made. Please ensure the title follows the [conventional commit format](<https://www.conventionalcommits.org/en/v1.0.0/>).
 
