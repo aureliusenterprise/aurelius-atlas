@@ -19,7 +19,7 @@ services:
             - kafka-kraft:/tmp/kraft-combined-logs
 
     schema-registry:
-        image: confluentinc/cp-schema-registry:8.2.1
+        image: confluentinc/cp-schema-registry:8.3.2
         depends_on:
             broker:
                 condition: service_healthy
