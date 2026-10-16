@@ -1,0 +1,50 @@
+name: Publish Containers
+
+on:
+    push:
+        tags:
+            - v*.*.*
+
+permissions:
+    contents: read
+    id-token: write
+    packages: write
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  sops: "true"
+                  java: "true"
+                  python: "true"
+                  node: "true"
+                  cosign: "true"
+                  trivy: "true"
+                  cyclonedx: "true"
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Publish containers
+              run: npx nx run-many -t docker-publish -- --version ${{ github.ref_name }}
+
+            - name: Attest containers
+              run: npx nx run-many -t docker-attest -- --version ${{ github.ref_name }}
+
+            - name: Sign containers
+              run: npx nx run-many -t docker-sign -- --version ${{ github.ref_name }}
+
+            - name: Verify container signatures
+              run: >
+                  npx nx run-many -t docker-verify -- --version ${{ github.ref_name }}
+                  --identity "^https://github\.com/${{ github.repository_owner }}/project-template/\.github/workflows/publish\.yaml@${{ github.ref }}$"
+                  --issuer "^https://token\.actions\.githubusercontent\.com$"

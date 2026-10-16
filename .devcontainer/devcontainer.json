@@ -1,0 +1,171 @@
+{
+    "containerEnv": {
+        "NX_DAEMON": "true",
+        "SOPS_AGE_KEY_FILE": "${containerWorkspaceFolder}/secrets/keys.txt"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "Angular.ng-template",
+                "bierner.markdown-mermaid",
+                "charliermarsh.ruff",
+                "DavidAnson.vscode-markdownlint",
+                "esbenp.prettier-vscode",
+                "KnisterPeter.vscode-commitizen",
+                "mtxr.sqltools",
+                "mtxr.sqltools-driver-pg",
+                "nrwl.angular-console",
+                "PKief.material-icon-theme",
+                "SonarSource.sonarlint-vscode",
+                "tamasfe.even-better-toml",
+                "vitest.explorer",
+                "-ms-python.autopep8"
+            ],
+            "settings": {
+                "[java]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "[json]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "[markdown]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                },
+                "[toml]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "[yaml]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "dev.containers.mountWaylandSocket": false,
+                "editor.formatOnSave": true,
+                "editor.formatOnSaveMode": "file",
+                "files.exclude": {
+                    "**/.pytest_cache": true,
+                    "**/.ruff_cache": true,
+                    "**/.trivy-cache": true,
+                    "**/__pycache__": true,
+                    ".angular": true,
+                    ".gradle": true,
+                    ".nx": true,
+                    ".pnpm-store": true,
+                    ".scannerwork": true,
+                    ".tmp": true,
+                    ".venv": true,
+                    "build": true,
+                    "node_modules": true
+                },
+                "files.insertFinalNewline": true,
+                "files.watcherExclude": {
+                    "**/.pytest_cache": true,
+                    "**/.ruff_cache": true,
+                    "**/.trivy-cache": true,
+                    "**/__pycache__": true,
+                    "**/dist": true,
+                    ".angular": true,
+                    ".git/objects/**": true,
+                    ".git/subtree-cache/**": true,
+                    ".gradle": true,
+                    ".nx": true,
+                    ".pnpm-store": true,
+                    ".scannerwork": true,
+                    ".tmp": true,
+                    ".venv": true,
+                    "build": true,
+                    "node_modules": true
+                },
+                "java.diagnostic.filter": ["**/aurelius-java-example/src/main/java/**/*"],
+                "material-icon-theme.files.associations": {
+                    "*.enc": "key",
+                    "keys.txt": "key",
+                    "project.json": "nx"
+                },
+                "material-icon-theme.folders.associations": {
+                    "connectors": "connection"
+                },
+                "python.analysis.typeCheckingMode": "standard",
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "terminal.integrated.gpuAcceleration": "on",
+                "terminal.integrated.shellIntegration.enabled": true,
+                "terminal.integrated.suggest.enabled": false,
+                "vscode.env.isTelemetryEnabled": false
+            }
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers-extra/features/apt-packages:1": {
+            "packages": ["age", "gnupg2", "libpq-dev", "librdkafka-dev"]
+        },
+        "ghcr.io/devcontainers-extra/features/cosign:1.0.10": {},
+        "ghcr.io/devcontainers-extra/features/cyclonedx-cli:1.0.10": {},
+        "ghcr.io/devcontainers-extra/features/nx-npm:1": {
+            "version": "23.2.1"
+        },
+        "ghcr.io/devcontainers-extra/features/sops:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:4": {},
+        "ghcr.io/devcontainers/features/java:1": {
+            "installGradle": true,
+            "version": "21.0.9-tem"
+        },
+        "ghcr.io/devcontainers/features/node:2": {
+            "version": "lts"
+        },
+        "ghcr.io/devcontainers/features/python:1": {
+            "toolsToInstall": ["uv"],
+            "version": "3.14"
+        },
+        "ghcr.io/dhoeric/features/trivy:1": {
+            "version": "0.71.0"
+        }
+    },
+    "forwardPorts": [1880, 4200, 4400, 8000, 8080, 8081, 8082, 9092],
+    "image": "mcr.microsoft.com/devcontainers/base:resolute",
+    "name": "Aurelius Project Template",
+    "onCreateCommand": {
+        "npm": "bash .devcontainer/npm.sh",
+        "uv": "bash .devcontainer/uv.sh"
+    },
+    "portsAttributes": {
+        "1880": {
+            "label": "Node-RED",
+            "onAutoForward": "openBrowser"
+        },
+        "4200": {
+            "label": "Angular",
+            "onAutoForward": "openBrowserOnce"
+        },
+        "4400": {
+            "label": "Storybook",
+            "onAutoForward": "openBrowser"
+        },
+        "8000": {
+            "label": "FastAPI"
+        },
+        "8080": {
+            "label": "Keycloak"
+        },
+        "8081": {
+            "label": "Schema Registry"
+        },
+        "8082": {
+            "label": "Kafka UI",
+            "onAutoForward": "openBrowser"
+        },
+        "9092": {
+            "label": "Kafka Broker"
+        }
+    },
+    "postCreateCommand": {
+        "playwright": "bash .devcontainer/playwright.sh",
+        "pre-commit": "bash .devcontainer/pre-commit.sh",
+        "sonar": "bash .devcontainer/sonar.sh",
+        "sops": "bash .devcontainer/sops.sh"
+    },
+    "runArgs": ["--add-host=keycloak.localhost:127.0.0.1"]
+}

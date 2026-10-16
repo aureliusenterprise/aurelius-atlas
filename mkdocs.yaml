@@ -1,0 +1,287 @@
+copyright: © 2025 Aurelius Enterprise
+repo_name: project-template
+repo_url: https://github.com/aureliusenterprise/project-template
+site_name: Aurelius Project Template
+site_url: https://aureliusenterprise.github.io/project-template
+
+theme:
+    favicon: assets/favicon.ico
+    logo: assets/favicon.ico
+    name: material
+    search: true
+    variant: classic
+
+    features:
+        - content.code.copy
+        - navigation.indexes
+        - navigation.instant
+        - navigation.instant.progress
+        - navigation.path
+        - navigation.sections
+        - navigation.tabs
+        - search.highlight
+
+    icon:
+        repo: fontawesome/brands/github
+
+    palette:
+        - media: "(prefers-color-scheme)"
+          accent: deep purple
+          toggle:
+              icon: material/brightness-auto
+              name: Switch to light mode
+        - media: "(prefers-color-scheme: light)"
+          accent: deep purple
+          scheme: default
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
+        - media: "(prefers-color-scheme: dark)"
+          accent: deep purple
+          scheme: slate
+          toggle:
+              icon: material/brightness-4
+              name: Switch to system preference
+
+markdown_extensions:
+    - admonition
+    - attr_list
+    - codehilite
+    - md_in_html
+    - pymdownx.details
+    - pymdownx.snippets
+    - pymdownx.superfences:
+          custom_fences:
+              - name: mermaid
+                class: mermaid
+                format: !!python/name:pymdownx.superfences.fence_code_format
+    - pymdownx.emoji:
+          emoji_index: !!python/name:material.extensions.emoji.twemoji
+          emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    - pymdownx.snippets
+    - pymdownx.tabbed:
+          alternate_style: true
+    - pymdownx.tasklist:
+          clickable_checkbox: true
+          custom_checkbox: true
+    - toc:
+          permalink: true
+
+nav:
+    - User Guide:
+          - user-guide/index.md
+          - Design Guide:
+                - user-guide/design-guide/index.md
+                - Consumers: user-guide/design-guide/consumers.md
+                - Producers: user-guide/design-guide/producers.md
+                - Kafka Topics: user-guide/design-guide/kafka-topics.md
+                - Schemas: user-guide/design-guide/schemas.md
+    - Contributor Guide:
+          - contributor-guide/index.md
+          - Development Environment: contributor-guide/development-environment.md
+          - AI-Assisted Development: contributor-guide/ai-assisted-development.md
+          - Adopting the Template: contributor-guide/adopting-the-template.md
+          - Documentation: contributor-guide/documentation.md
+          - Secrets Management: contributor-guide/secrets-management.md
+          - Version Control: contributor-guide/version-control.md
+    - API Reference:
+          - api-reference/index.md
+          - Apps:
+                - api-reference/apps/index.md
+                - aurelius-aws-lambda-example: api-reference/apps/aurelius-aws-lambda-example.md
+                - aurelius-fastapi-example: api-reference/apps/aurelius-fastapi-example.md
+                - aurelius-frontend-example: api-reference/apps/aurelius-frontend-example.md
+                - aurelius-java-producer-example: api-reference/apps/aurelius-java-producer-example.md
+                - aurelius-node-red-example: api-reference/apps/aurelius-node-red-example.md
+          - Connectors:
+                - api-reference/connectors/index.md
+                - aurelius-kafka-connect-jdbc-sink-example: api-reference/connectors/aurelius-kafka-connect-jdbc-sink-example.md
+          - Docker:
+                - api-reference/docker/index.md
+                - aurelius-aws-lambda-base: api-reference/docker/aurelius-aws-lambda-base.md
+          - Libs:
+                - api-reference/libs/index.md
+                - Angular:
+                      - api-reference/libs/angular/index.md
+                      - aurelius-data-access: api-reference/libs/angular/aurelius-data-access.md
+                      - aurelius-ui: api-reference/libs/angular/aurelius-ui.md
+                - Java:
+                      - api-reference/libs/java/index.md
+                      - aurelius-java-example: api-reference/libs/java/aurelius-java-example.md
+                - Python:
+                      - api-reference/libs/python/index.md
+                      - aurelius-aws-lambda: api-reference/libs/python/aurelius-aws-lambda.md
+                      - aurelius-example: api-reference/libs/python/aurelius-example.md
+                      - aurelius-kafka: api-reference/libs/python/aurelius-kafka.md
+                      - aurelius-sdk: api-reference/libs/python/aurelius-sdk.md
+                - Styles:
+                      - api-reference/libs/styles/index.md
+                      - aurelius-brand: api-reference/libs/styles/aurelius-brand.md
+    - Architecture:
+          - architecture/index.md
+          - Architecture Decisions:
+                - architecture/adr/index.md
+                - ADR Template: architecture/adr/template.md
+                - 001. Keep one monorepo for every stack: architecture/adr/001-single-monorepo.md
+                - 002. Modules are removable as whole slices: architecture/adr/002-modules-are-removable-slices.md
+                - 003. Every project documents itself: architecture/adr/003-every-project-documents-itself.md
+                - 004. One shared domain model serves streaming and storage: architecture/adr/004-one-shared-domain-model.md
+                - 005. Development infrastructure starts with the app that needs it: architecture/adr/005-dev-infra-starts-with-the-app.md
+                - 006. The whole system runs on one machine: architecture/adr/006-the-whole-system-runs-on-one-machine.md
+                - 007. One shared identity provider serves every authenticated surface: architecture/adr/007-one-shared-identity-provider.md
+                - 008. Real secrets are encrypted; only dev defaults are committed: architecture/adr/008-secrets-never-in-plaintext.md
+                - 009. Every example runs and is tested, or it is removed: architecture/adr/009-examples-must-run-and-be-tested.md
+                - 010. The unit validated is the unit that ships: architecture/adr/010-the-unit-validated-is-the-unit-that-ships.md
+                - 011. The development environment is a versioned artifact: architecture/adr/011-the-development-environment-is-a-versioned-artifact.md
+                - 012. Validation runs against real services, not substitutes: architecture/adr/012-validation-runs-against-real-services.md
+                - 013. Services prove who they are at every boundary: architecture/adr/013-services-prove-who-they-are-at-every-boundary.md
+                - 014. The gate that refuses a change is defined once: architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere.md
+                - 015. A change answers for what it caused; the state of the world is reviewed on a cadence: architecture/adr/015-a-change-answers-for-what-it-caused.md
+                - 016. The system observes itself; its operational data never leaves it: architecture/adr/016-the-system-observes-itself-internally.md
+                - 017. Shared concepts change only in ways that keep readers working: architecture/adr/017-shared-concepts-change-only-compatibly.md
+                - 018. Settings arrive at startup through one channel and fail loudly: architecture/adr/018-settings-arrive-at-startup-through-one-channel.md
+                - 019. The system releases as one versioned whole: architecture/adr/019-the-system-releases-as-one-versioned-whole.md
+                - 020. Dependencies stay current by default; majors move by decision: architecture/adr/020-dependencies-stay-current-by-default.md
+                - 021. A new technology joins the system by recipe: architecture/adr/021-a-new-technology-joins-by-recipe.md
+                - 022. The codebase explains itself to the agents that change it: architecture/adr/022-the-codebase-explains-itself-to-its-agents.md
+                - 023. A storage schema changes only by recorded migration: architecture/adr/023-storage-schema-changes-by-recorded-migration.md
+                - 024. A validated release is promoted by a declared path: architecture/adr/024-a-validated-release-is-promoted-by-a-declared-path.md
+                - 025. Data has a stated lifetime that the system enforces: architecture/adr/025-data-has-a-stated-lifetime.md
+                - 026. The system can be brought back from a named snapshot: architecture/adr/026-the-system-can-be-brought-back-from-a-named-snapshot.md
+                - 027. Every stream carries a stated delivery guarantee: architecture/adr/027-every-stream-carries-a-stated-delivery-guarantee.md
+                - 028. Operational secret handling has a named owner and a rehearsed path: architecture/adr/028-operational-secret-handling-has-a-named-owner.md
+                - 029. What ships is signed, and its origin can be proven: architecture/adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable.md
+                - 030. Interfaces between parts are verified, not assumed: architecture/adr/030-interfaces-between-parts-are-verified-not-assumed.md
+                - 031. Language and runtime versions have a declared support window: architecture/adr/031-runtime-versions-have-a-declared-support-window.md
+                - 032. Shared streams are named by a declared convention: architecture/adr/032-shared-streams-are-named-by-a-declared-convention.md
+                - 033. Shipped artifacts carry a contents inventory: architecture/adr/033-shipped-artifacts-carry-a-contents-inventory.md
+                - 034. Signals meet at one replaceable collection point: architecture/adr/034-signals-meet-at-one-replaceable-collection-point.md
+                - 035. Parts hand work to each other through a durable event log: architecture/adr/035-parts-hand-work-through-a-durable-event-log.md
+                - 036. The delivery plane is a named exception to the data boundary: architecture/adr/036-the-delivery-plane-is-a-named-exception-to-the-data-boundary.md
+                - 037. The system itself promises nothing about staying up: architecture/adr/037-the-system-itself-promises-nothing-about-staying-up.md
+                - 038. What a person may do is decided in one place, apart from who they are: architecture/adr/038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md
+                - 039. Data is protected where it travels and where it rests: architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests.md
+                - 040. The system raises its hand when it is broken: architecture/adr/040-the-system-raises-its-hand-when-it-is-broken.md
+                - 041. A failure of the running system has an owner and a rehearsed path: architecture/adr/041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path.md
+                - 042. Every dataset has an owner who answers for it: architecture/adr/042-every-dataset-has-an-owner-who-answers-for-it.md
+                - 043. AI-assisted review informs the two signatures: architecture/adr/043-ai-assisted-review-informs-the-signatures-it-does-not-replace-them.md
+                - 044. Every change carries two human signatures: architecture/adr/044-every-change-carries-two-human-signatures.md
+                - 045. Conventions are borrowed before they are invented: architecture/adr/045-conventions-are-borrowed-before-they-are-invented.md
+          - Vision & Strategy:
+                - architecture/vision-and-strategy/index.md
+                - Mission Statement: architecture/vision-and-strategy/mission-statement.md
+                - Business Objectives: architecture/vision-and-strategy/business-objectives.md
+                - Stakeholder Analysis: architecture/vision-and-strategy/stakeholder-analysis.md
+                - Architecture Roadmap: architecture/vision-and-strategy/architecture-roadmap.md
+          - Data Lifecycle Management:
+                - architecture/data-lifecycle-management/index.md
+                - Data Collection: architecture/data-lifecycle-management/data-collection.md
+                - Data Storage: architecture/data-lifecycle-management/data-storage.md
+                - Data Processing: architecture/data-lifecycle-management/data-processing.md
+                - Data Sharing: architecture/data-lifecycle-management/data-sharing.md
+                - Data Archiving: architecture/data-lifecycle-management/data-archiving.md
+          - Data Governance:
+                - architecture/data-governance/index.md
+                - Roles & Responsibilities: architecture/data-governance/roles-and-responsibilities.md
+                - Data Dictionary: architecture/data-governance/data-dictionary.md
+                - Data Quality: architecture/data-governance/data-quality.md
+                - Data Lineage: architecture/data-governance/data-lineage.md
+                - Compliance & Auditability: architecture/data-governance/compliance-and-auditability.md
+          - Platform:
+                - architecture/platform/index.md
+                - Components & Interfaces: architecture/platform/components-and-interfaces.md
+                - Data Pipelines: architecture/platform/data-pipelines.md
+                - Connectivity:
+                      - architecture/platform/connectivity/index.md
+                      - Integration Methods: architecture/platform/connectivity/integration-methods.md
+                      - API Management: architecture/platform/connectivity/api-management.md
+                      - Networking: architecture/platform/connectivity/networking.md
+                - Delivery:
+                      - architecture/platform/delivery/index.md
+                      - Configuration Management: architecture/platform/delivery/configuration-management.md
+                      - Change Management: architecture/platform/delivery/change-management.md
+                      - Testing: architecture/platform/delivery/testing.md
+                      - Release Management: architecture/platform/delivery/release-management.md
+                      - Deployment: architecture/platform/delivery/deployment.md
+                - Observability:
+                      - architecture/platform/observability/index.md
+                      - Monitoring: architecture/platform/observability/monitoring.md
+                      - Logging: architecture/platform/observability/logging.md
+                      - Alerting: architecture/platform/observability/alerting.md
+                - Resilience:
+                      - architecture/platform/resilience/index.md
+                      - High Availability: architecture/platform/resilience/high-availability.md
+                      - Incident Management: architecture/platform/resilience/incident-management.md
+                      - Backup & Restore: architecture/platform/resilience/backup-and-restore.md
+                      - Disaster Recovery: architecture/platform/resilience/disaster-recovery.md
+                - Security:
+                      - architecture/platform/security/index.md
+                      - Access Management: architecture/platform/security/access-management.md
+                      - Identity Management: architecture/platform/security/identity-management.md
+                      - Secrets Management: architecture/platform/security/secrets-management.md
+                      - Data Encryption: architecture/platform/security/data-encryption.md
+    - Changelog: CHANGELOG.md
+
+plugins:
+    - autorefs
+    - llmstxt:
+          sections:
+              User Guide:
+                  - user-guide/*.md
+                  - user-guide/**/*.md
+              Contributor Guide:
+                  - contributor-guide/*.md
+                  - contributor-guide/**/*.md
+              API Reference:
+                  - api-reference/*.md
+                  - api-reference/**/*.md
+              Architecture:
+                  - architecture/*.md
+                  - architecture/**/*.md
+              Changelog:
+                  - CHANGELOG.md
+    - mike
+    - mkdocstrings:
+          handlers:
+              python:
+                  options:
+                      docstring_options:
+                          ignore_init_summary: true
+                      docstring_section_style: list
+                      extensions:
+                          - tools/griffe/aurelius_pydantic.py:AureliusPydanticExtension:
+                                schema: true
+                      heading_level: 2
+                      inherited_members: true
+                      inventories:
+                          - https://docs.python.org/3/objects.inv
+                      line_length: 120
+                      merge_init_into_class: true
+                      parameter_headings: true
+                      separate_signature: true
+                      show_docstring_examples: true
+                      show_if_no_docstring: true
+                      show_object_full_path: false
+                      show_root_heading: true
+                      show_signature: true
+                      show_signature_annotations: true
+                      show_source: false
+                      show_symbol_type_heading: true
+                      show_symbol_type_toc: true
+                      signature_crossrefs: true
+                      summary: true
+                      unwrap_annotated: true
+    - search
+    - tags
+
+extra:
+    generator: false
+    social:
+        - icon: fontawesome/brands/github
+          link: https://github.com/aureliusenterprise/project-template
+    version:
+        alias: true
+        provider: mike
+
+extra_css:
+    - stylesheets/table.css

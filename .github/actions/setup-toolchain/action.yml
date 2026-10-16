@@ -1,0 +1,294 @@
+name: Setup Toolchain
+description: Installs the runtimes and tools needed by CI jobs. Must be called after actions/checkout.
+
+inputs:
+    sops:
+        description: Install SOPS
+        default: "false"
+    sops-version:
+        description: SOPS version to install
+        default: v3.11.0
+    java:
+        description: Set up JDK 21 and Gradle
+        default: "false"
+    python:
+        description: Set up Python, uv, and install dependencies
+        default: "false"
+    node:
+        description: Set up Node.js and install npm dependencies
+        default: "false"
+    dockerhub-username:
+        description: Docker Hub username (leave empty to skip Docker Hub login)
+        default: ""
+    dockerhub-token:
+        description: Docker Hub token
+        default: ""
+    github-token:
+        description: GitHub token for GHCR login (leave empty to skip)
+        default: ""
+    cosign:
+        description: Install Cosign (for container signing)
+        default: "false"
+    cosign-version:
+        description: Cosign version to install
+        default: v3.0.4
+    trivy:
+        description: Install Trivy (for vulnerability scanning)
+        default: "false"
+    trivy-version:
+        description: Trivy version to install
+        default: v0.68.0
+    cyclonedx:
+        description: Install CycloneDX CLI (for SBOM generation)
+        default: "false"
+    cyclonedx-version:
+        description: CycloneDX CLI version to install
+        default: v0.32.0
+    sonarqube:
+        description: Install SonarQube scanner
+        default: "false"
+    sonarqube-version:
+        description: SonarQube scanner version to install
+        default: 8.0.1.6346
+    playwright:
+        description: Install Playwright browsers with system dependencies
+        default: "false"
+    java-version:
+        description: Java version to set up
+        default: "21"
+    java-distribution:
+        description: Java distribution to set up
+        default: temurin
+    python-version:
+        description: Python version to set up
+        default: "3.14"
+    node-version:
+        description: Node.js version to set up
+        default: "24"
+
+runs:
+    using: composite
+    steps:
+        - name: Clean up pre-installed toolchains
+          shell: bash
+          run: |
+              # Remove Java (JDKs)
+              sudo rm -rf /usr/lib/jvm
+
+              # Remove .NET SDKs
+              sudo rm -rf /usr/share/dotnet
+
+              # Remove Swift toolchain
+              sudo rm -rf /usr/share/swift
+
+              # Remove Haskell (GHC)
+              sudo rm -rf /usr/local/.ghcup
+
+              # Remove Julia
+              sudo rm -rf /usr/local/julia*
+
+              # Remove Android SDKs
+              sudo rm -rf /usr/local/lib/android
+
+              # Remove Chromium (optional if not using for browser tests)
+              sudo rm -rf /usr/local/share/chromium
+
+              # Remove Microsoft/Edge and Google Chrome builds
+              sudo rm -rf /opt/microsoft /opt/google
+
+              # Remove Azure CLI
+              sudo rm -rf /opt/az
+
+              # Remove PowerShell
+              sudo rm -rf /usr/local/share/powershell
+
+              # Remove CodeQL and other toolcaches
+              sudo rm -rf /opt/hostedtoolcache
+
+              docker system prune -af || true
+              docker builder prune -af || true
+              df -h
+
+        - name: Set up Docker with containerd snapshotter
+          uses: docker/setup-docker-action@v5
+          with:
+              daemon-config: |
+                  {
+                    "features": {
+                      "containerd-snapshotter": true
+                    }
+                  }
+
+        - name: Cache SOPS
+          id: cache-sops
+          if: inputs.sops == 'true'
+          uses: actions/cache@v5
+          with:
+              path: /usr/local/bin/sops
+              key: sops-${{ inputs.sops-version }}
+
+        - name: Install SOPS
+          if: inputs.sops == 'true' && steps.cache-sops.outputs.cache-hit != 'true'
+          shell: bash
+          env:
+              SOPS_VERSION: ${{ inputs.sops-version }}
+          run: |
+              curl -LO https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64
+              sudo mv sops-${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops
+              sudo chmod +x /usr/local/bin/sops
+
+        - name: Set up JDK for x64
+          if: inputs.java == 'true'
+          uses: actions/setup-java@v5
+          with:
+              java-version: ${{ inputs.java-version }}
+              distribution: ${{ inputs.java-distribution }}
+              architecture: x64
+
+        - name: Setup Gradle
+          if: inputs.java == 'true'
+          uses: gradle/actions/setup-gradle@v5
+
+        - name: Setup Python
+          if: inputs.python == 'true'
+          uses: actions/setup-python@v6
+          with:
+              python-version: ${{ inputs.python-version }}
+
+        - name: Install uv
+          if: inputs.python == 'true'
+          shell: bash
+          run: python -m pip install uv
+
+        - name: Cache the virtualenv
+          if: inputs.python == 'true'
+          uses: actions/cache@v5
+          with:
+              path: ./.venv
+              key: ${{ runner.os }}-venv-${{ hashFiles('**/uv.lock') }}
+
+        - name: Install Python dependencies
+          if: inputs.python == 'true'
+          shell: bash
+          run: uv venv --allow-existing && uv sync
+
+        - name: Expose GitHub Runtime
+          if: inputs.python == 'true'
+          uses: crazy-max/ghaction-github-runtime@v4
+
+        - name: Update GITHUB_PATH
+          if: inputs.python == 'true'
+          shell: bash
+          run: echo "$(uv python find)" >> $GITHUB_PATH
+
+        - name: Setup Node.js and dependencies
+          if: inputs.node == 'true'
+          uses: actions/setup-node@v6
+          with:
+              node-version: ${{ inputs.node-version }}
+              cache: npm
+
+        - name: Install Node.js dependencies
+          if: inputs.node == 'true'
+          shell: bash
+          run: npm install
+
+        - name: Log in to Docker Hub
+          if: inputs.dockerhub-username != ''
+          uses: docker/login-action@v4
+          with:
+              registry: docker.io
+              username: ${{ inputs.dockerhub-username }}
+              password: ${{ inputs.dockerhub-token }}
+
+        - name: Log in to Docker Hardened Images registry
+          if: inputs.dockerhub-username != ''
+          uses: docker/login-action@v4
+          with:
+              registry: dhi.io
+              username: ${{ inputs.dockerhub-username }}
+              password: ${{ inputs.dockerhub-token }}
+
+        - name: Log in to the GitHub Container registry
+          if: inputs.github-token != ''
+          uses: docker/login-action@v4
+          with:
+              registry: ghcr.io
+              username: ${{ github.actor }}
+              password: ${{ inputs.github-token }}
+
+        - name: Cache Cosign
+          id: cache-cosign
+          if: inputs.cosign == 'true'
+          uses: actions/cache@v5
+          with:
+              path: /usr/local/bin/cosign
+              key: cosign-${{ inputs.cosign-version }}
+
+        - name: Install Cosign
+          if: inputs.cosign == 'true' && steps.cache-cosign.outputs.cache-hit != 'true'
+          shell: bash
+          env:
+              COSIGN_VERSION: ${{ inputs.cosign-version }}
+          run: |
+              curl -sSfL https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64 -o /usr/local/bin/cosign
+              chmod +x /usr/local/bin/cosign
+
+        - name: Install Trivy
+          if: inputs.trivy == 'true'
+          uses: aquasecurity/setup-trivy@v0.2.6
+          with:
+              trivy-version: ${{ inputs.trivy-version }}
+
+        - name: Cache CycloneDX CLI
+          id: cache-cyclonedx
+          if: inputs.cyclonedx == 'true'
+          uses: actions/cache@v5
+          with:
+              path: /usr/local/bin/cyclonedx
+              key: cyclonedx-${{ inputs.cyclonedx-version }}
+
+        - name: Install CycloneDX CLI
+          if: inputs.cyclonedx == 'true' && steps.cache-cyclonedx.outputs.cache-hit != 'true'
+          shell: bash
+          env:
+              CYCLONEDX_VERSION: ${{ inputs.cyclonedx-version }}
+          run: |
+              curl -sSfL https://github.com/CycloneDX/cyclonedx-cli/releases/download/${CYCLONEDX_VERSION}/cyclonedx-linux-x64 -o /usr/local/bin/cyclonedx
+              chmod +x /usr/local/bin/cyclonedx
+
+        - name: Cache SonarQube scanner
+          id: cache-sonarqube
+          if: inputs.sonarqube == 'true'
+          uses: actions/cache@v5
+          with:
+              path: ${{ runner.temp }}/sonar-scanner
+              key: sonarqube-${{ inputs.sonarqube-version }}
+
+        - name: Install SonarQube scanner
+          if: inputs.sonarqube == 'true' && steps.cache-sonarqube.outputs.cache-hit != 'true'
+          shell: bash
+          env:
+              SONAR_VERSION: ${{ inputs.sonarqube-version }}
+              SONAR_ROOT: ${{ runner.temp }}/sonar-scanner
+              SONAR_ZIP: /tmp/sonar-scanner.zip
+          run: |
+              curl -o "$SONAR_ZIP" -L "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_VERSION-linux-x64.zip"
+              unzip -o "$SONAR_ZIP" -d "$SONAR_ROOT"
+              rm "$SONAR_ZIP"
+              "$SONAR_ROOT/sonar-scanner-$SONAR_VERSION-linux-x64/bin/sonar-scanner" --version
+
+        - name: Add SonarQube scanner to PATH
+          if: inputs.sonarqube == 'true'
+          shell: bash
+          env:
+              SONAR_VERSION: ${{ inputs.sonarqube-version }}
+              SONAR_ROOT: ${{ runner.temp }}/sonar-scanner
+          run: |
+              echo "$SONAR_ROOT/sonar-scanner-$SONAR_VERSION-linux-x64/bin" >> "$GITHUB_PATH"
+
+        - name: Install Playwright
+          if: inputs.playwright == 'true'
+          shell: bash
+          run: |
+              uv run playwright install --with-deps

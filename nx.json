@@ -1,0 +1,93 @@
+{
+    "$schema": "./node_modules/nx/schemas/nx-schema.json",
+    "analytics": false,
+    "defaultBase": "main",
+    "generators": {
+        "@nx/angular:application": {
+            "linter": "eslint",
+            "style": "scss",
+            "unitTestRunner": "vitest-analog"
+        },
+        "@nx/angular:component": {
+            "style": "scss"
+        },
+        "@nx/angular:library": {
+            "linter": "eslint",
+            "unitTestRunner": "vitest-analog"
+        }
+    },
+    "namedInputs": {
+        "default": ["{projectRoot}/**/*"],
+        "production": ["default", "!{projectRoot}/src/test/**/*"]
+    },
+    "neverConnectToCloud": true,
+    "plugins": [
+        "./tools/plugins/alembic.ts",
+        "./tools/plugins/docker.ts",
+        "./tools/plugins/docker-compose.ts",
+        "./tools/plugins/mkdocs.ts",
+        "./tools/plugins/python.ts",
+        "./tools/plugins/sonarqube.ts",
+        "./tools/plugins/sops.ts",
+        "./tools/plugins/sops-decrypt.ts",
+        "./tools/plugins/sops-encrypt.ts",
+        {
+            "options": {
+                "targetName": "eslint:lint"
+            },
+            "plugin": "@nx/eslint/plugin"
+        },
+        {
+            "options": {
+                "buildTargetName": "build",
+                "classesTargetName": "classes",
+                "testTargetName": "test"
+            },
+            "plugin": "@nx/gradle"
+        }
+    ],
+    "release": {
+        "changelog": {
+            "workspaceChangelog": {
+                "file": "docs/CHANGELOG.md",
+                "renderOptions": {
+                    "authors": false,
+                    "commitReferences": true,
+                    "versionTitleDate": true
+                }
+            }
+        },
+        "projects": ["*"],
+        "version": {
+            "conventionalCommits": true
+        }
+    },
+    "targetDefaults": {
+        "@angular/build:application": {
+            "cache": true,
+            "dependsOn": ["^build"],
+            "inputs": ["default", "^default"]
+        },
+        "@nx/angular:ng-packagr-lite": {
+            "cache": true,
+            "dependsOn": ["^build"],
+            "inputs": ["default", "^default"]
+        },
+        "@nx/angular:unit-test": {
+            "cache": true,
+            "inputs": ["default", "^default"]
+        },
+        "@nx/eslint:lint": {
+            "cache": true,
+            "inputs": ["default", "{workspaceRoot}/eslint.config.mjs"]
+        },
+        "@nx/vitest:test": {
+            "cache": true,
+            "inputs": ["default", "^default"]
+        },
+        "build-storybook": {
+            "cache": true,
+            "inputs": ["default", "^default", "{projectRoot}/.storybook/**/*", "{projectRoot}/tsconfig.storybook.json"]
+        }
+    }
+}

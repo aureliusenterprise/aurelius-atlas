@@ -1,0 +1,44 @@
+name: Delete Documentation
+
+concurrency:
+    group: "docs"
+
+on: delete
+
+jobs:
+    delete_docs:
+        if: |
+            github.event.ref_type =='branch'
+
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - run: git config --global user.email "info@aureliusenterprise.com"
+            - run: git config --global user.name "Aurelius Enterprise"
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  python: "true"
+
+            - name: Check if documentation exists for the deleted branch
+              id: check_docs
+              run: |
+                  REF_NAME=${{ github.event.ref }}
+                  SANITIZED_REF_NAME=${REF_NAME//"/"/"-"}
+                  uv run mike list -b public-docs | grep -q $SANITIZED_REF_NAME && exists=true || exists=false
+                  echo "exists=$exists" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - name: Delete documentation if it exists
+              if: steps.check_docs.outputs.exists == 'true'
+              run: |
+                  REF_NAME=${{ github.event.ref }}
+                  SANITIZED_REF_NAME=${REF_NAME//"/"/"-"}
+                  uv run mike delete -b public-docs --push $SANITIZED_REF_NAME
+              shell: bash

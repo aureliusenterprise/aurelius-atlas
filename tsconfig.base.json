@@ -1,0 +1,31 @@
+{
+    "angularCompilerOptions": {
+        "strictInjectionParameters": true,
+        "strictTemplates": true
+    },
+    "compileOnSave": false,
+    "compilerOptions": {
+        "declaration": false,
+        "esModuleInterop": false,
+        "experimentalDecorators": true,
+        "ignoreDeprecations": "6.0",
+        "importHelpers": true,
+        "lib": ["es2022", "dom"],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "noUncheckedSideEffectImports": false,
+        "paths": {
+            "aurelius-data-access": ["./libs/angular/aurelius-data-access/src/index.ts"],
+            "aurelius-observability": ["./libs/angular/aurelius-observability/src/index.ts"],
+            "aurelius-ui": ["./libs/angular/aurelius-ui/src/index.ts"]
+        },
+        "rootDir": ".",
+        "skipDefaultLibCheck": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "strict": false,
+        "target": "es2015",
+        "types": ["*"]
+    },
+    "exclude": ["node_modules", "tmp"]
+}

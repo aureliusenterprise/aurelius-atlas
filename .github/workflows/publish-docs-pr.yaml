@@ -1,0 +1,44 @@
+name: Publish Documentation (PR)
+
+concurrency:
+    group: "docs"
+
+on:
+    pull_request:
+        branches:
+            - "**"
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - run: git config --global user.email "info@aureliusenterprise.com"
+            - run: git config --global user.name "Aurelius Enterprise"
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  python: "true"
+
+            - name: Publish documentation for PR
+              run: |
+                  REF_NAME=${{ github.head_ref }}
+                  SANITIZED_REF_NAME=${REF_NAME//"/"/"-"}
+                  echo "SANITIZED_REF_NAME=$SANITIZED_REF_NAME" >> "$GITHUB_ENV"
+                  uv run mike deploy -b public-docs --push $SANITIZED_REF_NAME
+              shell: bash
+
+            - name: Add PR comment with documentation link
+              uses: hasura/comment-progress@v2.3.0
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  repository: ${{ github.repository }}
+                  number: ${{ github.event.number }}
+                  id: docs-link
+                  message: "Documentation for this PR is available at: <https://aureliusenterprise.github.io/project-template/${{ env.SANITIZED_REF_NAME }}/>"

@@ -1,0 +1,142 @@
+name: Scan
+
+on:
+    schedule:
+        - cron: "0 2 * * 3"
+
+env:
+    SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: read
+            packages: read
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  sops: "true"
+                  java: "true"
+                  python: "true"
+                  node: "true"
+                  playwright: "true"
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Test all projects
+              run: npx nx run-many -t test e2e -c ci
+
+            - name: Upload coverage reports
+              uses: actions/upload-artifact@v7
+              with:
+                  name: coverage-reports
+                  path: |
+                      **/coverage.xml
+                      **/jacocoTestReport.xml
+                      **/lcov.info
+
+            - name: Collect failure diagnostics
+              if: failure()
+              run: |
+                  mkdir -p reports/failure-diagnostics
+                  docker ps --all --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" \
+                    > reports/failure-diagnostics/container-status.txt 2>&1 || true
+                  for project in $(docker compose ls --all -q); do
+                    echo "Collecting logs for project: $project"
+                    docker compose --project-name "$project" logs --no-color \
+                      > "reports/failure-diagnostics/${project}-logs.txt" 2>&1 || true
+                  done
+
+            - name: Upload failure diagnostics
+              if: failure()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: e2e-failure-diagnostics
+                  path: reports/failure-diagnostics/
+                  retention-days: 30
+
+    build-and-scan:
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  sops: "true"
+                  java: "true"
+                  python: "true"
+                  node: "true"
+                  cosign: "true"
+                  trivy: "true"
+                  cyclonedx: "true"
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build all docker images
+              run: npx nx run-many -t docker-build -c ci
+
+            - name: Generate vulnerability reports
+              run: npx nx run-many -t docker-vuln-scan -c sarif
+
+            - name: Upload vulnerability reports
+              uses: actions/upload-artifact@v7
+              with:
+                  name: vuln-reports
+                  path: "**/vulnerabilities.sarif"
+
+    sonar:
+        runs-on: ubuntu-latest
+        needs: [test, build-and-scan]
+
+        permissions:
+            contents: read
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  sops: "true"
+                  java: "true"
+                  node: "true"
+                  sonarqube: "true"
+
+            - name: Download coverage reports
+              uses: actions/download-artifact@v8
+              with:
+                  name: coverage-reports
+
+            - name: Download vulnerability reports
+              uses: actions/download-artifact@v8
+              with:
+                  name: vuln-reports
+
+            - name: Decrypt secrets for SonarQube
+              run: npx nx run-many -t decrypt
+
+            - name: Run SonarQube analysis
+              run: npx nx run-many -t sonar

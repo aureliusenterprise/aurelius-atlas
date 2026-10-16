@@ -1,0 +1,47 @@
+import { createNodesFromFiles, CreateNodesResult, CreateNodes } from "@nx/devkit";
+import { basename, dirname } from "node:path";
+
+export interface SonarQubePluginOptions {
+    readonly sonarTargetName?: string;
+}
+
+const glob = "**/sonar-project.properties";
+
+export const createNodes: CreateNodes<SonarQubePluginOptions> = [
+    glob,
+    async (configFiles, options, context) => {
+        return await createNodesFromFiles(
+            (configFile) => createNodesInternal(configFile, options),
+            configFiles,
+            options,
+            context,
+        );
+    },
+];
+
+async function createNodesInternal(
+    configFilePath: string,
+    { sonarTargetName = "sonar" }: SonarQubePluginOptions = {},
+): Promise<CreateNodesResult> {
+    const projectRoot = dirname(configFilePath);
+
+    return {
+        projects: {
+            [projectRoot]: {
+                name: basename(projectRoot),
+                targets: {
+                    [sonarTargetName]: {
+                        dependsOn: ["decrypt"],
+                        executor: "nx:run-commands",
+                        metadata: {
+                            description: "Run SonarQube analysis on the project",
+                        },
+                        options: {
+                            command: `sonar-scanner -Dproject.settings=${projectRoot}/sonar-project.properties -Dsonar.working.directory=${projectRoot}/.scannerwork`,
+                        },
+                    },
+                },
+            },
+        },
+    };
+}
