@@ -8,6 +8,9 @@ vi.mock("keycloak-angular", () => ({
 
 import { routes } from "./routes";
 
+// The guard is registered once, at import time. Copy the calls now: Vitest clears mock history before each test.
+const createAuthGuardCalls = [...createAuthGuardMock.mock.calls];
+
 describe("routes", () => {
     it("should configure the root route", () => {
         expect(routes).toHaveLength(1);
@@ -74,8 +77,8 @@ describe("routes", () => {
     });
 
     it("should register rootAuthGuard with createAuthGuard", () => {
-        expect(createAuthGuardMock).toHaveBeenCalledTimes(1);
-        const [guardArg] = createAuthGuardMock.mock.calls[0] ?? [];
+        expect(createAuthGuardCalls).toHaveLength(1);
+        const [guardArg] = createAuthGuardCalls[0] ?? [];
         expect(typeof guardArg).toBe("function");
     });
 });
