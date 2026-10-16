@@ -10,31 +10,10 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/apps/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-aws-lambda-example/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-fastapi-example/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-frontend-example/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-java-producer-example/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-node-red-example/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/connectors/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/connectors/aurelius-kafka-connect-jdbc-sink-example/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/docker/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/docker/aurelius-aws-lambda-base/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/</loc>
@@ -49,22 +28,10 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-data-access/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/java/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/java/aurelius-java-example/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-aws-lambda/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-example/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-kafka/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-sdk/</loc>
@@ -217,7 +184,46 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/045-conventions-are-borrowed-before-they-are-invented/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/046-the-catalogue-keeps-its-public-contract/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/047-one-search-store-is-the-system-of-record/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/051-the-conversion-proceeds-in-specified-increments/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/template/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/design-log/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/deviations/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-1-adopt-template/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/java-map/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/</loc>
@@ -230,18 +236,6 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-dynamic-events/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-scanning/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-static-edges/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-visualization/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-quality/</loc>
@@ -386,20 +380,5 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/user-guide/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/user-guide/design-guide/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/user-guide/design-guide/consumers/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/user-guide/design-guide/kafka-topics/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/user-guide/design-guide/producers/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/user-guide/design-guide/schemas/</loc>
       </url>
 </urlset>
