@@ -197,10 +197,14 @@ jobs:
             - name: Set SHA for affected commands
               uses: nrwl/nx-set-shas@v5
 
+            # Decrypt every project, not just the affected ones: with task-based affected,
+            # decrypt only counts as affected when .env.enc changes, and a .env that the
+            # sonar run decrypts itself is written after Nx has loaded the task env, so
+            # sonar-scanner would run without SONAR_TOKEN ("Not authorized").
             - name: Decrypt secrets for SonarQube
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t decrypt
+              run: npx nx run-many -t decrypt
 
             - name: Run SonarQube analysis
               env:
