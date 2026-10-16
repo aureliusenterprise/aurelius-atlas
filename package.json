@@ -33,7 +33,7 @@
         "@vitest/ui": "4.0.9",
         "angular-eslint": "22.5.0",
         "aurelius-node-red-example": "file:apps/aurelius-node-red-example",
-        "autoprefixer": "^10.4.0",
+        "autoprefixer": "^10.6.1",
         "chromatic": "^15.3.0",
         "eslint": "^9.8.0",
         "eslint-config-prettier": "^10.0.0",
