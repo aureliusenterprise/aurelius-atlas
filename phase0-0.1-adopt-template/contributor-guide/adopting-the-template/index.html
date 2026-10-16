@@ -353,7 +353,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG/" class="md-tabs__link">
+      <a href="../../CHANGELOG.md" class="md-tabs__link">
         
   
   Changelog
@@ -1308,14 +1308,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/angular/aurelius-ui/" class="md-nav__link">
+      <a href="../../api-reference/libs/angular/aurelius-atlas-ui/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-ui
+  aurelius-atlas-ui
 
     
   </span>
@@ -5264,7 +5264,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG/" class="md-nav__link">
+      <a href="../../CHANGELOG.md" class="md-nav__link">
         
   
   
@@ -5618,7 +5618,7 @@ they must be edited by hand. Work through this list top to bottom; each item nam
 </tr>
 <tr>
 <td>Root package names</td>
-<td><code>package.json</code> and <code>pyproject.toml</code> (<code>name = "aurelius-project-template"</code>, author entries)</td>
+<td><code>package.json</code> and <code>pyproject.toml</code> (<code>name = "aurelius-aurelius-atlas"</code>, author entries)</td>
 </tr>
 </tbody>
 </table>
@@ -5664,7 +5664,7 @@ libs, and <code>e2e/</code> test modules.</p>
 changing the schema or subject.</p>
 </details>
 <h3 id="5-angular-library-aliases">5. Angular library aliases<a class="headerlink" href="#5-angular-library-aliases" title="Permanent link">&para;</a></h3>
-<p>The Angular libraries are imported by <strong>bare names</strong> declared in <code>tsconfig.base.json</code> (<code>aurelius-ui</code>,
+<p>The Angular libraries are imported by <strong>bare names</strong> declared in <code>tsconfig.base.json</code> (<code>aurelius-atlas-ui</code>,
 <code>aurelius-data-access</code>, <code>aurelius-observability</code>) — not under an <code>@scope/</code>. Only <code>@aurelius/brand</code>
 (<code>libs/styles/aurelius-brand</code>, a <code>file:</code> npm dependency used in SCSS as <code>@use "@aurelius/brand/src/main"</code>)
 is scoped. Rename the aliases, the import statements, the package <code>name</code> fields, and the brand package
@@ -5674,6 +5674,12 @@ together.</p>
 <code>tools/plugins/docker.ts</code> (six target definitions). Edit it there, then update the <code>:local</code> image
 references in the <code>e2e/docker-compose.yaml</code> files and the connector's <code>docker-compose.yaml</code>, plus the
 <code>org.opencontainers.image.source</code> labels in the Dockerfiles.</p>
+<p>All base and infrastructure images are <a href="https://dhi.io">Docker Hardened Images</a> pulled from <code>dhi.io</code>,
+which requires Docker Hub authentication. In your fork, set the <code>DOCKERHUB_USERNAME</code> and
+<code>DOCKERHUB_TOKEN</code> repository secrets (the CI workflows pass them to the setup-toolchain action, which
+logs in to both <code>docker.io</code> and <code>dhi.io</code>); without them every CI job fails at the first image pull.
+Developers need a <code>docker login</code> on their host too — see
+<a href=".././development-environment/">Development Environment</a>.</p>
 <h3 id="7-sonarqube-organization">7. SonarQube organization<a class="headerlink" href="#7-sonarqube-organization" title="Permanent link">&para;</a></h3>
 <p>Each analyzed app has <code>sonar.organization=aureliusenterprise</code> and <code>sonar.projectKey=aurelius-*</code> in its
 <code>sonar-project.properties</code>. Point these at your SonarCloud organization (or disable the <code>sonar</code> step in CI

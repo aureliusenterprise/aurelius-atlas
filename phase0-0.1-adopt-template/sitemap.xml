@@ -4,9 +4,6 @@
         <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/CHANGELOG/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/</loc>
       </url>
       <url>
@@ -25,10 +22,10 @@
         <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-data-access/</loc>
+        <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-atlas-ui/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-ui/</loc>
+        <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-data-access/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/python/</loc>

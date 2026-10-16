@@ -353,7 +353,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../CHANGELOG/" class="md-tabs__link">
+      <a href="../../../../CHANGELOG.md" class="md-tabs__link">
         
   
   Changelog
@@ -1088,14 +1088,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/angular/aurelius-ui/" class="md-nav__link">
+      <a href="../../../../api-reference/libs/angular/aurelius-atlas-ui/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-ui
+  aurelius-atlas-ui
 
     
   </span>
@@ -5514,7 +5514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../CHANGELOG/" class="md-nav__link">
+      <a href="../../../../CHANGELOG.md" class="md-nav__link">
         
   
   
@@ -6475,7 +6475,7 @@ for services with health checks defined in Docker Compose.</p>
 <summary>Log capture</summary>
 <p>Containers are automatically torn down when exiting the context manager. The <code>capture_docker_compose_logs()</code>
 helper ensures logs are captured for debugging:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_sdk.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_sdk.testing.testcontainers</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
 
 <span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
     <span class="k">yield</span> <span class="n">compose</span><span class="o">.</span><span class="n">waiting_for</span><span class="p">({</span><span class="s2">"service"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">()})</span>
@@ -6539,7 +6539,7 @@ critical user flows. The codebase uses Playwright with pytest integration via <c
 <span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">locator</span><span class="p">(</span><span class="s2">".search-result-card"</span><span class="p">))</span><span class="o">.</span><span class="n">to_have_count</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">))</span>
 
 <span class="c1"># Text content check</span>
-<span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">f</span><span class="s2">"I have found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span><span class="si">}</span><span class="s2"> entities"</span><span class="p">)))</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">f</span><span class="s2">"I have found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span><span class="si">}</span><span class="s2"> entities</span><span class="se">\\</span><span class="s2">."</span><span class="p">)))</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
 </code></pre></div>
 </details>
 <details class="tip">

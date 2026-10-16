@@ -20,8 +20,8 @@
 - [aurelius-frontend-example](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/apps/aurelius-frontend-example/index.md>)
 - [Apps](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/apps/index.md>)
 - [API Reference](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/index.md>)
+- [aurelius-atlas-ui](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-atlas-ui/index.md>)
 - [aurelius-data-access](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-data-access/index.md>)
-- [aurelius-ui](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/aurelius-ui/index.md>)
 - [Index](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/angular/index.md>)
 - [Libs](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/index.md>)
 - [aurelius-example](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/api-reference/libs/python/aurelius-example/index.md>)
@@ -139,5 +139,3 @@
 - [Stakeholder Analysis](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/architecture/vision-and-strategy/stakeholder-analysis/index.md>)
 
 ## Changelog
-
-- [Changelog](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/CHANGELOG/index.md>)

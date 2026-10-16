@@ -353,7 +353,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG/" class="md-tabs__link">
+      <a href="../../CHANGELOG.md" class="md-tabs__link">
         
   
   Changelog
@@ -1219,14 +1219,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/angular/aurelius-ui/" class="md-nav__link">
+      <a href="../../api-reference/libs/angular/aurelius-atlas-ui/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-ui
+  aurelius-atlas-ui
 
     
   </span>
@@ -5175,7 +5175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG/" class="md-nav__link">
+      <a href="../../CHANGELOG.md" class="md-nav__link">
         
   
   
@@ -5397,6 +5397,11 @@ environment, including the all tools and dependencies required for local develop
 <div class="admonition note">
 <p class="admonition-title">Prerequisites</p>
 <p><a href="https://www.docker.com">Docker</a> and the <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html">NVIDIA Container Toolkit</a> must be installed on your system to use the development container.</p>
+<p>All container images in this repository — application bases as well as the development infrastructure
+(Postgres, Keycloak, Kafka, observability) — are <a href="https://dhi.io">Docker Hardened Images</a> pulled from
+the <code>dhi.io</code> registry. Pulling them requires a Docker Hub account: run <code>docker login</code> on your host
+before starting the development container or running any <code>serve</code>, <code>test</code>, or <code>e2e</code> target, otherwise
+image pulls fail with an unauthorized error.</p>
 <p>If you're using <strong>Rancher Desktop</strong>, follow the instructions in the <a href="https://docs.rancherdesktop.io/how-to-guides/vs-code-remote-containers/">Rancher Desktop documentation</a>
 to prepare your environment for use with the development container.</p>
 </div>
@@ -5417,7 +5422,7 @@ guide on <a href="https://code.visualstudio.com/remote/advancedcontainers/sharin
 to ensure your SSH key is available inside the container.</p>
 <h2 id="clone-the-repository">Clone the Repository<a class="headerlink" href="#clone-the-repository" title="Permanent link">&para;</a></h2>
 <p>To clone the repository, run the following command:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:aureliusenterprise/project-template.git
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:aureliusenterprise/aurelius-atlas.git
 </code></pre></div>
 <p>This will clone the repository to your local machine using SSH.</p>
 <h2 id="environment-setup">Environment Setup<a class="headerlink" href="#environment-setup" title="Permanent link">&para;</a></h2>
@@ -5457,6 +5462,14 @@ guide.</p>
 <li>Installs JavaScript dependencies (<code>npm install</code>) and Python dependencies (<code>uv sync</code>) into the workspace.</li>
 <li>Generates a personal SOPS/age key pair into <code>secrets/keys.txt</code>, unless one already exists.</li>
 </ol>
+<p>Local TLS material is not prewarmed: every <code>serve</code> or <code>e2e</code> target that needs it
+first runs that project's <code>certgen</code> target, which issues the certificates it
+owns into its own gitignored <code>certs/</code> directory. The local <code>mkcert</code> certificate
+authority has no workspace home: <code>certgen</code> installs it into the system trust
+stores on first use (it lives in mkcert's own store, outside the repository)
+and copies it into each project's <code>certs/</code>; run <code>mkcert -uninstall</code> to drop it
+entirely — see
+<a href="../../architecture/platform/security/data-encryption/">Data Encryption</a>.</p>
 <details class="warning">
 <summary>Your first tests may fail until your key is registered</summary>
 <p>Almost every <code>serve</code>, <code>test</code>, and <code>e2e</code> target first runs a <code>decrypt</code> step to turn the committed <code>.env.enc</code>
@@ -5464,6 +5477,13 @@ secret files into plaintext <code>.env</code> files. Decryption only succeeds on
 <code>.sops.yaml</code> and the files have been re-encrypted for you (see
 <a href=".././secrets-management/#registering-a-new-key-pair">Registering a new key pair</a>). Until then, commands fail
 with a SOPS/age decryption error — this is expected, not a broken setup.</p>
+</details>
+<details class="warning">
+<summary>Image pulls fail without a Docker Hub login</summary>
+<p>The <code>serve</code>, <code>test</code>, and <code>e2e</code> targets pull their base and infrastructure images from
+<a href="https://dhi.io">Docker Hardened Images</a> (<code>dhi.io/*</code>), a registry that requires authentication with
+Docker Hub credentials. If you have not run <code>docker login</code> with a Docker Hub account, pulls fail with
+an <code>unauthorized</code> (or rate-limit) error — see the Prerequisites note at the top of this guide.</p>
 </details>
 <h2 id="explore-the-workspace">Explore the Workspace<a class="headerlink" href="#explore-the-workspace" title="Permanent link">&para;</a></h2>
 <p>The workspace is organized as a monorepo, which means that all the projects are stored in a single repository.</p>

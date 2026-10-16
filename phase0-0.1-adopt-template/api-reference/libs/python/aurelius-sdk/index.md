@@ -35,7 +35,7 @@ Modules:
 - **`postgresql`** –
 - **`testing`** –
 
-  This module provides testing utilities for Aurelius applications.
+  Testing utilities for Aurelius applications.
 
 ## aurelius\_sdk.aws
 
@@ -329,9 +329,9 @@ stop() -> None
 
 Stop listening and release listener resources.
 
-## aurelius\_sdk.testing
+## aurelius\_sdk.testing.testcontainers
 
-This module provides testing utilities for Aurelius applications.
+Testcontainers-based helpers for tests.
 
 > [!NOTE]
 >
@@ -350,3 +350,139 @@ capture_docker_compose_logs(compose: DockerCompose, *services: str, logger: Logg
 ```
 
 Capture logs from the given Docker Compose services. Omit services to capture all available logs.
+
+## aurelius\_sdk.testing.tls
+
+This module provides TLS helpers for tests.
+
+> [!NOTE]
+>
+> Please install the `testing` extra to use this module.
+
+Classes:
+
+- **`TlsCertificates`** –
+
+  Ephemeral TLS material for a TLS-enforcing test container.
+
+Functions:
+
+- **`configure_tls_postgres`** –
+
+  Configure a PostgreSQL test container to enforce TLS, mirroring dev/postgres.
+- **`tls_certificates`** –
+
+  Generate ephemeral TLS material, removing the directory again on exit.
+
+Attributes:
+
+- **`DEFAULT_TLS_SANS`** (`tuple[str, ...]`) –
+
+  Default certificate identities: the loopback names and addresses.
+- **`TLS_POSTGRES_HOST`** –
+
+  Host test clients connect to.
+- **`TLS_POSTGRES_IMAGE`** –
+
+  Hardened PostgreSQL image used by the TLS test arrangement.
+
+### DEFAULT\_TLS\_SANS
+
+```
+DEFAULT_TLS_SANS: tuple[str, ...] = ('localhost', '127.0.0.1', '::1')
+```
+
+Default certificate identities: the loopback names and addresses.
+
+### TLS\_POSTGRES\_HOST
+
+```
+TLS_POSTGRES_HOST = 'localhost'
+```
+
+Host test clients connect to.
+
+The ephemeral certificates cover only loopback names and libpq verifies the host parameter against them, so clients connect to localhost through the published port rather than to `get_container_host_ip()` (a bridge/gateway address in some Docker setups). This requires the Docker daemon to be reachable on the local machine - the case in the dev container; a remote DOCKER\_HOST would need its address added as a SAN.
+
+### TLS\_POSTGRES\_IMAGE
+
+```
+TLS_POSTGRES_IMAGE = 'dhi.io/postgres:18-alpine3.23'
+```
+
+Hardened PostgreSQL image used by the TLS test arrangement.
+
+### TlsCertificates
+
+Bases: `NamedTuple`
+
+Ephemeral TLS material for a TLS-enforcing test container.
+
+Attributes:
+
+- **`ca_bundle_path`** (`Path`) –
+
+  PEM CA bundle clients point sslrootcert at to verify the server.
+- **`directory`** (`Path`) –
+
+  Directory to mount at /certs in the container (ca.pem, server certs, pg\_hba.conf).
+
+#### ca\_bundle\_path
+
+```
+ca_bundle_path: Path
+```
+
+PEM CA bundle clients point sslrootcert at to verify the server.
+
+#### directory
+
+```
+directory: Path
+```
+
+Directory to mount at /certs in the container (ca.pem, server certs, pg\_hba.conf).
+
+### configure\_tls\_postgres
+
+```
+configure_tls_postgres(container: PostgresContainer, certs: TlsCertificates) -> None
+```
+
+Configure a PostgreSQL test container to enforce TLS, mirroring dev/postgres.
+
+Call before the container starts. The server comes up with ssl=on and a hostssl-only pg\_hba.conf, so plaintext TCP connections are rejected server-side; clients connect with sslmode=verify-full against `certs.ca_bundle_path` (host: :data:`TLS_POSTGRES_HOST`).
+
+The hardened image runs as a fixed non-root user that cannot read host-owned key material it does not own, so — like dev/postgres — the certificates are copied into the container filesystem with strict permissions before startup (Postgres also refuses world-readable keys).
+
+### tls\_certificates
+
+```
+tls_certificates(*, prefix: str = 'aurelius-tls', sans: Sequence[str] = DEFAULT_TLS_SANS) -> Generator[TlsCertificates]
+```
+
+Generate ephemeral TLS material, removing the directory again on exit.
+
+A throwaway CA and server certificate (SANs: `sans`) live in a temporary directory - named with `prefix` - for the duration of the block, keeping the fixture as hermetic as the random credentials next to it; no certgen/decrypt is needed to run tests.
+
+Parameters:
+
+- #### **`prefix`**
+
+  (`str`, default: `'aurelius-tls'` ) –
+
+  Name prefix for the temporary certificate directory.
+- #### **`sans`**
+
+  (`Sequence[str]`, default: `DEFAULT_TLS_SANS` ) –
+
+  Certificate identities (host names and addresses) the server certificate is issued for.
+
+Usage in a fixture::
+
+```
+@pytest.fixture(scope="session")
+def db_tls_material() -> Generator[TlsCertificates]:
+    with tls_certificates() as certs:
+        yield certs
+```

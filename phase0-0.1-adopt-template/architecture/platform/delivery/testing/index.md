@@ -342,7 +342,7 @@ For integration and end-to-end testing, use [Testcontainers](<https://www.testco
 > Containers are automatically torn down when exiting the context manager. The `capture_docker_compose_logs()` helper ensures logs are captured for debugging:
 >
 > ```
-> from aurelius_sdk.testing import capture_docker_compose_logs
+> from aurelius_sdk.testing.testcontainers import capture_docker_compose_logs
 >
 > with DockerCompose(context=context) as compose:
 >     yield compose.waiting_for({"service": HealthcheckWaitStrategy()})
@@ -420,7 +420,7 @@ For frontend end-to-end testing, use [Playwright](<https://playwright.dev/>) to 
 > expect(authenticated.locator(".search-result-card")).to_have_count(len(entities))
 >
 > # Text content check
-> expect(authenticated.get_by_text(re.compile(f"I have found {len(entities)} entities"))).to_be_visible()
+> expect(authenticated.get_by_text(re.compile(f"I have found {len(entities)} entities\\."))).to_be_visible()
 > ```
 
 > [!TIP]

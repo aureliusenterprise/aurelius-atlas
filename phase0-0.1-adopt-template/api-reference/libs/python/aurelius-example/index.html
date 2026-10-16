@@ -353,7 +353,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../CHANGELOG/" class="md-tabs__link">
+      <a href="../../../../CHANGELOG.md" class="md-tabs__link">
         
   
   Changelog
@@ -1101,14 +1101,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../angular/aurelius-ui/" class="md-nav__link">
+      <a href="../../angular/aurelius-atlas-ui/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-ui
+  aurelius-atlas-ui
 
     
   </span>
@@ -1374,6 +1374,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__lt__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_example.Entity.avro_schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;avro_schema
       </span>
     </span>
   </a>
@@ -5307,7 +5318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../CHANGELOG/" class="md-nav__link">
+      <a href="../../../../CHANGELOG.md" class="md-nav__link">
         
   
   
@@ -5459,6 +5470,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__lt__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_example.Entity.avro_schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;avro_schema
       </span>
     </span>
   </a>
@@ -6031,6 +6053,35 @@
     <div class="doc doc-contents ">
 
         <p>Compare entities based on their latest change timestamp.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_example.Entity.avro_schema" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">avro_schema</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#aurelius_example.Entity.avro_schema" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">avro_schema</span><span class="p">(</span><span class="o">*</span><span class="n"><span title="aurelius_example.Entity.avro_schema(*args)">args</span></span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="o">**</span><span class="n"><span title="aurelius_example.Entity.avro_schema(**kwargs)">kwargs</span></span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the Avro schema with datetime fields encoded as timestamp-millis.</p>
+<p>pydantic-avro defaults <code>date-time</code> fields to <code>timestamp-micros</code>, but the
+Confluent Avro converter maps only <code>timestamp-millis</code> to the Connect
+<code>Timestamp</code> logical type. Without it, consumers that read through that
+converter (e.g. the Debezium JDBC sink) see a nameless raw <code>INT64</code> and try
+to bind it to a <code>timestamptz</code> column as a bigint, which fails.</p>
 
 
     </div>

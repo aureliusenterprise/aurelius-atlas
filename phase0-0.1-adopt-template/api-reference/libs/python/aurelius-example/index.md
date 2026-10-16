@@ -159,6 +159,16 @@ __lt__(other: Entity) -> bool
 
 Compare entities based on their latest change timestamp.
 
+### avro\_schema
+
+```
+avro_schema(*args: Any, **kwargs: Any) -> dict[str, Any]
+```
+
+Return the Avro schema with datetime fields encoded as timestamp-millis.
+
+pydantic-avro defaults `date-time` fields to `timestamp-micros`, but the Confluent Avro converter maps only `timestamp-millis` to the Connect `Timestamp` logical type. Without it, consumers that read through that converter (e.g. the Debezium JDBC sink) see a nameless raw `INT64` and try to bind it to a `timestamptz` column as a bigint, which fails.
+
 ## aurelius\_example.models.EntityNotification
 
 Bases: `BaseModel`

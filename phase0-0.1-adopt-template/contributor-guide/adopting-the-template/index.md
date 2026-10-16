@@ -26,7 +26,7 @@ The template carries the `aurelius` / `aureliusenterprise` identity in places th
 | Clone URL in setup guide | `docs/contributor-guide/development-environment.md` |
 | Bot identity in CI | `.github/workflows/publish-docs-*.yaml`, `rotate-keys.yaml`, `unpublish-docs.yaml` (`info@aureliusenterprise.com`) |
 | Release verification identity | `.github/workflows/publish.yaml` — the `--identity` regex hardcodes the repository name |
-| Root package names | `package.json` and `pyproject.toml` (`name = "aurelius-project-template"`, author entries) |
+| Root package names | `package.json` and `pyproject.toml` (`name = "aurelius-aurelius-atlas"`, author entries) |
 
 ### 2\. Project names and directories
 
@@ -63,11 +63,13 @@ Python packages use underscored names derived from the project (`aurelius_fastap
 
 ### 5\. Angular library aliases
 
-The Angular libraries are imported by **bare names** declared in `tsconfig.base.json` (`aurelius-ui`, `aurelius-data-access`, `aurelius-observability`) — not under an `@scope/`. Only `@aurelius/brand` (`libs/styles/aurelius-brand`, a `file:` npm dependency used in SCSS as `@use "@aurelius/brand/src/main"`) is scoped. Rename the aliases, the import statements, the package `name` fields, and the brand package together.
+The Angular libraries are imported by **bare names** declared in `tsconfig.base.json` (`aurelius-atlas-ui`, `aurelius-data-access`, `aurelius-observability`) — not under an `@scope/`. Only `@aurelius/brand` (`libs/styles/aurelius-brand`, a `file:` npm dependency used in SCSS as `@use "@aurelius/brand/src/main"`) is scoped. Rename the aliases, the import statements, the package `name` fields, and the brand package together.
 
 ### 6\. Container registry namespace
 
 The image namespace `ghcr.io/aureliusenterprise` is **hardcoded in plugin code**: `tools/plugins/docker.ts` (six target definitions). Edit it there, then update the `:local` image references in the `e2e/docker-compose.yaml` files and the connector's `docker-compose.yaml`, plus the `org.opencontainers.image.source` labels in the Dockerfiles.
+
+All base and infrastructure images are [Docker Hardened Images](<https://dhi.io>) pulled from `dhi.io`, which requires Docker Hub authentication. In your fork, set the `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` repository secrets (the CI workflows pass them to the setup-toolchain action, which logs in to both `docker.io` and `dhi.io`); without them every CI job fails at the first image pull. Developers need a `docker login` on their host too — see [Development Environment](<https://aureliusenterprise.github.io/phase0-0.1-adopt-template/contributor-guide/development-environment/index.md>).
 
 ### 7\. SonarQube organization
 

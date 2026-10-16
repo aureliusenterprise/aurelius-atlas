@@ -4,7 +4,7 @@ This library provides common utilities for API data access in Angular projects.
 
 ## API Documentation
 
-This library is written in TypeScript, which is not covered by the generated API reference (mkdocstrings covers Python only here). The source code with its TSDoc comments is the API reference: [`libs/angular/aurelius-data-access/src`](<https://github.com/aureliusenterprise/project-template/tree/main/libs/angular/aurelius-data-access/src>).
+This library is written in TypeScript, which is not covered by the generated API reference (mkdocstrings covers Python only here). The source code with its TSDoc comments is the API reference: [`libs/angular/aurelius-data-access/src`](<https://github.com/aureliusenterprise/aurelius-atlas/tree/main/libs/angular/aurelius-data-access/src>).
 
 ## Installation
 

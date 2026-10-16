@@ -14,7 +14,7 @@
         <link rel="prev" href="../secrets-management/">
       
       
-        <link rel="next" href="../../../../CHANGELOG/">
+        <link rel="next" href="../../../../CHANGELOG.md">
       
       
         
@@ -353,7 +353,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../CHANGELOG/" class="md-tabs__link">
+      <a href="../../../../CHANGELOG.md" class="md-tabs__link">
         
   
   Changelog
@@ -1088,14 +1088,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/angular/aurelius-ui/" class="md-nav__link">
+      <a href="../../../../api-reference/libs/angular/aurelius-atlas-ui/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-ui
+  aurelius-atlas-ui
 
     
   </span>
@@ -5029,6 +5029,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Encryption
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -5044,6 +5061,70 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#in-transit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        In transit
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#at-rest" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        At rest
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#named-relaxation-development-arrangement-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Named relaxation (development arrangement only)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Certificates
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5083,7 +5164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../CHANGELOG/" class="md-nav__link">
+      <a href="../../../../CHANGELOG.md" class="md-nav__link">
         
   
   
@@ -5123,6 +5204,58 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#in-transit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        In transit
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#at-rest" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        At rest
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#named-relaxation-development-arrangement-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Named relaxation (development arrangement only)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Certificates
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -5292,6 +5425,84 @@
 
 
 <h1 id="data-encryption">Data Encryption<a class="headerlink" href="#data-encryption" title="Permanent link">&para;</a></h1>
+<p>This page answers where data is encrypted, from the data-protection record
+(<a href="../../../adr/039-data-is-protected-where-it-travels-and-where-it-rests/">ADR 039</a>).
+Whether a path is protected is answered from configuration, not by probing a
+running system (R5) — this page names where the configuration lives.</p>
+<h2 id="in-transit">In transit<a class="headerlink" href="#in-transit" title="Permanent link">&para;</a></h2>
+<p>Every path data travels on inside the system is TLS with certificate
+verification against a local certificate authority:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Browser → nginx / FastAPI</td>
+<td>TLS (<code>ssl_certificate</code> in the nginx config, uvicorn <code>ssl_certfile</code>); the dev-server proxy and E2E verify (browser page loads: named relaxation below).</td>
+</tr>
+<tr>
+<td>Service → PostgreSQL</td>
+<td><code>sslmode=verify-full</code> + CA bundle; server <code>ssl=on</code> with TLS-only client authentication.</td>
+</tr>
+<tr>
+<td>Service → Kafka / Schema Registry</td>
+<td>TLS listeners only: apps use SASL_SSL (OAuth bearer tokens, ADR 013), infrastructure links use SSL (mTLS); registry and Connect serve HTTPS; clients pass the CA (or JVM truststore) explicitly — also for the token-endpoint call to Keycloak.</td>
+</tr>
+<tr>
+<td>Service → OpenTelemetry collector</td>
+<td>OTLP over TLS (gRPC 4317 / HTTP 4318); exporters trust the CA.</td>
+</tr>
+<tr>
+<td>Service → Keycloak (token verify)</td>
+<td>HTTPS issuer with CA trust in CI/E2E; the local development browser path is the named relaxation below.</td>
+</tr>
+</tbody>
+</table>
+<p>The PostgreSQL posture is tested, not just configured: unit-test containers
+(<code>aurelius_sdk.testing.tls</code>, via <code>tls_certificates</code> and <code>configure_tls_postgres</code>)
+start the same hardened image with <code>ssl=on</code> and a TLS-only client
+authentication file using an ephemeral per-run certificate authority, and
+connect with <code>sslmode=verify-full</code> — the same arrangement the dev and E2E
+services use.</p>
+<h2 id="at-rest">At rest<a class="headerlink" href="#at-rest" title="Permanent link">&para;</a></h2>
+<p>Encryption at rest is owned by the stores and is not configured in this
+repository; deployments choose store-level encryption (disk or volume
+encryption). Development data is throwaway and carries no at-rest guarantee —
+the arrangement states this rather than implying it.</p>
+<h2 id="named-relaxation-development-arrangement-only">Named relaxation (development arrangement only)<a class="headerlink" href="#named-relaxation-development-arrangement-only" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Keycloak additionally serves a plaintext HTTP listener (port 8080) so the
+  developer browser opens a familiar URL; its TLS listener (8443) serves every
+  CI/E2E path.</li>
+<li>Browser-facing developer surfaces (SPA dev-server, Grafana, Kafka UI,
+  Node-RED, Storybook) stay plaintext on a developer machine.</li>
+<li>Playwright's bundled browsers carry their own trust stores and cannot enroll
+  the mkcert root, so frontend E2E page navigation skips browser certificate
+  verification (<code>ignore_https_errors</code>). The E2E suite verifies the same
+  browser-facing endpoint against the CA out-of-band (hostname + chain), and
+  nginx still verifies the backend with <code>proxy_ssl_verify</code>.</li>
+</ul>
+<p>CI and E2E run all of these paths over TLS and verify certificates, except the
+browser navigation relaxation above. Each plaintext occurrence in this
+repository carries a comment naming ADR 039.</p>
+<h2 id="certificates">Certificates<a class="headerlink" href="#certificates" title="Permanent link">&para;</a></h2>
+<p>Each project that serves or consumes TLS owns a <code>tls.json</code> listing the
+certificates it needs; <code>nx certgen</code> issues them from an <code>mkcert</code> local CA
+into the project's own gitignored <code>certs/</code> directory — PEM keypairs, PKCS12
+keystores, a JVM <code>truststore.p12</code> where needed, and a <code>ca.pem</code> copy for pure
+clients. The CA itself has no workspace home: <code>certgen</code> installs mkcert's own
+root CA into the system trust stores (it lives in mkcert's store, outside the
+repository) and copies it into each project's <code>certs/</code>. Generation is on
+demand: <code>serve</code> and <code>e2e</code> targets declare a <code>certgen</code> dependency, which also
+depends on <code>decrypt</code> because truststore passwords live encrypted in each
+project's <code>.env.enc</code>. Per-project <code>certclean</code> removes a project's material
+but never the CA; <code>mkcert -uninstall</code> drops the CA and its system trust
+entries entirely. They are development material only — a deployment replaces
+the CA and key material with its own.</p>
 
 
 
