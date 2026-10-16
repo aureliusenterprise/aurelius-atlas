@@ -22,6 +22,7 @@ jobs:
               uses: ./.github/actions/setup-toolchain
               with:
                   sops: "true"
+                  java: "true"
                   node: "true"
 
             - name: Update keys for all projects
@@ -33,14 +34,22 @@ jobs:
             - run: git config --global user.name "Aurelius Enterprise"
 
             - name: Commit and push changes
+              id: commit
               run: |
                   git add -A
+                  if git diff --cached --quiet; then
+                      echo "Encrypted files already match .sops.yaml; nothing to commit."
+                      echo "changed=false" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
                   git commit -m "chore: update SOPS keys"
                   git push --set-upstream origin HEAD:"${{ github.head_ref }}"
+                  echo "changed=true" >> "$GITHUB_OUTPUT"
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Add PR comment
+              if: steps.commit.outputs.changed == 'true'
               uses: hasura/comment-progress@v2.3.0
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
