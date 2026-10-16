@@ -316,7 +316,7 @@ dev = [
     { name = "tenacity", specifier = ">=9.1.2" },
     { name = "testcontainers", specifier = ">=4.14" },
     { name = "timeout-decorator", specifier = ">=0.5.0" },
-    { name = "types-boto3", extras = ["full"], specifier = ">=1.43" },
+    { name = "types-boto3", extras = ["full"], specifier = ">=1.43.112" },
     { name = "zensical", specifier = ">=0.0.68" },
 ]
 
@@ -367,8 +367,8 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgresql'", specifier = ">=3.3.5" },
     { name = "testcontainers", marker = "extra == 'full'", specifier = ">=4.15.0" },
     { name = "testcontainers", marker = "extra == 'testing'", specifier = ">=4.15.0" },
-    { name = "types-boto3", extras = ["full"], marker = "extra == 'aws'", specifier = ">=1.43.96" },
-    { name = "types-boto3", extras = ["full"], marker = "extra == 'full'", specifier = ">=1.43.96" },
+    { name = "types-boto3", extras = ["full"], marker = "extra == 'aws'", specifier = ">=1.43.112" },
+    { name = "types-boto3", extras = ["full"], marker = "extra == 'full'", specifier = ">=1.43.112" },
 ]
 provides-extras = ["aws", "azure", "full", "logging", "postgresql", "testing"]
 
@@ -2323,15 +2323,15 @@ wheels = [
 
 [[package]]
 name = "types-boto3"
-version = "1.43.96"
+version = "1.43.112"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore-stubs" },
     { name = "types-s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/9f/579aedcd84882391564051c31f1a09ed2b127c3ce0fb41b10bfe7be87332/types_boto3-1.43.96.tar.gz", hash = "sha256:690f48c67d8e7b30540949bbff923aa2f85dc9f0e1432aea1421186438680188", size = 104887, upload-time = "2026-09-16T21:40:23.279Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/1f/0ac47fb6a4cde0f00fbc24a2a3f3faf718640292448ecf4029c066518d0f/types_boto3-1.43.112.tar.gz", hash = "sha256:84d474549cdceddc8b02c32eebc1d10e52f23c60c8ff251e4cac0248acd09fc8", size = 106102, upload-time = "2026-10-12T20:04:46.764Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/da/e8e1dea970e869e78eac9c64ad09c73f7fa311ff4e8b839305cd03420f0f/types_boto3-1.43.96-py3-none-any.whl", hash = "sha256:7740b63afc07772cbc24393b8cffc2228c2406e844577735d8f6aa63b0df21d3", size = 71416, upload-time = "2026-09-16T21:40:18.96Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/fc/ee966440036747e02c0970d1334187253f9f0279e724759e1fc873b1d671/types_boto3-1.43.112-py3-none-any.whl", hash = "sha256:416bfb93106f74cb4670e9c347e163ba2f03706e0e51dd8b7337155a251e7342", size = 72084, upload-time = "2026-10-12T20:04:42.967Z" },
 ]
 
 [package.optional-dependencies]
