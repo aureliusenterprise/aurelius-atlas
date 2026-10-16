@@ -1,9 +1,0 @@
-{
-    "keystore": true,
-    "services": {
-        "elasticsearch": ["elasticsearch", "localhost", "127.0.0.1"],
-        "openlineage-ingestion": ["openlineage-ingestion"],
-        "postgres": ["postgres", "postgresql", "localhost", "127.0.0.1"]
-    },
-    "truststore": true
-}

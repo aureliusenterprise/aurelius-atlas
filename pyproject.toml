@@ -15,7 +15,6 @@ dev = [
     "aurelius-sdk[full]",
     "aurelius-vulnerability-report",
     "alembic>=1.18",
-    "openmetadata-ingestion==2.0.4.0",
     "mike",
     "mkdocstrings>=1.0",
     "mkdocstrings-python>=2.0",

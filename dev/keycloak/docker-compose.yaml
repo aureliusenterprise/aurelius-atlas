@@ -24,25 +24,6 @@ services:
             postgres-keycloak:
                 condition: service_healthy
         environment:
-            # kafka realm client secrets (import/kafka.json placeholders).
-            # Substitution is NOT automatic for --import-realm; the
-            # -Dkeycloak.migration.replace-placeholders flag below enables
-            # it. Unresolved placeholders import as the literal "${...}"
-            # string. The ${VAR:?} guards abort `compose up` when the
-            # decrypted .env does not provide a value, instead of starting
-            # a silently-broken stack.
-            CLIENT_SECRET_KAFKA_CONNECT: ${CLIENT_SECRET_KAFKA_CONNECT:?}
-            CLIENT_SECRET_KAFKA_E2E: ${CLIENT_SECRET_KAFKA_E2E:?}
-            CLIENT_SECRET_KAFKA_LAMBDA: ${CLIENT_SECRET_KAFKA_LAMBDA:?}
-            CLIENT_SECRET_KAFKA_PRODUCER: ${CLIENT_SECRET_KAFKA_PRODUCER:?}
-            CLIENT_SECRET_KAFKA_UI: ${CLIENT_SECRET_KAFKA_UI:?}
-            # openmetadata realm client secret (import/openmetadata-realm.json
-            # placeholder); must match OIDC_CLIENT_SECRET in dev/governance.
-            CLIENT_SECRET_OPENMETADATA: ${CLIENT_SECRET_OPENMETADATA:?}
-            # Service-account client the ingestion containers use to mint
-            # short-lived OM tokens (client_credentials); must match
-            # OIDC_BOT_CLIENT_SECRET in dev/governance.
-            CLIENT_SECRET_OPENMETADATA_BOT: ${CLIENT_SECRET_OPENMETADATA_BOT:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.
@@ -141,7 +122,7 @@ services:
     metrics-puller:
         # Slice-owned OTel collector: scrapes the Keycloak metadata Postgres
         # (the server itself already pushes OTLP natively) and pushes OTLP to
-        # the dev collector — same pattern as dev/governance's metrics-puller.
+        # the dev collector.
         # Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]

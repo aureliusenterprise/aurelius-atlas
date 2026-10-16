@@ -93,11 +93,6 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build all docker images
-              env:
-                  # dev/governance's docker-build resolves its base from the
-                  # encrypted OPENMETADATA_VERSION pin (dependsOn decrypt);
-                  # scoped to the step so third-party actions never see it.
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx run-many -t docker-build -c ci
 
             - name: Generate vulnerability reports

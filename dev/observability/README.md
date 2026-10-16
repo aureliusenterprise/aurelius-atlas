@@ -31,16 +31,14 @@ nx serve aurelius-dev-observability
 ```
 
 Grafana is on `http://localhost:3000`. The FastAPI example, Keycloak, the
-frontend (via its `/otel` dev proxy), and the OpenMetadata server (dev/governance,
-via the OpenTelemetry Java agent) all export here automatically when started
-through `nx serve`/`nx up`. Components that speak no OTLP (databases,
-Elasticsearch, the Kafka broker) arrive via a slice-owned `metrics-puller`
-sidecar in governance, postgres, keycloak, and kafka. The OTLP receivers
+frontend (via its `/otel` dev proxy) all export here automatically when started
+through `nx serve`/`nx up`. Components that speak no OTLP (databases) arrive
+via a slice-owned `metrics-puller` sidecar in postgres and keycloak. The OTLP receivers
 (4317/4318) serve TLS only — exporters
 trust the local CA (each project's `certs/`, `nx certgen`); the browser-facing UI ports
 (Grafana, Prometheus) stay plaintext on a developer machine (ADR 039).
 
 Dashboards are file-provisioned from `config/grafana/dashboards/` — one per
-application/dev stack (FastAPI, Kafka, Keycloak, Postgres, OpenMetadata, and
+application/dev stack (FastAPI, frontend, Keycloak, Postgres, and
 the observability stack itself), all in the **Aurelius** folder. Edit the
 JSON in the repo rather than the UI: provisioning overwrites UI edits.

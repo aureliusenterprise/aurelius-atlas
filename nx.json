@@ -38,8 +38,6 @@
         "./tools/plugins/docker.ts",
         "./tools/plugins/docker-compose.ts",
         "./tools/plugins/mkdocs.ts",
-        "./tools/plugins/openlineage.ts",
-        "./tools/plugins/openmetadata.ts",
         "./tools/plugins/python.ts",
         "./tools/plugins/sonarqube.ts",
         "./tools/plugins/sops.ts",

@@ -393,7 +393,7 @@
         },
         {
             "collapsed": false,
-            "description": "The dedicated Postgres instance Keycloak stores users, sessions and tokens in (service 'postgres-keycloak', database 'keycloak') — not the OpenMetadata database. Scraped by its keycloak-infra metrics-puller sidecar.",
+            "description": "The dedicated Postgres instance Keycloak stores users, sessions and tokens in (service 'postgres-keycloak', database 'keycloak'). Scraped by its keycloak-infra metrics-puller sidecar.",
             "gridPos": {
                 "h": 1,
                 "w": 24,

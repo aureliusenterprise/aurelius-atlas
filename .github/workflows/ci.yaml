@@ -142,11 +142,6 @@ jobs:
               uses: nrwl/nx-set-shas@v5
 
             - name: Build docker images for affected projects
-              env:
-                  # dev/governance's docker-build resolves its base from the
-                  # encrypted OPENMETADATA_VERSION pin (dependsOn decrypt);
-                  # scoped to the step so third-party actions never see it.
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t docker-build -c ci
 
             - name: Generate vulnerability reports for affected projects
