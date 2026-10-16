@@ -7,10 +7,10 @@ version = "0.6.1"
 
 [project.optional-dependencies]
 # Floor only; no ceiling so consumers can track current boto3.
-aws = ["boto3>=1.41.5", "types-boto3[full]>=1.41.5"]
+aws = ["boto3>=1.43.113", "types-boto3[full]>=1.41.5"]
 azure = ["msal>=1.38.0"]
 full = [
-    "boto3>=1.41.5",
+    "boto3>=1.43.113",
     "coloredlogs>=15.0.1",
     "msal>=1.38.0",
     "psycopg[binary]>=3.3.6",
