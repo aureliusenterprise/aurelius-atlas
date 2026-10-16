@@ -1,0 +1,69 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-dev-kafka"],
+    "name": "aurelius-dev-governance",
+    "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
+    "tags": [],
+    "targets": {
+        "docker-attest": {
+            "dependsOn": [],
+            "executor": "nx:noop",
+            "metadata": { "description": "No-op — image is never published (see docker-publish)" }
+        },
+        "docker-build": {
+            "configurations": {
+                "ci": {
+                    "command": "docker buildx build . -f {projectRoot}/Dockerfile -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --build-arg OM_VERSION=$(python3 tools/openmetadata/om_version.py) --load --cache-from=\"type=gha,key={projectName}-cache-main\" --cache-from=\"type=gha,key={projectName}-cache-${GITHUB_REF_NAME}\" --cache-to=\"type=gha,key={projectName}-cache-${GITHUB_REF_NAME},mode=max,scope={projectName}\""
+                },
+                "local": {
+                    "command": "docker buildx build . -f {projectRoot}/Dockerfile -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --build-arg OM_VERSION=$(python3 tools/openmetadata/om_version.py)"
+                }
+            },
+            "dependsOn": ["decrypt", { "dependencies": true, "target": "docker-build" }],
+            "metadata": {
+                "description": "Build the derived OpenMetadata image (hardened base + OpenTelemetry agent); OM_VERSION resolves from the pinned OPENMETADATA_VERSION (decrypt first) so a version bump rebuilds from the matching base"
+            }
+        },
+        "docker-publish": {
+            "dependsOn": [],
+            "executor": "nx:noop",
+            "metadata": {
+                "description": "Not published: the derived image is dev-only infrastructure, not a release artifact (the Dockerfile still contributes the docker-* targets; sbom/vuln/license scans stay active)"
+            }
+        },
+        "docker-sign": {
+            "executor": "nx:noop",
+            "metadata": { "description": "No-op — image is never published (see docker-publish)" }
+        },
+        "docker-verify": {
+            "executor": "nx:noop",
+            "metadata": { "description": "No-op — image is never published (see docker-publish)" }
+        },
+        "ingest-openlineage": {
+            "command": "docker compose -f {projectRoot}/integrations/docker-compose.yaml --env-file {projectRoot}/.env up",
+            "dependsOn": ["decrypt", "certgen", "up"],
+            "metadata": {
+                "description": "Continuously ingest OpenLineage events from Kafka and register them in OpenMetadata"
+            }
+        },
+        "init-openlineage": {
+            "dependsOn": ["init-openmetadata", { "projects": "tag:openlineage", "target": "openlineage-register" }],
+            "executor": "nx:noop",
+            "metadata": {
+                "description": "Initialize the lineage graph by registering OpenLineage metadata from all sources. Static edges reference scanned entities (e.g. apiEndpoint datasets from the FastAPI REST scan), so init-openmetadata runs first: every openmetadata-ingest completes before any openlineage-register."
+            }
+        },
+        "init-openmetadata": {
+            "dependsOn": [{ "projects": "tag:openmetadata", "target": "openmetadata-ingest" }],
+            "executor": "nx:noop",
+            "metadata": {
+                "description": "Initialize metadata by ingesting from all sources"
+            }
+        }
+    }
+}

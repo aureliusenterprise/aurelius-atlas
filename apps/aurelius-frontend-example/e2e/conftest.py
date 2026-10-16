@@ -4,13 +4,17 @@ from pathlib import Path
 
 import dotenv
 import pytest
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL, Engine
 from sqlmodel import Session, SQLModel, create_engine
+from tenacity import RetryCallState, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from testcontainers.compose import DockerCompose
 from testcontainers.core.wait_strategies import HealthcheckWaitStrategy, HttpWaitStrategy
+
+CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 
 
 class Settings(BaseSettings):
@@ -25,6 +29,9 @@ class Settings(BaseSettings):
     username: str
 
     model_config = SettingsConfigDict(
+        # Namespace this project's e2e config: the compose files and the
+        # Nx-injected .env use AURELIUS_FRONTEND_-prefixed names.
+        env_prefix="AURELIUS_FRONTEND_",
         env_file=dotenv.find_dotenv(),
         extra="ignore",
     )
@@ -98,7 +105,9 @@ def compose(keycloak: DockerCompose, observability: DockerCompose) -> Generator[
 
         yield compose.waiting_for(
             {
-                "aurelius-frontend-example": HttpWaitStrategy(port=port, path="/").for_status_code(200),
+                "aurelius-frontend-example": HttpWaitStrategy(port=port, path="/en-US/")
+                .using_tls()
+                .for_status_code(200),
             },
         )
 
@@ -107,12 +116,48 @@ def compose(keycloak: DockerCompose, observability: DockerCompose) -> Generator[
 def base_url(compose: DockerCompose) -> str:
     """Return the base URL for the application."""
     port = compose.get_service_port("aurelius-frontend-example", 8080)
-    return f"http://localhost:{port}"
+    return f"https://localhost:{port}/en-US/"
+
+
+@pytest.fixture(scope="session")
+def browser_context_args(browser_context_args: dict) -> dict:  # noqa: ARG001
+    """Trust the ephemeral local development CA in Playwright browsers.
+
+    Playwright's bundled browsers ship their own trust stores and cannot enroll
+    the mkcert root, so page navigation skips browser certificate verification.
+    This is the one named relaxation of the browser-facing path (ADR 039): the
+    certificate chain and hostname are verified against the CA by the explicit
+    ``test__browser_facing_tls_verifies_against_ca`` check instead, nginx still
+    verifies the backend with ``proxy_ssl_verify`` (``config/nginx.conf``), and
+    non-browser E2E paths (API, Keycloak, Postgres) always verify.
+    """
+    return {"ignore_https_errors": True}
+
+
+def _clear_cookies(retry_state: RetryCallState) -> None:
+    """Start the next login attempt from a clean cookie jar."""
+    page: Page = retry_state.kwargs.get("page") or retry_state.args[0]
+    page.context.clear_cookies()
 
 
 @pytest.fixture()
+@retry(
+    retry=retry_if_exception_type(PlaywrightError),
+    stop=stop_after_attempt(2),
+    wait=wait_fixed(1),
+    reraise=True,
+    before_sleep=_clear_cookies,
+)
 def authenticated(page: Page, base_url: str, settings: Settings) -> Page:
-    """Authenticate the user and return the page."""
+    """
+    Authenticate the user and return the page.
+
+    The e2e stack starts its own compose networks while the tests run, and
+    Chromium aborts in-flight navigations when the host interface list changes
+    (net::ERR_NETWORK_CHANGED, occasionally surfacing as a wait timeout). The
+    abort can land mid-login, so each retry starts from a clean cookie jar:
+    Keycloak may already have issued the session on the failed pass.
+    """
     page.goto(base_url)
 
     page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
@@ -139,9 +184,10 @@ def database(compose: DockerCompose, settings: Settings) -> Engine:
         drivername="postgresql+psycopg",
         username=settings.database_username,
         password=settings.database_password.get_secret_value(),
-        host=hostname,
+        host="localhost" if hostname in ("0.0.0.0", "::") else hostname,  # noqa: S104
         port=port,
         database=settings.database_name,
+        query={"sslmode": "verify-full", "sslrootcert": str(CA_FILE)},
     )
 
     engine = create_engine(url)

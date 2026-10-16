@@ -19,10 +19,10 @@ export const createNodes: CreateNodes<MkdocsPluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     { docsTargetName = "docs" }: MkdocsPluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     return {

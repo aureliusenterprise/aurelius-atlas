@@ -1,11 +1,12 @@
-import { CommonModule } from "@angular/common";
+import { KeyValuePipe } from "@angular/common";
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { DarkMode, Header } from "aurelius-ui";
 import { AuthService } from "./services/auth.service";
+import { LocaleService } from "./services/locale.service";
 
 @Component({
-    imports: [CommonModule, DarkMode, Header, RouterOutlet],
+    imports: [DarkMode, Header, KeyValuePipe, RouterOutlet],
     selector: "aurelius-frontend-example-root",
     templateUrl: "./app.component.html",
     styleUrl: "./app.component.scss",
@@ -16,4 +17,9 @@ export class App {
      * The authentication service is injected to access the current authentication state.
      */
     protected readonly authService = inject(AuthService);
+
+    /**
+     * The locale service is injected to access the current locale and build locale-specific URLs.
+     */
+    protected readonly localeService = inject(LocaleService);
 }

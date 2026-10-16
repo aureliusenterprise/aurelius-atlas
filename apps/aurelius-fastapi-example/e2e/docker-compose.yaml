@@ -4,16 +4,38 @@ services:
     aurelius-fastapi-example:
         image: ghcr.io/aureliusenterprise/aurelius-fastapi-example:local
         environment:
-            AUTH_REALM_NAME: ${AUTH_REALM_NAME}
-            AUTH_SERVER_URL: ${AUTH_SERVER_URL}
-            ENVIRONMENT: ${ENVIRONMENT}
-            DATABASE_NAME: ${DATABASE_NAME}
-            DATABASE_HOST: postgres
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-            DATABASE_PORT: ${DATABASE_PORT}
-            DATABASE_USERNAME: ${DATABASE_USERNAME}
-            LOG_LEVEL: ${LOG_LEVEL}
-            OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+            # ${VAR:?} guards: Nx injects the project .env into the task
+            # environment; an empty Settings field would otherwise surface
+            # only as a pydantic validation error inside the started
+            # container (or silently break auth/DB connectivity).
+            # AURELIUS_FASTAPI_ prefix: Settings.env_prefix; the healthcheck's
+            # PORT/TLS_CA_FILE are prefixed too (see Dockerfile).
+            AURELIUS_FASTAPI_AUTH_CLIENT_ID: ${AURELIUS_FASTAPI_AUTH_CLIENT_ID:?}
+            AURELIUS_FASTAPI_AUTH_REALM_NAME: ${AURELIUS_FASTAPI_AUTH_REALM_NAME:?}
+            AURELIUS_FASTAPI_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_FASTAPI_AUTH_CA_FILE: /certs/ca.pem
+            AURELIUS_FASTAPI_ENVIRONMENT: ${AURELIUS_FASTAPI_ENVIRONMENT:?}
+            AURELIUS_FASTAPI_DATABASE_NAME: ${AURELIUS_FASTAPI_DATABASE_NAME:?}
+            AURELIUS_FASTAPI_DATABASE_HOST: postgres
+            AURELIUS_FASTAPI_DATABASE_PASSWORD: ${AURELIUS_FASTAPI_DATABASE_PASSWORD:?}
+            AURELIUS_FASTAPI_DATABASE_PORT: ${AURELIUS_FASTAPI_DATABASE_PORT:?}
+            AURELIUS_FASTAPI_DATABASE_USERNAME: ${AURELIUS_FASTAPI_DATABASE_USERNAME:?}
+            # TLS: the app serves HTTPS and verifies the TLS-only Postgres
+            # against the local development CA (this project's certs/, `nx certgen`).
+            AURELIUS_FASTAPI_DATABASE_SSLMODE: verify-full
+            AURELIUS_FASTAPI_DATABASE_SSLROOTCERT: /certs/ca.pem
+            AURELIUS_FASTAPI_LOG_LEVEL: ${AURELIUS_FASTAPI_LOG_LEVEL:?}
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            # Same reasoning as the app .env: the 60s default push means a
+            # ~35s e2e run flushes once (on shutdown), so the counters enter
+            # Prometheus already-final and the RED panels stay flat. Pushing
+            # every second lets the suite's traffic show up as a live bump.
+            OTEL_METRIC_EXPORT_INTERVAL: "1000"
+            AURELIUS_FASTAPI_TLS_CERT_FILE: /certs/aurelius-fastapi-example.pem
+            AURELIUS_FASTAPI_TLS_KEY_FILE: /certs/aurelius-fastapi-example-key.pem
+            # Healthcheck CA for verifying the served certificate (dev CA).
+            AURELIUS_FASTAPI_TLS_CA_FILE: /certs/ca.pem
         networks:
             - aurelius-dev-observability-network
             - aurelius-dev-postgres-network
@@ -22,6 +44,8 @@ services:
             - otel-collector:host-gateway
         ports:
             - 8000
+        volumes:
+            - ../certs:/certs:ro
 
 networks:
     aurelius-dev-observability-network:

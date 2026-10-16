@@ -1442,7 +1442,7 @@
             "directAccessGrantsEnabled": true,
             "enabled": true,
             "frontchannelLogout": true,
-            "fullScopeAllowed": true,
+            "fullScopeAllowed": false,
             "id": "ca2a08b7-da22-499d-a29b-ebbc29806560",
             "implicitFlowEnabled": false,
             "name": "aurelius",
@@ -1451,12 +1451,12 @@
             "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
             "protocol": "openid-connect",
             "publicClient": true,
-            "redirectUris": ["*"],
+            "redirectUris": ["http://localhost:4200/*", "http://127.0.0.1:4200/*", "https://localhost:18443/*"],
             "rootUrl": "",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "surrogateAuthRequired": false,
-            "webOrigins": ["*"]
+            "webOrigins": ["http://localhost:4200", "http://127.0.0.1:4200", "https://localhost:18443"]
         },
         {
             "alwaysDisplayInConsole": false,

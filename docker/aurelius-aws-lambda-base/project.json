@@ -3,6 +3,11 @@
     "implicitDependencies": [],
     "name": "aurelius-aws-lambda-base",
     "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
     "tags": [],
     "targets": {}
 }

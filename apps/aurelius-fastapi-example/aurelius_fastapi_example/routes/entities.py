@@ -11,6 +11,7 @@ from sqlmodel import Session, col, or_, select
 
 from aurelius_fastapi_example.models import Envelope, FindAllQueryParams, PaginatedResponse
 from aurelius_fastapi_example.providers import notifications, require_auth, session
+from aurelius_fastapi_example.providers.metrics import SSE_CONNECTIONS
 
 ENTITIES = APIRouter(dependencies=[require_auth])
 
@@ -71,8 +72,12 @@ async def sse(
 
     This endpoint streams real-time updates whenever entities are modified in the database.
     """
-    async for envelope in notifications():
-        yield ServerSentEvent(event=PG_NOTIFY_ENTITY_CHANNEL, data=envelope)
+    SSE_CONNECTIONS.add(1)
+    try:
+        async for envelope in notifications():
+            yield ServerSentEvent(event=PG_NOTIFY_ENTITY_CHANNEL, data=envelope)
+    finally:
+        SSE_CONNECTIONS.add(-1)
 
 
 @ENTITIES.get(

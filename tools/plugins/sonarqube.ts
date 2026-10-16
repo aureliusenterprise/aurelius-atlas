@@ -19,10 +19,10 @@ export const createNodes: CreateNodes<SonarQubePluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     { sonarTargetName = "sonar" }: SonarQubePluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     return {

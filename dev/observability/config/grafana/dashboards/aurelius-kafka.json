@@ -1,0 +1,353 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "Dev Kafka cluster (KRaft broker + Schema Registry) as seen by the Kafka exporter. All traffic here is dev-stream test/probe data; counts are raw messages per time bucket.",
+    "id": null,
+    "panels": [
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Number of topics the broker currently has (live gauge). Created topics persist, so this only goes up when a suite or app adds one.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "count(count by (topic) (kafka_topic_partitions{exported_job=\"dev-kafka\"}))",
+                    "refId": "A"
+                }
+            ],
+            "title": "Topics",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Consumer groups registered on the broker (live gauge), including groups that are subscribed but currently have no live members.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "count(count by (group) (kafka_consumer_group_members{exported_job=\"dev-kafka\"}))",
+                    "refId": "A"
+                }
+            ],
+            "title": "Consumer Groups",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Partitions whose in-sync replica count is below their configured replication (produced as replicas minus in-sync replicas). Healthy single-broker dev cluster: 0. Anything else means a partition is missing replicas and data is at risk.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "(sum(kafka_partition_replicas{exported_job=\"dev-kafka\"}) - sum(kafka_partition_replicas_in_sync{exported_job=\"dev-kafka\"})) or vector(0)",
+                    "refId": "A"
+                }
+            ],
+            "title": "Under-Replicated",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Sum of partitions over all topics (live gauge). More partitions means more parallel consumers a group can spread over.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum(kafka_topic_partitions{exported_job=\"dev-kafka\"})",
+                    "refId": "A"
+                }
+            ],
+            "title": "Total Partitions",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Latest offset per topic, i.e. the total number of messages ever produced to each partition summed across partitions (monotonic counter, not a rate). Flat lines = no one is producing right now.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 5
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (topic) (max by (topic, partition) (kafka_partition_current_offset_ratio{exported_job=\"dev-kafka\"}))",
+                    "legendFormat": "{{topic}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Log-End Offset by Topic",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "New messages appended to each topic per time bucket (Prometheus increase() on the log-end offset). Whole message counts, not a per-second rate - sparse dev traffic shows up as small integers or 0 between test runs.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 5
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (topic) (increase(kafka_partition_current_offset_ratio{exported_job=\"dev-kafka\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{topic}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Messages Produced (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Partition count of each topic (live gauge). Changes only when a topic is created or reconfigured.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 13
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (topic) (kafka_topic_partitions{exported_job=\"dev-kafka\"})",
+                    "legendFormat": "{{topic}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Partitions per Topic",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Live members per consumer group (live gauge). A member appears when a consumer is assigned partitions; drops to 0 when the app or test stops. Lag is the gap between those members' committed offsets and the log-end offsets above.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 13
+            },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (group) (kafka_consumer_group_members{exported_job=\"dev-kafka\"})",
+                    "legendFormat": "{{group}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Consumer Group Members",
+            "type": "timeseries"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "kafka", "observability"],
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Kafka",
+    "uid": "aurelius-kafka-obsv",
+    "version": 1
+}

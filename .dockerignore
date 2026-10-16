@@ -1,0 +1,15 @@
+# Docker build contexts are the workspace root (Dockerfiles COPY repo-relative
+# paths). Keep local development TLS material — leaves, private keys, PKCS12
+# keystores/truststores (`nx certgen`) — out of every image: no Dockerfile
+# needs them (services bind-mount their certs/ instead), and an image is a
+# distribution artifact while this material is dev-only identity (ADR 006).
+**/certs/
+**/.env
+**/.env.enc
+secrets/
+.venv/
+.git/
+site/
+build/
+coverage/
+node_modules/

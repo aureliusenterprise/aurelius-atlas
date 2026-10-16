@@ -22,12 +22,14 @@ Deploy using the provided Dockerfile. By default, the app listens on port `1880`
 
 ## Configuration
 
-The connector can be configured using the following environment variables:
+Every setting is read from the environment with the `AURELIUS_NODE_RED_`
+prefix (the `${...}` lookups in `flows.json`), so other projects' environment
+variables can never populate this app.
 
-| Name                      | Description                                                     |
-| ------------------------- | --------------------------------------------------------------- |
-| `KAFKA_BOOTSTRAP_SERVERS` | A comma-separated list of Kafka bootstrap servers.              |
-| `KAFKA_TOPIC_NAME`        | The name of the Kafka topic to write to.                        |
-| `SCHEMA_REGISTRY_URL`     | The URL of the schema registry.                                 |
-| `SCHEMA_SUBJECT_NAME`     | The name of the schema subject to use for encoding messages.    |
-| `SCHEMA_SUBJECT_VERSION`  | The version of the schema subject to use for encoding messages. |
+| Name                                        | Description                                                     |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| `AURELIUS_NODE_RED_KAFKA_BOOTSTRAP_SERVERS` | A comma-separated list of Kafka bootstrap servers.              |
+| `AURELIUS_NODE_RED_KAFKA_TOPIC_NAME`        | The name of the Kafka topic to write to.                        |
+| `AURELIUS_NODE_RED_SCHEMA_REGISTRY_URL`     | The URL of the schema registry.                                 |
+| `AURELIUS_NODE_RED_SCHEMA_SUBJECT_NAME`     | The name of the schema subject to use for encoding messages.    |
+| `AURELIUS_NODE_RED_SCHEMA_SUBJECT_VERSION`  | The version of the schema subject to use for encoding messages. |

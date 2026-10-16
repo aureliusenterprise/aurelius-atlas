@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from functools import total_ordering
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
@@ -8,6 +8,18 @@ from pydantic_avro.to_avro.base import AvroBase
 from sqlalchemy import DDL, Connection, event, types
 from sqlalchemy.schema import MetaData
 from sqlmodel import Field, SQLModel, func
+
+
+def _encode_timestamps_as_millis(node: object) -> None:
+    """Recursively rewrite ``timestamp-micros`` logical types to ``timestamp-millis`` in an Avro schema."""
+    if isinstance(node, dict):
+        if node.get("logicalType") == "timestamp-micros":
+            node["logicalType"] = "timestamp-millis"
+        for value in node.values():
+            _encode_timestamps_as_millis(value)
+    elif isinstance(node, list):
+        for item in node:
+            _encode_timestamps_as_millis(item)
 
 
 @total_ordering
@@ -49,6 +61,20 @@ class Entity(AvroBase, SQLModel, table=True):
         sa_type=types.TIMESTAMP(timezone=True),  # type: ignore[timestamp with timezone is allowed]
         sa_column_kwargs={"onupdate": func.now()},
     )
+
+    @classmethod
+    def avro_schema(cls, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
+        """Return the Avro schema with datetime fields encoded as timestamp-millis.
+
+        pydantic-avro defaults ``date-time`` fields to ``timestamp-micros``, but the
+        Confluent Avro converter maps only ``timestamp-millis`` to the Connect
+        ``Timestamp`` logical type. Without it, consumers that read through that
+        converter (e.g. the Debezium JDBC sink) see a nameless raw ``INT64`` and try
+        to bind it to a ``timestamptz`` column as a bigint, which fails.
+        """
+        schema = super().avro_schema(*args, **kwargs)
+        _encode_timestamps_as_millis(schema)
+        return schema
 
     def __lt__(self, other: Entity) -> bool:
         """Compare entities based on their latest change timestamp."""

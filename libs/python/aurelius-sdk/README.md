@@ -10,14 +10,14 @@ Part of the template **spine**.
 The base package depends only on `httpx`. Everything else is an extra, and each
 submodule raises a clear error at import time if its extra is missing:
 
-| Extra        | Enables                                |
-| ------------ | -------------------------------------- |
-| `logging`    | `logger.py` (colored console logging)  |
-| `postgresql` | `postgresql/` (CDC listener, tsquery)  |
-| `aws`        | `aws.py` (Secrets Manager)             |
-| `azure`      | `msal.py` (Azure AD / MSAL tokens)     |
-| `testing`    | `testing.py` (testcontainers fixtures) |
-| `full`       | All of the above                       |
+| Extra        | Enables                                           |
+| ------------ | ------------------------------------------------- |
+| `logging`    | `logger.py` (colored console logging)             |
+| `postgresql` | `postgresql/` (CDC listener, tsquery)             |
+| `aws`        | `aws.py` (Secrets Manager)                        |
+| `azure`      | `msal.py` (Azure AD / MSAL tokens)                |
+| `testing`    | `testing/` (TLS fixtures, testcontainers helpers) |
+| `full`       | All of the above                                  |
 
 ```bash
 uv add "aurelius-sdk[postgresql]"   # example: depend on one extra
@@ -33,7 +33,9 @@ uv add "aurelius-sdk[postgresql]"   # example: depend on one extra
 - `encoding.py` — zig-zag integer encoding helpers
 - `aws.py` — `get_secret()` for AWS Secrets Manager
 - `msal.py` — MSAL-based token acquisition for Azure services
-- `testing.py` — shared testcontainers-based fixtures
+- `testing/` — shared test fixtures: `tls.py` (ephemeral TLS material,
+  TLS-enforcing PostgreSQL containers) and `testcontainers.py` (Docker Compose
+  log capture)
 
 > [!NOTE]
 > The package root is intentionally empty — always import from submodules, e.g.

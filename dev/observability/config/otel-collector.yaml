@@ -3,8 +3,14 @@ receivers:
         protocols:
             grpc:
                 endpoint: 0.0.0.0:4317
+                tls:
+                    cert_file: /certs/otel-collector.pem
+                    key_file: /certs/otel-collector-key.pem
             http:
                 endpoint: 0.0.0.0:4318
+                tls:
+                    cert_file: /certs/otel-collector.pem
+                    key_file: /certs/otel-collector-key.pem
 
 processors:
     batch:
@@ -23,12 +29,28 @@ exporters:
         endpoint: http://tempo:4318
     prometheus:
         endpoint: 0.0.0.0:9464
+        # OTel SDKs like logfire aggregate histograms exponentially; the
+        # classic text format would flatten them to a lone +Inf bucket
+        # (histogram_quantile then always NaN). Emit them as Prometheus
+        # native histograms so p95 panels work for every producer.
+        send_native_histogram: true
 
 extensions:
     health_check:
 
 service:
     extensions: [health_check]
+    # Internal telemetry (otelcol_* pipeline health) on 0.0.0.0 so
+    # Prometheus (job otel-collector-internal) can scrape it — the default
+    # binds to loopback, which is unreachable across containers.
+    telemetry:
+        metrics:
+            readers:
+                - pull:
+                      exporter:
+                          prometheus:
+                              host: 0.0.0.0
+                              port: 8888
     pipelines:
         traces:
             receivers: [otlp]

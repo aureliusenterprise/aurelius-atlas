@@ -21,16 +21,20 @@ export const createNodes: CreateNodes<DockerComposePluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     { serveTargetName = "serve", upTargetName = "up" }: DockerComposePluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     // The docker-compose file must be in the same directory as the project.json file
     if (!existsSync(join(projectRoot, "project.json"))) {
         return {};
     }
+
+    // Projects that own TLS material must generate their certificates before any
+    // container that mounts ./certs is started.
+    const certgen = existsSync(join(projectRoot, "tls.json")) ? [{ target: "certgen" }] : [];
 
     return {
         projects: {
@@ -42,6 +46,7 @@ async function createNodesInternal(
                         command: "docker compose up",
                         dependsOn: [
                             { target: "decrypt" },
+                            ...certgen,
                             { target: "docker-build" },
                             { target: "docker-build", dependencies: true },
                             { target: serveTargetName, dependencies: true },
@@ -57,6 +62,7 @@ async function createNodesInternal(
                         command: "docker compose up -d --wait",
                         dependsOn: [
                             { target: "decrypt" },
+                            ...certgen,
                             { target: "docker-build" },
                             { target: "docker-build", dependencies: true },
                             { target: upTargetName, dependencies: true },

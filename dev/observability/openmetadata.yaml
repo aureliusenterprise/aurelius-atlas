@@ -1,0 +1,35 @@
+# OpenMetadata scan config — Grafana (native `grafana` dashboard connector).
+#
+# Reads dashboards/provisioned panels through the Grafana HTTP API and
+# registers them as Dashboard/Chart entities under service
+# `aurelius-observability`. The `grafana` connector is BETA upstream; the
+# service-account token needs the Admin role (viewer tokens return partial
+# metadata). Token lives in `.env.enc` as AURELIUS_OBSERVABILITY_GRAFANA_TOKEN
+# (per-project prefix per the root AGENTS.md env-var rule).
+source:
+    type: grafana
+    serviceName: aurelius-observability
+    serviceConnection:
+        config:
+            type: Grafana
+            hostPort: http://127.0.0.1:3000
+            verifySSL: false
+            apiKey: ${AURELIUS_OBSERVABILITY_GRAFANA_TOKEN}
+    sourceConfig:
+        config:
+            type: DashboardMetadata
+            # Dashboards are provisioned from config/grafana/dashboards;
+            # fine to scan all of them.
+            dashboardFilterPattern: {}
+
+sink:
+    type: metadata-rest
+    config: {}
+
+workflowConfig:
+    loggerLevel: INFO
+    openMetadataServerConfig:
+        hostPort: http://localhost:8585/api
+        authProvider: openmetadata
+        securityConfig:
+            jwtToken: ${OM_JWT_TOKEN}

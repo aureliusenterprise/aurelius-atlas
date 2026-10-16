@@ -3,7 +3,16 @@ import dev.nx.gradle.nx
 
 nx {
     set("name", "aurelius-java-example")
+    // @nx/gradle has no release support yet, so version this module from its
+    // build script with our custom version actions (see tools/plugins).
+    set("release") {
+        set("version") {
+            set("versionActions", "tools/plugins/gradle-version-actions.ts")
+        }
+    }
 }
+
+version = "0.6.1"
 
 plugins {
     id("com.github.davidmc24.gradle.plugin.avro").version("1.9.1")

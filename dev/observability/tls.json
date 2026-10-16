@@ -1,0 +1,5 @@
+{
+    "services": {
+        "otel-collector": ["otel-collector", "localhost", "127.0.0.1"]
+    }
+}

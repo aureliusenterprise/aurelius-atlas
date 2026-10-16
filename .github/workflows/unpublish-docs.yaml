@@ -29,16 +29,23 @@ jobs:
             - name: Check if documentation exists for the deleted branch
               id: check_docs
               run: |
-                  REF_NAME=${{ github.event.ref }}
+                  REF_NAME=$REF
                   SANITIZED_REF_NAME=${REF_NAME//"/"/"-"}
-                  uv run mike list -b public-docs | grep -q $SANITIZED_REF_NAME && exists=true || exists=false
+                  uv run mike list -b public-docs | grep -q "$SANITIZED_REF_NAME" && exists=true || exists=false
                   echo "exists=$exists" >> "$GITHUB_OUTPUT"
               shell: bash
+              env:
+                  # Pass the deleted ref through the environment so it is data,
+                  # never shell code (${{ }} interpolation would execute $(...)
+                  # embedded in a branch name).
+                  REF: ${{ github.event.ref }}
 
             - name: Delete documentation if it exists
               if: steps.check_docs.outputs.exists == 'true'
               run: |
-                  REF_NAME=${{ github.event.ref }}
+                  REF_NAME=$REF
                   SANITIZED_REF_NAME=${REF_NAME//"/"/"-"}
-                  uv run mike delete -b public-docs --push $SANITIZED_REF_NAME
+                  uv run mike delete -b public-docs --push "$SANITIZED_REF_NAME"
               shell: bash
+              env:
+                  REF: ${{ github.event.ref }}

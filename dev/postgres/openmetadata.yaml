@@ -1,0 +1,45 @@
+source:
+    type: postgres
+    serviceName: aurelius-dev-postgres
+    serviceConnection:
+        config:
+            type: Postgres
+            hostPort: localhost:5432
+            username: ${DATABASE_USERNAME}
+            authType:
+                password: ${DATABASE_PASSWORD}
+            database: ${DATABASE_NAME}
+            # The dev Postgres listens TLS-only (pg_hba: hostssl only), so the
+            # scan must present TLS. The ingestion SSLManager owns the libpq args:
+            # for Postgres connections it always overwrites connectionArguments
+            # with sslMode/sslConfig, so the settings live there and connection-
+            # Arguments is reserved for non-TLS driver options. `inline:` marks
+            # the CA as content read from this project's certgen output at
+            # /certs (rendered by tools/openmetadata/render_inline.py before
+            # ingestion) — the dev CA is generated per developer and never
+            # committed, so it cannot be inlined literally in this file.
+            sslMode: verify-full
+            sslConfig:
+                caCertificate: inline:/certs/ca.pem
+    sourceConfig:
+        config:
+            type: DatabaseMetadata
+            databaseFilterPattern:
+                includes:
+                    - ${DATABASE_NAME}
+            schemaFilterPattern:
+                excludes:
+                    - information_schema
+                    - pg_catalog
+
+sink:
+    type: metadata-rest
+    config: {}
+
+workflowConfig:
+    loggerLevel: INFO
+    openMetadataServerConfig:
+        hostPort: http://localhost:8585/api
+        authProvider: openmetadata
+        securityConfig:
+            jwtToken: ${OM_JWT_TOKEN}

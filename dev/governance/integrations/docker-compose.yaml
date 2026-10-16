@@ -1,0 +1,118 @@
+name: aurelius-dev-governance-openlineage-ingestion
+
+services:
+    # One-shot topic provisioning for the OpenLineage transport topic (exits
+    # after success). The topic belongs to this stack, not to the Kafka infra:
+    # the OM OpenLineage connector is consumer-only (verified in
+    # metadata/ingestion/source/pipeline/openlineage/connection.py: a
+    # confluent_kafka Consumer, no AdminClient anywhere), and its mandatory
+    # CheckBrokerConnectivity step (get_watermark_offsets on partition 0)
+    # blocks in its retry loop until the partition exists, while
+    # auto-create-on-first-produce would only materialise it once some
+    # producer already publishes. Created over the broker's INTERNAL mTLS
+    # listener with the same client identity the ingestion loop presents
+    # (certgen's openlineage-ingestion keystore; the broker's
+    # ssl.client.auth=required rejects leaves without the clientAuth EKU).
+    # PKCS12 rather than PEM: Kafka's PEM keystore wants cert+key in a single
+    # file while certgen issues them separately, and the .p12 bundles both
+    # (password TLS_TRUSTSTORE_PASSWORD, a governance dev default). Truststore
+    # is the project's root-CA store. Idempotent (--if-not-exists). Requires
+    # Kafka to be up (`nx up aurelius-dev-kafka`). The
+    # service_completed_successfully dependency below is not just ordering:
+    # compose's `--wait` treats ANY container exiting during the wait as a
+    # failed deployment (even exit 0), so a one-shot that nothing depends on
+    # breaks `up --wait` for the whole stack — a depended-on one-shot is
+    # reported "Exited" and tolerated.
+    openlineage-topic-init:
+        image: dhi.io/kafka:4.3-debian13
+        restart: "no"
+        environment:
+            TLS_TRUSTSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD:?}
+            OPENLINEAGE_TOPIC_NAMES: ${OPENLINEAGE_TOPIC_NAMES:?}
+        entrypoint:
+            [
+                "/bin/sh",
+                "-c",
+                "umask 077; printf 'security.protocol=SSL\nssl.keystore.type=PKCS12\nssl.keystore.location=/certs/openlineage-ingestion.p12\nssl.keystore.password=%s\nssl.key.password=%s\nssl.truststore.type=PKCS12\nssl.truststore.location=/certs/truststore.p12\nssl.truststore.password=%s\nssl.endpoint.identification.algorithm=https\n' \"$$TLS_TRUSTSTORE_PASSWORD\" \"$$TLS_TRUSTSTORE_PASSWORD\" \"$$TLS_TRUSTSTORE_PASSWORD\" > /tmp/admin-ssl.properties && for t in $$OPENLINEAGE_TOPIC_NAMES; do /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic \"$$t\" --partitions 3 --replication-factor 1 --bootstrap-server broker:9094 --command-config /tmp/admin-ssl.properties; done",
+            ]
+        volumes:
+            - ../certs:/certs:ro
+        networks:
+            - aurelius-dev-kafka-network
+
+    openlineage-ingestion:
+        # 2.0.x upstream image: DHI's hardened catalog publishes only the
+        # OM server (dhi.io/openmetadata); ingestion stays upstream.
+        # The render loop below relies on the connector's sslConfig-as-content
+        # semantics (SSLManager temp-files each value). Bump with the server —
+        # the ingestion client refuses to talk across major versions. Both
+        # images read the one OPENMETADATA_VERSION key from the governance
+        # env file (.env.enc is the source of truth).
+        image: openmetadata/ingestion:${OPENMETADATA_VERSION:?}
+        container_name: openmetadata_openlineage_ingestion
+        depends_on:
+            openlineage-topic-init:
+                condition: service_completed_successfully
+        entrypoint: ["/bin/bash"]
+        command:
+            - "-c"
+            - |
+                # The OL connector expects sslConfig values to be the
+                # certificate CONTENT (materialised to temp files); keep the
+                # PEMs in certgen output (never in git) and inline them into
+                # the rendered config at start. render_inline.py is mounted at
+                # /tools (shared with the openmetadata-ingest path, so both
+                # renderers are one implementation); --inline-paths reads the
+                # sslConfig file paths into their content.
+                python3 /tools/render_inline.py \
+                    --inline-paths source.serviceConnection.config.brokerConfig.sslConfig \
+                    /usr/src/app/openlineage.template.yaml /tmp/openlineage.yaml
+                while true; do
+                  # Mint a fresh Keycloak service-account token each cycle
+                  # (kc_token.py, mounted below); no OM PAT is ever stored.
+                  if ! OM_TOKEN=$(python3 /tools/kc_token.py); then
+                    echo "openlineage: token fetch failed, retrying" >&2
+                    sleep 15
+                    continue
+                  fi
+                                    export OM_JWT_TOKEN="$$OM_TOKEN"
+                  metadata ingest -c /tmp/openlineage.yaml
+                  sleep 60
+                done
+        configs:
+            - source: openlineage-config
+              target: /usr/src/app/openlineage.template.yaml
+        environment:
+            # Container-network token endpoint; overrides the host-facing
+            # KEYCLOAK_BOT_TOKEN_URL in dev/governance/.env, which names
+            # keycloak.localhost only on the host.
+            - KEYCLOAK_BOT_TOKEN_URL=http://keycloak:8080/realms/openmetadata/protocol/openid-connect/token
+            - OIDC_BOT_CLIENT_ID=${OIDC_BOT_CLIENT_ID:?}
+            - OIDC_BOT_CLIENT_SECRET=${OIDC_BOT_CLIENT_SECRET:?}
+        restart: unless-stopped
+        volumes:
+            # mTLS client material for the broker's INTERNAL SSL listener
+            # (paths referenced by sslConfig in openlineage.yaml); generated
+            # by `nx certgen aurelius-dev-governance`.
+            - ../certs:/certs:ro
+            # kc_token.py (stdlib-only) for the per-cycle token refresh.
+            - ../../../tools/openmetadata:/tools:ro
+        networks:
+            - governance-network
+            - aurelius-dev-kafka-network
+            - aurelius-dev-keycloak-network
+
+configs:
+    openlineage-config:
+        file: ./openlineage.yaml
+
+networks:
+    governance-network:
+        external: true
+        name: aurelius-dev-governance_governance-network
+    aurelius-dev-kafka-network:
+        external: true
+        name: aurelius-dev-kafka-network
+    aurelius-dev-keycloak-network:
+        external: true
+        name: aurelius-dev-keycloak-network

@@ -1,0 +1,7 @@
+{
+    "services": {
+        "aurelius-fastapi-example": ["aurelius-fastapi-example", "localhost", "127.0.0.1"],
+        "aurelius-frontend-example": ["aurelius-frontend-example", "localhost", "127.0.0.1"],
+        "postgres": ["postgres", "postgres-app", "localhost", "127.0.0.1"]
+    }
+}

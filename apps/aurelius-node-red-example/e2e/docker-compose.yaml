@@ -3,11 +3,26 @@ name: aurelius-node-red-example-e2e
 services:
     aurelius-node-red-example:
         environment:
-            KAFKA_BOOTSTRAP_SERVERS: broker:9094
-            KAFKA_TOPIC_NAME: ${KAFKA_TOPIC_NAME}
-            SCHEMA_REGISTRY_URL: http://schema-registry:8081
-            SCHEMA_SUBJECT_NAME: ${SCHEMA_SUBJECT_NAME}
-            SCHEMA_SUBJECT_VERSION: ${SCHEMA_SUBJECT_VERSION}
+            # App settings use the AURELIUS_NODE_RED_ prefix (flows.json
+            # ${...} lookups) so other projects' injected env can never
+            # populate this app.
+            AURELIUS_NODE_RED_KAFKA_BOOTSTRAP_SERVERS: broker:9094
+            AURELIUS_NODE_RED_KAFKA_CA_FILE: /certs/ca.pem
+            # The broker's SSL listener requires client certificates (mTLS):
+            # the flow's broker node presents this certgen leaf (`nx certgen`,
+            # this project's certs/) when connecting.
+            AURELIUS_NODE_RED_KAFKA_CLIENT_CERT_FILE: /certs/node-red.pem
+            AURELIUS_NODE_RED_KAFKA_CLIENT_KEY_FILE: /certs/node-red-key.pem
+            # ${VAR:?} guards: Nx injects the project .env into the task
+            # environment; an empty value would reach the flows as "" and
+            # fail obscurely at runtime instead of at `compose up`.
+            AURELIUS_NODE_RED_KAFKA_TOPIC_NAME: ${AURELIUS_NODE_RED_KAFKA_TOPIC_NAME:?}
+            AURELIUS_NODE_RED_SCHEMA_REGISTRY_URL: https://schema-registry:8081
+            AURELIUS_NODE_RED_SCHEMA_SUBJECT_NAME: ${AURELIUS_NODE_RED_SCHEMA_SUBJECT_NAME:?}
+            AURELIUS_NODE_RED_SCHEMA_SUBJECT_VERSION: ${AURELIUS_NODE_RED_SCHEMA_SUBJECT_VERSION:?}
+            # Trust the local development CA for the Schema Registry HTTPS client
+            # (Node.js TLS).
+            NODE_EXTRA_CA_CERTS: /certs/ca.pem
         image: ghcr.io/aureliusenterprise/aurelius-node-red-example:local
         networks:
             - aurelius-dev-kafka-network
@@ -15,6 +30,8 @@ services:
         ports:
             - 1880
         restart: unless-stopped
+        volumes:
+            - ../certs:/certs:ro
 
 networks:
     aurelius-dev-kafka-network:

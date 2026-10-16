@@ -6,17 +6,18 @@
             <form [formGroup]="entityForm">
                 <div class="modal-card">
                     <header class="modal-card-head">
-                        <p class="modal-card-title">Editor</p>
+                        <p class="modal-card-title" i18n>Editor</p>
                         <button class="delete" aria-label="close" (click)="cancel()"></button>
                     </header>
                     <section class="modal-card-body">
                         <div class="field">
-                            <label class="label" for="guid">GUID</label>
+                            <label class="label" for="guid" i18n>GUID</label>
                             <div class="control">
                                 <input
                                     id="guid"
                                     class="input is-static"
                                     type="text"
+                                    i18n-placeholder
                                     placeholder="New Entity"
                                     formControlName="guid"
                                     readonly
@@ -24,12 +25,13 @@
                             </div>
                         </div>
                         <div class="field">
-                            <label class="label" for="time_created">Time Created</label>
+                            <label class="label" for="time_created" i18n>Time Created</label>
                             <div class="control">
                                 <input
                                     id="time_created"
                                     class="input is-static"
                                     type="text"
+                                    i18n-placeholder
                                     placeholder="Entity has not been created yet"
                                     formControlName="time_created"
                                     readonly
@@ -37,12 +39,13 @@
                             </div>
                         </div>
                         <div class="field">
-                            <label class="label" for="time_modified">Time Modified</label>
+                            <label class="label" for="time_modified" i18n>Time Modified</label>
                             <div class="control">
                                 <input
                                     id="time_modified"
                                     class="input is-static"
                                     type="text"
+                                    i18n-placeholder
                                     placeholder="Entity has not been modified yet"
                                     formControlName="time_modified"
                                     readonly
@@ -51,36 +54,38 @@
                         </div>
                         <div class="field">
                             @let invalidName = entityForm.get("name")?.dirty && entityForm.get("name")?.invalid;
-                            <label class="label" for="name">Name</label>
+                            <label class="label" for="name" i18n>Name</label>
                             <div class="control">
                                 <input
                                     id="name"
                                     class="input"
                                     [class.is-danger]="invalidName"
                                     type="text"
+                                    i18n-placeholder
                                     placeholder="Name"
                                     formControlName="name"
                                 />
                             </div>
                             @if (invalidName) {
-                                <p class="help is-danger">Name must not be longer than 100 characters.</p>
+                                <p class="help is-danger" i18n>Name must not be longer than 100 characters.</p>
                             }
                         </div>
                         <div class="field">
                             @let invalidDescription =
                                 entityForm.get("description")?.dirty && entityForm.get("description")?.invalid;
-                            <label class="label" for="description">Description</label>
+                            <label class="label" for="description" i18n>Description</label>
                             <div class="control">
                                 <textarea
                                     id="description"
                                     class="textarea"
                                     [class.is-danger]="invalidDescription"
+                                    i18n-placeholder
                                     placeholder="Description"
                                     formControlName="description"
                                 ></textarea>
                             </div>
                             @if (invalidDescription) {
-                                <p class="help is-danger">Description must not be longer than 255 characters.</p>
+                                <p class="help is-danger" i18n>Description must not be longer than 255 characters.</p>
                             }
                         </div>
                     </section>
@@ -88,16 +93,23 @@
                         <div class="level is-flex-grow-1 is-mobile">
                             <div class="level-left">
                                 <div class="level-item buttons">
-                                    <button class="button is-success" [disabled]="!entityForm.valid" (click)="save()">
+                                    <button
+                                        class="button is-success"
+                                        [disabled]="!entityForm.valid"
+                                        (click)="save()"
+                                        i18n
+                                    >
                                         Save
                                     </button>
-                                    <button class="button" (click)="cancel()">Cancel</button>
+                                    <button class="button" (click)="cancel()" i18n>Cancel</button>
                                 </div>
                             </div>
                             <div class="level-right">
                                 @if (entity.guid) {
                                     <div class="level-item">
-                                        <button class="button is-danger" (click)="delete(entity.guid)">Delete</button>
+                                        <button class="button is-danger" (click)="delete(entity.guid)" i18n>
+                                            Delete
+                                        </button>
                                     </div>
                                 }
                             </div>

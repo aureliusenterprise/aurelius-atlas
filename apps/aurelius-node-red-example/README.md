@@ -18,13 +18,26 @@ with the rest of that slice.
 
 ## Configuration
 
-| Variable                  | Default                                 | Purpose              |
-| ------------------------- | --------------------------------------- | -------------------- |
-| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092`                        | Broker address       |
-| `KAFKA_TOPIC_NAME`        | `example.entity`                        | Target topic         |
-| `SCHEMA_REGISTRY_URL`     | `http://localhost:8081`                 | Schema Registry      |
-| `SCHEMA_SUBJECT_NAME`     | `com.aureliusenterprise.example.Entity` | Avro subject         |
-| `SCHEMA_SUBJECT_VERSION`  | `latest`                                | Avro subject version |
+Every flow setting is read from the environment with the
+`AURELIUS_NODE_RED_` prefix (the `${...}` lookups in `flows.json`), so other
+projects' environment variables can never populate this app.
+
+| Variable                                    | Default                                 | Purpose                                                              |
+| ------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------- |
+| `AURELIUS_NODE_RED_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092`                        | Broker address                                                       |
+| `AURELIUS_NODE_RED_KAFKA_TOPIC_NAME`        | `example.entity`                        | Target topic                                                         |
+| `AURELIUS_NODE_RED_SCHEMA_REGISTRY_URL`     | `https://localhost:8081`                | Schema Registry                                                      |
+| `AURELIUS_NODE_RED_SCHEMA_SUBJECT_NAME`     | `com.aureliusenterprise.example.Entity` | Avro subject                                                         |
+| `AURELIUS_NODE_RED_SCHEMA_SUBJECT_VERSION`  | `latest`                                | Avro subject version                                                 |
+| `AURELIUS_NODE_RED_KAFKA_CA_FILE`           | `certs/ca.pem`                          | TLS CA for the Kafka connection                                      |
+| `AURELIUS_NODE_RED_KAFKA_CLIENT_CERT_FILE`  | `certs/node-red.pem`                    | Client certificate for the broker (mTLS)                             |
+| `AURELIUS_NODE_RED_KAFKA_CLIENT_KEY_FILE`   | `certs/node-red-key.pem`                | Private key for the client certificate                               |
+| `NODE_EXTRA_CA_CERTS`                       | `certs/ca.pem`                          | TLS CA for the Schema Registry (third-party Node.js name, kept bare) |
+
+Kafka and Schema Registry connections use TLS verified against the local
+development CA (`nx certgen` generates this project's `certs/`). The broker's
+SSL listeners require a client certificate (mTLS), so the flow presents this
+project's own leaf and key when connecting.
 
 ## Running
 

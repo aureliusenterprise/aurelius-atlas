@@ -7,15 +7,28 @@ Part of the template **spine**.
 
 ## Services
 
-| Service           | Image                         | Host port | Notes                      |
-| ----------------- | ----------------------------- | --------- | -------------------------- |
-| Keycloak          | `dhi.io/keycloak:26-debian13` | 8080      | `start-dev --import-realm` |
-| postgres-keycloak | Postgres (internal)           | —         | Keycloak's own database    |
+| Service           | Image                           | Host port  | Notes                      |
+| ----------------- | ------------------------------- | ---------- | -------------------------- |
+| Keycloak          | `dhi.io/keycloak:26.7-debian13` | 8080, 8443 | `start-dev --import-realm` |
+| postgres-keycloak | Postgres (internal, TLS-only)   | —          | Keycloak's own database    |
 
-- Issuer URL: `http://keycloak.localhost:8080` (`KC_HOSTNAME=keycloak.localhost`)
+- Two listeners (ADR 039): plaintext `http://keycloak.localhost:8080` for the dev
+  browser, and TLS `https://keycloak.localhost:8443` used by E2E/CI. Both issuers
+  are what Keycloak advertises (`KC_HOSTNAME=keycloak.localhost`).
+- Its database connects with `sslmode=verify-full` against the local CA (`nx certgen`).
 - Realm/client definitions are imported from `import/master.json` on startup —
-  edit that file to change realms, clients, or test users
-- Telemetry is exported via OTLP to the observability stack (`otel-collector:4317`)
+  edit those files to change realms, clients, or test users:
+    - `import/master.json` — the `master` realm: admin console plus the
+      FastAPI/Angular clients and test users
+    - `import/kafka.json` — the `kafka` realm (machine identity for the Kafka
+      cluster): confidential client-credentials clients (`kafka-producer`,
+      `kafka-connect`, `kafka-lambda`, `kafka-e2e`, …) whose JWTs carry
+      `aud=kafka` for the broker's OAUTHBEARER validation; short 300 s token
+      lifetime. Client secrets live in this project's `.env.enc`, not the import
+      file: the JSON carries `${CLIENT_SECRET_*}` placeholders resolved from the
+      container environment at import time (see `AGENTS.md`). See `dev/kafka`
+- Telemetry is exported via OTLP over TLS to the observability stack
+  (`https://otel-collector:4317`, trusted via this project's `certs/truststore.p12`)
 
 ## Running
 

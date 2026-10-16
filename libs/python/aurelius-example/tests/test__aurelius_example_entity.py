@@ -185,6 +185,42 @@ def test__example_entity_time_modified_updates_on_change(
     assert entity.time_modified is not None, "time_modified should be updated when the entity is modified"
 
 
+def _collect_logical_types(node: object) -> list[str]:
+    """Collect all Avro logicalType values in a schema fragment."""
+    if isinstance(node, dict):
+        found = [node["logicalType"]] if "logicalType" in node else []
+        for value in node.values():
+            found.extend(_collect_logical_types(value))
+        return found
+    if isinstance(node, list):
+        return [t for item in node for t in _collect_logical_types(item)]
+    return []
+
+
+def test__example_entity_avro_schema_uses_timestamp_millis() -> None:
+    """Datetime fields must encode as timestamp-millis, not the pydantic-avro micros default.
+
+    The Confluent Avro converter only maps ``timestamp-millis`` to a Connect
+    ``Timestamp`` logical type; with micros (or no logical type reaching
+    consumers) the Debezium JDBC sink binds a raw bigint to the ``timestamptz``
+    column and every INSERT fails.
+    """
+    logical_types = _collect_logical_types(Entity.avro_schema(namespace="com.aureliusenterprise.example"))
+
+    assert "timestamp-millis" in logical_types
+    assert "timestamp-micros" not in logical_types
+    assert "uuid" in logical_types, "uuid logical type must survive the millis rewrite"
+
+
+def test__example_entity_json_schema_unaffected_by_avro_override() -> None:
+    """The Avro millis override must not leak into the JSON schema (FastAPI/OpenAPI)."""
+    json_schema = Entity.model_json_schema()
+
+    assert "avro_type" not in str(json_schema)
+    time_created = json_schema["properties"]["time_created"]
+    assert {"type": "string", "format": "date-time"} in time_created["anyOf"]
+
+
 @pytest.mark.parametrize(
     ("a", "b", "expected"),
     [

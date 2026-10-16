@@ -8,5 +8,27 @@ scrape_configs:
           - targets: ["prometheus:9090"]
 
     - job_name: otel-collector
+      # OTLP-pushed exponential histograms (logfire, keycloak native OTLP)
+      # reach us as Prometheus *native* histograms via the collector's
+      # prometheus exporter; those only exist in the protobuf exposition
+      # format — text scraping would flatten them to a lone +Inf bucket.
+      scrape_protocols: ["PrometheusProto", "OpenMetricsText1.0.0", "PrometheusText0.0.4"]
+      scrape_native_histograms: true
       static_configs:
           - targets: ["otel-collector:9464"]
+
+    # Self-monitoring: the stack's own internal metrics (scraped inside this
+    # compose project only — other slices' telemetry arrives via OTLP push,
+    # never scrape; see AGENTS.md). :8888 is the collector's internal
+    # telemetry (otelcol_* pipeline health); loki/tempo expose their own.
+    - job_name: otel-collector-internal
+      static_configs:
+          - targets: ["otel-collector:8888"]
+
+    - job_name: loki
+      static_configs:
+          - targets: ["loki:3100"]
+
+    - job_name: tempo
+      static_configs:
+          - targets: ["tempo:3200"]

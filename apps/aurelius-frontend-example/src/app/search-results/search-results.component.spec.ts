@@ -26,6 +26,20 @@ describe("SearchResults", () => {
         searchService = TestBed.inject(SearchService);
     });
 
+    it.each([
+        [0, "I have found 0 entities."],
+        [1, "I have found 1 entity."],
+        [2, "I have found 2 entities."],
+    ])("should render the entity count for %i results", async (total, heading) => {
+        vi.spyOn(searchService, "entities").mockReturnValue({ data: [], total });
+
+        await fixture.whenStable();
+
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        expect(compiled.querySelector("h1")?.textContent?.trim()).toBe(heading);
+    });
+
     it("should render a card for each entity", async () => {
         const entities = [
             { guid: "1", name: "Entity One" },

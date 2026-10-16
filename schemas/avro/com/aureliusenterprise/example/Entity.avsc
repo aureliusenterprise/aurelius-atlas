@@ -31,7 +31,7 @@
             "type": [
                 "null",
                 {
-                    "logicalType": "timestamp-micros",
+                    "logicalType": "timestamp-millis",
                     "type": "long"
                 }
             ]
@@ -43,7 +43,7 @@
             "type": [
                 "null",
                 {
-                    "logicalType": "timestamp-micros",
+                    "logicalType": "timestamp-millis",
                     "type": "long"
                 }
             ]

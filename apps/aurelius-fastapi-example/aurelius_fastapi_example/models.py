@@ -5,11 +5,19 @@ from uuid import UUID
 
 import logfire
 from aurelius_sdk.postgresql import sanitize_tsquery
-from pydantic import BaseModel, Field, HttpUrl, NonNegativeInt, PositiveInt, SecretStr, field_validator
+from pydantic import BaseModel, Field, HttpUrl, NonNegativeInt, PositiveInt, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 DEVELOPMENT = "development"
+
+# libpq sslmode values that do not verify the server certificate; unusable outside development.
+_UNVERIFIED_SSLMODES = ("disable", "allow", "prefer")
+
+# Namespace for this application's environment variables. Every Settings field is read
+# from ``AURELIUS_FASTAPI_<FIELD>`` so configuration from other projects in the
+# workspace (or a developer's shell) can never populate this application's fields.
+ENV_PREFIX = "AURELIUS_FASTAPI_"
 
 
 class Envelope[T: BaseModel | None](BaseModel):
@@ -110,8 +118,21 @@ class Settings(BaseSettings, Hashable):
         description="The maximum number of failed database operations before triggering the circuit breaker.",
     )
 
+    auth_client_id: str | None = Field(
+        default=None,
+        description="The client id this application authenticates as; seeds the default auth_audience.",
+    )
+
     auth_server_url: HttpUrl = Field(
         description="The base URL of the authentication server.",
+    )
+
+    auth_audience: str = Field(
+        default_factory=lambda settings: settings.get("auth_client_id") or "aurelius",
+        description=(
+            "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim "
+            "or 'aud' claim list. Defaults to AURELIUS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id."
+        ),
     )
 
     auto_create_schema: bool = Field(
@@ -186,14 +207,88 @@ class Settings(BaseSettings, Hashable):
         description="The port to bind the server to.",
     )
 
+    auth_ca_file: str = Field(
+        default="",
+        description=(
+            "PEM CA bundle used to verify the authentication server's TLS certificate. "
+            "Empty uses the operating system default trust store."
+        ),
+    )
+
+    database_sslmode: str = Field(
+        default="prefer",
+        description=(
+            "PostgreSQL TLS mode (disable, prefer, require, verify-ca, verify-full). "
+            "The development defaults set verify-full to match the TLS-only database."
+        ),
+    )
+
+    database_sslrootcert: str = Field(
+        default="",
+        description=(
+            "PEM CA bundle used to verify the database server's TLS certificate. "
+            "Required for verify-ca and verify-full; ignored by libpq otherwise."
+        ),
+    )
+
+    tls_cert_file: str = Field(
+        default="",
+        description="PEM certificate served by the application. Empty disables TLS on the server.",
+    )
+
+    tls_key_file: str = Field(
+        default="",
+        description="PEM private key matching tls_cert_file. Required when TLS is enabled.",
+    )
+
     @property
     def is_development(self) -> bool:
         """Check if the application is running in development mode."""
         return self.environment == DEVELOPMENT
 
+    @model_validator(mode="after")
+    def enforce_transport_security(self) -> Settings:
+        """Fail fast when a non-development deployment runs with unverified transport.
+
+        The defaults (``database_sslmode="prefer"``, empty ``tls_cert_file``) are
+        convenient for local development, where the TLS material lives in the
+        project ``.env``. Outside development they must be set explicitly:
+        otherwise a deployment that forgets the variables silently downgrades to
+        opportunistic/unverified TLS — credentials and tokens over a channel a
+        network-path attacker can read or impersonate.
+        """
+        if self.is_development:
+            return self
+
+        if self.database_sslmode in _UNVERIFIED_SSLMODES:
+            msg = (
+                f"{ENV_PREFIX}DATABASE_SSLMODE={self.database_sslmode!r} does not verify the database server "
+                "certificate. Set it to 'verify-ca' or 'verify-full' "
+                f"(with {ENV_PREFIX}DATABASE_SSLROOTCERT) outside development mode."
+            )
+            raise ValueError(msg)
+        if self.database_sslmode in ("verify-ca", "verify-full") and not self.database_sslrootcert:
+            msg = (
+                f"{ENV_PREFIX}DATABASE_SSLMODE={self.database_sslmode!r} requires {ENV_PREFIX}DATABASE_SSLROOTCERT "
+                "with the CA bundle that issued the database certificate."
+            )
+            raise ValueError(msg)
+        if not self.tls_cert_file or not self.tls_key_file:
+            msg = (
+                f"{ENV_PREFIX}TLS_CERT_FILE and {ENV_PREFIX}TLS_KEY_FILE are required outside development mode: "
+                "the API serves bearer tokens and must not run on plain HTTP. "
+                f"Set {ENV_PREFIX}ENVIRONMENT=development only for local stacks."
+            )
+            raise ValueError(msg)
+
+        return self
+
     @property
     def database_url(self) -> URL:
         """Construct the database URL."""
+        query: dict[str, str] = {"sslmode": self.database_sslmode}
+        if self.database_sslrootcert:
+            query["sslrootcert"] = self.database_sslrootcert
         return URL.create(
             drivername=self.database_driver,
             username=self.database_username,
@@ -201,8 +296,10 @@ class Settings(BaseSettings, Hashable):
             host=self.database_host,
             port=self.database_port,
             database=self.database_name,
+            query=query,
         )
 
     model_config = SettingsConfigDict(
+        env_prefix=ENV_PREFIX,
         frozen=True,
     )

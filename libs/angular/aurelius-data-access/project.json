@@ -21,9 +21,6 @@
             },
             "outputs": ["{workspaceRoot}/dist/{projectRoot}"]
         },
-        "lint": {
-            "executor": "@nx/eslint:lint"
-        },
         "test": {
             "configurations": {
                 "ci": {

@@ -1,5 +1,13 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "i18n": {
+        "locales": {
+            "nl-NL": {
+                "translation": "apps/aurelius-frontend-example/src/locale/messages.nl-NL.xlf"
+            }
+        },
+        "sourceLocale": "en-US"
+    },
     "implicitDependencies": ["aurelius-dev-keycloak", "aurelius-dev-observability", "aurelius-fastapi-example"],
     "name": "aurelius-frontend-example",
     "prefix": "aurelius-frontend-example",
@@ -21,7 +29,12 @@
                         }
                     ],
                     "extractLicenses": false,
+                    "localize": ["en-US"],
                     "optimization": false,
+                    "sourceMap": true
+                },
+                "nl-NL": {
+                    "localize": ["nl-NL"],
                     "sourceMap": true
                 },
                 "production": {
@@ -52,7 +65,9 @@
             "options": {
                 "browser": "apps/aurelius-frontend-example/src/main.ts",
                 "inlineStyleLanguage": "scss",
+                "localize": ["en-US", "nl-NL"],
                 "outputPath": "dist/apps/aurelius-frontend-example",
+                "polyfills": ["@angular/localize/init"],
                 "styles": ["apps/aurelius-frontend-example/src/styles.scss"],
                 "tsConfig": "apps/aurelius-frontend-example/tsconfig.app.json"
             },
@@ -78,6 +93,9 @@
                     "target": "decrypt"
                 },
                 {
+                    "target": "certgen"
+                },
+                {
                     "target": "docker-build"
                 },
                 {
@@ -89,19 +107,18 @@
             "options": {
                 "command": "uv run pytest e2e --browser chromium --browser firefox --browser webkit --tracing retain-on-failure",
                 "cwd": "{projectRoot}"
-            }
+            },
+            "parallelism": false
         },
         "extract-i18n": {
             "executor": "@angular/build:extract-i18n",
             "options": {
-                "buildTarget": "aurelius-frontend-example:build"
+                "buildTarget": "aurelius-frontend-example:build",
+                "outputPath": "apps/aurelius-frontend-example/src/locale"
             }
         },
-        "lint": {
-            "executor": "@nx/eslint:lint"
-        },
         "sbom": {
-            "command": "cyclonedx-esbuild --gather-license-texts --output-reproducible -o {args.appSbomPath} dist/{projectRoot}/stats.json",
+            "command": "cyclonedx-esbuild --gather-license-texts --output-reproducible -o {args.appSbomPath} dist/{projectRoot}/browser-stats.json",
             "dependsOn": ["build"],
             "options": {
                 "appSbomPath": "{projectRoot}/app-sbom.json"
@@ -112,6 +129,10 @@
                 "development": {
                     "buildTarget": "aurelius-frontend-example:build:development"
                 },
+                "nl-NL": {
+                    "buildTarget": "aurelius-frontend-example:build:development,nl-NL",
+                    "port": 4201
+                },
                 "production": {
                     "buildTarget": "aurelius-frontend-example:build:production"
                 }
@@ -119,6 +140,12 @@
             "continuous": true,
             "defaultConfiguration": "development",
             "dependsOn": [
+                {
+                    "target": "decrypt"
+                },
+                {
+                    "target": "certgen"
+                },
                 {
                     "projects": ["aurelius-dev-keycloak", "aurelius-fastapi-example"],
                     "target": "serve"
@@ -145,7 +172,7 @@
                 "host": "127.0.0.1",
                 "port": 4200,
                 "spa": true,
-                "staticFilePath": "dist/apps/aurelius-frontend-example/browser"
+                "staticFilePath": "dist/apps/aurelius-frontend-example/browser/en-US"
             }
         },
         "test": {

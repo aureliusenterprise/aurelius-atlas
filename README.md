@@ -23,11 +23,13 @@ nothing to install by hand beyond Docker and VS Code.
 1. Install [Docker](https://www.docker.com) and the VS Code
    [Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack),
    then clone this repository and open it in VS Code.
-2. Choose **Reopen in Container** when prompted. The first build installs the full toolchain and can take
+2. Log in to Docker Hub (`docker login`) with an account that has access to Docker Hardened Images —
+   every base and infrastructure image in this repository is pulled from `dhi.io`, which requires it.
+3. Choose **Reopen in Container** when prompted. The first build installs the full toolchain and can take
    a while; it also generates your personal secrets key into `secrets/keys.txt`.
-3. Register your secrets key (see [Secrets Management](docs/contributor-guide/secrets-management.md)) —
+4. Register your secrets key (see [Secrets Management](docs/contributor-guide/secrets-management.md)) —
    until you do, test and serve commands fail at the decryption step.
-4. Run an example:
+5. Run an example:
 
     ```bash
     npx nx serve aurelius-fastapi-example
@@ -35,7 +37,7 @@ nothing to install by hand beyond Docker and VS Code.
 
     Development infrastructure (Keycloak, Postgres, observability) starts automatically.
 
-5. Verify your setup:
+6. Verify your setup:
 
     ```bash
     nx test aurelius-fastapi-example -c ci
@@ -47,6 +49,9 @@ nothing to install by hand beyond Docker and VS Code.
       registered key you get a SOPS/age decryption error, not a code failure.
     - Unit tests need only that decryption; `e2e` targets additionally build Docker images and start real
       services (Postgres, Kafka, Keycloak), so they need the container runtime.
+    - All base and infrastructure images come from [Docker Hardened Images](https://dhi.io) (`dhi.io/*`),
+      which requires a Docker Hub login: run `docker login` first, or image pulls fail with an
+      unauthorized error.
     - Always pass `-c ci` to test targets — without it they run in watch mode and never exit.
 
 ## What is in the box

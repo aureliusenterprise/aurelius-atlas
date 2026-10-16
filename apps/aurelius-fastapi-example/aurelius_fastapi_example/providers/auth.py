@@ -150,6 +150,7 @@ def user_info(
     auth_base_url: Annotated[str, Depends(auth_base_url)],
     auth_token: Annotated[str, Depends(auth_token)],
     jwk: Annotated[RSAPublicKey, Depends(jwk)],
+    settings: Settings,
 ) -> dict:
     """Decode the authentication token to verify the user's identity and return their information."""
     try:
@@ -160,7 +161,9 @@ def user_info(
             LOGGER.error("Unsupported JWT algorithm: %s", alg)
             raise HTTPException(status_code=401, detail="Unsupported token algorithm")
 
-        return jwt.decode(
+        # Audience is verified after decoding (against the union of 'azp' and 'aud'), which pyjwt's
+        # built-in audience check cannot express; signature, issuer, and expiry are verified here.
+        claims = jwt.decode(
             auth_token,
             key=jwk,
             algorithms=[alg],
@@ -176,6 +179,35 @@ def user_info(
     except jwt.PyJWTError as e:
         LOGGER.exception("Failed to verify authentication token")
         raise HTTPException(status_code=401, detail="Invalid authorization token") from e
+
+    if not _audience_matches(claims, settings.auth_audience):
+        LOGGER.warning(
+            "Token audience mismatch: expected %r in azp/aud claims",
+            settings.auth_audience,
+        )
+        raise HTTPException(status_code=401, detail="Invalid token audience")
+
+    return claims
+
+
+def _audience_matches(claims: dict, expected_audience: str) -> bool:
+    """Check whether the expected audience appears in the token's 'azp' or 'aud' claims.
+
+    Keycloak records the calling client in 'azp' and only lists role-mapped clients in 'aud', so
+    accepting the union supports both plain client tokens and tokens carrying an explicit audience.
+    """
+    audiences: set[str] = set()
+
+    if azp := claims.get("azp"):
+        audiences.add(azp)
+
+    match claims.get("aud"):
+        case str() as aud:
+            audiences.add(aud)
+        case list() as aud_list:
+            audiences.update(a for a in aud_list if isinstance(a, str))
+
+    return expected_audience in audiences
 
 
 require_auth = Depends(user_info)

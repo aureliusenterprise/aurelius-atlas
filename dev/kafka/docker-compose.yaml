@@ -6,15 +6,123 @@ services:
         ports:
             - "9092:9092"
             - "9094:9094"
+            - "9096:9096"
+        # Keycloak (issuer for the OAUTHBEARER listeners) is reachable by the
+        # issuer name keycloak.localhost via a network alias on
+        # aurelius-dev-keycloak-network (the JWKS fetch and client token
+        # grants use the same https://keycloak.localhost:8443 issuer URL).
+        # host-gateway is NOT used: it resolves to the docker0 bridge, which
+        # is link-down in this environment and intermittently unreachable.
+        networks:
+            - default
+            - keycloak
         healthcheck:
-            test: /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server broker:9094 || exit 1
+            test:
+                [
+                    "CMD-SHELL",
+                    "umask 077; printf 'security.protocol=SSL\nssl.keystore.type=PKCS12\nssl.keystore.location=/certs/broker.p12\nssl.keystore.password=%s\nssl.key.password=%s\nssl.truststore.type=PKCS12\nssl.truststore.location=/certs/truststore.p12\nssl.truststore.password=%s\nssl.endpoint.identification.algorithm=https\n' \"$TLS_TRUSTSTORE_PASSWORD\" \"$TLS_TRUSTSTORE_PASSWORD\" \"$TLS_TRUSTSTORE_PASSWORD\" > /tmp/client-ssl.properties && /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server broker:9094 --command-config /tmp/client-ssl.properties || exit 1",
+                ]
             interval: 15s
             timeout: 10s
             retries: 20
             start_period: 30s
         restart: unless-stopped
+        environment:
+            # Broker configuration is passed entirely through KAFKA_* environment
+            # variables: the image entrypoint writes them into its own
+            # server.properties inside the container layer. This keeps the
+            # PKCS12 passwords out of any committed file — they come from the
+            # project's encrypted dev default (TLS_TRUSTSTORE_PASSWORD in
+            # .env.enc, `nx decrypt`). TLS-only listeners: INTERNAL serves the
+            # docker network (advertised as broker:9094), PUBLIC serves host
+            # clients (advertised as localhost:9092), CONTROLLER is the KRaft
+            # controller plane. The keystore holds the broker leaf + CA chain,
+            # the truststore the local dev CA (`nx certgen`, this project's
+            # certs/). ssl.key.password must be given explicitly: the PKCS12
+            # keystore protects the key with the store password and Kafka
+            # defaults it to empty.
+            #
+            # Machine identity (ADR 013): SECURE/SECUREHOST add OAUTHBEARER
+            # (SASL_SSL) on top of the same TLS transport — producers and
+            # consumers authenticate with Keycloak-issued JWTs from the
+            # dedicated `kafka` realm (aud=kafka). The broker validates tokens
+            # against the realm's JWKS endpoint; Kafka 4.x fails fast at
+            # startup when a JWKS endpoint is set without expected issuer and
+            # audience, so both are configured. The SSL listeners stay for
+            # infrastructure clients that keep mTLS: Schema Registry
+            # (kafkastore), this healthcheck, and Node-RED (its Kafka module
+            # supports no OAuth). JAVA_TOOL_OPTIONS sets the JVM truststore:
+            # Kafka's JWKS/token HTTPS calls to Keycloak do not use
+            # ssl.truststore.*, so the dev CA must be in the JVM default trust.
+            # Kafka 4.x additionally requires every OAuth endpoint URL to be
+            # named in the org.apache.kafka.sasl.oauthbearer.allowed.urls JVM
+            # system property (the default allowlist is empty; exact string
+            # match, comma-separated). Java clients need the same property.
+            # ${VAR:?} guards the first interpolation: an empty PKCS12
+            # password crash-loops the broker with obscure SSL errors, and
+            # compose aborts the whole config before any container starts.
+            TLS_TRUSTSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD:?}
+            # The password is quoted: unquoted, a value with spaces would split
+            # into extra (malformed) JVM args under JAVA_TOOL_OPTIONS' own
+            # whitespace parsing, corrupting the truststore settings.
+            JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/certs/truststore.p12 "-Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD}" -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=https://keycloak.localhost:8443/realms/kafka/protocol/openid-connect/certs,https://keycloak.localhost:8443/realms/kafka/protocol/openid-connect/token
+            KAFKA_BROKER_ID: "1"
+            KAFKA_PROCESS_ROLES: broker,controller
+            KAFKA_LISTENERS: INTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093,PUBLIC://0.0.0.0:9092,SECURE://0.0.0.0:9095,SECUREHOST://0.0.0.0:9096
+            KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:9094,PUBLIC://localhost:9092,SECURE://broker:9095,SECUREHOST://localhost:9096
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SSL,CONTROLLER:SSL,PUBLIC:SSL,SECURE:SASL_SSL,SECUREHOST:SASL_SSL
+            KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+            KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+            KAFKA_SSL_KEYSTORE_LOCATION: /certs/broker.p12
+            KAFKA_SSL_KEYSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            KAFKA_SSL_KEY_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+            KAFKA_SSL_TRUSTSTORE_LOCATION: /certs/truststore.p12
+            KAFKA_SSL_TRUSTSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: https
+            # True mTLS on the SSL listeners (review on PR #130): without this,
+            # ssl.client.auth defaults to "none" and any process reaching
+            # INTERNAL/PUBLIC connects anonymously, bypassing OAuth entirely.
+            # Exception clients present a CA-signed client certificate: the
+            # healthcheck and inter-broker traffic (broker.p12), Schema
+            # Registry kafkastore (schema-registry.p12), Kafka UI
+            # (kafka-ui.p12), Node-RED (its own certgen leaf + key). The
+            # SASL/OAUTHBEARER listeners stay certificate-optional: machine
+            # identity there comes from the Keycloak JWT.
+            KAFKA_LISTENER_NAME_INTERNAL_SSL_CLIENT_AUTH: required
+            KAFKA_LISTENER_NAME_PUBLIC_SSL_CLIENT_AUTH: required
+            # The KRaft controller plane admits no anonymous peers either: the
+            # controller listener uses the broker keystore (broker.p12), so
+            # the same material authenticates the controller connections.
+            KAFKA_LISTENER_NAME_CONTROLLER_SSL_CLIENT_AUTH: required
+            KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+            KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+            # SASL/OAUTHBEARER (server side). The JWT validator is wired per
+            # listener (listener names must be lowercase in these prefixes);
+            # the JWKS/issuer/audience settings are global for OAUTHBEARER.
+            KAFKA_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+            KAFKA_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: https://keycloak.localhost:8443/realms/kafka/protocol/openid-connect/certs
+            KAFKA_SASL_OAUTHBEARER_EXPECTED_ISSUER: https://keycloak.localhost:8443/realms/kafka
+            KAFKA_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: kafka
+            # Every SASL listener needs a login module (the broker would fail
+            # with "Could not find a 'KafkaServer' or 'secure.KafkaServer'
+            # entry in the JAAS configuration"); the validator callback
+            # handler below does the actual JWT verification.
+            KAFKA_LISTENER_NAME_SECURE_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;
+            KAFKA_LISTENER_NAME_SECUREHOST_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;
+            KAFKA_LISTENER_NAME_SECURE_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler
+            KAFKA_LISTENER_NAME_SECUREHOST_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler
+            KAFKA_LOG_DIRS: /opt/kafka/logs
+            KAFKA_NUM_PARTITIONS: "3"
+            KAFKA_MESSAGE_MAX_BYTES: "10000000"
+            KAFKA_SOCKET_REQUEST_MAX_BYTES: "104857600"
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+            KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+            KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+            KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+            KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
         volumes:
-            - ./server.properties:/opt/kafka/config/server.properties
+            - ./certs:/certs:ro
             - kafka-data:/opt/kafka/logs
             - kafka-kraft:/tmp/kraft-combined-logs
 
@@ -24,44 +132,130 @@ services:
             broker:
                 condition: service_healthy
         environment:
-            SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://broker:9094"
+            SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "SSL://broker:9094"
             SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
+            SCHEMA_REGISTRY_LISTENERS: "https://0.0.0.0:8081"
+            SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SSL
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION: /certs/truststore.p12
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_TYPE: PKCS12
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION: /certs/schema-registry.p12
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_TYPE: PKCS12
+            # Single-node SR: the inter-instance listener must use the same
+            # scheme as the only configured listener (https).
+            SCHEMA_REGISTRY_INTER_INSTANCE_PROTOCOL: https
+            SCHEMA_REGISTRY_SSL_KEYSTORE_TYPE: PKCS12
+            SCHEMA_REGISTRY_SSL_KEYSTORE_LOCATION: /certs/schema-registry.p12
+            SCHEMA_REGISTRY_SSL_KEYSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            # PKCS12 protects the key with its own password; Confluent's
+            # SslFactory defaults ssl.key.password to empty, so both must be
+            # given explicitly for the keystore's private key to load.
+            SCHEMA_REGISTRY_SSL_KEY_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            SCHEMA_REGISTRY_SSL_KEYSTORE_KEY_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            SCHEMA_REGISTRY_SSL_TRUSTSTORE_TYPE: PKCS12
+            SCHEMA_REGISTRY_SSL_TRUSTSTORE_LOCATION: /certs/truststore.p12
+            SCHEMA_REGISTRY_SSL_TRUSTSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            SCHEMA_REGISTRY_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: https
         restart: unless-stopped
         ports:
             - 8081:${SCHEMA_REGISTRY_PORT}
+        volumes:
+            - ./certs:/certs:ro
         healthcheck:
             test:
                 [
                     "CMD",
                     "curl",
+                    "--cacert",
+                    "/certs/ca.pem",
                     "--output",
                     "/dev/null",
                     "--silent",
                     "--head",
                     "--fail",
-                    "http://schema-registry:8081/subjects",
+                    "https://schema-registry:8081/subjects",
                 ]
             interval: 30s
             timeout: 10s
             retries: 10
 
     kafka-ui:
-        image: kafbat/kafka-ui:latest
+        image: kafbat/kafka-ui:v1.5.0
         depends_on:
             - broker
             - schema-registry
+        # The UI authenticates to the broker with mTLS on the SSL listener
+        # (broker:9094), NOT OAUTHBEARER: kafbat v1.5.0 embeds kafka-clients
+        # 7.9.5-ccs (Apache 3.9-era), which predates the built-in
+        # client-credentials token retriever (kafka-clients 4.x) and needs a
+        # JAAS file plus the Strimzi kafka-oauth jar the image does not ship.
+        # Keep the UI on mTLS until the image ships kafka-clients 4.x.
         environment:
             KAFKA_CLUSTERS_0_NAME: aurelius-dev-kafka
             KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:9094
-            KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+            KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SSL
+            KAFKA_CLUSTERS_0_SSL_TRUSTSTORELOCATION: /certs/truststore.p12
+            KAFKA_CLUSTERS_0_SSL_TRUSTSTOREPASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            # The INTERNAL listener requires client certificates (mTLS): the
+            # UI presents its own keystore (leaf + key + CA chain, `nx
+            # certgen`). kafbat's cluster-level `ssl` config is truststore-only,
+            # so the keystore goes through the free-form kafka client
+            # `properties` map (verified: PROPERTIES_* env binds dotted keys;
+            # this is what the UI's own mTLS form does). The Registry keystore
+            # (its private key) must never be handed to clients, so the SR
+            # connection keeps truststore-only settings.
+            KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+            KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_LOCATION: /certs/kafka-ui.p12
+            KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            # PKCS12 protects the key with its own password; kafka-clients
+            # defaults ssl.key.password to empty (see the broker notes above).
+            KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEY_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
+            KAFKA_CLUSTERS_0_SCHEMAREGISTRY: https://schema-registry:8081
+            KAFKA_CLUSTERS_0_SCHEMAREGISTRYSSL_TRUSTSTORELOCATION: /certs/truststore.p12
+            KAFKA_CLUSTERS_0_SCHEMAREGISTRYSSL_TRUSTSTOREPASSWORD: ${TLS_TRUSTSTORE_PASSWORD}
             SERVER_PORT: ${KAFKA_UI_PORT}
         ports:
             - ${KAFKA_UI_PORT}:${KAFKA_UI_PORT}
+        volumes:
+            - ./certs:/certs:ro
         restart: unless-stopped
+
+    metrics-puller:
+        # Slice-owned OTel collector: reads broker metrics over the Kafka
+        # protocol (kafka_metrics receiver, franz-go) and pushes OTLP to the
+        # dev collector — the zero-footprint alternative to a Prometheus JMX
+        # exporter (no third-party jar in the hardened broker). Presents its
+        # own certgen leaf to the broker's mTLS INTERNAL listener; targets
+        # and attribution live in config/metrics-puller.yaml. Long-running:
+        # a one-shot here would break every consumer's `up --wait` fixture.
+        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            broker:
+                condition: service_healthy
+        restart: unless-stopped
+        networks:
+            - default
+            - observability
 
 networks:
     default:
         name: aurelius-dev-kafka-network
+    keycloak:
+        name: aurelius-dev-keycloak-network
+        external: true
+    # The dev telemetry stack (dev/observability). The chain guarantees it
+    # exists before this stack (kafka -> keycloak -> observability via
+    # implicitDependencies); external-attach follows the keycloak-network
+    # precedent above (same assumption: nx e2e chains start the deps first).
+    observability:
+        name: aurelius-dev-observability-network
+        external: true
 
 volumes:
     kafka-data:

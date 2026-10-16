@@ -203,6 +203,30 @@ def test__aurelius_fastapi_example_find_many_requires_auth(
     assert response.status == 401, "Expected 401 Unauthorized status for unauthenticated request"
 
 
+def test__aurelius_fastapi_example_find_many_rejects_foreign_client_token(
+    connection: http.client.HTTPConnection,
+    admin_cli_token: str,
+) -> None:
+    """
+    Test that the find_many endpoint rejects tokens minted by a client outside the API's audience.
+
+    The token is validly signed by the same realm for the same user, but its audience (azp) is
+    admin-cli rather than the configured audience, so it must not authorize API access.
+
+    Asserts:
+        - The API returns a 401 Unauthorized status code for the foreign-client token.
+    """
+    connection.request(
+        "GET",
+        "/entities/",
+        headers={"Authorization": f"Bearer {admin_cli_token}"},
+    )
+    response = connection.getresponse()
+    response.read()
+
+    assert response.status == 401, "Expected 401 Unauthorized for a token from a client outside the audience"
+
+
 def test__aurelius_fastapi_example_find_one(
     connection: http.client.HTTPConnection,
     session: Session,

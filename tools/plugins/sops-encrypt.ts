@@ -20,10 +20,10 @@ export const createNodes: CreateNodes<SopsEncryptPluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     { encryptDefaultConfiguration = ".env", encryptTargetName = "encrypt" }: SopsEncryptPluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     return {

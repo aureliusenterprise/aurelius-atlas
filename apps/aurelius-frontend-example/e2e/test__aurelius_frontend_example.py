@@ -1,10 +1,64 @@
 import re
+import socket
+import ssl
 from collections.abc import Generator
+from urllib.parse import urljoin, urlsplit
 
 import pytest
 from aurelius_example import Entity
+from conftest import CA_FILE
 from playwright.sync_api import Page, expect
 from sqlmodel import Session, select
+
+
+def test__browser_facing_tls_verifies_against_ca(base_url: str) -> None:
+    """The browser-facing endpoint verifies against the local development CA.
+
+    Playwright's bundled browsers cannot enroll the mkcert root, so the browser
+    context relaxes certificate verification (see ``conftest`` — ADR 039). This
+    check performs the equivalent CA and hostname verification of the same
+    endpoint: the handshake fails if nginx serves a certificate the CA did not
+    issue or one that does not cover the connecting hostname.
+    """
+    parts = urlsplit(base_url)
+    host = parts.hostname or "localhost"
+    port = parts.port or 443
+
+    context = ssl.create_default_context(cafile=str(CA_FILE))
+    with (
+        socket.create_connection((host, port), timeout=10) as sock,
+        context.wrap_socket(sock, server_hostname=host) as tls,
+    ):
+        cert = tls.getpeercert()
+        assert cert is not None
+
+    subject_alt_names = {value for _type, value in cert["subjectAltName"]}
+    assert host in subject_alt_names
+
+
+@pytest.mark.parametrize(
+    ("accept_language", "locale"),
+    [("", "en-US"), ("en-US,en;q=0.9", "en-US"), ("nl-NL,nl;q=0.9,en;q=0.8", "nl-NL"), ("fr", "en-US")],
+)
+def test__root_redirects_to_preferred_locale(page: Page, base_url: str, accept_language: str, locale: str) -> None:
+    """The image redirects the root to the supported preferred locale."""
+    response = page.request.get(
+        urljoin(base_url, "/?redirect-check=1"), headers={"Accept-Language": accept_language}, max_redirects=0
+    )
+
+    assert response.status == 302
+    assert response.headers["location"].endswith(f"/{locale}/?redirect-check=1")
+
+
+@pytest.mark.parametrize("locale", ["en-US", "nl-NL"])
+def test__locale_routes_fall_back_to_localized_app(page: Page, base_url: str, locale: str) -> None:
+    """Client-side routes serve the index belonging to their locale."""
+    response = page.request.get(urljoin(base_url, f"/{locale}/route-not-found"))
+
+    assert response.status == 200
+    assert "text/html" in response.headers["content-type"]
+    assert f'<base href="/{locale}/">' in response.text()
+    assert f'lang="{locale}"' in response.text()
 
 
 def test__search_input_is_present(authenticated: Page) -> None:
@@ -29,7 +83,7 @@ def test__search_results_with_no_data(authenticated: Page) -> None:
         - The search results section is visible.
         - The message indicating no entities found is displayed.
     """
-    expect(authenticated.get_by_text("I have found 0 entities")).to_be_visible()
+    expect(authenticated.get_by_text(re.compile(r"I have found 0 entities\."))).to_be_visible()
     expect(authenticated.locator(".search-result-card")).to_have_count(0)
 
 
@@ -62,7 +116,7 @@ def test__search_results_with_data(authenticated: Page, entities: list[Entity]) 
         - The correct number of entities is displayed.
         - A search result card is visible for each entity.
     """
-    expect(authenticated.get_by_text(re.compile(f"I have found {len(entities)} entities"))).to_be_visible()
+    expect(authenticated.get_by_text(re.compile(rf"I have found {len(entities)} entities\."))).to_be_visible()
     expect(authenticated.locator(".search-result-card")).to_have_count(len(entities))
 
     for entity in entities:
@@ -88,7 +142,7 @@ def test__search_result_with_data_and_query(authenticated: Page, entities: list[
 
     search_input.fill(entity.name)
 
-    expect(authenticated.get_by_text(re.compile("I have found 1 entity"))).to_be_visible()
+    expect(authenticated.get_by_text(re.compile(r"I have found 1 entity\."))).to_be_visible()
     expect(authenticated.locator(".search-result-card")).to_have_count(1)
     expect(authenticated.locator(f".search-result-card[data-guid='{entity.guid}']")).to_be_visible()
 

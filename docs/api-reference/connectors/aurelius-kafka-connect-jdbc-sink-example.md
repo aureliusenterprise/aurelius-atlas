@@ -94,16 +94,19 @@ configs:
 
 These environment variables are referenced by `workers/worker.properties`:
 
-| Name                        | Description                                           |
-| --------------------------- | ----------------------------------------------------- |
-| `KAFKA_BOOTSTRAP_SERVERS`   | Kafka bootstrap servers.                              |
-| `CONFIG_STORAGE_TOPIC`      | Connect config storage topic name.                    |
-| `GROUP_ID`                  | Connect worker group ID.                              |
-| `OFFSET_STORAGE_TOPIC`      | Connect offset storage topic name.                    |
-| `STATUS_STORAGE_TOPIC`      | Connect status storage topic name.                    |
-| `REST_ADVERTISED_HOST_NAME` | Hostname advertised by the Connect REST API.          |
-| `REST_PORT`                 | Connect REST API port.                                |
-| `SCHEMA_REGISTRY_URL`       | Schema Registry URL used by the Avro value converter. |
+All app settings carry the `AURELIUS_CONNECTOR_` prefix, so other projects'
+environment variables can never populate this app.
+
+| Name                                           | Description                                           |
+| ---------------------------------------------- | ----------------------------------------------------- |
+| `AURELIUS_CONNECTOR_KAFKA_BOOTSTRAP_SERVERS`   | Kafka bootstrap servers.                              |
+| `AURELIUS_CONNECTOR_CONFIG_STORAGE_TOPIC`      | Connect config storage topic name.                    |
+| `AURELIUS_CONNECTOR_GROUP_ID`                  | Connect worker group ID.                              |
+| `AURELIUS_CONNECTOR_OFFSET_STORAGE_TOPIC`      | Connect offset storage topic name.                    |
+| `AURELIUS_CONNECTOR_STATUS_STORAGE_TOPIC`      | Connect status storage topic name.                    |
+| `AURELIUS_CONNECTOR_REST_ADVERTISED_HOST_NAME` | Hostname advertised by the Connect REST API.          |
+| `AURELIUS_CONNECTOR_REST_PORT`                 | Connect REST API port.                                |
+| `AURELIUS_CONNECTOR_SCHEMA_REGISTRY_URL`       | Schema Registry URL used by the Avro value converter. |
 
 `worker.properties` also sets `offset.storage.file.filename`, which is required for standalone mode.
 
@@ -111,11 +114,11 @@ These environment variables are referenced by `workers/worker.properties`:
 
 These environment variables are referenced by `workers/connector.properties`:
 
-| Name                | Description                                               |
-| ------------------- | --------------------------------------------------------- |
-| `DATABASE_URL`      | JDBC URL for the target Postgres database.                |
-| `DATABASE_USERNAME` | Database username.                                        |
-| `DATABASE_PASSWORD` | Database password.                                        |
-| `KAFKA_TOPIC_NAME`  | Source topic consumed by the sink connector.              |
-| `DLQ_TOPIC_NAME`    | Dead-letter queue topic for records that fail processing. |
-| `TABLE_NAME`        | Destination table name used by the JDBC sink connector.   |
+| Name                                   | Description                                               |
+| -------------------------------------- | --------------------------------------------------------- |
+| `AURELIUS_CONNECTOR_DATABASE_URL`      | JDBC URL for the target Postgres database.                |
+| `AURELIUS_CONNECTOR_DATABASE_USERNAME` | Database username.                                        |
+| `AURELIUS_CONNECTOR_DATABASE_PASSWORD` | Database password.                                        |
+| `AURELIUS_CONNECTOR_KAFKA_TOPIC_NAME`  | Source topic consumed by the sink connector.              |
+| `AURELIUS_CONNECTOR_DLQ_TOPIC_NAME`    | Dead-letter queue topic for records that fail processing. |
+| `AURELIUS_CONNECTOR_TABLE_NAME`        | Destination table name used by the JDBC sink connector.   |

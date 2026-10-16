@@ -19,10 +19,10 @@ export const createNodes: CreateNodes<SopsPluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     { keygenTargetName = "keygen" }: SopsPluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     return {

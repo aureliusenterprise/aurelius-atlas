@@ -44,6 +44,12 @@ inputs:
     cyclonedx-version:
         description: CycloneDX CLI version to install
         default: v0.32.0
+    mkcert:
+        description: Install mkcert and NSS tools (for local TLS development certificates)
+        default: "false"
+    mkcert-version:
+        description: mkcert version to install
+        default: v1.4.4
     sonarqube:
         description: Install SonarQube scanner
         default: "false"
@@ -256,6 +262,26 @@ runs:
           run: |
               curl -sSfL https://github.com/CycloneDX/cyclonedx-cli/releases/download/${CYCLONEDX_VERSION}/cyclonedx-linux-x64 -o /usr/local/bin/cyclonedx
               chmod +x /usr/local/bin/cyclonedx
+
+        - name: Cache mkcert
+          id: cache-mkcert
+          if: inputs.mkcert == 'true'
+          uses: actions/cache@v5
+          with:
+              path: /usr/local/bin/mkcert
+              key: mkcert-${{ inputs.mkcert-version }}
+
+        - name: Install mkcert
+          if: inputs.mkcert == 'true' && steps.cache-mkcert.outputs.cache-hit != 'true'
+          shell: bash
+          env:
+              MKCERT_VERSION: ${{ inputs.mkcert-version }}
+          run: |
+              sudo apt-get update
+              sudo apt-get install -y libnss3-tools
+              curl -LO https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64
+              sudo mv mkcert-${MKCERT_VERSION}-linux-amd64 /usr/local/bin/mkcert
+              sudo chmod +x /usr/local/bin/mkcert
 
         - name: Cache SonarQube scanner
           id: cache-sonarqube

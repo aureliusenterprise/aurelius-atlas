@@ -43,9 +43,17 @@ creation_rules:
 ```
 
 Next, create a new branch and commit your changes. After pushing the branch to GitHub, create a pull request to
-merge the changes into the `main` branch. A GitHub action will automatically rotate the encryption on all encrypted
-files in the repository to include your public key. After a team member approves the pull request, you can merge
-the changes.
+merge the changes into the `main` branch. Have a team member review and approve the pull request. Once it is
+merged, a GitHub action rotates the encryption on all encrypted files in the repository to include your public
+key and pushes the re-encrypted files to `main`.
+
+!!! IMPORTANT "Reviewing .sops.yaml changes is the security gate"
+
+    The rotation workflow holds the key that decrypts every `.env.enc` in the repository, so it deliberately runs
+    only on `main` — never on pull requests — and can therefore only re-encrypt to recipients that are already
+    merged. This makes the review of the `.sops.yaml` diff the single point of control: verify that every added
+    recipient key belongs to a known team member before approving the merge. Never merge a key you cannot attribute
+    to a person.
 
 !!! NOTE "Ensure a descriptive pull request title"
 

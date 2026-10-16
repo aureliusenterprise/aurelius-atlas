@@ -84,6 +84,13 @@ The image namespace `ghcr.io/aureliusenterprise` is **hardcoded in plugin code**
 references in the `e2e/docker-compose.yaml` files and the connector's `docker-compose.yaml`, plus the
 `org.opencontainers.image.source` labels in the Dockerfiles.
 
+All base and infrastructure images are [Docker Hardened Images](https://dhi.io) pulled from `dhi.io`,
+which requires Docker Hub authentication. In your fork, set the `DOCKERHUB_USERNAME` and
+`DOCKERHUB_TOKEN` repository secrets (the CI workflows pass them to the setup-toolchain action, which
+logs in to both `docker.io` and `dhi.io`); without them every CI job fails at the first image pull.
+Developers need a `docker login` on their host too — see
+[Development Environment](./development-environment.md).
+
 ### 7. SonarQube organization
 
 Each analyzed app has `sonar.organization=aureliusenterprise` and `sonar.projectKey=aurelius-*` in its

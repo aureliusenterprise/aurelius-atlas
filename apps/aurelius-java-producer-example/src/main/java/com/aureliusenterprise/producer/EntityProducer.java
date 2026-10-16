@@ -42,7 +42,6 @@ public class EntityProducer {
 
     /**
      * Sends an {@link Entity} to the configured topic using the provided UUID key.
-     *
      * Converts the UUID key to a string and creates a {@link ProducerRecord} with the key and entity.
      * Throws {@link MissingKeyException} if the key is {@code null}.
      *

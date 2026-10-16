@@ -15,9 +15,28 @@ app; workspace-wide rules live in the root `AGENTS.md`.
 ## Configuration
 
 - `.env` in this directory is loaded into the `run` task's process environment by a
-  hand-rolled loader in `build.gradle.kts` (comments and quotes supported).
-- Runtime keys: `KAFKA_TOPIC_NAME`, `KAFKA_BOOTSTRAP_SERVERS`,
-  `SCHEMA_REGISTRY_URL`, `MESSAGE_INTERVAL_MILLIS`.
+  hand-rolled loader in `build.gradle.kts` (comments and quotes supported). The
+  loader additionally converts `AURELIUS_JAVA_PRODUCER_KAFKA_TRUSTSTORE_FILE`/`_PASSWORD` and
+  `AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_TOKEN_ENDPOINT_URL` into `run`-task JVM system properties
+  (`javax.net.ssl.trustStore*`, `org.apache.kafka.sasl.oauthbearer.allowed.urls`).
+- All app settings use the `AURELIUS_JAVA_PRODUCER_` prefix (`AppConfig.ENV_PREFIX`)
+  so other projects' injected env can never populate this app. Runtime keys:
+  `AURELIUS_JAVA_PRODUCER_KAFKA_TOPIC_NAME`, `..._KAFKA_BOOTSTRAP_SERVERS`,
+  `..._SCHEMA_REGISTRY_URL`, `..._MESSAGE_INTERVAL_MILLIS`, and the OAuth trio
+  `..._KAFKA_OAUTH_TOKEN_ENDPOINT_URL`/`_CLIENT_ID`/`_CLIENT_SECRET` (all-or-none;
+  when set, `App.buildProducerProperties` switches to SASL*SSL + OAUTHBEARER
+  against the `kafka` realm — ADR 013). `TLS_TRUSTSTORE_PASSWORD` (shared compose
+  interpolation) and the `KAFKA_E2E_OAUTH*\*` e2e-suite role stay bare by
+  convention (third-party/shared names).
+
+> [!WARNING]
+> Never add `JAVA_TOOL_OPTIONS` to `.env`. Nx injects `.env` into **every** task's
+> environment for this project, so a JVM-wide options string there leaks into
+> unrelated JVMs (e.g. `sonar-scanner`, which then fails to load a relative
+> `certs/truststore.p12` from the workspace root). The OAuth login's JVM
+> properties belong in the `run` task's `systemProperty` wiring instead; the
+> e2e/compose JVMs get their own (container-path) `JAVA_TOOL_OPTIONS` from
+> `e2e/docker-compose.yaml`, which Nx never sees.
 
 ## Wiring Checklist
 
@@ -28,6 +47,10 @@ app; workspace-wide rules live in the root `AGENTS.md`.
   `packages.confluent.io` repository.
 - `gradle/libs.versions.toml` — add new dependencies to the version catalog, not
   inline.
+- `kafka-clients` OAuth needs `jackson-databind` and `jose4j`, which are
+  _optional_ in the kafka-clients POM — declared explicitly in
+  `build.gradle.kts`; without jose4j the OAUTHBEARER login fails with
+  `ClassNotFoundException: ...VerificationKeyResolver`.
 - `Dockerfile` — the `e2e` target depends on `docker-build`; keep the image entry
   point in sync with `application.mainClass`.
 - `nx { array("implicitDependencies", "aurelius-dev-kafka") }` — controls what

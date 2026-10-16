@@ -10,6 +10,7 @@ from sqlmodel import SQLModel
 from aurelius_fastapi_example.globals import LOGGER, METADATA, NAME
 from aurelius_fastapi_example.models import Settings
 from aurelius_fastapi_example.providers import database, get_broadcaster
+from aurelius_fastapi_example.providers.metrics import register_sse_metric
 from aurelius_fastapi_example.routes import ENTITIES, HEALTH
 
 
@@ -100,12 +101,20 @@ def create_app(settings: Settings) -> FastAPI:
         service_name=app.title,
         service_version=app.version,
         min_level=settings.log_level,
+        # The Angular frontend injects W3C traceparent headers on purpose
+        # (aurelius-observability interceptor), so joining incoming trace
+        # context is intended. Without this, logfire's default warns on the
+        # first extracted context by emitting a standalone 0-length
+        # "Found propagated trace context" trace.
+        distributed_tracing=True,
         console=logfire.ConsoleOptions(min_log_level=settings.log_level),
     )
 
     logfire.instrument_fastapi(app)
     logfire.instrument_httpx()
     logfire.instrument_psycopg()
+
+    register_sse_metric()
 
     setup_logging(settings.log_level)
 

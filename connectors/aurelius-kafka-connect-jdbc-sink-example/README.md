@@ -12,6 +12,11 @@ with the rest of that slice.
 - `docker-compose.yaml` runs a single `kafka-connect` service that joins the
   external `aurelius-dev-kafka-network` and `aurelius-dev-postgres-network`
   (start `aurelius-dev-kafka` and `aurelius-dev-postgres` first).
+- The worker authenticates to the broker with OAuth bearer tokens
+  (`AURELIUS_CONNECTOR_KAFKA_OAUTH_TOKEN_ENDPOINT_URL`/`_CLIENT_ID`/`_CLIENT_SECRET`, client
+  `kafka-connect` in the `kafka` realm — ADR 013) over the SASL_SSL listener
+  (`broker:9095`); it also joins `aurelius-dev-keycloak-network` to reach the
+  token endpoint.
 - `workers/worker.properties` — worker config; environment values are injected via
   the `EnvVarConfigProvider` (`${env:VAR}` placeholders).
 - `workers/connector.properties` — the sink connector: `insert.mode=upsert` on the

@@ -28,9 +28,15 @@ LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/proj
 LABEL org.opencontainers.image.title="Aurelius FastAPI Example"
 LABEL org.opencontainers.image.version="${VERSION}"
 
-# Set default values for the environment variables
-ENV HOST=0.0.0.0
-ENV PORT=8000
+# Set default values for the environment variables (AURELIUS_FASTAPI_ prefix:
+# matches Settings.env_prefix; bare names belong to other projects).
+ENV AURELIUS_FASTAPI_HOST=0.0.0.0
+ENV AURELIUS_FASTAPI_PORT=8000
+# AURELIUS_FASTAPI_TLS_CA_FILE: PEM CA bundle the healthcheck uses to verify the
+# server when TLS is enabled (local dev: /certs/ca.pem, mounted read-only).
+# Leave it unset for deployments whose certificate chains to the image's system
+# trust store.
+ENV AURELIUS_FASTAPI_TLS_CA_FILE=""
 
 # Set the working directory
 WORKDIR /application
@@ -43,7 +49,7 @@ USER nonroot
 
 # Configure a healthcheck to ensure the application is running
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["python", "-c", "import os,urllib.request; p=os.getenv('PORT','8000'); urllib.request.urlopen('http://127.0.0.1:'+p+'/health/ready', timeout=5).close()"]
+    CMD ["python", "-c", "import os,ssl,urllib.request; p=os.getenv('AURELIUS_FASTAPI_PORT','8000'); t=os.getenv('AURELIUS_FASTAPI_TLS_CERT_FILE',''); ca=os.getenv('AURELIUS_FASTAPI_TLS_CA_FILE',''); s=('https' if t else 'http')+'://localhost:'+p+'/health/ready'; c=(ssl.create_default_context(cafile=ca) if t and ca else ssl.create_default_context() if t else None); urllib.request.urlopen(s,timeout=5,context=c).close()"]
 
 # Start the application
 ENTRYPOINT [ "python", "-m", "aurelius_fastapi_example" ]

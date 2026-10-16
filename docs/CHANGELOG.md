@@ -1,3 +1,35 @@
+## 0.6.1 (2026-10-09)
+
+### 🚀 Features
+
+- switch to logfire for structured logging ([b85ddc4d](https://github.com/aureliusenterprise/project-template/commit/b85ddc4d))
+- setup opentelemetry ([#43](https://github.com/aureliusenterprise/project-template/pull/43))
+- add HTML report generation for vulnerability scans ([#44](https://github.com/aureliusenterprise/project-template/pull/44))
+- add ESLint configuration for pre-commit ([711c997d](https://github.com/aureliusenterprise/project-template/commit/711c997d))
+- simplify kafka connect docker image ([#47](https://github.com/aureliusenterprise/project-template/pull/47))
+- harden aws lambda images ([#48](https://github.com/aureliusenterprise/project-template/pull/48))
+- refactor authentication handling ([4a09d286](https://github.com/aureliusenterprise/project-template/commit/4a09d286))
+- harden dev infrastructure images and extend e2e shared services ([#123](https://github.com/aureliusenterprise/project-template/pull/123))
+- add cirquit breakers to api example ([7f9a1e6e](https://github.com/aureliusenterprise/project-template/commit/7f9a1e6e))
+- **docs:** migrate docs stack to Zensical with llmstxt and pydantic-aware API refs ([e339b2cf](https://github.com/aureliusenterprise/project-template/commit/e339b2cf))
+- **frontend:** typed runtime config with configurable API and OTel URLs ([cd7bfb9a](https://github.com/aureliusenterprise/project-template/commit/cd7bfb9a))
+
+### 🩹 Fixes
+
+- patch java producer vulnerabilities ([d1063dde](https://github.com/aureliusenterprise/project-template/commit/d1063dde))
+- address sonarqube warning ([efdc876d](https://github.com/aureliusenterprise/project-template/commit/efdc876d))
+- update Debezium JDBC connector version to 3.5.1.Final ([ccd33ab5](https://github.com/aureliusenterprise/project-template/commit/ccd33ab5))
+- update project-graph plugin version to 0.1.24 ([47c461a6](https://github.com/aureliusenterprise/project-template/commit/47c461a6))
+- set avro trusted packages and default time created ([f9503471](https://github.com/aureliusenterprise/project-template/commit/f9503471))
+- ensure traces show up in grafana ([f5581b03](https://github.com/aureliusenterprise/project-template/commit/f5581b03))
+- **aurelius-example:** derive Entity comparison operators via total_ordering ([3d7acb0c](https://github.com/aureliusenterprise/project-template/commit/3d7acb0c))
+- **dev:** make kafka server.properties writable for broker startup ([840496f2](https://github.com/aureliusenterprise/project-template/commit/840496f2))
+- **e2e:** start shared dev stacks via nx before e2e tests run ([f43912d8](https://github.com/aureliusenterprise/project-template/commit/f43912d8))
+- **fastapi-example:** migrate OpenIdConfig to Pydantic V2 ConfigDict ([1f533a52](https://github.com/aureliusenterprise/project-template/commit/1f533a52))
+- **keycloak:** loosen healthcheck timings ([2e5bbbed](https://github.com/aureliusenterprise/project-template/commit/2e5bbbed))
+- **release:** make nx release work for manifest-less and Gradle projects ([66dcba14](https://github.com/aureliusenterprise/project-template/commit/66dcba14))
+- **report:** update worst severity display logic for unknown severity ([0a682f7d](https://github.com/aureliusenterprise/project-template/commit/0a682f7d))
+
 ## 0.6.0 (2026-05-03)
 
 ### 🚀 Features

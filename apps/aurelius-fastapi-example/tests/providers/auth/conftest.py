@@ -26,7 +26,10 @@ def keycloak_admin_credentials() -> dict[str, str]:
 def keycloak_container(keycloak_admin_credentials: dict[str, str]) -> Generator[DockerContainer]:
     """Start a Keycloak container to act as a real OIDC provider for auth tests."""
     with (
-        DockerContainer("dhi.io/keycloak:26-debian13")
+        # Pinned to the 26.7 stream: the 26-debian13 tag rolled to a 26.8.0 build
+        # with a broken Vert.x dependency set (vertx-core 4.5.28 vs the other
+        # modules at 4.5.34) that fails at startup.
+        DockerContainer("dhi.io/keycloak:26.7-debian13")
         .with_env("KEYCLOAK_ADMIN", keycloak_admin_credentials["username"])
         .with_env("KEYCLOAK_ADMIN_PASSWORD", keycloak_admin_credentials["password"])
         .with_env("KC_HEALTH_ENABLED", "true")
@@ -49,6 +52,8 @@ def auth_settings(keycloak_container: DockerContainer) -> Mock:
         auth_realm_name=KEYCLOAK_REALM,
         auth_reset_timeout=60.0,
         auth_server_url=f"http://{host}:{port}/",
+        # Tokens in these tests are minted via the admin-cli client; accept it as the audience.
+        auth_audience="admin-cli",
         spec=Settings,
     )
 

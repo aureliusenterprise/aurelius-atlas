@@ -10,8 +10,11 @@ LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/proj
 LABEL org.opencontainers.image.title="Aurelius Frontend Example"
 LABEL org.opencontainers.image.version="${VERSION}"
 
-# Copy the built application files to the Nginx HTML directory
+# Copy the built application files (one directory per locale) to the Nginx HTML directory
 COPY --chown=root:root --chmod=0755 dist/apps/aurelius-frontend-example/browser /usr/share/nginx/html
+
+# Replace the stock site config with multi-locale serving (Accept-Language redirect)
+COPY --chown=root:root apps/aurelius-frontend-example/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Switch to the nginx user to run the application
 USER nginx

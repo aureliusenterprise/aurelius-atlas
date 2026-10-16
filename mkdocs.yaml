@@ -185,7 +185,12 @@ nav:
                 - Roles & Responsibilities: architecture/data-governance/roles-and-responsibilities.md
                 - Data Dictionary: architecture/data-governance/data-dictionary.md
                 - Data Quality: architecture/data-governance/data-quality.md
-                - Data Lineage: architecture/data-governance/data-lineage.md
+                - Data Lineage:
+                      - architecture/data-governance/data-lineage/index.md
+                      - Scanning & Discovery: architecture/data-governance/data-lineage/lineage-scanning.md
+                      - Static Lineage Edges: architecture/data-governance/data-lineage/lineage-static-edges.md
+                      - Dynamic Lineage Events: architecture/data-governance/data-lineage/lineage-dynamic-events.md
+                      - Using the Lineage Graph: architecture/data-governance/data-lineage/lineage-visualization.md
                 - Compliance & Auditability: architecture/data-governance/compliance-and-auditability.md
           - Platform:
                 - architecture/platform/index.md

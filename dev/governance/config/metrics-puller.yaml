@@ -1,0 +1,64 @@
+# Governance-owned metrics puller: scrapes the stack's own infrastructure
+# (Elasticsearch, the OpenMetadata metadata Postgres) and pushes OTLP to the
+# dev collector — the pull happens next to the scrape targets, credentials and
+# certificates (all already in this project), so dev/observability stays
+# slice-agnostic and nothing outside governance knows governance exists.
+#
+# Why not the paid ES Prometheus endpoint: only /_prometheus/metrics is
+# Platinum-gated; the receiver reads the free _cluster/_nodes stats APIs
+# (verified against the running ES 9.5). The OpenTelemetry Collector has no
+# OpenSearch receiver, and Postgres speaks no OTLP either — pull is the only
+# option for both, hence this sidecar.
+#
+# Env vars: reused dev defaults (compose interpolates them into the
+# container env; the collector expands ${env:...} at load time). TLS: one
+# shared mkcert CA validates ES (leaf SAN covers "elasticsearch") and
+# Postgres (leaf SAN covers "postgresql"); the push exporter trusts the
+# collector's leaf the same way.
+
+receivers:
+    elasticsearch:
+        endpoint: https://elasticsearch:9200
+        username: elastic
+        password: ${env:ES_PASSWORD}
+        tls:
+            ca_file: /certs/ca.pem
+        collection_interval: 30s
+    postgresql:
+        endpoint: postgresql:5432
+        # Block sequence on purpose: in a flow list ([...]) the YAML parser
+        # treats the colon inside ${env:...} as a key separator and the
+        # collector's resolver never sees the placeholder.
+        databases:
+            - ${env:OM_DB_NAME}
+        username: ${env:OM_DB_USER}
+        password: ${env:OM_DB_PASSWORD}
+        tls:
+            ca_file: /certs/ca.pem
+        collection_interval: 30s
+
+processors:
+    resource:
+        attributes:
+            # Attribution in Prometheus: the collector's prometheus exporter
+            # maps service.name to the job label (series carry
+            # exported_job="openmetadata-infra", same mechanism as the OM
+            # server's own telemetry). deployment.environment.name is added by
+            # the receiving collector, so it is not repeated here.
+            - action: upsert
+              key: service.name
+              value: openmetadata-infra
+    batch:
+
+exporters:
+    otlp:
+        endpoint: https://otel-collector:4317
+        tls:
+            ca_file: /certs/ca.pem
+
+service:
+    pipelines:
+        metrics:
+            receivers: [elasticsearch, postgresql]
+            processors: [resource, batch]
+            exporters: [otlp]

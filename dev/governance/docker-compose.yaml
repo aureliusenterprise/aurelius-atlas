@@ -1,0 +1,324 @@
+name: aurelius-dev-governance
+
+services:
+    # The DHI image ships no data directory, so a named volume mounted at
+    # /usr/share/elasticsearch/data is created root-owned and uid 1000
+    # (elasticsearch) cannot write it. One root-owned pass fixes ownership
+    # before the service starts (numeric 0:0: the image has no "root"
+    # passwd entry).
+    elasticsearch-init:
+        image: dhi.io/elasticsearch:9.5-debian13
+        container_name: openmetadata_elasticsearch_init
+        user: "0:0"
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - chown 1000:1000 /usr/share/elasticsearch/data &&
+              chmod 700 /usr/share/elasticsearch/data
+        volumes:
+            - es-data:/usr/share/elasticsearch/data
+
+    elasticsearch:
+        image: dhi.io/elasticsearch:9.5-debian13
+        container_name: openmetadata_elasticsearch
+        environment:
+            ES_JAVA_OPTS: ${ES_JAVA_OPTS:?}
+            # The entrypoint reads ELASTIC_PASSWORD itself and seeds it as
+            # the bootstrap password for the built-in "elastic" user.
+            ELASTIC_PASSWORD: ${ES_PASSWORD:?}
+        # Hardened profile: X-Pack security with TLS on HTTP (and transport,
+        # required once security is on) using the `nx certgen` material.
+        # Settings go through `-E` flags: unlike the upstream image, the DHI
+        # entrypoint has no env2yaml, so dotted environment variables would
+        # never reach elasticsearch.yml — and Elastic's auto-configuration
+        # would then generate its own CA/keystores and ignore the mounted
+        # certificates, so it is switched off explicitly.
+        command:
+            - eswrapper
+            - -Ediscovery.type=single-node
+            - -Expack.security.enabled=true
+            - -Expack.security.autoconfiguration.enabled=false
+            - -Expack.security.http.ssl.enabled=true
+            - -Expack.security.http.ssl.key=/usr/share/elasticsearch/config/elasticsearch-key.pem
+            - -Expack.security.http.ssl.certificate=/usr/share/elasticsearch/config/elasticsearch.pem
+            - -Expack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/ca.pem
+            - -Expack.security.transport.ssl.enabled=true
+            - -Expack.security.transport.ssl.key=/usr/share/elasticsearch/config/elasticsearch-key.pem
+            - -Expack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/elasticsearch.pem
+            - -Expack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/ca.pem
+            - -Expack.security.transport.ssl.verification_mode=certificate
+        # 9300 (transport) stays internal: only this single node joins.
+        ports:
+            - "9200:9200"
+        # The image has no curl; TLS + basic auth via openssl s_client with a
+        # hand-rolled HTTP request. The subshell keeps stdin open long enough
+        # for the response to arrive before s_client shuts down.
+        # `${ES_PASSWORD}` is interpolated by compose (dev default; no shell
+        # metacharacters).
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "(printf 'GET /_cluster/health HTTP/1.1\r\nHost: elasticsearch\r\nAuthorization: Basic %s\r\nConnection: close\r\n\r\n' \"$(printf 'elastic:${ES_PASSWORD}' | base64 -w0)\"; sleep 1) | timeout 10 openssl s_client -connect 127.0.0.1:9200 -CAfile /certs/ca.pem -brief 2>/dev/null | grep -qE 'green|yellow' || exit 1",
+                ]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+        volumes:
+            - es-data:/usr/share/elasticsearch/data
+            - ./certs:/certs:ro
+            # ES 9's entitlement framework only lets the server read SSL
+            # material from its config directory, so the leaf, key, and CA
+            # are bind-mounted there individually (a directory mount would
+            # also work now auto-config is off, but individual files keep
+            # the key out of the healthcheck-visible /certs listing).
+            - ./certs/ca.pem:/usr/share/elasticsearch/config/ca.pem:ro
+            - ./certs/elasticsearch.pem:/usr/share/elasticsearch/config/elasticsearch.pem:ro
+            - ./certs/elasticsearch-key.pem:/usr/share/elasticsearch/config/elasticsearch-key.pem:ro
+        depends_on:
+            elasticsearch-init:
+                condition: service_completed_successfully
+        networks:
+            - governance-network
+
+    postgresql:
+        # Same hardened-PG pattern as dev/postgres: DHI image, scram-sha-256,
+        # TLS via startup flags (the image user cannot read bind-mounted key
+        # material it does not own, hence the copy-and-tighten), and the
+        # shared hba that rejects non-TLS connections. PostgreSQL 18 well
+        # above OpenMetadata's minimum of 15.
+        image: dhi.io/postgres:18-alpine3.23
+        container_name: openmetadata_postgresql
+        environment:
+            # Credentials come from the project's encrypted dev defaults
+            # (.env.enc, `nx decrypt`) — same guard pattern as the OM server.
+            POSTGRES_USER: ${OM_DB_USER:?}
+            POSTGRES_PASSWORD: ${OM_DB_PASSWORD:?}
+            POSTGRES_DB: ${OM_DB_NAME:?}
+            POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - >-
+                install -m 600 /certs/postgres.pem /tmp/server.pem &&
+                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
+                exec docker-entrypoint.sh
+                -c ssl=on
+                -c ssl_cert_file=/tmp/server.pem
+                -c ssl_key_file=/tmp/server-key.pem
+                -c hba_file=/conf/pg_hba.conf
+        stop_signal: SIGINT
+        expose:
+            - "5432"
+        ports:
+            - "5433:5432"
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "PGSSLMODE=verify-full PGSSLROOTCERT=/certs/ca.pem pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+                ]
+            interval: 15s
+            timeout: 10s
+            retries: 10
+        volumes:
+            - db-data:/var/lib/postgresql
+            - ./certs:/certs:ro
+            - ../postgres/pg_hba.conf:/conf/pg_hba.conf:ro
+        networks:
+            - governance-network
+
+    openmetadata-server:
+        # Derived image (Dockerfile here): the hardened dhi.io/openmetadata
+        # base at OPENMETADATA_VERSION plus the OpenTelemetry Java agent baked
+        # in. Built by the inferred docker-build target, which up/serve run
+        # first; the base version still resolves from the single
+        # OPENMETADATA_VERSION pin (Dockerfile build arg, fed from .env), so
+        # bumping it rebuilds on the new base — and the ingestion client
+        # stays on the matching major (it refuses cross-major talks).
+        image: ghcr.io/aureliusenterprise/aurelius-dev-governance:local
+        container_name: openmetadata_server
+        environment:
+            SERVER_PORT: ${OM_SERVER_PORT:?}
+            SERVER_ADMIN_PORT: ${OM_ADMIN_PORT:?}
+            DB_DRIVER_CLASS: org.postgresql.Driver
+            DB_SCHEME: postgresql
+            DB_HOST: postgresql
+            DB_PORT: 5432
+            OM_DATABASE: ${OM_DB_NAME:?}
+            DB_USER: ${OM_DB_USER:?}
+            DB_USER_PASSWORD: ${OM_DB_PASSWORD:?}
+            # JDBC over TLS, verifying the postgres leaf against the local CA
+            # (SAN covers the "postgresql" service name). Replaces the MySQL
+            # defaults in openmetadata.yaml's ${DB_PARAMS}.
+            DB_PARAMS: "sslmode=verify-full&sslrootcert=/certs/ca.pem"
+            ELASTICSEARCH_HOST: elasticsearch
+            ELASTICSEARCH_PORT: 9200
+            SEARCH_TYPE: elasticsearch
+            # Elasticsearch over HTTPS with basic auth; the PKCS12 truststore
+            # (root CA only, `nx certgen`) verifies the ES leaf.
+            ELASTICSEARCH_SCHEME: https
+            ELASTICSEARCH_USER: elastic
+            ELASTICSEARCH_PASSWORD: ${ES_PASSWORD:?}
+            ELASTICSEARCH_TRUST_STORE_PATH: /certs/truststore.p12
+            ELASTICSEARCH_TRUST_STORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD:?}
+            AUTHENTICATION_CLIENT_TYPE: confidential
+            AUTHENTICATION_PROVIDER: custom-oidc
+            CUSTOM_OIDC_AUTHENTICATION_PROVIDER_NAME: keycloak
+            OIDC_TYPE: keycloak
+            OIDC_CLIENT_ID: openmetadata
+            # Matches CLIENT_SECRET_OPENMETADATA in dev/keycloak (realm import
+            # placeholder) — both from the encrypted dev defaults.
+            OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?}
+            OIDC_CALLBACK: http://localhost:${OM_SERVER_PORT:?}/callback
+            OIDC_DISCOVERY_URI: http://${KEYCLOAK_HOST:?}.localhost:${KEYCLOAK_PORT:?}/realms/${KEYCLOAK_REALM:?}/.well-known/openid-configuration
+            AUTHENTICATION_PUBLIC_KEYS: "[http://${KEYCLOAK_HOST:?}.localhost:${KEYCLOAK_PORT:?}/realms/${KEYCLOAK_REALM:?}/protocol/openid-connect/certs]"
+            # Do NOT set AUTHENTICATION_JWT_PRINCIPAL_CLAIMS_MAPPING: JwtFilter
+            # applies it to every non-bot token, including the OM-issued
+            # session JWT the SPA receives after a successful OIDC exchange.
+            # That internal token carries `username`/`preferred_username` but
+            # no `om_user` claim, so an om_user mapping rejects the session on
+            # the very first API call ("'username' claim is not present") and
+            # login loops back to /signin. With the default claim order
+            # (email, preferred_username, sub) the identity resolves from the
+            # email local-part: realm `admin` (admin@aureliusenterprise.com)
+            # and the OM session token (admin@open-metadata.org) both land on
+            # the seeded `admin`; the `openmetadata-bot` service account
+            # (email mapper → ingestion-bot@open-metadata.org) resolves to the
+            # seeded `ingestion-bot` — no committed bot PAT anywhere. Realm
+            # users are therefore identified by email local-part; keep it
+            # aligned with the intended OM username when adding users.
+            # NB: the server persists authenticationConfiguration in the
+            # `openmetadata_settings` DB table and loads that over these env
+            # values on restart — after changing any auth env here, delete
+            # the row (configtype='authenticationConfiguration') and
+            # recreate the server so the new value is re-seeded.
+            AUTHORIZER_ADMIN_PRINCIPALS: '["admin"]'
+            # OpenTelemetry Java agent (dev telemetry, same push pattern as
+            # dev/keycloak): OpenMetadata exposes no Prometheus-scrapeable
+            # endpoint (the admin port's /metrics and /metrics/prometheus
+            # both serve Dropwizard JSON), so JVM, HTTP and JDBC telemetry
+            # comes from runtime instrumentation pushed to the collector
+            # over TLS. The jar ships in the image at /otel (Dockerfile,
+            # ADD --checksum with the release-pinned SHA-256);
+            # OTEL_EXPORTER_OTLP_CERTIFICATE is the shared local root CA
+            # from `nx certgen` (one mkcert CA workspace-wide, so it already
+            # validates the collector's leaf). JAVA_TOOL_OPTIONS is honoured
+            # by the JVM itself, so it works regardless of how the image's
+            # entrypoint assembles JAVA_OPTS — and because it is set here
+            # rather than baked into the image, the derived image stays
+            # usable without telemetry (compose decides).
+            JAVA_TOOL_OPTIONS: -javaagent:/otel/opentelemetry-javaagent.jar
+            OTEL_SERVICE_NAME: openmetadata
+            OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4317
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            OTEL_TRACES_SAMPLER: parentbased_traceidratio
+            OTEL_TRACES_SAMPLER_ARG: "0.1"
+            # The javaagent default is a Prometheus pull endpoint on :9464;
+            # nothing scrapes it here — push OTLP to the collector instead
+            # (metrics reach Prometheus through the collector's pipeline).
+            OTEL_METRICS_EXPORTER: otlp
+        extra_hosts:
+            - keycloak.localhost:host-gateway
+        ports:
+            - "8585:8585"
+            - "8586:8586"
+        volumes:
+            - ./certs:/certs:ro
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+            postgresql:
+                condition: service_healthy
+            execute-migrate-all:
+                condition: service_completed_successfully
+        networks:
+            - governance-network
+            - aurelius-dev-keycloak-network
+            - observability-network
+
+    execute-migrate-all:
+        image: dhi.io/openmetadata:${OPENMETADATA_VERSION:?}-debian13
+        container_name: openmetadata_migrate
+        environment:
+            DB_DRIVER_CLASS: org.postgresql.Driver
+            DB_SCHEME: postgresql
+            DB_HOST: postgresql
+            DB_PORT: 5432
+            OM_DATABASE: ${OM_DB_NAME:?}
+            DB_USER: ${OM_DB_USER:?}
+            DB_USER_PASSWORD: ${OM_DB_PASSWORD:?}
+            DB_PARAMS: "sslmode=verify-full&sslrootcert=/certs/ca.pem"
+            ELASTICSEARCH_HOST: elasticsearch
+            ELASTICSEARCH_PORT: 9200
+            SEARCH_TYPE: elasticsearch
+            ELASTICSEARCH_SCHEME: https
+            ELASTICSEARCH_USER: elastic
+            ELASTICSEARCH_PASSWORD: ${ES_PASSWORD:?}
+            ELASTICSEARCH_TRUST_STORE_PATH: /certs/truststore.p12
+            ELASTICSEARCH_TRUST_STORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD:?}
+        # Invoke via the interpreter: DHI rebuilds of this tag ship the bootstrap
+        # scripts without the exec bit (-rw-r--r--, root-owned) and the container
+        # runs as uid 1000, which makes a direct exec fail with exit 126.
+        command: >
+            -lc "bash /opt/openmetadata/bootstrap/openmetadata-ops.sh migrate"
+        depends_on:
+            postgresql:
+                condition: service_healthy
+            elasticsearch:
+                condition: service_healthy
+        volumes:
+            - ./certs:/certs:ro
+        networks:
+            - governance-network
+
+    metrics-puller:
+        # Governance-owned OTel collector pulling this slice's own
+        # infrastructure metrics (Elasticsearch, the metadata Postgres) and
+        # pushing OTLP to the dev collector — the pull stays next to the
+        # targets, credentials and CA (all already here), so dev/observability
+        # never learns governance exists (no cross-slice scrape config, no
+        # exported secrets). The same image as the observability collector.
+        # Neither ES nor Postgres speaks OTLP, so a puller is the only push
+        # option; and only ES's _prometheus/metrics endpoint is subscription-
+        # gated — the receiver reads the free _cluster/_nodes stats APIs.
+        # Targets, interval and the service.name attribution live in
+        # config/metrics-puller.yaml.
+        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        container_name: openmetadata_metrics_puller
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        environment:
+            # Reused dev defaults (same ${VAR:?} guard pattern as the rest of
+            # the stack); the collector expands ${env:...} in its config.
+            ES_PASSWORD: ${ES_PASSWORD:?}
+            OM_DB_USER: ${OM_DB_USER:?}
+            OM_DB_PASSWORD: ${OM_DB_PASSWORD:?}
+            OM_DB_NAME: ${OM_DB_NAME:?}
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+            postgresql:
+                condition: service_healthy
+        networks:
+            - governance-network
+            - observability-network
+
+networks:
+    governance-network:
+        driver: bridge
+    aurelius-dev-keycloak-network:
+        external: true
+    # The dev telemetry stack (dev/observability), shared by the server's OTLP
+    # push and the metrics-puller. Attaching is safe even though the chain
+    # order is guaranteed (governance -> kafka -> keycloak -> observability via
+    # implicitDependencies): the network exists as soon as observability is up,
+    # which it always is before this stack.
+    observability-network:
+        name: aurelius-dev-observability-network
+        external: true
+
+volumes:
+    es-data:
+    db-data:

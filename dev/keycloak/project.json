@@ -3,13 +3,18 @@
     "implicitDependencies": ["aurelius-dev-observability"],
     "name": "aurelius-dev-keycloak",
     "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
     "tags": [],
     "targets": {
         "serve": {
-            "dependsOn": ["decrypt", "docker-build", "^docker-build", "^serve"]
+            "dependsOn": ["decrypt", "certgen", "docker-build", "^docker-build", "^serve"]
         },
         "up": {
-            "dependsOn": ["decrypt", "docker-build", "^docker-build", "^up"]
+            "dependsOn": ["decrypt", "certgen", "docker-build", "^docker-build", "^up"]
         }
     }
 }

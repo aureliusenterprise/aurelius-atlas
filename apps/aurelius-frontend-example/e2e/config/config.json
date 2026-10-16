@@ -3,7 +3,7 @@
     "keycloak": {
         "clientId": "aurelius",
         "realm": "master",
-        "url": "http://keycloak.localhost:8080"
+        "url": "https://keycloak.localhost:8443"
     },
     "otelExporterUrl": "/otel/v1/traces"
 }

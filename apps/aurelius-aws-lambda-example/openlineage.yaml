@@ -1,0 +1,36 @@
+version: 1
+openmetadata:
+    host: http://localhost:8585
+    tokenEnv: OPENLINEAGE_JWT_TOKEN
+pipeline:
+    # Own pipeline service (serviceType below) so the app appears as its own
+    # box in Service Lineage instead of piling into aurelius-openlineage.
+    service: aurelius-aws-lambda-example
+    serviceType: CustomPipeline
+    # UI label for the Service Lineage box — the raw name truncates
+    # ("aurelius-aws-lambda-ex…") and reads as a duplicate of the app itself.
+    serviceDisplayName: AWS Lambda Consumer (Pipeline)
+    name: aurelius-aws-lambda-example
+    description: Example Kafka producer in AWS Lambda.
+    state: Active
+edges:
+    - from:
+          entity: topic
+          service: aurelius-dev-kafka
+          name: example.entity
+      to:
+          entity: pipeline
+          service: aurelius-aws-lambda-example
+          name: aurelius-aws-lambda-example
+      source: Manual
+      description: Entity topic consumed by AWS Lambda example.
+    - from:
+          entity: pipeline
+          service: aurelius-aws-lambda-example
+          name: aurelius-aws-lambda-example
+      to:
+          entity: topic
+          service: aurelius-dev-kafka
+          name: example.entity
+      source: Manual
+      description: Entity topic produced by AWS Lambda example.

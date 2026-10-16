@@ -1,0 +1,50 @@
+# Slice-owned metrics puller: scrapes Keycloak's metadata Postgres and pushes
+# OTLP to the dev collector (https://otel-collector:4317 — the stack is
+# already on the observability network for the server's own OTLP export).
+# The Keycloak SERVER already exports traces/metrics/logs natively (Quarkus
+# OTel); this covers the database behind it, which speaks no OTLP.
+# Same shape as dev/governance/config/metrics-puller.yaml.
+#
+# Env vars: the same dev defaults the keycloak service uses for KC_DB_*;
+# compose interpolates them into the container env, the collector expands
+# ${env:...} at load time. TLS: the certs/ "postgres" leaf has SANs
+# postgres-keycloak/localhost — verify-full against ca.pem works. The DB name
+# is the literal `keycloak` (same constant as KC_DB_URL in compose).
+
+receivers:
+    postgresql:
+        endpoint: postgres-keycloak:5432
+        # Block sequence on purpose: in a flow list ([...]) the YAML parser
+        # treats the colon inside ${env:...} as a key separator and the
+        # collector's resolver never sees the placeholder.
+        databases:
+            - keycloak
+        username: ${env:KEYCLOAK_DATABASE_USERNAME}
+        password: ${env:KEYCLOAK_DATABASE_PASSWORD}
+        tls:
+            ca_file: /certs/ca.pem
+        collection_interval: 30s
+
+processors:
+    resource:
+        attributes:
+            # Prometheus attribution: the receiving collector's prometheus
+            # exporter maps service.name to the job label. Distinct from the
+            # Keycloak server's own service.name="keycloak".
+            - action: upsert
+              key: service.name
+              value: keycloak-infra
+    batch:
+
+exporters:
+    otlp:
+        endpoint: https://otel-collector:4317
+        tls:
+            ca_file: /certs/ca.pem
+
+service:
+    pipelines:
+        metrics:
+            receivers: [postgresql]
+            processors: [resource, batch]
+            exporters: [otlp]
