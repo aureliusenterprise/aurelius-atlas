@@ -30,7 +30,7 @@
         "@types/node": "^25.9.1",
         "@typescript-eslint/utils": "8.67.0",
         "@vitest/coverage-v8": "4.0.9",
-        "@vitest/ui": "4.0.9",
+        "@vitest/ui": "5.0.4",
         "angular-eslint": "22.5.0",
         "aurelius-node-red-example": "file:apps/aurelius-node-red-example",
         "autoprefixer": "^10.4.0",
