@@ -15,9 +15,9 @@
         "moduleResolution": "bundler",
         "noUncheckedSideEffectImports": false,
         "paths": {
+            "aurelius-atlas-ui": ["./libs/angular/aurelius-atlas-ui/src/index.ts"],
             "aurelius-data-access": ["./libs/angular/aurelius-data-access/src/index.ts"],
-            "aurelius-observability": ["./libs/angular/aurelius-observability/src/index.ts"],
-            "aurelius-atlas-ui": ["./libs/angular/aurelius-atlas-ui/src/index.ts"]
+            "aurelius-observability": ["./libs/angular/aurelius-observability/src/index.ts"]
         },
         "rootDir": ".",
         "skipDefaultLibCheck": true,
