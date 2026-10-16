@@ -6,10 +6,10 @@ requires-python = ">=3.14"
 version = "0.6.0"
 
 [project.optional-dependencies]
-aws = ["boto3>=1.43.96", "types-boto3[full]>=1.43.96"]
+aws = ["boto3>=1.43.112", "types-boto3[full]>=1.43.96"]
 azure = ["msal>=1.38.0"]
 full = [
-    "boto3>=1.43.96",
+    "boto3>=1.43.112",
     "coloredlogs>=15.0.1",
     "msal>=1.38.0",
     "psycopg[binary]>=3.3.5",

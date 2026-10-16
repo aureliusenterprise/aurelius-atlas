@@ -18,7 +18,7 @@ dev = [
     "aurelius-sdk[full]",
     "aurelius-vulnerability-report",
     "alembic>=1.18",
-    "boto3>=1.43",
+    "boto3>=1.43.112",
     "confluent-kafka[avro,schema-registry]>=2.14",
     "mike",
     "mkdocstrings>=1.0",
