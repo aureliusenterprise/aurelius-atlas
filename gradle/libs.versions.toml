@@ -8,7 +8,7 @@ kafka-avro-serializer = "8.3.2"
 kafka-clients = "4.3.1"
 mockito-core = "5.23.0"
 mockito-junit-jupiter = "5.23.0"
-openlineage-java = "1.47.1"
+openlineage-java = "1.54.0"
 slf4j-api = "2.0.19"
 slf4j-simple = "2.0.19"
 
