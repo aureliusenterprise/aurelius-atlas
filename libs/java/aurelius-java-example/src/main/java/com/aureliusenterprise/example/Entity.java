@@ -21,7 +21,7 @@ public class Entity
     private static final long serialVersionUID = 1164637377708274102L;
 
     public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse(
-        "{\"type\":\"record\",\"name\":\"Entity\",\"namespace\":\"com.aureliusenterprise.example\",\"fields\":[{\"name\":\"description\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"A description of the entity\",\"default\":null},{\"name\":\"guid\",\"type\":[\"null\",{\"type\":\"string\",\"logicalType\":\"uuid\"}],\"doc\":\"The unique identifier for the entity\",\"default\":null},{\"name\":\"name\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"The name of the entity\",\"default\":null},{\"name\":\"time_created\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}],\"doc\":\"The timestamp when the entity was created\",\"default\":null},{\"name\":\"time_modified\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}],\"doc\":\"The timestamp when the entity was last modified\",\"default\":null}]}"
+        "{\"type\":\"record\",\"name\":\"Entity\",\"namespace\":\"com.aureliusenterprise.example\",\"fields\":[{\"name\":\"description\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"A description of the entity\",\"default\":null},{\"name\":\"guid\",\"type\":[\"null\",{\"type\":\"string\",\"logicalType\":\"uuid\"}],\"doc\":\"The unique identifier for the entity\",\"default\":null},{\"name\":\"name\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"doc\":\"The name of the entity\",\"default\":null},{\"name\":\"time_created\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-millis\"}],\"doc\":\"The timestamp when the entity was created\",\"default\":null},{\"name\":\"time_modified\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-millis\"}],\"doc\":\"The timestamp when the entity was last modified\",\"default\":null}]}"
     );
 
     public static org.apache.avro.Schema getClassSchema() {
@@ -32,7 +32,7 @@ public class Entity
 
     static {
         MODEL$.addLogicalTypeConversion(new org.apache.avro.Conversions.UUIDConversion());
-        MODEL$.addLogicalTypeConversion(new org.apache.avro.data.TimeConversions.TimestampMicrosConversion());
+        MODEL$.addLogicalTypeConversion(new org.apache.avro.data.TimeConversions.TimestampMillisConversion());
     }
 
     private static final BinaryMessageEncoder<Entity> ENCODER = new BinaryMessageEncoder<>(MODEL$, SCHEMA$);

@@ -18,30 +18,37 @@ describe("routes", () => {
         expect(typeof route.loadComponent).toBe("function");
     });
 
-    it("should call login and return false when unauthenticated", async () => {
-        const [route] = routes;
-        const guard = route.canActivate?.[0] as (
-            route: ActivatedRouteSnapshot,
-            state: RouterStateSnapshot,
-            authData: {
-                authenticated: boolean;
-                keycloak: { login: (options: { redirectUri: string }) => Promise<void> };
-            },
-        ) => Promise<boolean>;
+    it.each(["/", "/en-US/", "/nl-NL/"])(
+        "should preserve the base path %s when redirecting to login",
+        async (basePath) => {
+            const baseUri = vi
+                .spyOn(document, "baseURI", "get")
+                .mockReturnValue(`${globalThis.location.origin}${basePath}`);
+            const [route] = routes;
+            const guard = route.canActivate?.[0] as (
+                route: ActivatedRouteSnapshot,
+                state: RouterStateSnapshot,
+                authData: {
+                    authenticated: boolean;
+                    keycloak: { login: (options: { redirectUri: string }) => Promise<void> };
+                },
+            ) => Promise<boolean>;
 
-        const login = vi.fn().mockResolvedValue(undefined);
-        const state = { url: "/search" } as RouterStateSnapshot;
+            const login = vi.fn().mockResolvedValue(undefined);
+            const state = { url: "/search" } as RouterStateSnapshot;
 
-        const result = await guard({} as ActivatedRouteSnapshot, state, {
-            authenticated: false,
-            keycloak: { login },
-        });
+            const result = await guard({} as ActivatedRouteSnapshot, state, {
+                authenticated: false,
+                keycloak: { login },
+            });
 
-        expect(result).toBe(false);
-        expect(login).toHaveBeenCalledWith({
-            redirectUri: `${globalThis.location.origin}/search`,
-        });
-    });
+            expect(result).toBe(false);
+            expect(login).toHaveBeenCalledWith({
+                redirectUri: `${globalThis.location.origin}${basePath}search`,
+            });
+            baseUri.mockRestore();
+        },
+    );
 
     it("should not call login and return true when authenticated", async () => {
         const [route] = routes;

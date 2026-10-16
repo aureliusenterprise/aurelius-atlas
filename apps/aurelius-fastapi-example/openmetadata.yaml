@@ -1,0 +1,39 @@
+source:
+    type: rest
+    serviceName: aurelius-fastapi-example-api
+    serviceConnection:
+        config:
+            type: Rest
+            openAPISchemaConnection:
+                # The app serves TLS (AURELIUS_FASTAPI_TLS_* in .env), so the
+                # scan must use https and trust the dev CA. The CA comes from
+                # this project's certgen output, bind-mounted at /certs by the
+                # openmetadata-ingest target — referenced as a container PATH
+                # here: unlike the Kafka sslConfig map (rendered to content by
+                # render_inline.py), the REST connector passes caCertificate
+                # straight to requests' verify=, which expects a CA bundle
+                # path.
+                # Endpoint entities keep path-based names (/entities/get), so
+                # the scheme change does not affect the static edges in
+                # openlineage.yaml, which resolve apiEndpoints by name.
+                openAPISchemaURL: https://localhost:8000/openapi.json
+            verifySSL: validate
+            sslConfig:
+                caCertificate: /certs/ca.pem
+    sourceConfig:
+        config:
+            type: ApiMetadata
+            markDeletedApiCollections: true
+            overrideMetadata: false
+
+sink:
+    type: metadata-rest
+    config: {}
+
+workflowConfig:
+    loggerLevel: INFO
+    openMetadataServerConfig:
+        hostPort: http://localhost:8585/api
+        authProvider: openmetadata
+        securityConfig:
+            jwtToken: ${OM_JWT_TOKEN}

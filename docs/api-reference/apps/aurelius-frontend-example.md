@@ -33,39 +33,42 @@ Docker `configs` mechanism.
 
 ### Nginx Configuration
 
-The application uses Nginx as a reverse proxy to forward API requests to the Aurelius backend. The Nginx configuration
-is **not bundled** in the image; it must be provided externally at runtime.
+The production image already bundles the locale-aware Nginx configuration for the Angular app. The bundled
+file is served at `/etc/nginx/conf.d/default.conf`, and optional fragments may be added under
+`/etc/nginx/app.d/*.conf` inside the existing `server` block.
 
-Mount your `nginx.conf` into the container at `/etc/nginx/conf.d/default.conf` via a Docker volume or Docker
-configs` mechanism. Below is an example configuration that serves the static frontend and proxies API requests
-to the backend:
+The image serves locale-prefixed routes (`/en-US/`, `/nl-NL/`), redirects `/` to the preferred language,
+and falls back to the matching locale's `index.html` for client-side routing. Keep the app-serving rules in
+the image and add only server-scoped proxy or TLS fragments via `/etc/nginx/app.d/*.conf`.
 
 ```nginx
 server {
-    listen       8080;
-    listen  [::]:8080;
-    server_name  localhost;
+    listen 8080;
+    root /usr/share/nginx/html;
+
+    include /etc/nginx/app.d/*.conf;
+
+    set $accept_language en-US;
+    location = / {
+        if ($http_accept_language ~* "^nl") {
+            set $accept_language nl-NL;
+        }
+        return 302 /$accept_language/$is_args$args;
+    }
+
+    location /en-US/ {
+        try_files $uri $uri/ /en-US/index.html;
+    }
+
+    location /nl-NL/ {
+        try_files $uri $uri/ /nl-NL/index.html;
+    }
 
     location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.htm;
-    }
-
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root   /usr/share/nginx/html;
-    }
-
-    location /api/ {
-        rewrite ^/api(/.*)$ $1 break;
-        proxy_pass http://backend-host:8000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_redirect off;
+        try_files $uri /en-US/index.html;
     }
 }
 ```
 
-You are free to modify the Nginx configuration as needed, but ensure that API requests are correctly proxied to
-the backend and that the static frontend files are served properly.
+Do not define another `server` block or an HTTP-level `map` in a fragment; the hardened image includes
+fragments at server scope only.

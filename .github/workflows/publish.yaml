@@ -35,16 +35,24 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Publish containers
-              run: npx nx run-many -t docker-publish -- --version ${{ github.ref_name }}
+              run: npx nx run-many -t docker-publish -- --version "$VERSION"
+              env:
+                  # Tag name as data, never shell code (${{ }} interpolation in
+                  # a run: block would execute $(...) embedded in a tag name).
+                  VERSION: ${{ github.ref_name }}
 
             - name: Attest containers
-              run: npx nx run-many -t docker-attest -- --version ${{ github.ref_name }}
+              run: npx nx run-many -t docker-attest -- --version "$VERSION"
+              env:
+                  VERSION: ${{ github.ref_name }}
 
             - name: Sign containers
-              run: npx nx run-many -t docker-sign -- --version ${{ github.ref_name }}
+              run: npx nx run-many -t docker-sign -- --version "$VERSION"
+              env:
+                  VERSION: ${{ github.ref_name }}
 
             - name: Verify container signatures
-              run: >
-                  npx nx run-many -t docker-verify -- --version ${{ github.ref_name }}
-                  --identity "^https://github\.com/${{ github.repository_owner }}/project-template/\.github/workflows/publish\.yaml@${{ github.ref }}$"
-                  --issuer "^https://token\.actions\.githubusercontent\.com$"
+              run: npx nx run-many -t docker-verify -- --version "$VERSION" --identity "$IDENTITY" --issuer "^https://token\.actions\.githubusercontent\.com$"
+              env:
+                  VERSION: ${{ github.ref_name }}
+                  IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/project-template/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"

@@ -32,7 +32,7 @@ function getBranchName(): string {
     return branchName.replaceAll("/", "-");
 }
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     {
         attestTargetName = "docker-attest",
@@ -44,7 +44,7 @@ async function createNodesInternal(
         verifyTargetName = "docker-verify",
         vulnScanTargetName = "docker-vuln-scan",
     }: DockerPluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
     const branchName = getBranchName();
 

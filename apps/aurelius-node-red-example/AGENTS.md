@@ -17,8 +17,18 @@ app; workspace-wide rules live in the root `AGENTS.md`.
 ## Configuration
 
 - Kafka/Schema Registry connection values are read from environment variables by
-  the Kafka nodes: `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_TOPIC_NAME`,
-  `SCHEMA_REGISTRY_URL`, `SCHEMA_SUBJECT_NAME`, `SCHEMA_SUBJECT_VERSION`.
+  the Kafka nodes, all under the `AURELIUS_NODE_RED_` prefix (the `${...}`
+  lookups in `flows.json`): `..._KAFKA_BOOTSTRAP_SERVERS`, `..._KAFKA_TOPIC_NAME`,
+  `..._SCHEMA_REGISTRY_URL`, `..._SCHEMA_SUBJECT_NAME`, `..._SCHEMA_SUBJECT_VERSION`.
+- Both connections use TLS verified against the local dev CA: `AURELIUS_NODE_RED_KAFKA_CA_FILE`
+  (Kafka node) and `NODE_EXTRA_CA_CERTS` (Schema Registry HTTPS client) point at
+  `certs/ca.pem` (`nx certgen` generates this project's `certs/`).
+- The broker's SSL listeners enforce mTLS (`ssl.client.auth` required): the
+  flow's broker node presents `AURELIUS_NODE_RED_KAFKA_CLIENT_CERT_FILE`/`_KEY_FILE`
+  (`certs/node-red{,-key}.pem`, provisioned by this project's `tls.json`).
+  The e2e compose sets them to the in-container `/certs/...` copies; `.env`
+  carries repo-relative paths for the host `serve` path. Node-RED core
+  expands `${VAR}` in node properties (same mechanism as `..._KAFKA_CA_FILE`).
 - `.env` holds dev defaults; `.env.enc` holds real values (SOPS).
 
 ## Wiring Checklist

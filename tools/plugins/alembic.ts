@@ -19,10 +19,10 @@ export const createNodes: CreateNodes<AlembicPluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     { generateMigrationsTargetName = "generate-migrations" }: AlembicPluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     return {

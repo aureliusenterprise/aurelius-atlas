@@ -16,6 +16,7 @@
             "continuous": true,
             "dependsOn": [
                 { "target": "decrypt" },
+                { "target": "certgen" },
                 {
                     "projects": ["aurelius-dev-keycloak", "aurelius-dev-postgres", "aurelius-dev-observability"],
                     "target": "serve"

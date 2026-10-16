@@ -1,0 +1,7 @@
+{
+    "services": {
+        "keycloak": ["keycloak", "keycloak.localhost"],
+        "postgres": ["postgres", "postgres-keycloak", "localhost", "127.0.0.1"]
+    },
+    "truststore": true
+}

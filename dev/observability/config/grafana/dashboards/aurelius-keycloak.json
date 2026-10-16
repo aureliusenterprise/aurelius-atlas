@@ -1,0 +1,592 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "Keycloak: server RED/JVM metrics over native OTLP (Micrometer -> collector) with its own logs (Loki) and traces (Tempo, javaagent), plus the database it runs on — a dedicated Postgres, scraped by the keycloak-infra metrics-puller.",
+    "id": null,
+    "panels": [
+        {
+            "collapsed": false,
+            "description": "Keycloak's own RED + JVM metrics, pushed over OTLP through the collector.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 100,
+            "panels": [],
+            "title": "Server (native OTLP)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Requests Keycloak served per time bucket (Prometheus increase()), grouped by outcome: SUCCESS, CLIENT_ERROR (4xx), SERVER_ERROR (5xx)... Whole counts, not a per-second rate. Token issuance from the SPA and dev logins show up as small integers here.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 1
+            },
+            "id": 1,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (outcome) (increase(http_server_requests_milliseconds_count{exported_job=\"keycloak\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{outcome}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Requests by Outcome (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Average request duration over the last 5 minutes (total duration / count, both via rate()), plus the slowest single request seen in the window (max gauge). Both lines only exist while Keycloak serves traffic: a gap means no requests happened, not zero latency. The average hides the tail - the max line reveals occasional slow admin-console or token calls.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 1
+            },
+            "id": 2,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum(rate(http_server_requests_milliseconds_sum{exported_job=\"keycloak\"}[5m])) / sum(rate(http_server_requests_milliseconds_count{exported_job=\"keycloak\"}[5m]))",
+                    "legendFormat": "avg",
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "max(max_over_time(http_server_requests_max_milliseconds{exported_job=\"keycloak\"}[5m])) and sum(rate(http_server_requests_milliseconds_count{exported_job=\"keycloak\"}[5m])) > 0",
+                    "legendFormat": "max",
+                    "refId": "B"
+                }
+            ],
+            "title": "Duration avg / max (ms)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Failed Keycloak requests (HTTP 5xx) per time bucket (Prometheus increase()). A sustained 0 means the identity service itself is healthy; spikes usually coincide with database or LDAP issues visible in the Postgres row below.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 1
+            },
+            "id": 3,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum(increase(http_server_requests_milliseconds_count{exported_job=\"keycloak\",status=~\"5..\"}[$__interval])) or vector(0)",
+                    "interval": "1m",
+                    "legendFormat": "5xx",
+                    "refId": "A"
+                }
+            ],
+            "title": "5xx Errors per bucket",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Heap memory in use by pool (G1 Eden / Survivor / Old). A sawtooth that resets on GC is normal; a floor that keeps climbing between collections hints at a leak or an undersized heap.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "bytes"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 9
+            },
+            "id": 4,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (id) (jvm_memory_used_bytes{exported_job=\"keycloak\", area=\"heap\"})",
+                    "legendFormat": "{{id}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "JVM Heap Used",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Garbage-collection pauses per time bucket (Prometheus increase()), by collector and action. Whole pause counts, not a rate. Long or frequent Old-generation pauses are what show up as request-latency spikes.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 9
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (gc, action) (increase(jvm_gc_pause_milliseconds_count{exported_job=\"keycloak\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{gc}} {{action}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "GC Pauses per bucket",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Process CPU utilization as a fraction of one core being busy (1.0 = one core saturated); it is an instantaneous gauge, not averaged, so short spikes are visible. Keycloak idles near 0.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 9
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "process_cpu_usage{exported_job=\"keycloak\"}",
+                    "legendFormat": "process",
+                    "refId": "A"
+                }
+            ],
+            "title": "CPU Usage",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Live JVM threads by state (runnable/blocked/waiting/timed). The XNIO worker pool sizes request handling: many blocked threads usually mean the database, not Keycloak, is the bottleneck.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 17
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (state) (jvm_threads_states{exported_job=\"keycloak\"})",
+                    "legendFormat": "{{state}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Threads",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Keycloak's database connection pool: active connections in use and callers awaiting one. Both flat near 0 at dev traffic; awaiting > 0 means requests are queuing for a DB connection.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 17
+            },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "agroal_active_count{exported_job=\"keycloak\"}",
+                    "legendFormat": "active",
+                    "refId": "A"
+                },
+                {
+                    "expr": "agroal_awaiting_count{exported_job=\"keycloak\"}",
+                    "legendFormat": "awaiting",
+                    "refId": "B"
+                }
+            ],
+            "title": "DB Pool (agroal)",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "Keycloak container logs.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 25
+            },
+            "id": 102,
+            "panels": [],
+            "title": "Logs (Loki)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "loki",
+                "uid": "loki"
+            },
+            "description": "Server logs from the Keycloak container (Loki, service_name=keycloak): startup warnings, authentication failures, and admin actions. The time range above applies; click a line to expand the full log entry.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 26
+            },
+            "id": 9,
+            "options": {
+                "dedupStrategy": "none",
+                "enableLogDetails": true,
+                "prettifyLogMessage": false,
+                "showCommonLabels": false,
+                "showLabels": true,
+                "showTime": true,
+                "wrapLogMessage": true
+            },
+            "targets": [
+                {
+                    "direction": "backward",
+                    "expr": "{service_name=\"keycloak\"}",
+                    "queryType": "range",
+                    "refId": "A"
+                }
+            ],
+            "title": "Keycloak Logs",
+            "type": "logs"
+        },
+        {
+            "collapsed": false,
+            "description": "The dedicated Postgres instance Keycloak stores users, sessions and tokens in (service 'postgres-keycloak', database 'keycloak') — not the OpenMetadata database. Scraped by its keycloak-infra metrics-puller sidecar.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 36
+            },
+            "id": 101,
+            "panels": [],
+            "title": "Keycloak's Postgres (metrics-puller)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Client connections to the database, by state (active/idle).",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 0,
+                "y": 37
+            },
+            "id": 10,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_backends{exported_job=\"keycloak-infra\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Backends",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "On-disk size of the keycloak database, all tables included.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "bytes"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 6,
+                "y": 37
+            },
+            "id": 11,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_db_size_bytes{exported_job=\"keycloak-infra\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "DB Size",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Rows inserted, updated, deleted and fetched per time bucket (Prometheus increase()) by the queries Keycloak issues - login/logout and token issuance are the main writers. Whole counts; quiet between dev logins.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 37
+            },
+            "id": 12,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (operation) (increase(postgresql_operations_total{exported_job=\"keycloak-infra\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{operation}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Row Operations (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "Keycloak server traces (javaagent).",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 45
+            },
+            "id": 103,
+            "panels": [],
+            "title": "Traces (Tempo)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "tempo",
+                "uid": "tempo"
+            },
+            "description": "Recent traces of Keycloak handling requests (javaagent instrumentation): token issuance and login flows, with the SQL they run against Keycloak's Postgres. Open a row for the full span waterfall. Search covers the recent ingest window.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 46
+            },
+            "id": 13,
+            "options": {
+                "showHeader": true
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "tempo"
+                    },
+                    "limit": 20,
+                    "query": "{resource.service.name = \"keycloak\"}",
+                    "queryType": "traceql",
+                    "refId": "A"
+                }
+            ],
+            "title": "Keycloak Server Traces",
+            "type": "table"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "keycloak", "observability"],
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Keycloak",
+    "uid": "aurelius-keycloak-obsv",
+    "version": 1
+}

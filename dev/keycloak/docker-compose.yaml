@@ -2,7 +2,11 @@ name: aurelius-dev-keycloak
 
 services:
     keycloak:
-        image: dhi.io/keycloak:26-debian13
+        # Pinned to the 26.7 stream: the 26.8.0 build of dhi.io/keycloak:26-debian13
+        # (2026-10-10) ships a broken dependency set (Vert.x modules at 4.5.34 with
+        # vertx-core still at 4.5.28) and fails to start with
+        # NoClassDefFoundError: io/vertx/core/net/PqcEnforcementPolicy.
+        image: dhi.io/keycloak:26.7-debian13
         command:
             [
                 "start-dev",
@@ -14,23 +18,59 @@ services:
                 "--tracing-enabled=true",
                 "--telemetry-metrics-enabled=true",
                 "--telemetry-logs-enabled=true",
-                "--telemetry-endpoint=http://otel-collector:4317",
+                "--telemetry-endpoint=https://otel-collector:4317",
             ]
         depends_on:
             postgres-keycloak:
                 condition: service_healthy
         environment:
-            KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
-            KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+            # kafka realm client secrets (import/kafka.json placeholders).
+            # Substitution is NOT automatic for --import-realm; the
+            # -Dkeycloak.migration.replace-placeholders flag below enables
+            # it. Unresolved placeholders import as the literal "${...}"
+            # string. The ${VAR:?} guards abort `compose up` when the
+            # decrypted .env does not provide a value, instead of starting
+            # a silently-broken stack.
+            CLIENT_SECRET_KAFKA_CONNECT: ${CLIENT_SECRET_KAFKA_CONNECT:?}
+            CLIENT_SECRET_KAFKA_E2E: ${CLIENT_SECRET_KAFKA_E2E:?}
+            CLIENT_SECRET_KAFKA_LAMBDA: ${CLIENT_SECRET_KAFKA_LAMBDA:?}
+            CLIENT_SECRET_KAFKA_PRODUCER: ${CLIENT_SECRET_KAFKA_PRODUCER:?}
+            CLIENT_SECRET_KAFKA_UI: ${CLIENT_SECRET_KAFKA_UI:?}
+            # openmetadata realm client secret (import/openmetadata-realm.json
+            # placeholder); must match OIDC_CLIENT_SECRET in dev/governance.
+            CLIENT_SECRET_OPENMETADATA: ${CLIENT_SECRET_OPENMETADATA:?}
+            # Service-account client the ingestion containers use to mint
+            # short-lived OM tokens (client_credentials); must match
+            # OIDC_BOT_CLIENT_SECRET in dev/governance.
+            CLIENT_SECRET_OPENMETADATA_BOT: ${CLIENT_SECRET_OPENMETADATA_BOT:?}
+            # Credentials: an empty value here yields obscure failures
+            # (missing admin user, JDBC/SSL crash loops) instead of a
+            # clear startup error, so require them at interpolation time.
+            KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
+            KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
             KC_DB: postgres
-            KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
-            KC_DB_USERNAME: ${KEYCLOAK_DATABASE_USERNAME}
-            KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD}
+            KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak?sslmode=verify-full&sslrootcert=/certs/ca.pem
+            KC_DB_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
+            KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
             KC_HEALTH_ENABLED: true
             KC_HOSTNAME: keycloak.localhost
+            # Quarkus' OTLP gRPC sender (Vert.x) ignores OTEL_EXPORTER_OTLP_CERTIFICATE,
+            # so the local development CA is provided as the JVM truststore instead.
+            # The password is the project's encrypted dev default (.env.enc).
+            JAVA_OPTS: -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
+            # (replace-placeholders lets ${VAR} placeholders in import/*.json
+            # resolve from this container's environment; Keycloak reads them
+            # via System.getenv and leaves startup imports unsubstituted
+            # without the flag.)
+            # TLS listener for e2e/CI (https://keycloak.localhost:8443) verified
+            # against the local development CA; the plaintext listener stays for
+            # the dev browser (named relaxation, ADR 039).
+            KC_HTTPS_CERTIFICATE_FILE: /certs/keycloak.pem
+            KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/keycloak-key.pem
             # OpenTelemetry native configuration
             OTEL_SERVICE_NAME: keycloak
-            OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4317
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
             OTEL_TRACES_SAMPLER: parentbased_traceidratio
             OTEL_TRACES_SAMPLER_ARG: "0.1"
         healthcheck:
@@ -45,11 +85,21 @@ services:
             start_period: 180s
         ports:
             - 8080:8080
+            - 8443:8443
         volumes:
             - ./import:/opt/keycloak/data/import:ro
+            - ./certs:/certs:ro
         networks:
-            - default
-            - observability
+            default:
+                # The issuer name clients must use (KC_HOSTNAME pins
+                # https://keycloak.localhost:8443). Attaching to this network
+                # (aurelius-dev-keycloak-network) resolves the name in-network,
+                # so OAuth clients (broker, producer, lambda, connect) never
+                # depend on host routing — host-gateway maps to the (often
+                # link-down) docker0 bridge here and flakes.
+                aliases:
+                    - keycloak.localhost
+            observability: {}
 
     postgres-keycloak:
         image: dhi.io/postgres:18-alpine3.23
@@ -58,9 +108,26 @@ services:
             POSTGRES_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD}
             POSTGRES_DB: keycloak
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+        # The image runs as a fixed non-root user that cannot read bind-mounted
+        # key material it does not own, so the certificates are copied to the
+        # container filesystem with strict permissions before startup.
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - >-
+                install -m 600 /certs/postgres.pem /tmp/server.pem &&
+                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
+                exec docker-entrypoint.sh
+                -c ssl=on
+                -c ssl_cert_file=/tmp/server.pem
+                -c ssl_key_file=/tmp/server-key.pem
+                -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready", "-d", "keycloak"]
+            test:
+                [
+                    "CMD-SHELL",
+                    "PGSSLMODE=verify-full PGSSLROOTCERT=/certs/ca.pem pg_isready -h 127.0.0.1 -U ${KEYCLOAK_DATABASE_USERNAME} -d keycloak",
+                ]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -68,6 +135,30 @@ services:
             - 5432
         volumes:
             - data:/var/lib/postgresql
+            - ./certs:/certs:ro
+            - ../postgres/pg_hba.conf:/conf/pg_hba.conf:ro
+
+    metrics-puller:
+        # Slice-owned OTel collector: scrapes the Keycloak metadata Postgres
+        # (the server itself already pushes OTLP natively) and pushes OTLP to
+        # the dev collector — same pattern as dev/governance's metrics-puller.
+        # Targets and attribution live in config/metrics-puller.yaml.
+        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        environment:
+            # Same dev defaults the keycloak service uses for KC_DB_*; the
+            # collector expands ${env:...} in its config.
+            KEYCLOAK_DATABASE_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
+            KEYCLOAK_DATABASE_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            postgres-keycloak:
+                condition: service_healthy
+        networks:
+            - default
+            - observability
 
 networks:
     default:

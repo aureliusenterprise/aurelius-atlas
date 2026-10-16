@@ -3,17 +3,39 @@ name: aurelius-java-producer-example-e2e
 services:
     aurelius-java-producer-example:
         environment:
-            KAFKA_BOOTSTRAP_SERVERS: broker:9094
-            KAFKA_TOPIC_NAME: ${KAFKA_TOPIC_NAME}
-            SCHEMA_REGISTRY_URL: http://schema-registry:8081
+            # OAuth listener on the Docker network (SASL_SSL/OAUTHBEARER).
+            # AURELIUS_JAVA_PRODUCER_ prefix: AppConfig.ENV_PREFIX. The
+            # truststore password value still comes from the shared bare
+            # TLS_TRUSTSTORE_PASSWORD variable (certgen.sh reads it by name).
+            AURELIUS_JAVA_PRODUCER_KAFKA_BOOTSTRAP_SERVERS: broker:9095
+            # ${VAR:?} guards: Nx injects the project .env into the task
+            # environment; a missing/empty value would otherwise reach the
+            # container as "" and fail AppConfig validation (or silently
+            # disable OAuth) only after the image has started.
+            AURELIUS_JAVA_PRODUCER_KAFKA_TOPIC_NAME: ${AURELIUS_JAVA_PRODUCER_KAFKA_TOPIC_NAME:?}
+            AURELIUS_JAVA_PRODUCER_KAFKA_TRUSTSTORE_FILE: /certs/truststore.p12
+            AURELIUS_JAVA_PRODUCER_KAFKA_TRUSTSTORE_PASSWORD: ${TLS_TRUSTSTORE_PASSWORD:?}
+            AURELIUS_JAVA_PRODUCER_SCHEMA_REGISTRY_URL: https://schema-registry:8081
+            AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_TOKEN_ENDPOINT_URL: ${AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_TOKEN_ENDPOINT_URL:?}
+            AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_CLIENT_ID: ${AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_CLIENT_ID:?}
+            AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_CLIENT_SECRET: ${AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_CLIENT_SECRET:?}
+            # JVM truststore so the token-endpoint TLS verifies against the dev CA,
+            # plus the Kafka 4.x OAuth URL allowlist (exact string match).
+            JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD} -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=${AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_TOKEN_ENDPOINT_URL}
         image: ghcr.io/aureliusenterprise/aurelius-java-producer-example:local
         restart: unless-stopped
+        volumes:
+            - ../certs:/certs:ro
         networks:
             - aurelius-dev-kafka-network
+            - aurelius-dev-keycloak-network
             - default
         ports:
             - 1880
 
 networks:
     aurelius-dev-kafka-network:
+        external: true
+    # Resolves keycloak.localhost (network alias) for token grants in-network.
+    aurelius-dev-keycloak-network:
         external: true

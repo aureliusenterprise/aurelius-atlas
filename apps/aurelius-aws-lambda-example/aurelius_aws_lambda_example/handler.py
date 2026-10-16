@@ -2,6 +2,7 @@ import json
 from functools import cache
 
 from aurelius_example import Entity
+from aurelius_kafka import oauth_client_config, ssl_client_config
 from aws_lambda_powertools.utilities.kafka import ConsumerRecords, kafka_consumer
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from confluent_kafka import Producer
@@ -25,9 +26,28 @@ def initialize() -> tuple[Settings, AvroDeserializer, AvroSerializer, Producer]:
     LOGGER.setLevel(settings.log_level)
     LOGGER.log_uncaught_exceptions = settings.is_development
 
-    schema_registry_client = SchemaRegistryClient(
-        {"url": str(settings.schema_registry_url)},
-    )
+    schema_registry_config: dict[str, str] = {"url": str(settings.schema_registry_url)}
+    producer_config: dict[str, str] = {"bootstrap.servers": settings.kafka_bootstrap_servers}
+    if settings.kafka_ca_file:
+        # The Python Schema Registry client verifies the registry with
+        # ssl.ca.location (its TLS context checks hostnames by default);
+        # unlike librdkafka it does not accept ssl.endpoint.identification.algorithm.
+        schema_registry_config["ssl.ca.location"] = settings.kafka_ca_file
+        producer_config.update(ssl_client_config(ca_location=settings.kafka_ca_file))
+    if settings.kafka_oauth_token_endpoint_url:
+        # OAUTHBEARER against the Keycloak-secured listener: OIDC
+        # client-credentials grants fetched by librdkafka itself. This replaces
+        # the plain SSL branch above (SASL_SSL includes the TLS transport).
+        producer_config.update(
+            oauth_client_config(
+                token_endpoint_url=settings.kafka_oauth_token_endpoint_url,
+                client_id=settings.kafka_oauth_client_id,
+                client_secret=settings.kafka_oauth_client_secret.get_secret_value(),
+                ca_location=settings.kafka_ca_file or None,
+            )
+        )
+
+    schema_registry_client = SchemaRegistryClient(schema_registry_config)
 
     value_schema = Entity.avro_schema(namespace="com.aureliusenterprise.example")
 
@@ -46,7 +66,7 @@ def initialize() -> tuple[Settings, AvroDeserializer, AvroSerializer, Producer]:
         schema_str=json.dumps(value_schema),  # type: ignore[arg-type]
     )
 
-    kafka_producer = Producer({"bootstrap.servers": settings.kafka_bootstrap_servers})
+    kafka_producer = Producer(producer_config)
 
     name = METADATA["Name"]
     version = METADATA["Version"]

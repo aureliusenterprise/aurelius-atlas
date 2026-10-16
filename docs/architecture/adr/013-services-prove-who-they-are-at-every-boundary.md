@@ -112,13 +112,49 @@ Any acceptable arrangement must deliver:
   credential turns a working deployment into a broken one loudly, where the
   open arrangement failed quietly.
 - **Neutral / follow-ups:** the development event platform currently runs
-  unauthenticated, which this record defines as a defect: closing it means an
-  authenticated local cluster and consumers that present service credentials,
-  and until then every claim of R1 in that part of the system is aspirational
-  and is treated as such; the credential format per boundary (issued by the
-  identity provider, by the platform itself, or by the deployment) is a
-  follow-up per service, not settled here; and the line between a service
-  credential and a secret follows the secrets record — a credential is a
-  secret and rests where that record says secrets rest, while who owns its
-  rotation is the question a proposed record takes up
+  unauthenticated, which this record defines as a defect (closed in 2026-10:
+  the event platform now authenticates every client — see Implementation);
+  the credential format per boundary (issued by the identity provider, by the
+  platform itself, or by the deployment) is a follow-up per service, not
+  settled here; and the line between a service credential and a secret
+  follows the secrets record — a credential is a secret and rests where that
+  record says secrets rest, while who owns its rotation is the question a
+  proposed record takes up
   ([028](./028-operational-secret-handling-has-a-named-owner.md)).
+
+## Implementation
+
+The boundary this record left open — the development event platform — is now
+closed. The local Kafka cluster admits no anonymous producer or consumer.
+Callers that can present a service token arrive with OAuth 2.0 bearer
+tokens (SASL/OAUTHBEARER over TLS) issued by the shared identity provider
+([007](./007-one-shared-identity-provider.md)) from a dedicated `kafka`
+realm; the exception clients whose Kafka libraries cannot do OAUTHBEARER —
+Node-RED first among them — arrive instead with a per-service client
+certificate under mutual TLS:
+
+- **The broker holds a verdict.** `dev/kafka` serves SASL_SSL listeners whose
+  validation points at the realm's JWKS endpoint and refuses tokens from any
+  other issuer or audience — a caller without a valid service token is
+  turned away at the boundary (R1).
+- **Credentials name the service.** Each token caller — the Java producer,
+  the Lambda, the JDBC sink connector, the E2E suites — is a distinct
+  confidential client of the realm with its own secret, so the broker's
+  session log names the calling service (R2, R3); retiring one is an edit to
+  the realm definition (R6). Secrets rest encrypted with the project
+  ([008](./008-secrets-never-in-plaintext.md)) and reach the service through
+  the same configuration path as its other settings (R4).
+- **The authenticated path runs where validation runs.** Every E2E suite
+  that touches Kafka over the token listeners authenticates against the
+  running realm over TLS (R5), the certificate-path suites present their
+  own client certificate, and unit tests cover the OAuth configuration
+  branches beside the certificate ones.
+
+Transport protection on those paths (certificates, trust) belongs to the
+data-protection record
+([039](./039-data-is-protected-where-it-travels-and-where-it-rests.md));
+this record covers the credential presented once the channel is open. The
+platform's own infrastructure links that carry no service identity of their
+own (controller quorum, Schema Registry backing store) also stay on mutual
+TLS; there the certificate is the transport arrangement, while for the
+exception clients above it doubles as the service identity.

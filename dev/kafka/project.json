@@ -1,7 +1,13 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-dev-keycloak"],
     "name": "aurelius-dev-kafka",
     "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
     "tags": [],
     "targets": {}
 }

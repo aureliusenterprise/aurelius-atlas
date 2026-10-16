@@ -19,8 +19,8 @@ rules — including the scaffold recipe for Python libs — live in the root
   `uv.sources`) — consumed by nearly every Python project in the workspace.
 - Each submodule must raise a clear error at import time when its extra is
   missing; keep the extras table in `README.md` in sync with `pyproject.toml`.
-- `testing.py` (testcontainers fixtures) is shared by app unit and E2E tests —
-  changing it affects every suite.
+- `testing/` (TLS fixtures in `tls.py`, Compose helpers in `testcontainers.py`)
+  is shared by app unit and E2E tests — changing it affects every suite.
 
 ## Commands
 

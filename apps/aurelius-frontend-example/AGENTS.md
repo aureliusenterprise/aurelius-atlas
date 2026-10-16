@@ -10,7 +10,10 @@ rules live in the root `AGENTS.md`.
 - `dev/config.json` — runtime Keycloak config, bundled **only** in the development
   build (see `build.configurations.development.assets` in `project.json`)
 - `proxy.conf.json` — dev-server proxy: `/api` → backend on 8000 (prefix stripped),
-  `/otel` → OTLP collector on 4318
+- `proxy.conf.json` — dev-server proxy: `/api` → backend on 8000 (prefix
+  stripped), `/otel` → OTLP collector on 4318. Both upstreams are HTTPS with
+  verification; the proxy trusts the local CA via `NODE_EXTRA_CA_CERTS`
+  (`.env.enc`) — ADR 039
 - `e2e/` — pytest + Playwright (chromium, firefox, webkit)
 
 ## Configuration
@@ -29,8 +32,19 @@ rules live in the root `AGENTS.md`.
   assets, so secrets never leak into production bundles.
 - `tsconfig.base.json` — add a path alias when consuming a new Angular lib.
 - `package.json` — `@aurelius/brand` is a `file:` dependency.
-- `Dockerfile` — static nginx (`dhi.io/nginx`, port 8080); keep proxy/otel paths in
-  sync when backend or collector routes change.
+- `Dockerfile` — static nginx (`dhi.io/nginx`, port 8080), with locale routing baked
+  in from `nginx.conf`. Optional `/etc/nginx/app.d/*.conf` fragments are included at
+  server scope for per-deployment extras. E2E ships its own full `default.conf`
+  (`e2e/config/nginx.conf`, TLS + verified `/api/` + `/otel/` proxies); keep the
+  security headers and proxy paths in sync when either changes.
+- `nginx.conf` — production also reverse-proxies `/api/` → the FastAPI upstream and
+  `/otel/` → the OTLP collector (prefix stripped, mirroring `proxy.conf.json`), so
+  the CSP can stay `connect-src 'self'`. Upstreams are the stack's service names —
+  template material like the CSP's Keycloak origins: deployments edit them (or
+  override the file) for their topology. Hostnames are variables resolved through
+  `resolver` per request (Docker DNS `127.0.0.11` by default), so a missing backend
+  returns 502 instead of blocking container start. Upstream TLS verification is off
+  (no mounted CA); `e2e/config/nginx.conf` shows the verified variant.
 - `mkdocs.yaml` — user-guide pages referencing this app.
 
 ## Commands

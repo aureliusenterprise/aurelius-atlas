@@ -54,6 +54,7 @@ function buildTargets(
     targets[typecheckTargetName] = {
         cache: true,
         executor: "@nxlv/python:run-commands",
+        inputs: ["pythonBase", "^default"],
         metadata: {
             description: "Run type checking on the Python code",
         },
@@ -73,6 +74,8 @@ function buildTargets(
                     target: "decrypt",
                     dependencies: true,
                 },
+                // E2E containers mount the project's TLS material; generate it on demand.
+                ...(existsSync(join(projectRoot, "tls.json")) ? [{ target: "certgen" }] : []),
                 {
                     target: "docker-build",
                 },
@@ -82,6 +85,7 @@ function buildTargets(
                 },
             ],
             executor: "@nxlv/python:run-commands",
+            inputs: ["pythonBase", "^default", "{projectRoot}/tests/**/*", "{projectRoot}/e2e/**/*"],
             metadata: {
                 description: "Run the end-to-end tests for this application",
             },
@@ -107,6 +111,7 @@ function buildTargets(
     targets[buildTargetName] = {
         cache: true,
         executor: "@nxlv/python:build",
+        inputs: ["production", "^production"],
         metadata: {
             description: "Builds the Python package",
         },
@@ -122,6 +127,7 @@ function buildTargets(
     targets[lintTargetName] = {
         cache: true,
         executor: "@nxlv/python:ruff-check",
+        inputs: ["pythonBase", "^default"],
         metadata: {
             description: "Lint the Python code",
         },
@@ -149,6 +155,7 @@ function buildTargets(
                     cov: moduleName,
                 },
             },
+            inputs: ["pythonBase", "^default", "{projectRoot}/tests/**/*", "{projectRoot}/e2e/**/*"],
             metadata: {
                 description: "Run the unit tests for this application",
             },
@@ -162,10 +169,7 @@ function buildTargets(
     return targets;
 }
 
-async function createNodesInternal(
-    configFilePath: string,
-    options: PythonPluginOptions | undefined,
-): Promise<CreateNodesResult> {
+function createNodesInternal(configFilePath: string, options: PythonPluginOptions | undefined): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     const isWorkspaceProject = projectRoot === ".";

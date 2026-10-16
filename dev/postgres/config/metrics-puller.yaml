@@ -1,0 +1,49 @@
+# Slice-owned metrics puller: scrapes this Postgres and pushes OTLP to the
+# dev collector (https://otel-collector:4317, external network — see
+# docker-compose.yaml). Postgres speaks no OTLP, so a puller sidecar is the
+# only push option; dev/observability stays slice-agnostic by convention.
+# Same shape as dev/governance/config/metrics-puller.yaml (see that file and
+# the governance AGENTS.md for the receiver background).
+#
+# Env vars: the same dev defaults the postgres service itself gets
+# (compose interpolates them into the container env; the collector expands
+# ${env:...} at load time). TLS: the shared mkcert CA (certs/ca.pem) validates
+# the server leaf, whose SANs cover "postgres" — verify-full works.
+
+receivers:
+    postgresql:
+        endpoint: postgres:5432
+        # Block sequence on purpose: in a flow list ([...]) the YAML parser
+        # treats the colon inside ${env:...} as a key separator and the
+        # collector's resolver never sees the placeholder.
+        databases:
+            - ${env:DATABASE_NAME}
+        username: ${env:DATABASE_USERNAME}
+        password: ${env:DATABASE_PASSWORD}
+        tls:
+            ca_file: /certs/ca.pem
+        collection_interval: 30s
+
+processors:
+    resource:
+        attributes:
+            # Prometheus attribution: the receiving collector's prometheus
+            # exporter maps service.name to the job label (series carry
+            # exported_job="dev-postgres").
+            - action: upsert
+              key: service.name
+              value: dev-postgres
+    batch:
+
+exporters:
+    otlp:
+        endpoint: https://otel-collector:4317
+        tls:
+            ca_file: /certs/ca.pem
+
+service:
+    pipelines:
+        metrics:
+            receivers: [postgresql]
+            processors: [resource, batch]
+            exporters: [otlp]

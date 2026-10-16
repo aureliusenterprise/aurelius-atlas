@@ -39,6 +39,26 @@ dependencies {
 
     // Other dependencies
     implementation(libs.jackson.core)
+    // kafka-clients' OAUTHBEARER client-credentials JWT retriever needs
+    // jackson-databind (declared optional upstream, so it is not transitively
+    // brought in); without it token login fails at runtime with NoClassDefFoundError.
+    implementation(libs.jackson.databind)
+    // kafka-clients' OAUTHBEARER handler validates the fetched JWT with jose4j
+    // (optional upstream dep, like jackson-databind): without it the login
+    // callback handler fails with ClassNotFoundException at runtime.
+    implementation(libs.jose4j)
+
+    // OpenLineage dependencies
+    // KafkaConfig and KafkaTransport are included in the main openlineage-java JAR
+    implementation(libs.openlineage.java)
+
+    constraints {
+        // Kafka 8.3.2-ccs still bundles at.yawk.lz4:lz4-java 1.11.1, which Trivy
+        // flags (CVE-2026-106449..106453); 1.12.0 is the patched release. The
+        // at.yawk fork keeps the net.jpountz.* API kafka-clients calls, so the
+        // upgrade is drop-in and the LZ4 record codec keeps working.
+        implementation("at.yawk.lz4:lz4-java:1.12.0")
+    }
 }
 
 java {
@@ -83,8 +103,36 @@ fun loadEnv(file: File): Map<String, String> {
 
 // Inject .env values into the 'run' task's process environment
 tasks.named("run", JavaExec::class).configure {
-    val envFile = project.file("${projectDir}/.env")
-    environment(loadEnv(envFile))
+    val env = loadEnv(project.file("${projectDir}/.env"))
+    environment(env)
+    // The OAuth login (JWKS/token fetches from Keycloak) uses the JVM-wide
+    // JSSE truststore, and Kafka 4.x requires the token URL in the OAuth URL
+    // allowlist; both must be JVM system properties. Pass them here rather
+    // than as JAVA_TOOL_OPTIONS in .env: Nx injects .env into EVERY task's
+    // environment, so a JAVA_TOOL_OPTIONS there poisons unrelated JVMs
+    // (sonar-scanner, the Gradle daemon's dependency downloads) with a
+    // truststore path that only resolves from this project directory.
+    // .env keys carry the AURELIUS_JAVA_PRODUCER_ prefix (AppConfig.ENV_PREFIX).
+    env["AURELIUS_JAVA_PRODUCER_KAFKA_TRUSTSTORE_FILE"]?.takeIf { it.isNotBlank() }?.let { truststore ->
+        systemProperty("javax.net.ssl.trustStore", project.file(truststore).absolutePath)
+        // The password goes through the spawned JVM's environment, not a
+        // command-line property: argv is world-readable (ps, /proc/<pid>/cmdline)
+        // while a process's environment is owner-only on Linux. JAVA_TOOL_OPTIONS
+        // here applies to THIS task's JVM only — unlike one in .env it cannot
+        // poison other Nx tasks (see d80b06b3). The dev password is a single
+        // token: JAVA_TOOL_OPTIONS is whitespace-split by the JVM launcher.
+        environment(
+            "JAVA_TOOL_OPTIONS",
+            "-Djavax.net.ssl.trustStorePassword=${env["AURELIUS_JAVA_PRODUCER_KAFKA_TRUSTSTORE_PASSWORD"].orEmpty()}",
+        )
+    }
+    env["AURELIUS_JAVA_PRODUCER_KAFKA_OAUTH_TOKEN_ENDPOINT_URL"]?.takeIf { it.isNotBlank() }?.let { tokenUrl ->
+        systemProperty("org.apache.kafka.sasl.oauthbearer.allowed.urls", tokenUrl)
+    }
+    nx {
+        // The producer verifies the broker against this project's truststore.
+        array("dependsOn", "certgen")
+    }
 }
 
 allprojects {
@@ -108,6 +156,7 @@ tasks.register("e2e") {
     nx {
         array("dependsOn") {
             add("decrypt")
+            add("certgen")
             add("docker-build")
             obj {
                 set("target", "up")

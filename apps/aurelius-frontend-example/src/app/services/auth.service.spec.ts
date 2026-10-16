@@ -57,24 +57,30 @@ describe("AuthService", () => {
         expect(logout).toHaveBeenCalledWith({ redirectUri: globalThis.location.origin });
     });
 
-    it(
-        "should load user profile when authenticated",
-        async () =>
-            new Promise<void>((done) => {
-                const loadUserProfile = vi
-                    .spyOn(keycloak, "loadUserProfile")
-                    .mockResolvedValueOnce({ username: "testuser" });
+    // The service reacts via an Angular effect; flush it deterministically instead of
+    // racing a setTimeout(50) against the 100 ms test timeout, which flaked on loaded runners.
+    it("should derive the user profile from the ID token when authenticated", () => {
+        keycloak.idTokenParsed = { sub: "id-1", preferred_username: "testuser" };
+        eventsSignal.set({ type: KeycloakEventType.Ready, args: true });
 
-                eventsSignal.set({ type: KeycloakEventType.Ready, args: true });
+        TestBed.flushEffects();
 
-                setTimeout(() => {
-                    expect(loadUserProfile).toHaveBeenCalled();
-                    expect(service.profile()).toEqual({ username: "testuser" });
-                    done();
-                }, 50);
-            }),
-        100,
-    );
+        expect(service.profile()).toEqual({
+            id: "id-1",
+            username: "testuser",
+            email: undefined,
+            firstName: undefined,
+            lastName: undefined,
+        });
+    });
+
+    it("should return a null profile when authenticated without an ID token", () => {
+        eventsSignal.set({ type: KeycloakEventType.Ready, args: true });
+
+        TestBed.flushEffects();
+
+        expect(service.profile()).toBeNull();
+    });
 
     it("should return null profile when not authenticated", async () => {
         expect(service.authenticated()).toBe(false);

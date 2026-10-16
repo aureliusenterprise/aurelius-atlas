@@ -8,7 +8,10 @@ from confluent_kafka.serialization import Deserializer, MessageField, Serializat
 from timeout_decorator import timeout
 
 
-@timeout(30)
+# Cold start covers JVM boot + OAuth token fetch + first produce; under parallel
+# suite load (shared Docker daemon) the container may still be starting when the
+# test begins polling.
+@timeout(60)
 def consume_message(consumer: Consumer, topic: str) -> tuple[HeadersType | None, bytes | None, bytes | None]:
     """Consume a message from the Kafka topic."""
     consumer.subscribe([topic])

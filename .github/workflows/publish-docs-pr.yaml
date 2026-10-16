@@ -28,11 +28,17 @@ jobs:
 
             - name: Publish documentation for PR
               run: |
-                  REF_NAME=${{ github.head_ref }}
+                  REF_NAME=$HEAD_REF
                   SANITIZED_REF_NAME=${REF_NAME//"/"/"-"}
                   echo "SANITIZED_REF_NAME=$SANITIZED_REF_NAME" >> "$GITHUB_ENV"
-                  uv run mike deploy -b public-docs --push $SANITIZED_REF_NAME
+                  uv run mike deploy -b public-docs --push "$SANITIZED_REF_NAME"
               shell: bash
+              env:
+                  # Pass the PR branch through the environment: interpolating
+                  # ${{ github.head_ref }} into the shell text would execute
+                  # $(...) / backticks embedded in a branch name (this job runs
+                  # for fork PRs too).
+                  HEAD_REF: ${{ github.head_ref }}
 
             - name: Add PR comment with documentation link
               uses: hasura/comment-progress@v2.3.0

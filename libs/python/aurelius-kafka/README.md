@@ -13,6 +13,9 @@ with the rest of that slice.
 - `KafkaProducer` — producer wrapper with a `batch()` helper
 - `build_schema_registry_header()` — Schema Registry wire-format header framing
 - `msk.MSKOAuthTokenProvider` — SASL/OAUTHBEARER token provider for AWS MSK IAM
+- `ssl_client_config()` / `tls_host()` — TLS client options for the dev broker
+- `oauth_client_config()` — SASL_SSL/OAUTHBEARER (OIDC client credentials)
+  options for the Keycloak-secured dev Kafka listeners (see `dev/kafka`)
 
 ## Dependencies
 

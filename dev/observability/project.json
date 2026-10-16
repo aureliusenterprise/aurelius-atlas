@@ -2,6 +2,11 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "aurelius-dev-observability",
     "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
     "tags": [],
     "targets": {}
 }

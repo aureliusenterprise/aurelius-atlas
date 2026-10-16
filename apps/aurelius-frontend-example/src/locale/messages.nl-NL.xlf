@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en-US" target-language="nl-NL" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="2448391510242468907" datatype="html">
+        <source>Logged in as <x id="INTERPOLATION" equiv-text="{{ _profile.username ?? _profile.email }}"/></source>
+        <target>Ingelogd als <x id="INTERPOLATION"/></target>
+      </trans-unit>
+      <trans-unit id="2411560932668359796" datatype="html">
+        <source> Account Management </source>
+        <target> Accountbeheer </target>
+      </trans-unit>
+      <trans-unit id="7507948636555938109" datatype="html">
+        <source>Log out</source>
+        <target>Uitloggen</target>
+      </trans-unit>
+      <trans-unit id="2826581353496868063" datatype="html">
+        <source>Language</source>
+        <target>Taal</target>
+      </trans-unit>
+      <trans-unit id="2336550011721758066" datatype="html">
+        <source>Log in</source>
+        <target>Inloggen</target>
+      </trans-unit>
+      <trans-unit id="3742657416068781599" datatype="html">
+        <source>Editor</source>
+        <target>Editor</target>
+      </trans-unit>
+      <trans-unit id="5033050349783030026" datatype="html">
+        <source>GUID</source>
+        <target>GUID</target>
+      </trans-unit>
+      <trans-unit id="5638267705425936956" datatype="html">
+        <source>New Entity</source>
+        <target>Nieuwe entiteit</target>
+      </trans-unit>
+      <trans-unit id="4270758441764042239" datatype="html">
+        <source>Time Created</source>
+        <target>Aanmaakdatum</target>
+      </trans-unit>
+      <trans-unit id="3813307666666818816" datatype="html">
+        <source>Entity has not been created yet</source>
+        <target>Entiteit is nog niet aangemaakt</target>
+      </trans-unit>
+      <trans-unit id="3099281752234839772" datatype="html">
+        <source>Time Modified</source>
+        <target>Wijzigingsdatum</target>
+      </trans-unit>
+      <trans-unit id="2898687621231446810" datatype="html">
+        <source>Entity has not been modified yet</source>
+        <target>Entiteit is nog niet gewijzigd</target>
+      </trans-unit>
+      <trans-unit id="8953033926734869941" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+      </trans-unit>
+      <trans-unit id="3140869295218056657" datatype="html">
+        <source>Name must not be longer than 100 characters.</source>
+        <target>Naam mag niet langer zijn dan 100 tekens.</target>
+      </trans-unit>
+      <trans-unit id="4902817035128594900" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+      </trans-unit>
+      <trans-unit id="1192560794303864243" datatype="html">
+        <source>Description must not be longer than 255 characters.</source>
+        <target>Beschrijving mag niet langer zijn dan 255 tekens.</target>
+      </trans-unit>
+      <trans-unit id="3620188369327429839" datatype="html">
+        <source> Save </source>
+        <target> Opslaan </target>
+      </trans-unit>
+      <trans-unit id="2159130950882492111" datatype="html">
+        <source>Cancel</source>
+        <target>Annuleren</target>
+      </trans-unit>
+      <trans-unit id="6660925946511264619" datatype="html">
+        <source> Delete </source>
+        <target> Verwijderen </target>
+      </trans-unit>
+      <trans-unit id="2380939390102386148" datatype="html">
+        <source> <x id="ICU" equiv-text="{entities.total, plural, =1 {I have found {{ entities.total }} entity.} other {I have found {{ entities.total }} entities.}}" xid="8733557069108956019"/>
+</source>
+        <target> <x id="ICU" xid="8733557069108956019"/> </target>
+      </trans-unit>
+      <trans-unit id="6195608577924072966" datatype="html">
+        <source>{VAR_PLURAL, plural, =1 {I have found <x id="INTERPOLATION"/> entity.} other {I have found <x id="INTERPOLATION"/> entities.}}</source>
+        <target>{VAR_PLURAL, plural, =1 {Ik heb <x id="INTERPOLATION"/> entiteit gevonden.} other {Ik heb <x id="INTERPOLATION"/> entiteiten gevonden.}}</target>
+      </trans-unit>
+      <trans-unit id="3637275323243351717" datatype="html">
+        <source>Search for an entity</source>
+        <target>Zoek naar een entiteit</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

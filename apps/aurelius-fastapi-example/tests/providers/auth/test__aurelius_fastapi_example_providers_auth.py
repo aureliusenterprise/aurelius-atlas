@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import httpx
 import jwt
 import pytest
@@ -82,6 +84,7 @@ def test__user_info_decodes_valid_token(
     keycloak_access_token: str,
     http_client: httpx.Client,
     auth_circuit_breaker: CircuitBreaker,
+    auth_settings: Settings,
 ) -> None:
     """User info provider should decode and validate a valid Keycloak token."""
     openid = auth.openid_configuration(
@@ -92,10 +95,48 @@ def test__user_info_decodes_valid_token(
     keys = auth.jwks(http_client=http_client, openid=openid, auth_circuit_breaker=auth_circuit_breaker)
 
     key = auth.jwk(keycloak_access_token, keys)
-    claims = auth.user_info(auth_base_url, keycloak_access_token, key)
+    claims = auth.user_info(auth_base_url, keycloak_access_token, key, auth_settings)
 
     assert claims["iss"] == auth_base_url
     assert claims["azp"] == "admin-cli"
+
+
+def test__user_info_rejects_wrong_audience(
+    auth_base_url: str,
+    keycloak_access_token: str,
+    http_client: httpx.Client,
+    auth_circuit_breaker: CircuitBreaker,
+) -> None:
+    """User info provider should reject tokens whose azp/aud do not contain the expected audience."""
+    openid = auth.openid_configuration(
+        auth_base_url=auth_base_url,
+        http_client=http_client,
+        auth_circuit_breaker=auth_circuit_breaker,
+    )
+    keys = auth.jwks(http_client=http_client, openid=openid, auth_circuit_breaker=auth_circuit_breaker)
+
+    key = auth.jwk(keycloak_access_token, keys)
+
+    wrong_audience_settings = Mock(auth_audience="some-other-client", spec=Settings)
+
+    with pytest.raises(HTTPException, match="Invalid token audience"):
+        auth.user_info(auth_base_url, keycloak_access_token, key, wrong_audience_settings)
+
+
+@pytest.mark.parametrize(
+    ("claims", "expected_audience", "expected"),
+    [
+        ({"azp": "aurelius"}, "aurelius", True),
+        ({"aud": "aurelius"}, "aurelius", True),
+        ({"aud": ["account", "aurelius"]}, "aurelius", True),
+        ({"azp": "admin-cli", "aud": ["account"]}, "aurelius", False),
+        ({}, "aurelius", False),
+        ({"aud": ["account", "master-realm"]}, "aurelius", False),
+    ],
+)
+def test__audience_matches(claims: dict, expected_audience: str, expected: bool) -> None:  # noqa: FBT001
+    """Audience check should accept the expected value in azp or aud and reject otherwise."""
+    assert auth._audience_matches(claims, expected_audience) is expected  # noqa: SLF001
 
 
 def test__user_info_rejects_wrong_issuer(
@@ -103,6 +144,7 @@ def test__user_info_rejects_wrong_issuer(
     keycloak_access_token: str,
     http_client: httpx.Client,
     auth_circuit_breaker: CircuitBreaker,
+    auth_settings: Settings,
 ) -> None:
     """User info provider should reject tokens when issuer does not match configured realm."""
     openid = auth.openid_configuration(
@@ -115,7 +157,7 @@ def test__user_info_rejects_wrong_issuer(
     key = auth.jwk(keycloak_access_token, keys)
 
     with pytest.raises(HTTPException, match="Invalid token issuer"):
-        auth.user_info(f"{auth_base_url}/wrong", keycloak_access_token, key)
+        auth.user_info(f"{auth_base_url}/wrong", keycloak_access_token, key, auth_settings)
 
 
 def test__jwk_rejects_unknown_key_id() -> None:

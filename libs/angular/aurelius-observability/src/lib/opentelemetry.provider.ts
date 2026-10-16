@@ -1,6 +1,6 @@
 import { EnvironmentProviders, InjectionToken, makeEnvironmentProviders, provideAppInitializer } from "@angular/core";
 import { Tracer } from "@opentelemetry/api";
-import { defaultResource, resourceFromAttributes } from "@opentelemetry/resources";
+import { defaultResource, Resource, resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchSpanProcessor, ConsoleSpanExporter, SpanExporter, SpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { WebTracerProvider } from "@opentelemetry/sdk-trace-web";
 
@@ -13,6 +13,10 @@ export interface AureliusOpenTelemetryOptions {
     spanProcessors?: SpanProcessor[];
     name?: string;
     version?: string;
+    /**
+     * Extra resource merged last (e.g. {@link createAureliusSessionResource}).
+     */
+    resource?: Resource;
 }
 
 function resolveName(options?: AureliusOpenTelemetryOptions): string {
@@ -24,12 +28,15 @@ export function createAureliusWebTracerProvider(options?: AureliusOpenTelemetryO
         new BatchSpanProcessor(options?.exporter ?? new ConsoleSpanExporter()),
     ];
 
-    const resource = defaultResource().merge(
+    let resource = defaultResource().merge(
         resourceFromAttributes({
             "service.name": resolveName(options),
             ...(options?.serviceVersion ? { "service.version": options.serviceVersion } : {}),
         }),
     );
+    if (options?.resource) {
+        resource = resource.merge(options.resource);
+    }
 
     const provider = new WebTracerProvider({ resource, spanProcessors });
     provider.register();

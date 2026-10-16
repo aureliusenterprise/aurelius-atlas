@@ -1,5 +1,5 @@
 """
-This module provides testing utilities for Aurelius applications.
+Testcontainers-based helpers for tests.
 
 Note:
     Please install the `testing` extra to use this module.

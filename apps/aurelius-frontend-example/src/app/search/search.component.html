@@ -2,11 +2,12 @@
 
 <div class="field has-addons">
     <div class="control has-icons-left is-expanded">
-        <label class="is-sr-only" for="search-input">Search for an entity</label>
+        <label class="is-sr-only" for="search-input" i18n>Search for an entity</label>
         <input
             id="search-input"
             class="input"
             type="search"
+            i18n-placeholder
             placeholder="Search for an entity"
             [class.is-danger]="_error"
             [(ngModel)]="searchService.query"

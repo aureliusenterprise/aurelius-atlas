@@ -5,7 +5,7 @@ import threading
 from collections.abc import AsyncGenerator, Callable
 from functools import cache, partial
 from types import TracebackType
-from typing import Annotated, Self
+from typing import Annotated, Any, Self
 
 import psycopg
 from aurelius_example.models import PG_NOTIFY_ENTITY_CHANNEL, Entity, EntityNotification
@@ -37,6 +37,9 @@ class EntityNotificationBroadcaster(Broadcaster[Envelope[Entity]]):
         if self._is_running():
             return
 
+        ssl_options: dict[str, Any] = (
+            {"sslrootcert": self._settings.database_sslrootcert} if self._settings.database_sslrootcert else {}
+        )
         try:
             self._connection = psycopg.connect(
                 autocommit=True,
@@ -45,6 +48,8 @@ class EntityNotificationBroadcaster(Broadcaster[Envelope[Entity]]):
                 dbname=self._settings.database_name,
                 user=self._settings.database_username,
                 password=self._settings.database_password.get_secret_value(),
+                sslmode=self._settings.database_sslmode,
+                **ssl_options,
             )
 
             self._postgres_listener = PostgresListener(

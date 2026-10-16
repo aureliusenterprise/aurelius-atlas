@@ -3,22 +3,25 @@ dependencies = ["httpx>=0.28.1"]
 description = "This library provides common utilities for Aurelius projects."
 name = "aurelius-sdk"
 requires-python = ">=3.14"
-version = "0.6.0"
+version = "0.6.1"
 
 [project.optional-dependencies]
-aws = ["boto3>=1.43.96", "types-boto3[full]>=1.43.96"]
+# Floor only: 1.41.5 is what the workspace venv pins (openmetadata-ingestion
+# requires ~=1.41.5); no ceiling so consumers can track current boto3.
+aws = ["boto3>=1.41.5", "types-boto3[full]>=1.41.5"]
 azure = ["msal>=1.38.0"]
 full = [
-    "boto3>=1.43.96",
+    "boto3>=1.41.5",
     "coloredlogs>=15.0.1",
     "msal>=1.38.0",
     "psycopg[binary]>=3.3.5",
     "testcontainers>=4.15.0",
-    "types-boto3[full]>=1.43.96",
+    "types-boto3[full]>=1.41.5",
+    "trustme>=1.1",
 ]
 logging = ["coloredlogs>=15.0.1"]
 postgresql = ["psycopg[binary]>=3.3.5"]
-testing = ["testcontainers>=4.15.0"]
+testing = ["testcontainers>=4.15.0", "trustme>=1.1"]
 
 [[project.authors]]
 name = "Aurelius Enterprise"

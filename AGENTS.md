@@ -10,10 +10,12 @@ there is no central index.
 ## Quick Start
 
 1. **Install dependencies**: `npm ci` (root) + `uv sync` + `./gradlew dependencies` (Java)
-2. **Run an app**: `npx nx serve <project>` — required dev infrastructure (Keycloak, Postgres,
-   Kafka, observability) starts automatically via target `dependsOn`; there is no root compose file.
-3. **Run pre-commit**: `pre-commit run --all-files` (fix any issues)
-4. **Verify**: `nx run-many --target=test -c ci` (or target a specific project)
+2. **Docker Hub login**: `docker login` — all base/infra images come from `dhi.io` (Docker Hardened Images)
+   and pulls fail as `unauthorized` without it.
+3. **Run an app**: `npx nx serve <project>` — required dev infrastructure (Keycloak, Postgres, Kafka,
+   observability) starts automatically via target `dependsOn`; there is no root compose file.
+4. **Run pre-commit**: `pre-commit run --all-files` (fix any issues)
+5. **Verify**: `nx run-many --target=test -c ci` (or target a specific project)
 
 > [!WARNING]
 > Fresh clones fail tests until a SOPS age key exists (`secrets/keys.txt`, generated on first
@@ -103,6 +105,17 @@ and the `mkdocs.yaml` nav.
 - **SonarQube**: Analysis configured per app via `sonar-project.properties`.
 - **Secrets**: Real secrets live in per-project `.env.enc` (SOPS). Plaintext `.env` files hold
   dev defaults only. The age key is generated per developer on first devcontainer start.
+- **Env var prefixes**: Nx injects each project's `.env` into **every** task's environment for
+  that project, so app-owned settings must carry a per-project prefix — `AURELIUS_FASTAPI_`,
+  `AURELIUS_LAMBDA_`, `AURELIUS_FRONTEND_`, `AURELIUS_JAVA_PRODUCER_`, `AURELIUS_NODE_RED_`,
+  `AURELIUS_CONNECTOR_` — to prevent cross-project shadowing (pydantic `env_prefix`,
+  `AppConfig.ENV_PREFIX`, `flows.json` `${...}`, `${env:...}` in Connect properties).
+  Names consumed by **third-party** code stay bare: `OTEL_*`, `POSTGRES_*`/`PG*` (image entrypoints),
+  `KC_*`/`KEYCLOAK_*`, broker `KAFKA_*`/`SCHEMA_REGISTRY_*`/`KAFKA_CLUSTERS_0_*` (dev/kafka infra
+  config), `JAVA_OPTS`/`JAVA_TOOL_OPTIONS`, `NODE_EXTRA_CA_CERTS`, Node `PORT`, `SONAR_TOKEN`,
+  `KAFKA_E2E_OAUTH_*` (shared e2e role), `TLS_TRUSTSTORE_PASSWORD` (shared compose interpolation),
+  and `AWS_REGION` (boto3/Lambda runtime, dual-owned by the lambda app). When renaming a key in
+  `.env`, re-run `nx encrypt <project>` — CI regenerates plaintext `.env` from `.env.enc`.
 
 ## Common Commands
 

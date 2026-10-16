@@ -1,7 +1,12 @@
 @let entities = searchService.entities();
 @let pageSize = searchService.pageSize();
 
-<h1 class="title is-1">I have found {{ entities.total | i18nPlural: pluralMap }}</h1>
+<h1 class="title is-1" i18n>
+    {entities.total, plural,
+        =1 {I have found {{ entities.total }} entity.}
+        other {I have found {{ entities.total }} entities.}
+    }
+</h1>
 
 @if (entities.total > 0) {
     <aurelius-ui-pagination

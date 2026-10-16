@@ -18,7 +18,19 @@
     },
     "namedInputs": {
         "default": ["{projectRoot}/**/*"],
-        "production": ["default", "!{projectRoot}/src/test/**/*"]
+        "production": [
+            "default",
+            "!{workspaceRoot}/docs/**/*",
+            "!{projectRoot}/**/AGENTS.md",
+            "!{projectRoot}/sonar-project.properties",
+            "!{projectRoot}/e2e/**/*",
+            "!{projectRoot}/src/test/**/*",
+            "!{projectRoot}/src/**/*.spec.ts",
+            "!{projectRoot}/src/**/*.stories.ts",
+            "!{projectRoot}/tests/**/*"
+        ],
+        "pythonBase": ["default", "{workspaceRoot}/pyproject.toml", "{workspaceRoot}/uv.lock"],
+        "secrets": ["{projectRoot}/.env.enc", "{workspaceRoot}/.sops.yaml"]
     },
     "neverConnectToCloud": true,
     "plugins": [
@@ -26,17 +38,14 @@
         "./tools/plugins/docker.ts",
         "./tools/plugins/docker-compose.ts",
         "./tools/plugins/mkdocs.ts",
+        "./tools/plugins/openlineage.ts",
+        "./tools/plugins/openmetadata.ts",
         "./tools/plugins/python.ts",
         "./tools/plugins/sonarqube.ts",
         "./tools/plugins/sops.ts",
         "./tools/plugins/sops-decrypt.ts",
         "./tools/plugins/sops-encrypt.ts",
-        {
-            "options": {
-                "targetName": "eslint:lint"
-            },
-            "plugin": "@nx/eslint/plugin"
-        },
+        "./tools/plugins/tls.ts",
         {
             "options": {
                 "buildTargetName": "build",
@@ -44,6 +53,12 @@
                 "testTargetName": "test"
             },
             "plugin": "@nx/gradle"
+        },
+        {
+            "options": {
+                "targetName": "lint"
+            },
+            "plugin": "@nx/eslint/plugin"
         }
     ],
     "release": {
@@ -66,28 +81,52 @@
         "@angular/build:application": {
             "cache": true,
             "dependsOn": ["^build"],
-            "inputs": ["default", "^default"]
+            "inputs": ["production", "^production"]
         },
         "@nx/angular:ng-packagr-lite": {
             "cache": true,
             "dependsOn": ["^build"],
-            "inputs": ["default", "^default"]
+            "inputs": ["production", "^production"]
         },
         "@nx/angular:unit-test": {
             "cache": true,
             "inputs": ["default", "^default"]
         },
-        "@nx/eslint:lint": {
+        "@nx/eslint/plugin": {
             "cache": true,
             "inputs": ["default", "{workspaceRoot}/eslint.config.mjs"]
         },
-        "@nx/vitest:test": {
-            "cache": true,
-            "inputs": ["default", "^default"]
-        },
-        "build-storybook": {
+        "@storybook/angular:build-storybook": {
             "cache": true,
             "inputs": ["default", "^default", "{projectRoot}/.storybook/**/*", "{projectRoot}/tsconfig.storybook.json"]
+        },
+        "decrypt": {
+            "inputs": ["secrets"]
+        },
+        "docker-build": {
+            "inputs": [
+                "production",
+                "^production",
+                "{projectRoot}/Dockerfile",
+                {
+                    "dependentTasksOutputFiles": "**/*",
+                    "transitive": true
+                }
+            ]
+        },
+        "docker-publish": {
+            "inputs": [
+                "production",
+                "^production",
+                "{projectRoot}/Dockerfile",
+                {
+                    "dependentTasksOutputFiles": "**/*",
+                    "transitive": true
+                }
+            ]
+        },
+        "sonar": {
+            "inputs": ["default", "^default"]
         }
     }
 }

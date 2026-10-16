@@ -1,8 +1,6 @@
-import { effect, inject, Injectable, Signal, signal } from "@angular/core";
-import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { computed, effect, inject, Injectable, signal } from "@angular/core";
 import { KEYCLOAK_EVENT_SIGNAL, KeycloakEventType, ReadyArgs, typeEventArgs } from "keycloak-angular";
 import Keycloak, { KeycloakProfile } from "keycloak-js";
-import { switchMap } from "rxjs";
 
 @Injectable({
     providedIn: "root",
@@ -16,7 +14,7 @@ export class AuthService {
     /**
      * A signal that returns the Keycloak profile if the user is authenticated.
      */
-    readonly profile: Signal<KeycloakProfile | null>;
+    readonly profile = computed(() => this.profileFor(this.authenticated()));
 
     /**
      * The Keycloak instance used for authentication.
@@ -43,12 +41,6 @@ export class AuthService {
                 this.authenticated.set(false);
             }
         });
-
-        const profile$ = toObservable(this.authenticated).pipe(
-            switchMap((authenticated) => this.loadUserProfile(authenticated)),
-        );
-
-        this.profile = toSignal(profile$, { initialValue: null });
     }
 
     /**
@@ -73,12 +65,30 @@ export class AuthService {
     }
 
     /**
-     * Loads the user profile if the user is authenticated.
+     * Returns the user profile for authenticated users, derived from the ID-token claims.
+     *
+     * Deliberately NOT {@link Keycloak.loadUserProfile}: that calls the Account REST API,
+     * which requires the {@code account} audience. The {@code aurelius} client runs with
+     * {@code fullScopeAllowed: false} (least privilege), so its tokens never carry that
+     * audience and the call would fail with an opaque CORS error.
      */
-    private async loadUserProfile(authenticated: boolean): Promise<KeycloakProfile | null> {
+    private profileFor(authenticated: boolean): KeycloakProfile | null {
         if (!authenticated) {
             return null;
         }
-        return this.keycloak.loadUserProfile();
+
+        const claims = this.keycloak.idTokenParsed;
+
+        if (!claims) {
+            return null;
+        }
+
+        return {
+            id: claims.sub,
+            username: claims["preferred_username"],
+            email: claims["email"],
+            firstName: claims["given_name"],
+            lastName: claims["family_name"],
+        };
     }
 }

@@ -21,14 +21,14 @@ export const createNodes: CreateNodes<SopsDecryptPluginOptions> = [
     },
 ];
 
-async function createNodesInternal(
+function createNodesInternal(
     configFilePath: string,
     {
         decryptDefaultConfiguration = ".env",
         decryptTargetName = "decrypt",
         updateKeys = "update-keys",
     }: SopsDecryptPluginOptions = {},
-): Promise<CreateNodesResult> {
+): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
     return {

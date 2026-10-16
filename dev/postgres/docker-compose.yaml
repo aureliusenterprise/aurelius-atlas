@@ -4,13 +4,34 @@ services:
     postgres:
         image: dhi.io/postgres:18-alpine3.23
         environment:
-            POSTGRES_USER: ${DATABASE_USERNAME}
-            POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-            POSTGRES_DB: ${DATABASE_NAME}
+            # ${VAR:?} guards: empty credentials would reinitialise the data
+            # volume differently or crash-loop initdb obscurely; abort
+            # interpolation instead. (DATABASE_PORT appears only in `ports:`,
+            # where an empty value already fails config validation.)
+            POSTGRES_USER: ${DATABASE_USERNAME:?}
+            POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?}
+            POSTGRES_DB: ${DATABASE_NAME:?}
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+        # The image runs as a fixed non-root user that cannot read bind-mounted
+        # key material it does not own, so the certificates are copied to the
+        # container filesystem with strict permissions before startup.
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - >-
+                install -m 600 /certs/postgres.pem /tmp/server.pem &&
+                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
+                exec docker-entrypoint.sh
+                -c ssl=on
+                -c ssl_cert_file=/tmp/server.pem
+                -c ssl_key_file=/tmp/server-key.pem
+                -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready", "-d", "${DATABASE_NAME}"]
+            test:
+                [
+                    "CMD-SHELL",
+                    "PGSSLMODE=verify-full PGSSLROOTCERT=/certs/ca.pem pg_isready -h 127.0.0.1 -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}",
+                ]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -18,10 +39,43 @@ services:
             - ${DATABASE_PORT}:${DATABASE_PORT}
         volumes:
             - data:/var/lib/postgresql
+            - ./certs:/certs:ro
+            - ./pg_hba.conf:/conf/pg_hba.conf:ro
+
+    metrics-puller:
+        # Slice-owned OTel collector: scrapes this Postgres and pushes OTLP
+        # to the dev collector, so dev/observability never learns this slice
+        # exists (same pattern as dev/governance's metrics-puller). Targets
+        # and attribution live in config/metrics-puller.yaml.
+        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        environment:
+            # Same dev defaults the postgres service gets; the collector
+            # expands ${env:...} in its config.
+            DATABASE_NAME: ${DATABASE_NAME:?}
+            DATABASE_USERNAME: ${DATABASE_USERNAME:?}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:?}
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - default
+            - observability
 
 networks:
     default:
         name: aurelius-dev-postgres-network
+    # The dev telemetry stack (dev/observability). Attaching is safe because
+    # nx guarantees the chain (this project's implicitDependencies on
+    # aurelius-dev-observability make `nx up`/`serve` start it first; e2e
+    # fixtures inherit the guarantee through their dependents), and the
+    # network exists as soon as observability is up.
+    observability:
+        name: aurelius-dev-observability-network
+        external: true
 
 volumes:
     data:

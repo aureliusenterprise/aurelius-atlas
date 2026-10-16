@@ -32,7 +32,10 @@ nx serve aurelius-frontend-example
 ```
 
 Serves on `http://localhost:4200` with a dev proxy: `/api` → the FastAPI backend on
-port 8000 (prefix stripped) and `/otel` → the OTLP collector on port 4318.
+port 8000 (prefix stripped) and `/otel` → the OTLP collector on port 4318. Both
+upstreams are HTTPS and verified against the local CA — the proxy trusts it via
+`NODE_EXTRA_CA_CERTS` from the project `.env` (`nx certgen`, ADR 039). The
+developer browser stays on plaintext HTTP on 4200.
 
 ## Testing
 
@@ -46,3 +49,19 @@ nx extract-i18n aurelius-frontend-example    # refresh translation bundles
 
 The production Docker image is a static nginx serve (`dhi.io/nginx`, port 8080);
 `/config.json` is supplied at deploy time instead of being baked in.
+
+The image includes the locale-aware nginx config for `/en-US/` and `/nl-NL/`, the
+preferred-language redirect at `/`, and localized SPA fallbacks. Keep these
+application-serving rules in the image. Supply TLS and backend routing through
+deployment infrastructure, or mount optional nginx fragments at
+`/etc/nginx/app.d/*.conf`. These fragments are included inside the existing
+`server` block, so they must not define another `server` or an HTTP-level `map`.
+
+E2E runs the same image configuration. Compose mounts `e2e/config/nginx.conf`
+E2E replaces the image's site config with `e2e/config/nginx.conf` (mounted at
+`/etc/nginx/conf.d/default.conf`): the same locale-serving rules, but with
+`listen ssl` using the frontend's certificate and TLS-verified `/api/` and
+`/otel/` proxies — E2E always runs over TLS (ADR 039). Tests also get the
+runtime `config.json`. Tests use `/en-US/` and check the root locale
+redirects and SPA fallbacks for both locales. Neither nginx configuration is used
+by `nx serve`, which runs Angular's development server.

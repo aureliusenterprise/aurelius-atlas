@@ -8,8 +8,14 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
 - `Dockerfile` — multi-stage: builder installs `awslambdaric` + CloudWatch
   Lambda Insights into `/var/task` / `/opt/cloudwatch`; runtime stage runs as
   `nonroot` with `ENTRYPOINT ["python", "-m", "awslambdaric"]`
-- `pyproject.toml` — name/version stub so uv-workspace release versioning bumps
-  this image alongside the rest
+
+## Versioning
+
+This image is not semver-versioned: `release.version.versionActions` points at
+`tools/plugins/noop-version-actions.ts`, so `nx release` skips it (no manifest
+to bump). Images are tagged `local`/`latest` by the docker targets; consuming
+Lambda apps resolve the base via `--build-arg VERSION={args.version}`, which
+falls back to the `ARG VERSION=local` default in their Dockerfiles.
 
 ## Wiring Checklist
 

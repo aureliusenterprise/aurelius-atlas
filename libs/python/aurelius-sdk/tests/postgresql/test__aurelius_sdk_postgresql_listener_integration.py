@@ -7,7 +7,14 @@ from typing import TypedDict
 import psycopg
 import pytest
 from aurelius_sdk.postgresql import PostgresListener
-from testcontainers.postgres import PostgresContainer
+from aurelius_sdk.testing.tls import (
+    TLS_POSTGRES_HOST,
+    TLS_POSTGRES_IMAGE,
+    TlsCertificates,
+    configure_tls_postgres,
+    tls_certificates,
+)
+from testcontainers.community.postgres import PostgresContainer
 
 
 class PostgresConnectKwargs(TypedDict):
@@ -18,6 +25,8 @@ class PostgresConnectKwargs(TypedDict):
     dbname: str
     user: str
     password: str
+    sslmode: str
+    sslrootcert: str
 
 
 @pytest.fixture(scope="session")
@@ -31,29 +40,45 @@ def db_credentials() -> dict[str, str]:
 
 
 @pytest.fixture(scope="session")
-def db_container(db_credentials: dict[str, str]) -> Generator[PostgresContainer]:
-    """Start a PostgreSQL container for SDK CDC integration tests."""
-    with PostgresContainer(
-        "postgres:latest",
+def db_tls_material() -> Generator[TlsCertificates]:
+    """Generate ephemeral TLS material, removed again at session teardown."""
+    with tls_certificates() as certs:
+        yield certs
+
+
+@pytest.fixture(scope="session")
+def db_container(db_credentials: dict[str, str], db_tls_material: TlsCertificates) -> Generator[PostgresContainer]:
+    """Start a TLS-enforcing PostgreSQL container for SDK CDC integration tests."""
+    container = PostgresContainer(
+        TLS_POSTGRES_IMAGE,
         username=db_credentials["database_username"],
         password=db_credentials["database_password"],
         dbname=db_credentials["database_name"],
-    ) as container:
+    )
+    configure_tls_postgres(container, db_tls_material)
+    with container:
         yield container
 
 
 @pytest.fixture
 def postgres_connect_kwargs(
     db_container: PostgresContainer,
+    db_tls_material: TlsCertificates,
     db_credentials: dict[str, str],
 ) -> PostgresConnectKwargs:
     """Return psycopg connect kwargs for the running test container."""
     return {
-        "host": db_container.get_container_host_ip(),
+        # TLS_POSTGRES_HOST, not get_container_host_ip(): the ephemeral certificate
+        # only covers loopback names and libpq verifies the host against them.
+        "host": TLS_POSTGRES_HOST,
         "port": int(db_container.get_exposed_port(5432)),
         "dbname": db_credentials["database_name"],
         "user": db_credentials["database_username"],
         "password": db_credentials["database_password"],
+        # The container enforces TLS (hostssl-only pg_hba) with an ephemeral
+        # trustme CA, matching dev/e2e: verify the server against that CA.
+        "sslmode": "verify-full",
+        "sslrootcert": str(db_tls_material.ca_bundle_path),
     }
 
 
@@ -66,6 +91,8 @@ def _connect(connect_kwargs: PostgresConnectKwargs) -> psycopg.Connection:
         dbname=connect_kwargs["dbname"],
         user=connect_kwargs["user"],
         password=connect_kwargs["password"],
+        sslmode=connect_kwargs["sslmode"],
+        sslrootcert=connect_kwargs["sslrootcert"],
     )
 
 

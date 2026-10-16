@@ -6,4 +6,7 @@
 **/CHANGELOG.md
 uv.lock
 
+**/.gitignore
+**/.dockerignore
+**/.prettierignore
 .angular

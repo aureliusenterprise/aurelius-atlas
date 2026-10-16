@@ -14,17 +14,27 @@ specific to this app; workspace-wide rules live in the root `AGENTS.md`.
 
 ## Configuration
 
-- Settings are pydantic `BaseSettings`; keys come from `.env` (dev default) and
-  `.env.enc` (SOPS). `KAFKA_BOOTSTRAP_SERVERS` and `SCHEMA_REGISTRY_URL` are
-  supplied by the e2e compose and by Lambda environment variables in deployment.
+- Settings are pydantic `BaseSettings` with `env_prefix="AURELIUS_LAMBDA_"`;
+  keys come from `.env` (dev default) and `.env.enc` (SOPS), all prefixed —
+  e.g. `AURELIUS_LAMBDA_KAFKA_BOOTSTRAP_SERVERS`,
+  `AURELIUS_LAMBDA_SCHEMA_REGISTRY_URL` — supplied by the e2e compose and by
+  Lambda environment variables in deployment. `AWS_REGION` is exempt from the
+  prefix (the boto3/MSK signer chain reads the standard name; the field uses a
+  `validation_alias` so only that name populates it).
+- OAuth (ADR 013): `AURELIUS_LAMBDA_KAFKA_OAUTH_TOKEN_ENDPOINT_URL`/`_CLIENT_ID`/`_CLIENT_SECRET`
+  (all-or-none, enforced by a model validator) make `initialize()` build the
+  producer via `aurelius_kafka.oauth_client_config`. In the e2e compose the
+  token URL is hardcoded to `https://keycloak:8443/...` — librdkafka resolves
+  `*.localhost` to loopback in containers (`dev/kafka/AGENTS.md` explains).
 
 ## Wiring Checklist
 
 - `project.json` — `implicitDependencies`: `aurelius-aws-lambda`, `aurelius-kafka`,
   `aurelius-example`, `aurelius-dev-kafka`, `aurelius-aws-lambda-base`.
 - `Dockerfile` — `FROM ghcr.io/aureliusenterprise/aurelius-aws-lambda-base:${VERSION}`
-  and `CMD aurelius_aws_lambda_example.main`. Bumping the base image means
-  releasing it first; `nx release` keeps `${VERSION}` in sync.
+  and `CMD aurelius_aws_lambda_example.main`. The base image is not semver-versioned
+  (noop version actions), so `${VERSION}` resolves to the `local` default and the
+  base is consumed as a rebuilt `local`/`latest` image, not a pinned release tag.
 - `pyproject.toml` — workspace deps via `[tool.uv.sources] workspace = true`.
 - `mkdocs.yaml` — API reference page under `docs/api-reference/apps/`.
 

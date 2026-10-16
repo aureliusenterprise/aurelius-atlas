@@ -1,7 +1,7 @@
 name: Update SOPS keys
 
 on:
-    pull_request:
+    push:
         branches:
             - main
         paths:
@@ -11,6 +11,17 @@ jobs:
     update-keys:
         name: Update SOPS Keys
         runs-on: ubuntu-latest
+        # SECURITY: this job holds the key that decrypts every .env.enc in the
+        # repository (SOPS_AGE_KEY) and pushes the re-encrypted files to main.
+        # It therefore runs only on pushes to main — never on pull requests —
+        # so it can only ever re-encrypt to recipients that a reviewer already
+        # approved and merged into .sops.yaml. Reviewers must verify that every
+        # key in the diff belongs to a known team member; never merge a key you
+        # cannot attribute to a person.
+        # The push to main authenticates with the deploy key, so the job's
+        # GITHUB_TOKEN only needs read access (checkout).
+        permissions:
+            contents: read
 
         steps:
             - name: Checkout code
@@ -33,27 +44,21 @@ jobs:
             - run: git config --global user.email "info@aureliusenterprise.com"
             - run: git config --global user.name "Aurelius Enterprise"
 
-            - name: Commit and push changes
-              id: commit
+            - name: Commit and push rotation changes
+              env:
+                  # Write deploy key added to the branch ruleset's bypass list;
+                  # the default GITHUB_TOKEN cannot push to protected main.
+                  SSH_PRIVATE_KEY: ${{ secrets.ROTATION_DEPLOY_KEY }}
               run: |
                   git add -A
-                  if git diff --cached --quiet; then
-                      echo "Encrypted files already match .sops.yaml; nothing to commit."
-                      echo "changed=false" >> "$GITHUB_OUTPUT"
-                      exit 0
-                  fi
-                  git commit -m "chore: update SOPS keys"
-                  git push --set-upstream origin HEAD:"${{ github.head_ref }}"
-                  echo "changed=true" >> "$GITHUB_OUTPUT"
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Add PR comment
-              if: steps.commit.outputs.changed == 'true'
-              uses: hasura/comment-progress@v2.3.0
-              with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  repository: ${{ github.repository }}
-                  number: ${{ github.event.number }}
-                  id: secret-update-note
-                  message: "Updated SOPS keys due to changes in .sops.yaml. Please review the changes."
+                  # No-op when the recipient change needed no re-encryption.
+                  git diff --cached --quiet || git commit -m "chore: update SOPS keys"
+                  # Detached checkout: push the rotation commit (if any) to main.
+                  # Switch to SSH so git authenticates with the deploy key below
+                  # instead of checkout's persisted GITHUB_TOKEN.
+                  git remote set-url origin git@github.com:${{ github.repository }}.git
+                  mkdir -p ~/.ssh
+                  printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+                  chmod 600 ~/.ssh/id_ed25519
+                  ssh-keyscan github.com >> ~/.ssh/known_hosts
+                  git push origin HEAD:main

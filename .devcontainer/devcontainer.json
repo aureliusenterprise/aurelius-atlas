@@ -98,12 +98,12 @@
     },
     "features": {
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
-            "packages": ["age", "gnupg2", "libpq-dev", "librdkafka-dev"]
+            "packages": ["age", "gnupg2", "libpq-dev", "librdkafka-dev", "libnss3-tools", "mkcert"]
         },
         "ghcr.io/devcontainers-extra/features/cosign:1.0.10": {},
         "ghcr.io/devcontainers-extra/features/cyclonedx-cli:1.0.10": {},
         "ghcr.io/devcontainers-extra/features/nx-npm:1": {
-            "version": "23.2.1"
+            "version": "23.3.0"
         },
         "ghcr.io/devcontainers-extra/features/sops:1": {
             "version": "latest"

@@ -11,6 +11,9 @@
                     "target": "decrypt"
                 },
                 {
+                    "target": "certgen"
+                },
+                {
                     "target": "docker-build"
                 },
                 {
@@ -26,7 +29,11 @@
         },
         "serve": {
             "command": "node-red -u {projectRoot} --title aurelius-node-red-example",
-            "dependsOn": [{ "target": "decrypt" }, { "projects": ["aurelius-dev-kafka"], "target": "serve" }]
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                { "projects": ["aurelius-dev-kafka"], "target": "serve" }
+            ]
         }
     }
 }

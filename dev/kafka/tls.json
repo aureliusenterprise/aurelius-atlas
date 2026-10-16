@@ -1,0 +1,11 @@
+{
+    "keystore": true,
+    "services": {
+        "broker": ["broker", "localhost", "127.0.0.1"],
+        "kafka-ui": ["kafka-ui"],
+        "metrics-puller": ["metrics-puller"],
+        "openmetadata": ["openmetadata", "localhost", "127.0.0.1"],
+        "schema-registry": ["schema-registry", "localhost", "127.0.0.1"]
+    },
+    "truststore": true
+}

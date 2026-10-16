@@ -1,9 +1,21 @@
 import { provideHttpClient, withInterceptors, withXhr } from "@angular/common/http";
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from "@angular/core";
+import {
+    ApplicationConfig,
+    ErrorHandler,
+    provideBrowserGlobalErrorListeners,
+    provideZonelessChangeDetection,
+} from "@angular/core";
 import { provideRouter } from "@angular/router";
 import { provideApiBaseUrl } from "aurelius-data-access";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { aureliusOpenTelemetryHttpInterceptor, provideAureliusOpenTelemetry } from "aurelius-observability";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
+import {
+    AureliusTraceErrorHandler,
+    aureliusOpenTelemetryHttpInterceptor,
+    createAureliusSessionResource,
+    provideAureliusOpenTelemetry,
+    provideAureliusOpenTelemetryMetrics,
+} from "aurelius-observability";
 import {
     INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
     includeBearerTokenInterceptor,
@@ -30,20 +42,43 @@ async function loadConfig(): Promise<AppConfig> {
 }
 
 /**
+ * Metric signal URL: explicit config wins, else the traces endpoint with its
+ * trailing signal swapped (`.../v1/traces` -> `.../v1/metrics`).
+ * @param config The parsed app config.
+ * @returns The OTLP metrics endpoint.
+ */
+export function metricsUrl(config: AppConfig): string {
+    return config.otelMetricsExporterUrl ?? config.otelExporterUrl.replace(/traces$/, "metrics");
+}
+
+/**
  * Load the application configuration from the server and initialize the application.
  * @returns ApplicationConfig
  */
 export async function initialize(): Promise<ApplicationConfig> {
     const config = await loadConfig();
+    const sessionResource = createAureliusSessionResource();
 
     return {
         providers: [
             provideBrowserGlobalErrorListeners(),
+            // Uncaught errors (window.onerror + unhandledrejection, handed to
+            // the DI ErrorHandler by the listeners above) become exception
+            // events on the active span, or a standalone error span.
+            { provide: ErrorHandler, useClass: AureliusTraceErrorHandler },
             provideAureliusOpenTelemetry({
                 exporter: new OTLPTraceExporter({
                     url: config.otelExporterUrl,
                 }),
                 name: "aurelius-frontend-example",
+                resource: sessionResource,
+            }),
+            provideAureliusOpenTelemetryMetrics({
+                exporter: new OTLPMetricExporter({
+                    url: metricsUrl(config),
+                }),
+                name: "aurelius-frontend-example",
+                resource: sessionResource,
             }),
             provideApiBaseUrl(config.apiBaseUrl),
             provideKeycloak({

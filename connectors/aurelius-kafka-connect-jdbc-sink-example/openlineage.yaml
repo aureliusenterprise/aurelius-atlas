@@ -1,0 +1,51 @@
+version: 1
+openmetadata:
+    host: http://localhost:8585
+    tokenEnv: OPENLINEAGE_JWT_TOKEN
+pipeline:
+    service: aurelius-openlineage
+    # Must equal the pipeline OpenMetadata derives from the sink's native
+    # OpenLineage events: "{jobNamespace}-{jobName}", where Debezium always
+    # names the job "{connectorName}.{taskId}" and the connector sets
+    # jobNamespace=aurelius-openlineage. Registering it statically here lets
+    # the live event stream merge into this same pipeline (stitched lineage).
+    name: aurelius-openlineage-aurelius-kafka-connect-jdbc-sink-example.0
+    description: Kafka Connect JDBC sink.
+    state: Active
+edges:
+    - from:
+          entity: topic
+          service: aurelius-dev-kafka
+          name: example.entity
+      to:
+          entity: pipeline
+          service: aurelius-openlineage
+          name: aurelius-openlineage-aurelius-kafka-connect-jdbc-sink-example.0
+      source: Manual
+      description: Entity topic consumed by Kafka Connect JDBC sink example.
+    - from:
+          entity: pipeline
+          service: aurelius-openlineage
+          name: aurelius-openlineage-aurelius-kafka-connect-jdbc-sink-example.0
+      to:
+          entity: table
+          service: aurelius-dev-postgres
+          # OpenMetadata's table entity name is the bare table — the schema
+          # lives in the FQN (aurelius-dev-postgres.aurelius.public.entity),
+          # not the name — so registration resolves it by `entity`.
+          name: entity
+      source: Manual
+      description: Entity table produced by Kafka Connect JDBC sink example.
+    - from:
+          entity: pipeline
+          service: aurelius-openlineage
+          name: aurelius-openlineage-aurelius-kafka-connect-jdbc-sink-example.0
+      to:
+          entity: topic
+          service: aurelius-dev-kafka
+          # Connect's dead-letter topic (errors.deadletterqueue.topic.name in
+          # workers/connector.properties): records the sink could not write
+          # are diverted here instead of stopping the task.
+          name: example.entity-dlq
+      source: Manual
+      description: Conversion/subscription failures are diverted to the sink DLQ topic.

@@ -22,6 +22,13 @@ export interface AppConfig {
      * OTLP trace exporter endpoint, same-origin (e.g. `/otel/v1/traces`).
      */
     readonly otelExporterUrl: string;
+
+    /**
+     * OTLP metric exporter endpoint, same-origin (e.g. `/otel/v1/metrics`).
+     * When omitted, consumers derive it from {@link otelExporterUrl} by
+     * swapping the trailing `traces` signal for `metrics`.
+     */
+    readonly otelMetricsExporterUrl?: string;
 }
 
 /**
@@ -58,7 +65,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         throw new Error("Invalid app config: expected a JSON object.");
     }
 
-    const { keycloak, apiBaseUrl, otelExporterUrl } = value as Partial<AppConfig>;
+    const { keycloak, apiBaseUrl, otelExporterUrl, otelMetricsExporterUrl } = value as Partial<AppConfig>;
 
     if (typeof keycloak !== "object" || keycloak === null) {
         throw new Error('Invalid app config: missing "keycloak" object.');
@@ -73,6 +80,10 @@ export function parseAppConfig(value: unknown): AppConfig {
         return field;
     };
 
+    if (otelMetricsExporterUrl !== undefined) {
+        requireString("otelMetricsExporterUrl", otelMetricsExporterUrl);
+    }
+
     return {
         keycloak: {
             clientId: requireString("keycloak.clientId", clientId),
@@ -81,5 +92,6 @@ export function parseAppConfig(value: unknown): AppConfig {
         },
         apiBaseUrl: requireString("apiBaseUrl", apiBaseUrl),
         otelExporterUrl: requireString("otelExporterUrl", otelExporterUrl),
+        ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
     };
 }

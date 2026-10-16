@@ -15,8 +15,10 @@ the rest of that slice.
 - `USER nonroot`, `PYTHONPATH=/var/task`, and
   `ENTRYPOINT ["python", "-m", "awslambdaric"]` — the handler is supplied as the
   image `CMD` (e.g. `aurelius_aws_lambda_example.main`).
-- The `pyproject.toml` here is a name/version stub: it exists so uv-workspace
-  release versioning bumps this image's version alongside the rest.
+- This image is not semver-versioned: `nx release` skips it (noop version
+  actions), so it is tagged `local`/`latest` only. Consumers resolve it via
+  `--build-arg VERSION={args.version}`, which falls back to the
+  `ARG VERSION=local` default in their Dockerfiles.
 
 ## Consuming
 

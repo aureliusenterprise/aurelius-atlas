@@ -9,6 +9,12 @@ environment, including the all tools and dependencies required for local develop
 
     [Docker](https://www.docker.com) and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) must be installed on your system to use the development container.
 
+    All container images in this repository — application bases as well as the development infrastructure
+    (Postgres, Keycloak, Kafka, observability) — are [Docker Hardened Images](https://dhi.io) pulled from
+    the `dhi.io` registry. Pulling them requires a Docker Hub account: run `docker login` on your host
+    before starting the development container or running any `serve`, `test`, or `e2e` target, otherwise
+    image pulls fail with an unauthorized error.
+
     If you're using **Rancher Desktop**, follow the instructions in the [Rancher Desktop documentation](https://docs.rancherdesktop.io/how-to-guides/vs-code-remote-containers/)
     to prepare your environment for use with the development container.
 
@@ -86,6 +92,15 @@ When the development container starts for the first time, it:
 2. Installs JavaScript dependencies (`npm install`) and Python dependencies (`uv sync`) into the workspace.
 3. Generates a personal SOPS/age key pair into `secrets/keys.txt`, unless one already exists.
 
+Local TLS material is not prewarmed: every `serve` or `e2e` target that needs it
+first runs that project's `certgen` target, which issues the certificates it
+owns into its own gitignored `certs/` directory. The local `mkcert` certificate
+authority has no workspace home: `certgen` installs it into the system trust
+stores on first use (it lives in mkcert's own store, outside the repository)
+and copies it into each project's `certs/`; run `mkcert -uninstall` to drop it
+entirely — see
+[Data Encryption](../architecture/platform/security/data-encryption.md).
+
 ??? WARNING "Your first tests may fail until your key is registered"
 
     Almost every `serve`, `test`, and `e2e` target first runs a `decrypt` step to turn the committed `.env.enc`
@@ -93,6 +108,13 @@ When the development container starts for the first time, it:
     `.sops.yaml` and the files have been re-encrypted for you (see
     [Registering a new key pair](./secrets-management.md#registering-a-new-key-pair)). Until then, commands fail
     with a SOPS/age decryption error — this is expected, not a broken setup.
+
+??? WARNING "Image pulls fail without a Docker Hub login"
+
+    The `serve`, `test`, and `e2e` targets pull their base and infrastructure images from
+    [Docker Hardened Images](https://dhi.io) (`dhi.io/*`), a registry that requires authentication with
+    Docker Hub credentials. If you have not run `docker login` with a Docker Hub account, pulls fail with
+    an `unauthorized` (or rate-limit) error — see the Prerequisites note at the top of this guide.
 
 ## Explore the Workspace
 

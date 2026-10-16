@@ -1,0 +1,67 @@
+{
+    "clients": [
+        {
+            "attributes": {
+                "oidc.ciba.grant_enabled": "false"
+            },
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "openmetadata",
+            "directAccessGrantsEnabled": true,
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": ["http://localhost:8585/callback"],
+            "secret": "${CLIENT_SECRET_OPENMETADATA}",
+            "standardFlowEnabled": true,
+            "webOrigins": ["http://localhost:8585"]
+        },
+        {
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "openmetadata-bot",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "implicitFlowEnabled": false,
+            "name": "OpenMetadata ingestion bot (machine client)",
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "email",
+                        "claim.value": "ingestion-bot@open-metadata.org",
+                        "id.token.claim": "true",
+                        "jsontype.label": "string"
+                    },
+                    "name": "bot-email-claim",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-hardcoded-claim-mapper"
+                }
+            ],
+            "publicClient": false,
+            "secret": "${CLIENT_SECRET_OPENMETADATA_BOT}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "webOrigins": ["http://localhost:8585"]
+        }
+    ],
+    "enabled": true,
+    "realm": "openmetadata",
+    "users": [
+        {
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "admin"
+                }
+            ],
+            "email": "admin@aureliusenterprise.com",
+            "emailVerified": false,
+            "enabled": true,
+            "firstName": "Admin",
+            "lastName": "Admin",
+            "realmRoles": ["admin", "user"],
+            "username": "admin"
+        }
+    ]
+}

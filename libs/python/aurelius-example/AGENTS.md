@@ -40,6 +40,12 @@ uv run pyright libs/python/aurelius-example
   Avro records and Postgres rows stay valid.
 - Keep the AvroBase and SQLModel halves on one class — that dual identity is
   the point of this lib.
+- `datetime` fields serialize as Avro `timestamp-millis` (not the
+  pydantic-avro `timestamp-micros` default): `Entity.avro_schema()` post-processes
+  the generated schema via `_encode_timestamps_as_millis`. The Confluent Avro
+  converter only maps `timestamp-millis` to a Connect `Timestamp` logical type;
+  without it the Debezium JDBC sink sees a raw bigint and every INSERT into the
+  `timestamptz` column fails. Keep `Entity.avsc` in sync with this.
 
 ## Removal
 

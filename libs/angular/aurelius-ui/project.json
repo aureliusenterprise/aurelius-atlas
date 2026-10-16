@@ -52,9 +52,6 @@
                 "command": "chromatic --storybook-build-dir=dist/storybook/aurelius-ui --no-interactive --exit-once-uploaded"
             }
         },
-        "lint": {
-            "executor": "@nx/eslint:lint"
-        },
         "static-storybook": {
             "configurations": {
                 "ci": {
