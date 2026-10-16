@@ -18,7 +18,7 @@ specific to this lib; workspace-wide rules live in the root `AGENTS.md`.
 - Consumed as the npm package `@aurelius/brand` via a `file:` dependency in
   `apps/aurelius-frontend-example/package.json` — this is the one scoped
   specifier; Angular libs use bare path aliases instead.
-- `aurelius-ui` (`.storybook/styles.scss` and component styles) and
+- `aurelius-atlas-ui` (`.storybook/styles.scss` and component styles) and
   `aurelius-frontend-example` global styles both build on these tokens.
 - Depends on `bulma` and `@fortawesome/fontawesome-free` — declare them here,
   not in consuming projects.
@@ -26,7 +26,7 @@ specific to this lib; workspace-wide rules live in the root `AGENTS.md`.
 
 ## Conventions
 
-- All brand colours and theme variables live here — apps and `aurelius-ui`
+- All brand colours and theme variables live here — apps and `aurelius-atlas-ui`
   must not define their own palettes.
 - Changes here ripple to every frontend surface; check Storybook and the app
   after editing tokens.
@@ -34,5 +34,5 @@ specific to this lib; workspace-wide rules live in the root `AGENTS.md`.
 ## Removal
 
 Part of the spine. Removing it means dropping the `file:` dependency and all
-`@use "@aurelius/brand/..."` imports in the frontend and `aurelius-ui`, and
+`@use "@aurelius/brand/..."` imports in the frontend and `aurelius-atlas-ui`, and
 replacing the styling baseline (Bulma/FontAwesome) some other way.

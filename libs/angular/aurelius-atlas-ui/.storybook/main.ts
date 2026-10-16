@@ -9,7 +9,7 @@ const config: StorybookConfig = {
         name: getAbsolutePath("@storybook/angular"),
         options: {
             builder: {
-                viteConfigPath: "libs/angular/aurelius-ui/vite.config.mts",
+                viteConfigPath: "libs/angular/aurelius-atlas-ui/vite.config.mts",
             },
         },
     },

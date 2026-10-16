@@ -10,14 +10,14 @@ export default meta;
 type Story = StoryObj<Accordion>;
 
 const primaryTemplate = `
-<aurelius-ui-accordion [expanded]="expanded">
+<aurelius-atlas-ui-accordion [expanded]="expanded">
     <ng-container header>
         <p>Accordion Header</p>
     </ng-container>
     <ng-container content>
         <p>Accordion Content</p>
     </ng-container>
-</aurelius-ui-accordion>
+</aurelius-atlas-ui-accordion>
 `;
 
 export const Primary: Story = {

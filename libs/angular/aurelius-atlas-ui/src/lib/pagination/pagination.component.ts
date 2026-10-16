@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, input, model } from "@angular/core";
 
 @Component({
-    selector: "aurelius-ui-pagination",
+    selector: "aurelius-atlas-ui-pagination",
     imports: [CommonModule],
     templateUrl: "./pagination.component.html",
     styleUrls: ["./pagination.component.scss"],

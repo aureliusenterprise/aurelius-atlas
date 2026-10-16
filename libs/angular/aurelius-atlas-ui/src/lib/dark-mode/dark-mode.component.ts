@@ -5,7 +5,7 @@ import { faCircleHalfStroke, faCircle as faCircleSolid } from "@fortawesome/free
 import { DarkModeService } from "./dark-mode.service";
 
 @Component({
-    selector: "aurelius-ui-dark-mode",
+    selector: "aurelius-atlas-ui-dark-mode",
     imports: [FontAwesomeModule],
     templateUrl: "./dark-mode.component.html",
     styleUrl: "./dark-mode.component.scss",

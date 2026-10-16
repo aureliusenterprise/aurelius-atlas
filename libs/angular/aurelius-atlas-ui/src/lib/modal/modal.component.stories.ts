@@ -10,7 +10,7 @@ export default meta;
 type Story = StoryObj<Modal>;
 
 const primaryTemplate = `
-<aurelius-ui-modal #modal [active]="active" [showCloseButton]="showCloseButton">
+<aurelius-atlas-ui-modal #modal [active]="active" [showCloseButton]="showCloseButton">
     <ng-container modal-content>
         <figure class="image is-square">
             <img
@@ -19,12 +19,12 @@ const primaryTemplate = `
             />
         </figure>
     </ng-container>
-</aurelius-ui-modal>
+</aurelius-atlas-ui-modal>
 <button class="button is-primary" (click)="modal.open()">Open Modal</button>
 `;
 
 const emptyTemplate = `
-<aurelius-ui-modal #modal [active]="active" [showCloseButton]="showCloseButton"></aurelius-ui-modal>
+<aurelius-atlas-ui-modal #modal [active]="active" [showCloseButton]="showCloseButton"></aurelius-atlas-ui-modal>
 <button class="button is-primary" (click)="modal.open()">Open Modal</button>
 `;
 

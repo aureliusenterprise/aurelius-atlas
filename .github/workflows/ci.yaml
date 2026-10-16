@@ -235,6 +235,6 @@ jobs:
             - name: Run Chromatic
               uses: chromaui/action@v17
               with:
-                  buildCommand: "npx nx build-storybook aurelius-ui"
-                  outputDir: "dist/storybook/aurelius-ui"
+                  buildCommand: "npx nx build-storybook aurelius-atlas-ui"
+                  outputDir: "dist/storybook/aurelius-atlas-ui"
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}

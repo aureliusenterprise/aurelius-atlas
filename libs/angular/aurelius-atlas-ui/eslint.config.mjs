@@ -15,7 +15,7 @@ export default [
                 "error",
                 {
                     type: "attribute",
-                    prefix: "aurelius-ui",
+                    prefix: "aurelius-atlas-ui",
                     style: "kebab-case",
                 },
             ],
@@ -23,7 +23,7 @@ export default [
                 "error",
                 {
                     type: "element",
-                    prefix: "aurelius-ui",
+                    prefix: "aurelius-atlas-ui",
                     style: "kebab-case",
                 },
             ],

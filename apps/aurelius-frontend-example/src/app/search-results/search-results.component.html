@@ -9,7 +9,7 @@
 </h1>
 
 @if (entities.total > 0) {
-    <aurelius-ui-pagination
+    <aurelius-atlas-ui-pagination
         [pageSize]="pageSize"
         [(pageIndex)]="searchService.pageIndex"
         [totalItems]="entities.total"
@@ -17,7 +17,7 @@
     <div class="content mt-4">
         <div class="grid is-col-min-15">
             @for (entity of entities.data; track entity.guid) {
-                <aurelius-ui-card [attr.data-guid]="entity.guid" class="cell search-result-card">
+                <aurelius-atlas-ui-card [attr.data-guid]="entity.guid" class="cell search-result-card">
                     <ng-container card-content>
                         <p class="title is-4">{{ entity.name }}</p>
                         <div class="content">{{ entity.description }}</div>
@@ -38,7 +38,7 @@
                             </div>
                         </nav>
                     </ng-container>
-                </aurelius-ui-card>
+                </aurelius-atlas-ui-card>
             }
         </div>
     </div>

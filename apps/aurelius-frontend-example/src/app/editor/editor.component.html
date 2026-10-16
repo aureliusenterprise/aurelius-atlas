@@ -1,7 +1,7 @@
 @let entity = entityService.entity();
 
 @if (entity) {
-    <aurelius-ui-modal [active]="entity !== null" [showCloseButton]="false">
+    <aurelius-atlas-ui-modal [active]="entity !== null" [showCloseButton]="false">
         <ng-container modal-content>
             <form [formGroup]="entityForm">
                 <div class="modal-card">
@@ -118,5 +118,5 @@
                 </div>
             </form>
         </ng-container>
-    </aurelius-ui-modal>
+    </aurelius-atlas-ui-modal>
 }

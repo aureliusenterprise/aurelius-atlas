@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
-import { Card, Pagination } from "aurelius-ui";
+import { Card, Pagination } from "aurelius-atlas-ui";
 import { EntityService } from "../services/entity.service";
 import { SearchService } from "../services/search.service";
 

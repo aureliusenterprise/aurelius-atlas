@@ -4,7 +4,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 
 @Component({
-    selector: "aurelius-ui-accordion",
+    selector: "aurelius-atlas-ui-accordion",
     imports: [CommonModule, FontAwesomeModule],
     templateUrl: "./accordion.component.html",
     styleUrl: "./accordion.component.scss",

@@ -21,7 +21,7 @@ This file is the recipe for adding or modifying a library here; each library's o
 6. **Styles**: if the library ships SCSS using brand tokens, `@use` them from
    `@aurelius/brand` rather than redefining colours.
 7. **Storybook**: for component libraries, copy the Storybook targets from
-   `aurelius-ui` (`storybook`, `build-storybook`, `static-storybook`,
+   `aurelius-atlas-ui` (`storybook`, `build-storybook`, `static-storybook`,
    `test-storybook`, `chromatic`) and add `.stories.ts` per component.
 
 ## Conventions
@@ -34,7 +34,7 @@ This file is the recipe for adding or modifying a library here; each library's o
   `@nx/angular:unit-test`); run with `nx test <lib> -c ci`.
 - Peer dependencies must match the workspace Angular major — check
   `package.json` after generating (a stale `^21` peer range exists in
-  `aurelius-ui` as a known issue).
+  `aurelius-atlas-ui` as a known issue).
 
 ## Removal
 

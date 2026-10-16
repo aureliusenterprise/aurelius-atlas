@@ -53,7 +53,7 @@ describe("SearchResults", () => {
         const compiled = fixture.nativeElement as HTMLElement;
 
         for (const entity of entities) {
-            expect(compiled.querySelector(`aurelius-ui-card[data-guid="${entity.guid}"]`)).not.toBeNull();
+            expect(compiled.querySelector(`aurelius-atlas-ui-card[data-guid="${entity.guid}"]`)).not.toBeNull();
         }
     });
 

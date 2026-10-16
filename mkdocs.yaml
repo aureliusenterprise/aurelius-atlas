@@ -104,7 +104,7 @@ nav:
                 - Angular:
                       - api-reference/libs/angular/index.md
                       - aurelius-data-access: api-reference/libs/angular/aurelius-data-access.md
-                      - aurelius-ui: api-reference/libs/angular/aurelius-ui.md
+                      - aurelius-atlas-ui: api-reference/libs/angular/aurelius-atlas-ui.md
                 - Java:
                       - api-reference/libs/java/index.md
                       - aurelius-java-example: api-reference/libs/java/aurelius-java-example.md

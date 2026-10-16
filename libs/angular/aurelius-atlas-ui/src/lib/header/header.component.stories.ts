@@ -11,7 +11,7 @@ export default meta;
 type Story = StoryObj<Header>;
 
 const template = `
-<aurelius-ui-header [expanded]="expanded" [logo]="logo" [name]="name">
+<aurelius-atlas-ui-header [expanded]="expanded" [logo]="logo" [name]="name">
     <ng-container navbar-start>
         <a class="navbar-item" routerLink="/">Home</a>
         <a class="navbar-item" routerLink="/about">About</a>
@@ -23,7 +23,7 @@ const template = `
             </div>
         </div>
     </ng-container>
-</aurelius-ui-header>
+</aurelius-atlas-ui-header>
 `;
 
 export const Primary: Story = {

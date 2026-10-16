@@ -20,7 +20,7 @@ Part of the template **spine**.
 
 ## Workspace dependencies
 
-- `aurelius-ui` — presentational Bulma components
+- `aurelius-atlas-ui` — presentational Bulma components
 - `aurelius-data-access` — typed HTTP + SSE client for the backend
 - `aurelius-observability` — browser OpenTelemetry setup
 - `@aurelius/brand` (`libs/styles/aurelius-brand`) — SCSS design tokens

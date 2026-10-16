@@ -1,7 +1,7 @@
 import { KeyValuePipe } from "@angular/common";
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
-import { DarkMode, Header } from "aurelius-ui";
+import { DarkMode, Header } from "aurelius-atlas-ui";
 import { AuthService } from "./services/auth.service";
 import { LocaleService } from "./services/locale.service";
 

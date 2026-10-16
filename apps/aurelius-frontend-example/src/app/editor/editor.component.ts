@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, effect, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { EntitiesService, Entity } from "aurelius-data-access";
-import { Modal } from "aurelius-ui";
+import { Modal } from "aurelius-atlas-ui";
 import { firstValueFrom } from "rxjs";
 import { EntityService } from "../services/entity.service";
 

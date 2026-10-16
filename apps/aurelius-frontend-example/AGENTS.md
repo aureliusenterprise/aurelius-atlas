@@ -62,7 +62,7 @@ Offline-safe: `nx test -c ci`, `nx lint`, `extract-i18n`. Needs Docker: `serve`,
 ## Conventions
 
 - Components stay presentational; data access goes through `aurelius-data-access`,
-  shared UI through `aurelius-ui`, styling tokens through `@aurelius/brand`.
+  shared UI through `aurelius-atlas-ui`, styling tokens through `@aurelius/brand`.
 - Follow the existing injectable-service pattern in `src/app` for new state.
 - New routes need E2E coverage in `e2e/`.
 

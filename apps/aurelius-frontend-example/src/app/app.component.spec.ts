@@ -66,7 +66,7 @@ describe("App", () => {
     });
 
     it("should render the header with the application name", () => {
-        const header = fixture.debugElement.query(By.css("aurelius-ui-header"));
+        const header = fixture.debugElement.query(By.css("aurelius-atlas-ui-header"));
 
         expect(header).toBeTruthy();
         expect(header.attributes["name"]).toBe("Aurelius Frontend Example");
@@ -78,7 +78,7 @@ describe("App", () => {
     });
 
     it("should render the dark mode toggle", () => {
-        expect(fixture.debugElement.query(By.css("aurelius-ui-dark-mode"))).toBeTruthy();
+        expect(fixture.debugElement.query(By.css("aurelius-atlas-ui-dark-mode"))).toBeTruthy();
     });
 
     it("should show the log in button when unauthenticated", () => {

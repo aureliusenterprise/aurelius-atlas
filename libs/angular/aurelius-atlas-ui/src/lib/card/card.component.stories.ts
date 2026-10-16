@@ -10,7 +10,7 @@ export default meta;
 type Story = StoryObj<Card>;
 
 const template = `
-<aurelius-ui-card>
+<aurelius-atlas-ui-card>
     <ng-container card-image>
     <figure class="image is-square">
       <img
@@ -34,7 +34,7 @@ const template = `
         <button class="card-footer-item">{{ button1 }}</button>
         <button class="card-footer-item">{{ button2 }}</button>
     </ng-container>
-</aurelius-ui-card>
+</aurelius-atlas-ui-card>
 `;
 
 export const Primary: Story = {

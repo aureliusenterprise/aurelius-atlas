@@ -3,7 +3,7 @@
 @let _profile = authService.profile();
 
 <section class="container">
-    <aurelius-ui-header class="hero-head" logo="favicon.ico" name="Aurelius Frontend Example">
+    <aurelius-atlas-ui-header class="hero-head" logo="favicon.ico" name="Aurelius Frontend Example">
         <ng-container navbar-end>
             @if (_profile) {
                 <div class="navbar-item has-dropdown is-hoverable">
@@ -43,9 +43,9 @@
             @if (!_authenticated) {
                 <button class="button is-primary" (click)="authService.login()" i18n>Log in</button>
             }
-            <aurelius-ui-dark-mode></aurelius-ui-dark-mode>
+            <aurelius-atlas-ui-dark-mode></aurelius-atlas-ui-dark-mode>
         </ng-container>
-    </aurelius-ui-header>
+    </aurelius-atlas-ui-header>
 
     <!-- Main content area -->
     <router-outlet></router-outlet>

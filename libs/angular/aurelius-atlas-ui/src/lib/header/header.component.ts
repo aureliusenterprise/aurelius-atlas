@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, input, model } from "@angular/core";
 
 @Component({
-    selector: "aurelius-ui-header",
+    selector: "aurelius-atlas-ui-header",
     imports: [CommonModule],
     templateUrl: "./header.component.html",
     styleUrl: "./header.component.scss",

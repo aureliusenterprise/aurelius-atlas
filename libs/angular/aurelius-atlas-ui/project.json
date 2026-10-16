@@ -1,23 +1,23 @@
 {
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-    "name": "aurelius-ui",
-    "prefix": "aurelius-ui",
+    "name": "aurelius-atlas-ui",
+    "prefix": "aurelius-atlas-ui",
     "projectType": "library",
-    "sourceRoot": "libs/angular/aurelius-ui/src",
+    "sourceRoot": "libs/angular/aurelius-atlas-ui/src",
     "tags": [],
     "targets": {
         "build": {
             "configurations": {
                 "development": {},
                 "production": {
-                    "tsConfig": "libs/angular/aurelius-ui/tsconfig.lib.prod.json"
+                    "tsConfig": "libs/angular/aurelius-atlas-ui/tsconfig.lib.prod.json"
                 }
             },
             "defaultConfiguration": "production",
             "executor": "@nx/angular:ng-packagr-lite",
             "options": {
-                "project": "libs/angular/aurelius-ui/ng-package.json",
-                "tsConfig": "libs/angular/aurelius-ui/tsconfig.lib.json"
+                "project": "libs/angular/aurelius-atlas-ui/ng-package.json",
+                "tsConfig": "libs/angular/aurelius-atlas-ui/tsconfig.lib.json"
             },
             "outputs": ["{workspaceRoot}/dist/{projectRoot}"]
         },
@@ -32,16 +32,16 @@
                 "assets": [
                     {
                         "glob": "**/*",
-                        "input": "libs/angular/aurelius-ui/.storybook/assets",
+                        "input": "libs/angular/aurelius-atlas-ui/.storybook/assets",
                         "output": "/assets/"
                     }
                 ],
-                "browserTarget": "aurelius-ui:build-storybook",
+                "browserTarget": "aurelius-atlas-ui:build-storybook",
                 "compodoc": false,
-                "configDir": "libs/angular/aurelius-ui/.storybook",
+                "configDir": "libs/angular/aurelius-atlas-ui/.storybook",
                 "experimentalZoneless": true,
-                "outputDir": "dist/storybook/aurelius-ui",
-                "styles": ["libs/angular/aurelius-ui/.storybook/styles.scss"]
+                "outputDir": "dist/storybook/aurelius-atlas-ui",
+                "styles": ["libs/angular/aurelius-atlas-ui/.storybook/styles.scss"]
             },
             "outputs": ["{options.outputDir}"]
         },
@@ -49,23 +49,23 @@
             "dependsOn": ["build-storybook", "decrypt"],
             "executor": "nx:run-commands",
             "options": {
-                "command": "chromatic --storybook-build-dir=dist/storybook/aurelius-ui --no-interactive --exit-once-uploaded"
+                "command": "chromatic --storybook-build-dir=dist/storybook/aurelius-atlas-ui --no-interactive --exit-once-uploaded"
             }
         },
         "static-storybook": {
             "configurations": {
                 "ci": {
-                    "buildTarget": "aurelius-ui:build-storybook:ci"
+                    "buildTarget": "aurelius-atlas-ui:build-storybook:ci"
                 }
             },
             "dependsOn": ["build-storybook"],
             "executor": "@nx/web:file-server",
             "options": {
-                "buildTarget": "aurelius-ui:build-storybook",
+                "buildTarget": "aurelius-atlas-ui:build-storybook",
                 "host": "127.0.0.1",
                 "port": 4500,
                 "spa": true,
-                "staticFilePath": "dist/storybook/aurelius-ui"
+                "staticFilePath": "dist/storybook/aurelius-atlas-ui"
             }
         },
         "storybook": {
@@ -79,17 +79,17 @@
                 "assets": [
                     {
                         "glob": "**/*",
-                        "input": "libs/angular/aurelius-ui/.storybook/assets",
+                        "input": "libs/angular/aurelius-atlas-ui/.storybook/assets",
                         "output": "/assets/"
                     }
                 ],
-                "browserTarget": "aurelius-ui:build-storybook",
+                "browserTarget": "aurelius-atlas-ui:build-storybook",
                 "compodoc": false,
-                "configDir": "libs/angular/aurelius-ui/.storybook",
+                "configDir": "libs/angular/aurelius-atlas-ui/.storybook",
                 "experimentalZoneless": true,
                 "host": "127.0.0.1",
                 "port": 4400,
-                "styles": ["libs/angular/aurelius-ui/.storybook/styles.scss"]
+                "styles": ["libs/angular/aurelius-atlas-ui/.storybook/styles.scss"]
             }
         },
         "test": {
@@ -105,7 +105,7 @@
         "test-storybook": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "test-storybook -c libs/angular/aurelius-ui/.storybook --url=http://127.0.0.1:4400"
+                "command": "test-storybook -c libs/angular/aurelius-atlas-ui/.storybook --url=http://127.0.0.1:4400"
             }
         }
     }

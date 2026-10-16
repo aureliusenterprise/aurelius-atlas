@@ -16,7 +16,7 @@ Depends on `bulma` and `@fortawesome/fontawesome-free`.
 ## Usage
 
 Consumed as the npm package `@aurelius/brand` (a `file:` dependency of
-`aurelius-frontend-example`; `aurelius-ui` styles build on these tokens):
+`aurelius-frontend-example`; `aurelius-atlas-ui` styles build on these tokens):
 
 ```scss
 @use "@aurelius/brand/src/main" as brand;

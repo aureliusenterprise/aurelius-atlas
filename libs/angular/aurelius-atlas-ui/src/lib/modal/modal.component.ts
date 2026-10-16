@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, input, model } from "@angular/core";
 
 @Component({
-    selector: "aurelius-ui-modal",
+    selector: "aurelius-atlas-ui-modal",
     imports: [CommonModule],
     templateUrl: "./modal.component.html",
     styleUrl: "./modal.component.scss",
