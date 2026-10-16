@@ -27,18 +27,17 @@ repos:
                 - prettier-plugin-sort-json@4.1.1
                 - prettier-plugin-toml@2.0.6
 
-    - repo: https://github.com/pre-commit/mirrors-eslint
-      rev: v10.12.0
+    # ESLint runs from the workspace's node_modules: the project configs need the Nx
+    # plugin presets, angular-eslint, eslint-plugin-storybook and the Nx project graph,
+    # which an isolated pre-commit environment cannot provide. Requires `npm ci`.
+    - repo: local
       hooks:
           - id: eslint
             name: Check for ESLint errors
-            args: [--fix]
-            files: '\.[jt]sx?$|\.json$'
-            additional_dependencies:
-                - eslint@^10.12.0
-                - "@nx/eslint-plugin@23.3.0"
-                - "@typescript-eslint/utils@8.71.2"
-                - jsonc-eslint-parser@^3.3.0
+            entry: npx --no-install eslint --fix --no-warn-ignored
+            language: system
+            types_or: [javascript, jsx, ts, tsx, json]
+            exclude: ^package-lock\.json$
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
       rev: v0.17.1

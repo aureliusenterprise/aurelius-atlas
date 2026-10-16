@@ -21,6 +21,8 @@ export default config;
 // Check https://storybook.js.org/docs/react/builders/vite#configuration
 // and https://nx.dev/recipes/storybook/custom-builder-configs
 
-function getAbsolutePath(value: string): any {
-    return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
+// Resolves a package to its absolute directory. Typed as the input literal because
+// `framework.name` only accepts the package name, while Storybook expects a path here.
+function getAbsolutePath<T extends string>(value: T): T {
+    return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`))) as T;
 }
