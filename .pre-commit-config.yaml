@@ -1,6 +1,6 @@
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v5.0.0
+      rev: v6.0.0
       hooks:
           - id: check-merge-conflict
             name: Check for merge conflicts
@@ -23,20 +23,20 @@ repos:
           - id: prettier
             name: Format code with Prettier
             additional_dependencies:
-                - prettier@3.8.3
-                - prettier-plugin-sort-json@4.1.1
-                - prettier-plugin-toml@2.0.6
+                - prettier@3.9.10
+                - prettier-plugin-sort-json@4.2.0
+                - prettier-plugin-toml@3.0.2
 
     - repo: https://github.com/pre-commit/mirrors-eslint
-      rev: v10.4.1
+      rev: v10.12.0
       hooks:
           - id: eslint
             name: Check for ESLint errors
             args: [--fix]
             files: '\.[jt]sx?$|\.json$'
             additional_dependencies:
-                - eslint@^9.8.0
-                - "@nx/eslint-plugin@22.7.1"
+                - eslint@^10.12.0
+                - "@nx/eslint-plugin@23.3.0"
                 - "@typescript-eslint/utils@8.71.2"
                 - jsonc-eslint-parser@^3.3.0
 
@@ -59,7 +59,7 @@ repos:
             require_serial: true
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: v0.48.0
+      rev: v0.49.1
       hooks:
           - id: markdownlint
             name: Check for Markdown linting errors
