@@ -10,7 +10,7 @@ mockito-core = "5.23.0"
 mockito-junit-jupiter = "5.23.0"
 openlineage-java = "1.47.1"
 slf4j-api = "2.0.19"
-slf4j-simple = "2.0.19"
+slf4j-simple = "2.0.20"
 
 [libraries]
 avro = { module = "org.apache.avro:avro", version.ref = "avro" }
