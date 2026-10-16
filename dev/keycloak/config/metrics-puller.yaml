@@ -3,7 +3,6 @@
 # already on the observability network for the server's own OTLP export).
 # The Keycloak SERVER already exports traces/metrics/logs natively (Quarkus
 # OTel); this covers the database behind it, which speaks no OTLP.
-# Same shape as dev/governance/config/metrics-puller.yaml.
 #
 # Env vars: the same dev defaults the keycloak service uses for KC_DB_*;
 # compose interpolates them into the container env, the collector expands

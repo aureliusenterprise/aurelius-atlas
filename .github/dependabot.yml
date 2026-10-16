@@ -10,6 +10,10 @@ updates:
       directory: "/"
       schedule:
           interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"
 
     - package-ecosystem: "docker"
       directories:
@@ -18,6 +22,10 @@ updates:
           - "/docker/*"
       schedule:
           interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"
 
     - package-ecosystem: "docker-compose"
       directories:
@@ -27,16 +35,19 @@ updates:
           - "/dev/*"
       schedule:
           interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"
 
     - package-ecosystem: "github-actions"
       directory: "/.github/workflows"
       schedule:
           interval: weekly
-
-    - package-ecosystem: "gradle"
-      directory: "/"
-      schedule:
-          interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"
 
     - package-ecosystem: "npm"
       directories:
@@ -46,6 +57,10 @@ updates:
           - "/libs/styles/*"
       schedule:
           interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"
       ignore:
           - dependency-name: "nx"
           - dependency-name: "@nx/*"
@@ -55,8 +70,16 @@ updates:
       directory: "/"
       schedule:
           interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"
 
     - package-ecosystem: "uv"
       directory: "/"
       schedule:
           interval: weekly
+      groups:
+          all:
+              patterns:
+                  - "*"

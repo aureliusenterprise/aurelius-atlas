@@ -33,12 +33,6 @@ When changing this app, check all of:
 - `mkdocs.yaml` — API reference page lives at
   `docs/api-reference/apps/aurelius-fastapi-example.md`.
 - `Dockerfile` and SBOM/vulnerability targets — keep in sync with new runtime deps.
-- `openmetadata.yaml` — the REST/OpenAPI scan follows the app's protocol:
-  the app serves TLS when `AURELIUS_FASTAPI_TLS_*` are set (they are), so
-  the scan uses the `https` URL and trusts `certs/ca.pem` (path, not
-  content — the connector hands it to `requests` `verify=`). If TLS is
-  dropped, switch the URL back to `http`; apiEndpoint names are path-based
-  either way, so `openlineage.yaml` edges survive the change.
 
 ## Commands
 

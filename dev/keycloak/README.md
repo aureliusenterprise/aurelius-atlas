@@ -20,13 +20,6 @@ Part of the template **spine**.
   edit those files to change realms, clients, or test users:
     - `import/master.json` — the `master` realm: admin console plus the
       FastAPI/Angular clients and test users
-    - `import/kafka.json` — the `kafka` realm (machine identity for the Kafka
-      cluster): confidential client-credentials clients (`kafka-producer`,
-      `kafka-connect`, `kafka-lambda`, `kafka-e2e`, …) whose JWTs carry
-      `aud=kafka` for the broker's OAUTHBEARER validation; short 300 s token
-      lifetime. Client secrets live in this project's `.env.enc`, not the import
-      file: the JSON carries `${CLIENT_SECRET_*}` placeholders resolved from the
-      container environment at import time (see `AGENTS.md`). See `dev/kafka`
 - Telemetry is exported via OTLP over TLS to the observability stack
   (`https://otel-collector:4317`, trusted via this project's `certs/truststore.p12`)
 

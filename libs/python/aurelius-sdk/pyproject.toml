@@ -6,8 +6,7 @@ requires-python = ">=3.14"
 version = "0.6.1"
 
 [project.optional-dependencies]
-# Floor only: 1.41.5 is what the workspace venv pins (openmetadata-ingestion
-# requires ~=1.41.5); no ceiling so consumers can track current boto3.
+# Floor only; no ceiling so consumers can track current boto3.
 aws = ["boto3>=1.41.5", "types-boto3[full]>=1.41.5"]
 azure = ["msal>=1.38.0"]
 full = [

@@ -15,7 +15,7 @@ workspace-wide rules live in the root `AGENTS.md`.
 - Exposes the external Docker network `aurelius-dev-postgres-network`; the
   FastAPI example and the JDBC sink connector attach to it.
 - The FastAPI example's `serve` target starts this project via `dependsOn`.
-- The **`metrics-puller`** service (same pattern as dev/governance) scrapes
+- The **`metrics-puller`** service scrapes
   this database with the Collector's `postgresql` receiver and pushes OTLP to
   the dev collector over the external `aurelius-dev-observability-network`
   (Postgres speaks no OTLP, so a puller sidecar is the only push option;

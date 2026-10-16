@@ -22,9 +22,6 @@
                 "-ms-python.autopep8"
             ],
             "settings": {
-                "[java]": {
-                    "editor.defaultFormatter": "esbenp.prettier-vscode"
-                },
                 "[json]": {
                     "editor.defaultFormatter": "esbenp.prettier-vscode"
                 },
@@ -77,14 +74,10 @@
                     "build": true,
                     "node_modules": true
                 },
-                "java.diagnostic.filter": ["**/aurelius-java-example/src/main/java/**/*"],
                 "material-icon-theme.files.associations": {
                     "*.enc": "key",
                     "keys.txt": "key",
                     "project.json": "nx"
-                },
-                "material-icon-theme.folders.associations": {
-                    "connectors": "connection"
                 },
                 "python.analysis.typeCheckingMode": "standard",
                 "python.testing.pytestEnabled": true,
@@ -98,7 +91,7 @@
     },
     "features": {
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
-            "packages": ["age", "gnupg2", "libpq-dev", "librdkafka-dev", "libnss3-tools", "mkcert"]
+            "packages": ["age", "gnupg2", "libpq-dev", "libnss3-tools", "mkcert"]
         },
         "ghcr.io/devcontainers-extra/features/cosign:1.0.10": {},
         "ghcr.io/devcontainers-extra/features/cyclonedx-cli:1.0.10": {},
@@ -124,18 +117,14 @@
             "version": "0.71.0"
         }
     },
-    "forwardPorts": [1880, 4200, 4400, 8000, 8080, 8081, 8082, 9092],
+    "forwardPorts": [4200, 4400, 8000, 8080],
     "image": "mcr.microsoft.com/devcontainers/base:resolute",
-    "name": "Aurelius Project Template",
+    "name": "Aurelius Atlas",
     "onCreateCommand": {
         "npm": "bash .devcontainer/npm.sh",
         "uv": "bash .devcontainer/uv.sh"
     },
     "portsAttributes": {
-        "1880": {
-            "label": "Node-RED",
-            "onAutoForward": "openBrowser"
-        },
         "4200": {
             "label": "Angular",
             "onAutoForward": "openBrowserOnce"
@@ -149,16 +138,6 @@
         },
         "8080": {
             "label": "Keycloak"
-        },
-        "8081": {
-            "label": "Schema Registry"
-        },
-        "8082": {
-            "label": "Kafka UI",
-            "onAutoForward": "openBrowser"
-        },
-        "9092": {
-            "label": "Kafka Broker"
         }
     },
     "postCreateCommand": {

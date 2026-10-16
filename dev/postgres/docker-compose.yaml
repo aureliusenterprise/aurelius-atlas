@@ -45,8 +45,7 @@ services:
     metrics-puller:
         # Slice-owned OTel collector: scrapes this Postgres and pushes OTLP
         # to the dev collector, so dev/observability never learns this slice
-        # exists (same pattern as dev/governance's metrics-puller). Targets
-        # and attribution live in config/metrics-puller.yaml.
+        # exists. Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         environment:
