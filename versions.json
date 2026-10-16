@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase0-0.1-adopt-template",
+    "title": "phase0-0.1-adopt-template",
+    "aliases": []
+  },
+  {
     "version": "main",
     "title": "main",
     "aliases": []

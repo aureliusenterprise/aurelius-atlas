@@ -1,0 +1,6744 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://aureliusenterprise.github.io/phase0-0.1-adopt-template/architecture/platform/delivery/testing/">
+      
+      
+        <link rel="prev" href="../change-management/">
+      
+      
+        <link rel="next" href="../release-management/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/favicon.ico">
+      <meta name="generator" content="zensical-0.0.68">
+    
+    
+      
+        <title>Testing - Aurelius Atlas</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../../../assets/stylesheets/classic/main.3d7537f3.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/classic/palette.031959be.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../stylesheets/table.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Aurelius Atlas" class="md-header__button md-logo" aria-label="Aurelius Atlas" data-md-component="logo">
+      
+  <img src="../../../../assets/favicon.ico" alt="Aurelius Atlas">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Aurelius Atlas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Testing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/aureliusenterprise/aurelius-atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aurelius-atlas
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+          
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../user-guide/" class="md-tabs__link">
+          
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../contributor-guide/" class="md-tabs__link">
+          
+  
+  Contributor Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../api-reference/" class="md-tabs__link">
+          
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../" class="md-tabs__link">
+          
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../CHANGELOG/" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Aurelius Atlas" class="md-nav__button md-logo" aria-label="Aurelius Atlas" data-md-component="logo">
+      
+  <img src="../../../../assets/favicon.ico" alt="Aurelius Atlas">
+
+    </a>
+    Aurelius Atlas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aureliusenterprise/aurelius-atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aurelius-atlas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../user-guide/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  User Guide
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../contributor-guide/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contributor Guide
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Contributor Guide
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Development Environment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/ai-assisted-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  AI-Assisted Development
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/adopting-the-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Adopting the Template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Documentation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/secrets-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/version-control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Version Control
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../api-reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Reference
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API Reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../api-reference/apps/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Apps
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Apps
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/apps/aurelius-fastapi-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-fastapi-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/apps/aurelius-frontend-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-frontend-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../api-reference/libs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Libs
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Libs
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../api-reference/libs/angular/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Angular
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_2" id="__nav_3_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Angular
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/angular/aurelius-data-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-data-access
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/angular/aurelius-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-ui
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../api-reference/libs/python/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Python
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Python
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-sdk
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../api-reference/libs/styles/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Styles
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_4" id="__nav_3_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Styles
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/styles/aurelius-brand/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-brand
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Architecture
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture Decisions
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Architecture Decisions
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ADR Template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/001-single-monorepo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  001. Keep one monorepo for every stack
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/002-modules-are-removable-slices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  002. Modules are removable as whole slices
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/003-every-project-documents-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  003. Every project documents itself
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/004-one-shared-domain-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  004. One shared domain model serves streaming and storage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/005-dev-infra-starts-with-the-app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  005. Development infrastructure starts with the app that needs it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/006-the-whole-system-runs-on-one-machine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  006. The whole system runs on one machine
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/007-one-shared-identity-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  007. One shared identity provider serves every authenticated surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/008-secrets-never-in-plaintext/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  008. Real secrets are encrypted; only dev defaults are committed
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/009-examples-must-run-and-be-tested/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  009. Every example runs and is tested, or it is removed
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/010-the-unit-validated-is-the-unit-that-ships/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  010. The unit validated is the unit that ships
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/011-the-development-environment-is-a-versioned-artifact/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  011. The development environment is a versioned artifact
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/012-validation-runs-against-real-services/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  012. Validation runs against real services, not substitutes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/013-services-prove-who-they-are-at-every-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  013. Services prove who they are at every boundary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/014-the-gate-is-defined-once-and-runs-everywhere/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  014. The gate that refuses a change is defined once
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/015-a-change-answers-for-what-it-caused/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  015. A change answers for what it caused; the state of the world is reviewed on a cadence
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/016-the-system-observes-itself-internally/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  016. The system observes itself; its operational data never leaves it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/017-shared-concepts-change-only-compatibly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  017. Shared concepts change only in ways that keep readers working
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/018-settings-arrive-at-startup-through-one-channel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  018. Settings arrive at startup through one channel and fail loudly
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/019-the-system-releases-as-one-versioned-whole/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  019. The system releases as one versioned whole
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/020-dependencies-stay-current-by-default/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  020. Dependencies stay current by default; majors move by decision
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/021-a-new-technology-joins-by-recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  021. A new technology joins the system by recipe
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/022-the-codebase-explains-itself-to-its-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  022. The codebase explains itself to the agents that change it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/023-storage-schema-changes-by-recorded-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  023. A storage schema changes only by recorded migration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/024-a-validated-release-is-promoted-by-a-declared-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  024. A validated release is promoted by a declared path
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/025-data-has-a-stated-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  025. Data has a stated lifetime that the system enforces
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/026-the-system-can-be-brought-back-from-a-named-snapshot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  026. The system can be brought back from a named snapshot
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/027-every-stream-carries-a-stated-delivery-guarantee/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  027. Every stream carries a stated delivery guarantee
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/028-operational-secret-handling-has-a-named-owner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  028. Operational secret handling has a named owner and a rehearsed path
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  029. What ships is signed, and its origin can be proven
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/030-interfaces-between-parts-are-verified-not-assumed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  030. Interfaces between parts are verified, not assumed
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/031-runtime-versions-have-a-declared-support-window/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  031. Language and runtime versions have a declared support window
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/032-shared-streams-are-named-by-a-declared-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  032. Shared streams are named by a declared convention
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/033-shipped-artifacts-carry-a-contents-inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  033. Shipped artifacts carry a contents inventory
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/034-signals-meet-at-one-replaceable-collection-point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  034. Signals meet at one replaceable collection point
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/035-parts-hand-work-through-a-durable-event-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  035. Parts hand work to each other through a durable event log
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/036-the-delivery-plane-is-a-named-exception-to-the-data-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  036. The delivery plane is a named exception to the data boundary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/037-the-system-itself-promises-nothing-about-staying-up/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  037. The system itself promises nothing about staying up
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  038. What a person may do is decided in one place, apart from who they are
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/039-data-is-protected-where-it-travels-and-where-it-rests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  039. Data is protected where it travels and where it rests
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/040-the-system-raises-its-hand-when-it-is-broken/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  040. The system raises its hand when it is broken
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  041. A failure of the running system has an owner and a rehearsed path
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/042-every-dataset-has-an-owner-who-answers-for-it/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  042. Every dataset has an owner who answers for it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/043-ai-assisted-review-informs-the-signatures-it-does-not-replace-them/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  043. AI-assisted review informs the two signatures
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/044-every-change-carries-two-human-signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  044. Every change carries two human signatures
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/045-conventions-are-borrowed-before-they-are-invented/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  045. Conventions are borrowed before they are invented
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/046-the-catalogue-keeps-its-public-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  046. The catalogue keeps its public contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/047-one-search-store-is-the-system-of-record/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  047. One search store is the system of record
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  048. Behaviour is proven against the reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/049-every-function-and-rule-is-traceable-to-a-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  049. Every function and rule is traceable to a test
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/050-the-system-carries-only-what-the-catalogue-needs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  050. The system carries only what the catalogue needs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/051-the-conversion-proceeds-in-specified-increments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  051. The conversion proceeds in specified increments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../conversion/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Conversion
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Conversion
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/design-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Design Log
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/java-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Java to Python Map
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/deviations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deviations from Apache Atlas
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../conversion/increments/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Increments
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_3_5" id="__nav_4_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_3_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Increments
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Specification Template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/0-1-adopt-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.1 Adopt the template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../vision-and-strategy/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Vision & Strategy
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Vision & Strategy
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../vision-and-strategy/mission-statement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Mission Statement
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../vision-and-strategy/business-objectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Business Objectives
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../vision-and-strategy/stakeholder-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Stakeholder Analysis
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../vision-and-strategy/architecture-roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture Roadmap
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../data-lifecycle-management/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Lifecycle Management
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lifecycle Management
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-lifecycle-management/data-collection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Collection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-lifecycle-management/data-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Storage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-lifecycle-management/data-processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Processing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-lifecycle-management/data-sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Sharing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-lifecycle-management/data-archiving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Archiving
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../data-governance/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Governance
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Governance
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/roles-and-responsibilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Roles & Responsibilities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Dictionary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Quality
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/compliance-and-auditability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Compliance & Auditability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Platform
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7" id="__nav_4_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Platform
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components-and-interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Components & Interfaces
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Pipelines
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../connectivity/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Connectivity
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_4" id="__nav_4_7_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Connectivity
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../connectivity/integration-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Integration Methods
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../connectivity/api-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../connectivity/networking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Networking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Delivery
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_5" id="__nav_4_7_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_5_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4_7_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Delivery
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../change-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Change Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Goals
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Goals">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protect-customer-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Protect customer trust
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improve-delivery-predictability" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Improve delivery predictability
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reduce-cost-of-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reduce cost of change
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-developer-productivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Enable developer productivity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-scalable-team-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Enable scalable team execution
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-and-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics and indicators
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics and indicators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-performance-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Key performance indicators
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supporting-leading-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Supporting leading indicators
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Approach
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Approach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Unit tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Integration tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#end-to-end-e2e-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        End-to-end (E2E) tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#language-and-framework-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Language and framework standards
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Language and framework standards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Python
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#angular" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Angular
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Java
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testcontainers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Testcontainers
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#playwright" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Playwright
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chromatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Chromatic
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chromatic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#review-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Review workflow
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-with-storybook" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Integration with Storybook
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naming-and-organization-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Naming and organization conventions
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-data-and-environment-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Test data and environment management
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cicd-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CI/CD integration
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI&#x2f;CD integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nx-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Nx integration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Core commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-pipeline-expectations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CI pipeline expectations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reliability-and-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reliability and maintenance
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reliability and maintenance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flaky-test-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Flaky test management
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ongoing-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ongoing maintenance
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributor-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Contributor checklist
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deployment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../observability/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Observability
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_6" id="__nav_4_7_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Observability
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Monitoring
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Logging
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/alerting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Alerting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../resilience/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Resilience
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_7" id="__nav_4_7_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Resilience
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/high-availability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  High Availability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/incident-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Incident Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/backup-and-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Backup & Restore
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/disaster-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Disaster Recovery
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../security/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Security
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_8" id="__nav_4_7_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Security
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/access-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Access Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/identity-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Identity Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/secrets-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/data-encryption/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Encryption
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Goals
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Goals">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protect-customer-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Protect customer trust
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improve-delivery-predictability" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Improve delivery predictability
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reduce-cost-of-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reduce cost of change
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-developer-productivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Enable developer productivity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-scalable-team-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Enable scalable team execution
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-and-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics and indicators
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics and indicators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-performance-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Key performance indicators
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supporting-leading-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Supporting leading indicators
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Approach
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Approach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Unit tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Integration tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#end-to-end-e2e-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        End-to-end (E2E) tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#language-and-framework-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Language and framework standards
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Language and framework standards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Python
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#angular" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Angular
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Java
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testcontainers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Testcontainers
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#playwright" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Playwright
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chromatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Chromatic
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chromatic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#review-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Review workflow
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-with-storybook" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Integration with Storybook
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naming-and-organization-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Naming and organization conventions
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-data-and-environment-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Test data and environment management
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cicd-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CI/CD integration
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI&#x2f;CD integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nx-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Nx integration
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Core commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-pipeline-expectations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CI pipeline expectations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reliability-and-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reliability and maintenance
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reliability and maintenance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flaky-test-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Flaky test management
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ongoing-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ongoing maintenance
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributor-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Contributor checklist
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../../../.." class="md-path__link">
+        
+  
+  <span class="md-ellipsis">
+    Aurelius Project Template
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../../../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Platform
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Delivery
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="testing-strategy">Testing Strategy<a class="headerlink" href="#testing-strategy" title="Permanent link">&para;</a></h1>
+<p>This document defines how testing is planned, executed, and maintained across the workspace.</p>
+<h2 id="goals">Goals<a class="headerlink" href="#goals" title="Permanent link">&para;</a></h2>
+<p>The testing strategy exists to protect customer value while improving delivery throughput.</p>
+<h3 id="protect-customer-trust">Protect customer trust<a class="headerlink" href="#protect-customer-trust" title="Permanent link">&para;</a></h3>
+<p>Testing protects customer trust by reducing defects in critical workflows, lowering incidents related to reliability,
+security, and data integrity, and increasing confidence in every production release. This includes preventing:</p>
+<ul>
+<li><strong>Data corruption</strong> through validation of business logic and database operations</li>
+<li><strong>Security vulnerabilities</strong> via authentication/authorization testing and input sanitization checks</li>
+<li><strong>Service outages</strong> by validating system resilience and error handling</li>
+<li><strong>Regulatory non-compliance</strong> through audit trail verification and data governance tests</li>
+</ul>
+<h3 id="improve-delivery-predictability">Improve delivery predictability<a class="headerlink" href="#improve-delivery-predictability" title="Permanent link">&para;</a></h3>
+<p>Testing improves delivery predictability by catching regressions early, establishing clear quality gates for pull
+requests and release candidates, and supporting a consistent release cadence across teams.</p>
+<h3 id="reduce-cost-of-change">Reduce cost of change<a class="headerlink" href="#reduce-cost-of-change" title="Permanent link">&para;</a></h3>
+<p>Testing reduces the cost of change by surfacing issues earlier—during development rather than production—when
+fixes are faster and less expensive. This lowers rework from escaped defects and shortens investigation time through
+reliable, repeatable feedback.</p>
+<h3 id="enable-developer-productivity">Enable developer productivity<a class="headerlink" href="#enable-developer-productivity" title="Permanent link">&para;</a></h3>
+<p>Testing enables developer productivity by reducing cognitive load for contributors, providing fast local feedback
+loops, and minimizing friction in the development workflow. Well-structured tests serve as living documentation
+that clarifies expected behavior and reduces the time spent understanding system functionality.</p>
+<h3 id="enable-scalable-team-execution">Enable scalable team execution<a class="headerlink" href="#enable-scalable-team-execution" title="Permanent link">&para;</a></h3>
+<p>Testing enables scalable team execution by standardizing expectations across projects, making onboarding easier
+through clear conventions, and supporting parallel development with confidence in integration boundaries.</p>
+<h2 id="metrics-and-indicators">Metrics and indicators<a class="headerlink" href="#metrics-and-indicators" title="Permanent link">&para;</a></h2>
+<p>The testing strategy should improve the following indicators over time.</p>
+<div class="admonition note">
+<p class="admonition-title">Business-aligned quality</p>
+<p>Test coverage is a means, not the end goal. The primary objective is reliable business outcomes: stable
+releases, fewer incidents, and faster delivery.</p>
+</div>
+<h3 id="key-performance-indicators">Key performance indicators<a class="headerlink" href="#key-performance-indicators" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Indicator</th>
+<th>Desired direction</th>
+<th>Example target</th>
+<th>Business intent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Change failure rate (CFR)</td>
+<td>Down</td>
+<td>&lt; 15%</td>
+<td>Reduce release risk and increase confidence in delivery.</td>
+</tr>
+<tr>
+<td>Mean time to restore (MTTR)</td>
+<td>Down</td>
+<td>&lt; 1 hour</td>
+<td>Reduce customer and operational impact when failures occur.</td>
+</tr>
+<tr>
+<td>Lead time for changes</td>
+<td>Down</td>
+<td>&lt; 7 days</td>
+<td>Improve speed and predictability of delivery from start of development to production.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">About the indicators</p>
+<p>The above indicators are based on the <a href="https://www.devops-research.com/research.html">DORA metrics</a>, which
+are widely recognized as key measures of software delivery performance.</p>
+<p>Example targets are provided as starting points. Actual targets should be operationalized in the context of team goals together
+with business stakeholders during implementation.</p>
+</div>
+<details class="note">
+<summary>Measurement methodology</summary>
+<ul>
+<li><strong>Change failure rate</strong>: Calculated from deployment logs and incident tracking systems (e.g., failed deployments / total deployments)</li>
+<li><strong>Mean time to restore</strong>: Measured from incident detection to service restoration, tracked in the incident management system</li>
+<li><strong>Lead time for changes</strong>: Tracked from commit to production deployment using CI/CD pipeline metadata</li>
+</ul>
+</details>
+<h3 id="supporting-leading-indicators">Supporting leading indicators<a class="headerlink" href="#supporting-leading-indicators" title="Permanent link">&para;</a></h3>
+<p>Leading indicators provide early warning signals before customer-facing impact:</p>
+<table>
+<thead>
+<tr>
+<th>Indicator</th>
+<th>Desired direction</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pull request quality gate pass rates</td>
+<td>Upward / stable</td>
+<td>Early detection of integration issues</td>
+</tr>
+<tr>
+<td>Flaky test rate</td>
+<td>Downward</td>
+<td>Maintain CI reliability and trust</td>
+</tr>
+<tr>
+<td>Mean time to fix flaky tests</td>
+<td>Downward</td>
+<td>Reduce test debt and improve feedback speed</td>
+</tr>
+<tr>
+<td>Recurring regression incidents</td>
+<td>Downward</td>
+<td>Improve test coverage for previously failing scenarios</td>
+</tr>
+<tr>
+<td>Test execution time (unit layer)</td>
+<td>Stable / downward</td>
+<td>Ensure fast local feedback loops</td>
+</tr>
+<tr>
+<td>Test execution time (integration layer)</td>
+<td>Stable / downward</td>
+<td>Maintain CI pipeline efficiency</td>
+</tr>
+<tr>
+<td>Coverage of critical business paths</td>
+<td>Upward</td>
+<td>Prioritize testing on high-value functionality</td>
+</tr>
+<tr>
+<td>Percentage of changes with test updates</td>
+<td>Upward</td>
+<td>Maintain confidence as the codebase evolves</td>
+</tr>
+</tbody>
+</table>
+<h2 id="approach">Approach<a class="headerlink" href="#approach" title="Permanent link">&para;</a></h2>
+<p>The strategy supports these goals through consistent patterns and tooling that provide fast local feedback for
+contributors, reliable validation of cross-service behavior, and predictable CI execution for pull requests and
+releases.</p>
+<p>To achieve this, our testing model follows a testing pyramid:</p>
+<ul>
+<li><strong>Unit tests</strong>: high volume, fast execution, isolated behavior</li>
+<li><strong>Integration tests</strong>: medium volume, service boundaries, realistic dependencies</li>
+<li><strong>End-to-end (E2E) tests</strong>: focused volume, critical user and data workflows</li>
+</ul>
+<h3 id="unit-tests">Unit tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h3>
+<p>Unit tests validate individual functions, classes, and modules in isolation.</p>
+<p>Use unit tests to verify business logic quickly, lock in behavior for edge cases and regressions, and refactor
+safely with immediate feedback. Unit tests should be deterministic and independent, run in milliseconds to low
+seconds, and avoid real network or infrastructure dependencies.</p>
+<h3 id="integration-tests">Integration tests<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h3>
+<p>Integration tests validate interactions between components and external systems.</p>
+<p>Use integration tests to confirm API to database behavior, validate messaging flows and service contracts, and
+verify configuration and startup assumptions. These tests should run against realistic, typically containerized,
+infrastructure with explicit setup and teardown boundaries and focused assertions at integration points.</p>
+<details class="tip">
+<summary>Contract testing</summary>
+<p>For microservice architectures, consider adding contract testing as an extension of integration tests to validate:</p>
+<ul>
+<li>API schema compatibility between services</li>
+<li>Message format consistency across service boundaries</li>
+<li>Backward compatibility guarantees during version changes</li>
+</ul>
+</details>
+<h3 id="end-to-end-e2e-tests">End-to-end (E2E) tests<a class="headerlink" href="#end-to-end-e2e-tests" title="Permanent link">&para;</a></h3>
+<p>E2E tests validate complete workflows across system boundaries.</p>
+<p>Use E2E tests to verify user-critical paths from entry to outcome, validate end-to-end data consistency, and confirm
+deployment-like behavior before release. Compared to unit and integration tests, E2E suites should remain smaller
+due to higher runtime cost, with strong emphasis on reliability and low flake rate.</p>
+<h2 id="language-and-framework-standards">Language and framework standards<a class="headerlink" href="#language-and-framework-standards" title="Permanent link">&para;</a></h2>
+<h3 id="python">Python<a class="headerlink" href="#python" title="Permanent link">&para;</a></h3>
+<p>Unit and integration tests use <a href="https://docs.pytest.org/en/stable/"><code>pytest</code></a>.</p>
+<details class="info">
+<summary>Recommended pytest plugins</summary>
+<ul>
+<li><a href="https://github.com/pytest-dev/pytest-cov"><code>pytest-cov</code></a> - Coverage reporting</li>
+<li><a href="https://github.com/pytest-dev/pytest-xdist"><code>pytest-xdist</code></a> - Parallel test execution</li>
+<li><a href="https://github.com/pytest-dev/pytest-mock"><code>pytest-mock</code></a> - Mocking support</li>
+</ul>
+</details>
+<details class="info">
+<summary>Test naming convention</summary>
+<p>Test files should be named <code>test\_\_\*.py</code> (e.g., <code>test__entity_producer.py</code>). Test functions should follow the pattern
+<code>test__&lt;function_name&gt;_&lt;scenario&gt;</code> for unit tests and <code>test__&lt;function_name&gt;_&lt;scenario&gt;_&lt;expected_outcome&gt;</code> for integration
+tests to clarify intent and expected results.</p>
+</details>
+<details class="info">
+<summary>Fixture best practices</summary>
+<ul>
+<li>Use function-scoped fixtures (<code>@pytest.fixture()</code>) for mutable state</li>
+<li>Use session-scoped fixtures only for expensive shared infrastructure (e.g., database connections, containerized
+services)</li>
+<li>Prefer parametrized fixtures for testing multiple scenarios without duplication</li>
+</ul>
+</details>
+<details class="example">
+<summary>Parametrized tests</summary>
+<p>Use <code>@pytest.mark.parametrize</code> to test multiple input and expected output combinations without duplicating test code:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">"input_value,expected_output"</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="s2">"valid"</span><span class="p">,</span> <span class="s2">"result1"</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"invalid"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_function</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="n">expected_output</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div>
+</details>
+<h3 id="angular">Angular<a class="headerlink" href="#angular" title="Permanent link">&para;</a></h3>
+<p>Unit tests use <a href="https://jestjs.io/">Jest</a> or <a href="https://vitest.dev/">Vitest</a>. Choose Jest for broader ecosystem
+support and Vitest for faster execution in Vite-based projects.</p>
+<details class="info">
+<summary>File naming convention</summary>
+<p>Test files should be named <code>*.spec.ts</code> (e.g., <code>entity-producer.service.spec.ts</code>) and placed alongside the
+implementation file for easy navigation.</p>
+</details>
+<details class="info">
+<summary>Describe block organization</summary>
+<p>Organize related behavior with describe blocks, limiting nesting to a maximum of 3 levels for readability:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">describe</span><span class="p">(</span><span class="s2">"UserService"</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">describe</span><span class="p">(</span><span class="s2">"when authenticated"</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">describe</span><span class="p">(</span><span class="s2">"#getUser"</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">it</span><span class="p">(</span><span class="s2">"should return user data"</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">});</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div>
+</details>
+<details class="info">
+<summary>Behavior naming convention</summary>
+<p>Use <code>should &lt;condition&gt; when &lt;scenario&gt;</code> pattern:</p>
+<ul>
+<li><code>should display error message when form is invalid</code></li>
+<li><code>should navigate to dashboard after successful login</code></li>
+</ul>
+</details>
+<details class="info">
+<summary>Mocking best practices</summary>
+<ul>
+<li>Use shallow mocks for service dependencies (mock only the methods being tested)</li>
+<li>Use deep mocks sparingly, as they can hide integration issues</li>
+<li>Isolate HTTP behavior using test-time mocks via HttpClientTestingModule</li>
+</ul>
+</details>
+<h3 id="java">Java<a class="headerlink" href="#java" title="Permanent link">&para;</a></h3>
+<p>Unit tests use <a href="https://junit.org/">JUnit 5</a>.</p>
+<details class="info">
+<summary>File naming convention</summary>
+<p>Test files should be named <code>*Test.java</code> (e.g., <code>EntityProducerTest.java</code>). Package structure should mirror the main codebase for easy navigation (e.g., <code>src/test/java/com/aurelius/producer/</code>).</p>
+</details>
+<details class="info">
+<summary>Assertion style</summary>
+<p>Prefer <code>AssertJ</code> for fluent assertions over built-in JUnit assertions or Hamcrest:</p>
+<div class="highlight"><pre><span></span><code><span class="n">assertThat</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="na">getName</span><span class="p">()).</span><span class="na">isEqualTo</span><span class="p">(</span><span class="s">"Test Entity"</span><span class="p">);</span>
+<span class="n">assertThatThrownBy</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">entity</span><span class="p">.</span><span class="na">setGuid</span><span class="p">(</span><span class="kc">null</span><span class="p">))</span>
+<span class="w">    </span><span class="p">.</span><span class="na">isInstanceOf</span><span class="p">(</span><span class="n">NullPointerException</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+</code></pre></div>
+</details>
+<details class="info">
+<summary>Mockito usage</summary>
+<p>Use <a href="https://site.mockito.org/">Mockito</a> for isolation and interaction verification:</p>
+<ul>
+<li><code>@Mock</code> for creating mock dependencies</li>
+<li><code>@InjectMocks</code> for injecting mocks into the test subject</li>
+<li><code>verify()</code> for interaction verification</li>
+</ul>
+</details>
+<details class="info">
+<summary>Test isolation patterns</summary>
+<ul>
+<li>Use <code>@BeforeEach</code> to set up fresh state for each test</li>
+<li>Use <code>@AfterEach</code> to clean up any modifications made during tests</li>
+<li>Avoid static mutable state that can cause test interference</li>
+</ul>
+</details>
+<details class="example">
+<summary>Parameterized tests</summary>
+<p>Use <code>@ParameterizedTest</code> with various sources:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@ParameterizedTest</span>
+<span class="nd">@ValueSource</span><span class="p">(</span><span class="n">strings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">"valid"</span><span class="p">,</span><span class="w"> </span><span class="s">"also-valid"</span><span class="w"> </span><span class="p">})</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">testValidation</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">input</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">assertThat</span><span class="p">(</span><span class="n">isValid</span><span class="p">(</span><span class="n">input</span><span class="p">)).</span><span class="na">isTrue</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+<h3 id="testcontainers">Testcontainers<a class="headerlink" href="#testcontainers" title="Permanent link">&para;</a></h3>
+<p>For integration and end-to-end testing, use <a href="https://www.testcontainers.org/">Testcontainers</a> as the default
+approach for provisioning dependent services.</p>
+<details class="tip">
+<summary>Benefits of Testcontainers</summary>
+<p>Prefer ephemeral, containerized dependencies over shared static environments for integration tests. This provides:</p>
+<ul>
+<li>Isolation: Each test gets a fresh environment, reducing flakiness from shared state.</li>
+<li>Realism: Tests run against actual service images, improving confidence in production-like behavior.</li>
+<li>Flexibility: Easily configure different versions and setups for testing various scenarios.</li>
+</ul>
+</details>
+<details class="tip">
+<summary>Validating containerized applications</summary>
+<p>Consider running containerized applications in a Testcontainers-managed container during testing. This provides
+higher confidence that the tested behavior matches production-like conditions, including configuration,
+environment variables, and network interactions.</p>
+</details>
+<details class="example">
+<summary>Multi-service scenarios with Docker Compose</summary>
+<p>Use <code>DockerCompose</code> from <code>testcontainers.compose</code> when multiple services are required.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">testcontainers.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">DockerCompose</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"session"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compose</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">DockerCompose</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Return a Docker Compose instance."""</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">,</span> <span class="n">env_file</span><span class="o">=</span><span class="n">dotenv</span><span class="o">.</span><span class="n">find_dotenv</span><span class="p">())</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">compose</span>
+</code></pre></div>
+</details>
+<details class="example">
+<summary>Wait strategies</summary>
+<p>Use appropriate wait strategies for common services. The codebase uses <code>HealthcheckWaitStrategy</code>
+for services with health checks defined in Docker Compose.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">testcontainers.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">DockerCompose</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"session"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compose</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">DockerCompose</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Return a Docker Compose instance."""</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">,</span> <span class="n">env_file</span><span class="o">=</span><span class="n">dotenv</span><span class="o">.</span><span class="n">find_dotenv</span><span class="p">())</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">compose</span><span class="o">.</span><span class="n">waiting_for</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"aurelius-fastapi-example"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">(),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+</code></pre></div>
+</details>
+<details class="example">
+<summary>Service discovery</summary>
+<p>Use <code>get_service_host_and_port()</code> or <code>get_service_port()</code> to retrieve runtime connection details:</p>
+<div class="highlight"><pre><span></span><code><span class="n">hostname</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">compose</span><span class="o">.</span><span class="n">get_service_host_and_port</span><span class="p">(</span><span class="s2">"postgres-app"</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">database_port</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">hostname</span> <span class="ow">and</span> <span class="n">port</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"PostgreSQL service not found in Docker Compose"</span><span class="p">)</span>
+</code></pre></div>
+</details>
+<details class="example">
+<summary>Log capture</summary>
+<p>Containers are automatically torn down when exiting the context manager. The <code>capture_docker_compose_logs()</code>
+helper ensures logs are captured for debugging:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_sdk.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
+
+<span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
+    <span class="k">yield</span> <span class="n">compose</span><span class="o">.</span><span class="n">waiting_for</span><span class="p">({</span><span class="s2">"service"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">()})</span>
+    <span class="n">capture_docker_compose_logs</span><span class="p">(</span><span class="n">compose</span><span class="p">)</span>
+</code></pre></div>
+</details>
+<h3 id="playwright">Playwright<a class="headerlink" href="#playwright" title="Permanent link">&para;</a></h3>
+<p>For frontend end-to-end testing, use <a href="https://playwright.dev/">Playwright</a> to validate functional behavior and
+critical user flows. The codebase uses Playwright with pytest integration via <code>playwright.sync_api</code>.</p>
+<details class="example">
+<summary>Basic assertion</summary>
+<p>Use Playwright's built-in assertions for common checks:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">playwright.sync_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">Page</span><span class="p">,</span> <span class="n">expect</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_main_page_has_welcome_message</span><span class="p">(</span><span class="n">authenticated</span><span class="p">:</span> <span class="n">Page</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">"Welcome"</span><span class="p">)))</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
+</code></pre></div>
+</details>
+<details class="example">
+<summary>Authentication fixture</summary>
+<p>The codebase uses pytest fixtures to handle authentication before tests run. A typical authenticated fixture navigates to the app and performs Keycloak login:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">authenticated</span><span class="p">(</span><span class="n">page</span><span class="p">:</span> <span class="n">Page</span><span class="p">,</span> <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Authenticate the user and return the page."""</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="n">base_url</span><span class="p">)</span>
+
+    <span class="c1"># Navigate to Keycloak login</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">wait_for_url</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">f</span><span class="s2">"/realms/</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">auth_realm_name</span><span class="si">}</span><span class="s2">/protocol/openid-connect/auth"</span><span class="p">))</span>
+
+    <span class="c1"># Fill credentials and sign in</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">locator</span><span class="p">(</span><span class="s2">"#username"</span><span class="p">)</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">locator</span><span class="p">(</span><span class="s2">"#password"</span><span class="p">)</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">password</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">())</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">get_by_role</span><span class="p">(</span><span class="s2">"button"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Sign in"</span><span class="p">)</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+
+    <span class="c1"># Wait for redirect back to app</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">wait_for_url</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">base_url</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">page</span>
+</code></pre></div>
+</details>
+<details class="example">
+<summary>Locator patterns</summary>
+<p>Use semantic locators (test IDs, labels, roles) for more resilient tests:</p>
+<ul>
+<li><code>page.locator("#search-input")</code> - ID-based locator</li>
+<li><code>page.get_by_role("button", name="Sign in")</code> - ARIA role-based locator</li>
+<li><code>page.get_by_text(re.compile("Welcome"))</code> - Text-based locator with regex</li>
+</ul>
+</details>
+<details class="example">
+<summary>Assertions</summary>
+<p>Common assertion patterns used in the codebase:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Visibility check</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">search_input</span><span class="p">)</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
+
+<span class="c1"># Attribute check</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">search_input</span><span class="p">)</span><span class="o">.</span><span class="n">to_have_attribute</span><span class="p">(</span><span class="s2">"placeholder"</span><span class="p">,</span> <span class="s2">"Search for an entity"</span><span class="p">)</span>
+
+<span class="c1"># Count check</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">locator</span><span class="p">(</span><span class="s2">".search-result-card"</span><span class="p">))</span><span class="o">.</span><span class="n">to_have_count</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">))</span>
+
+<span class="c1"># Text content check</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">f</span><span class="s2">"I have found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span><span class="si">}</span><span class="s2"> entities"</span><span class="p">)))</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
+</code></pre></div>
+</details>
+<details class="tip">
+<summary>Test isolation</summary>
+<p>Each test should receive a fresh <code>Page</code> instance through the fixture, ensuring tests don't interfere with each other. The <code>authenticated</code> fixture handles login state separately from individual test logic.</p>
+</details>
+<h3 id="chromatic">Chromatic<a class="headerlink" href="#chromatic" title="Permanent link">&para;</a></h3>
+<p>For visual testing of UI components, use <a href="https://www.chromatic.com/">Chromatic</a> to catch regressions in shared
+UI components and maintain visual consistency. The visual review workflow also allows for non-technical stakeholders
+to triage and approve visual changes.</p>
+<h4 id="review-workflow">Review workflow<a class="headerlink" href="#review-workflow" title="Permanent link">&para;</a></h4>
+<p>Define who approves visual changes based on component type:</p>
+<ul>
+<li><strong>Design system components</strong>: Require designer approval</li>
+<li><strong>Feature components</strong>: Developer approval sufficient for non-breaking changes</li>
+<li><strong>Layout changes</strong>: PM and designer review required</li>
+</ul>
+<h4 id="integration-with-storybook">Integration with Storybook<a class="headerlink" href="#integration-with-storybook" title="Permanent link">&para;</a></h4>
+<p>Chromatic integrates directly with <a href="https://storybook.js.org/">Storybook</a> to automatically capture component states.
+Ensure all stories are documented and represent actual usage patterns in the application.</p>
+<div class="admonition success">
+<p class="admonition-title">Best practices reinforcement</p>
+<p>The Chromatic visual testing workflow together with Storybook reinforces best practices around component isolation and documentation in the project.</p>
+</div>
+<h2 id="naming-and-organization-conventions">Naming and organization conventions<a class="headerlink" href="#naming-and-organization-conventions" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Test file pattern</th>
+<th>Test function pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td><code>test\_\_\*.py</code></td>
+<td><code>test\_\_&lt;function_name&gt;_&lt;scenario&gt;</code></td>
+</tr>
+<tr>
+<td>Angular</td>
+<td><code>\*.spec.ts</code></td>
+<td><code>should &lt;behavior&gt; when &lt;condition&gt;</code></td>
+</tr>
+<tr>
+<td>Java</td>
+<td><code>\*Test.java</code></td>
+<td><code>test&lt;Method&gt;_&lt;scenario&gt;_&lt;outcome&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>General organization rules:</p>
+<ol>
+<li>Keep tests independent and order-agnostic.</li>
+<li>Use behavior-oriented names that describe intent.</li>
+<li>Follow <a href="https://semaphore.io/blog/aaa-pattern-test-automation">Arrange, Act, Assert (AAA)</a> structure.</li>
+<li>Prefer reusable fixtures/builders over copy-pasted setup.</li>
+</ol>
+<h2 id="test-data-and-environment-management">Test data and environment management<a class="headerlink" href="#test-data-and-environment-management" title="Permanent link">&para;</a></h2>
+<p>Quality and stability depend on disciplined environment control.</p>
+<p>Use environment variables and typed settings for configuration, create test data through fixtures or factories
+rather than manual shared state, clean up generated data after each test or fixture scope, and avoid hidden dependencies
+between test modules.</p>
+<div class="admonition tip">
+<p class="admonition-title">Fixture scopes</p>
+<p>Use session-scoped fixtures only for expensive shared infrastructure.
+Use function-scoped fixtures for mutable state.</p>
+</div>
+<h2 id="cicd-integration">CI/CD integration<a class="headerlink" href="#cicd-integration" title="Permanent link">&para;</a></h2>
+<p>Testing is orchestrated with <a href="https://nx.dev/">Nx</a> and executed in GitHub Actions.</p>
+<h3 id="nx-integration">Nx integration<a class="headerlink" href="#nx-integration" title="Permanent link">&para;</a></h3>
+<p>Nx provides task orchestration across projects, affected-project execution for efficient pull request validation,
+task caching to reduce repeated work, and parallel execution for independent tasks.</p>
+<h3 id="core-commands">Core commands<a class="headerlink" href="#core-commands" title="Permanent link">&para;</a></h3>
+<p>Use these commands during development and CI troubleshooting:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test one project</span>
+nx<span class="w"> </span><span class="nb">test</span><span class="w"> </span>&lt;project-name&gt;
+
+<span class="c1"># Run E2E for one project</span>
+nx<span class="w"> </span>e2e<span class="w"> </span>&lt;project-name&gt;
+
+<span class="c1"># Test affected projects</span>
+nx<span class="w"> </span>affected<span class="w"> </span>-t<span class="w"> </span><span class="nb">test</span><span class="w"> </span>e2e<span class="w"> </span>-c<span class="w"> </span>ci
+
+<span class="c1"># Run test target across many projects</span>
+nx<span class="w"> </span>run-many<span class="w"> </span>-t<span class="w"> </span><span class="nb">test</span>
+</code></pre></div>
+<h3 id="ci-pipeline-expectations">CI pipeline expectations<a class="headerlink" href="#ci-pipeline-expectations" title="Permanent link">&para;</a></h3>
+<p>CI validation includes:</p>
+<ol>
+<li>Runtime and dependency setup (Java, Python, Node.js)</li>
+<li>Lint/format and pre-commit quality gates</li>
+<li>Affected test and E2E execution</li>
+<li>Browser setup for frontend E2E</li>
+<li>Visual regression checks where configured</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Merge criteria</p>
+<p>Pull requests are expected to pass all required affected test stages
+before merge.</p>
+</div>
+<h2 id="reliability-and-maintenance">Reliability and maintenance<a class="headerlink" href="#reliability-and-maintenance" title="Permanent link">&para;</a></h2>
+<h3 id="flaky-test-management">Flaky test management<a class="headerlink" href="#flaky-test-management" title="Permanent link">&para;</a></h3>
+<p>When a test is flaky, follow this sequence:</p>
+<ol>
+<li>Identify recurring failure patterns in CI.</li>
+<li>Investigate root causes (timing, isolation, environment).</li>
+<li>Fix underlying issues before considering retries.</li>
+<li>Document known flake status and ownership.</li>
+</ol>
+<h3 id="ongoing-maintenance">Ongoing maintenance<a class="headerlink" href="#ongoing-maintenance" title="Permanent link">&para;</a></h3>
+<p>Maintain test quality by reviewing coverage trends regularly, removing redundant or low-value tests, refactoring
+duplicated setup logic, and updating tests as contracts and dependencies evolve.</p>
+<h2 id="contributor-checklist">Contributor checklist<a class="headerlink" href="#contributor-checklist" title="Permanent link">&para;</a></h2>
+<p>Before opening a pull request, confirm that:</p>
+<ul>
+<li>New behavior is covered at the correct test layer</li>
+<li>Existing tests were updated for changed contracts</li>
+<li>Affected project tests pass locally</li>
+<li>Any new infrastructure requirements are documented.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Aurelius Enterprise
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/aureliusenterprise/aurelius-atlas" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      
+<div class="md-progress" data-md-component="progress" role="progressbar" aria-label="Loading"></div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../../../..","features":["content.code.copy","navigation.indexes","navigation.instant","navigation.instant.progress","navigation.path","navigation.sections","navigation.tabs","search.highlight"],"redirect":null,"search":"../../../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"alias":true,"provider":"mike"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.3c842f4c.min.js"></script>
+      
+    
+  </body>
+</html>
