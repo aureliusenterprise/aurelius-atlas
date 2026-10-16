@@ -235,6 +235,18 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-dynamic-events/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-scanning/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-static-edges/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-lineage/lineage-visualization/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/data-governance/data-quality/</loc>
       </url>
       <url>

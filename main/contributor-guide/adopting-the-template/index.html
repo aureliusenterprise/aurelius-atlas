@@ -4330,9 +4330,40 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../architecture/data-governance/data-lineage/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../architecture/data-governance/data-lineage/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4345,7 +4376,140 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5_5" id="__nav_4_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_5_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lineage
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-scanning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Scanning & Discovery
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-static-edges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Static Lineage Edges
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-dynamic-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dynamic Lineage Events
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Using the Lineage Graph
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -5871,6 +6035,12 @@ together.</p>
 <code>tools/plugins/docker.ts</code> (six target definitions). Edit it there, then update the <code>:local</code> image
 references in the <code>e2e/docker-compose.yaml</code> files and the connector's <code>docker-compose.yaml</code>, plus the
 <code>org.opencontainers.image.source</code> labels in the Dockerfiles.</p>
+<p>All base and infrastructure images are <a href="https://dhi.io">Docker Hardened Images</a> pulled from <code>dhi.io</code>,
+which requires Docker Hub authentication. In your fork, set the <code>DOCKERHUB_USERNAME</code> and
+<code>DOCKERHUB_TOKEN</code> repository secrets (the CI workflows pass them to the setup-toolchain action, which
+logs in to both <code>docker.io</code> and <code>dhi.io</code>); without them every CI job fails at the first image pull.
+Developers need a <code>docker login</code> on their host too — see
+<a href=".././development-environment/">Development Environment</a>.</p>
 <h3 id="7-sonarqube-organization">7. SonarQube organization<a class="headerlink" href="#7-sonarqube-organization" title="Permanent link">&para;</a></h3>
 <p>Each analyzed app has <code>sonar.organization=aureliusenterprise</code> and <code>sonar.projectKey=aurelius-*</code> in its
 <code>sonar-project.properties</code>. Point these at your SonarCloud organization (or disable the <code>sonar</code> step in CI

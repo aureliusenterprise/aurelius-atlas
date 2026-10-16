@@ -194,6 +194,16 @@ Values are expected to be Avro-encoded records that conform to the `Entity` sche
 > ```
 >
 > Compare entities based on their latest change timestamp.
+>
+> ### avro\_schema
+>
+> ```
+> avro_schema(*args: Any, **kwargs: Any) -> dict[str, Any]
+> ```
+>
+> Return the Avro schema with datetime fields encoded as timestamp-millis.
+>
+> pydantic-avro defaults `date-time` fields to `timestamp-micros`, but the Confluent Avro converter maps only `timestamp-millis` to the Connect `Timestamp` logical type. Without it, consumers that read through that converter (e.g. the Debezium JDBC sink) see a nameless raw `INT64` and try to bind it to a `timestamptz` column as a bigint, which fails.
 
 The schema is registered in the schema registry as `com.aureliusenterprise.example.Entity`.
 
@@ -233,16 +243,18 @@ configs:
 
 These environment variables are referenced by `workers/worker.properties`:
 
+All app settings carry the `AURELIUS_CONNECTOR_` prefix, so other projects' environment variables can never populate this app.
+
 | Name | Description |
 | --- | --- |
-| `KAFKA_BOOTSTRAP_SERVERS` | Kafka bootstrap servers. |
-| `CONFIG_STORAGE_TOPIC` | Connect config storage topic name. |
-| `GROUP_ID` | Connect worker group ID. |
-| `OFFSET_STORAGE_TOPIC` | Connect offset storage topic name. |
-| `STATUS_STORAGE_TOPIC` | Connect status storage topic name. |
-| `REST_ADVERTISED_HOST_NAME` | Hostname advertised by the Connect REST API. |
-| `REST_PORT` | Connect REST API port. |
-| `SCHEMA_REGISTRY_URL` | Schema Registry URL used by the Avro value converter. |
+| `AURELIUS_CONNECTOR_KAFKA_BOOTSTRAP_SERVERS` | Kafka bootstrap servers. |
+| `AURELIUS_CONNECTOR_CONFIG_STORAGE_TOPIC` | Connect config storage topic name. |
+| `AURELIUS_CONNECTOR_GROUP_ID` | Connect worker group ID. |
+| `AURELIUS_CONNECTOR_OFFSET_STORAGE_TOPIC` | Connect offset storage topic name. |
+| `AURELIUS_CONNECTOR_STATUS_STORAGE_TOPIC` | Connect status storage topic name. |
+| `AURELIUS_CONNECTOR_REST_ADVERTISED_HOST_NAME` | Hostname advertised by the Connect REST API. |
+| `AURELIUS_CONNECTOR_REST_PORT` | Connect REST API port. |
+| `AURELIUS_CONNECTOR_SCHEMA_REGISTRY_URL` | Schema Registry URL used by the Avro value converter. |
 
 `worker.properties` also sets `offset.storage.file.filename`, which is required for standalone mode.
 
@@ -252,9 +264,9 @@ These environment variables are referenced by `workers/connector.properties`:
 
 | Name | Description |
 | --- | --- |
-| `DATABASE_URL` | JDBC URL for the target Postgres database. |
-| `DATABASE_USERNAME` | Database username. |
-| `DATABASE_PASSWORD` | Database password. |
-| `KAFKA_TOPIC_NAME` | Source topic consumed by the sink connector. |
-| `DLQ_TOPIC_NAME` | Dead-letter queue topic for records that fail processing. |
-| `TABLE_NAME` | Destination table name used by the JDBC sink connector. |
+| `AURELIUS_CONNECTOR_DATABASE_URL` | JDBC URL for the target Postgres database. |
+| `AURELIUS_CONNECTOR_DATABASE_USERNAME` | Database username. |
+| `AURELIUS_CONNECTOR_DATABASE_PASSWORD` | Database password. |
+| `AURELIUS_CONNECTOR_KAFKA_TOPIC_NAME` | Source topic consumed by the sink connector. |
+| `AURELIUS_CONNECTOR_DLQ_TOPIC_NAME` | Dead-letter queue topic for records that fail processing. |
+| `AURELIUS_CONNECTOR_TABLE_NAME` | Destination table name used by the JDBC sink connector. |

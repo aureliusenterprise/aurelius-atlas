@@ -1490,6 +1490,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_example.models.Entity.avro_schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;avro_schema
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4366,9 +4377,40 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../../architecture/data-governance/data-lineage/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../architecture/data-governance/data-lineage/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4381,7 +4423,140 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5_5" id="__nav_4_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_5_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lineage
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-scanning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Scanning & Discovery
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-static-edges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Static Lineage Edges
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-dynamic-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dynamic Lineage Events
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Using the Lineage Graph
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -5676,6 +5851,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_example.models.Entity.avro_schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;avro_schema
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6234,6 +6420,35 @@ schema.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_example.models.Entity.avro_schema" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">avro_schema</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#aurelius_example.models.Entity.avro_schema" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">avro_schema</span><span class="p">(</span><span class="o">*</span><span class="n"><span title="aurelius_example.models.Entity.avro_schema(*args)">args</span></span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="o">**</span><span class="n"><span title="aurelius_example.models.Entity.avro_schema(**kwargs)">kwargs</span></span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the Avro schema with datetime fields encoded as timestamp-millis.</p>
+<p>pydantic-avro defaults <code>date-time</code> fields to <code>timestamp-micros</code>, but the
+Confluent Avro converter maps only <code>timestamp-millis</code> to the Connect
+<code>Timestamp</code> logical type. Without it, consumers that read through that
+converter (e.g. the Debezium JDBC sink) see a nameless raw <code>INT64</code> and try
+to bind it to a <code>timestamptz</code> column as a bigint, which fails.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -6276,6 +6491,8 @@ value that is <code>null</code>.</p>
 </code></pre></div>
 <h3 id="worker-configuration-environment-variables">Worker configuration environment variables<a class="headerlink" href="#worker-configuration-environment-variables" title="Permanent link">&para;</a></h3>
 <p>These environment variables are referenced by <code>workers/worker.properties</code>:</p>
+<p>All app settings carry the <code>AURELIUS_CONNECTOR_</code> prefix, so other projects'
+environment variables can never populate this app.</p>
 <table>
 <thead>
 <tr>
@@ -6285,35 +6502,35 @@ value that is <code>null</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>KAFKA_BOOTSTRAP_SERVERS</code></td>
+<td><code>AURELIUS_CONNECTOR_KAFKA_BOOTSTRAP_SERVERS</code></td>
 <td>Kafka bootstrap servers.</td>
 </tr>
 <tr>
-<td><code>CONFIG_STORAGE_TOPIC</code></td>
+<td><code>AURELIUS_CONNECTOR_CONFIG_STORAGE_TOPIC</code></td>
 <td>Connect config storage topic name.</td>
 </tr>
 <tr>
-<td><code>GROUP_ID</code></td>
+<td><code>AURELIUS_CONNECTOR_GROUP_ID</code></td>
 <td>Connect worker group ID.</td>
 </tr>
 <tr>
-<td><code>OFFSET_STORAGE_TOPIC</code></td>
+<td><code>AURELIUS_CONNECTOR_OFFSET_STORAGE_TOPIC</code></td>
 <td>Connect offset storage topic name.</td>
 </tr>
 <tr>
-<td><code>STATUS_STORAGE_TOPIC</code></td>
+<td><code>AURELIUS_CONNECTOR_STATUS_STORAGE_TOPIC</code></td>
 <td>Connect status storage topic name.</td>
 </tr>
 <tr>
-<td><code>REST_ADVERTISED_HOST_NAME</code></td>
+<td><code>AURELIUS_CONNECTOR_REST_ADVERTISED_HOST_NAME</code></td>
 <td>Hostname advertised by the Connect REST API.</td>
 </tr>
 <tr>
-<td><code>REST_PORT</code></td>
+<td><code>AURELIUS_CONNECTOR_REST_PORT</code></td>
 <td>Connect REST API port.</td>
 </tr>
 <tr>
-<td><code>SCHEMA_REGISTRY_URL</code></td>
+<td><code>AURELIUS_CONNECTOR_SCHEMA_REGISTRY_URL</code></td>
 <td>Schema Registry URL used by the Avro value converter.</td>
 </tr>
 </tbody>
@@ -6330,27 +6547,27 @@ value that is <code>null</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>DATABASE_URL</code></td>
+<td><code>AURELIUS_CONNECTOR_DATABASE_URL</code></td>
 <td>JDBC URL for the target Postgres database.</td>
 </tr>
 <tr>
-<td><code>DATABASE_USERNAME</code></td>
+<td><code>AURELIUS_CONNECTOR_DATABASE_USERNAME</code></td>
 <td>Database username.</td>
 </tr>
 <tr>
-<td><code>DATABASE_PASSWORD</code></td>
+<td><code>AURELIUS_CONNECTOR_DATABASE_PASSWORD</code></td>
 <td>Database password.</td>
 </tr>
 <tr>
-<td><code>KAFKA_TOPIC_NAME</code></td>
+<td><code>AURELIUS_CONNECTOR_KAFKA_TOPIC_NAME</code></td>
 <td>Source topic consumed by the sink connector.</td>
 </tr>
 <tr>
-<td><code>DLQ_TOPIC_NAME</code></td>
+<td><code>AURELIUS_CONNECTOR_DLQ_TOPIC_NAME</code></td>
 <td>Dead-letter queue topic for records that fail processing.</td>
 </tr>
 <tr>
-<td><code>TABLE_NAME</code></td>
+<td><code>AURELIUS_CONNECTOR_TABLE_NAME</code></td>
 <td>Destination table name used by the JDBC sink connector.</td>
 </tr>
 </tbody>

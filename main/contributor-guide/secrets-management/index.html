@@ -4208,9 +4208,40 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../architecture/data-governance/data-lineage/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../architecture/data-governance/data-lineage/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4223,7 +4254,140 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5_5" id="__nav_4_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_5_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lineage
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-scanning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Scanning & Discovery
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-static-edges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Static Lineage Edges
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-dynamic-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dynamic Lineage Events
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/data-governance/data-lineage/lineage-visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Using the Lineage Graph
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -5565,9 +5729,17 @@ to the list of <code>age</code> keys. Each key is separated by a comma and a new
 <span class="w">          </span><span class="no">&lt;KEY3&gt;</span>
 </code></pre></div>
 <p>Next, create a new branch and commit your changes. After pushing the branch to GitHub, create a pull request to
-merge the changes into the <code>main</code> branch. A GitHub action will automatically rotate the encryption on all encrypted
-files in the repository to include your public key. After a team member approves the pull request, you can merge
-the changes.</p>
+merge the changes into the <code>main</code> branch. Have a team member review and approve the pull request. Once it is
+merged, a GitHub action rotates the encryption on all encrypted files in the repository to include your public
+key and pushes the re-encrypted files to <code>main</code>.</p>
+<div class="admonition important">
+<p class="admonition-title">Reviewing .sops.yaml changes is the security gate</p>
+<p>The rotation workflow holds the key that decrypts every <code>.env.enc</code> in the repository, so it deliberately runs
+only on <code>main</code> — never on pull requests — and can therefore only re-encrypt to recipients that are already
+merged. This makes the review of the <code>.sops.yaml</code> diff the single point of control: verify that every added
+recipient key belongs to a known team member before approving the merge. Never merge a key you cannot attribute
+to a person.</p>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Ensure a descriptive pull request title</p>
 <p>The pull request title should clearly indicate that you are adding a new key pair, and for which user it is intended.

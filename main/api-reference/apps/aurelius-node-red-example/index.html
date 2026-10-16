@@ -4222,9 +4222,40 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../../architecture/data-governance/data-lineage/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../architecture/data-governance/data-lineage/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4237,7 +4268,140 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5_5" id="__nav_4_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_5_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lineage
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-scanning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Scanning & Discovery
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-static-edges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Static Lineage Edges
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-dynamic-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dynamic Lineage Events
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/data-governance/data-lineage/lineage-visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Using the Lineage Graph
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -5602,7 +5766,9 @@ is registered in the schema registry as <code>com.aureliusenterprise.example.Ent
 <h2 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h2>
 <p>Deploy using the provided Dockerfile. By default, the app listens on port <code>1880</code>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>The connector can be configured using the following environment variables:</p>
+<p>Every setting is read from the environment with the <code>AURELIUS_NODE_RED_</code>
+prefix (the <code>${...}</code> lookups in <code>flows.json</code>), so other projects' environment
+variables can never populate this app.</p>
 <table>
 <thead>
 <tr>
@@ -5612,23 +5778,23 @@ is registered in the schema registry as <code>com.aureliusenterprise.example.Ent
 </thead>
 <tbody>
 <tr>
-<td><code>KAFKA_BOOTSTRAP_SERVERS</code></td>
+<td><code>AURELIUS_NODE_RED_KAFKA_BOOTSTRAP_SERVERS</code></td>
 <td>A comma-separated list of Kafka bootstrap servers.</td>
 </tr>
 <tr>
-<td><code>KAFKA_TOPIC_NAME</code></td>
+<td><code>AURELIUS_NODE_RED_KAFKA_TOPIC_NAME</code></td>
 <td>The name of the Kafka topic to write to.</td>
 </tr>
 <tr>
-<td><code>SCHEMA_REGISTRY_URL</code></td>
+<td><code>AURELIUS_NODE_RED_SCHEMA_REGISTRY_URL</code></td>
 <td>The URL of the schema registry.</td>
 </tr>
 <tr>
-<td><code>SCHEMA_SUBJECT_NAME</code></td>
+<td><code>AURELIUS_NODE_RED_SCHEMA_SUBJECT_NAME</code></td>
 <td>The name of the schema subject to use for encoding messages.</td>
 </tr>
 <tr>
-<td><code>SCHEMA_SUBJECT_VERSION</code></td>
+<td><code>AURELIUS_NODE_RED_SCHEMA_SUBJECT_VERSION</code></td>
 <td>The version of the schema subject to use for encoding messages.</td>
 </tr>
 </tbody>

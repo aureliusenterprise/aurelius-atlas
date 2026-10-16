@@ -18,10 +18,10 @@ Deploy using the provided Dockerfile.
 
 ## Configuration
 
-The connector can be configured using the following environment variables:
+Every setting is read from the environment with the `AURELIUS_JAVA_PRODUCER_` prefix, so other projects' environment variables can never populate this app.
 
 | Name | Description |
 | --- | --- |
-| `KAFKA_BOOTSTRAP_SERVERS` | A comma-separated list of Kafka bootstrap servers. |
-| `KAFKA_TOPIC_NAME` | The name of the Kafka topic to write to. |
-| `SCHEMA_REGISTRY_URL` | The URL of the schema registry. |
+| `AURELIUS_JAVA_PRODUCER_KAFKA_BOOTSTRAP_SERVERS` | A comma-separated list of Kafka bootstrap servers. |
+| `AURELIUS_JAVA_PRODUCER_KAFKA_TOPIC_NAME` | The name of the Kafka topic to write to. |
+| `AURELIUS_JAVA_PRODUCER_SCHEMA_REGISTRY_URL` | The URL of the schema registry. |

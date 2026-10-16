@@ -4127,9 +4127,40 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../../data-governance/data-lineage/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../data-governance/data-lineage/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4142,7 +4173,140 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5_5" id="__nav_4_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_5_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lineage
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-lineage/lineage-scanning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Scanning & Discovery
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-lineage/lineage-static-edges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Static Lineage Edges
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-lineage/lineage-dynamic-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dynamic Lineage Events
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-governance/data-lineage/lineage-visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Using the Lineage Graph
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -6677,7 +6841,7 @@ for services with health checks defined in Docker Compose.</p>
 <summary>Log capture</summary>
 <p>Containers are automatically torn down when exiting the context manager. The <code>capture_docker_compose_logs()</code>
 helper ensures logs are captured for debugging:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_sdk.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_sdk.testing.testcontainers</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
 
 <span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
     <span class="k">yield</span> <span class="n">compose</span><span class="o">.</span><span class="n">waiting_for</span><span class="p">({</span><span class="s2">"service"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">()})</span>
@@ -6741,7 +6905,7 @@ critical user flows. The codebase uses Playwright with pytest integration via <c
 <span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">locator</span><span class="p">(</span><span class="s2">".search-result-card"</span><span class="p">))</span><span class="o">.</span><span class="n">to_have_count</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">))</span>
 
 <span class="c1"># Text content check</span>
-<span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">f</span><span class="s2">"I have found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span><span class="si">}</span><span class="s2"> entities"</span><span class="p">)))</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">authenticated</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">f</span><span class="s2">"I have found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span><span class="si">}</span><span class="s2"> entities</span><span class="se">\\</span><span class="s2">."</span><span class="p">)))</span><span class="o">.</span><span class="n">to_be_visible</span><span class="p">()</span>
 </code></pre></div>
 </details>
 <details class="tip">

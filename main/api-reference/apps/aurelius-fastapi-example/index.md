@@ -66,12 +66,30 @@ Configuration is managed via the `Settings` model:
 >       "title": "Db Fail Max",
 >       "type": "integer"
 >     },
+>     "auth_client_id": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "description": "The client id this application authenticates as; seeds the default auth_audience.",
+>       "title": "Auth Client Id"
+>     },
 >     "auth_server_url": {
 >       "description": "The base URL of the authentication server.",
 >       "format": "uri",
 >       "maxLength": 2083,
 >       "minLength": 1,
 >       "title": "Auth Server Url",
+>       "type": "string"
+>     },
+>     "auth_audience": {
+>       "description": "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id.",
+>       "title": "Auth Audience",
 >       "type": "string"
 >     },
 >     "auto_create_schema": {
@@ -167,6 +185,36 @@ Configuration is managed via the `Settings` model:
 >       "description": "The port to bind the server to.",
 >       "title": "Port",
 >       "type": "integer"
+>     },
+>     "auth_ca_file": {
+>       "default": "",
+>       "description": "PEM CA bundle used to verify the authentication server's TLS certificate. Empty uses the operating system default trust store.",
+>       "title": "Auth Ca File",
+>       "type": "string"
+>     },
+>     "database_sslmode": {
+>       "default": "prefer",
+>       "description": "PostgreSQL TLS mode (disable, prefer, require, verify-ca, verify-full). The development defaults set verify-full to match the TLS-only database.",
+>       "title": "Database Sslmode",
+>       "type": "string"
+>     },
+>     "database_sslrootcert": {
+>       "default": "",
+>       "description": "PEM CA bundle used to verify the database server's TLS certificate. Required for verify-ca and verify-full; ignored by libpq otherwise.",
+>       "title": "Database Sslrootcert",
+>       "type": "string"
+>     },
+>     "tls_cert_file": {
+>       "default": "",
+>       "description": "PEM certificate served by the application. Empty disables TLS on the server.",
+>       "title": "Tls Cert File",
+>       "type": "string"
+>     },
+>     "tls_key_file": {
+>       "default": "",
+>       "description": "PEM private key matching tls_cert_file. Required when TLS is enabled.",
+>       "title": "Tls Key File",
+>       "type": "string"
 >     }
 >   },
 >   "required": [
@@ -181,6 +229,7 @@ Configuration is managed via the `Settings` model:
 >
 > Config:
 >
+> - `env_prefix`: `ENV_PREFIX`
 > - `frozen`: `True`
 >
 > Fields:
@@ -190,7 +239,9 @@ Configuration is managed via the `Settings` model:
 > - `auth_realm_name` (`str`)
 > - `auth_reset_timeout` (`int`)
 > - `db_fail_max` (`int`)
+> - `auth_client_id` (`str | None`)
 > - `auth_server_url` (`HttpUrl`)
+> - `auth_audience` (`str`)
 > - `auto_create_schema` (`bool`)
 > - `cdc_disconnect_poll_timeout` (`float`)
 > - `cdc_shutdown_join_timeout` (`float`)
@@ -205,6 +256,39 @@ Configuration is managed via the `Settings` model:
 > - `host` (`str`)
 > - `log_level` (`LevelName`)
 > - `port` (`int`)
+> - `auth_ca_file` (`str`)
+> - `database_sslmode` (`str`)
+> - `database_sslrootcert` (`str`)
+> - `tls_cert_file` (`str`)
+> - `tls_key_file` (`str`)
+>
+> Validators:
+>
+> - `enforce_transport_security`
+>
+> ### auth\_audience
+>
+> ```
+> auth_audience: str
+> ```
+>
+> The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS\_FASTAPI\_AUTH\_CLIENT\_ID, falling back to the template client id.
+>
+> ### auth\_ca\_file
+>
+> ```
+> auth_ca_file: str = ''
+> ```
+>
+> PEM CA bundle used to verify the authentication server's TLS certificate. Empty uses the operating system default trust store.
+>
+> ### auth\_client\_id
+>
+> ```
+> auth_client_id: str | None = None
+> ```
+>
+> The client id this application authenticates as; seeds the default auth\_audience.
 >
 > ### auth\_fail\_max
 >
@@ -310,6 +394,22 @@ Configuration is managed via the `Settings` model:
 >
 > The port for the database.
 >
+> ### database\_sslmode
+>
+> ```
+> database_sslmode: str = 'prefer'
+> ```
+>
+> PostgreSQL TLS mode (disable, prefer, require, verify-ca, verify-full). The development defaults set verify-full to match the TLS-only database.
+>
+> ### database\_sslrootcert
+>
+> ```
+> database_sslrootcert: str = ''
+> ```
+>
+> PEM CA bundle used to verify the database server's TLS certificate. Required for verify-ca and verify-full; ignored by libpq otherwise.
+>
 > ### database\_url
 >
 > ```
@@ -377,7 +477,7 @@ Configuration is managed via the `Settings` model:
 > ### model\_config
 >
 > ```
-> model_config = SettingsConfigDict(frozen=True)
+> model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True)
 > ```
 >
 > ### port
@@ -387,6 +487,32 @@ Configuration is managed via the `Settings` model:
 > ```
 >
 > The port to bind the server to.
+>
+> ### tls\_cert\_file
+>
+> ```
+> tls_cert_file: str = ''
+> ```
+>
+> PEM certificate served by the application. Empty disables TLS on the server.
+>
+> ### tls\_key\_file
+>
+> ```
+> tls_key_file: str = ''
+> ```
+>
+> PEM private key matching tls\_cert\_file. Required when TLS is enabled.
+>
+> ### enforce\_transport\_security
+>
+> ```
+> enforce_transport_security() -> Settings
+> ```
+>
+> Fail fast when a non-development deployment runs with unverified transport.
+>
+> The defaults (`database_sslmode="prefer"`, empty `tls_cert_file`) are convenient for local development, where the TLS material lives in the project `.env`. Outside development they must be set explicitly: otherwise a deployment that forgets the variables silently downgrades to opportunistic/unverified TLS — credentials and tokens over a channel a network-path attacker can read or impersonate.
 
 You can set configuration options using environment variables or CLI arguments.
 

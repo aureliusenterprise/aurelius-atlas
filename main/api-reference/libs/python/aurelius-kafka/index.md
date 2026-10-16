@@ -25,8 +25,14 @@ Modules:
 - **`msk`** –
 
   This module provides auth utilities for Amazon MSK (Managed Streaming for Apache Kafka).
+- **`oauth`** –
+
+  OAuth (OAUTHBEARER) client configuration for the Kafka dev cluster.
 - **`producer`** –
 - **`schema_registry`** –
+- **`ssl`** –
+
+  SSL client configuration for the TLS-only local development broker.
 
 Classes:
 
@@ -42,11 +48,27 @@ Functions:
 - **`build_schema_registry_header`** –
 
   Builds a message header compatible with the Confluent Schema Registry wire format.
+- **`oauth_client_config`** –
+
+  Build `confluent_kafka` client options for OAUTHBEARER/OIDC authentication.
+- **`ssl_client_config`** –
+
+  Build `confluent_kafka` client options for connecting to the TLS dev broker.
+- **`tls_host`** –
+
+  Return a host name usable for verified TLS connections.
 
 ### \_\_all\_\_
 
 ```
-__all__ = ['KafkaAdminClient', 'KafkaProducer', 'build_schema_registry_header']
+__all__ = [
+    "KafkaAdminClient",
+    "KafkaProducer",
+    "build_schema_registry_header",
+    "oauth_client_config",
+    "ssl_client_config",
+    "tls_host",
+]
 ```
 
 ### KafkaAdminClient
@@ -248,6 +270,138 @@ Returns:
 - **`bytes`** ( `bytes` ) –
 
   The schema registry header.
+
+### oauth\_client\_config
+
+```
+oauth_client_config(
+    *,
+    token_endpoint_url: str,
+    client_id: str,
+    client_secret: str,
+    ca_location: str | None = None,
+    scope: str | None = None,
+    extra: Mapping[str, str] | None = None,
+) -> dict[str, str]
+```
+
+Build `confluent_kafka` client options for OAUTHBEARER/OIDC authentication.
+
+When a `ca_location` is given it is applied to both `ssl.ca.location` (broker TLS) and `https.ca.location` (the token endpoint HTTP client): in development the same CA normally signs both. Without it, the operating system's default trust stores are used for both.
+
+Parameters:
+
+- #### **`token_endpoint_url`**
+
+  (`str`) –
+
+  OIDC token endpoint of the `kafka` realm.
+- #### **`client_id`**
+
+  (`str`) –
+
+  Keycloak confidential client id (per-role).
+- #### **`client_secret`**
+
+  (`str`) –
+
+  Keycloak client secret.
+- #### **`ca_location`**
+
+  (`str | None`, default: `None` ) –
+
+  Path to the PEM CA bundle that signed the broker and the token endpoint, or `None` for system trust.
+- #### **`scope`**
+
+  (`str | None`, default: `None` ) –
+
+  Optional scope to request with the token grant.
+- #### **`extra`**
+
+  (`Mapping[str, str] | None`, default: `None` ) –
+
+  Additional options merged last.
+
+Returns:
+
+- `dict[str, str]` –
+
+  dict\[str, str\]: Options to merge into a producer/consumer/admin config.
+
+Raises:
+
+- `ValueError` –
+
+  If `token_endpoint_url` is not an `https://` URL. The client-credentials grant posts the client secret to this endpoint; over plain http it would travel in cleartext, so a non-TLS URL is rejected here rather than left to the transport (librdkafka does not enforce it).
+
+### ssl\_client\_config
+
+```
+ssl_client_config(
+    *,
+    ca_location: str,
+    client_cert_location: str | None = None,
+    client_key_location: str | None = None,
+    extra: Mapping[str, str] | None = None,
+) -> dict[str, str]
+```
+
+Build `confluent_kafka` client options for connecting to the TLS dev broker.
+
+The dev broker's SSL listeners require client certificates (mTLS), so a client that reaches them (rather than the SASL/OAUTHBEARER listeners) passes its own leaf and key alongside the CA bundle.
+
+Parameters:
+
+- #### **`ca_location`**
+
+  (`str`) –
+
+  Path to the PEM CA bundle that signed the broker.
+- #### **`client_cert_location`**
+
+  (`str | None`, default: `None` ) –
+
+  Path to the PEM client certificate, for listeners with `ssl.client.auth` required.
+- #### **`client_key_location`**
+
+  (`str | None`, default: `None` ) –
+
+  Path to the PEM private key matching `client_cert_location`.
+- #### **`extra`**
+
+  (`Mapping[str, str] | None`, default: `None` ) –
+
+  Additional options merged last.
+
+Returns:
+
+- `dict[str, str]` –
+
+  dict\[str, str\]: Options to merge into a producer/consumer/admin config.
+
+### tls\_host
+
+```
+tls_host(host: str | None) -> str
+```
+
+Return a host name usable for verified TLS connections.
+
+Docker publishes container ports on wildcard addresses (`0.0.0.0`/`::`) and tools like testcontainers report those verbatim (or `None` when the port is unpublished); hostname verification (`ssl.endpoint.identification.algorithm=https`) would then fail because wildcard addresses are not certificate SANs. Map those to `localhost`, which is covered by the dev certificate SANs.
+
+Parameters:
+
+- #### **`host`**
+
+  (`str | None`) –
+
+  Host reported by the tooling (may be a wildcard bind).
+
+Returns:
+
+- **`str`** ( `str` ) –
+
+  A verifiable host name.
 
 ## aurelius\_kafka.msk
 
