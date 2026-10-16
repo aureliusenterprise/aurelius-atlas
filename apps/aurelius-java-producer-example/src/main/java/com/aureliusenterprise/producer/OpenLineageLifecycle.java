@@ -44,7 +44,7 @@ public class OpenLineageLifecycle {
      * "kafka-producer" is not one (no scheme) — so use the repository URL,
      * the convention for producer identity in OL events.
      */
-    private static final String PRODUCER_URL = "https://github.com/aureliusenterprise/project-template";
+    private static final String PRODUCER_URL = "https://github.com/aureliusenterprise/aurelius-atlas";
 
     /**
      * The OpenLineage client used to emit events to Kafka.

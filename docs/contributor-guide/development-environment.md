@@ -41,7 +41,7 @@ to ensure your SSH key is available inside the container.
 To clone the repository, run the following command:
 
 ```bash
-git clone git@github.com:aureliusenterprise/project-template.git
+git clone git@github.com:aureliusenterprise/aurelius-atlas.git
 ```
 
 This will clone the repository to your local machine using SSH.

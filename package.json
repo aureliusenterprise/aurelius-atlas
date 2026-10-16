@@ -59,7 +59,7 @@
         "vitest": "4.1.11"
     },
     "license": "UNLICENSED",
-    "name": "aurelius-project-template",
+    "name": "aurelius-aurelius-atlas",
     "nx": {
         "includedScripts": []
     },

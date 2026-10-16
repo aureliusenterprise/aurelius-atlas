@@ -9,7 +9,7 @@ This library provides common UI components for Angular projects.
 This library is written in TypeScript, which is not covered by the generated
 API reference (mkdocstrings covers Python only here). Storybook, described
 below, is the component API reference; for the raw signatures, see the
-[source](https://github.com/aureliusenterprise/project-template/tree/main/libs/angular/aurelius-atlas-ui/src).
+[source](https://github.com/aureliusenterprise/aurelius-atlas/tree/main/libs/angular/aurelius-atlas-ui/src).
 
 ## Installation
 

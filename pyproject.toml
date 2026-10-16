@@ -1,5 +1,5 @@
 [project]
-name = "aurelius-project-template"
+name = "aurelius-aurelius-atlas"
 readme = "docs/README.md"
 requires-python = ">=3.14"
 version = "0.6.1"

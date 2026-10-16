@@ -33,12 +33,12 @@ RUN --mount=type=cache,mode=0755,target=/root/.npm \
 RUN --mount=type=cache,mode=0755,target=/root/.npm \
     set -eux; \
     for pkg in undici@6.28.1 ip-address@10.7.1 brace-expansion@5.0.12 postcss-selector-parser@7.1.6; do \
-        name="${pkg%@*}"; \
-        npm pack --silent --pack-destination /tmp "${pkg}"; \
-        rm -rf "node_modules/npm/node_modules/${name}"; \
-        mkdir -p "node_modules/npm/node_modules/${name}"; \
-        tar -xzf /tmp/"${name}"-*.tgz --strip-components=1 --no-same-owner \
-            -C "node_modules/npm/node_modules/${name}"; \
+    name="${pkg%@*}"; \
+    npm pack --silent --pack-destination /tmp "${pkg}"; \
+    rm -rf "node_modules/npm/node_modules/${name}"; \
+    mkdir -p "node_modules/npm/node_modules/${name}"; \
+    tar -xzf /tmp/"${name}"-*.tgz --strip-components=1 --no-same-owner \
+    -C "node_modules/npm/node_modules/${name}"; \
     done; \
     rm -f /tmp/*.tgz
 
@@ -52,7 +52,7 @@ ARG VERSION=local
 LABEL org.opencontainers.image.authors="Aurelius Enterprise"
 LABEL org.opencontainers.image.description="This is an example Node-RED application."
 LABEL org.opencontainers.image.licenses=UNLICENSED
-LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/project-template
+LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/aurelius-atlas
 LABEL org.opencontainers.image.title="Aurelius Node-RED Example"
 LABEL org.opencontainers.image.version="${VERSION}"
 

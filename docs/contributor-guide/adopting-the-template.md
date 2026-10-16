@@ -23,7 +23,7 @@ they must be edited by hand. Work through this list top to bottom; each item nam
 | Clone URL in setup guide       | `docs/contributor-guide/development-environment.md`                                                                |
 | Bot identity in CI             | `.github/workflows/publish-docs-*.yaml`, `rotate-keys.yaml`, `unpublish-docs.yaml` (`info@aureliusenterprise.com`) |
 | Release verification identity  | `.github/workflows/publish.yaml` — the `--identity` regex hardcodes the repository name                            |
-| Root package names             | `package.json` and `pyproject.toml` (`name = "aurelius-project-template"`, author entries)                         |
+| Root package names             | `package.json` and `pyproject.toml` (`name = "aurelius-aurelius-atlas"`, author entries)                           |
 
 ### 2. Project names and directories
 

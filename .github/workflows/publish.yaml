@@ -55,4 +55,4 @@ jobs:
               run: npx nx run-many -t docker-verify -- --version "$VERSION" --identity "$IDENTITY" --issuer "^https://token\.actions\.githubusercontent\.com$"
               env:
                   VERSION: ${{ github.ref_name }}
-                  IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/project-template/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"
+                  IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/aurelius-atlas/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"

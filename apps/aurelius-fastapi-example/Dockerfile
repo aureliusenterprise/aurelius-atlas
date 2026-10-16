@@ -24,7 +24,7 @@ ARG VERSION=local
 LABEL org.opencontainers.image.authors="Aurelius Enterprise"
 LABEL org.opencontainers.image.description="This is an example FastAPI application."
 LABEL org.opencontainers.image.licenses=UNLICENSED
-LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/project-template
+LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/aurelius-atlas
 LABEL org.opencontainers.image.title="Aurelius FastAPI Example"
 LABEL org.opencontainers.image.version="${VERSION}"
 

@@ -11,7 +11,7 @@ members = [
     "aurelius-kafka",
     "aurelius-kafka-connect-jdbc-sink-example",
     "aurelius-license-report",
-    "aurelius-project-template",
+    "aurelius-aurelius-atlas",
     "aurelius-sdk",
     "aurelius-vulnerability-report",
 ]
@@ -246,7 +246,7 @@ requires-dist = [
 ]
 
 [[package]]
-name = "aurelius-project-template"
+name = "aurelius-aurelius-atlas"
 version = "0.6.1"
 source = { virtual = "." }
 

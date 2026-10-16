@@ -1,8 +1,8 @@
 copyright: © 2025 Aurelius Enterprise
-repo_name: project-template
-repo_url: https://github.com/aureliusenterprise/project-template
+repo_name: aurelius-atlas
+repo_url: https://github.com/aureliusenterprise/aurelius-atlas
 site_name: Aurelius Project Template
-site_url: https://aureliusenterprise.github.io/project-template
+site_url: https://aureliusenterprise.github.io/aurelius-atlas
 
 theme:
     favicon: assets/favicon.ico
@@ -283,7 +283,7 @@ extra:
     generator: false
     social:
         - icon: fontawesome/brands/github
-          link: https://github.com/aureliusenterprise/project-template
+          link: https://github.com/aureliusenterprise/aurelius-atlas
     version:
         alias: true
         provider: mike

@@ -40,7 +40,7 @@ ARG VERSION=local
 LABEL org.opencontainers.image.authors="Aurelius Enterprise"
 LABEL org.opencontainers.image.description="This is a base image for AWS Lambda functions."
 LABEL org.opencontainers.image.licenses=UNLICENSED
-LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/project-template
+LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/aurelius-atlas
 LABEL org.opencontainers.image.title="Aurelius AWS Lambda Base"
 LABEL org.opencontainers.image.version="${VERSION}"
 
