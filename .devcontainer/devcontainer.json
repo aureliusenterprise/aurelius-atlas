@@ -103,7 +103,7 @@
         },
         "ghcr.io/devcontainers/features/docker-in-docker:4": {},
         "ghcr.io/devcontainers/features/java:1": {
-            "installGradle": false,
+            "installGradle": true,
             "version": "21.0.9-tem"
         },
         "ghcr.io/devcontainers/features/node:2": {
