@@ -28,8 +28,8 @@
         "@swc/helpers": "0.5.19",
         "@types/node": "^25.9.1",
         "@typescript-eslint/utils": "8.71.2",
-        "@vitest/coverage-v8": "4.1.11",
-        "@vitest/ui": "4.1.11",
+        "@vitest/coverage-v8": "5.0.4",
+        "@vitest/ui": "5.0.4",
         "angular-eslint": "22.5.0",
         "autoprefixer": "^10.4.0",
         "chromatic": "^15.3.0",
@@ -53,7 +53,7 @@
         "typescript": "6.0.3",
         "typescript-eslint": "8.71.2",
         "vite": "8.2.1",
-        "vitest": "4.1.11"
+        "vitest": "5.0.4"
     },
     "license": "UNLICENSED",
     "name": "aurelius-atlas",
