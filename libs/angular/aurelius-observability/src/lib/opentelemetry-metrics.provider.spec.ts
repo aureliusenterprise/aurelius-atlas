@@ -26,7 +26,6 @@ vi.mock("web-vitals", () => ({
     onTTFB: (cb: (m: never) => void) => (handlers.current.TTFB = cb),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const metric = (name: string, value: number) => ({
     name,
     value,
