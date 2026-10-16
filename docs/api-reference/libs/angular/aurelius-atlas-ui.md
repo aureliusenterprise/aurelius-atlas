@@ -18,8 +18,8 @@ your application code and tree-shaken to include only the parts you use.
 
 ## Storybook
 
-The `aurelius-atlas-ui` library includes a Storybook instance for interactive documentation and testing of the UI components.
-To run Storybook, execute the following command in the root of the monorepo:
+The `aurelius-atlas-ui` library includes a Storybook instance for interactive documentation and testing of the
+UI components. To run Storybook, execute the following command in the root of the monorepo:
 
 ```bash
 nx run aurelius-atlas-ui:storybook
