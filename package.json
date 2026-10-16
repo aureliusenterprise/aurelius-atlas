@@ -21,7 +21,7 @@
         "@nx/web": "23.2.1",
         "@nx/workspace": "23.2.1",
         "@nxlv/python": "^22.0.5",
-        "@schematics/angular": "22.1.8",
+        "@schematics/angular": "22.2.2",
         "@storybook/addon-docs": "10.2.17",
         "@storybook/angular": "10.5.7",
         "@swc-node/register": "1.11.1",
