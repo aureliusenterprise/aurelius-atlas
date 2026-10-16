@@ -29,8 +29,8 @@ jobs:
                   python: "true"
                   node: "true"
                   playwright: "true"
-                  dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Test all projects
@@ -88,8 +88,8 @@ jobs:
                   cosign: "true"
                   trivy: "true"
                   cyclonedx: "true"
-                  dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build all docker images

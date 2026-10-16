@@ -30,8 +30,8 @@ jobs:
                   cosign: "true"
                   trivy: "true"
                   cyclonedx: "true"
-                  dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Publish containers
