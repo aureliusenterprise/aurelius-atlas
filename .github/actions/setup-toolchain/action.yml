@@ -7,7 +7,7 @@ inputs:
         default: "false"
     sops-version:
         description: SOPS version to install
-        default: v3.11.0
+        default: v3.13.3
     java:
         description: Set up JDK 21 and Gradle
         default: "false"
