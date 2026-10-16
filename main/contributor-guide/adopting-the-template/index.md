@@ -57,7 +57,7 @@ Python packages use underscored names derived from the project (`aurelius_fastap
 
 ### 5\. Angular library aliases
 
-The Angular libraries are imported by **bare names** declared in `tsconfig.base.json` (`aurelius-ui`, `aurelius-data-access`, `aurelius-observability`) — not under an `@scope/`. Only `@aurelius/brand` (`libs/styles/aurelius-brand`, a `file:` npm dependency used in SCSS as `@use "@aurelius/brand/src/main"`) is scoped. Rename the aliases, the import statements, the package `name` fields, and the brand package together.
+The Angular libraries are imported by **bare names** declared in `tsconfig.base.json` (`aurelius-atlas-ui`, `aurelius-data-access`, `aurelius-observability`) — not under an `@scope/`. Only `@aurelius/brand` (`libs/styles/aurelius-brand`, a `file:` npm dependency used in SCSS as `@use "@aurelius/brand/src/main"`) is scoped. Rename the aliases, the import statements, the package `name` fields, and the brand package together.
 
 ### 6\. Container registry namespace
 
