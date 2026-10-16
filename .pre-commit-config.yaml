@@ -37,11 +37,11 @@ repos:
             additional_dependencies:
                 - eslint@^9.8.0
                 - "@nx/eslint-plugin@22.7.1"
-                - "@typescript-eslint/utils@8.61.0"
-                - jsonc-eslint-parser@^3.1.0
+                - "@typescript-eslint/utils@8.71.2"
+                - jsonc-eslint-parser@^3.3.0
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.16.8
+      rev: v0.17.1
       hooks:
           - id: ruff
             name: Check for Python linting errors
