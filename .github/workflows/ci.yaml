@@ -209,28 +209,31 @@ jobs:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t sonar
 
-    chromatic:
-        runs-on: ubuntu-latest
-        needs: test
-
-        permissions:
-            contents: read
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
-            - name: Setup toolchain
-              uses: ./.github/actions/setup-toolchain
-              with:
-                  sops: "true"
-                  node: "true"
-
-            - name: Run Chromatic
-              uses: chromaui/action@v17
-              with:
-                  buildCommand: "npx nx build-storybook aurelius-atlas-ui"
-                  outputDir: "dist/storybook/aurelius-atlas-ui"
-                  projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+    # Chromatic (visual regression tests for the aurelius-atlas-ui Storybook) is disabled
+    # while Atlas does not use the Angular component library. To re-enable it,
+    # uncomment this job and set the CHROMATIC_PROJECT_TOKEN repository secret.
+    # chromatic:
+    #     runs-on: ubuntu-latest
+    #     needs: test
+    #
+    #     permissions:
+    #         contents: read
+    #
+    #     steps:
+    #         - name: Checkout code
+    #           uses: actions/checkout@v6
+    #           with:
+    #               fetch-depth: 0
+    #
+    #         - name: Setup toolchain
+    #           uses: ./.github/actions/setup-toolchain
+    #           with:
+    #               sops: "true"
+    #               node: "true"
+    #
+    #         - name: Run Chromatic
+    #           uses: chromaui/action@v17
+    #           with:
+    #               buildCommand: "npx nx build-storybook aurelius-atlas-ui"
+    #               outputDir: "dist/storybook/aurelius-atlas-ui"
+    #               projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
