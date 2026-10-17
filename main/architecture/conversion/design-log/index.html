@@ -802,6 +802,8 @@
       
         
       
+        
+      
     
     
     
@@ -897,6 +899,33 @@
     
   
   aurelius-atlas-frontend-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/apps/aurelius-atlas-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-server
 
     
   </span>
@@ -3496,6 +3525,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-015. The server is a FastAPI application with one router per Atlas resource
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-016-the-server-does-not-start-without-its-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-016. The server does not start without its store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3575,6 +3626,8 @@
       
         
           
+        
+      
         
       
         
@@ -3763,6 +3816,33 @@
     
   
   0.4 Parity harness
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-5-server-skeleton/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.5 Server skeleton
 
     
   </span>
@@ -5755,6 +5835,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-015. The server is a FastAPI application with one router per Atlas resource
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-016-the-server-does-not-start-without-its-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-016. The server does not start without its store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6009,6 +6111,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-014-scenario-facts-reach-the-report-as-test-properties">DD-014</a></td>
 <td>Scenario facts reach the report as test properties</td>
 <td>0.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource">DD-015</a></td>
+<td>The server is a FastAPI application with one router per Atlas resource</td>
+<td>0.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-016-the-server-does-not-start-without-its-store">DD-016</a></td>
+<td>The server does not start without its store</td>
+<td>0.5</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -6278,6 +6392,42 @@ this change is <em>not run</em>, not missing.</p>
 tests. Make the trace library know scenarios: couples the traceability tool to one kind of test.</p>
 <p><strong>Consequences.</strong> The trace file format gains a <code>properties</code> field per test; readers of version 1 files
 without it see no properties. Property names are prefixed with the plugin that sets them (<code>parity.</code>).</p>
+<h3 id="dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource">DD-015. The server is a FastAPI application with one router per Atlas resource<a class="headerlink" href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.5</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>apps/aurelius-atlas-server</code> is a FastAPI application built like the template's example
+service (settings, uvicorn entry point, logfire, hardened image), with one router module per Atlas
+REST resource class (<code>AdminResource</code> → <code>routes/admin.py</code>, later <code>EntityREST</code> → <code>routes/entity.py</code>).
+Atlas errors are raised as <code>AtlasError</code> and turned into the Atlas error body by one exception handler,
+as <code>AtlasBaseExceptionMapper</code> does; JSON goes out as <code>application/json; charset=UTF-8</code>.</p>
+<p><strong>Reason.</strong> ADR 045's ladder: FastAPI and the example's wiring are the workspace's convention, already
+gated, observed and packaged. Mirroring the Java resource classes keeps the Java map one row per class
+and lets a reviewer put a router next to its Java resource.</p>
+<p><strong>Alternatives.</strong> Starlette without FastAPI: no validation or OpenAPI for the request models later
+increments need. Routers per URL prefix rather than per Java class: <code>admin</code> would still be one, but
+<code>/v2/entity</code> and <code>/v2/entity/bulk</code> belong to one Java class and would split.</p>
+<p><strong>Consequences.</strong> The example service is no longer the only FastAPI app; 0.7 removes it. Later
+increments add routers and error codes; the error handler and media type stay.</p>
+<h3 id="dd-016-the-server-does-not-start-without-its-store">DD-016. The server does not start without its store<a class="headerlink" href="#dd-016-the-server-does-not-start-without-its-store" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.5</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The server opens the Elasticsearch store in its start-up and stops with an error when the
+store cannot be opened (unreachable, rejected, or not Elasticsearch 9). Once running, <code>readiness</code>
+reports the store's health on every call, and <code>liveness</code> and <code>status</code> do not depend on it.</p>
+<p><strong>Reason.</strong> The store is the only system of record (<a href="../../adr/047-one-search-store-is-the-system-of-record/">ADR 047</a>);
+a server without it cannot answer anything but the admin endpoints. Failing at start-up shows a wrong
+setting at once (<a href="../../adr/018-settings-arrive-at-startup-through-one-channel/">ADR 018</a>) and lets an
+orchestrator restart the container, while readiness covers a store that goes away later.</p>
+<p><strong>Alternatives.</strong> Start without the store and retry in the background: a misconfigured server would run
+and only its readiness would say so. Make liveness depend on the store: an outage of Elasticsearch would
+make an orchestrator restart every server, which does not help.</p>
+<p><strong>Consequences.</strong> Start-up order matters: <code>nx serve</code> and the end-to-end tests start the dev store first.</p>
 
 
 

@@ -32,7 +32,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 0.2 | Elasticsearch infrastructure | `dev/elasticsearch`, store library skeleton, health check | – | done |
 | 0.3 | Test report and traceability | `covers` marker, function-to-test checker, HTML test report in CI | – | in progress |
 | 0.4 | Parity harness | Scenario format, runner, comparison, deviations, report section | – | in progress |
-| 0.5 | Server and dashboard skeleton | Admin version/session/status endpoints, dashboard served; template examples removed | `AdminResource` (part) | planned |
+| 0.5 | Server skeleton | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness | `AdminResource` (part) | in progress |
+| 0.6 | Dashboards served | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3` | planned |
+| 0.7 | Template examples removed | Example service, screen, libraries and the relational database leave (ADR 050) | – | planned |
 | 1.1 | Typedef models | Enum, struct, classification, entity, relationship, business-metadata definitions | `intg/.../model/typedef` | planned |
 | 1.2 | Type registry | Attribute types, supertypes, constraints, validation errors | `AtlasTypeRegistry`, `AtlasStructType`, … | planned |
 | 1.3 | Typedef storage and bootstrap | Typedef index, built-in models at start-up, typedef versions | `AtlasTypeDefGraphStore`, model patches | planned |

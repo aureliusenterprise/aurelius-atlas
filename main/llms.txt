@@ -18,6 +18,7 @@
 
 - [aurelius-atlas-fastapi-example](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-fastapi-example/index.md>)
 - [aurelius-atlas-frontend-example](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-frontend-example/index.md>)
+- [aurelius-atlas-server](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-server/index.md>)
 - [Apps](<https://aureliusenterprise.github.io/main/api-reference/apps/index.md>)
 - [API Reference](<https://aureliusenterprise.github.io/main/api-reference/index.md>)
 - [aurelius-atlas-data-access](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-data-access/index.md>)
@@ -95,6 +96,7 @@
 - [0.2 Elasticsearch infrastructure](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-2-elasticsearch-infrastructure/index.md>)
 - [0.3 Test report and traceability](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-3-test-report-traceability/index.md>)
 - [0.4 Parity harness](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-4-parity-harness/index.md>)
+- [0.5 Server skeleton](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-5-server-skeleton/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)
 - [Conversion](<https://aureliusenterprise.github.io/main/architecture/conversion/index.md>)

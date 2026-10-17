@@ -802,6 +802,8 @@
       
         
       
+        
+      
     
     
     
@@ -897,6 +899,33 @@
     
   
   aurelius-atlas-frontend-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/apps/aurelius-atlas-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-server
 
     
   </span>
@@ -3357,6 +3386,8 @@
       
         
       
+        
+      
     
     
     
@@ -3533,6 +3564,33 @@
     
   
   0.4 Parity harness
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-5-server-skeleton/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.5 Server skeleton
 
     
   </span>
@@ -5487,6 +5545,30 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Simple authorizer only</td>
 <td>Out of scope; Ranger needs its own server</td>
 <td>0.1</td>
+</tr>
+<tr>
+<td>DV-03</td>
+<td>Admin</td>
+<td><code>version</code> names Apache Atlas 2.4.0 and its build revision</td>
+<td>Names Aurelius Atlas, its release and its revision</td>
+<td>A client must be able to tell which implementation answers</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>DV-04</td>
+<td>Authentication</td>
+<td>Every endpoint except <code>admin/status</code> needs a login; the session reports the user, groups and permissions</td>
+<td>Until 6.1, no endpoint needs a login; the session reports no user, no groups and no entity permissions</td>
+<td>Authentication arrives in 6.1; removed then</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>DV-05</td>
+<td>Admin</td>
+<td>The session's <code>timezones</code> are Java's <code>TimeZone.getAvailableIDs()</code></td>
+<td>The IANA time zone ids of the server's tz database, sorted</td>
+<td>Java's list includes legacy three-letter ids the IANA database does not have</td>
+<td>0.5</td>
 </tr>
 </tbody>
 </table>
