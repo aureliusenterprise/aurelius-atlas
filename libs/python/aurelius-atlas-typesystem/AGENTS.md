@@ -9,7 +9,8 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 - `aurelius_atlas_typesystem/types.py` — `AtlasType` and its subclasses (`org.apache.atlas.type`), the
   definition side only (DD-025)
 - `aurelius_atlas_typesystem/registry.py` — `TypeRegistry` and `TransientTypeRegistry`
-- `tests/` — TRG-01 to TRG-16
+- `tests/` — TRG-01 to TRG-16 (1.2) and THY-01 to THY-12 (1.3); `tests/fixtures/` holds Atlas's
+  `0010-base_model.json` and `0011-glossary_model.json`, unchanged and skipped by the hooks
 
 ## Conventions
 

@@ -28,6 +28,8 @@ from aurelius_atlas_model.typedef import (
 )
 
 from aurelius_atlas_typesystem.types import (
+    CLASSIFICATION_ROOT,
+    ENTITY_ROOT,
     ArrayType,
     AtlasType,
     BuiltInType,
@@ -129,6 +131,8 @@ class TypeRegistry:
         self._lock_timeout = lock_timeout
         self._under_update: TransientTypeRegistry | None = None
         self._holds = 0
+        ENTITY_ROOT._resolve_references(self)  # noqa: SLF001 - every registry resolves the root types, as Java's does
+        CLASSIFICATION_ROOT._resolve_references(self)  # noqa: SLF001
 
     def is_registered(self, type_name: str | None) -> bool:
         """Whether ``type_name`` is a registered type; built array and map names are not (TRG-04)."""

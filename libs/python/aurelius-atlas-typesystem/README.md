@@ -6,7 +6,8 @@ The Atlas type system for Aurelius Atlas, without I/O
 ([DD-002](../../../docs/architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
 the type registry and the types that type definitions resolve to. Since increment
 [1.2](../../../docs/architecture/conversion/increments/1-2-type-registry.md): the built-in, array, map, enum
-and struct types, attribute types and constraints. The type hierarchies follow in 1.3.
+and struct types, attribute types and constraints. Since [1.3](../../../docs/architecture/conversion/increments/1-3-type-hierarchies.md):
+entity and classification hierarchies, relationship and business metadata types.
 
 ```python
 from aurelius_atlas_typesystem.registry import TypeRegistry

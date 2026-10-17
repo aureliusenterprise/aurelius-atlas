@@ -17,6 +17,7 @@ from aurelius_atlas_model.typedef import (
     AtlasEnumDef,
     AtlasEnumElementDef,
     AtlasRelationshipDef,
+    AtlasRelationshipEndDef,
     AtlasStructDef,
     Cardinality,
     TypeCategory,
@@ -355,16 +356,22 @@ def test__an_enum_default_is_given_or_the_first_element(enum_def: AtlasEnumDef, 
     [
         AtlasClassificationDef(name="k", attribute_defs=[AtlasAttributeDef(name="a", type_name="missing")]),
         AtlasEntityDef(name="k", attribute_defs=[AtlasAttributeDef(name="a", type_name="missing")]),
-        AtlasRelationshipDef(name="k", attribute_defs=[AtlasAttributeDef(name="a", type_name="missing")]),
+        AtlasRelationshipDef(
+            name="k",
+            attribute_defs=[AtlasAttributeDef(name="a", type_name="missing")],
+            end_def1=AtlasRelationshipEndDef(type="end", name="one"),
+            end_def2=AtlasRelationshipEndDef(type="end", name="two"),
+        ),
         AtlasBusinessMetadataDef(name="k", attribute_defs=[AtlasAttributeDef(name="a", type_name="missing")]),
     ],
     ids=["classification", "entity", "relationship", "business-metadata"],
 )
 def test__every_kind_resolves_its_own_attributes(typedef: AtlasStructDef) -> None:
     """Each subclass of ``AtlasStructType`` resolves its attributes as a struct does."""
-    assert failure(typedef).code is AtlasErrorCode.TYPE_NAME_NOT_FOUND
+    end = AtlasEntityDef(name="end")
+    assert failure(end, typedef).code is AtlasErrorCode.TYPE_NAME_NOT_FOUND
     fixed = typedef.model_copy(update={"attribute_defs": [AtlasAttributeDef(name="a", type_name="int")]})
-    type_: AtlasType = struct_type(resolve(fixed), "k")
+    type_: AtlasType = struct_type(resolve(end, fixed), "k")
     assert isinstance(type_, StructType)
     assert type_.category is typedef.category
     assert isinstance(type_.attribute_type("a"), BuiltInType)

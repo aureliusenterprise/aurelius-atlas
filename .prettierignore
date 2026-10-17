@@ -10,6 +10,7 @@ uv.lock
 /apps/aurelius-atlas-dashboard/dashboardv3
 # Apache Atlas addons/models files used as test fixtures, kept byte-identical to release-2.4.0 (1.1)
 /libs/python/aurelius-atlas-model/tests/fixtures/*.json
+/libs/python/aurelius-atlas-typesystem/tests/fixtures/*.json
 
 **/.gitignore
 **/.dockerignore
