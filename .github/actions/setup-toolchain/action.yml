@@ -8,8 +8,8 @@ inputs:
     sops-version:
         description: SOPS version to install
         default: v3.13.3
-    java:
-        description: Set up JDK 21 and Gradle
+    disk-cleanup:
+        description: Remove unneeded pre-installed toolchains and Docker state (for disk-heavy jobs)
         default: "false"
     python:
         description: Set up Python, uv, and install dependencies
@@ -59,12 +59,6 @@ inputs:
     playwright:
         description: Install Playwright browsers with system dependencies
         default: "false"
-    java-version:
-        description: Java version to set up
-        default: "21"
-    java-distribution:
-        description: Java distribution to set up
-        default: temurin
     python-version:
         description: Python version to set up
         default: "3.14"
@@ -76,46 +70,36 @@ runs:
     using: composite
     steps:
         - name: Clean up pre-installed toolchains
+          # Opt-in: this step costs 1-2 minutes (deleting ~20 GB of small files is
+          # metadata-bound I/O) and only pays off for jobs that fill the disk with
+          # Docker images. Other jobs skip it and run faster.
+          if: inputs.disk-cleanup == 'true'
           shell: bash
           run: |
-              # Remove Java (JDKs)
-              sudo rm -rf /usr/lib/jvm
-
-              # Remove .NET SDKs
-              sudo rm -rf /usr/share/dotnet
-
-              # Remove Swift toolchain
-              sudo rm -rf /usr/share/swift
-
-              # Remove Haskell (GHC)
-              sudo rm -rf /usr/local/.ghcup
-
-              # Remove Julia
-              sudo rm -rf /usr/local/julia*
-
-              # Remove Android SDKs
-              sudo rm -rf /usr/local/lib/android
-
-              # Remove Chromium (optional if not using for browser tests)
-              sudo rm -rf /usr/local/share/chromium
-
-              # Remove Microsoft/Edge and Google Chrome builds
-              sudo rm -rf /opt/microsoft /opt/google
-
-              # Remove Azure CLI
-              sudo rm -rf /opt/az
-
-              # Remove PowerShell
-              sudo rm -rf /usr/local/share/powershell
-
-              # Remove CodeQL and other toolcaches
-              sudo rm -rf /opt/hostedtoolcache
+              # Deletion is metadata-bound I/O and takes ~2 minutes; run it in
+              # the background so it overlaps with the cache restores and
+              # installs that follow. Nothing later depends on the space being
+              # free yet - the Docker prunes below act on a freshly started,
+              # empty daemon.
+              nohup sudo rm -rf \
+                  /usr/share/dotnet \
+                  /usr/share/swift \
+                  /usr/local/.ghcup \
+                  /usr/local/julia* \
+                  /usr/local/lib/android \
+                  /usr/local/share/chromium \
+                  /opt/microsoft /opt/google \
+                  /opt/az \
+                  /usr/local/share/powershell \
+                  >/dev/null 2>&1 &
 
               docker system prune -af || true
               docker builder prune -af || true
-              df -h
 
         - name: Set up Docker with containerd snapshotter
+          # Only jobs that log in to a registry use Docker; without this gate
+          # the light jobs pay ~20 s for a daemon restart they never need.
+          if: inputs.dockerhub-username != ''
           uses: docker/setup-docker-action@v5
           with:
               daemon-config: |
@@ -142,18 +126,6 @@ runs:
               curl -LO https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64
               sudo mv sops-${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops
               sudo chmod +x /usr/local/bin/sops
-
-        - name: Set up JDK for x64
-          if: inputs.java == 'true'
-          uses: actions/setup-java@v5
-          with:
-              java-version: ${{ inputs.java-version }}
-              distribution: ${{ inputs.java-distribution }}
-              architecture: x64
-
-        - name: Setup Gradle
-          if: inputs.java == 'true'
-          uses: gradle/actions/setup-gradle@v5
 
         - name: Setup Python
           if: inputs.python == 'true'
@@ -182,11 +154,6 @@ runs:
           if: inputs.python == 'true'
           uses: crazy-max/ghaction-github-runtime@v4
 
-        - name: Update GITHUB_PATH
-          if: inputs.python == 'true'
-          shell: bash
-          run: echo "$(uv python find)" >> $GITHUB_PATH
-
         - name: Setup Node.js and dependencies
           if: inputs.node == 'true'
           uses: actions/setup-node@v6
@@ -198,6 +165,17 @@ runs:
           if: inputs.node == 'true'
           shell: bash
           run: npm install
+
+        - name: Cache Playwright browsers
+          id: cache-playwright
+          if: inputs.playwright == 'true'
+          uses: actions/cache@v5
+          with:
+              path: ~/.cache/ms-playwright
+              # The browsers are installed by the Python playwright package
+              # (uv run playwright install), whose lock is uv.lock - the npm
+              # lockfile does not contain playwright at all.
+              key: ${{ runner.os }}-playwright-${{ hashFiles('**/uv.lock') }}
 
         - name: Log in to Docker Hub
           if: inputs.dockerhub-username != ''
@@ -222,6 +200,32 @@ runs:
               registry: ghcr.io
               username: ${{ github.actor }}
               password: ${{ inputs.github-token }}
+
+        - name: Prefetch base images (background)
+          if: inputs.dockerhub-username != ''
+          shell: bash
+          run: |
+              # Pull every third-party image the workspace's compose files and
+              # Dockerfiles use, in parallel and detached: the pulls keep
+              # running while later steps (Playwright, Nx build/test) execute,
+              # so docker compose/build find images already in the local store
+              # instead of pulling them serially on the critical path.
+              # Concurrent pulls of the same tag are deduplicated by the
+              # daemon, so a service starting before prefetch finishes just
+              # joins the in-flight pull. Images without a dhi.io prefix are
+              # locally built app images, not pulled.
+              # setsid detaches from the step's process group so the runner
+              # does not kill the in-flight pulls when the step exits.
+              {
+                  grep -rhoE '^[[:space:]]*image:[[:space:]]*[^[:space:]]+' \
+                      --include=docker-compose.yaml dev apps
+                  grep -rhoE '^FROM[[:space:]]+[^[:space:]]+' apps/*/Dockerfile dev/*/Dockerfile 2>/dev/null
+              } |
+                  awk '{print $2}' |
+                  grep '^dhi\.io/' |
+                  sort -u |
+                  setsid xargs -P 4 -n 1 docker pull -q >/tmp/prefetch.log 2>&1 &
+              echo "Base image prefetch started in the background."
 
         - name: Cache Cosign
           id: cache-cosign
@@ -314,6 +318,9 @@ runs:
               echo "$SONAR_ROOT/sonar-scanner-$SONAR_VERSION-linux-x64/bin" >> "$GITHUB_PATH"
 
         - name: Install Playwright
+          # Runs even on a cache hit: --with-deps installs the system libraries
+          # a fresh runner needs to launch the browsers, while the cached
+          # ~/.cache/ms-playwright makes the downloads themselves a no-op.
           if: inputs.playwright == 'true'
           shell: bash
           run: |
