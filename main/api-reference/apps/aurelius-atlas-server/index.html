@@ -1034,6 +1034,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.dashboard_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;dashboard_dir
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.elasticsearch_ca_certs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1205,6 +1216,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.app.DASHBOARD_V3_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DASHBOARD_V3_DIR
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.app.LOGGER" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1262,6 +1284,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.app.mount_dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;mount_dashboards
+      </span>
+    </span>
+  </a>
   
 </li>
         
@@ -4100,6 +4133,8 @@
       
         
       
+        
+      
     
     
     
@@ -4303,6 +4338,33 @@
     
   
   0.5 Server skeleton
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/0-6-dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.6 Dashboards served
 
     
   </span>
@@ -6141,6 +6203,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.dashboard_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;dashboard_dir
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.elasticsearch_ca_certs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6312,6 +6385,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.app.DASHBOARD_V3_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DASHBOARD_V3_DIR
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.app.LOGGER" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6369,6 +6453,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.app.mount_dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;mount_dashboards
+      </span>
+    </span>
+  </a>
   
 </li>
         
@@ -6982,6 +7077,19 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tls Key File"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"dashboard_dir"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"directory-path"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dashboard Dir"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"revision"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UNKNOWN"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Revision"</span><span class="p">,</span>
@@ -7081,6 +7189,15 @@ Elasticsearch settings; it does not start without its store.</p>
                 (<code><span title="pydantic.FilePath">FilePath</span> | None</code>)
             </li>
             <li>
+              <code><a class="autorefs autorefs-internal" title="            dashboard_dir
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.dashboard_dir)" href="./#aurelius_atlas_server.settings.ServerSettings.dashboard_dir">dashboard_dir</a></code>
+                (<code><span title="pydantic.DirectoryPath">DirectoryPath</span> | None</code>)
+            </li>
+            <li>
               <code><a class="autorefs autorefs-internal" title="            revision
 
 
@@ -7143,6 +7260,31 @@ Elasticsearch settings; it does not start without its store.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.dashboard_dir" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">dashboard_dir</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.dashboard_dir" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">dashboard_dir</span><span class="p">:</span> <span class="n"><span title="pydantic.DirectoryPath">DirectoryPath</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The built dashboards: <code>dashboardv2</code> at its root and <code>dashboardv3</code> in <code>n/</code>; None serves the API only
+(DSH-04).</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -7503,6 +7645,13 @@ Elasticsearch settings; it does not start without its store.</p>
               <p>Build the application.</p>
             </div>
           </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            mount_dashboards (aurelius_atlas_server.app.mount_dashboards)" href="./#aurelius_atlas_server.app.mount_dashboards">mount_dashboards</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Serve <code>dashboardv3</code> at <code>/n/</code> and <code>dashboardv2</code> at <code>/</code> (DSH-01, DSH-02; DD-018).</p>
+            </div>
+          </li>
     </ul>
 
 
@@ -7510,6 +7659,18 @@ Elasticsearch settings; it does not start without its store.</p>
 
 <p><span class="doc-section-title">Attributes:</span></p>
     <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            DASHBOARD_V3_DIR
+
+
+  
+      module-attribute
+   (aurelius_atlas_server.app.DASHBOARD_V3_DIR)" href="./#aurelius_atlas_server.app.DASHBOARD_V3_DIR">DASHBOARD_V3_DIR</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Where <code>dashboardv3</code> sits in the dashboard directory, and below which path it is served.</p>
+          </div>
+        </li>
         <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            LOGGER
 
@@ -7545,6 +7706,30 @@ Elasticsearch settings; it does not start without its store.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.app.DASHBOARD_V3_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">DASHBOARD_V3_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.app.DASHBOARD_V3_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">DASHBOARD_V3_DIR</span> <span class="o">=</span> <span class="s1">'n'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Where <code>dashboardv3</code> sits in the dashboard directory, and below which path it is served.</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -7646,6 +7831,27 @@ starts, which fails when the store cannot be opened (SRV-02), and closed when it
           </div>
         </li>
     </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.app.mount_dashboards" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">mount_dashboards</span>
+
+
+<a href="#aurelius_atlas_server.app.mount_dashboards" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">mount_dashboards</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.app.mount_dashboards(app)">app</span></span><span class="p">:</span> <span class="n"><span title="fastapi.FastAPI">FastAPI</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.app.mount_dashboards(directory)">directory</span></span><span class="p">:</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Serve <code>dashboardv3</code> at <code>/n/</code> and <code>dashboardv2</code> at <code>/</code> (DSH-01, DSH-02; DD-018).</p>
+<p>Mounted after the API routes, so the API takes precedence (DSH-03).</p>
 
 
     </div>

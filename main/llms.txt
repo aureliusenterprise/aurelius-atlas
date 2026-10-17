@@ -97,6 +97,7 @@
 - [0.3 Test report and traceability](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-3-test-report-traceability/index.md>)
 - [0.4 Parity harness](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-4-parity-harness/index.md>)
 - [0.5 Server skeleton](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-5-server-skeleton/index.md>)
+- [0.6 Dashboards served](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-6-dashboards/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)
 - [Conversion](<https://aureliusenterprise.github.io/main/architecture/conversion/index.md>)

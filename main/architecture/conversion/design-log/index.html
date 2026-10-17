@@ -3547,6 +3547,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-018. The server serves the dashboards from the API's origin
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-019-the-template-examples-stay-until-the-plan-is-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-019. The template examples stay until the plan is done
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3626,6 +3659,8 @@
       
         
           
+        
+      
         
       
         
@@ -3843,6 +3878,33 @@
     
   
   0.5 Server skeleton
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-6-dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.6 Dashboards served
 
     
   </span>
@@ -5857,6 +5919,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-018. The server serves the dashboards from the API's origin
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-019-the-template-examples-stay-until-the-plan-is-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-019. The template examples stay until the plan is done
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6123,6 +6218,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-016-the-server-does-not-start-without-its-store">DD-016</a></td>
 <td>The server does not start without its store</td>
 <td>0.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24">DD-017</a></td>
+<td>The dashboards are vendored unchanged and built with dart-sass on Node 24</td>
+<td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin">DD-018</a></td>
+<td>The server serves the dashboards from the API's origin</td>
+<td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019</a></td>
+<td>The template examples stay until the plan is done</td>
+<td>0.6</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -6409,7 +6522,8 @@ and lets a reviewer put a router next to its Java resource.</p>
 <p><strong>Alternatives.</strong> Starlette without FastAPI: no validation or OpenAPI for the request models later
 increments need. Routers per URL prefix rather than per Java class: <code>admin</code> would still be one, but
 <code>/v2/entity</code> and <code>/v2/entity/bulk</code> belong to one Java class and would split.</p>
-<p><strong>Consequences.</strong> The example service is no longer the only FastAPI app; 0.7 removes it. Later
+<p><strong>Consequences.</strong> The example service is no longer the only FastAPI app; it stays until the plan is done
+(DD-019). Later
 increments add routers and error codes; the error handler and media type stay.</p>
 <h3 id="dd-016-the-server-does-not-start-without-its-store">DD-016. The server does not start without its store<a class="headerlink" href="#dd-016-the-server-does-not-start-without-its-store" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6428,6 +6542,65 @@ orchestrator restart the container, while readiness covers a store that goes awa
 and only its readiness would say so. Make liveness depend on the store: an outage of Elasticsearch would
 make an orchestrator restart every server, which does not help.</p>
 <p><strong>Consequences.</strong> Start-up order matters: <code>nx serve</code> and the end-to-end tests start the dev store first.</p>
+<h3 id="dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24">DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24<a class="headerlink" href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>apps/aurelius-atlas-dashboard/dashboardv2</code> and <code>dashboardv3</code> are copies of the
+<code>release-2.4.0</code> tag, byte for byte, with Atlas's <code>LICENSE</code> and <code>NOTICE</code>. Every change is a patch listed
+in <code>PATCHES.md</code> and made in its own commit. The first patch replaces <code>node-sass</code> with <code>sass</code> (dart-sass)
+in both <code>gruntfile.js</code> files and <code>package.json</code> files. Both dashboards are built with
+<code>grunt build-minify</code>, as Atlas's Maven build does, in the hardened Node 24 image; only the built files
+leave the build. The workspace's formatters, linters and hooks skip the vendored directories.</p>
+<p><strong>Reason.</strong> DD-001 asks for the dashboards unchanged; a vendored copy lets a reviewer prove that with a
+diff against the tag. <code>node-sass</code> 9 is a native module with builds for Node 16 to 20 only, and Node 20
+is past its end of life; dart-sass is pure JavaScript, the maintained Sass compiler, and <code>grunt-sass</code>
+supports it. A trial build on Node 24 gave the same files as Atlas's toolchain on Node 20, with
+identical JavaScript; only the two compiled stylesheets differ.</p>
+<p><strong>Alternatives.</strong> Build unchanged on Node 20: no patch, but an unsupported Node and a native compile in
+every build. Download the tag at build time and apply patch files: a smaller repository, but the source
+the build uses is not in review. Commit the built files: no legacy toolchain at all, but the shipped
+files cannot be reviewed or rebuilt.</p>
+<p><strong>Consequences.</strong> The vendored <code>package-lock.json</code> files keep their 2020-era dependencies; they only run
+inside the build container and are not part of the server image, so Dependabot does not watch them.
+Moving to another Atlas release replaces both directories and re-applies <code>PATCHES.md</code>.</p>
+<h3 id="dd-018-the-server-serves-the-dashboards-from-the-apis-origin">DD-018. The server serves the dashboards from the API's origin<a class="headerlink" href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The server mounts the built <code>dashboardv3</code> at <code>/n/</code> and <code>dashboardv2</code> at <code>/</code> as static
+files, after the API routes, when <code>AURELIUS_ATLAS_SERVER_DASHBOARD_DIR</code> names their directory. The
+server image contains the built dashboards and sets that setting.</p>
+<p><strong>Reason.</strong> The dashboards call <code>api/atlas/...</code> with relative URLs and rely on the session cookie of the
+same origin, as in Atlas's web application. Serving them from the server keeps that without a proxy or
+cross-origin configuration, and one image is the whole product.</p>
+<p><strong>Alternatives.</strong> A separate static file server or the template's Angular serving: a second container
+and a proxy to keep one origin. Serving through a CDN: possible later in front of the server; nothing
+here prevents it.</p>
+<p><strong>Consequences.</strong> API paths must never collide with dashboard files; the API is matched first. Unit
+tests build their settings without the environment and serve no dashboards unless a test sets the
+directory; <code>nx serve</code> builds the dashboards first and its <code>.env</code> points at <code>dist/</code>.</p>
+<h3 id="dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019. The template examples stay until the plan is done<a class="headerlink" href="#dd-019-the-template-examples-stay-until-the-plan-is-done" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The removal of the template's examples, planned as increment 0.7, moves to a to-do
+after 6.4. Until then, the FastAPI example service, the Angular example screen and its libraries,
+<code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code> and <code>dev/postgres</code> stay in the workspace. They remain
+the named deviation of ADR 050.</p>
+<p><strong>Reason.</strong> The project's second phase needs these components again. Removing them now and
+restoring them from the template later would cost more than keeping them.</p>
+<p><strong>Alternatives.</strong> Remove them now, as ADR 050 plans once the server and the dashboards replace them:
+this fulfils ADR 050's R1 sooner, but the components would have to be restored for the second phase.</p>
+<p><strong>Consequences.</strong> CI keeps building, testing and scanning the examples. 1.1 follows 0.6 directly.
+The to-do in the roadmap records the scope already agreed for the removal: everything the catalogue
+does not use, apart from <code>dev/keycloak</code>.</p>
 
 
 

@@ -13,7 +13,7 @@ Where each part of Apache Atlas 2.4.0 goes. Updated by every increment; the stat
 | `server-api` | Interfaces shared by server components | `aurelius-atlas-core` | not started |
 | `common` | Shared utilities | where used | not started |
 | `authorization` | Simple and Ranger authorizers | `aurelius-atlas-server` (simple authorizer only) | not started |
-| `dashboardv2`, `dashboardv3` | Web UIs (served at `/` and `/n/`) | `aurelius-atlas-dashboard` (unchanged) | not started |
+| `dashboardv2`, `dashboardv3` | Web UIs (served at `/` and `/n/`) | `aurelius-atlas-dashboard` (unchanged) | in progress |
 | `notification` | Kafka hook and entity notifications | – | dropped |
 | `client` | Java client libraries | – | dropped |
 | `addons/*-bridge`, `*-shim` | Hooks for Hive, HBase, Kafka, Sqoop, Storm, … | – | dropped |

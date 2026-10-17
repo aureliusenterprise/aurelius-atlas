@@ -86,6 +86,19 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Tls Key File"
 >     },
+>     "dashboard_dir": {
+>       "anyOf": [
+>         {
+>           "format": "directory-path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Dashboard Dir"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
@@ -142,6 +155,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `log_level` (`LogLevel`)
 > - `tls_cert_file` (`FilePath | None`)
 > - `tls_key_file` (`FilePath | None`)
+> - `dashboard_dir` (`DirectoryPath | None`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
 > - `elasticsearch_username` (`str`)
@@ -151,6 +165,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > Validators:
 >
 > - `_tls_pair`
+>
+> ### dashboard\_dir
+>
+> ```
+> dashboard_dir: DirectoryPath | None = None
+> ```
+>
+> The built dashboards: `dashboardv2` at its root and `dashboardv3` in `n/`; None serves the API only (DSH-04).
 >
 > ### elasticsearch\_ca\_certs
 >
@@ -265,11 +287,25 @@ Functions:
 - **`create_app`** –
 
   Build the application.
+- **`mount_dashboards`** –
+
+  Serve `dashboardv3` at `/n/` and `dashboardv2` at `/` (DSH-01, DSH-02; DD-018).
 
 Attributes:
 
+- **`DASHBOARD_V3_DIR`** –
+
+  Where `dashboardv3` sits in the dashboard directory, and below which path it is served.
 - **`LOGGER`** –
 - **`NAME`** –
+
+### DASHBOARD\_V3\_DIR
+
+```
+DASHBOARD_V3_DIR = 'n'
+```
+
+Where `dashboardv3` sits in the dashboard directory, and below which path it is served.
 
 ### LOGGER
 
@@ -303,6 +339,16 @@ Parameters:
   (`ElasticsearchStore | None`, default: `None` ) –
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
+
+### mount\_dashboards
+
+```
+mount_dashboards(app: FastAPI, directory: Path) -> None
+```
+
+Serve `dashboardv3` at `/n/` and `dashboardv2` at `/` (DSH-01, DSH-02; DD-018).
+
+Mounted after the API routes, so the API takes precedence (DSH-03).
 
 ## aurelius\_atlas\_server.errors
 
