@@ -3,6 +3,10 @@ name: Scan
 on:
     schedule:
         - cron: "0 2 * * 3"
+    # Manual trigger to run the full suite on demand: verify CI/toolchain
+    # changes whose paths the affected-filtered CI never exercises
+    # (dispatch it with the change's branch as ref).
+    workflow_dispatch:
 
 # Default-deny fallback; the jobs below also declare their own scopes, which
 # take precedence over this block.
@@ -27,6 +31,7 @@ jobs:
               uses: ./.github/actions/setup-toolchain
               with:
                   sops: "true"
+                  disk-cleanup: "true"
                   python: "true"
                   node: "true"
                   playwright: "true"
@@ -48,7 +53,6 @@ jobs:
                   name: coverage-reports
                   path: |
                       **/coverage.xml
-                      **/jacocoTestReport.xml
                       **/lcov.info
 
             - name: Collect failure diagnostics
@@ -88,6 +92,7 @@ jobs:
               uses: ./.github/actions/setup-toolchain
               with:
                   sops: "true"
+                  disk-cleanup: "true"
                   python: "true"
                   node: "true"
                   cosign: "true"
