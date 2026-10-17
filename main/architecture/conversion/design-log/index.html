@@ -3704,6 +3704,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-026. Dynamic attributes and search lookups wait for their increments
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-027-derived-type-sets-keep-first-seen-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-027. Derived type sets keep first-seen order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3783,6 +3805,8 @@
       
         
           
+        
+      
         
       
         
@@ -4087,6 +4111,33 @@
     
   
   1.2 Type registry
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-3-type-hierarchies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.3 Type hierarchies
 
     
   </span>
@@ -6200,6 +6251,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-026. Dynamic attributes and search lookups wait for their increments
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-027-derived-type-sets-keep-first-seen-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-027. Derived type sets keep first-seen order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6520,6 +6593,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-025-the-type-system-ports-the-definition-side-only">DD-025</a></td>
 <td>The type system ports the definition side only</td>
 <td>1.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments">DD-026</a></td>
+<td>Dynamic attributes and search lookups wait for their increments</td>
+<td>1.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-027-derived-type-sets-keep-first-seen-order">DD-027</a></td>
+<td>Derived type sets keep first-seen order</td>
+<td>1.3</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -6988,6 +7073,36 @@ Elasticsearch: the index mapping is designed in 2.2.</p>
 untested by any endpoint until 2.x.</p>
 <p><strong>Consequences.</strong> The type classes grow in 2.1. Atlas behaviour that depends on vertex property names
 is designed again for Elasticsearch in 2.2 and recorded there.</p>
+<h3 id="dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments">DD-026. Dynamic attributes and search lookups wait for their increments<a class="headerlink" href="#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.3</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> The entity type's dynamic attributes (<code>dynAttribute:</code> templates, their parsing and
+evaluation order) are ported with entity writes in 2.4. The root entity type's lookup of business
+attributes for search is ported with basic search in 4.1. Both resolve nothing a type definition is
+checked against.</p>
+<p><strong>Reason.</strong> They are used only when entities are written or searched, and can only be tested there;
+porting them now would leave them untested by any endpoint until then (as DD-025 argues for values).</p>
+<p><strong>Alternatives.</strong> Port them with the rest of <code>AtlasEntityType</code> now: a larger increment whose extra code
+no rule of 1.3 can exercise.</p>
+<p><strong>Consequences.</strong> 2.4 adds the template parsing to <code>EntityType</code>; 4.1 adds the lookup to the root type.</p>
+<h3 id="dd-027-derived-type-sets-keep-first-seen-order">DD-027. Derived type sets keep first-seen order<a class="headerlink" href="#dd-027-derived-type-sets-keep-first-seen-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.3</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> All super types are listed in the order the depth-first walk of the super types first
+reaches them; sub types and relationship attributes in the order the registry resolves its types, which
+is the order the definitions were added in.</p>
+<p><strong>Reason.</strong> Java keeps them in <code>HashSet</code>s and <code>HashMap</code>s, whose order Atlas does not define; first-seen
+order is stable, as for the definitions' own sets (DD-021). Where the order picks a winner, as for
+inherited relationship attributes, Java's winner is equally arbitrary.</p>
+<p><strong>Alternatives.</strong> Sort them by name: stable too, but unrelated to how the hierarchy was declared.</p>
+<p><strong>Consequences.</strong> <code>subTypes</code> in responses may be ordered differently from Atlas's; parity scenarios
+compare them without order (DD-021, from 1.5).</p>
 
 
 

@@ -102,6 +102,7 @@
 - [0.6 Dashboards served](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-6-dashboards/index.md>)
 - [1.1 Typedef models](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>)
 - [1.2 Type registry](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-2-type-registry/index.md>)
+- [1.3 Type hierarchies](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-3-type-hierarchies/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)
 - [Conversion](<https://aureliusenterprise.github.io/main/architecture/conversion/index.md>)

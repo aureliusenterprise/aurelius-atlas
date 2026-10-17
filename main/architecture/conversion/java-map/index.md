@@ -32,4 +32,5 @@ Rows are added by each increment for the classes it ports.
 | `AtlasBaseTypeDef`, `AtlasStructDef`, `AtlasEnumDef`, `AtlasClassificationDef`, `AtlasEntityDef`, `AtlasRelationshipDef`, `AtlasRelationshipEndDef`, `AtlasBusinessMetadataDef` | `aurelius_atlas_model.typedef` | 1.1 | in progress |
 | `AtlasTypeDefHeader`, `AtlasTypesDef`, `TypeCategory` | `aurelius_atlas_model.typedef` | 1.1 | in progress |
 | `AtlasTypeRegistry`, `AtlasType`, `AtlasBuiltInTypes`, `AtlasArrayType`, `AtlasMapType`, `AtlasEnumType`, `AtlasStructType` (definition side, DD-025) | `aurelius_atlas_typesystem` | 1.2 | in progress |
+| `AtlasEntityType`, `AtlasClassificationType`, `AtlasRelationshipType`, `AtlasBusinessMetadataType` (definition side, DD-025, DD-026) | `aurelius_atlas_typesystem` | 1.3 | in progress |
 | `AtlasErrorCode`, `AtlasBaseException` (the codes each increment raises) | `aurelius_atlas_model.errors` (DD-023) | 0.5, 1.2 | in progress |
