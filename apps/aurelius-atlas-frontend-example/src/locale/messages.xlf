@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en-US" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="2448391510242468907" datatype="html">
+        <source>Logged in as <x id="INTERPOLATION" equiv-text="{{ _profile.username ?? _profile.email }}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/app.component.html</context>
+          <context context-type="linenumber">11,12</context>
+        </context-group>
+        <note priority="1" from="description">The username of the logged-in user</note>
+      </trans-unit>
+      <trans-unit id="2411560932668359796" datatype="html">
+        <source> Account Management </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/app.component.html</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7507948636555938109" datatype="html">
+        <source>Log out</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/app.component.html</context>
+          <context context-type="linenumber">19,20</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2336550011721758066" datatype="html">
+        <source>Log in</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/app.component.html</context>
+          <context context-type="linenumber">26,27</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3742657416068781599" datatype="html">
+        <source>Editor</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">9,10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5033050349783030026" datatype="html">
+        <source>GUID</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">14,15</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5638267705425936956" datatype="html">
+        <source>New Entity</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">21,22</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4270758441764042239" datatype="html">
+        <source>Time Created</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">28,29</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3813307666666818816" datatype="html">
+        <source>Entity has not been created yet</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">35,36</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3099281752234839772" datatype="html">
+        <source>Time Modified</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">42,43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2898687621231446810" datatype="html">
+        <source>Entity has not been modified yet</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">49,50</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8953033926734869941" datatype="html">
+        <source>Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">57,58</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3140869295218056657" datatype="html">
+        <source>Name must not be longer than 100 characters.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">70,71</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4902817035128594900" datatype="html">
+        <source>Description</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">76,77</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">83,84</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1192560794303864243" datatype="html">
+        <source>Description must not be longer than 255 characters.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">88,89</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3620188369327429839" datatype="html">
+        <source> Save </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">102</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2159130950882492111" datatype="html">
+        <source>Cancel</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">104,105</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6660925946511264619" datatype="html">
+        <source> Delete </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/editor/editor.component.html</context>
+          <context context-type="linenumber">111</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2826581353496868063" datatype="html">
+        <source>Language</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/locale-select/locale-select.component.html</context>
+          <context context-type="linenumber">2,3</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2380939390102386148" datatype="html">
+        <source> <x id="ICU" equiv-text="{entities.total, plural,
+        =1 {I have found {{ entities.total }} entity.}
+        other {I have found {{ entities.total }} entities.}
+    }" xid="8733557069108956019"/>
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/search-results/search-results.component.html</context>
+          <context context-type="linenumber">5,11</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6195608577924072966" datatype="html">
+        <source>{VAR_PLURAL, plural, =1 {I have found <x id="INTERPOLATION"/> entity.} other {I have found <x id="INTERPOLATION"/> entities.}}</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/search-results/search-results.component.html</context>
+          <context context-type="linenumber">5,7</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3637275323243351717" datatype="html">
+        <source>Search for an entity</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/search/search.component.html</context>
+          <context context-type="linenumber">5,6</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">apps/aurelius-atlas-frontend-example/src/app/search/search.component.html</context>
+          <context context-type="linenumber">11,12</context>
+        </context-group>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

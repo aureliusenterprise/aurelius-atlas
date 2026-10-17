@@ -1,0 +1,193 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "i18n": {
+        "locales": {
+            "nl-NL": {
+                "translation": "apps/aurelius-atlas-frontend-example/src/locale/messages.nl-NL.xlf"
+            }
+        },
+        "sourceLocale": "en-US"
+    },
+    "implicitDependencies": [
+        "aurelius-atlas-dev-keycloak",
+        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-fastapi-example"
+    ],
+    "name": "aurelius-atlas-frontend-example",
+    "prefix": "aurelius-atlas-frontend-example",
+    "projectType": "application",
+    "sourceRoot": "apps/aurelius-atlas-frontend-example/src",
+    "tags": [],
+    "targets": {
+        "build": {
+            "configurations": {
+                "development": {
+                    "assets": [
+                        {
+                            "glob": "**/*",
+                            "input": "apps/aurelius-atlas-frontend-example/dev"
+                        },
+                        {
+                            "glob": "**/*",
+                            "input": "apps/aurelius-atlas-frontend-example/public"
+                        }
+                    ],
+                    "extractLicenses": false,
+                    "localize": ["en-US"],
+                    "optimization": false,
+                    "sourceMap": true
+                },
+                "nl-NL": {
+                    "localize": ["nl-NL"],
+                    "sourceMap": true
+                },
+                "production": {
+                    "assets": [
+                        {
+                            "glob": "**/*",
+                            "input": "apps/aurelius-atlas-frontend-example/public"
+                        }
+                    ],
+                    "budgets": [
+                        {
+                            "maximumError": "4mb",
+                            "maximumWarning": "2mb",
+                            "type": "initial"
+                        },
+                        {
+                            "maximumError": "8kb",
+                            "maximumWarning": "4kb",
+                            "type": "anyComponentStyle"
+                        }
+                    ],
+                    "outputHashing": "all",
+                    "statsJson": true
+                }
+            },
+            "defaultConfiguration": "production",
+            "executor": "@angular/build:application",
+            "options": {
+                "browser": "apps/aurelius-atlas-frontend-example/src/main.ts",
+                "inlineStyleLanguage": "scss",
+                "localize": ["en-US", "nl-NL"],
+                "outputPath": "dist/apps/aurelius-atlas-frontend-example",
+                "polyfills": ["@angular/localize/init"],
+                "styles": ["apps/aurelius-atlas-frontend-example/src/styles.scss"],
+                "tsConfig": "apps/aurelius-atlas-frontend-example/tsconfig.app.json"
+            },
+            "outputs": ["{options.outputPath}"]
+        },
+        "docker-sbom": {
+            "command": "trivy image --format cyclonedx --output {args.dockerSbomPath} {args.namespace}/{projectName}:{args.version} && cyclonedx merge --name {args.namespace}/{projectName}:{args.version} --input-files {args.appSbomPath} {args.dockerSbomPath} --input-format json --output-file {projectRoot}/sbom.json --output-format json --output-version v1_6",
+            "dependsOn": [{ "params": "forward", "target": "sbom" }],
+            "metadata": {
+                "description": "Generate a Software Bill of Materials (SBOM) for the Docker image using Trivy and merge it with the SBOM generated from the application dependencies"
+            },
+            "options": {
+                "appSbomPath": "{projectRoot}/app-sbom.json",
+                "dockerSbomPath": "{projectRoot}/docker-sbom.json",
+                "namespace": "ghcr.io/aureliusenterprise",
+                "version": "local"
+            },
+            "parallelism": false
+        },
+        "e2e": {
+            "dependsOn": [
+                {
+                    "target": "decrypt"
+                },
+                {
+                    "target": "certgen"
+                },
+                {
+                    "target": "docker-build"
+                },
+                {
+                    "dependencies": true,
+                    "target": "up"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "options": {
+                "command": "uv run pytest e2e --browser chromium --browser firefox --browser webkit --tracing retain-on-failure",
+                "cwd": "{projectRoot}"
+            },
+            "parallelism": false
+        },
+        "extract-i18n": {
+            "executor": "@angular/build:extract-i18n",
+            "options": {
+                "buildTarget": "aurelius-atlas-frontend-example:build",
+                "outputPath": "apps/aurelius-atlas-frontend-example/src/locale"
+            }
+        },
+        "sbom": {
+            "command": "cyclonedx-esbuild --gather-license-texts --output-reproducible -o {args.appSbomPath} dist/{projectRoot}/browser-stats.json",
+            "dependsOn": ["build"],
+            "options": {
+                "appSbomPath": "{projectRoot}/app-sbom.json"
+            }
+        },
+        "serve": {
+            "configurations": {
+                "development": {
+                    "buildTarget": "aurelius-atlas-frontend-example:build:development"
+                },
+                "nl-NL": {
+                    "buildTarget": "aurelius-atlas-frontend-example:build:development,nl-NL",
+                    "port": 4201
+                },
+                "production": {
+                    "buildTarget": "aurelius-atlas-frontend-example:build:production"
+                }
+            },
+            "continuous": true,
+            "defaultConfiguration": "development",
+            "dependsOn": [
+                {
+                    "target": "decrypt"
+                },
+                {
+                    "target": "certgen"
+                },
+                {
+                    "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-fastapi-example"],
+                    "target": "serve"
+                }
+            ],
+            "executor": "@angular/build:dev-server",
+            "options": {
+                "host": "127.0.0.1",
+                "port": 4200,
+                "proxyConfig": "apps/aurelius-atlas-frontend-example/proxy.conf.json"
+            }
+        },
+        "serve-static": {
+            "continuous": true,
+            "dependsOn": [
+                {
+                    "projects": ["aurelius-atlas-fastapi-example"],
+                    "target": "serve"
+                }
+            ],
+            "executor": "@nx/web:file-server",
+            "options": {
+                "buildTarget": "aurelius-atlas-frontend-example:build",
+                "host": "127.0.0.1",
+                "port": 4200,
+                "spa": true,
+                "staticFilePath": "dist/apps/aurelius-atlas-frontend-example/browser/en-US"
+            }
+        },
+        "test": {
+            "configurations": {
+                "ci": {
+                    "coverage": true,
+                    "coverageReporters": ["lcov"],
+                    "watch": false
+                }
+            },
+            "executor": "@nx/angular:unit-test"
+        }
+    }
+}

@@ -1,7 +1,7 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "implicitDependencies": ["aurelius-dev-observability"],
-    "name": "aurelius-dev-postgres",
+    "implicitDependencies": ["aurelius-atlas-dev-observability"],
+    "name": "aurelius-atlas-dev-postgres",
     "projectType": "application",
     "release": {
         "version": {

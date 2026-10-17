@@ -82,21 +82,21 @@ nav:
           - api-reference/index.md
           - Apps:
                 - api-reference/apps/index.md
-                - aurelius-fastapi-example: api-reference/apps/aurelius-fastapi-example.md
-                - aurelius-frontend-example: api-reference/apps/aurelius-frontend-example.md
+                - aurelius-atlas-fastapi-example: api-reference/apps/aurelius-atlas-fastapi-example.md
+                - aurelius-atlas-frontend-example: api-reference/apps/aurelius-atlas-frontend-example.md
           - Libs:
                 - api-reference/libs/index.md
                 - Angular:
                       - api-reference/libs/angular/index.md
-                      - aurelius-data-access: api-reference/libs/angular/aurelius-data-access.md
+                      - aurelius-atlas-data-access: api-reference/libs/angular/aurelius-atlas-data-access.md
                       - aurelius-atlas-ui: api-reference/libs/angular/aurelius-atlas-ui.md
                 - Python:
                       - api-reference/libs/python/index.md
-                      - aurelius-example: api-reference/libs/python/aurelius-example.md
-                      - aurelius-sdk: api-reference/libs/python/aurelius-sdk.md
+                      - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
+                      - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
                 - Styles:
                       - api-reference/libs/styles/index.md
-                      - aurelius-brand: api-reference/libs/styles/aurelius-brand.md
+                      - aurelius-atlas-brand: api-reference/libs/styles/aurelius-atlas-brand.md
     - Architecture:
           - architecture/index.md
           - Architecture Decisions:

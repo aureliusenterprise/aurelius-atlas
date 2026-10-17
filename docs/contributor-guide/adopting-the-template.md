@@ -56,8 +56,8 @@ Every project under `apps/`, `libs/`, `connectors/`, `dev/`, `docker/`, and `rep
 
 ### 3. Python package names
 
-Python packages use underscored names derived from the project (`aurelius_fastapi_example`, `aurelius_sdk`,
-`aurelius_example`, `aurelius_kafka`, `aurelius_aws_lambda`). Renaming a package means renaming its
+Python packages use underscored names derived from the project (`aurelius_atlas_fastapi_example`, `aurelius_atlas_sdk`,
+`aurelius_atlas_example`, `aurelius_kafka`, `aurelius_aws_lambda`). Renaming a package means renaming its
 directory, the `name` and `packages` fields in its `pyproject.toml`, and **every import** across apps,
 libs, and `e2e/` test modules.
 
@@ -82,8 +82,8 @@ libs, and `e2e/` test modules.
 ### 5. Angular library aliases
 
 The Angular libraries are imported by **bare names** declared in `tsconfig.base.json` (`aurelius-atlas-ui`,
-`aurelius-data-access`, `aurelius-observability`) — not under an `@scope/`. Only `@aurelius/brand`
-(`libs/styles/aurelius-brand`, a `file:` npm dependency used in SCSS as `@use "@aurelius/brand/src/main"`)
+`aurelius-atlas-data-access`, `aurelius-atlas-observability`) — not under an `@scope/`. Only `@aurelius/atlas-brand`
+(`libs/styles/aurelius-atlas-brand`, a `file:` npm dependency used in SCSS as `@use "@aurelius/atlas-brand/src/main"`)
 is scoped. Rename the aliases, the import statements, the package `name` fields, and the brand package
 together.
 
@@ -110,8 +110,8 @@ until your projects exist there).
 ### 8. Keycloak realm and clients
 
 The development realm import (`dev/keycloak/import/master.json`) defines a client with id `aurelius`.
-Rename it there and in both consumers: `apps/aurelius-frontend-example/dev/config.json` and
-`apps/aurelius-frontend-example/e2e/config/config.json` (`clientId`).
+Rename it there and in both consumers: `apps/aurelius-atlas-frontend-example/dev/config.json` and
+`apps/aurelius-atlas-frontend-example/e2e/config/config.json` (`clientId`).
 
 ### 9. Documentation references
 

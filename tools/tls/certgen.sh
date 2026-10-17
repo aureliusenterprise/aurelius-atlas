@@ -191,7 +191,7 @@ done < <(jq -r '.services | keys[]' "$config")
 # drivers, Schema Registry clients, Keycloak's OTLP sender) that verify servers.
 if [[ "$need_truststore" == "true" ]]; then
     rm -f "$certs_dir/truststore.p12"
-    keytool -importcert -alias aurelius-dev-ca -file "$certs_dir/ca.pem" \
+    keytool -importcert -alias aurelius-atlas-dev-ca -file "$certs_dir/ca.pem" \
         -keystore "$certs_dir/truststore.p12" -storetype PKCS12 \
         -storepass "$password" -noprompt
     chmod 644 "$certs_dir/truststore.p12"

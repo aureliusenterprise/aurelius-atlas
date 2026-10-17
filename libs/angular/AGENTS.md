@@ -12,14 +12,14 @@ This file is the recipe for adding or modifying a library here; each library's o
    the workspace convention (it skips strict ng-packagr entry-point rules).
 3. **Path alias**: register the bare package name (e.g. `aurelius-<name>`) in
    `tsconfig.base.json` `paths` — the workspace convention is unscoped aliases
-   pointing at `src/index.ts` (only `@aurelius/brand` is scoped, as a `file:` npm
+   pointing at `src/index.ts` (only `@aurelius/atlas-brand` is scoped, as a `file:` npm
    dependency).
 4. **`README.md`** — what the library does and when to use it. This is the
    canonical description: each library documents itself here, so no central list
    of libraries is maintained anywhere.
 5. **`AGENTS.md`** — wiring and conventions for the library itself.
 6. **Styles**: if the library ships SCSS using brand tokens, `@use` them from
-   `@aurelius/brand` rather than redefining colours.
+   `@aurelius/atlas-brand` rather than redefining colours.
 7. **Storybook**: for component libraries, copy the Storybook targets from
    `aurelius-atlas-ui` (`storybook`, `build-storybook`, `static-storybook`,
    `test-storybook`, `chromatic`) and add `.stories.ts` per component.
@@ -28,7 +28,7 @@ This file is the recipe for adding or modifying a library here; each library's o
 
 - Standalone components only; zoneless-compatible (no `zone.js` assumptions).
 - Libraries never inject app-level state or call HTTP directly unless they are
-  data-access libraries (see `aurelius-data-access`).
+  data-access libraries (see `aurelius-atlas-data-access`).
 - Public API is `src/index.ts` — re-export only intended symbols.
 - Tests are `.spec.ts` files co-located with source (Vitest via
   `@nx/angular:unit-test`); run with `nx test <lib> -c ci`.

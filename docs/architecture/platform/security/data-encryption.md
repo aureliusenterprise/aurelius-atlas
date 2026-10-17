@@ -19,7 +19,7 @@ verification against a local certificate authority:
 | Service → Keycloak (token verify) | HTTPS issuer with CA trust in CI/E2E; the local development browser path is the named relaxation below.                                                                                                                                         |
 
 The PostgreSQL posture is tested, not just configured: unit-test containers
-(`aurelius_sdk.testing.tls`, via `tls_certificates` and `configure_tls_postgres`)
+(`aurelius_atlas_sdk.testing.tls`, via `tls_certificates` and `configure_tls_postgres`)
 start the same hardened image with `ssl=on` and a TLS-only client
 authentication file using an ephemeral per-run certificate authority, and
 connect with `sslmode=verify-full` — the same arrangement the dev and E2E

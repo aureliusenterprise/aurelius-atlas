@@ -1,4 +1,4 @@
-# aurelius-dev-postgres
+# aurelius-atlas-dev-postgres
 
 Local development Postgres for the Aurelius examples.
 
@@ -12,14 +12,14 @@ Part of the template **spine**.
 
 - Database: `aurelius`, user/password `postgres` (dev defaults in `.env`),
   `scram-sha-256` authentication
-- Attached to the `aurelius-dev-postgres-network` Docker network, which the FastAPI
+- Attached to the `aurelius-atlas-dev-postgres-network` Docker network, which the FastAPI
   example and the JDBC sink connector join
 
 ## Running
 
 ```bash
-nx serve aurelius-dev-postgres   # docker compose up (foreground)
-nx up aurelius-dev-postgres      # detached, waits for healthy
+nx serve aurelius-atlas-dev-postgres   # docker compose up (foreground)
+nx up aurelius-atlas-dev-postgres      # detached, waits for healthy
 ```
 
 The FastAPI example's `serve` target starts this project automatically via

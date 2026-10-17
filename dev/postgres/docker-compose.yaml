@@ -1,4 +1,4 @@
-name: aurelius-dev-postgres
+name: aurelius-atlas-dev-postgres
 
 services:
     postgres:
@@ -66,14 +66,14 @@ services:
 
 networks:
     default:
-        name: aurelius-dev-postgres-network
+        name: aurelius-atlas-dev-postgres-network
     # The dev telemetry stack (dev/observability). Attaching is safe because
     # nx guarantees the chain (this project's implicitDependencies on
-    # aurelius-dev-observability make `nx up`/`serve` start it first; e2e
+    # aurelius-atlas-dev-observability make `nx up`/`serve` start it first; e2e
     # fixtures inherit the guarantee through their dependents), and the
     # network exists as soon as observability is up.
     observability:
-        name: aurelius-dev-observability-network
+        name: aurelius-atlas-dev-observability-network
         external: true
 
 volumes:

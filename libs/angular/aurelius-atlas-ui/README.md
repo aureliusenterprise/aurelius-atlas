@@ -1,9 +1,9 @@
 # aurelius-atlas-ui
 
 Shared presentational Angular components for Aurelius frontends, styled with
-Bulma design tokens from `@aurelius/brand`. Components are standalone and carry no
+Bulma design tokens from `@aurelius/atlas-brand`. Components are standalone and carry no
 data-fetching logic — state and HTTP belong in the consuming app or in
-`aurelius-data-access`.
+`aurelius-atlas-data-access`.
 
 Part of the template **spine**.
 

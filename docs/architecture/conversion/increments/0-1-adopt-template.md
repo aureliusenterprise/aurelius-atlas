@@ -15,7 +15,7 @@ Turn the Aurelius Project Template into the Aurelius Atlas repository without ad
 - Record ADRs 046–051 and create this conversion ledger.
 - Add the conversion workflow to the root `AGENTS.md` and a pull-request template.
 
-Not in scope: the template's spine examples (FastAPI example, Angular example, `aurelius-example`,
+Not in scope: the template's spine examples (FastAPI example, Angular example, `aurelius-atlas-example`,
 Postgres) stay until increment 0.5 replaces them.
 
 ## Semantics
