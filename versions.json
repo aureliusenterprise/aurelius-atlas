@@ -1,10 +1,5 @@
 [
   {
-    "version": "phase1-1.3-type-hierarchies",
-    "title": "phase1-1.3-type-hierarchies",
-    "aliases": []
-  },
-  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
