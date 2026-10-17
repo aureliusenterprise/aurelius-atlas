@@ -58,6 +58,9 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)        | Typedef models are Pydantic models that read and write Atlas's JSON       | 1.1       | Proposed |
 | [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                 | Set-valued fields keep each name once, in first-seen order                | 1.1       | Proposed |
 | [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)      | Typedef timestamps are aware datetimes, written as epoch milliseconds     | 1.1       | Proposed |
+| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                    | Atlas errors live in the model library                                    | 1.2       | Proposed |
+| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)       | The registry is updated on a transient copy under a re-entrant lock       | 1.2       | Proposed |
+| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                            | The type system ports the definition side only                            | 1.2       | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -559,3 +562,66 @@ readable, but a visible difference from Atlas.
 
 **Consequences.** Jackson's RFC 1123 form (`Tue, 17 Oct 2026 10:00:00 GMT`) is not read. No Atlas client
 is known to send it; if one does, it becomes a deviation.
+
+### DD-023. Atlas errors live in the model library
+
+- **Status:** Proposed
+- **Increment:** 1.2
+- **Date:** 2026-10-17
+
+**Decision.** `AtlasErrorCode` and `AtlasError` move from `aurelius_atlas_server.errors` to
+`aurelius_atlas_model.errors`. Each code keeps Atlas's HTTP status, error code and message template.
+The server keeps the error handler and the response class and imports the errors from there.
+
+**Reason.** The type system (1.2) and the stores raise Atlas errors, and they may not depend on the
+server (DD-002: model ← typesystem ← core; server → core). In Java, too, `AtlasErrorCode` sits in
+`intg`, below everything else.
+
+**Alternatives.** A separate errors library: one more project for two classes. Each layer with its own
+exception, mapped in the server: the mapping would repeat Atlas's error table.
+
+**Consequences.** New error codes are added to `aurelius_atlas_model.errors` as each increment needs
+them, copied from `AtlasErrorCode`.
+
+### DD-024. The registry is updated on a transient copy under a re-entrant lock
+
+- **Status:** Proposed
+- **Increment:** 1.2
+- **Date:** 2026-10-17
+
+**Decision.** `TypeRegistry.lock_for_update(timeout)` returns a `TransientTypeRegistry` built from the
+registry's definitions, under a re-entrant `threading.RLock`. Changes resolve every type on the copy;
+`release(transient, commit=...)` swaps the copy's types into the registry or drops them. A context
+manager wraps the pair.
+
+**Reason.** It is Atlas's `TypeRegistryUpdateSynchronizer`: readers never see a half-resolved registry,
+and a failed change leaves the registry as it was (TRG-05, TRG-09). A thread lock also protects
+FastAPI's thread-pool handlers; async handlers hold it only around synchronous code.
+
+**Alternatives.** An `asyncio.Lock`: does not protect code run in threads. Copy-on-write without a lock:
+two concurrent updates would each start from the same registry and one would be lost.
+
+**Consequences.** The lock is per process. Several server processes keep their registries in step
+through the store (1.4).
+
+### DD-025. The type system ports the definition side only
+
+- **Status:** Proposed
+- **Increment:** 1.2
+- **Date:** 2026-10-17
+
+**Decision.** The ported types resolve definitions: names, attribute types, cardinalities, constraints
+and later the hierarchies (1.3). Their value side (`isValidValue`, `getNormalizedValue`,
+`validateValue`, `createDefaultValue`, `areEqualValues`) is ported with entity validation in 2.1. Their
+JanusGraph side (vertex property names, unique property names, index field names, index-query escaping)
+is not ported.
+
+**Reason.** Types REST (1.5) needs only the definition side; values first matter for entities (2.1),
+which is where Atlas's tests for them can be run. The JanusGraph names have no meaning in
+Elasticsearch: the index mapping is designed in 2.2.
+
+**Alternatives.** Port each class whole: one increment several times the size limit, with value code
+untested by any endpoint until 2.x.
+
+**Consequences.** The type classes grow in 2.1. Atlas behaviour that depends on vertex property names
+is designed again for Elasticsearch in 2.2 and recorded there.
