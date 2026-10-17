@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal, Self
 
 from aurelius_atlas_store_es import StoreSettings
-from pydantic import Field, FilePath, HttpUrl, SecretStr, model_validator
+from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_PREFIX = "AURELIUS_ATLAS_SERVER_"
@@ -40,6 +40,10 @@ class ServerSettings(BaseSettings):
 
     tls_key_file: FilePath | None = None
     """PEM private key of ``tls_cert_file``."""
+
+    dashboard_dir: DirectoryPath | None = None
+    """The built dashboards: ``dashboardv2`` at its root and ``dashboardv3`` in ``n/``; None serves the API only
+    (DSH-04)."""
 
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""

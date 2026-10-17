@@ -467,4 +467,5 @@ and a proxy to keep one origin. Serving through a CDN: possible later in front o
 here prevents it.
 
 **Consequences.** API paths must never collide with dashboard files; the API is matched first. Unit
-tests and `nx serve` run without dashboards unless the setting points at a local build.
+tests build their settings without the environment and serve no dashboards unless a test sets the
+directory; `nx serve` builds the dashboards first and its `.env` points at `dist/`.

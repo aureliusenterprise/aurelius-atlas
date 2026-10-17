@@ -5,7 +5,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 
 ## Layout
 
-- `aurelius_atlas_server/app.py` — `create_app`: the store's lifetime, the error handler, the routers
+- `aurelius_atlas_server/app.py` — `create_app`: the store's lifetime, the error handler, the routers;
+  `mount_dashboards`: the built dashboards after the routers (DD-018)
 - `aurelius_atlas_server/settings.py` — `ServerSettings` (`AURELIUS_ATLAS_SERVER_` prefix)
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
@@ -24,11 +25,13 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 
 ## Wiring Checklist
 
-- `project.json` — `implicitDependencies` and `serve` `dependsOn` (dev Elasticsearch, observability).
+- `project.json` — `implicitDependencies` and `serve` `dependsOn` (dev Elasticsearch, observability, the
+  dashboard build).
 - `.env.enc` — dev settings; the Elasticsearch password mirrors `dev/elasticsearch/.env`. Re-run
   `nx encrypt aurelius-atlas-server` after changing `.env`.
 - `tls.json` — the server's certificate (`nx certgen`), used by `serve` and `e2e`.
-- `Dockerfile` — installs the wheel `nx build` makes, with the workspace libraries bundled in.
+- `Dockerfile` — installs the wheel `nx build` makes, with the workspace libraries bundled in, and copies
+  the built dashboards (`aurelius-atlas-dashboard/dist`).
 - `e2e/docker-compose.yaml` — the image on the dev store's network, reached as `elasticsearch:9200`.
 
 ## Commands
