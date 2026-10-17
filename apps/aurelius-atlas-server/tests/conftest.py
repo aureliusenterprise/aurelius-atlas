@@ -1,0 +1,59 @@
+from collections.abc import AsyncIterator
+from pathlib import Path
+
+import httpx
+import pytest
+from aurelius_atlas_server import ServerSettings, create_app
+from aurelius_atlas_store_es import store
+from aurelius_atlas_store_es.testing.fake import FakeClient
+from fastapi import FastAPI
+
+
+@pytest.fixture
+def ca_file(tmp_path: Path) -> Path:
+    """A file standing in for the Elasticsearch CA; the fake client never reads it."""
+    path = tmp_path / "ca.pem"
+    path.write_text("not a certificate\n")
+    return path
+
+
+@pytest.fixture
+def settings(ca_file: Path) -> ServerSettings:
+    """Settings for a server on a local store."""
+    return ServerSettings.model_validate(
+        {
+            "elasticsearch_hosts": ["https://localhost:9200"],
+            "elasticsearch_password": "test-password",
+            "elasticsearch_ca_certs": ca_file,
+            "revision": "abc123",
+        }
+    )
+
+
+@pytest.fixture
+def fake_es(monkeypatch: pytest.MonkeyPatch) -> FakeClient:
+    """The Elasticsearch client the store builds, healthy unless a test changes it."""
+    fake = FakeClient()
+
+    def build(**kwargs: object) -> FakeClient:
+        fake.kwargs = kwargs
+        return fake
+
+    monkeypatch.setattr(store, "AsyncElasticsearch", build)
+    return fake
+
+
+@pytest.fixture
+def app(settings: ServerSettings, fake_es: FakeClient) -> FastAPI:
+    """The application on the fake store."""
+    _ = fake_es
+    return create_app(settings)
+
+
+@pytest.fixture
+async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+    """A client talking to the started application in-process."""
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+            yield client

@@ -1,0 +1,10 @@
+name: A server with a healthy store is ready
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#serviceReadiness
+rules: [ADM-04]
+covers: [aurelius_atlas_server.routes.admin.get_readiness]
+stages:
+    - request: { method: GET, url: /api/atlas/admin/readiness }
+      response:
+          status: 200
+          text: Service is ready to accept requests

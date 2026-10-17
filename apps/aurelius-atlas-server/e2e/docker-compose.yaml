@@ -1,0 +1,34 @@
+name: aurelius-atlas-server-e2e
+
+services:
+    aurelius-atlas-server:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        environment:
+            # ${VAR:?} guards: Nx injects the project .env into the task environment; a missing value
+            # would otherwise only show as a settings error inside the started container.
+            AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            # The dev store, reached on its network by its service name (in its certificate).
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            # HTTPS with this project's certificate (`nx certgen`); the healthcheck verifies it.
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+        networks:
+            - aurelius-atlas-dev-elasticsearch-network
+            - aurelius-atlas-dev-observability-network
+        extra_hosts:
+            - otel-collector:host-gateway
+        ports:
+            - 21000
+        volumes:
+            - ../certs:/certs:ro
+
+networks:
+    aurelius-atlas-dev-elasticsearch-network:
+        external: true
+    aurelius-atlas-dev-observability-network:
+        external: true

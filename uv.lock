@@ -10,6 +10,7 @@ members = [
     "aurelius-atlas-license-report",
     "aurelius-atlas-parity",
     "aurelius-atlas-sdk",
+    "aurelius-atlas-server",
     "aurelius-atlas-store-es",
     "aurelius-atlas-trace",
     "aurelius-atlas-vulnerability-report",
@@ -221,6 +222,7 @@ dev = [
     { name = "aurelius-atlas-license-report" },
     { name = "aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extra = ["full"] },
+    { name = "aurelius-atlas-server" },
     { name = "aurelius-atlas-store-es", extra = ["testing"] },
     { name = "aurelius-atlas-trace" },
     { name = "aurelius-atlas-vulnerability-report" },
@@ -264,6 +266,7 @@ dev = [
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
     { name = "aurelius-atlas-parity", editable = "libs/python/aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extras = ["full"], editable = "libs/python/aurelius-atlas-sdk" },
+    { name = "aurelius-atlas-server", editable = "apps/aurelius-atlas-server" },
     { name = "aurelius-atlas-store-es", extras = ["testing"], editable = "libs/python/aurelius-atlas-store-es" },
     { name = "aurelius-atlas-trace", editable = "libs/python/aurelius-atlas-trace" },
     { name = "aurelius-atlas-vulnerability-report", editable = "reports/aurelius-atlas-vulnerability-report" },
@@ -442,6 +445,31 @@ requires-dist = [
     { name = "types-boto3", extras = ["full"], marker = "extra == 'full'", specifier = ">=1.43.113" },
 ]
 provides-extras = ["aws", "azure", "full", "logging", "postgresql", "testing"]
+
+[[package]]
+name = "aurelius-atlas-server"
+version = "0.6.1"
+source = { editable = "apps/aurelius-atlas-server" }
+dependencies = [
+    { name = "aurelius-atlas-store-es" },
+    { name = "fastapi" },
+    { name = "logfire", extra = ["fastapi"] },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "tzdata" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
+    { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "logfire", extras = ["fastapi"], specifier = ">=5.2.0" },
+    { name = "pydantic", specifier = ">=2.14.1" },
+    { name = "pydantic-settings", specifier = ">=2.15.0" },
+    { name = "tzdata", specifier = ">=2025.2" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
+]
 
 [[package]]
 name = "aurelius-atlas-store-es"
