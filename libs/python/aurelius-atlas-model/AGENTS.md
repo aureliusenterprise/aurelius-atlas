@@ -18,7 +18,7 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 - Write response bodies with `to_json()`: by alias, nulls left out, empty collections kept (TDM-02).
 - A Java setter that normalises its input becomes an `_`-prefixed validator on the field, so it runs
   on reading, construction and assignment (`validate_assignment`), as the Java setter does.
-- No I/O, no settings, no registry lookups: resolving type names is `aurelius-atlas-typesystem` (1.2).
+- No I/O, no settings, no registry lookups: resolving type names is `aurelius-atlas-typesystem` (1.2, 1.3).
 
 ## Wiring Checklist
 

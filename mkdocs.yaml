@@ -99,6 +99,7 @@ nav:
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
                       - aurelius-atlas-trace: api-reference/libs/python/aurelius-atlas-trace.md
+                      - aurelius-atlas-typesystem: api-reference/libs/python/aurelius-atlas-typesystem.md
                 - Styles:
                       - api-reference/libs/styles/index.md
                       - aurelius-atlas-brand: api-reference/libs/styles/aurelius-atlas-brand.md
@@ -174,6 +175,7 @@ nav:
                       - 0.5 Server skeleton: architecture/conversion/increments/0-5-server-skeleton.md
                       - 0.6 Dashboards served: architecture/conversion/increments/0-6-dashboards.md
                       - 1.1 Typedef models: architecture/conversion/increments/1-1-typedef-models.md
+                      - 1.2 Type registry: architecture/conversion/increments/1-2-type-registry.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

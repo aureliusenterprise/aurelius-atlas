@@ -4,6 +4,7 @@
         "aurelius-atlas-dashboard",
         "aurelius-atlas-dev-elasticsearch",
         "aurelius-atlas-dev-observability",
+        "aurelius-atlas-model",
         "aurelius-atlas-store-es"
     ],
     "name": "aurelius-atlas-server",

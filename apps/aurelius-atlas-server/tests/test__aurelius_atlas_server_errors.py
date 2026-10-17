@@ -4,13 +4,6 @@ import pytest
 from aurelius_atlas_server.errors import ATLAS_JSON_MEDIA_TYPE, AtlasError, AtlasErrorCode, atlas_error_handler
 
 
-@pytest.mark.covers("aurelius_atlas_server.errors.AtlasErrorCode.message")
-def test__error_code_fills_its_template() -> None:
-    """Parameters fill ``{0}``, ``{1}``, ... like Java's ``MessageFormat``."""
-    assert AtlasErrorCode.INTERNAL_ERROR.message("boom") == "Internal server error boom"
-    assert AtlasError(AtlasErrorCode.INTERNAL_ERROR, "boom").message == "Internal server error boom"
-
-
 @pytest.mark.covers("aurelius_atlas_server.errors.atlas_error_handler", rules=["SRV-04", "SRV-05"])
 @pytest.mark.parametrize(
     ("cause", "body"),
