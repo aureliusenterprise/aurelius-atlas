@@ -1140,6 +1140,8 @@
       
         
       
+        
+      
     
     
     
@@ -1235,6 +1237,33 @@
     
   
   aurelius-atlas-sdk
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-store-es/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-store-es
 
     
   </span>
@@ -3259,6 +3288,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-004-the-store-uses-the-official-async-elasticsearch-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-004. The store uses the official async Elasticsearch client
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-005-development-and-tests-run-elasticsearch-with-security-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-005. Development and tests run Elasticsearch with security on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-006-the-elasticsearch-test-fixture-ships-with-the-store-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-006. The Elasticsearch test fixture ships with the store library
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-007-a-yellow-cluster-is-healthy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-007. A yellow cluster is healthy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3338,6 +3411,8 @@
       
         
           
+        
+      
         
       
         
@@ -3439,6 +3514,33 @@
     
   
   0.1 Adopt the template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-2-elasticsearch-infrastructure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.2 Elasticsearch infrastructure
 
     
   </span>
@@ -5310,6 +5412,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-004-the-store-uses-the-official-async-elasticsearch-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-004. The store uses the official async Elasticsearch client
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-005-development-and-tests-run-elasticsearch-with-security-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-005. Development and tests run Elasticsearch with security on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-006-the-elasticsearch-test-fixture-ships-with-the-store-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-006. The Elasticsearch test fixture ships with the store library
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-007-a-yellow-cluster-is-healthy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-007. A yellow cluster is healthy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5500,6 +5646,30 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td>0.1</td>
 <td>Accepted</td>
 </tr>
+<tr>
+<td><a href="#dd-004-the-store-uses-the-official-async-elasticsearch-client">DD-004</a></td>
+<td>The store uses the official async Elasticsearch client, one per store</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-005-development-and-tests-run-elasticsearch-with-security-on">DD-005</a></td>
+<td>Development and tests run Elasticsearch with TLS and authentication on</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-006-the-elasticsearch-test-fixture-ships-with-the-store-library">DD-006</a></td>
+<td>The Elasticsearch test fixture ships with the store library</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-007-a-yellow-cluster-is-healthy">DD-007</a></td>
+<td>A yellow cluster is healthy</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
 </tbody>
 </table>
 <h3 id="dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served<a class="headerlink" href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" title="Permanent link">&para;</a></h3>
@@ -5561,6 +5731,73 @@ the eventual atlas-vs-template distinction implicit rather than visible in the p
 projects, Chromatic, and any external CI references must be created/renamed to match. <code>.env.enc</code>
 files were re-encrypted with the new prefixed keys. Old locally built images are stale and should be
 pruned (<code>docker image prune</code> / rebuild via <code>nx e2e</code>).</p>
+<h3 id="dd-004-the-store-uses-the-official-async-elasticsearch-client">DD-004. The store uses the official async Elasticsearch client<a class="headerlink" href="#dd-004-the-store-uses-the-official-async-elasticsearch-client" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-store-es</code> talks to Elasticsearch through <code>AsyncElasticsearch</code> from the
+official <code>elasticsearch</code> Python client, version 9.5 or later within major 9, matching the 9.5 server
+(<code>dhi.io/elasticsearch:9.5-debian13</code>; minor upgrades are deliberate, patch releases follow the tag). A
+store instance owns exactly one client, opened and closed with the store (<code>async with</code>).</p>
+<p><strong>Reason.</strong> The server is FastAPI and asynchronous; a blocking client would tie up the event loop or
+need a thread pool. The official client tracks the server's API and versioning, ships typed
+request helpers, and includes the query DSL module that search (4.x) will need.</p>
+<p><strong>Alternatives.</strong> <code>httpx</code> against the REST API directly: no extra dependency, but every API, retry
+and error type would be rebuilt by hand. <code>opensearch-py</code>: a different server; ADR 047 names
+Elasticsearch. One client per request: simple, but loses connection pooling.</p>
+<p><strong>Consequences.</strong> The client's major version moves with the server's (STO-04 guards it). Connection
+pooling and retries are the client's; tuning them is part of 6.4.</p>
+<h3 id="dd-005-development-and-tests-run-elasticsearch-with-security-on">DD-005. Development and tests run Elasticsearch with security on<a class="headerlink" href="#dd-005-development-and-tests-run-elasticsearch-with-security-on" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>dev/elasticsearch</code> and the test fixture run with <code>xpack.security</code> enabled: TLS on the
+HTTP layer with a certificate from the workspace CA (dev) or an ephemeral CA (tests), and basic
+authentication for the built-in <code>elastic</code> user. The store library has no option to skip certificate
+verification.</p>
+<p><strong>Reason.</strong> It is the posture production needs, and the one <code>dev/postgres</code> already has; a store that
+only ever ran without security would meet TLS and authentication for the first time in production.</p>
+<p><strong>Alternatives.</strong> Security disabled in development: faster start-up and simpler <code>curl</code>, but a
+different code path (plain HTTP, no credentials) from production, and a verification switch in the
+library that someone eventually leaves off.</p>
+<p><strong>Consequences.</strong> Dev tools need the CA file and the password
+(<code>curl --cacert dev/elasticsearch/certs/ca.pem -u elastic:…</code>). A dedicated application user with
+least privilege replaces <code>elastic</code> when authorization arrives (6.2).</p>
+<h3 id="dd-006-the-elasticsearch-test-fixture-ships-with-the-store-library">DD-006. The Elasticsearch test fixture ships with the store library<a class="headerlink" href="#dd-006-the-elasticsearch-test-fixture-ships-with-the-store-library" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The testcontainers helper that starts a TLS-enabled Elasticsearch lives in
+<code>aurelius_atlas_store_es.testing</code>, behind the library's <code>testing</code> extra, next to the code it serves.</p>
+<p><strong>Reason.</strong> Every later project with a store (<code>-core</code>, the server, the parity harness) needs the same
+container; the library that defines the settings is the one that knows how to build them for a test
+server, and keeping both together means a settings change cannot break the fixture unnoticed.</p>
+<p><strong>Alternatives.</strong> <code>aurelius-atlas-sdk.testing</code>, where the Postgres helper lives: would make the
+generic SDK depend on Elasticsearch. A copy per project: drifts.</p>
+<p><strong>Consequences.</strong> Test-only dependencies (<code>testcontainers</code>, <code>trustme</code>) stay out of the runtime install;
+consuming projects add <code>aurelius-atlas-store-es[testing]</code> to their dev dependencies.</p>
+<h3 id="dd-007-a-yellow-cluster-is-healthy">DD-007. A yellow cluster is healthy<a class="headerlink" href="#dd-007-a-yellow-cluster-is-healthy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The store's health check reports up for cluster status green or yellow and down for red
+(STO-05).</p>
+<p><strong>Reason.</strong> Yellow means every primary shard is assigned and all data is readable and writable; only
+replicas are missing. A single-node cluster, the development and small-installation case
+(<a href="../../adr/006-the-whole-system-runs-on-one-machine/">ADR 006</a>), is yellow as soon as an index has a
+replica. Reporting it down would make every single-node deployment permanently unready.</p>
+<p><strong>Alternatives.</strong> Green only: correct for multi-node clusters, unusable for single-node ones unless
+every index is created with zero replicas. A configurable threshold: one more setting nobody sets.</p>
+<p><strong>Consequences.</strong> Lost redundancy is not visible as a health failure; it is visible in the cluster
+metrics (ESD-06) and should be alerted on there.</p>
 
 
 
