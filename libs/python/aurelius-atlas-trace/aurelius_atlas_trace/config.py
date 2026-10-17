@@ -7,6 +7,7 @@ from typing import Any
 
 from aurelius_atlas_trace.rules import Increment
 
+PYPROJECT = "pyproject.toml"
 CONFIG_TABLE = "aurelius-atlas-trace"
 TEST_DIRECTORIES = ("tests", "e2e")
 """The test directories of a project, as the Nx Python plugin knows them."""
@@ -51,7 +52,7 @@ def _read_toml(path: Path) -> dict[str, Any]:
 
 
 def _project(root: Path) -> Project:
-    pyproject = _read_toml(root / "pyproject.toml")
+    pyproject = _read_toml(root / PYPROJECT)
     paths = pyproject.get("tool", {}).get("hatch", {}).get("build", {}).get("targets", {}).get("wheel", {})
     packages = tuple(paths.get("packages", ()))
     if not packages:
@@ -65,7 +66,7 @@ def _project(root: Path) -> Project:
 
 def _roots(workspace: Path, members: list[str], excluded: set[str]) -> list[Path]:
     globbed = {root for member in members if member not in excluded for root in workspace.glob(member)}
-    return sorted(root for root in globbed if (root / "pyproject.toml").is_file())
+    return sorted(root for root in globbed if (root / PYPROJECT).is_file())
 
 
 def load_config(workspace: Path) -> TraceConfig:
@@ -79,7 +80,7 @@ def load_config(workspace: Path) -> TraceConfig:
     Raises:
         ConfigError: The table or one of its settings is missing, or a project declares no package.
     """
-    path = workspace / "pyproject.toml"
+    path = workspace / PYPROJECT
     tool = _read_toml(path).get("tool", {})
     table = tool.get(CONFIG_TABLE)
     if table is None:

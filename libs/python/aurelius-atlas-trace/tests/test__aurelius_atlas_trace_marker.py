@@ -221,8 +221,10 @@ def test__parse_marker_resolves_targets_and_keeps_rules() -> None:
 @pytest.mark.covers("aurelius_atlas_trace.marker.parse_marker")
 def test__parse_marker_raises_marker_error() -> None:
     """Invalid markers raise MarkerError, which the plugin reports."""
+    empty = pytest.mark.covers().mark
+
     with pytest.raises(MarkerError):
-        parse_marker(pytest.mark.covers().mark)
+        parse_marker(empty)
 
 
 @pytest.mark.covers(
