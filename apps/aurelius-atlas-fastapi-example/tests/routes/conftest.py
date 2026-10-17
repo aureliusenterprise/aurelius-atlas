@@ -1,4 +1,5 @@
 from collections.abc import Callable, Generator
+from contextlib import contextmanager
 
 import pytest
 from aurelius_atlas_example import Entity
@@ -63,6 +64,23 @@ def unauthenticated_client(app: FastAPI, db_session: Session, db_settings: Setti
 def mock_user() -> dict:
     """Return a minimal decoded JWT payload for use in tests."""
     return {"sub": "test-user-id", "preferred_username": "testuser"}
+
+
+@pytest.fixture
+def write_role_client(app: FastAPI, db_session: Session, db_settings: Settings):  # noqa: ANN201
+    """Factory for a TestClient with the write-role authorization gate enabled.
+
+    Yields a context manager taking the claims the fake caller presents, so a
+    test can exercise both the allow (role present) and deny (role missing)
+    branches of require_write_access against the real dependency chain.
+    """
+    enforced = db_settings.model_copy(update={"auth_write_role": "aurelius-write"})
+
+    @contextmanager
+    def factory(claims: dict) -> Generator[TestClient]:
+        yield from _client_with_overrides(app, enforced, db_session, lambda: claims)
+
+    return factory
 
 
 @pytest.fixture

@@ -75,6 +75,26 @@ def test__search_input_is_present(authenticated: Page) -> None:
     expect(search_input).to_have_attribute("placeholder", "Search for an entity")
 
 
+def test__deferred_stylesheet_media_flipped_by_csp_allowed_script(authenticated: Page) -> None:
+    """
+    Test that the deferred stylesheet becomes active despite the strict CSP.
+
+    @angular/build ships the full stylesheet as ``<link media="print">`` and
+    flips it to its real media via a fixed inline script (beasties). The CSP
+    allows that script by hash only; if the hash drifts from the build,
+    browsers silently block the script and the link stays ``media="print"``
+    — the inlined critical CSS hides that from the eye, so assert it here.
+
+    Asserts:
+        - The deferred ``styles-*.css`` link exists in the served document.
+        - Its effective media is no longer ``print`` (flip script executed).
+    """
+    deferred = authenticated.locator('link[rel="stylesheet"][href^="styles-"]')
+
+    expect(deferred).to_have_count(1)
+    expect(deferred).not_to_have_attribute("media", "print")
+
+
 def test__search_results_with_no_data(authenticated: Page) -> None:
     """
     Test that the search results section is visible when no data is present.

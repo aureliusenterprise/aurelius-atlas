@@ -13,8 +13,12 @@ LABEL org.opencontainers.image.version="${VERSION}"
 # Copy the built application files (one directory per locale) to the Nginx HTML directory
 COPY --chown=root:root --chmod=0755 dist/apps/aurelius-atlas-frontend-example/browser /usr/share/nginx/html
 
-# Replace the stock site config with multi-locale serving (Accept-Language redirect)
-COPY --chown=root:root apps/aurelius-atlas-frontend-example/nginx.conf /etc/nginx/conf.d/default.conf
+# Ship the site config (Accept-Language locale routing + proxies) over the
+# stock one. It is a template: the ${AURELIUS_ATLAS_FRONTEND_*} placeholders
+# are resolved by the deployment, which mounts its filled-in copy over
+# /etc/nginx/conf.d/default.conf (e2e does exactly this). A bare container
+# with no mount fails at nginx config parse — loud, not silently wrong.
+COPY --chown=root:root apps/aurelius-atlas-frontend-example/nginx.conf.template /etc/nginx/conf.d/default.conf
 
 # Switch to the nginx user to run the application
 USER nginx

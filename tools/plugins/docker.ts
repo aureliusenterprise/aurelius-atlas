@@ -27,9 +27,25 @@ export const createNodes: CreateNodes<DockerPluginOptions> = [
     },
 ];
 
+/**
+ * Sanitize a git ref for embedding in target commands (cache keys).
+ *
+ * Git ref names may legally contain shell metacharacters (`$`, `(`, `;`),
+ * and Nx interpolates `${branchName}` into the command *string*, which the
+ * task runner then executes through a shell — a ref like `v1$(touch pwn)`
+ * would execute. Anything outside a conservative allow-list is replaced, so
+ * the value stays data. The result is only used as a cache-key suffix, where
+ * the substitution is invisible.
+ * @param ref The raw branch or tag name.
+ * @returns The ref with `/` mapped to `-` and all unsafe characters replaced.
+ */
+export function sanitizeRef(ref: string): string {
+    return ref.replaceAll("/", "-").replace(/[^A-Za-z0-9._@+-]/g, "-");
+}
+
 function getBranchName(): string {
     const branchName = process.env.GITHUB_REF_NAME || execSync("git rev-parse --abbrev-ref HEAD").toString().trim();
-    return branchName.replaceAll("/", "-");
+    return sanitizeRef(branchName);
 }
 
 function createNodesInternal(

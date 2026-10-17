@@ -139,6 +139,95 @@ def test__audience_matches(claims: dict, expected_audience: str, expected: bool)
     assert auth._audience_matches(claims, expected_audience) is expected  # noqa: SLF001
 
 
+@pytest.mark.parametrize(
+    ("claims", "expected"),
+    [
+        ({"realm_access": {"roles": ["aurelius-write", "offline_access"]}}, {"aurelius-write", "offline_access"}),
+        ({"resource_access": {"aurelius": {"roles": ["aurelius-write"]}}}, {"aurelius-write"}),
+        (
+            {
+                "realm_access": {"roles": ["r1"]},
+                "resource_access": {"aurelius": {"roles": ["c1"]}, "account": {"roles": ["c2"]}},
+            },
+            {"r1", "c1"},
+        ),
+        ({}, set()),
+        ({"realm_access": {"roles": "not-a-list"}}, set()),
+        ({"resource_access": {"aurelius": {"no-roles": True}}}, set()),
+        ({"resource_access": "malformed"}, set()),
+    ],
+)
+def test__token_roles_collects_realm_and_client_roles(claims: dict, expected: set[str]) -> None:
+    """Role collection keeps realm roles and the *audience client's* roles only, ignoring malformed claims.
+
+    Client roles are namespaced per client in Keycloak, so roles of ``account``
+    (any client other than the audience ``aurelius``) must not appear.
+    """
+    assert auth._token_roles(claims, client_id="aurelius") == expected  # noqa: SLF001
+
+
+def test__token_roles_ignores_same_named_role_on_other_client() -> None:
+    """A same-named client role under a different client belongs to that client, not to us."""
+    claims = {"resource_access": {"other-client": {"roles": ["aurelius-write"]}}}
+
+    assert auth._token_roles(claims, client_id="aurelius") == set()  # noqa: SLF001
+
+
+def test__token_roles_empty_client_id_reads_realm_roles_only() -> None:
+    """Without a configured audience client, no client-scoped role is trusted (realm roles stay)."""
+    claims = {
+        "realm_access": {"roles": ["r1"]},
+        "resource_access": {"aurelius": {"roles": ["c1"]}},
+    }
+
+    assert auth._token_roles(claims, client_id="") == {"r1"}  # noqa: SLF001
+
+
+def test__require_write_access_allows_role_holder() -> None:
+    """A token carrying the configured write role passes the authorization gate."""
+    settings = Mock(auth_audience="aurelius", auth_write_role="aurelius-write", spec=Settings)
+    claims = {"sub": "u", "realm_access": {"roles": ["aurelius-write"]}}
+
+    assert auth.require_write_access(claims, settings) is claims
+
+
+def test__require_write_access_allows_audience_client_role_holder() -> None:
+    """The write role under the audience client passes the gate."""
+    settings = Mock(auth_audience="aurelius", auth_write_role="aurelius-write", spec=Settings)
+    claims = {"sub": "u", "azp": "aurelius", "resource_access": {"aurelius": {"roles": ["aurelius-write"]}}}
+
+    assert auth.require_write_access(claims, settings) is claims
+
+
+def test__require_write_access_rejects_role_on_other_client() -> None:
+    """A token with azp=aurelius but only resource_access.other-client.roles must be denied.
+
+    Keycloak namespaces client roles per client; a same-named role granted on
+    another client is not our role, even though the audience check passes.
+    """
+    settings = Mock(auth_audience="aurelius", auth_write_role="aurelius-write", spec=Settings)
+    claims = {"sub": "u", "azp": "aurelius", "resource_access": {"other-client": {"roles": ["aurelius-write"]}}}
+
+    with pytest.raises(HTTPException, check=lambda e: e.status_code == 403, match="Insufficient permissions"):
+        auth.require_write_access(claims, settings)
+
+
+def test__require_write_access_rejects_missing_role() -> None:
+    """A valid token without the write role must not mutate entities."""
+    settings = Mock(auth_audience="aurelius", auth_write_role="aurelius-write", spec=Settings)
+
+    with pytest.raises(HTTPException, check=lambda e: e.status_code == 403, match="Insufficient permissions"):
+        auth.require_write_access({"sub": "u", "realm_access": {"roles": ["viewer"]}}, settings)
+
+
+def test__require_write_access_disabled_when_role_empty() -> None:
+    """An empty configured role disables the check (development only — validator enforces it)."""
+    settings = Mock(auth_audience="aurelius", auth_write_role="", spec=Settings)
+    claims = {"sub": "u"}
+
+    assert auth.require_write_access(claims, settings) is claims
+
+
 def test__user_info_rejects_wrong_issuer(
     auth_base_url: str,
     keycloak_access_token: str,

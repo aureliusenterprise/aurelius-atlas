@@ -50,16 +50,23 @@ nx extract-i18n aurelius-atlas-frontend-example    # refresh translation bundles
 The production Docker image is a static nginx serve (`dhi.io/nginx`, port 8080);
 `/config.json` is supplied at deploy time instead of being baked in.
 
-The image includes the locale-aware nginx config for `/en-US/` and `/nl-NL/`, the
-preferred-language redirect at `/`, and localized SPA fallbacks. Keep these
-application-serving rules in the image. Supply TLS and backend routing through
-deployment infrastructure, or mount optional nginx fragments at
-`/etc/nginx/app.d/*.conf`. These fragments are included inside the existing
-`server` block, so they must not define another `server` or an HTTP-level `map`.
+The image ships its locale-aware nginx config (for `/en-US/` and `/nl-NL/`, the
+preferred-language redirect at `/`, and localized SPA fallbacks) as a template
+(`nginx.conf.template`, baked at `/etc/nginx/conf.d/default.conf`). The
+`${AURELIUS_ATLAS_FRONTEND_*}` placeholders — backend topology
+(`API_UPSTREAM[_NAME]`, `OTEL_UPSTREAM[_NAME]`), the upstream trust anchor
+(`TLS_CA_FILE`), the DNS resolver (`DNS_RESOLVER`) and the Keycloak origins in
+the CSP (`KEYCLOAK_ORIGINS`) — are resolved **by the deployment**: mount a
+filled-in copy over `/etc/nginx/conf.d/default.conf` (envsubst, sed,
+kustomize — anything that writes a file). Unresolved placeholders make nginx
+fail at startup rather than serve with template values. Add per-deployment
+extras as fragments at `/etc/nginx/app.d/*.conf` — fragments are included
+inside the existing `server` block, so they must not define another `server`
+or an HTTP-level `map`.
 
-E2E runs the same image configuration. Compose mounts `e2e/config/nginx.conf`
-E2E replaces the image's site config with `e2e/config/nginx.conf` (mounted at
-`/etc/nginx/conf.d/default.conf`): the same locale-serving rules, but with
+E2E ships exactly such a filled-in copy: Compose mounts `e2e/config/nginx.conf`
+(a static file with the stack's values hard-filled) at
+`/etc/nginx/conf.d/default.conf`: the same locale-serving rules, but with
 `listen ssl` using the frontend's certificate and TLS-verified `/api/` and
 `/otel/` proxies — E2E always runs over TLS (ADR 039). Tests also get the
 runtime `config.json`. Tests use `/en-US/` and check the root locale

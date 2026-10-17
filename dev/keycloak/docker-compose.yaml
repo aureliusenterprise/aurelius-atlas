@@ -24,6 +24,12 @@ services:
             postgres-keycloak:
                 condition: service_healthy
         environment:
+            # Dev realm users (import/master.json) carry ${DEV_USER_*_PASSWORD}
+            # placeholders resolved at import time by the same
+            # replace-placeholders mechanism as the client secrets below; the
+            # guards fail interpolation (not the import) when unset.
+            DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
+            DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.
