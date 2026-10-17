@@ -862,14 +862,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/apps/aurelius-fastapi-example/" class="md-nav__link">
+      <a href="../../../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-fastapi-example
+  aurelius-atlas-fastapi-example
 
     
   </span>
@@ -889,14 +889,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/apps/aurelius-frontend-example/" class="md-nav__link">
+      <a href="../../../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-frontend-example
+  aurelius-atlas-frontend-example
 
     
   </span>
@@ -1067,14 +1067,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/angular/aurelius-data-access/" class="md-nav__link">
+      <a href="../../../../api-reference/libs/angular/aurelius-atlas-data-access/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-data-access
+  aurelius-atlas-data-access
 
     
   </span>
@@ -1200,14 +1200,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/python/aurelius-example/" class="md-nav__link">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-example
+  aurelius-atlas-example
 
     
   </span>
@@ -1227,14 +1227,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/python/aurelius-sdk/" class="md-nav__link">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-sdk
+  aurelius-atlas-sdk
 
     
   </span>
@@ -1331,14 +1331,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/styles/aurelius-brand/" class="md-nav__link">
+      <a href="../../../../api-reference/libs/styles/aurelius-atlas-brand/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-brand
+  aurelius-atlas-brand
 
     
   </span>
@@ -6463,7 +6463,7 @@ for services with health checks defined in Docker Compose.</p>
     <span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">,</span> <span class="n">env_file</span><span class="o">=</span><span class="n">dotenv</span><span class="o">.</span><span class="n">find_dotenv</span><span class="p">())</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
         <span class="k">yield</span> <span class="n">compose</span><span class="o">.</span><span class="n">waiting_for</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">"aurelius-fastapi-example"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">(),</span>
+                <span class="s2">"aurelius-atlas-fastapi-example"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">(),</span>
             <span class="p">},</span>
         <span class="p">)</span>
 </code></pre></div>
@@ -6481,7 +6481,7 @@ for services with health checks defined in Docker Compose.</p>
 <summary>Log capture</summary>
 <p>Containers are automatically torn down when exiting the context manager. The <code>capture_docker_compose_logs()</code>
 helper ensures logs are captured for debugging:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_sdk.testing.testcontainers</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">aurelius_atlas_sdk.testing.testcontainers</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_docker_compose_logs</span>
 
 <span class="k">with</span> <span class="n">DockerCompose</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span> <span class="k">as</span> <span class="n">compose</span><span class="p">:</span>
     <span class="k">yield</span> <span class="n">compose</span><span class="o">.</span><span class="n">waiting_for</span><span class="p">({</span><span class="s2">"service"</span><span class="p">:</span> <span class="n">HealthcheckWaitStrategy</span><span class="p">()})</span>

@@ -1,23 +1,23 @@
-# aurelius-sdk
+# aurelius-atlas-sdk
 
 This library provides common utilities for Aurelius projects.
 
 ## Installation
 
-You can include `aurelius-sdk` in your project by adding it to your `pyproject.toml`:
+You can include `aurelius-atlas-sdk` in your project by adding it to your `pyproject.toml`:
 
 ```
-dependencies = ["aurelius-sdk"]
+dependencies = ["aurelius-atlas-sdk"]
 
-[tool.uv.sources.aurelius-sdk]
+[tool.uv.sources.aurelius-atlas-sdk]
 workspace = true
 ```
 
-Ensure the path points to the correct location of the `aurelius-sdk` library.
+Ensure the path points to the correct location of the `aurelius-atlas-sdk` library.
 
 ## Documentation
 
-## aurelius\_sdk
+## aurelius\_atlas\_sdk
 
 Modules:
 
@@ -37,7 +37,7 @@ Modules:
 
   Testing utilities for Aurelius applications.
 
-## aurelius\_sdk.aws
+## aurelius\_atlas\_sdk.aws
 
 This module provides utilities for working with AWS services.
 
@@ -78,7 +78,7 @@ Returns:
 
   The secret value.
 
-## aurelius\_sdk.logger
+## aurelius\_atlas\_sdk.logger
 
 This module provides logging utilities for Aurelius applications.
 
@@ -153,7 +153,7 @@ Set up logging by specifying the logging level as a string. This is equivalent t
 >>> setup_logging("DEBUG")
 ```
 
-## aurelius\_sdk.msal
+## aurelius\_atlas\_sdk.msal
 
 This module provides authentication utilities for the Microsoft Identity Platform.
 
@@ -218,7 +218,7 @@ Returns:
 
   httpx.Request: The modified request.
 
-## aurelius\_sdk.postgresql
+## aurelius\_atlas\_sdk.postgresql
 
 Modules:
 
@@ -329,7 +329,7 @@ stop() -> None
 
 Stop listening and release listener resources.
 
-## aurelius\_sdk.testing.testcontainers
+## aurelius\_atlas\_sdk.testing.testcontainers
 
 Testcontainers-based helpers for tests.
 
@@ -351,7 +351,7 @@ capture_docker_compose_logs(compose: DockerCompose, *services: str, logger: Logg
 
 Capture logs from the given Docker Compose services. Omit services to capture all available logs.
 
-## aurelius\_sdk.testing.tls
+## aurelius\_atlas\_sdk.testing.tls
 
 This module provides TLS helpers for tests.
 

@@ -10,10 +10,10 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/apps/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-fastapi-example/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-fastapi-example/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-frontend-example/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-frontend-example/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/</loc>
@@ -22,25 +22,25 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/angular/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-ui/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-data-access/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-data-access/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-ui/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-example/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-sdk/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-sdk/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/styles/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/styles/aurelius-brand/</loc>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/styles/aurelius-atlas-brand/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/</loc>

@@ -862,14 +862,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api-reference/apps/aurelius-fastapi-example/" class="md-nav__link">
+      <a href="../../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-fastapi-example
+  aurelius-atlas-fastapi-example
 
     
   </span>
@@ -889,14 +889,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api-reference/apps/aurelius-frontend-example/" class="md-nav__link">
+      <a href="../../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-frontend-example
+  aurelius-atlas-frontend-example
 
     
   </span>
@@ -1067,14 +1067,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api-reference/libs/angular/aurelius-data-access/" class="md-nav__link">
+      <a href="../../../api-reference/libs/angular/aurelius-atlas-data-access/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-data-access
+  aurelius-atlas-data-access
 
     
   </span>
@@ -1200,14 +1200,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api-reference/libs/python/aurelius-example/" class="md-nav__link">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-example
+  aurelius-atlas-example
 
     
   </span>
@@ -1227,14 +1227,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api-reference/libs/python/aurelius-sdk/" class="md-nav__link">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-sdk
+  aurelius-atlas-sdk
 
     
   </span>
@@ -1331,14 +1331,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api-reference/libs/styles/aurelius-brand/" class="md-nav__link">
+      <a href="../../../api-reference/libs/styles/aurelius-atlas-brand/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-brand
+  aurelius-atlas-brand
 
     
   </span>
@@ -3242,6 +3242,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         DD-002. Atlas code lives in aurelius-atlas projects split by layer
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-003. Template projects are renamed to the aurelius-atlas prefix
       </span>
     </span>
   </a>
@@ -5288,6 +5299,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-003. Template projects are renamed to the aurelius-atlas prefix
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5472,6 +5494,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td>0.1</td>
 <td>Accepted</td>
 </tr>
+<tr>
+<td><a href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix">DD-003</a></td>
+<td>All template projects carry the <code>aurelius-atlas-</code> prefix</td>
+<td>0.1</td>
+<td>Accepted</td>
+</tr>
 </tbody>
 </table>
 <h3 id="dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served<a class="headerlink" href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" title="Permanent link">&para;</a></h3>
@@ -5512,6 +5540,27 @@ naming convention.</p>
 touches the same project and nothing can be tested in isolation. A package per Java module (<code>intg</code>,
 <code>repository</code>, <code>webapp</code>): mirrors history rather than the dependency structure we want.</p>
 <p><strong>Consequences.</strong> Projects are created by the increment that first needs them, not up front.</p>
+<h3 id="dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix">DD-003. Template projects are renamed to the aurelius-atlas prefix<a class="headerlink" href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 0.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> All workspace projects inherited from the template carry the <code>aurelius-atlas-</code> prefix
+(directories, Nx names, uv/npm package names, Python import packages, env-var prefixes, Sonar keys,
+compose project and network names, Grafana dashboards). The org handle <code>aureliusenterprise</code>, the npm
+scope <code>@aurelius</code>, the Keycloak client/realm ids (<code>aurelius</code>, <code>master</code>), and the DB name (<code>aurelius</code>)
+are identities of the organisation/Keycloak and stay unchanged.</p>
+<p><strong>Reason.</strong> DD-002 fixes the <code>aurelius-atlas-</code> prefix for the Atlas projects; renaming the template
+examples now, while they are the only content, avoids two naming generations in one repo and the
+churn of renaming them piecemeal once Atlas code lands beside them.</p>
+<p><strong>Alternatives.</strong> Rename only new Atlas projects: leaves <code>aurelius-*</code> and <code>aurelius-atlas-*</code> side by
+side, which reads as two projects with different ownership. Keep the template names entirely: makes
+the eventual atlas-vs-template distinction implicit rather than visible in the project graph.</p>
+<p><strong>Consequences.</strong> Docker image names change (<code>ghcr.io/aureliusenterprise/aurelius-atlas-*</code>); Sonar
+projects, Chromatic, and any external CI references must be created/renamed to match. <code>.env.enc</code>
+files were re-encrypted with the new prefixed keys. Old locally built images are stale and should be
+pruned (<code>docker image prune</code> / rebuild via <code>nx e2e</code>).</p>
 
 
 

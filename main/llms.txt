@@ -16,18 +16,18 @@
 
 ## API Reference
 
-- [aurelius-fastapi-example](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-fastapi-example/index.md>)
-- [aurelius-frontend-example](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-frontend-example/index.md>)
+- [aurelius-atlas-fastapi-example](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-fastapi-example/index.md>)
+- [aurelius-atlas-frontend-example](<https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-frontend-example/index.md>)
 - [Apps](<https://aureliusenterprise.github.io/main/api-reference/apps/index.md>)
 - [API Reference](<https://aureliusenterprise.github.io/main/api-reference/index.md>)
+- [aurelius-atlas-data-access](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-data-access/index.md>)
 - [aurelius-atlas-ui](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-ui/index.md>)
-- [aurelius-data-access](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-data-access/index.md>)
 - [Index](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/index.md>)
 - [Libs](<https://aureliusenterprise.github.io/main/api-reference/libs/index.md>)
-- [aurelius-example](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-example/index.md>)
-- [aurelius-sdk](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-sdk/index.md>)
+- [aurelius-atlas-example](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/index.md>)
+- [aurelius-atlas-sdk](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-sdk/index.md>)
 - [Python](<https://aureliusenterprise.github.io/main/api-reference/libs/python/index.md>)
-- [aurelius-brand](<https://aureliusenterprise.github.io/main/api-reference/libs/styles/aurelius-brand/index.md>)
+- [aurelius-atlas-brand](<https://aureliusenterprise.github.io/main/api-reference/libs/styles/aurelius-atlas-brand/index.md>)
 - [Index](<https://aureliusenterprise.github.io/main/api-reference/libs/styles/index.md>)
 
 ## Architecture

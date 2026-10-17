@@ -1,23 +1,23 @@
-# aurelius-example
+# aurelius-atlas-example
 
 This library provides common utilities for example projects.
 
 ## Installation
 
-You can include `aurelius-example` in your project by adding it to your `pyproject.toml`:
+You can include `aurelius-atlas-example` in your project by adding it to your `pyproject.toml`:
 
 ```
-dependencies = ["aurelius-example"]
+dependencies = ["aurelius-atlas-example"]
 
-[tool.uv.sources.aurelius-example]
+[tool.uv.sources.aurelius-atlas-example]
 workspace = true
 ```
 
-Ensure the path points to the correct location of the `aurelius-example` library.
+Ensure the path points to the correct location of the `aurelius-atlas-example` library.
 
 ## Documentation
 
-## aurelius\_example.Entity
+## aurelius\_atlas\_example.Entity
 
 Bases: `AvroBase`, `SQLModel`
 
@@ -169,7 +169,7 @@ Return the Avro schema with datetime fields encoded as timestamp-millis.
 
 pydantic-avro defaults `date-time` fields to `timestamp-micros`, but the Confluent Avro converter maps only `timestamp-millis` to the Connect `Timestamp` logical type. Without it, consumers that read through that converter (e.g. the Debezium JDBC sink) see a nameless raw `INT64` and try to bind it to a `timestamptz` column as a bigint, which fails.
 
-## aurelius\_example.models.EntityNotification
+## aurelius\_atlas\_example.models.EntityNotification
 
 Bases: `BaseModel`
 

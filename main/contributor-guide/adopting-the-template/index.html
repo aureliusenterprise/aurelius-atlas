@@ -1082,14 +1082,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-fastapi-example/" class="md-nav__link">
+      <a href="../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-fastapi-example
+  aurelius-atlas-fastapi-example
 
     
   </span>
@@ -1109,14 +1109,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-frontend-example/" class="md-nav__link">
+      <a href="../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-frontend-example
+  aurelius-atlas-frontend-example
 
     
   </span>
@@ -1287,14 +1287,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/angular/aurelius-data-access/" class="md-nav__link">
+      <a href="../../api-reference/libs/angular/aurelius-atlas-data-access/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-data-access
+  aurelius-atlas-data-access
 
     
   </span>
@@ -1420,14 +1420,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-example/" class="md-nav__link">
+      <a href="../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-example
+  aurelius-atlas-example
 
     
   </span>
@@ -1447,14 +1447,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-sdk/" class="md-nav__link">
+      <a href="../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-sdk
+  aurelius-atlas-sdk
 
     
   </span>
@@ -1551,14 +1551,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/styles/aurelius-brand/" class="md-nav__link">
+      <a href="../../api-reference/libs/styles/aurelius-atlas-brand/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  aurelius-brand
+  aurelius-atlas-brand
 
     
   </span>
@@ -5647,8 +5647,8 @@ they must be edited by hand. Work through this list top to bottom; each item nam
 graph errors. A stale reference anywhere breaks the graph immediately.</p>
 </details>
 <h3 id="3-python-package-names">3. Python package names<a class="headerlink" href="#3-python-package-names" title="Permanent link">&para;</a></h3>
-<p>Python packages use underscored names derived from the project (<code>aurelius_fastapi_example</code>, <code>aurelius_sdk</code>,
-<code>aurelius_example</code>, <code>aurelius_kafka</code>, <code>aurelius_aws_lambda</code>). Renaming a package means renaming its
+<p>Python packages use underscored names derived from the project (<code>aurelius_atlas_fastapi_example</code>, <code>aurelius_atlas_sdk</code>,
+<code>aurelius_atlas_example</code>, <code>aurelius_kafka</code>, <code>aurelius_aws_lambda</code>). Renaming a package means renaming its
 directory, the <code>name</code> and <code>packages</code> fields in its <code>pyproject.toml</code>, and <strong>every import</strong> across apps,
 libs, and <code>e2e/</code> test modules.</p>
 <h3 id="4-java-packages-and-the-avro-namespace">4. Java packages and the Avro namespace<a class="headerlink" href="#4-java-packages-and-the-avro-namespace" title="Permanent link">&para;</a></h3>
@@ -5671,8 +5671,8 @@ changing the schema or subject.</p>
 </details>
 <h3 id="5-angular-library-aliases">5. Angular library aliases<a class="headerlink" href="#5-angular-library-aliases" title="Permanent link">&para;</a></h3>
 <p>The Angular libraries are imported by <strong>bare names</strong> declared in <code>tsconfig.base.json</code> (<code>aurelius-atlas-ui</code>,
-<code>aurelius-data-access</code>, <code>aurelius-observability</code>) — not under an <code>@scope/</code>. Only <code>@aurelius/brand</code>
-(<code>libs/styles/aurelius-brand</code>, a <code>file:</code> npm dependency used in SCSS as <code>@use "@aurelius/brand/src/main"</code>)
+<code>aurelius-atlas-data-access</code>, <code>aurelius-atlas-observability</code>) — not under an <code>@scope/</code>. Only <code>@aurelius/atlas-brand</code>
+(<code>libs/styles/aurelius-atlas-brand</code>, a <code>file:</code> npm dependency used in SCSS as <code>@use "@aurelius/atlas-brand/src/main"</code>)
 is scoped. Rename the aliases, the import statements, the package <code>name</code> fields, and the brand package
 together.</p>
 <h3 id="6-container-registry-namespace">6. Container registry namespace<a class="headerlink" href="#6-container-registry-namespace" title="Permanent link">&para;</a></h3>
@@ -5692,8 +5692,8 @@ Developers need a <code>docker login</code> on their host too — see
 until your projects exist there).</p>
 <h3 id="8-keycloak-realm-and-clients">8. Keycloak realm and clients<a class="headerlink" href="#8-keycloak-realm-and-clients" title="Permanent link">&para;</a></h3>
 <p>The development realm import (<code>dev/keycloak/import/master.json</code>) defines a client with id <code>aurelius</code>.
-Rename it there and in both consumers: <code>apps/aurelius-frontend-example/dev/config.json</code> and
-<code>apps/aurelius-frontend-example/e2e/config/config.json</code> (<code>clientId</code>).</p>
+Rename it there and in both consumers: <code>apps/aurelius-atlas-frontend-example/dev/config.json</code> and
+<code>apps/aurelius-atlas-frontend-example/e2e/config/config.json</code> (<code>clientId</code>).</p>
 <h3 id="9-documentation-references">9. Documentation references<a class="headerlink" href="#9-documentation-references" title="Permanent link">&para;</a></h3>
 <p>After the code renames, sweep the prose: project READMEs, <code>docs/api-reference/</code>, and the design guide all
 name example projects and the Avro subject. <code>zensical build --strict</code> will catch broken nav, but not stale

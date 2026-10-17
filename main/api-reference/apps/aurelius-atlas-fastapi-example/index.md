@@ -1,4 +1,4 @@
-# aurelius-fastapi-example
+# aurelius-atlas-fastapi-example
 
 This is an example FastAPI application.
 
@@ -7,7 +7,7 @@ This is an example FastAPI application.
 Run the following command to start the application locally:
 
 ```
-python -m aurelius_fastapi_example
+python -m aurelius_atlas_fastapi_example
 ```
 
 This launches a Uvicorn server at [http://127.0.0.1:8000](<http://127.0.0.1:8000>).
@@ -24,7 +24,7 @@ Configuration is managed via the `Settings` model:
 >
 > **Settings**
 >
-> ## aurelius\_fastapi\_example.models.Settings
+> ## aurelius\_atlas\_fastapi\_example.models.Settings
 >
 > Bases: `BaseSettings`, `Hashable`
 >
@@ -88,7 +88,7 @@ Configuration is managed via the `Settings` model:
 >       "type": "string"
 >     },
 >     "auth_audience": {
->       "description": "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id.",
+>       "description": "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id.",
 >       "title": "Auth Audience",
 >       "type": "string"
 >     },
@@ -272,7 +272,7 @@ Configuration is managed via the `Settings` model:
 > auth_audience: str
 > ```
 >
-> The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS\_FASTAPI\_AUTH\_CLIENT\_ID, falling back to the template client id.
+> The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS\_ATLAS\_FASTAPI\_AUTH\_CLIENT\_ID, falling back to the template client id.
 >
 > ### auth\_ca\_file
 >
@@ -523,5 +523,5 @@ You can set configuration options using environment variables or CLI arguments.
 > To see available CLI options, run:
 >
 > ```
-> python -m aurelius_fastapi_example --help
+> python -m aurelius_atlas_fastapi_example --help
 > ```

@@ -1,4 +1,4 @@
-# aurelius-frontend-example
+# aurelius-atlas-frontend-example
 
 This is an example frontend application built with Angular.
 
