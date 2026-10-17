@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 LOGGER = logging.getLogger(__name__)
 
 HEALTHY_CLUSTER_STATUSES = frozenset({"green", "yellow"})
-"""Cluster statuses that count as up; yellow is healthy on a single node (DD-007)."""
+"""Cluster statuses that count as up; yellow is healthy on a single node (DD-008)."""
 
 
 class HealthStatus(StrEnum):

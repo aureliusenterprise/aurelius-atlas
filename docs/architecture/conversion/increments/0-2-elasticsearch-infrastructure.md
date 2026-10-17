@@ -1,8 +1,8 @@
 # 0.2 Elasticsearch infrastructure
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** [#78](https://github.com/aureliusenterprise/aurelius-atlas/pull/78)
-- **Records:** ADR 047 (becomes Accepted), DD-004, DD-005, DD-006, DD-007
+- **Records:** ADR 047 (becomes Accepted), DD-005, DD-006, DD-007, DD-008
 
 ## Scope
 
@@ -57,7 +57,7 @@ Not in scope:
 | STO-08 | The password is never part of the settings' `repr`, a log record or a health report                                                                               |
 
 Rule STO-05 counts yellow as up because a single-node cluster is yellow as soon as an index has a
-replica it cannot place ([DD-007](../design-log.md#dd-007-a-yellow-cluster-is-healthy)).
+replica it cannot place ([DD-008](../design-log.md#dd-008-a-yellow-cluster-is-healthy)).
 
 ## Java origin
 

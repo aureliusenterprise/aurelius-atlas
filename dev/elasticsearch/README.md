@@ -14,7 +14,7 @@ Part of the **spine**.
 | volume-init    | same as `elasticsearch` (one-shot, runs as root)    | –                                     |
 
 - Single node, cluster name `aurelius-atlas`, heap `${ELASTICSEARCH_HEAP}` (1 GiB)
-- Security on (DD-005): HTTPS only with a certificate from the workspace CA, basic authentication as
+- Security on (DD-006): HTTPS only with a certificate from the workspace CA, basic authentication as
   `elastic` with the password from `.env`
 - Data in the named volume `data`; it survives restarts until removed with `docker compose down -v`
 - Attached to the `aurelius-atlas-dev-elasticsearch-network` Docker network
