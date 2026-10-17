@@ -177,7 +177,10 @@ runs:
           uses: actions/cache@v5
           with:
               path: ~/.cache/ms-playwright
-              key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+              # The browsers are installed by the Python playwright package
+              # (uv run playwright install), whose lock is uv.lock - the npm
+              # lockfile does not contain playwright at all.
+              key: ${{ runner.os }}-playwright-${{ hashFiles('**/uv.lock') }}
 
         - name: Log in to Docker Hub
           if: inputs.dockerhub-username != ''
