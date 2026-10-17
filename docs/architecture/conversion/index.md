@@ -37,8 +37,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 0.3 | Test report and traceability    | `covers` marker, function-to-test checker, HTML test report in CI                     | –                                              | in progress |
 | 0.4 | Parity harness                  | Scenario format, runner, comparison, deviations, report section                       | –                                              | in progress |
 | 0.5 | Server skeleton                 | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness  | `AdminResource` (part)                         | in progress |
-| 0.6 | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3`                   | planned     |
-| 0.7 | Template examples removed       | Example service, screen, libraries and the relational database leave (ADR 050)        | –                                              | planned     |
+| 0.6 | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3`                   | in progress |
 | 1.1 | Typedef models                  | Enum, struct, classification, entity, relationship, business-metadata definitions     | `intg/.../model/typedef`                       | planned     |
 | 1.2 | Type registry                   | Attribute types, supertypes, constraints, validation errors                           | `AtlasTypeRegistry`, `AtlasStructType`, …      | planned     |
 | 1.3 | Typedef storage and bootstrap   | Typedef index, built-in models at start-up, typedef versions                          | `AtlasTypeDefGraphStore`, model patches        | planned     |
@@ -65,3 +64,25 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 6.2 | Authorization                   | Simple authorizer policies on every endpoint                                          | `atlas-simple-authz-policy`                    | planned     |
 | 6.3 | Import, export and migration    | Atlas export ZIP format, migration of an existing Atlas                               | `ExportService`, `ImportService`               | planned     |
 | 6.4 | Hardening                       | Metrics, observability, load test, index tuning                                       | `AdminResource` metrics                        | planned     |
+
+## After phase 0
+
+To do once the last 0.x increment is done:
+
+- [ ] **Re-check the accepted expat vulnerabilities.** CVE-2026-77214 and CVE-2026-102633 in
+      `expat` and `libexpat` 2.8.5-r1 come from the base image `dhi.io/python:3.14-alpine3.24` of
+      `aurelius-atlas-server`, and are fixed in 2.9.0-r0. They were accepted in SonarCloud on #85, because
+      no hardened image with the fix existed yet. Check that the current base image ships expat 2.9.0 or
+      later, and that SonarCloud has closed the four issues as fixed. If not, reopen them and decide again.
+
+## After the plan
+
+To do once 6.4 is done, not numbered as an increment yet
+([DD-019](./design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)):
+
+- [ ] **Remove the template's examples.** The FastAPI example service, the Angular example screen,
+      `aurelius-atlas-example`, `aurelius-atlas-sdk`, `libs/angular/*`, `libs/styles`, `dev/postgres`
+      and the Angular, Storybook and Chromatic toolchain leave (ADR 050). `dev/keycloak` stays for 6.1
+      and takes over `pg_hba.conf` from `dev/postgres`. The rules are tested by a test-only
+      `tools/workspace` project without a Sonar target. They are kept until then because the project's
+      second phase needs them again.

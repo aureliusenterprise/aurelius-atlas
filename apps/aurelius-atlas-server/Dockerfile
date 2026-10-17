@@ -37,6 +37,10 @@ WORKDIR /application
 
 COPY --chown=root:root --chmod=0755 --from=build-image /build ./
 
+# The dashboards, built by `nx build aurelius-atlas-dashboard`: dashboardv2 at /, dashboardv3 at /n/ (DD-018).
+COPY --chown=root:root --chmod=0755 apps/aurelius-atlas-dashboard/dist ./dashboard
+ENV AURELIUS_ATLAS_SERVER_DASHBOARD_DIR=/application/dashboard
+
 USER nonroot
 
 EXPOSE 21000

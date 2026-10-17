@@ -5,6 +5,9 @@
 /.nx/workspace-data
 **/CHANGELOG.md
 uv.lock
+# Vendored Apache Atlas dashboards, kept byte-identical to release-2.4.0 (DD-017)
+/apps/aurelius-atlas-dashboard/dashboardv2
+/apps/aurelius-atlas-dashboard/dashboardv3
 
 **/.gitignore
 **/.dockerignore
