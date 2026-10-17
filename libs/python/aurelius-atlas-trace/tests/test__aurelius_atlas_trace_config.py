@@ -22,6 +22,22 @@ def test__load_config_checks_every_member_not_excluded(make_workspace: Callable[
     assert config.spec_dir == workspace.root / "specs"
     assert config.enforce_from == Increment(0, 2)
     assert config.excluded_subpackages == ("testing",)
+    assert config.deviations == workspace.root / "deviations.md"
+
+
+@pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["SCN-13"])
+def test__load_config_reads_an_optional_deviations_table(make_workspace: Callable[..., SampleWorkspace]) -> None:
+    """Without the setting there is no table; a configured table that does not exist is an error."""
+    workspace = make_workspace(code="", tests="")
+    pyproject = workspace.root / "pyproject.toml"
+    text = pyproject.read_text()
+
+    pyproject.write_text(text.replace('deviations = "deviations.md"\n', ""))
+    assert load_config(workspace.root).deviations is None
+
+    pyproject.write_text(text.replace('"deviations.md"', '"missing.md"'))
+    with pytest.raises(ConfigError, match=r"deviations: .*missing\.md does not exist"):
+        load_config(workspace.root)
 
 
 @pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["TRC-07"])

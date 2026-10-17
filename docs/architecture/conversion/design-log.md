@@ -34,19 +34,24 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 
 ## Log
 
-| #                                                                                    | Decision                                                                  | Increment | Status   |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | --------- | -------- |
-| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)       | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged | 0.1       | Accepted |
-| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)         | Atlas code lives in `aurelius-atlas-*` projects split by layer            | 0.1       | Accepted |
-| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)         | All template projects carry the `aurelius-atlas-` prefix                  | 0.1       | Accepted |
-| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)            | The SPA keeps tokens in memory and renews them silently                   | 0.1       | Accepted |
-| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)             | The store uses the official async Elasticsearch client, one per store     | 0.2       | Proposed |
-| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)           | Development and tests run Elasticsearch with TLS and authentication on    | 0.2       | Proposed |
-| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)        | The Elasticsearch test fixture ships with the store library               | 0.2       | Proposed |
-| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                        | A yellow cluster is healthy                                               | 0.2       | Proposed |
-| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run) | Traceability is checked from collected markers, not from a test run       | 0.3       | Proposed |
-| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)      | The traceability check covers Atlas code from increment 0.2 on            | 0.3       | Proposed |
-| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)   | The test report is generated from JUnit, coverage and trace files         | 0.3       | Proposed |
+| #                                                                                        | Decision                                                                  | Increment | Status   |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------- | -------- |
+| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)           | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged | 0.1       | Accepted |
+| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)             | Atlas code lives in `aurelius-atlas-*` projects split by layer            | 0.1       | Accepted |
+| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)             | All template projects carry the `aurelius-atlas-` prefix                  | 0.1       | Accepted |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                | The SPA keeps tokens in memory and renews them silently                   | 0.1       | Accepted |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                 | The store uses the official async Elasticsearch client, one per store     | 0.2       | Proposed |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)               | Development and tests run Elasticsearch with TLS and authentication on    | 0.2       | Proposed |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)            | The Elasticsearch test fixture ships with the store library               | 0.2       | Proposed |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                            | A yellow cluster is healthy                                               | 0.2       | Proposed |
+| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)     | Traceability is checked from collected markers, not from a test run       | 0.3       | Proposed |
+| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)          | The traceability check covers Atlas code from increment 0.2 on            | 0.3       | Proposed |
+| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)       | The test report is generated from JUnit, coverage and trace files         | 0.3       | Proposed |
+| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)       | Parity scenarios are YAML files run as parametrised pytest tests          | 0.4       | Proposed |
+| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)       | A scenario response is compared exactly, except at declared paths         | 0.4       | Proposed |
+| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                     | Scenario facts reach the report as test properties                        | 0.4       | Proposed |
+| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource) | The server is a FastAPI application with one router per Atlas resource    | 0.5       | Proposed |
+| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                            | The server does not start without its store                               | 0.5       | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -299,3 +304,116 @@ page of test results, nothing about rules or functions. SonarCloud: shows covera
 
 **Consequences.** The page is an artifact of the CI run, not a published site; 0.4 adds the parity
 results to it. If a later need (history, trends) outgrows a static page, a viewer is chosen then.
+
+### DD-012. Parity scenarios are YAML files run as parametrised pytest tests
+
+- **Status:** Proposed
+- **Increment:** 0.4
+- **Date:** 2026-10-17
+
+**Decision.** A scenario is a `*.scenario.yaml` file in the stage shape of Tavern (`request`,
+`response`, `save`), validated with pydantic. A project's test module turns a directory of them into
+one parametrised test, `load_scenarios(directory)`, whose body is `await run_scenario(scenario, client)`;
+the project's fixture decides whether `client` talks to the application in-process (`httpx.ASGITransport`)
+or over HTTP to a running server.
+
+**Reason.** ADR 045's ladder: the request/response/save stage is the community's shape for declarative
+API tests, so reviewers who know Tavern read our scenarios at once. Running scenarios as ordinary pytest
+parameters puts them in JUnit, in the trace file and under `covers` (SCN-04) with public pytest API only.
+
+**Alternatives.** Tavern itself: speaks HTTP through `requests` only, so the in-process unit level is
+lost, and the exact comparison, volatile paths and deviations (DD-013) would be hooks around it. A
+custom collector for `*.scenario.yaml`: shorter test modules, but it needs pytest's private fixture
+API to give the items a client. Schemathesis: generates requests from an OpenAPI document, which
+Atlas 2.4.0 does not ship and which states types, not Atlas's answers.
+
+**Consequences.** Every project with scenarios has one small test module and a `client` fixture. The
+scenario format is ours to keep stable; it is versioned by its rules SCN-01 to SCN-03.
+
+### DD-013. A scenario response is compared exactly, except at declared paths
+
+- **Status:** Proposed
+- **Increment:** 0.4
+- **Date:** 2026-10-17
+
+**Decision.** The expected body must equal the actual body: the same keys, arrays in the same order,
+booleans and null distinct from numbers. Only `volatile` paths (generated GUIDs, timestamps) skip the
+value, and only `deviations` entries change the expectation, each naming its `DV-NN`.
+
+**Reason.** The dashboard and existing clients read fields the scenarios might not think of; an extra,
+missing or `null` field is a visible difference ([ADR 046](../adr/046-the-catalogue-keeps-its-public-contract.md)).
+Atlas serialises its models with Jackson `NON_NULL` inclusion, so "absent" and `null` differ there and
+must differ here.
+
+**Alternatives.** Subset matching: short scenarios, but an extra or misnamed field passes. Snapshot
+files written from our own responses: exact, but the expectation would come from the implementation,
+not from Atlas (ADR 052 R1).
+
+**Consequences.** Expectations for large responses are long; scenarios borrow Atlas's own test fixtures
+for request bodies to keep writing them cheap. Arrays whose order Atlas does not define get an explicit
+order-insensitive option when the first increment needs one.
+
+### DD-014. Scenario facts reach the report as test properties
+
+- **Status:** Proposed
+- **Increment:** 0.4
+- **Date:** 2026-10-17
+
+**Decision.** The parity plugin adds each scenario's endpoints and deviation ids to the test item's
+`user_properties` at collection. The trace plugin writes every test's properties to the trace file, so
+`check` (unknown deviations) and `report` (one row per endpoint) read them from the collection they
+already do.
+
+**Reason.** `user_properties` is pytest's own channel for facts about a test, and JUnit carries it too.
+Reading it at collection keeps the report's rule of DD-009: an endpoint whose scenarios did not run in
+this change is _not run_, not missing.
+
+**Alternatives.** A separate `--parity-json` file: a second format next to the trace file for the same
+tests. Make the trace library know scenarios: couples the traceability tool to one kind of test.
+
+**Consequences.** The trace file format gains a `properties` field per test; readers of version 1 files
+without it see no properties. Property names are prefixed with the plugin that sets them (`parity.`).
+
+### DD-015. The server is a FastAPI application with one router per Atlas resource
+
+- **Status:** Proposed
+- **Increment:** 0.5
+- **Date:** 2026-10-17
+
+**Decision.** `apps/aurelius-atlas-server` is a FastAPI application built like the template's example
+service (settings, uvicorn entry point, logfire, hardened image), with one router module per Atlas
+REST resource class (`AdminResource` → `routes/admin.py`, later `EntityREST` → `routes/entity.py`).
+Atlas errors are raised as `AtlasError` and turned into the Atlas error body by one exception handler,
+as `AtlasBaseExceptionMapper` does; JSON goes out as `application/json; charset=UTF-8`.
+
+**Reason.** ADR 045's ladder: FastAPI and the example's wiring are the workspace's convention, already
+gated, observed and packaged. Mirroring the Java resource classes keeps the Java map one row per class
+and lets a reviewer put a router next to its Java resource.
+
+**Alternatives.** Starlette without FastAPI: no validation or OpenAPI for the request models later
+increments need. Routers per URL prefix rather than per Java class: `admin` would still be one, but
+`/v2/entity` and `/v2/entity/bulk` belong to one Java class and would split.
+
+**Consequences.** The example service is no longer the only FastAPI app; 0.7 removes it. Later
+increments add routers and error codes; the error handler and media type stay.
+
+### DD-016. The server does not start without its store
+
+- **Status:** Proposed
+- **Increment:** 0.5
+- **Date:** 2026-10-17
+
+**Decision.** The server opens the Elasticsearch store in its start-up and stops with an error when the
+store cannot be opened (unreachable, rejected, or not Elasticsearch 9). Once running, `readiness`
+reports the store's health on every call, and `liveness` and `status` do not depend on it.
+
+**Reason.** The store is the only system of record ([ADR 047](../adr/047-one-search-store-is-the-system-of-record.md));
+a server without it cannot answer anything but the admin endpoints. Failing at start-up shows a wrong
+setting at once ([ADR 018](../adr/018-settings-arrive-at-startup-through-one-channel.md)) and lets an
+orchestrator restart the container, while readiness covers a store that goes away later.
+
+**Alternatives.** Start without the store and retry in the background: a misconfigured server would run
+and only its readiness would say so. Make liveness depend on the store: an outage of Elasticsearch would
+make an orchestrator restart every server, which does not help.
+
+**Consequences.** Start-up order matters: `nx serve` and the end-to-end tests start the dev store first.

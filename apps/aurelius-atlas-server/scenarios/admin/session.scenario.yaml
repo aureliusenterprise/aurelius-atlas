@@ -1,0 +1,46 @@
+name: The session reports the user interface settings and the user
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getUserProfile
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#AdminResource (session defaults)
+    - webapp/src/main/java/org/apache/atlas/web/filters/AtlasCSRFPreventionFilter.java (CSRF defaults)
+    - intg/src/main/java/org/apache/atlas/AtlasConfiguration.java (feature switch defaults)
+    - distro/src/conf/users-credentials.properties (user admin in group ADMIN)
+    - webapp/src/main/java/org/apache/atlas/web/dao/UserDao.java#loadUserByUsername (the group is the authority)
+rules: [ADM-05, SRV-05]
+covers: [aurelius_atlas_server.routes.admin.get_session]
+stages:
+    - name: as the admin user of a default Atlas installation
+      request: { method: GET, url: /api/atlas/admin/session }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              atlas.rest-csrf.enabled: true
+              atlas.rest-csrf.browser-useragents-regex: "^Mozilla.*,^Opera.*,^Chrome"
+              atlas.rest-csrf.methods-to-ignore: "GET,OPTIONS,HEAD,TRACE"
+              atlas.rest-csrf.custom-header: X-XSRF-HEADER
+              atlas.entity.update.allowed: true
+              atlas.entity.create.allowed: true
+              atlas.ui.editable.entity.types: hdfs_path
+              atlas.ui.default.version: v2
+              userName: admin
+              groups: [ADMIN]
+              timezones: ["Java's TimeZone.getAvailableIDs()"]
+              atlas.ui.date.timezone.format.enabled: true
+              atlas.ui.date.format: "MM/DD/YYYY hh:mm:ss A"
+              atlas.debug.metrics.enabled: false
+              atlas.tasks.enabled: true
+              atlas.tasks.ui.tab.enabled: false
+              atlas.lineage.on.demand.enabled: false
+              atlas.lineage.on.demand.default.node.count: 3
+              atlas.relationship.search.enabled: false
+              _csrfToken: "20 random letters and digits"
+          # A new token per session; its form is checked by the unit tests.
+          volatile: [$._csrfToken, $.timezones]
+          deviations:
+              - { id: DV-04, path: $.userName, value: null }
+              - { id: DV-04, path: $.groups, value: [] }
+              - { id: DV-04, path: "$['atlas.entity.update.allowed']", value: false }
+              - { id: DV-04, path: "$['atlas.entity.create.allowed']", value: false }
+              # The ids differ (DV-05) and are compared as volatile; their content is checked by the unit tests.
+              - { id: DV-05, path: $.timezones, value: "IANA time zone ids" }

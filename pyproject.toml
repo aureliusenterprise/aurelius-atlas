@@ -12,7 +12,9 @@ dev = [
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
+    "aurelius-atlas-parity",
     "aurelius-atlas-sdk[full]",
+    "aurelius-atlas-server",
     "aurelius-atlas-store-es[testing]",
     "aurelius-atlas-trace",
     "aurelius-atlas-vulnerability-report",
@@ -63,7 +65,13 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-license-report]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-parity]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-sdk]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-server]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-store-es]
@@ -78,7 +86,9 @@ workspace = true
 [tool.uv.workspace]
 members = [
     "apps/aurelius-atlas-fastapi-example",
+    "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-example",
+    "libs/python/aurelius-atlas-parity",
     "libs/python/aurelius-atlas-sdk",
     "libs/python/aurelius-atlas-store-es",
     "libs/python/aurelius-atlas-trace",
@@ -89,6 +99,7 @@ members = [
 # What the traceability check covers (ADR 049, DD-010): every workspace member except these template
 # projects, without their `testing` subpackages, and the rules of every specification from 0.2 on.
 [tool.aurelius-atlas-trace]
+deviations = "docs/architecture/conversion/deviations.md"
 enforce-from = "0.2"
 exclude-projects = [
     "apps/aurelius-atlas-fastapi-example",

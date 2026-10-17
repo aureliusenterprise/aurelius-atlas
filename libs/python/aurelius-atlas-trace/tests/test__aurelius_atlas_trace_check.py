@@ -109,6 +109,32 @@ def test__inventory_covers_every_atlas_project(make_workspace: Callable[..., Sam
     assert names == [f"{workspace.package}.named", f"{workspace.package}.unnamed"]
 
 
+SCENARIO_CONFTEST = """
+def pytest_itemcollected(item):
+    item.user_properties += [("parity.deviation", "DV-01"), ("parity.deviation", "DV-99")]
+"""
+
+
+@pytest.mark.covers("aurelius_atlas_trace.check.run_check", "aurelius_atlas_trace.check.Findings.ok", rules=["SCN-13"])
+def test__run_check_finds_deviations_the_table_does_not_define(make_workspace: Callable[..., SampleWorkspace]) -> None:
+    """A scenario naming a deviation id that is not in the deviations table is a finding."""
+    workspace = make_workspace(code=CODE, tests=TESTS, rules="", conftest=SCENARIO_CONFTEST)
+
+    findings = run_check(load_config(workspace.root))
+
+    assert findings.unknown_deviations == (("tests/test__sample.py::test__named", "DV-99"),)
+    assert not findings.ok
+
+
+@pytest.mark.covers("aurelius_atlas_trace.check.find_gaps", rules=["SCN-13"])
+def test__find_gaps_skips_deviations_when_no_table_is_configured() -> None:
+    """Without a deviations table, deviation ids are not compared."""
+    test = TracedTest(nodeid="a", targets=(), rules=(), properties=(("parity.deviation", "DV-99"),))
+
+    assert find_gaps([], {}, [test]).ok
+    assert find_gaps([], {}, [test], {"DV-01"}).unknown_deviations == (("a", "DV-99"),)
+
+
 @pytest.mark.covers("aurelius_atlas_trace.check.find_gaps", rules=["TRC-09"])
 def test__find_gaps_counts_a_name_from_any_test(tmp_path: Path) -> None:
     """A function or rule named by any one test is covered."""
@@ -122,13 +148,14 @@ def test__find_gaps_counts_a_name_from_any_test(tmp_path: Path) -> None:
     assert find_gaps([function], rules, tests).ok
 
 
-@pytest.mark.covers("aurelius_atlas_trace.check.format_findings", rules=["TRC-09"])
+@pytest.mark.covers("aurelius_atlas_trace.check.format_findings", rules=["TRC-09", "SCN-13"])
 def test__format_findings_lists_each_gap_with_its_location(tmp_path: Path) -> None:
     """Every gap is one line naming the function, rule or test and where to find it."""
     findings = Findings(
         uncovered_functions=(PublicFunction(name="m.f", file=tmp_path / "m.py", first_line=3, last_line=4),),
         unchecked_rules=(Rule(id="ABC-03", increment=Increment(0, 2), spec=tmp_path / "0-2-x.md"),),
         unknown_rules=(("tests/test__a.py::test__a", "ZZZ-99"),),
+        unknown_deviations=(("tests/test__s.py::test__scenario[x]", "DV-99"),),
     )
 
     assert format_findings(findings, tmp_path).splitlines() == [
@@ -138,5 +165,7 @@ def test__format_findings_lists_each_gap_with_its_location(tmp_path: Path) -> No
         "  ABC-03  (0-2-x.md, increment 0.2)",
         "Tests naming a rule no specification defines (1):",
         "  tests/test__a.py::test__a: ZZZ-99",
+        "Scenarios naming a deviation the deviations table does not define (1):",
+        "  tests/test__s.py::test__scenario[x]: DV-99",
     ]
     assert format_findings(Findings((), (), ()), tmp_path) == "Every public function and every rule is named by a test."

@@ -1,0 +1,12 @@
+name: The status of a running server is ACTIVE
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getStatus
+    - webapp/src/main/java/org/apache/atlas/web/security/AtlasSecurityConfig.java#configure (no login for admin/status)
+rules: [ADM-02, SRV-05]
+covers: [aurelius_atlas_server.routes.admin.get_status]
+stages:
+    - request: { method: GET, url: /api/atlas/admin/status }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json: { Status: ACTIVE }

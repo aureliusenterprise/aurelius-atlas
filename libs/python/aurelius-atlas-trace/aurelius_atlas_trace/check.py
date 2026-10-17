@@ -9,6 +9,7 @@ from pathlib import Path
 
 from aurelius_atlas_trace.config import Project, TraceConfig
 from aurelius_atlas_trace.inventory import PublicFunction, public_functions
+from aurelius_atlas_trace.parity import DEVIATION_PROPERTY, read_deviation_ids
 from aurelius_atlas_trace.rules import Rule, read_rules
 from aurelius_atlas_trace.trace import TracedTest, read_trace_file
 
@@ -38,11 +39,13 @@ class Findings:
     unchecked_rules: tuple[Rule, ...]
     unknown_rules: tuple[tuple[str, str], ...]
     """Pairs of (test node id, rule id) for rules that no specification defines."""
+    unknown_deviations: tuple[tuple[str, str], ...] = ()
+    """Pairs of (test node id, deviation id) for deviations the deviations table does not define (SCN-13)."""
 
     @property
     def ok(self) -> bool:
         """Whether nothing is missing."""
-        return not (self.uncovered_functions or self.unchecked_rules or self.unknown_rules)
+        return not (self.uncovered_functions or self.unchecked_rules or self.unknown_rules or self.unknown_deviations)
 
 
 def collect_project(project: Project) -> ProjectTests:
@@ -93,19 +96,39 @@ def inventory(config: TraceConfig) -> list[PublicFunction]:
     ]
 
 
-def find_gaps(functions: Iterable[PublicFunction], rules: dict[str, Rule], tests: Iterable[TracedTest]) -> Findings:
-    """Compare what the tests name with the functions and rules that must be named (TRC-09)."""
+def find_gaps(
+    functions: Iterable[PublicFunction],
+    rules: dict[str, Rule],
+    tests: Iterable[TracedTest],
+    deviations: set[str] | None = None,
+) -> Findings:
+    """Compare what the tests name with the functions and rules that must be named (TRC-09).
+
+    Args:
+        functions: The public functions that must be named.
+        rules: The rules that must be named, by id.
+        tests: The collected tests.
+        deviations: The deviation ids scenarios may name (SCN-13); None skips that comparison.
+    """
     named_targets: set[str] = set()
     named_rules: set[str] = set()
     unknown: list[tuple[str, str]] = []
+    unknown_deviations: list[tuple[str, str]] = []
     for test in tests:
         named_targets.update(test.targets)
         named_rules.update(test.rules)
         unknown.extend((test.nodeid, rule) for rule in test.rules if rule not in rules)
+        if deviations is not None:
+            unknown_deviations.extend(
+                (test.nodeid, deviation)
+                for deviation in test.property_values(DEVIATION_PROPERTY)
+                if deviation not in deviations
+            )
     return Findings(
         uncovered_functions=tuple(function for function in functions if function.name not in named_targets),
         unchecked_rules=tuple(rule for rule in rules.values() if rule.id not in named_rules),
         unknown_rules=tuple(sorted(unknown)),
+        unknown_deviations=tuple(sorted(unknown_deviations)),
     )
 
 
@@ -116,6 +139,7 @@ def run_check(config: TraceConfig) -> Findings:
         inventory(config),
         read_rules(config.spec_dir, config.enforce_from),
         (test for project_tests in collected for test in project_tests.tests),
+        None if config.deviations is None else read_deviation_ids(config.deviations),
     )
 
 
@@ -139,4 +163,9 @@ def format_findings(findings: Findings, workspace: Path) -> str:
     if findings.unknown_rules:
         lines.append(f"Tests naming a rule no specification defines ({len(findings.unknown_rules)}):")
         lines.extend(f"  {nodeid}: {rule}" for nodeid, rule in findings.unknown_rules)
+    if findings.unknown_deviations:
+        lines.append(
+            f"Scenarios naming a deviation the deviations table does not define ({len(findings.unknown_deviations)}):"
+        )
+        lines.extend(f"  {nodeid}: {deviation}" for nodeid, deviation in findings.unknown_deviations)
     return "\n".join(lines)

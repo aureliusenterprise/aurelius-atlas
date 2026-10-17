@@ -1,0 +1,10 @@
+name: A running server is live
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#serviceLiveliness
+rules: [ADM-03]
+covers: [aurelius_atlas_server.routes.admin.get_liveness]
+stages:
+    - request: { method: GET, url: /api/atlas/admin/liveness }
+      response:
+          status: 200
+          text: Service is live
