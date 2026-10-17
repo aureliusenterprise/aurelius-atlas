@@ -30,40 +30,41 @@ The ledger in this section is the central record of the conversion:
 
 Status values: _planned_, _in progress_, _in review_, _done_.
 
-| #   | Increment                       | Semantics in scope                                                                    | Java origin                                    | Status      |
-| --- | ------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------- |
-| 0.1 | Adopt the template              | Remove unused slices, rename, ADRs 046–051, this ledger                               | –                                              | done        |
-| 0.2 | Elasticsearch infrastructure    | `dev/elasticsearch`, store library skeleton, health check                             | –                                              | done        |
-| 0.3 | Test report and traceability    | `covers` marker, function-to-test checker, HTML test report in CI                     | –                                              | in progress |
-| 0.4 | Parity harness                  | Scenario format, runner, comparison, deviations, report section                       | –                                              | in progress |
-| 0.5 | Server skeleton                 | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness  | `AdminResource` (part)                         | in progress |
-| 0.6 | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3`                   | in progress |
-| 1.1 | Typedef models                  | Enum, struct, classification, entity, relationship, business-metadata definitions     | `intg/.../model/typedef`                       | in progress |
-| 1.2 | Type registry                   | Attribute types, supertypes, constraints, validation errors                           | `AtlasTypeRegistry`, `AtlasStructType`, …      | planned     |
-| 1.3 | Typedef storage and bootstrap   | Typedef index, built-in models at start-up, typedef versions                          | `AtlasTypeDefGraphStore`, model patches        | planned     |
-| 1.4 | Types REST                      | `/v2/types/...` read and write                                                        | `TypesREST`                                    | planned     |
-| 2.1 | Entity models and validation    | `AtlasEntity`, extended info, headers, validation                                     | `intg/.../model/instance`, `AtlasEntityType`   | planned     |
-| 2.2 | Entity store                    | Index layout, GUIDs, unique attributes, optimistic versioning                         | `AtlasEntityStoreV2`                           | planned     |
-| 2.3 | Entity read REST                | By GUID, by unique attributes, bulk, headers                                          | `EntityREST`                                   | planned     |
-| 2.4 | Entity write REST               | Create/update, partial update, bulk                                                   | `EntityREST`, `EntityGraphMapper`              | planned     |
-| 2.5 | Delete semantics                | Soft and hard delete, purge                                                           | `DeleteHandlerV1`, `SoftDeleteHandlerV1`       | planned     |
-| 3.1 | Relationship instances          | Relationship CRUD and relationship attributes                                         | `RelationshipREST`, `AtlasRelationshipStoreV2` | planned     |
-| 3.2 | Ownership cascades              | Composition and owned-reference cascades                                              | `DeleteHandlerV1`                              | planned     |
-| 3.3 | Direct classifications          | Add, update, remove, validity periods                                                 | `EntityREST`                                   | planned     |
-| 3.4 | Classification propagation      | Propagation, blocked propagation, removal                                             | `ClassificationPropagateTaskFactory`           | planned     |
-| 3.5 | Entity audit                    | Audit events and audit REST                                                           | `EntityAuditRepository`                        | planned     |
-| 4.1 | Basic search                    | `SearchParameters`, filters, operators, sort, paging                                  | `EntitySearchProcessor`, `SearchContext`       | planned     |
-| 4.2 | Quick search and suggestions    | Free text, facets, suggestions                                                        | `AtlasDiscoveryService`                        | planned     |
-| 4.3 | DSL parser                      | Atlas DSL grammar to AST                                                              | `AtlasDSLParser.g4`, `query/`                  | planned     |
-| 4.4 | DSL execution                   | AST to search queries; declared unsupported forms                                     | `GremlinQueryComposer` (replaced)              | planned     |
-| 4.5 | Saved searches and user profile | Saved search CRUD                                                                     | `UserProfileService`                           | planned     |
-| 5.1 | Lineage                         | Process inputs/outputs, depth, direction, on-demand lineage                           | `EntityLineageService`                         | planned     |
-| 5.2 | Glossary                        | Glossaries, terms, categories, term assignment                                        | `GlossaryREST`, `GlossaryService`              | planned     |
-| 5.3 | Business metadata and labels    | Business metadata attributes, labels                                                  | `EntityREST`                                   | planned     |
-| 6.1 | Authentication                  | Keycloak OIDC, session endpoints                                                      | `AtlasKeycloakAuthenticationProvider`          | planned     |
-| 6.2 | Authorization                   | Simple authorizer policies on every endpoint                                          | `atlas-simple-authz-policy`                    | planned     |
-| 6.3 | Import, export and migration    | Atlas export ZIP format, migration of an existing Atlas                               | `ExportService`, `ImportService`               | planned     |
-| 6.4 | Hardening                       | Metrics, observability, load test, index tuning                                       | `AdminResource` metrics                        | planned     |
+| #   | Increment                       | Semantics in scope                                                                                            | Java origin                                    | Status      |
+| --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------- |
+| 0.1 | Adopt the template              | Remove unused slices, rename, ADRs 046–051, this ledger                                                       | –                                              | done        |
+| 0.2 | Elasticsearch infrastructure    | `dev/elasticsearch`, store library skeleton, health check                                                     | –                                              | done        |
+| 0.3 | Test report and traceability    | `covers` marker, function-to-test checker, HTML test report in CI                                             | –                                              | in progress |
+| 0.4 | Parity harness                  | Scenario format, runner, comparison, deviations, report section                                               | –                                              | in progress |
+| 0.5 | Server skeleton                 | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness                          | `AdminResource` (part)                         | in progress |
+| 0.6 | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source                         | `dashboardv2`, `dashboardv3`                   | in progress |
+| 1.1 | Typedef models                  | Enum, struct, classification, entity, relationship, business-metadata definitions                             | `intg/.../model/typedef`                       | in progress |
+| 1.2 | Type registry                   | Registry and its updates, built-in, array, map, enum and struct types, attribute types, constraints, errors   | `AtlasTypeRegistry`, `AtlasStructType`, …      | in progress |
+| 1.3 | Type hierarchies                | Entity and classification super and sub types, inherited attributes, relationship and business metadata types | `AtlasEntityType`, `AtlasRelationshipType`, …  | planned     |
+| 1.4 | Typedef storage and bootstrap   | Typedef index, built-in models at start-up, typedef versions                                                  | `AtlasTypeDefGraphStore`, model patches        | planned     |
+| 1.5 | Types REST                      | `/v2/types/...` read and write                                                                                | `TypesREST`                                    | planned     |
+| 2.1 | Entity models and validation    | `AtlasEntity`, extended info, headers, validation                                                             | `intg/.../model/instance`, `AtlasEntityType`   | planned     |
+| 2.2 | Entity store                    | Index layout, GUIDs, unique attributes, optimistic versioning                                                 | `AtlasEntityStoreV2`                           | planned     |
+| 2.3 | Entity read REST                | By GUID, by unique attributes, bulk, headers                                                                  | `EntityREST`                                   | planned     |
+| 2.4 | Entity write REST               | Create/update, partial update, bulk                                                                           | `EntityREST`, `EntityGraphMapper`              | planned     |
+| 2.5 | Delete semantics                | Soft and hard delete, purge                                                                                   | `DeleteHandlerV1`, `SoftDeleteHandlerV1`       | planned     |
+| 3.1 | Relationship instances          | Relationship CRUD and relationship attributes                                                                 | `RelationshipREST`, `AtlasRelationshipStoreV2` | planned     |
+| 3.2 | Ownership cascades              | Composition and owned-reference cascades                                                                      | `DeleteHandlerV1`                              | planned     |
+| 3.3 | Direct classifications          | Add, update, remove, validity periods                                                                         | `EntityREST`                                   | planned     |
+| 3.4 | Classification propagation      | Propagation, blocked propagation, removal                                                                     | `ClassificationPropagateTaskFactory`           | planned     |
+| 3.5 | Entity audit                    | Audit events and audit REST                                                                                   | `EntityAuditRepository`                        | planned     |
+| 4.1 | Basic search                    | `SearchParameters`, filters, operators, sort, paging                                                          | `EntitySearchProcessor`, `SearchContext`       | planned     |
+| 4.2 | Quick search and suggestions    | Free text, facets, suggestions                                                                                | `AtlasDiscoveryService`                        | planned     |
+| 4.3 | DSL parser                      | Atlas DSL grammar to AST                                                                                      | `AtlasDSLParser.g4`, `query/`                  | planned     |
+| 4.4 | DSL execution                   | AST to search queries; declared unsupported forms                                                             | `GremlinQueryComposer` (replaced)              | planned     |
+| 4.5 | Saved searches and user profile | Saved search CRUD                                                                                             | `UserProfileService`                           | planned     |
+| 5.1 | Lineage                         | Process inputs/outputs, depth, direction, on-demand lineage                                                   | `EntityLineageService`                         | planned     |
+| 5.2 | Glossary                        | Glossaries, terms, categories, term assignment                                                                | `GlossaryREST`, `GlossaryService`              | planned     |
+| 5.3 | Business metadata and labels    | Business metadata attributes, labels                                                                          | `EntityREST`                                   | planned     |
+| 6.1 | Authentication                  | Keycloak OIDC, session endpoints                                                                              | `AtlasKeycloakAuthenticationProvider`          | planned     |
+| 6.2 | Authorization                   | Simple authorizer policies on every endpoint                                                                  | `atlas-simple-authz-policy`                    | planned     |
+| 6.3 | Import, export and migration    | Atlas export ZIP format, migration of an existing Atlas                                                       | `ExportService`, `ImportService`               | planned     |
+| 6.4 | Hardening                       | Metrics, observability, load test, index tuning                                                               | `AdminResource` metrics                        | planned     |
 
 ## After phase 0
 

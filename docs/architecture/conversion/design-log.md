@@ -509,7 +509,7 @@ are ignored. The Java setters' normalisations run as `_`-prefixed validators, so
 is read and when a model is built in code, as the Java constructors and setters do.
 
 **Reason.** Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and
-writes it natively, so 1.4 needs no mapping layer. Atlas writes with Jackson `NON_NULL`, which is
+writes it natively, so 1.5 needs no mapping layer. Atlas writes with Jackson `NON_NULL`, which is
 Pydantic's `exclude_none`; empty collections stay because Jackson keeps them (DD-013 compares exactly).
 
 **Alternatives.** Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to
@@ -538,7 +538,7 @@ table size, but it would copy an accident of the implementation. Sorted order: s
 what clients send.
 
 **Consequences.** The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them
-without order, through the option DD-013 foresees, which 1.4 adds with the first scenario that needs it.
+without order, through the option DD-013 foresees, which 1.5 adds with the first scenario that needs it.
 
 ### DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
 

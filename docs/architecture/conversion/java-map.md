@@ -20,7 +20,7 @@ truth about what has been ported. Status values: _not started_, _in progress_, _
 | `notification`                  | Kafka hook and entity notifications                   | –                                                   | dropped     |
 | `client`                        | Java client libraries                                 | –                                                   | dropped     |
 | `addons/*-bridge`, `*-shim`     | Hooks for Hive, HBase, Kafka, Sqoop, Storm, …         | –                                                   | dropped     |
-| `addons/models`                 | Built-in type definitions (JSON)                      | loaded by `aurelius-atlas-core` (1.3)               | not started |
+| `addons/models`                 | Built-in type definitions (JSON)                      | loaded by `aurelius-atlas-core` (1.4)               | not started |
 | `distro`, `build-tools`, `docs` | Packaging, build and site                             | template workflow                                   | replaced    |
 | `tools/*`                       | Index repair, classification updater, analyzers       | –                                                   | dropped     |
 
