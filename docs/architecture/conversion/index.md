@@ -65,6 +65,16 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 6.3 | Import, export and migration    | Atlas export ZIP format, migration of an existing Atlas                               | `ExportService`, `ImportService`               | planned     |
 | 6.4 | Hardening                       | Metrics, observability, load test, index tuning                                       | `AdminResource` metrics                        | planned     |
 
+## After phase 0
+
+To do once the last 0.x increment is done:
+
+- [ ] **Re-check the accepted expat vulnerabilities.** CVE-2026-77214 and CVE-2026-102633 in
+      `expat` and `libexpat` 2.8.5-r1 come from the base image `dhi.io/python:3.14-alpine3.24` of
+      `aurelius-atlas-server`, and are fixed in 2.9.0-r0. They were accepted in SonarCloud on #85, because
+      no hardened image with the fix existed yet. Check that the current base image ships expat 2.9.0 or
+      later, and that SonarCloud has closed the four issues as fixed. If not, reopen them and decide again.
+
 ## After the plan
 
 To do once 6.4 is done, not numbered as an increment yet
