@@ -1,10 +1,5 @@
 [
   {
-    "version": "phase0-0.6-dashboards",
-    "title": "phase0-0.6-dashboards",
-    "aliases": []
-  },
-  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
