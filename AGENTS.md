@@ -210,8 +210,9 @@ Atlas behaviour (ADR 051):
 3. **Every public function has a test that names it**, and every rule id has a test that names it,
    via `@pytest.mark.covers("<dotted.path>", rules=["ENT-07"])` (ADR 049). CI fails otherwise;
    run `uv run aurelius-atlas-trace check` locally to see the gaps first.
-4. **Parity before acceptance.** REST behaviour is compared against recorded responses of the
-   reference Java Atlas (ADR 048). Fixtures are only re-recorded on purpose and reviewed as code.
+4. **Parity before acceptance.** REST behaviour is checked by scenarios whose expected responses are
+   read from the Apache Atlas 2.4.0 source and its own tests, each citing where (ADR 052). No running
+   Java Atlas is used. Scenarios are reviewed as code.
 5. **Decisions are recorded where they are made.** Business-level decisions become ADRs;
    technical ones become `DD-NNN` entries in `docs/architecture/conversion/design-log.md`.
    Update `java-map.md` and `deviations.md` in the same PR. Never edit an accepted decision;
