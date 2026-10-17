@@ -1,0 +1,918 @@
+{
+    "classificationDefs": [],
+    "entityDefs": [
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "qualifiedName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "shortDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "longDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "language",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "usage",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "additionalAttributes",
+                    "typeName": "map<string,string>"
+                }
+            ],
+
+            "name": "AtlasGlossary",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.1"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "qualifiedName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "shortDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "longDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "examples",
+                    "typeName": "array<string>"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "abbreviation",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "usage",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "additionalAttributes",
+                    "typeName": "map<string,string>"
+                }
+            ],
+
+            "name": "AtlasGlossaryTerm",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.1"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "qualifiedName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "shortDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "longDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "additionalAttributes",
+                    "typeName": "map<string,string>"
+                }
+            ],
+            "name": "AtlasGlossaryCategory",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.1"
+        }
+    ],
+    "enumDefs": [
+        {
+            "description": "TermRelationshipStatus defines how reliable the relationship is between two glossary terms",
+            "elementDefs": [
+                {
+                    "description": "DRAFT means the relationship is under development.",
+                    "ordinal": 0,
+                    "value": "DRAFT"
+                },
+                {
+                    "description": "ACTIVE means the relationship is validated and in use.",
+                    "ordinal": 1,
+                    "value": "ACTIVE"
+                },
+                {
+                    "description": "DEPRECATED means the the relationship is being phased out.",
+                    "ordinal": 2,
+                    "value": "DEPRECATED"
+                },
+                {
+                    "description": "OBSOLETE means that the relationship should not be used anymore.",
+                    "ordinal": 3,
+                    "value": "OBSOLETE"
+                },
+                {
+                    "description": "OTHER means that there is another status.",
+                    "ordinal": 99,
+                    "value": "OTHER"
+                }
+            ],
+            "name": "AtlasGlossaryTermRelationshipStatus",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "description": "TermAssignmentStatus defines how much the semantic assignment should be trusted.",
+            "elementDefs": [
+                {
+                    "description": "DISCOVERED means that the semantic assignment was added by a discovery engine.",
+                    "ordinal": 0,
+                    "value": "DISCOVERED"
+                },
+                {
+                    "description": "PROPOSED means that the semantic assignment was proposed by person - they may be a subject matter expert, or consumer of the Referenceable asset",
+                    "ordinal": 1,
+                    "value": "PROPOSED"
+                },
+                {
+                    "description": "IMPORTED means that the semantic assignment has been imported from outside of the open metadata cluster",
+                    "ordinal": 2,
+                    "value": "IMPORTED"
+                },
+                {
+                    "description": "VALIDATED means that the semantic assignment has been reviewed and is highly trusted.",
+                    "ordinal": 3,
+                    "value": "VALIDATED"
+                },
+                {
+                    "description": "DEPRECATED means that the semantic assignment is being phased out. There may be another semantic assignment to the Referenceable that will ultimately replace this one.",
+                    "ordinal": 4,
+                    "value": "DEPRECATED"
+                },
+                {
+                    "description": "OBSOLETE means that the semantic assignment is no longer in use,",
+                    "ordinal": 5,
+                    "value": "OBSOLETE"
+                },
+                {
+                    "description": "OTHER means that the semantic assignment value does not match any of the other Term Assignment Status values",
+                    "ordinal": 6,
+                    "value": "OTHER"
+                }
+            ],
+            "name": "AtlasGlossaryTermAssignmentStatus",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        }
+    ],
+    "relationshipDefs": [
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the semantic assignment.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "description",
+                    "typeName": "string",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "expression",
+                    "typeName": "string",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The confidence attribute in the semantic assignment stores the level of confidence (0-100%) in the correctness of the semantic assignment - it is typically used by discovery engines.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "confidence",
+                    "typeName": "int",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The semantic assignment is created by the user (person or engine) identified by the createdBy attribute.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "createdBy",
+                    "typeName": "string",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the semantic assignment and deciding if it should be approved or not.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "steward",
+                    "typeName": "string",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "source",
+                    "typeName": "string",
+                    "valuesMaxCount": 1,
+                    "valuesMinCount": 0
+                }
+            ],
+            "description": "SemanticAssignment is a relationship used to assign a term to a referenceable object. This means that the term describes the meaning of the referenceable object. The semantic assignment needs to be a controlled relationship when glossary definitions are used to provide classifications for the data assets and hence define how the data is to be governed.",
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": false,
+                "name": "assignedEntities",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "isContainer": false,
+                "name": "meanings",
+                "type": "Referenceable"
+            },
+            "name": "AtlasGlossarySemanticAssignment",
+            "propagateTags": "ONE_TO_TWO",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "description": "TermAnchor links each term to exactly one Glossary object. This means that this is its home glossary. If the Glossary object is deleted, then so are all of the terms linked to it.",
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "name": "terms",
+                "type": "AtlasGlossary"
+            },
+            "endDef2": {
+                "cardinality": "SINGLE",
+                "name": "anchor",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryTermAnchor",
+            "propagateTags": "NONE",
+            "relationshipCategory": "COMPOSITION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                }
+            ],
+            "description": "TermCategorization is a relationship used to organize terms into categories. A term may be linked with many categories and a category may have many terms linked to it. This relationship may connect terms and categories both in the same glossary or in different glossaries.",
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "name": "terms",
+                "type": "AtlasGlossaryCategory"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "categories",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryTermCategorization",
+            "propagateTags": "NONE",
+            "relationshipCategory": "AGGREGATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "description": "CategoryAnchor links each category to exactly one Glossary object. This means that this is its home glossary. If the Glossary object is deleted then so are all of the categories linked to it.",
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "name": "categories",
+                "type": "AtlasGlossary"
+            },
+            "endDef2": {
+                "cardinality": "SINGLE",
+                "name": "anchor",
+                "type": "AtlasGlossaryCategory"
+            },
+            "name": "AtlasGlossaryCategoryAnchor",
+            "propagateTags": "NONE",
+            "relationshipCategory": "COMPOSITION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "description": "CategoryHierarchyLink is a relationship used to organize categories into a hierarchy to, for example, create a structure for a taxonomy. A category may have none or one super-categories. This super-category may be in a different glossary.",
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "name": "childrenCategories",
+                "type": "AtlasGlossaryCategory"
+            },
+            "endDef2": {
+                "cardinality": "SINGLE",
+                "name": "parentCategory",
+                "type": "AtlasGlossaryCategory"
+            },
+            "name": "AtlasGlossaryCategoryHierarchyLink",
+            "propagateTags": "NONE",
+            "relationshipCategory": "AGGREGATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to explain why the linked term is of interest.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "RelatedTerm is a relationship used to say that the linked glossary term may also be of interest. It is like a 'see also' link in a dictionary.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "seeAlso",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "seeAlso",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryRelatedTerm",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "Synonym is a relationship between glossary terms that have the same, or a very similar meaning in the same language. Notice that both ends of this relationship have the same name and refer to the same type; this results in one Synonym attribute being added to GlossaryTerm.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "synonyms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "synonyms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossarySynonym",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "Antonym is a relationship between glossary terms that have the opposite (or near opposite) meaning, in the same language. Notice that both ends of this relationship have the same name and refer to the same type; this results in one Antonym attribute being added to GlossaryTerm.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "antonyms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "antonyms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryAntonym",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "PreferredTerm is a relationship that indicates that the preferredTerm should be used in place of the preferredToTerm. This relationship can be used to encourage adoption of newer vocabularies. This is a weaker version of ReplacementTerm.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "preferredTerms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "preferredToTerms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryPreferredTerm",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "ReplacementTerm is a relationship that indicates that the replacementTerm must be used instead of the replacedByTerm. This is stronger version of the PreferredTerm.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "replacedBy",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "replacementTerms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryReplacementTerm",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "Translation is a relationship that defines that the related terms represent the same meaning, but each are written in a different language. Hence one is a translation of the other. The language of each term is defined in the Glossary object that anchors the term.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "translatedTerms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "translationTerms",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryTranslation",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "IsA is a relationship that defines that the 'isA' term is a more generic term than the 'isOf' term. For example, this relationship would be use to say that 'Cat' ISA 'Animal'.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "classifies",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "isA",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryIsARelationship",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The description field can be used to add details about the relationship.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "expression",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "status",
+                    "typeName": "AtlasGlossaryTermRelationshipStatus"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The steward is the person responsible for assessing the relationship and deciding if it should be approved or not.",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "steward",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "name": "source",
+                    "typeName": "string"
+                }
+            ],
+            "description": "ValidValue is a relationship that shows the validValue term represents one of the valid values that could be assigned to a data item that has the meaning described in the validValueFor term.",
+            "endDef1": {
+                "cardinality": "SET",
+                "name": "validValuesFor",
+                "type": "AtlasGlossaryTerm"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "name": "validValues",
+                "type": "AtlasGlossaryTerm"
+            },
+            "name": "AtlasGlossaryValidValue",
+            "propagateTags": "NONE",
+            "relationshipCategory": "ASSOCIATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        }
+    ],
+    "structDefs": []
+}

@@ -1,0 +1,8 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-model",
+    "projectType": "library",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_model",
+    "tags": [],
+    "targets": {}
+}

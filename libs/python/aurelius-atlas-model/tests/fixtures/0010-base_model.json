@@ -1,0 +1,610 @@
+{
+    "classificationDefs": [],
+    "entityDefs": [
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "qualifiedName",
+                    "typeName": "string"
+                }
+            ],
+            "name": "Referenceable",
+            "serviceType": "atlas_core",
+            "superTypes": [],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [],
+            "name": "__internal",
+            "serviceType": "atlas_core",
+            "superTypes": [],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "indexType": "STRING",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "indexType": "STRING",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "displayName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "description",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "indexType": "STRING",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "userDescription",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "indexType": "STRING",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "owner",
+                    "typeName": "string"
+                }
+            ],
+            "name": "Asset",
+            "serviceType": "atlas_core",
+            "superTypes": ["Referenceable"],
+            "typeVersion": "1.1"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "queryText",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "execTime",
+                    "typeName": "date"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "userName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "serviceType",
+                    "typeName": "string"
+                }
+            ],
+            "name": "ddl",
+            "serviceType": "atlas_core",
+            "superTypes": ["Referenceable"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [],
+            "name": "DataSet",
+            "serviceType": "atlas_core",
+            "superTypes": ["Asset"],
+            "typeVersion": "1.1"
+        },
+        {
+            "attributeDefs": [],
+            "description": "Infrastructure can be IT infrastructure, which contains hosts and servers. Infrastructure might not be IT orientated, such as 'Car' for IoT applications.",
+            "name": "Infrastructure",
+            "serviceType": "atlas_core",
+            "superTypes": ["Asset"],
+            "typeVersion": "1.1"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SET",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "inputs",
+                    "typeName": "array<DataSet>"
+                },
+                {
+                    "cardinality": "SET",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "outputs",
+                    "typeName": "array<DataSet>"
+                }
+            ],
+            "name": "Process",
+            "serviceType": "atlas_core",
+            "superTypes": ["Asset"],
+            "typeVersion": "1.1"
+        },
+        {
+            "name": "Path",
+            "serviceType": "atlas_core",
+            "superTypes": ["DataSet"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "displayName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "fullName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "urls",
+                    "typeName": "array<string>"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "additionalInfo",
+                    "typeName": "map<string,string>"
+                }
+            ],
+            "name": "AtlasServer",
+            "serviceType": "atlas_core",
+            "superTypes": [],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "fullName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SET",
+                    "constraints": [
+                        {
+                            "type": "ownedRef"
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "savedSearches",
+                    "typeName": "array<__AtlasUserSavedSearch>"
+                }
+            ],
+            "name": "__AtlasUserProfile",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "name",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "ownerName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "searchType",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "uniqueName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "searchParameters",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "uiParameters",
+                    "typeName": "string"
+                }
+            ],
+            "name": "__AtlasUserSavedSearch",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true,
+                    "name": "metricsId",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "metrics",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "collectionTime",
+                    "typeName": "long"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "timeToLiveMillis",
+                    "typeName": "long"
+                }
+            ],
+            "name": "__AtlasMetricsStat",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "userName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "operation",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "sourceServerName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "targetServerName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "operationParams",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "operationStartTime",
+                    "typeName": "long"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "operationEndTime",
+                    "typeName": "long"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "resultSummary",
+                    "typeName": "string"
+                }
+            ],
+            "name": "__ExportImportAuditEntry",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "userName",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "operation",
+                    "typeName": "atlas_operation"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "name": "startTime",
+                    "typeName": "date"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "endTime",
+                    "typeName": "date"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "clientId",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "params",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "result",
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "resultCount",
+                    "typeName": "long"
+                }
+            ],
+            "name": "__AtlasAuditEntry",
+            "serviceType": "atlas_core",
+            "superTypes": ["__internal"],
+            "typeVersion": "1.0"
+        },
+        {
+            "attributeDefs": [],
+            "name": "ProcessExecution",
+            "serviceType": "atlas_core",
+            "superTypes": ["Asset"],
+            "typeVersion": "1.0"
+        }
+    ],
+    "enumDefs": [
+        {
+            "description": "Defines audit operations in Atlas",
+            "elementDefs": [
+                {
+                    "ordinal": 0,
+                    "value": "OTHERS"
+                },
+                {
+                    "ordinal": 1,
+                    "value": "PURGE"
+                },
+                {
+                    "ordinal": 2,
+                    "value": "EXPORT"
+                },
+                {
+                    "ordinal": 3,
+                    "value": "IMPORT"
+                },
+                {
+                    "ordinal": 4,
+                    "value": "IMPORT_DELETE_REPL"
+                },
+                {
+                    "ordinal": 5,
+                    "value": "TYPE_DEF_CREATE"
+                },
+                {
+                    "ordinal": 6,
+                    "value": "TYPE_DEF_UPDATE"
+                },
+                {
+                    "ordinal": 7,
+                    "value": "TYPE_DEF_DELETE"
+                },
+                {
+                    "ordinal": 8,
+                    "value": "SERVER_START"
+                },
+                {
+                    "ordinal": 9,
+                    "value": "SERVER_STATE_ACTIVE"
+                }
+            ],
+            "name": "atlas_operation",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        }
+    ],
+    "relationshipDefs": [
+        {
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "isLegacyAttribute": true,
+                "name": "inputs",
+                "type": "Process"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "isContainer": false,
+                "name": "inputToProcesses",
+                "type": "DataSet"
+            },
+            "name": "dataset_process_inputs",
+            "propagateTags": "TWO_TO_ONE",
+            "relationshipCategory": "AGGREGATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "isLegacyAttribute": true,
+                "name": "outputs",
+                "type": "Process"
+            },
+            "endDef2": {
+                "cardinality": "SET",
+                "isContainer": false,
+                "name": "outputFromProcesses",
+                "type": "DataSet"
+            },
+            "name": "process_dataset_outputs",
+            "propagateTags": "ONE_TO_TWO",
+            "relationshipCategory": "AGGREGATION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        },
+        {
+            "endDef1": {
+                "cardinality": "SET",
+                "isContainer": true,
+                "isLegacyAttribute": true,
+                "name": "savedSearches",
+                "type": "__AtlasUserProfile"
+            },
+            "endDef2": {
+                "cardinality": "SINGLE",
+                "isContainer": false,
+                "name": "userProfile",
+                "type": "__AtlasUserSavedSearch"
+            },
+            "name": "__AtlasUserProfile_savedsearches",
+            "propagateTags": "NONE",
+            "relationshipCategory": "COMPOSITION",
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0"
+        }
+    ],
+    "structDefs": []
+}

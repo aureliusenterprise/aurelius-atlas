@@ -94,6 +94,7 @@ nav:
                 - Python:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
+                      - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
                       - aurelius-atlas-parity: api-reference/libs/python/aurelius-atlas-parity.md
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
