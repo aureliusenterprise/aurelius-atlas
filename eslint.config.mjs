@@ -5,7 +5,14 @@ export default [
     ...nx.configs["flat/typescript"],
     ...nx.configs["flat/javascript"],
     {
-        ignores: ["**/dist", "**/vite.config.*.timestamp*", "**/vitest.config.*.timestamp*"],
+        ignores: [
+            "**/dist",
+            "**/vite.config.*.timestamp*",
+            "**/vitest.config.*.timestamp*",
+            // Vendored Apache Atlas dashboards, kept byte-identical to release-2.4.0 (DD-017)
+            "apps/aurelius-atlas-dashboard/dashboardv2/**",
+            "apps/aurelius-atlas-dashboard/dashboardv3/**",
+        ],
     },
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
