@@ -1,0 +1,22 @@
+name: The version reports the server's name, release and revision
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getVersion
+    - webapp/src/main/resources/atlas-buildinfo.properties
+    - pom.xml (name, description)
+rules: [ADM-01, SRV-05]
+covers: [aurelius_atlas_server.routes.admin.get_version]
+stages:
+    - request: { method: GET, url: /api/atlas/admin/version }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              Version: "2.4.0"
+              Revision: "the build's source revision"
+              Name: apache-atlas
+              Description: Metadata Management and Data Governance Platform over Hadoop
+          # The release and the revision change with every build; their presence is what is compared.
+          volatile: [$.Version, $.Revision]
+          deviations:
+              - { id: DV-03, path: $.Name, value: aurelius-atlas }
+              - { id: DV-03, path: $.Description, value: Apache Atlas 2.4.0 REST API on Elasticsearch }

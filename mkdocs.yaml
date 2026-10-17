@@ -84,6 +84,7 @@ nav:
                 - api-reference/apps/index.md
                 - aurelius-atlas-fastapi-example: api-reference/apps/aurelius-atlas-fastapi-example.md
                 - aurelius-atlas-frontend-example: api-reference/apps/aurelius-atlas-frontend-example.md
+                - aurelius-atlas-server: api-reference/apps/aurelius-atlas-server.md
           - Libs:
                 - api-reference/libs/index.md
                 - Angular:
