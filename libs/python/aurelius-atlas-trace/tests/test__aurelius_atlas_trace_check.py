@@ -85,9 +85,10 @@ def test__collect_project_fails_when_a_test_module_does_not_import(
 ) -> None:
     """A test module that cannot be imported makes its markers unknown, which is an error."""
     workspace = make_workspace(code=CODE, tests="import does_not_exist\n")
+    (project,) = load_config(workspace.root).projects
 
     with pytest.raises(CollectionError, match="collecting the tests of sample failed"):
-        collect_project(load_config(workspace.root).projects[0])
+        collect_project(project)
 
 
 @pytest.mark.covers("aurelius_atlas_trace.check.collect_project", rules=["TRC-10"])

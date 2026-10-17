@@ -45,9 +45,10 @@ def test__read_rules_refuses_a_rule_defined_twice(tmp_path: Path) -> None:
     """The same id in two specifications is an error that names both."""
     write_spec(tmp_path, "0-2-a.md", "| ABC-01 | One |\n")
     write_spec(tmp_path, "0-3-b.md", "| ABC-01 | Again |\n")
+    enforce_from = Increment(0, 2)
 
     with pytest.raises(DuplicateRuleError, match=r"ABC-01 is defined in both 0-2-a\.md and 0-3-b\.md"):
-        read_rules(tmp_path, Increment(0, 2))
+        read_rules(tmp_path, enforce_from)
 
 
 @pytest.mark.covers("aurelius_atlas_trace.rules.Increment.parse")

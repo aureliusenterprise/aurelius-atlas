@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 from aurelius_atlas_trace.cli import EXIT_ERROR, EXIT_GAPS, EXIT_OK, main
@@ -61,3 +62,21 @@ def test__main_report_writes_the_page_and_the_summary(make_workspace: Callable[.
     assert code == EXIT_OK
     assert "ABC-01" in output.read_text()
     assert summary.read_text().startswith("## Test report")
+
+
+@pytest.mark.covers("aurelius_atlas_trace.cli.main", rules=["TRC-12"])
+def test__main_report_refuses_to_write_outside_the_workspace(
+    make_workspace: Callable[..., SampleWorkspace], tmp_path: Path
+) -> None:
+    """An output or summary path that resolves outside the workspace is an error, and nothing is written."""
+    workspace = make_workspace(code=CODE, tests=TESTS)
+    inside = workspace.root / "dist" / "index.html"
+    outside = tmp_path / "elsewhere" / "summary.md"
+    escaping = workspace.root / ".." / "escaped.html"
+
+    root = str(workspace.root)
+    assert main(["--workspace", root, "report", "--output", str(escaping)]) == EXIT_ERROR
+    assert main(["--workspace", root, "report", "--output", str(inside), "--summary", str(outside)]) == EXIT_ERROR
+    assert not inside.exists()
+    assert not outside.parent.exists()
+    assert not (tmp_path / "escaped.html").exists()

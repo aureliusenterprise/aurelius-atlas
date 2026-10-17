@@ -55,7 +55,7 @@ def collect_project(project: Project) -> ProjectTests:
         return ProjectTests(project=project, tests=())
     with tempfile.TemporaryDirectory() as work_dir:
         trace_file = Path(work_dir) / "trace.json"
-        result = subprocess.run(  # noqa: S603 - fixed arguments, no shell
+        result = subprocess.run(  # noqa: S603 - fixed arguments and no shell
             [
                 sys.executable,
                 "-m",

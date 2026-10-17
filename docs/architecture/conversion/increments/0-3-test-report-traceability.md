@@ -62,7 +62,7 @@ Not in scope:
 | Id     | Rule                                                                                                                                                                               |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TRC-11 | With `--trace-json <file>`, a pytest run writes every test's node id, targets, rules and outcome to the file; without it, a run writes nothing                                     |
-| TRC-12 | `report` builds one self-contained HTML page from JUnit XML, Cobertura coverage XML and trace files; it reads no other format                                                      |
+| TRC-12 | `report` builds one self-contained HTML page from JUnit XML, Cobertura coverage XML and trace files; it reads no other format, and writes only inside the workspace                |
 | TRC-13 | The page lists, per rule, its increment and the tests naming it with their outcomes, and per public function, the tests naming it, their outcomes and the function's line coverage |
 | TRC-14 | A rule or function whose tests did not run in this change is shown as _not run_, not as failed or uncovered                                                                        |
 | TRC-15 | `report` also writes a Markdown summary (counts, failed tests, uncovered items) that CI appends to the run page                                                                    |

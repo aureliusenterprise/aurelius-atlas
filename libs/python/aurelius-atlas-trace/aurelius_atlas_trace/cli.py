@@ -14,6 +14,12 @@ EXIT_OK = 0
 EXIT_GAPS = 1
 EXIT_ERROR = 2
 
+OUTSIDE_WORKSPACE_ERROR = "{path} is outside the workspace {workspace}; the report is written inside it"
+
+
+class OutsideWorkspaceError(ValueError):
+    """An output file of ``report`` would be written outside the workspace."""
+
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aurelius-atlas-trace", description=__doc__)
@@ -24,6 +30,19 @@ def _parser() -> argparse.ArgumentParser:
     report.add_argument("--output", type=Path, required=True, help="HTML file to write")
     report.add_argument("--summary", type=Path, help="also write a Markdown summary here")
     return parser
+
+
+def _inside(workspace: Path, path: Path) -> Path:
+    """Return the resolved path, refusing one that leaves the workspace (TRC-12)."""
+    resolved = path.resolve()
+    if not resolved.is_relative_to(workspace):
+        raise OutsideWorkspaceError(OUTSIDE_WORKSPACE_ERROR.format(path=resolved, workspace=workspace))
+    return resolved
+
+
+def _write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -40,13 +59,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             findings = run_check(config)
             print(format_findings(findings, workspace))  # noqa: T201 - command output
             return EXIT_OK if findings.ok else EXIT_GAPS
+        output = _inside(workspace, arguments.output)
+        summary = None if arguments.summary is None else _inside(workspace, arguments.summary)
         report = build_report(config)
-        arguments.output.parent.mkdir(parents=True, exist_ok=True)
-        arguments.output.write_text(render_html(report))
-        if arguments.summary is not None:
-            arguments.summary.parent.mkdir(parents=True, exist_ok=True)
-            arguments.summary.write_text(render_summary(report))
-    except (CollectionError, ConfigError, DuplicateRuleError) as error:
+        _write(output, render_html(report))
+        if summary is not None:
+            _write(summary, render_summary(report))
+    except (CollectionError, ConfigError, DuplicateRuleError, OutsideWorkspaceError) as error:
         print(error, file=sys.stderr)  # noqa: T201 - command output
         return EXIT_ERROR
     return EXIT_OK

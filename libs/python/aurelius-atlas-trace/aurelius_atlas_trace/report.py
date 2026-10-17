@@ -108,14 +108,19 @@ def read_junit(paths: Iterable[Path]) -> JUnitTotals:
             totals.failures += int(suite.get("failures", 0))
             totals.errors += int(suite.get("errors", 0))
             totals.skipped += int(suite.get("skipped", 0))
-            for case in suite.iter("testcase"):
-                problem = case.find("failure")
-                if problem is None:
-                    problem = case.find("error")
-                if problem is not None:
-                    name = f"{case.get('classname', '')}::{case.get('name', '')}"
-                    totals.failed_cases.append(JUnitFailure(name=name, message=problem.get("message", "")))
+            totals.failed_cases.extend(
+                failure for case in suite.iter("testcase") if (failure := _failure(case)) is not None
+            )
     return totals
+
+
+def _failure(case: ET.Element) -> JUnitFailure | None:
+    problem = case.find("failure")
+    if problem is None:
+        problem = case.find("error")
+    if problem is None:
+        return None
+    return JUnitFailure(name=f"{case.get('classname', '')}::{case.get('name', '')}", message=problem.get("message", ""))
 
 
 def read_coverage(paths: Iterable[Path]) -> dict[Path, dict[int, int]]:
