@@ -21,7 +21,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 ## Wiring Checklist
 
 - `project.json` — the `build` target and its inputs; `aurelius-atlas-server` lists this project in
-  `implicitDependencies` and its `serve` `dependsOn`, so `docker-build` and `serve` build it first.
+  `implicitDependencies` and in the `serve`, `docker-build` and `docker-publish` `dependsOn`, so each
+  builds it first.
 - `apps/aurelius-atlas-server/Dockerfile` — copies `dist/` into the image and sets
   `AURELIUS_ATLAS_SERVER_DASHBOARD_DIR`.
 - `.dockerignore` — keeps local `node_modules/`, `dist/` and `public/js/libs/` out of the build context.

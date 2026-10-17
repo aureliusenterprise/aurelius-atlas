@@ -26,7 +26,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 ## Wiring Checklist
 
 - `project.json` — `implicitDependencies` and `serve` `dependsOn` (dev Elasticsearch, observability, the
-  dashboard build).
+  dashboard build). `docker-build` and `docker-publish` repeat the plugin's `dependsOn` and add the
+  dashboard build: the plugin only chains the dependencies' `docker-build`, which the dashboard has not.
 - `.env.enc` — dev settings; the Elasticsearch password mirrors `dev/elasticsearch/.env`. Re-run
   `nx encrypt aurelius-atlas-server` after changing `.env`.
 - `tls.json` — the server's certificate (`nx certgen`), used by `serve` and `e2e`.

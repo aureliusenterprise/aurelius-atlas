@@ -11,6 +11,20 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_server",
     "tags": [],
     "targets": {
+        "docker-build": {
+            "dependsOn": [
+                { "target": "build" },
+                { "dependencies": true, "target": "docker-build" },
+                { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
+            ]
+        },
+        "docker-publish": {
+            "dependsOn": [
+                { "target": "build" },
+                { "dependencies": true, "params": "forward", "target": "docker-publish" },
+                { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
+            ]
+        },
         "serve": {
             "continuous": true,
             "dependsOn": [
