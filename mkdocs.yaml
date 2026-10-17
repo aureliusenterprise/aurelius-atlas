@@ -176,6 +176,7 @@ nav:
                       - 0.6 Dashboards served: architecture/conversion/increments/0-6-dashboards.md
                       - 1.1 Typedef models: architecture/conversion/increments/1-1-typedef-models.md
                       - 1.2 Type registry: architecture/conversion/increments/1-2-type-registry.md
+                      - 1.3 Type hierarchies: architecture/conversion/increments/1-3-type-hierarchies.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
