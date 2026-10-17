@@ -398,6 +398,7 @@ Attributes:
 - **`MISSING_TABLE_ERROR`** –
 - **`NO_DEVIATIONS_ERROR`** –
 - **`NO_PACKAGE_ERROR`** –
+- **`PYPROJECT`** –
 - **`TEST_DIRECTORIES`** –
 
   The test directories of a project, as the Nx Python plugin knows them.
@@ -430,6 +431,12 @@ NO_DEVIATIONS_ERROR = '{path}: [tool.{table}] deviations: {file} does not exist'
 
 ```
 NO_PACKAGE_ERROR = '{project} declares no package in [tool.hatch.build.targets.wheel] packages'
+```
+
+### PYPROJECT
+
+```
+PYPROJECT = 'pyproject.toml'
 ```
 
 ### TEST\_DIRECTORIES
