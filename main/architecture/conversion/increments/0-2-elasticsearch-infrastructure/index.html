@@ -20,7 +20,7 @@
         <link rel="prev" href="../0-1-adopt-template/">
       
       
-        <link rel="next" href="../../../vision-and-strategy/">
+        <link rel="next" href="../0-3-test-report-traceability/">
       
       
         
@@ -1142,6 +1142,8 @@
       
         
       
+        
+      
     
     
     
@@ -1264,6 +1266,33 @@
     
   
   aurelius-atlas-store-es
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-trace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-trace
 
     
   </span>
@@ -3256,6 +3285,8 @@
       
         
       
+        
+      
     
     
     
@@ -3517,6 +3548,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0-3-test-report-traceability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.3 Test report and traceability
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -5527,6 +5585,8 @@
       
         
       
+        
+      
     
     
     
@@ -5560,9 +5620,9 @@
 
 <h1 id="02-elasticsearch-infrastructure">0.2 Elasticsearch infrastructure<a class="headerlink" href="#02-elasticsearch-infrastructure" title="Permanent link">&para;</a></h1>
 <ul>
-<li><strong>Status:</strong> in review</li>
+<li><strong>Status:</strong> done</li>
 <li><strong>Pull request:</strong> <a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/78">#78</a></li>
-<li><strong>Records:</strong> ADR 047 (becomes Accepted), DD-004, DD-005, DD-006, DD-007</li>
+<li><strong>Records:</strong> ADR 047 (becomes Accepted), DD-005, DD-006, DD-007, DD-008</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>Give the spine its search store (<a href="../../../adr/047-one-search-store-is-the-system-of-record/">ADR 047</a>)
@@ -5690,7 +5750,7 @@ without adding Atlas behaviour:</p>
 </tbody>
 </table>
 <p>Rule STO-05 counts yellow as up because a single-node cluster is yellow as soon as an index has a
-replica it cannot place (<a href="../../design-log/#dd-007-a-yellow-cluster-is-healthy">DD-007</a>).</p>
+replica it cannot place (<a href="../../design-log/#dd-008-a-yellow-cluster-is-healthy">DD-008</a>).</p>
 <h2 id="java-origin">Java origin<a class="headerlink" href="#java-origin" title="Permanent link">&para;</a></h2>
 <p>None ported. The JanusGraph and Solr wiring this replaces (<code>graphdb/*</code>,
 <code>AtlasJanusGraphDatabase</code>, <code>Solr6Index</code>) is already mapped as <em>replaced</em> in the
