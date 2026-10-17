@@ -53,10 +53,5 @@
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
-  },
-  {
-    "version": "chore-ci-setup-speedup",
-    "title": "chore-ci-setup-speedup",
-    "aliases": []
   }
 ]
