@@ -1,6 +1,7 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": [
+        "aurelius-atlas-dashboard",
         "aurelius-atlas-dev-elasticsearch",
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-store-es"
@@ -18,11 +19,12 @@
                 {
                     "projects": ["aurelius-atlas-dev-elasticsearch", "aurelius-atlas-dev-observability"],
                     "target": "serve"
-                }
+                },
+                { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
             ],
             "executor": "@nxlv/python:run-commands",
             "metadata": {
-                "description": "Serve the Atlas API on https://localhost:21000 against the dev store"
+                "description": "Serve the Atlas API and the dashboards on https://localhost:21000 against the dev store"
             },
             "options": {
                 "command": "uv run python -m aurelius_atlas_server"
