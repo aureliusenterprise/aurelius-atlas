@@ -94,6 +94,7 @@ nav:
                 - Python:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
+                      - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
                       - aurelius-atlas-parity: api-reference/libs/python/aurelius-atlas-parity.md
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
@@ -172,6 +173,7 @@ nav:
                       - 0.4 Parity harness: architecture/conversion/increments/0-4-parity-harness.md
                       - 0.5 Server skeleton: architecture/conversion/increments/0-5-server-skeleton.md
                       - 0.6 Dashboards served: architecture/conversion/increments/0-6-dashboards.md
+                      - 1.1 Typedef models: architecture/conversion/increments/1-1-typedef-models.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

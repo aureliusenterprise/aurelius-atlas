@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [manifest]
@@ -8,6 +8,7 @@ members = [
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
+    "aurelius-atlas-model",
     "aurelius-atlas-parity",
     "aurelius-atlas-sdk",
     "aurelius-atlas-server",
@@ -220,6 +221,7 @@ dev = [
     { name = "aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report" },
+    { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extra = ["full"] },
     { name = "aurelius-atlas-server" },
@@ -264,6 +266,7 @@ dev = [
     { name = "aurelius-atlas-example", editable = "libs/python/aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example", editable = "apps/aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
+    { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-parity", editable = "libs/python/aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extras = ["full"], editable = "libs/python/aurelius-atlas-sdk" },
     { name = "aurelius-atlas-server", editable = "apps/aurelius-atlas-server" },
@@ -370,6 +373,17 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
 ]
+
+[[package]]
+name = "aurelius-atlas-model"
+version = "0.6.1"
+source = { editable = "libs/python/aurelius-atlas-model" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.14.1" }]
 
 [[package]]
 name = "aurelius-atlas-parity"
