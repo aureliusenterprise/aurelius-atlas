@@ -43,5 +43,10 @@
     "version": "main",
     "title": "main",
     "aliases": []
+  },
+  {
+    "version": "chore-ci-setup-speedup",
+    "title": "chore-ci-setup-speedup",
+    "aliases": []
   }
 ]
