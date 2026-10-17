@@ -4,11 +4,12 @@ concurrency:
     group: "docs"
 
 # Default-deny: mike deploy --push writes the public-docs branch
-# (contents:write) and the PR comment step posts through GITHUB_TOKEN
-# (pull-requests:write). Nothing else in this workflow needs a scope.
+# (contents:write) and the commit-status step posts the docs link as a
+# commit status (statuses:write) so the PR checks entry links straight to
+# the published preview. Nothing else in this workflow needs a scope.
 permissions:
     contents: write
-    pull-requests: write
+    statuses: write
 
 on:
     pull_request:
@@ -47,11 +48,23 @@ jobs:
                   # for fork PRs too).
                   HEAD_REF: ${{ github.head_ref }}
 
-            - name: Add PR comment with documentation link
-              uses: hasura/comment-progress@v2.3.0
-              with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  repository: ${{ github.repository }}
-                  number: ${{ github.event.number }}
-                  id: docs-link
-                  message: "Documentation for this PR is available at: <https://aureliusenterprise.github.io/aurelius-atlas/${{ env.SANITIZED_REF_NAME }}/>"
+            - name: Publish documentation link as commit status
+              # Same mechanism Chromatic's checks use: a commit status with a
+              # target_url shows up in the PR checks list and links directly
+              # to the published preview, instead of a job-run page or a
+              # comment on the conversation. Posted on the PR head SHA (not
+              # github.sha, the merge commit, which never appears in the
+              # checks list). Skipped for fork PRs: the head commit does not
+              # exist in this repository, so the statuses API would reject
+              # it; the docs themselves still deploy.
+              if: github.event.pull_request.head.repo.full_name == github.repository
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  DOCS_URL: https://aureliusenterprise.github.io/aurelius-atlas/${{ env.SANITIZED_REF_NAME }}/
+                  PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+              run: |
+                  gh api "repos/${{ github.repository }}/statuses/$PR_HEAD_SHA" \
+                      -f state=success \
+                      -f context=documentation-preview \
+                      -f target_url="$DOCS_URL" \
+                      -f description="Documentation preview published"
