@@ -35,9 +35,10 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 0.5 | Server skeleton | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness | `AdminResource` (part) | in progress |
 | 0.6 | Dashboards served | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3` | in progress |
 | 1.1 | Typedef models | Enum, struct, classification, entity, relationship, business-metadata definitions | `intg/.../model/typedef` | in progress |
-| 1.2 | Type registry | Attribute types, supertypes, constraints, validation errors | `AtlasTypeRegistry`, `AtlasStructType`, … | planned |
-| 1.3 | Typedef storage and bootstrap | Typedef index, built-in models at start-up, typedef versions | `AtlasTypeDefGraphStore`, model patches | planned |
-| 1.4 | Types REST | `/v2/types/...` read and write | `TypesREST` | planned |
+| 1.2 | Type registry | Registry and its updates, built-in, array, map, enum and struct types, attribute types, constraints, errors | `AtlasTypeRegistry`, `AtlasStructType`, … | in progress |
+| 1.3 | Type hierarchies | Entity and classification super and sub types, inherited attributes, relationship and business metadata types | `AtlasEntityType`, `AtlasRelationshipType`, … | planned |
+| 1.4 | Typedef storage and bootstrap | Typedef index, built-in models at start-up, typedef versions | `AtlasTypeDefGraphStore`, model patches | planned |
+| 1.5 | Types REST | `/v2/types/...` read and write | `TypesREST` | planned |
 | 2.1 | Entity models and validation | `AtlasEntity`, extended info, headers, validation | `intg/.../model/instance`, `AtlasEntityType` | planned |
 | 2.2 | Entity store | Index layout, GUIDs, unique attributes, optimistic versioning | `AtlasEntityStoreV2` | planned |
 | 2.3 | Entity read REST | By GUID, by unique attributes, bulk, headers | `EntityREST` | planned |

@@ -52,6 +52,9 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-trace/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-typesystem/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/styles/</loc>
       </url>
       <url>
@@ -254,6 +257,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-2-type-registry/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/</loc>

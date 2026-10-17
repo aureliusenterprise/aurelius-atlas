@@ -1177,6 +1177,8 @@
       
         
       
+        
+      
     
     
     
@@ -1380,6 +1382,33 @@
     
   
   aurelius-atlas-trace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-typesystem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-typesystem
 
     
   </span>
@@ -3642,6 +3671,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-023-atlas-errors-live-in-the-model-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-023. Atlas errors live in the model library
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-024. The registry is updated on a transient copy under a re-entrant lock
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-025-the-type-system-ports-the-definition-side-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-025. The type system ports the definition side only
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3721,6 +3783,8 @@
       
         
           
+        
+      
         
       
         
@@ -3996,6 +4060,33 @@
     
   
   1.1 Typedef models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-2-type-registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.2 Type registry
 
     
   </span>
@@ -6076,6 +6167,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-023-atlas-errors-live-in-the-model-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-023. Atlas errors live in the model library
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-024. The registry is updated on a transient copy under a re-entrant lock
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-025-the-type-system-ports-the-definition-side-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-025. The type system ports the definition side only
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6378,6 +6502,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022</a></td>
 <td>Typedef timestamps are aware datetimes, written as epoch milliseconds</td>
 <td>1.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-023-atlas-errors-live-in-the-model-library">DD-023</a></td>
+<td>Atlas errors live in the model library</td>
+<td>1.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock">DD-024</a></td>
+<td>The registry is updated on a transient copy under a re-entrant lock</td>
+<td>1.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-025-the-type-system-ports-the-definition-side-only">DD-025</a></td>
+<td>The type system ports the definition side only</td>
+<td>1.2</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -6755,7 +6897,7 @@ snake_case attributes and the Java getter names as aliases. <code>model_validate
 are ignored. The Java setters' normalisations run as <code>_</code>-prefixed validators, so they apply when a body
 is read and when a model is built in code, as the Java constructors and setters do.</p>
 <p><strong>Reason.</strong> Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and
-writes it natively, so 1.4 needs no mapping layer. Atlas writes with Jackson <code>NON_NULL</code>, which is
+writes it natively, so 1.5 needs no mapping layer. Atlas writes with Jackson <code>NON_NULL</code>, which is
 Pydantic's <code>exclude_none</code>; empty collections stay because Jackson keeps them (DD-013 compares exactly).</p>
 <p><strong>Alternatives.</strong> Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to
 TDM-15 would be custom code. Generating models from Atlas's JSON schema: Atlas publishes none, and the
@@ -6778,7 +6920,7 @@ stable and keeps what the client sent.</p>
 table size, but it would copy an accident of the implementation. Sorted order: stable, but reorders
 what clients send.</p>
 <p><strong>Consequences.</strong> The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them
-without order, through the option DD-013 foresees, which 1.4 adds with the first scenario that needs it.</p>
+without order, through the option DD-013 foresees, which 1.5 adds with the first scenario that needs it.</p>
 <h3 id="dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds<a class="headerlink" href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Proposed</li>
@@ -6795,6 +6937,57 @@ bare integer as seconds or milliseconds depending on its size, so the conversion
 readable, but a visible difference from Atlas.</p>
 <p><strong>Consequences.</strong> Jackson's RFC 1123 form (<code>Tue, 17 Oct 2026 10:00:00 GMT</code>) is not read. No Atlas client
 is known to send it; if one does, it becomes a deviation.</p>
+<h3 id="dd-023-atlas-errors-live-in-the-model-library">DD-023. Atlas errors live in the model library<a class="headerlink" href="#dd-023-atlas-errors-live-in-the-model-library" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>AtlasErrorCode</code> and <code>AtlasError</code> move from <code>aurelius_atlas_server.errors</code> to
+<code>aurelius_atlas_model.errors</code>. Each code keeps Atlas's HTTP status, error code and message template.
+The server keeps the error handler and the response class and imports the errors from there.</p>
+<p><strong>Reason.</strong> The type system (1.2) and the stores raise Atlas errors, and they may not depend on the
+server (DD-002: model ← typesystem ← core; server → core). In Java, too, <code>AtlasErrorCode</code> sits in
+<code>intg</code>, below everything else.</p>
+<p><strong>Alternatives.</strong> A separate errors library: one more project for two classes. Each layer with its own
+exception, mapped in the server: the mapping would repeat Atlas's error table.</p>
+<p><strong>Consequences.</strong> New error codes are added to <code>aurelius_atlas_model.errors</code> as each increment needs
+them, copied from <code>AtlasErrorCode</code>.</p>
+<h3 id="dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock">DD-024. The registry is updated on a transient copy under a re-entrant lock<a class="headerlink" href="#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>TypeRegistry.lock_for_update(timeout)</code> returns a <code>TransientTypeRegistry</code> built from the
+registry's definitions, under a re-entrant <code>threading.RLock</code>. Changes resolve every type on the copy;
+<code>release(transient, commit=...)</code> swaps the copy's types into the registry or drops them. A context
+manager wraps the pair.</p>
+<p><strong>Reason.</strong> It is Atlas's <code>TypeRegistryUpdateSynchronizer</code>: readers never see a half-resolved registry,
+and a failed change leaves the registry as it was (TRG-05, TRG-09). A thread lock also protects
+FastAPI's thread-pool handlers; async handlers hold it only around synchronous code.</p>
+<p><strong>Alternatives.</strong> An <code>asyncio.Lock</code>: does not protect code run in threads. Copy-on-write without a lock:
+two concurrent updates would each start from the same registry and one would be lost.</p>
+<p><strong>Consequences.</strong> The lock is per process. Several server processes keep their registries in step
+through the store (1.4).</p>
+<h3 id="dd-025-the-type-system-ports-the-definition-side-only">DD-025. The type system ports the definition side only<a class="headerlink" href="#dd-025-the-type-system-ports-the-definition-side-only" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The ported types resolve definitions: names, attribute types, cardinalities, constraints
+and later the hierarchies (1.3). Their value side (<code>isValidValue</code>, <code>getNormalizedValue</code>,
+<code>validateValue</code>, <code>createDefaultValue</code>, <code>areEqualValues</code>) is ported with entity validation in 2.1. Their
+JanusGraph side (vertex property names, unique property names, index field names, index-query escaping)
+is not ported.</p>
+<p><strong>Reason.</strong> Types REST (1.5) needs only the definition side; values first matter for entities (2.1),
+which is where Atlas's tests for them can be run. The JanusGraph names have no meaning in
+Elasticsearch: the index mapping is designed in 2.2.</p>
+<p><strong>Alternatives.</strong> Port each class whole: one increment several times the size limit, with value code
+untested by any endpoint until 2.x.</p>
+<p><strong>Consequences.</strong> The type classes grow in 2.1. Atlas behaviour that depends on vertex property names
+is designed again for Elasticsearch in 2.2 and recorded there.</p>
 
 
 

@@ -352,16 +352,12 @@ Mounted after the API routes, so the API takes precedence (DSH-03).
 
 ## aurelius\_atlas\_server.errors
 
-Atlas errors and the body they are answered with (SRV-04, SRV-05), as `AtlasBaseExceptionMapper` does.
+The body Atlas errors are answered with (SRV-04, SRV-05), as `AtlasBaseExceptionMapper` does.
+
+The errors themselves live in `aurelius_atlas_model.errors` (DD-023) and are re-exported here.
 
 Classes:
 
-- **`AtlasError`** –
-
-  An error the Atlas API answers with its own status and body.
-- **`AtlasErrorCode`** –
-
-  The Atlas error codes the server raises, with their HTTP status and message template (`AtlasErrorCode`).
 - **`AtlasJSONResponse`** –
 
   A JSON response with the Atlas media type (SRV-05).
@@ -377,7 +373,6 @@ Attributes:
 - **`ATLAS_JSON_MEDIA_TYPE`** –
 
   The media type of Atlas JSON responses (`Servlets.JSON_MEDIA_TYPE`).
-- **`LOGGER`** –
 
 ### ATLAS\_JSON\_MEDIA\_TYPE
 
@@ -393,94 +388,11 @@ The media type of Atlas JSON responses (`Servlets.JSON_MEDIA_TYPE`).
 LOGGER = logging.getLogger(__name__)
 ```
 
-### AtlasError
+### \_\_all\_\_
 
 ```
-AtlasError(code: AtlasErrorCode, *params: object, cause: BaseException | None = None)
+__all__ = ['ATLAS_JSON_MEDIA_TYPE', 'AtlasError', 'AtlasErrorCode', 'AtlasJSONResponse', 'atlas_error_handler']
 ```
-
-Bases: `Exception`
-
-An error the Atlas API answers with its own status and body.
-
-Attributes:
-
-- **`cause`** –
-- **`code`** –
-- **`message`** –
-
-#### cause
-
-```
-cause = cause
-```
-
-#### code
-
-```
-code = code
-```
-
-#### message
-
-```
-message = code.message(*params)
-```
-
-### AtlasErrorCode
-
-```
-AtlasErrorCode(http_status: int, code: str, template: str)
-```
-
-Bases: `Enum`
-
-The Atlas error codes the server raises, with their HTTP status and message template (`AtlasErrorCode`).
-
-Methods:
-
-- **`message`** –
-
-  Fill the template's `{0}`, `{1}`, ... with the parameters, as Java's `MessageFormat` does.
-
-Attributes:
-
-- **`INTERNAL_ERROR`** –
-- **`code`** –
-- **`http_status`** –
-- **`template`** –
-
-#### INTERNAL\_ERROR
-
-```
-INTERNAL_ERROR = (500, 'ATLAS-500-00-001', 'Internal server error {0}')
-```
-
-#### code
-
-```
-code = code
-```
-
-#### http\_status
-
-```
-http_status = http_status
-```
-
-#### template
-
-```
-template = template
-```
-
-#### message
-
-```
-message(*params: object) -> str
-```
-
-Fill the template's `{0}`, `{1}`, ... with the parameters, as Java's `MessageFormat` does.
 
 ### AtlasJSONResponse
 
