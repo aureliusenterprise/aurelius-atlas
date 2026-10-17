@@ -1142,6 +1142,8 @@
       
         
       
+        
+      
     
     
     
@@ -1264,6 +1266,33 @@
     
   
   aurelius-atlas-store-es
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-trace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-trace
 
     
   </span>
@@ -3343,6 +3372,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-009. Traceability is checked from collected markers, not from a test run
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-010. The traceability check covers Atlas code from increment 0.2 on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-011. The test report is generated from JUnit, coverage and trace files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3422,6 +3484,8 @@
       
         
           
+        
+      
         
       
         
@@ -3552,6 +3616,33 @@
     
   
   0.2 Elasticsearch infrastructure
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-3-test-report-traceability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.3 Test report and traceability
 
     
   </span>
@@ -5478,6 +5569,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-009. Traceability is checked from collected markers, not from a test run
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-010. The traceability check covers Atlas code from increment 0.2 on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-011. The test report is generated from JUnit, coverage and trace files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5698,6 +5822,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td>0.2</td>
 <td>Proposed</td>
 </tr>
+<tr>
+<td><a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run">DD-009</a></td>
+<td>Traceability is checked from collected markers, not from a test run</td>
+<td>0.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on">DD-010</a></td>
+<td>The traceability check covers Atlas code from increment 0.2 on</td>
+<td>0.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files">DD-011</a></td>
+<td>The test report is generated from JUnit, coverage and trace files</td>
+<td>0.3</td>
+<td>Proposed</td>
+</tr>
 </tbody>
 </table>
 <h3 id="dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served<a class="headerlink" href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" title="Permanent link">&para;</a></h3>
@@ -5852,6 +5994,62 @@ replica. Reporting it down would make every single-node deployment permanently u
 every index is created with zero replicas. A configurable threshold: one more setting nobody sets.</p>
 <p><strong>Consequences.</strong> Lost redundancy is not visible as a health failure; it is visible in the cluster
 metrics (ESD-06) and should be alerted on there.</p>
+<h3 id="dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run">DD-009. Traceability is checked from collected markers, not from a test run<a class="headerlink" href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.3</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-trace check</code> runs <code>pytest --collect-only</code> over the unit and end-to-end
+tests of every Atlas project and reads the <code>covers</code> markers from the collected items. Whether the
+naming tests pass is the test job's concern, not the check's.</p>
+<p><strong>Reason.</strong> CI runs <code>nx affected -t test e2e</code>, so the results of one run contain only the affected
+projects' tests; a check over them would report every unaffected function as uncovered (TRC-10).
+Collection imports the tests but starts no containers, so it is cheap enough to run on every change.</p>
+<p><strong>Alternatives.</strong> Merge the trace files of the run with those of the last run on <code>main</code>: needs
+artifact plumbing between workflows and still goes stale when a run on <code>main</code> fails. Run every test
+on every change: correct, but turns a one-minute check into the full end-to-end suite. Parse the test
+sources with <code>ast</code>: misses markers applied through <code>pytestmark</code>, classes and parametrisation.</p>
+<p><strong>Consequences.</strong> A test module that fails to import fails the check, which is the right answer: its
+markers are unknown. A test that names a function but is skipped still counts as naming it; the
+report shows it as skipped.</p>
+<h3 id="dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on">DD-010. The traceability check covers Atlas code from increment 0.2 on<a class="headerlink" href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.3</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> R1 applies to the public functions, methods and properties of every uv workspace
+member that the configuration does not exclude; the template projects (examples, SDK, reports) are
+excluded, and so are <code>testing</code> subpackages, which are test infrastructure. R2 applies to the rules of
+every specification from increment 0.2 on. The configuration is the <code>[tool.aurelius-atlas-trace]</code>
+table of the root <code>pyproject.toml</code>.</p>
+<p><strong>Reason.</strong> Template code is removed or replaced by the conversion (0.5 removes the examples), so
+markers on it would be written to be deleted. Excluding instead of listing makes a new Atlas project
+checked by default. Increment 0.1's rules (ADO-01 to ADO-03) describe the adoption of the template and
+were verified when it merged; 0.2 is the first increment with code, and its manual checks of ESD-01 to
+ESD-06 are replaced by tests in this increment.</p>
+<p><strong>Alternatives.</strong> Check every workspace member: retrofits markers onto code about to be deleted.
+List the Atlas projects explicitly: a new project is silently unchecked until someone adds it.</p>
+<p><strong>Consequences.</strong> A project that leaves the template set (the SDK, if it is kept) is removed from the
+exclusion list and gets its markers in the same change.</p>
+<h3 id="dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files">DD-011. The test report is generated from JUnit, coverage and trace files<a class="headerlink" href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.3</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-trace report</code> turns JUnit XML (<code>pytest --junitxml</code>), Cobertura XML
+(<code>pytest-cov</code>) and the plugin's trace JSON into one static HTML page and a Markdown summary. CI uploads
+the page as the <code>test-report</code> artifact and appends the summary to the run page.</p>
+<p><strong>Reason.</strong> ADR 045's ladder: the input formats are the ecosystem's own, and no framework or community
+tool joins test results to specification rules and to a function inventory, which is the view ADR 049
+R3 asks for. The generator is a few hundred lines with the standard library only.</p>
+<p><strong>Alternatives.</strong> Allure Report: a polished viewer, but it needs its Java CLI, and the per-rule and
+per-function gap view would still be ours to build as labels and post-processing. <code>pytest-html</code>: one
+page of test results, nothing about rules or functions. SonarCloud: shows coverage, not traceability.</p>
+<p><strong>Consequences.</strong> The page is an artifact of the CI run, not a published site; 0.4 adds the parity
+results to it. If a later need (history, trends) outgrows a static page, a viewer is chosen then.</p>
 
 
 
