@@ -84,8 +84,9 @@ boundaries are a workspace-wide rule — which projects may leave together, and
 what to unwire when they do.
 
 The **spine** (keep this): `aurelius-atlas-frontend-example`, `aurelius-atlas-fastapi-example`,
-`libs/python/aurelius-atlas-sdk`, `libs/angular/*`, `dev/postgres`, `dev/keycloak`, `dev/observability`,
-plus the workflow (CI, pre-commit, SBOM, docs, release).
+`libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`, `libs/angular/*`,
+`dev/elasticsearch`, `dev/postgres`, `dev/keycloak`, `dev/observability`, plus the workflow (CI,
+pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
 slices and its Java tooling were removed when the template was adopted (ADR 050).

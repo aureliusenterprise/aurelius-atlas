@@ -1,0 +1,82 @@
+name: aurelius-atlas-dev-elasticsearch
+
+services:
+    volume-init:
+        # The image has no data directory, so Docker creates the named volume's
+        # mount point owned by root, and Elasticsearch (uid 1000) cannot write
+        # to it. This one-shot step hands the volume to uid 1000 before start.
+        image: dhi.io/elasticsearch:9.5-debian13
+        user: "0"
+        entrypoint: ["chown", "1000:1000", "/usr/share/elasticsearch/data"]
+        volumes:
+            - data:/usr/share/elasticsearch/data
+
+    elasticsearch:
+        image: dhi.io/elasticsearch:9.5-debian13
+        depends_on:
+            volume-init:
+                condition: service_completed_successfully
+        environment:
+            # The image's entrypoint turns ELASTIC_PASSWORD into the bootstrap
+            # password of the built-in elastic user. Every other setting is in
+            # config/elasticsearch.yml. ${VAR:?} guards: an empty password would
+            # start a cluster nobody can log in to.
+            ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
+            ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP:?} -Xmx${ELASTICSEARCH_HEAP:?}
+        healthcheck:
+            # The hardened image has no curl; openssl speaks HTTPS, verifies the
+            # server against the workspace CA, and authenticates as elastic.
+            # Healthy means the cluster status is green or yellow (DD-007).
+            test:
+                [
+                    "CMD-SHELL",
+                    "printf 'GET /_cluster/health HTTP/1.1\\r\\nHost: localhost\\r\\nAuthorization: Basic %s\\r\\nConnection: close\\r\\n\\r\\n' \"$$(printf 'elastic:%s' \"$$ELASTIC_PASSWORD\" | base64 -w0)\" | timeout 5 openssl s_client -quiet -verify_return_error -CAfile config/tls/ca.pem -connect localhost:9200 2>/dev/null | grep -qE '\"status\":\"(green|yellow)\"'",
+                ]
+            interval: 10s
+            timeout: 10s
+            retries: 30
+            start_period: 30s
+        ports:
+            - ${ELASTICSEARCH_PORT}:9200
+        volumes:
+            - data:/usr/share/elasticsearch/data
+            - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+            # Not config/certs: see config/elasticsearch.yml.
+            - ./certs:/usr/share/elasticsearch/config/tls:ro
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+            nofile:
+                soft: 65536
+                hard: 65536
+
+    metrics-puller:
+        # Slice-owned OTel collector: scrapes this cluster and pushes OTLP to
+        # the dev collector, so dev/observability never learns this project
+        # exists. Targets and attribution live in config/metrics-puller.yaml.
+        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        environment:
+            ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+        networks:
+            - default
+            - observability
+
+networks:
+    default:
+        name: aurelius-atlas-dev-elasticsearch-network
+    # The dev telemetry stack (dev/observability); see dev/postgres for why
+    # attaching to the external network is safe.
+    observability:
+        name: aurelius-atlas-dev-observability-network
+        external: true
+
+volumes:
+    data:
