@@ -4,6 +4,11 @@ on:
     schedule:
         - cron: "0 2 * * 3"
 
+# Default-deny fallback; the jobs below also declare their own scopes, which
+# take precedence over this block.
+permissions:
+    contents: read
+
 jobs:
     test:
         runs-on: ubuntu-latest

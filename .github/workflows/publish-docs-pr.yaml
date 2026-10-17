@@ -3,6 +3,13 @@ name: Publish Documentation (PR)
 concurrency:
     group: "docs"
 
+# Default-deny: mike deploy --push writes the public-docs branch
+# (contents:write) and the PR comment step posts through GITHUB_TOKEN
+# (pull-requests:write). Nothing else in this workflow needs a scope.
+permissions:
+    contents: write
+    pull-requests: write
+
 on:
     pull_request:
         branches:

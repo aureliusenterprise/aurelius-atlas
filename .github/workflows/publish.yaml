@@ -33,6 +33,21 @@ jobs:
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
+            - name: Validate tag name
+              # The tag becomes {args.version} in the docker targets, and Nx
+              # re-quotes interpolated values in double quotes — where $(...)
+              # still expands. Git tag names may legally contain $ ( ) ; (the
+              # v*.*.* trigger matches `v1.0.0$(touch pwn)`), so only a strict
+              # semver tag may proceed. The release workflow is the only
+              # producer of these tags.
+              env:
+                  VERSION: ${{ github.ref_name }}
+              run: |
+                  if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+                      echo "::error::Tag name is not a plain semver tag: $VERSION"
+                      exit 1
+                  fi
+
             - name: Publish containers
               run: npx nx run-many -t docker-publish -- --version "$VERSION"
               env:

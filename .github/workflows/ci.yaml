@@ -9,6 +9,12 @@ on:
         branches:
             - main
 
+# Default-deny: every job declares its own scope below; this top-level block
+# is the fallback so a future job that forgets `permissions:` still gets the
+# minimum instead of the org default.
+permissions:
+    contents: read
+
 jobs:
     validate:
         runs-on: ubuntu-latest
