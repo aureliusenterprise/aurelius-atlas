@@ -1891,7 +1891,7 @@ The value is not compared (SCN-10).
 ### apply\_deviation
 
 ```
-apply_deviation(expected: Any, *, id: str, path: JsonPath, value: Any = None, absent: bool = False) -> Any
+apply_deviation(expected: object, *, id: str, path: JsonPath, value: object = None, absent: bool = False) -> object
 ```
 
 Return a copy of the expectation with the Aurelius value, or no value, at the path (SCN-12).
