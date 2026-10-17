@@ -115,5 +115,7 @@ def test__apply_deviation_changes_the_expectation(path: str, change: dict[str, A
 )
 def test__apply_deviation_refuses_a_path_that_matches_nothing(path: str, change: dict[str, Any]) -> None:
     """A deviation that changes nothing is a mistake in the scenario, so it fails, naming the deviation."""
+    parsed = parse_path(path)
+
     with pytest.raises(ValueError, match=r"deviation DV-07 at .* matches nothing"):
-        apply_deviation({"name": "x", "list": [1, 2]}, id="DV-07", path=parse_path(path), **change)
+        apply_deviation({"name": "x", "list": [1, 2]}, id="DV-07", path=parsed, **change)

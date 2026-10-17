@@ -15,7 +15,9 @@ aurelius_atlas_parity = "aurelius_atlas_parity.plugin"
 packages = ["aurelius_atlas_parity"]
 
 [tool.pytest.ini_options]
-addopts = ["-p", "pytester"]
+# The library's own run does not load its plugin through the entry point: that would import the package
+# before pytest-cov starts measuring, and every module-level line would count as not run.
+addopts = ["-p", "pytester", "-p", "no:aurelius_atlas_parity"]
 asyncio_default_fixture_loop_scope = "module"
 asyncio_mode = "auto"
 required_plugins = ["pytest-asyncio"]

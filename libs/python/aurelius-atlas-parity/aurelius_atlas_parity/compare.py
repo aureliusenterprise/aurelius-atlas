@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from aurelius_atlas_parity.path import JsonPath, Location, Wildcard, format_location
+from aurelius_atlas_parity.path import JsonPath, Location, Segment, Wildcard, format_location
 
 DEVIATION_MATCHES_NOTHING_ERROR = "deviation {id} at {path} matches nothing in the expectation"
 
@@ -107,14 +107,14 @@ def mask_volatile(document: Any, paths: list[JsonPath]) -> Any:  # noqa: ANN401 
     return masked
 
 
-def apply_deviation(  # noqa: C901 - one branch per kind of last segment
-    expected: Any,  # noqa: ANN401 - any JSON value
+def apply_deviation(
+    expected: object,
     *,
     id: str,  # noqa: A002 - the deviation id, as the format names it
     path: JsonPath,
-    value: Any = None,  # noqa: ANN401 - any JSON value
+    value: object = None,
     absent: bool = False,
-) -> Any:  # noqa: ANN401 - any JSON value
+) -> object:
     """Return a copy of the expectation with the Aurelius value, or no value, at the path (SCN-12).
 
     A key that the expectation does not have is added when a value is given, so a deviation can declare a
@@ -123,37 +123,43 @@ def apply_deviation(  # noqa: C901 - one branch per kind of last segment
     Raises:
         ValueError: The path matches nothing to change in the expectation.
     """
-    changed = copy.deepcopy(expected)
     if not path.segments:
         if absent:
             raise ValueError(DEVIATION_MATCHES_NOTHING_ERROR.format(id=id, path=path.text))
-        return value
+        return copy.deepcopy(value)
+    changed = copy.deepcopy(expected)
     last = path.segments[-1]
     touched = False
     for _, parent in path.parent.find(changed):
-        if isinstance(parent, dict):
-            keys = list(parent) if isinstance(last, Wildcard) else [last] if isinstance(last, str) else []
-            for key in keys:
-                if absent and key in parent:
-                    del parent[key]
-                    touched = True
-                elif not absent:
-                    parent[key] = copy.deepcopy(value)
-                    touched = True
-        elif isinstance(parent, list):
-            indexes = (
-                range(len(parent))
-                if isinstance(last, Wildcard)
-                else [last]
-                if isinstance(last, int) and last < len(parent)
-                else []
-            )
-            for index in sorted(indexes, reverse=True):
-                if absent:
-                    del parent[index]
-                else:
-                    parent[index] = copy.deepcopy(value)
-                touched = True
+        touched = _change_children(parent, last, value=value, absent=absent) or touched
     if not touched:
         raise ValueError(DEVIATION_MATCHES_NOTHING_ERROR.format(id=id, path=path.text))
     return changed
+
+
+def _child_steps(parent: object, last: Segment, *, absent: bool) -> list[str | int]:
+    """The keys or indexes of a parent that the last segment of a deviation's path names."""
+    if isinstance(parent, dict):
+        if isinstance(last, Wildcard):
+            return list(parent)
+        if not isinstance(last, str) or (absent and last not in parent):
+            return []
+        return [last]
+    if isinstance(parent, list):
+        if isinstance(last, Wildcard):
+            return list(range(len(parent)))
+        if isinstance(last, int) and last < len(parent):
+            return [last]
+    return []
+
+
+def _change_children(parent: Any, last: Segment, *, value: object, absent: bool) -> bool:  # noqa: ANN401
+    """Set or remove the children of one parent; return whether any changed."""
+    steps = _child_steps(parent, last, absent=absent)
+    # Remove from the end, so the indexes of a list stay valid.
+    for step in reversed(steps):
+        if absent:
+            del parent[step]
+        else:
+            parent[step] = copy.deepcopy(value)
+    return bool(steps)
