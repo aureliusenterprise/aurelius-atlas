@@ -39,6 +39,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served) | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged | 0.1       | Accepted |
 | [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)   | Atlas code lives in `aurelius-atlas-*` projects split by layer            | 0.1       | Accepted |
 | [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)   | All template projects carry the `aurelius-atlas-` prefix                  | 0.1       | Accepted |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)      | The SPA keeps tokens in memory and renews them silently                   | 0.1       | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -110,3 +111,33 @@ the eventual atlas-vs-template distinction implicit rather than visible in the p
 projects, Chromatic, and any external CI references must be created/renamed to match. `.env.enc`
 files were re-encrypted with the new prefixed keys. Old locally built images are stale and should be
 pruned (`docker image prune` / rebuild via `nx e2e`).
+
+### DD-004. The SPA keeps tokens in memory and renews them silently
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-17
+
+**Decision.** The Angular SPA uses Keycloak's default in-memory token store (`tokenStore: "default"`
+in `provideKeycloak`, `apps/aurelius-atlas-frontend-example/src/app/app.config.ts`) with
+`onLoad: "check-sso"` and a silent-SSO redirect (`/silent-check-sso.html`). Access and refresh tokens
+never touch `localStorage` or any other persistent browser storage.
+
+**Reason.** `localStorage` is readable by any script that achieves XSS on the origin, and is also
+exposed to browser extensions with host permissions; a stolen refresh token there is a durable
+session hijack. With the in-memory store, injected script can read the current access token but the
+attacker's code dies with the page, and a reload forces a fresh authentication check against
+Keycloak rather than replaying stored secrets.
+
+**Alternatives.** `tokenStore: "sessionStorage"`: survives reload in the tab, but every XSS or
+extension read is still one `getItem` away — same theft surface, no meaningful gain.
+`tokenStore: "localStorage"`: survives tab close; strongest theft value, rejected. A confidential
+client with a BFF holding tokens server-side: the right answer at scale, deferred as its own
+increment — it changes the auth topology (new service, cookie session) rather than a setting.
+
+**Consequences.** A page reload re-mints tokens via silent SSO; the user sees no login unless the
+Keycloak SSO session itself has ended. Silent SSO relies on a third-party-cookie-acceptable (or
+same-site) Keycloak deployment: where browsers block the framing cookie, `check-sso` degrades to a
+not-signed-in state and the app falls back to a full redirect login (`login()`), which still works.
+If per-tab token durability becomes a product requirement, supersede this entry by adding the BFF —
+not by moving the tokens to storage.
