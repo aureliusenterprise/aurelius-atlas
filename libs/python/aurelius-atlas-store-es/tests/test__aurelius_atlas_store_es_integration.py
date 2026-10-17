@@ -39,7 +39,7 @@ def with_changes(settings: StoreSettings, **changes: object) -> StoreSettings:
 
 
 async def test__elasticsearch_container_yields_working_settings(es_settings: StoreSettings) -> None:
-    """DD-006: the fixture starts a TLS-only, authenticated server and yields settings that reach it."""
+    """DD-007: the fixture starts a TLS-only, authenticated server and yields settings that reach it."""
     assert es_settings.host_urls[0].startswith("https://localhost:")
 
     async with ElasticsearchStore(es_settings) as store:
@@ -67,7 +67,7 @@ async def test__elasticsearch_store_health_is_up_on_a_fresh_node(store: Elastics
 
 
 async def test__check_health_is_up_when_replicas_cannot_be_placed(store: ElasticsearchStore) -> None:
-    """STO-05, DD-007: an index with a replica makes a single node yellow, which is still up."""
+    """STO-05, DD-008: an index with a replica makes a single node yellow, which is still up."""
     index = "sto-05-yellow"
     await store.client.indices.create(index=index, settings={"number_of_shards": 1, "number_of_replicas": 1})
     try:

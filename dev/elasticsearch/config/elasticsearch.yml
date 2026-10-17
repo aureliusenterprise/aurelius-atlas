@@ -7,7 +7,7 @@ node.name: elasticsearch
 network.host: 0.0.0.0
 discovery.type: single-node
 
-# Security on (DD-005): TLS-only HTTP with a certificate from the workspace CA,
+# Security on (DD-006): TLS-only HTTP with a certificate from the workspace CA,
 # basic authentication. Certificates are mounted at config/tls, not
 # config/certs: that directory belongs to security auto-configuration, which
 # must not run because every security setting is explicit.
