@@ -5435,6 +5435,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#after-phase-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        After phase 0
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#after-the-plan" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -5855,6 +5866,15 @@ the status of each one.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="after-phase-0">After phase 0<a class="headerlink" href="#after-phase-0" title="Permanent link">&para;</a></h2>
+<p>To do once the last 0.x increment is done:</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Re-check the accepted expat vulnerabilities.</strong> CVE-2026-77214 and CVE-2026-102633 in
+      <code>expat</code> and <code>libexpat</code> 2.8.5-r1 come from the base image <code>dhi.io/python:3.14-alpine3.24</code> of
+      <code>aurelius-atlas-server</code>, and are fixed in 2.9.0-r0. They were accepted in SonarCloud on #85, because
+      no hardened image with the fix existed yet. Check that the current base image ships expat 2.9.0 or
+      later, and that SonarCloud has closed the four issues as fixed. If not, reopen them and decide again.</li>
+</ul>
 <h2 id="after-the-plan">After the plan<a class="headerlink" href="#after-the-plan" title="Permanent link">&para;</a></h2>
 <p>To do once 6.4 is done, not numbered as an increment yet
 (<a href="./design-log/#dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019</a>):</p>
