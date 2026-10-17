@@ -38,6 +38,7 @@ def _make_settings(**overrides: Any) -> Mock:  # noqa: ANN401
         "auth_realm_name": "test-realm",
         "auth_reset_timeout": 60,
         "auth_server_url": TypeAdapter(HttpUrl).validate_python("http://localhost:8080"),
+        "auth_write_role": "",
         "auto_create_schema": False,
         "cdc_disconnect_poll_timeout": 5.0,
         "cdc_shutdown_join_timeout": 2.0,
@@ -140,6 +141,9 @@ def db_settings(
         auth_realm_name="test-realm",
         auth_reset_timeout=60,
         auth_server_url=TypeAdapter(HttpUrl).validate_python("http://localhost:8080"),
+        # Pinned empty (check disabled): route tests run with development-style
+        # semantics; the enforce_auth_security validator keeps production honest.
+        auth_write_role="",
         # Same value the default_factory computes from environment=development;
         # pinned so ambient env cannot flip it.
         auto_create_schema=True,

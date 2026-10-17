@@ -27,7 +27,7 @@ def _settings_kwargs(**overrides: Any) -> dict[str, Any]:  # noqa: ANN401
     """Return Settings kwargs for the given environment scenario."""
     kwargs: dict[str, Any] = {
         "auth_realm_name": "test-realm",
-        "auth_server_url": TypeAdapter(HttpUrl).validate_python("http://localhost:8080"),
+        "auth_server_url": TypeAdapter(HttpUrl).validate_python("https://auth.example/"),
         "database_password": SecretStr("secret"),
     }
     kwargs.update(overrides)
@@ -39,7 +39,12 @@ class TestEnforceTransportSecurity:
 
     def test_development_allows_plaintext_defaults(self) -> None:
         """Development mode keeps the convenient plaintext defaults."""
-        settings = Settings(**_settings_kwargs(environment="development"))
+        settings = Settings(
+            **_settings_kwargs(
+                environment="development",
+                auth_server_url=TypeAdapter(HttpUrl).validate_python("http://localhost:8080"),
+            )
+        )
 
         assert settings.is_development
         assert settings.database_sslmode == "prefer"
@@ -109,6 +114,8 @@ class TestEnforceTransportSecurity:
                 database_sslrootcert="/ca.pem",
                 tls_cert_file="/c.pem",
                 tls_key_file="/k.pem",
+                auth_client_id="aurelius",
+                auth_write_role="aurelius-write",
             )
         )
 
@@ -119,3 +126,69 @@ class TestEnforceTransportSecurity:
         """Anything but 'development' (e.g. 'staging') is treated as production."""
         with pytest.raises(ValueError, match="does not verify the database server"):
             Settings(**_settings_kwargs(environment="staging", tls_cert_file="/c.pem", tls_key_file="/k.pem"))
+
+
+class TestEnforceAuthSecurity:
+    """The fail-closed validator for authentication/authorization configuration."""
+
+    @staticmethod
+    def _hardened(**overrides: Any) -> Settings:  # noqa: ANN401
+        """Production settings that pass both validators unless overridden."""
+        kwargs = _settings_kwargs(
+            environment="production",
+            database_sslmode="verify-full",
+            database_sslrootcert="/ca.pem",
+            tls_cert_file="/c.pem",
+            tls_key_file="/k.pem",
+            auth_client_id="aurelius",
+            auth_write_role="aurelius-write",
+        )
+        kwargs.update(overrides)
+        return Settings(**kwargs)
+
+    def test_production_accepts_https_auth_server(self) -> None:
+        """A hardened auth configuration passes."""
+        settings = self._hardened()
+
+        assert settings.auth_server_url.scheme == "https"
+        assert settings.auth_audience == "aurelius"
+        assert settings.auth_write_role == "aurelius-write"
+
+    def test_production_rejects_plaintext_auth_server(self) -> None:
+        """JWKS/OIDC discovery over http would let a network attacker forge tokens."""
+        with pytest.raises(ValueError, match="AUTH_SERVER_URL must use https"):
+            self._hardened(auth_server_url=TypeAdapter(HttpUrl).validate_python("http://keycloak.localhost:8080"))
+
+    def test_production_requires_explicit_audience(self) -> None:
+        """Without an audience every token of the issuer would be accepted."""
+        with pytest.raises(ValueError, match="AUTH_AUDIENCE"):
+            self._hardened(auth_client_id=None, auth_audience="")
+
+    def test_production_requires_write_role(self) -> None:
+        """Without a write role, authentication alone would authorize mutations."""
+        with pytest.raises(ValueError, match="AUTH_WRITE_ROLE"):
+            self._hardened(auth_write_role="")
+
+    def test_audience_falls_back_to_client_id_only(self) -> None:
+        """The audience defaults to the client id; there is no template-audience fallback."""
+        kwargs = _settings_kwargs(environment="development", auth_client_id="my-client")
+
+        assert Settings(**kwargs).auth_audience == "my-client"
+
+        kwargs = _settings_kwargs(environment="development", auth_client_id=None)
+
+        assert Settings(**kwargs).auth_audience == ""
+
+    def test_development_allows_plaintext_auth_configuration(self) -> None:
+        """Development keeps the convenient plaintext/relaxed defaults."""
+        settings = Settings(
+            **_settings_kwargs(
+                environment="development",
+                auth_server_url=TypeAdapter(HttpUrl).validate_python("http://localhost:8080"),
+                auth_client_id=None,
+                auth_write_role="",
+            )
+        )
+
+        assert settings.auth_server_url.scheme == "http"
+        assert settings.auth_write_role == ""

@@ -139,6 +139,53 @@ def test__audience_matches(claims: dict, expected_audience: str, expected: bool)
     assert auth._audience_matches(claims, expected_audience) is expected  # noqa: SLF001
 
 
+@pytest.mark.parametrize(
+    ("claims", "expected"),
+    [
+        ({"realm_access": {"roles": ["aurelius-write", "offline_access"]}}, {"aurelius-write", "offline_access"}),
+        ({"resource_access": {"aurelius": {"roles": ["aurelius-write"]}}}, {"aurelius-write"}),
+        (
+            {
+                "realm_access": {"roles": ["r1"]},
+                "resource_access": {"aurelius": {"roles": ["c1"]}, "account": {"roles": ["c2"]}},
+            },
+            {"r1", "c1", "c2"},
+        ),
+        ({}, set()),
+        ({"realm_access": {"roles": "not-a-list"}}, set()),
+        ({"resource_access": {"aurelius": {"no-roles": True}}}, set()),
+        ({"resource_access": "malformed"}, set()),
+    ],
+)
+def test__token_roles_collects_realm_and_client_roles(claims: dict, expected: set[str]) -> None:
+    """Role collection should union realm and per-client roles and ignore malformed claims."""
+    assert auth._token_roles(claims) == expected  # noqa: SLF001
+
+
+def test__require_write_access_allows_role_holder() -> None:
+    """A token carrying the configured write role passes the authorization gate."""
+    settings = Mock(auth_write_role="aurelius-write", spec=Settings)
+    claims = {"sub": "u", "realm_access": {"roles": ["aurelius-write"]}}
+
+    assert auth.require_write_access(claims, settings) is claims
+
+
+def test__require_write_access_rejects_missing_role() -> None:
+    """A valid token without the write role must not mutate entities."""
+    settings = Mock(auth_write_role="aurelius-write", spec=Settings)
+
+    with pytest.raises(HTTPException, check=lambda e: e.status_code == 403, match="Insufficient permissions"):
+        auth.require_write_access({"sub": "u", "realm_access": {"roles": ["viewer"]}}, settings)
+
+
+def test__require_write_access_disabled_when_role_empty() -> None:
+    """An empty configured role disables the check (development only — validator enforces it)."""
+    settings = Mock(auth_write_role="", spec=Settings)
+    claims = {"sub": "u"}
+
+    assert auth.require_write_access(claims, settings) is claims
+
+
 def test__user_info_rejects_wrong_issuer(
     auth_base_url: str,
     keycloak_access_token: str,

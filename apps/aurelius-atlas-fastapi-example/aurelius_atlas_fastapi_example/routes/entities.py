@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql.ext import plainto_tsquery
 from sqlmodel import Session, col, or_, select
 
 from aurelius_atlas_fastapi_example.models import Envelope, FindAllQueryParams, PaginatedResponse
-from aurelius_atlas_fastapi_example.providers import notifications, require_auth, session
+from aurelius_atlas_fastapi_example.providers import notifications, require_auth, require_write, session
 from aurelius_atlas_fastapi_example.providers.metrics import SSE_CONNECTIONS
 
 ENTITIES = APIRouter(dependencies=[require_auth])
@@ -115,6 +115,7 @@ def find_one(
     "/",
     summary="Create or update an entity",
     description="Create a new entity or update an existing entity.",
+    dependencies=[require_write],
 )
 def create_or_update(
     entity: Entity,
@@ -148,6 +149,7 @@ def create_or_update(
     responses={
         410: {"description": "Entity not found"},
     },
+    dependencies=[require_write],
 )
 def delete(
     guid: UUID,

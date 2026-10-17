@@ -128,11 +128,20 @@ class Settings(BaseSettings, Hashable):
     )
 
     auth_audience: str = Field(
-        default_factory=lambda settings: settings.get("auth_client_id") or "aurelius",
+        default_factory=lambda settings: settings.get("auth_client_id") or "",
         description=(
             "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim "
-            "or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID, falling back to "
-            "the template client id."
+            "or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID; required outside development mode."
+        ),
+    )
+
+    auth_write_role: str = Field(
+        default="",
+        description=(
+            "The role mutating endpoints (PUT/DELETE) require: accepted when it appears in the token's "
+            "'realm_access.roles' or in any 'resource_access.<client>.roles' list. Empty disables the "
+            "authorization check; required outside development mode so a deployment cannot ship "
+            "authentication without authorization by forgetting the variable."
         ),
     )
 
@@ -279,6 +288,45 @@ class Settings(BaseSettings, Hashable):
                 f"{ENV_PREFIX}TLS_CERT_FILE and {ENV_PREFIX}TLS_KEY_FILE are required outside development mode: "
                 "the API serves bearer tokens and must not run on plain HTTP. "
                 f"Set {ENV_PREFIX}ENVIRONMENT=development only for local stacks."
+            )
+            raise ValueError(msg)
+
+        return self
+
+    @model_validator(mode="after")
+    def enforce_auth_security(self) -> Settings:
+        """Fail fast when a non-development deployment misconfigures authentication or authorization.
+
+        Two silent-downgrade paths are closed here:
+
+        * A plaintext ``auth_server_url`` lets a network-path attacker serve a forged
+          OpenID configuration / JWKS, which mints tokens this API would accept — the
+          whole bearer-token scheme collapses. OAuth token endpoints elsewhere in the
+          workspace are https-only for the same reason.
+        * An empty ``auth_audience`` (no ``AUTH_CLIENT_ID``, no explicit audience) would
+          accept any token from the issuer, and an empty ``auth_write_role`` would
+          authenticate every caller for mutating operations. Both must be explicit.
+        """
+        if self.is_development:
+            return self
+
+        if self.auth_server_url.scheme.lower() != "https":
+            msg = (
+                f"{ENV_PREFIX}AUTH_SERVER_URL must use https outside development mode "
+                f"(got {self.auth_server_url.scheme!r}): JWKS/OIDC discovery over plaintext HTTP lets a "
+                "network-path attacker forge tokens by serving its own keys."
+            )
+            raise ValueError(msg)
+        if not self.auth_audience:
+            msg = (
+                f"{ENV_PREFIX}AUTH_AUDIENCE (or {ENV_PREFIX}AUTH_CLIENT_ID) is required outside development "
+                "mode: without an audience this API accepts any token issued by the auth server."
+            )
+            raise ValueError(msg)
+        if not self.auth_write_role:
+            msg = (
+                f"{ENV_PREFIX}AUTH_WRITE_ROLE is required outside development mode: without a required "
+                "role, every authenticated principal may write and delete entities."
             )
             raise ValueError(msg)
 

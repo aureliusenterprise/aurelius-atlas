@@ -210,4 +210,55 @@ def _audience_matches(claims: dict, expected_audience: str) -> bool:
     return expected_audience in audiences
 
 
+def _token_roles(claims: dict) -> set[str]:
+    """Collect all roles a token carries: realm roles plus per-client resource roles.
+
+    Keycloak emits realm roles in ``realm_access.roles`` and client roles in
+    ``resource_access.<client-id>.roles``; accepting both keeps the check
+    independent of how the deployment assigns the role (realm- or client-scoped).
+    """
+    roles: set[str] = set()
+
+    match claims.get("realm_access"):
+        case {"roles": list() as realm_roles}:
+            roles.update(r for r in realm_roles if isinstance(r, str))
+        case _:
+            pass
+
+    match claims.get("resource_access"):
+        case dict() as resource_access:
+            for access in resource_access.values():
+                match access:
+                    case {"roles": list() as client_roles}:
+                        roles.update(r for r in client_roles if isinstance(r, str))
+                    case _:
+                        pass
+        case _:
+            pass
+
+    return roles
+
+
+def require_write_access(
+    claims: Annotated[dict, Depends(user_info)],
+    settings: Settings,
+) -> dict:
+    """Require the configured write role for mutating operations (PUT/DELETE).
+
+    ``require_auth`` only proves *who* the caller is; without this gate any valid
+    token of the realm could write or delete any entity. An empty
+    ``auth_write_role`` disables the check, which is only reachable in development
+    (enforced by ``Settings.enforce_auth_security``).
+    """
+    if not settings.auth_write_role:
+        return claims
+
+    if settings.auth_write_role not in _token_roles(claims):
+        LOGGER.warning("Token lacks required write role %r", settings.auth_write_role)
+        raise HTTPException(status_code=403, detail="Insufficient permissions for this operation")
+
+    return claims
+
+
 require_auth = Depends(user_info)
+require_write = Depends(require_write_access)
