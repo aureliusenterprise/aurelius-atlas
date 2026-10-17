@@ -40,12 +40,20 @@ class Outcome(StrEnum):
 
 @dataclass(frozen=True)
 class TracedTest:
-    """One collected test: its node id, what it names, and how it ended (None when it did not run)."""
+    """One collected test: its node id, what it names, how it ended (None when it did not run), and its properties.
+
+    The properties are the test's ``user_properties`` at collection, as name and value pairs (SCN-14).
+    """
 
     nodeid: str
     targets: tuple[str, ...]
     rules: tuple[str, ...]
     outcome: Outcome | None = None
+    properties: tuple[tuple[str, str], ...] = ()
+
+    def property_values(self, name: str) -> tuple[str, ...]:
+        """Return the values of every property with this name, in order."""
+        return tuple(value for key, value in self.properties if key == name)
 
     def to_json(self) -> dict[str, Any]:
         """Return the JSON form of this test."""
@@ -54,6 +62,7 @@ class TracedTest:
             "targets": list(self.targets),
             "rules": list(self.rules),
             "outcome": None if self.outcome is None else self.outcome.value,
+            "properties": [list(pair) for pair in self.properties],
         }
 
     @classmethod
@@ -65,6 +74,7 @@ class TracedTest:
             targets=tuple(data.get("targets", ())),
             rules=tuple(data.get("rules", ())),
             outcome=None if outcome is None else Outcome(outcome),
+            properties=tuple((str(name), str(value)) for name, value in data.get("properties", ())),
         )
 
 
