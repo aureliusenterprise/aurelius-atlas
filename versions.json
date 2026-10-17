@@ -38,5 +38,10 @@
     "version": "main",
     "title": "main",
     "aliases": []
+  },
+  {
+    "version": "chore-rename-projects-to-aurelius-atlas-prefix",
+    "title": "chore-rename-projects-to-aurelius-atlas-prefix",
+    "aliases": []
   }
 ]
