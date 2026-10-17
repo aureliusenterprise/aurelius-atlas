@@ -14,6 +14,7 @@ dev = [
     "aurelius-atlas-license-report",
     "aurelius-atlas-sdk[full]",
     "aurelius-atlas-store-es[testing]",
+    "aurelius-atlas-trace",
     "aurelius-atlas-vulnerability-report",
     "alembic>=1.18",
     "mike",
@@ -68,6 +69,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-store-es]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-trace]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-vulnerability-report]
 workspace = true
 
@@ -77,9 +81,24 @@ members = [
     "libs/python/aurelius-atlas-example",
     "libs/python/aurelius-atlas-sdk",
     "libs/python/aurelius-atlas-store-es",
+    "libs/python/aurelius-atlas-trace",
     "reports/aurelius-atlas-license-report",
     "reports/aurelius-atlas-vulnerability-report",
 ]
+
+# What the traceability check covers (ADR 049, DD-010): every workspace member except these template
+# projects, without their `testing` subpackages, and the rules of every specification from 0.2 on.
+[tool.aurelius-atlas-trace]
+enforce-from = "0.2"
+exclude-projects = [
+    "apps/aurelius-atlas-fastapi-example",
+    "libs/python/aurelius-atlas-example",
+    "libs/python/aurelius-atlas-sdk",
+    "reports/aurelius-atlas-license-report",
+    "reports/aurelius-atlas-vulnerability-report",
+]
+exclude-subpackages = ["testing"]
+specs = "docs/architecture/conversion/increments"
 
 [tool.pyright]
 exclude = [".venv"]
