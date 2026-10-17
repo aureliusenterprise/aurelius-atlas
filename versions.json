@@ -45,11 +45,6 @@
     "aliases": []
   },
   {
-    "version": "feat-elasticsearch-grafana-dashboard",
-    "title": "feat-elasticsearch-grafana-dashboard",
-    "aliases": []
-  },
-  {
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
