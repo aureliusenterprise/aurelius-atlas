@@ -12,9 +12,10 @@ def as_client(fake: FakeClient) -> AsyncElasticsearch:
     return cast("AsyncElasticsearch", fake)
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-05", "STO-07"])
 @pytest.mark.parametrize(("cluster_status", "expected"), [("green", HealthStatus.UP), ("yellow", HealthStatus.UP)])
 async def test__check_health_is_up_for_green_and_yellow(cluster_status: str, expected: HealthStatus) -> None:
-    """STO-05, STO-07: green and yellow are up, and the report names the cluster and version."""
+    """Green and yellow are up, and the report names the cluster and version."""
     fake = FakeClient()
     fake.cluster_status = cluster_status
 
@@ -25,8 +26,9 @@ async def test__check_health_is_up_for_green_and_yellow(cluster_status: str, exp
     )
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-05", "STO-07"])
 async def test__check_health_is_down_for_red() -> None:
-    """STO-05, STO-07: red is down, and the server details are still reported."""
+    """Red is down, and the server details are still reported."""
     fake = FakeClient()
     fake.cluster_status = "red"
 
@@ -41,6 +43,7 @@ async def test__check_health_is_down_for_red() -> None:
     )
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-06"])
 @pytest.mark.parametrize(
     ("error", "reason"),
     [
@@ -52,7 +55,7 @@ async def test__check_health_is_down_for_red() -> None:
 )
 @pytest.mark.parametrize("failing_call", ["info", "health"])
 async def test__check_health_never_raises(error: Exception, reason: str, failing_call: str) -> None:
-    """STO-06: any failure to ask the server is reported as down with the reason."""
+    """Any failure to ask the server is reported as down with the reason."""
     fake = FakeClient()
     if failing_call == "info":
         fake.info_error = error
@@ -64,8 +67,9 @@ async def test__check_health_never_raises(error: Exception, reason: str, failing
     assert report == HealthReport(status=HealthStatus.DOWN, reason=reason)
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-08"])
 async def test__check_health_report_contains_no_password(password: str) -> None:
-    """STO-08: a failure message from the transport does not leak into the report as the password."""
+    """A failure message from the transport does not leak into the report as the password."""
     fake = FakeClient()
     fake.info_error = TransportConnectionError(f"https://elastic:{password}@localhost:9200 refused")
 

@@ -38,8 +38,9 @@ def with_changes(settings: StoreSettings, **changes: object) -> StoreSettings:
     return StoreSettings.model_validate({**settings.model_dump(), "password": settings.password, **changes})
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.testing.container.elasticsearch_container")
 async def test__elasticsearch_container_yields_working_settings(es_settings: StoreSettings) -> None:
-    """DD-007: the fixture starts a TLS-only, authenticated server and yields settings that reach it."""
+    """The fixture starts a TLS-only, authenticated server and yields settings that reach it."""
     assert es_settings.host_urls[0].startswith("https://localhost:")
 
     async with ElasticsearchStore(es_settings) as store:
@@ -48,15 +49,21 @@ async def test__elasticsearch_container_yields_working_settings(es_settings: Sto
     assert info["cluster_name"] == "aurelius-atlas-test"
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_store_es.ElasticsearchStore.open",
+    "aurelius_atlas_store_es.ElasticsearchStore.client",
+    rules=["STO-03", "STO-04"],
+)
 async def test__elasticsearch_store_opens_on_elasticsearch_9(store: ElasticsearchStore) -> None:
-    """STO-03, STO-04: an Elasticsearch 9 server is accepted and the store holds one open client."""
+    """An Elasticsearch 9 server is accepted and the store holds one open client."""
     assert store.is_open
     info = await store.client.info()
     assert str(info["version"]["number"]).startswith("9.")
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.health", rules=["STO-05", "STO-07"])
 async def test__elasticsearch_store_health_is_up_on_a_fresh_node(store: ElasticsearchStore) -> None:
-    """STO-05, STO-07: a fresh single node is up and reports its name, version and status."""
+    """A fresh single node is up and reports its name, version and status."""
     report = await store.health()
 
     assert report.status is HealthStatus.UP
@@ -66,8 +73,9 @@ async def test__elasticsearch_store_health_is_up_on_a_fresh_node(store: Elastics
     assert report.cluster_status in {"green", "yellow"}
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-05"])
 async def test__check_health_is_up_when_replicas_cannot_be_placed(store: ElasticsearchStore) -> None:
-    """STO-05, DD-008: an index with a replica makes a single node yellow, which is still up."""
+    """An index with a replica makes a single node yellow, which is still up."""
     index = "sto-05-yellow"
     await store.client.indices.create(index=index, settings={"number_of_shards": 1, "number_of_replicas": 1})
     try:
@@ -80,8 +88,9 @@ async def test__check_health_is_up_when_replicas_cannot_be_placed(store: Elastic
     assert report.status is HealthStatus.UP
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-05", "STO-07"])
 async def test__check_health_is_down_when_a_primary_cannot_be_placed(store: ElasticsearchStore) -> None:
-    """STO-05, STO-07: an index whose primary cannot be allocated makes the cluster red, which is down."""
+    """An index whose primary cannot be allocated makes the cluster red, which is down."""
     index = "sto-05-red"
     await store.client.indices.create(
         index=index,
@@ -99,8 +108,9 @@ async def test__check_health_is_down_when_a_primary_cannot_be_placed(store: Elas
     assert report.reason == "cluster status is red"
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.open", rules=["STO-04", "STO-08"])
 async def test__elasticsearch_store_open_rejects_a_wrong_password(es_settings: StoreSettings) -> None:
-    """STO-04, STO-08: a rejected credential makes the store unavailable, without echoing the password."""
+    """A rejected credential makes the store unavailable, without echoing the password."""
     wrong = "not-the-password"
     store = ElasticsearchStore(with_changes(es_settings, password=wrong))
 
@@ -111,8 +121,9 @@ async def test__elasticsearch_store_open_rejects_a_wrong_password(es_settings: S
     assert not store.is_open
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.check_health", rules=["STO-06"])
 async def test__check_health_reports_a_rejected_credential_as_down(es_settings: StoreSettings) -> None:
-    """STO-06: a client with a wrong password gets a down report, not an exception."""
+    """A client with a wrong password gets a down report, not an exception."""
     client = AsyncElasticsearch(
         hosts=es_settings.host_urls,
         basic_auth=(es_settings.username, "not-the-password"),
@@ -127,10 +138,11 @@ async def test__check_health_reports_a_rejected_credential_as_down(es_settings: 
     assert report.reason == "request rejected with status 401"
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.open", rules=["STO-02"])
 async def test__elasticsearch_store_open_rejects_an_untrusted_certificate(
     es_settings: StoreSettings, tmp_path: Path
 ) -> None:
-    """STO-02: a server certificate that the configured CA did not sign is refused."""
+    """A server certificate that the configured CA did not sign is refused."""
     other_ca = tmp_path / "other-ca.pem"
     trustme.CA().cert_pem.write_to_path(other_ca)
 
@@ -138,8 +150,13 @@ async def test__elasticsearch_store_open_rejects_an_untrusted_certificate(
         await ElasticsearchStore(with_changes(es_settings, ca_certs=other_ca)).open()
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_store_es.ElasticsearchStore.open",
+    "aurelius_atlas_store_es.check_health",
+    rules=["STO-04", "STO-06"],
+)
 async def test__elasticsearch_store_open_reports_an_unreachable_server(es_settings: StoreSettings) -> None:
-    """STO-04, STO-06: nothing listening is unavailable on open and down on health, never a crash."""
+    """Nothing listening is unavailable on open and down on health, never a crash."""
     settings = with_changes(es_settings, hosts=["https://localhost:1"], request_timeout=2)
 
     with pytest.raises(StoreUnavailableError, match="unreachable"):

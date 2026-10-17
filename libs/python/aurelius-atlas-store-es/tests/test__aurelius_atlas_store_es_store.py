@@ -14,10 +14,11 @@ from elasticsearch import AuthenticationException, ConnectionTimeout
 from elasticsearch import ConnectionError as TransportConnectionError
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.open", rules=["STO-01", "STO-02"])
 async def test__elasticsearch_store_open_builds_a_verifying_https_client(
     settings: StoreSettings, fake_client: Callable[[], FakeClient], password: str
 ) -> None:
-    """STO-01, STO-02: the client is built from the settings and always verifies certificates."""
+    """The client is built from the settings and always verifies certificates."""
     async with ElasticsearchStore(settings):
         kwargs = fake_client().kwargs
 
@@ -30,10 +31,15 @@ async def test__elasticsearch_store_open_builds_a_verifying_https_client(
     }
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_store_es.ElasticsearchStore.open",
+    "aurelius_atlas_store_es.ElasticsearchStore.close",
+    rules=["STO-03"],
+)
 async def test__elasticsearch_store_closes_its_client_once(
     settings: StoreSettings, fake_client: Callable[[], FakeClient]
 ) -> None:
-    """STO-03: one client per store, closed exactly once, however often close is called."""
+    """One client per store, closed exactly once, however often close is called."""
     store = ElasticsearchStore(settings)
 
     await store.open()
@@ -46,10 +52,11 @@ async def test__elasticsearch_store_closes_its_client_once(
     assert fake_client().close_calls == 1
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.close", rules=["STO-03"])
 async def test__elasticsearch_store_closes_its_client_when_the_body_raises(
     settings: StoreSettings, fake_client: Callable[[], FakeClient]
 ) -> None:
-    """STO-03: leaving ``async with`` by an exception still closes the client."""
+    """Leaving ``async with`` by an exception still closes the client."""
     message = "boom"
 
     with pytest.raises(RuntimeError, match=message):
@@ -59,17 +66,23 @@ async def test__elasticsearch_store_closes_its_client_when_the_body_raises(
     assert fake_client().close_calls == 1
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_store_es.ElasticsearchStore.client",
+    "aurelius_atlas_store_es.ElasticsearchStore.is_open",
+    rules=["STO-03"],
+)
 async def test__elasticsearch_store_client_requires_an_open_store(settings: StoreSettings) -> None:
-    """STO-03: the client is only available between open and close."""
+    """The client is only available between open and close."""
     with pytest.raises(RuntimeError, match=STORE_NOT_OPEN_ERROR):
         _ = ElasticsearchStore(settings).client
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.open", rules=["STO-04"])
 @pytest.mark.parametrize("version", ["8.19.23", "10.0.0", "unknown"])
 async def test__elasticsearch_store_open_rejects_unsupported_versions(
     settings: StoreSettings, fake_client: Callable[[], FakeClient], version: str
 ) -> None:
-    """STO-04: a server that is not Elasticsearch 9 is refused, and the client is closed."""
+    """A server that is not Elasticsearch 9 is refused, and the client is closed."""
     fake_client().version = version
     store = ElasticsearchStore(settings)
 
@@ -80,6 +93,7 @@ async def test__elasticsearch_store_open_rejects_unsupported_versions(
     assert fake_client().close_calls == 1
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.open", rules=["STO-04"])
 @pytest.mark.parametrize(
     "error",
     [
@@ -91,7 +105,7 @@ async def test__elasticsearch_store_open_rejects_unsupported_versions(
 async def test__elasticsearch_store_open_reports_an_unavailable_server(
     settings: StoreSettings, fake_client: Callable[[], FakeClient], error: Exception, password: str
 ) -> None:
-    """STO-04: an unreachable or refusing server raises StoreUnavailableError, and the client is closed."""
+    """An unreachable or refusing server raises StoreUnavailableError, and the client is closed."""
     fake_client().info_error = error
     store = ElasticsearchStore(settings)
 
@@ -104,18 +118,20 @@ async def test__elasticsearch_store_open_reports_an_unavailable_server(
     assert fake_client().close_calls == 1
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.health", rules=["STO-06"])
 async def test__elasticsearch_store_health_is_down_when_not_open(settings: StoreSettings) -> None:
-    """STO-06: asking a closed store for its health does not raise."""
+    """Asking a closed store for its health does not raise."""
     report = await ElasticsearchStore(settings).health()
 
     assert report.status is HealthStatus.DOWN
     assert report.reason == "store is not open"
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.health", rules=["STO-05", "STO-07"])
 async def test__elasticsearch_store_health_asks_the_cluster(
     settings: StoreSettings, fake_client: Callable[[], FakeClient]
 ) -> None:
-    """STO-05, STO-07: an open store reports the cluster's health."""
+    """An open store reports the cluster's health."""
     async with ElasticsearchStore(settings) as store:
         report = await store.health()
 
@@ -123,10 +139,11 @@ async def test__elasticsearch_store_health_asks_the_cluster(
     assert report.cluster_name == fake_client().cluster_name
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.ElasticsearchStore.open", rules=["STO-08"])
 async def test__elasticsearch_store_does_not_log_the_password(
     settings: StoreSettings, fake_client: Callable[[], FakeClient], caplog: pytest.LogCaptureFixture, password: str
 ) -> None:
-    """STO-08: neither a successful nor a failed open logs the password."""
+    """Neither a successful nor a failed open logs the password."""
     caplog.set_level("DEBUG")
 
     async with ElasticsearchStore(settings) as store:
