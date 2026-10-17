@@ -172,6 +172,7 @@ nav:
                       - 0.4 Parity harness: architecture/conversion/increments/0-4-parity-harness.md
                       - 0.5 Server skeleton: architecture/conversion/increments/0-5-server-skeleton.md
                       - 0.6 Dashboards served: architecture/conversion/increments/0-6-dashboards.md
+                      - 1.1 Typedef models: architecture/conversion/increments/1-1-typedef-models.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
