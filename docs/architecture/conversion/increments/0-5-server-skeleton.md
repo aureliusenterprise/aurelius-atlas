@@ -23,7 +23,7 @@ Not in scope:
 | Not delivered here                                         | Delivered by                         |
 | ---------------------------------------------------------- | ------------------------------------ |
 | The dashboards at `/` and `/n/`                            | 0.6                                  |
-| Removing the template's example projects                   | 0.7                                  |
+| Removing the template's example projects                   | after the plan (DD-019)              |
 | Authentication; the session's user, groups and permissions | 6.1, 6.2                             |
 | Metrics (`/admin/metrics`) and the other admin endpoints   | 6.4 and the increments that own them |
 | High availability states (`PASSIVE`, `BECOMING_ACTIVE`, …) | not planned                          |

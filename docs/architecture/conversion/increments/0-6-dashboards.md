@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** DD-017, DD-018; relies on DD-001, ADR 046
+- **Records:** DD-017, DD-018, DD-019; relies on DD-001, ADR 046
 
 ## Scope
 
