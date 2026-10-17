@@ -37,7 +37,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 0.3 | Test report and traceability    | `covers` marker, function-to-test checker, HTML test report in CI                     | –                                              | in progress |
 | 0.4 | Parity harness                  | Scenario format, runner, comparison, deviations, report section                       | –                                              | in progress |
 | 0.5 | Server skeleton                 | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness  | `AdminResource` (part)                         | in progress |
-| 0.6 | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3`                   | planned     |
+| 0.6 | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source | `dashboardv2`, `dashboardv3`                   | in progress |
 | 0.7 | Template examples removed       | Example service, screen, libraries and the relational database leave (ADR 050)        | –                                              | planned     |
 | 1.1 | Typedef models                  | Enum, struct, classification, entity, relationship, business-metadata definitions     | `intg/.../model/typedef`                       | planned     |
 | 1.2 | Type registry                   | Attribute types, supertypes, constraints, validation errors                           | `AtlasTypeRegistry`, `AtlasStructType`, …      | planned     |
