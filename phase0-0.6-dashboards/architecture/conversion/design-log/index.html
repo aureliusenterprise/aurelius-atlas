@@ -3569,6 +3569,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-019-the-template-examples-stay-until-the-plan-is-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-019. The template examples stay until the plan is done
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5930,6 +5941,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-019-the-template-examples-stay-until-the-plan-is-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-019. The template examples stay until the plan is done
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6207,6 +6229,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin">DD-018</a></td>
 <td>The server serves the dashboards from the API's origin</td>
+<td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019</a></td>
+<td>The template examples stay until the plan is done</td>
 <td>0.6</td>
 <td>Proposed</td>
 </tr>
@@ -6494,7 +6522,8 @@ and lets a reviewer put a router next to its Java resource.</p>
 <p><strong>Alternatives.</strong> Starlette without FastAPI: no validation or OpenAPI for the request models later
 increments need. Routers per URL prefix rather than per Java class: <code>admin</code> would still be one, but
 <code>/v2/entity</code> and <code>/v2/entity/bulk</code> belong to one Java class and would split.</p>
-<p><strong>Consequences.</strong> The example service is no longer the only FastAPI app; 0.7 removes it. Later
+<p><strong>Consequences.</strong> The example service is no longer the only FastAPI app; it stays until the plan is done
+(DD-019). Later
 increments add routers and error codes; the error handler and media type stay.</p>
 <h3 id="dd-016-the-server-does-not-start-without-its-store">DD-016. The server does not start without its store<a class="headerlink" href="#dd-016-the-server-does-not-start-without-its-store" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6555,6 +6584,23 @@ here prevents it.</p>
 <p><strong>Consequences.</strong> API paths must never collide with dashboard files; the API is matched first. Unit
 tests build their settings without the environment and serve no dashboards unless a test sets the
 directory; <code>nx serve</code> builds the dashboards first and its <code>.env</code> points at <code>dist/</code>.</p>
+<h3 id="dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019. The template examples stay until the plan is done<a class="headerlink" href="#dd-019-the-template-examples-stay-until-the-plan-is-done" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The removal of the template's examples, planned as increment 0.7, moves to a to-do
+after 6.4. Until then, the FastAPI example service, the Angular example screen and its libraries,
+<code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code> and <code>dev/postgres</code> stay in the workspace. They remain
+the named deviation of ADR 050.</p>
+<p><strong>Reason.</strong> The project's second phase needs these components again. Removing them now and
+restoring them from the template later would cost more than keeping them.</p>
+<p><strong>Alternatives.</strong> Remove them now, as ADR 050 plans once the server and the dashboards replace them:
+this fulfils ADR 050's R1 sooner, but the components would have to be restored for the second phase.</p>
+<p><strong>Consequences.</strong> CI keeps building, testing and scanning the examples. 1.1 follows 0.6 directly.
+The to-do in the roadmap records the scope already agreed for the removal: everything the catalogue
+does not use, apart from <code>dev/keycloak</code>.</p>
 
 
 

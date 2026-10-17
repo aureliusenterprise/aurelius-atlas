@@ -50,6 +50,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-016](<#dd-016-the-server-does-not-start-without-its-store>) | The server does not start without its store | 0.5 | Proposed |
 | [DD-017](<#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24>) | The dashboards are vendored unchanged and built with dart-sass on Node 24 | 0.6 | Proposed |
 | [DD-018](<#dd-018-the-server-serves-the-dashboards-from-the-apis-origin>) | The server serves the dashboards from the API's origin | 0.6 | Proposed |
+| [DD-019](<#dd-019-the-template-examples-stay-until-the-plan-is-done>) | The template examples stay until the plan is done | 0.6 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -259,7 +260,7 @@ Technical decisions made during the conversion that are too implementation-speci
 
 **Alternatives.** Starlette without FastAPI: no validation or OpenAPI for the request models later increments need. Routers per URL prefix rather than per Java class: `admin` would still be one, but `/v2/entity` and `/v2/entity/bulk` belong to one Java class and would split.
 
-**Consequences.** The example service is no longer the only FastAPI app; 0.7 removes it. Later increments add routers and error codes; the error handler and media type stay.
+**Consequences.** The example service is no longer the only FastAPI app; it stays until the plan is done (DD-019). Later increments add routers and error codes; the error handler and media type stay.
 
 ### DD-016. The server does not start without its store
 
@@ -302,3 +303,17 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** A separate static file server or the template's Angular serving: a second container and a proxy to keep one origin. Serving through a CDN: possible later in front of the server; nothing here prevents it.
 
 **Consequences.** API paths must never collide with dashboard files; the API is matched first. Unit tests build their settings without the environment and serve no dashboards unless a test sets the directory; `nx serve` builds the dashboards first and its `.env` points at `dist/`.
+
+### DD-019. The template examples stay until the plan is done
+
+- **Status:** Proposed
+- **Increment:** 0.6
+- **Date:** 2026-10-17
+
+**Decision.** The removal of the template's examples, planned as increment 0.7, moves to a to-do after 6.4. Until then, the FastAPI example service, the Angular example screen and its libraries, `aurelius-atlas-example`, `aurelius-atlas-sdk` and `dev/postgres` stay in the workspace. They remain the named deviation of ADR 050.
+
+**Reason.** The project's second phase needs these components again. Removing them now and restoring them from the template later would cost more than keeping them.
+
+**Alternatives.** Remove them now, as ADR 050 plans once the server and the dashboards replace them: this fulfils ADR 050's R1 sooner, but the components would have to be restored for the second phase.
+
+**Consequences.** CI keeps building, testing and scanning the examples. 1.1 follows 0.6 directly. The to-do in the roadmap records the scope already agreed for the removal: everything the catalogue does not use, apart from `dev/keycloak`.

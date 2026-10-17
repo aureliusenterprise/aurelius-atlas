@@ -5434,6 +5434,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#after-the-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        After the plan
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5661,13 +5672,6 @@ the status of each one.</p>
 <td>in progress</td>
 </tr>
 <tr>
-<td>0.7</td>
-<td>Template examples removed</td>
-<td>Example service, screen, libraries and the relational database leave (ADR 050)</td>
-<td>–</td>
-<td>planned</td>
-</tr>
-<tr>
 <td>1.1</td>
 <td>Typedef models</td>
 <td>Enum, struct, classification, entity, relationship, business-metadata definitions</td>
@@ -5851,6 +5855,17 @@ the status of each one.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="after-the-plan">After the plan<a class="headerlink" href="#after-the-plan" title="Permanent link">&para;</a></h2>
+<p>To do once 6.4 is done, not numbered as an increment yet
+(<a href="./design-log/#dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019</a>):</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Remove the template's examples.</strong> The FastAPI example service, the Angular example screen,
+      <code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code>, <code>libs/angular/*</code>, <code>libs/styles</code>, <code>dev/postgres</code>
+      and the Angular, Storybook and Chromatic toolchain leave (ADR 050). <code>dev/keycloak</code> stays for 6.1
+      and takes over <code>pg_hba.conf</code> from <code>dev/postgres</code>. The rules are tested by a test-only
+      <code>tools/workspace</code> project without a Sonar target. They are kept until then because the project's
+      second phase needs them again.</li>
+</ul>
 
 
 
