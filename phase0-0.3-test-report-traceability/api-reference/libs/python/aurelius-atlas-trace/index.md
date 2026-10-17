@@ -354,6 +354,7 @@ Attributes:
 - **`CONFIG_TABLE`** –
 - **`MISSING_TABLE_ERROR`** –
 - **`NO_PACKAGE_ERROR`** –
+- **`PYPROJECT`** –
 - **`TEST_DIRECTORIES`** –
 
   The test directories of a project, as the Nx Python plugin knows them.
@@ -380,6 +381,12 @@ MISSING_TABLE_ERROR = '{path} has no [tool.{table}] table'
 
 ```
 NO_PACKAGE_ERROR = '{project} declares no package in [tool.hatch.build.targets.wheel] packages'
+```
+
+### PYPROJECT
+
+```
+PYPROJECT = 'pyproject.toml'
 ```
 
 ### TEST\_DIRECTORIES
