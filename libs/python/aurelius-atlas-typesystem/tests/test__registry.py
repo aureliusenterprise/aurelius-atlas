@@ -16,6 +16,7 @@ from aurelius_atlas_model.typedef import (
     AtlasEntityDef,
     AtlasEnumDef,
     AtlasRelationshipDef,
+    AtlasRelationshipEndDef,
     AtlasStructDef,
     AtlasTypesDef,
     Cardinality,
@@ -34,6 +35,9 @@ from aurelius_atlas_typesystem.types import (
     RelationshipType,
     StructType,
 )
+
+END = AtlasRelationshipEndDef(type="t", name="self")
+"""A relationship end on entity type ``t``."""
 
 BUILT_IN = ["boolean", "byte", "short", "int", "long", "float", "double", "biginteger", "bigdecimal", "date", "string"]
 
@@ -139,7 +143,7 @@ def test__definitions_and_types_are_found_per_kind_and_across_kinds() -> None:
         AtlasStructDef(name="s"),
         AtlasClassificationDef(name="c"),
         AtlasEntityDef(name="t", service_type="hive"),
-        AtlasRelationshipDef(name="r"),
+        AtlasRelationshipDef(name="r", end_def1=END, end_def2=END),
         AtlasBusinessMetadataDef(name="b"),
     )
 
@@ -151,7 +155,10 @@ def test__definitions_and_types_are_found_per_kind_and_across_kinds() -> None:
     assert isinstance(registry.business_metadata_type("b"), BusinessMetadataType)
     assert registry.entity_type("c") is None
     assert registry.struct_type(None) is None
-    assert registry.typedef_by_name("t") == AtlasEntityDef(name="t", service_type="hive")
+    entity_def = registry.typedef_by_name("t")
+    assert isinstance(entity_def, AtlasEntityDef)
+    assert (entity_def.name, entity_def.service_type, entity_def.sub_types) == ("t", "hive", [])
+    assert [attribute.name for attribute in entity_def.relationship_attribute_defs or []] == ["self"]
     assert registry.typedef_by_guid("g-e") == AtlasEnumDef(name="e", guid="g-e")
     assert registry.typedef_by_name("missing") is None
     assert registry.typedef_names(TypeCategory.ENTITY) == ["t"]
