@@ -88,8 +88,14 @@ Configuration is managed via the `Settings` model:
 >       "type": "string"
 >     },
 >     "auth_audience": {
->       "description": "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id.",
+>       "description": "The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID; required outside development mode.",
 >       "title": "Auth Audience",
+>       "type": "string"
+>     },
+>     "auth_write_role": {
+>       "default": "",
+>       "description": "The role mutating endpoints (PUT/DELETE) require: accepted when it appears in the token's 'realm_access.roles' or in the 'resource_access.<auth_audience>.roles' list (client roles are namespaced per client; roles of other clients never satisfy the gate). Empty disables the authorization check; required outside development mode so a deployment cannot ship authentication without authorization by forgetting the variable.",
+>       "title": "Auth Write Role",
 >       "type": "string"
 >     },
 >     "auto_create_schema": {
@@ -242,6 +248,7 @@ Configuration is managed via the `Settings` model:
 > - `auth_client_id` (`str | None`)
 > - `auth_server_url` (`HttpUrl`)
 > - `auth_audience` (`str`)
+> - `auth_write_role` (`str`)
 > - `auto_create_schema` (`bool`)
 > - `cdc_disconnect_poll_timeout` (`float`)
 > - `cdc_shutdown_join_timeout` (`float`)
@@ -265,6 +272,7 @@ Configuration is managed via the `Settings` model:
 > Validators:
 >
 > - `enforce_transport_security`
+> - `enforce_auth_security`
 >
 > ### auth\_audience
 >
@@ -272,7 +280,7 @@ Configuration is managed via the `Settings` model:
 > auth_audience: str
 > ```
 >
-> The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS\_ATLAS\_FASTAPI\_AUTH\_CLIENT\_ID, falling back to the template client id.
+> The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS\_ATLAS\_FASTAPI\_AUTH\_CLIENT\_ID; required outside development mode.
 >
 > ### auth\_ca\_file
 >
@@ -321,6 +329,14 @@ Configuration is managed via the `Settings` model:
 > ```
 >
 > The base URL of the authentication server.
+>
+> ### auth\_write\_role
+>
+> ```
+> auth_write_role: str = ''
+> ```
+>
+> The role mutating endpoints (PUT/DELETE) require: accepted when it appears in the token's 'realm\_access.roles' or in the 'resource\_access..roles' list (client roles are namespaced per client; roles of other clients never satisfy the gate). Empty disables the authorization check; required outside development mode so a deployment cannot ship authentication without authorization by forgetting the variable.
 >
 > ### auto\_create\_schema
 >
@@ -503,6 +519,19 @@ Configuration is managed via the `Settings` model:
 > ```
 >
 > PEM private key matching tls\_cert\_file. Required when TLS is enabled.
+>
+> ### enforce\_auth\_security
+>
+> ```
+> enforce_auth_security() -> Settings
+> ```
+>
+> Fail fast when a non-development deployment misconfigures authentication or authorization.
+>
+> Two silent-downgrade paths are closed here:
+>
+> - A plaintext `auth_server_url` lets a network-path attacker serve a forged OpenID configuration / JWKS, which mints tokens this API would accept — the whole bearer-token scheme collapses. OAuth token endpoints elsewhere in the workspace are https-only for the same reason.
+> - An empty `auth_audience` (no `AUTH_CLIENT_ID`, no explicit audience) would accept any token from the issuer, and an empty `auth_write_role` would authenticate every caller for mutating operations. Both must be explicit.
 >
 > ### enforce\_transport\_security
 >

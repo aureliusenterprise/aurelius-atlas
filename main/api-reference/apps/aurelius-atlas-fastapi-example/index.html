@@ -1055,6 +1055,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_fastapi_example.models.Settings.auth_write_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;auth_write_role
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_fastapi_example.models.Settings.auto_create_schema" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1301,6 +1312,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;tls_key_file
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_fastapi_example.models.Settings.enforce_auth_security" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;enforce_auth_security
       </span>
     </span>
   </a>
@@ -5731,6 +5753,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_fastapi_example.models.Settings.auth_write_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;auth_write_role
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_fastapi_example.models.Settings.auto_create_schema" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -5984,6 +6017,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_fastapi_example.models.Settings.enforce_auth_security" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;enforce_auth_security
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_fastapi_example.models.Settings.enforce_transport_security" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6212,8 +6256,14 @@
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"auth_audience"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID; required outside development mode."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Auth Audience"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"auth_write_role"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The role mutating endpoints (PUT/DELETE) require: accepted when it appears in the token's 'realm_access.roles' or in the 'resource_access.&lt;auth_audience&gt;.roles' list (client roles are namespaced per client; roles of other clients never satisfy the gate). Empty disables the authorization check; required outside development mode so a deployment cannot ship authentication without authorization by forgetting the variable."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Auth Write Role"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"auto_create_schema"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -6433,6 +6483,15 @@
                 (<code><span title="str">str</span></code>)
             </li>
             <li>
+              <code><a class="autorefs autorefs-internal" title="            auth_write_role
+
+
+  
+      pydantic-field
+   (aurelius_atlas_fastapi_example.models.Settings.auth_write_role)" href="./#aurelius_atlas_fastapi_example.models.Settings.auth_write_role">auth_write_role</a></code>
+                (<code><span title="str">str</span></code>)
+            </li>
+            <li>
               <code><a class="autorefs autorefs-internal" title="            auto_create_schema
 
 
@@ -6615,6 +6674,14 @@
       pydantic-validator
    (aurelius_atlas_fastapi_example.models.Settings.enforce_transport_security)" href="./#aurelius_atlas_fastapi_example.models.Settings.enforce_transport_security">enforce_transport_security</a></code>
             </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            enforce_auth_security
+
+
+  
+      pydantic-validator
+   (aurelius_atlas_fastapi_example.models.Settings.enforce_auth_security)" href="./#aurelius_atlas_fastapi_example.models.Settings.enforce_auth_security">enforce_auth_security</a></code>
+            </li>
         </ul>
 
 
@@ -6645,7 +6712,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID, falling back to the template client id.</p>
+        <p>The audience this API accepts: a token is authorized when this value appears in its 'azp' claim or 'aud' claim list. Defaults to AURELIUS_ATLAS_FASTAPI_AUTH_CLIENT_ID; required outside development mode.</p>
 
     </div>
 
@@ -6790,6 +6857,30 @@
     <div class="doc doc-contents ">
 
         <p>The base URL of the authentication server.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_fastapi_example.models.Settings.auth_write_role" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">auth_write_role</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_fastapi_example.models.Settings.auth_write_role" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">auth_write_role</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">''</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The role mutating endpoints (PUT/DELETE) require: accepted when it appears in the token's 'realm_access.roles' or in the 'resource_access.<auth_audience>.roles' list (client roles are namespaced per client; roles of other clients never satisfy the gate). Empty disables the authorization check; required outside development mode so a deployment cannot ship authentication without authorization by forgetting the variable.</p>
 
     </div>
 
@@ -7348,6 +7439,45 @@
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_fastapi_example.models.Settings.enforce_auth_security" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">enforce_auth_security</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-validator"><code>pydantic-validator</code></small>
+  </span>
+
+<a href="#aurelius_atlas_fastapi_example.models.Settings.enforce_auth_security" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">enforce_auth_security</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            aurelius_atlas_fastapi_example.models.Settings
+
+
+  
+      pydantic-model
+  " href="./#aurelius_atlas_fastapi_example.models.Settings">Settings</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Fail fast when a non-development deployment misconfigures authentication or authorization.</p>
+<p>Two silent-downgrade paths are closed here:</p>
+<ul>
+<li>A plaintext <code>auth_server_url</code> lets a network-path attacker serve a forged
+  OpenID configuration / JWKS, which mints tokens this API would accept — the
+  whole bearer-token scheme collapses. OAuth token endpoints elsewhere in the
+  workspace are https-only for the same reason.</li>
+<li>An empty <code>auth_audience</code> (no <code>AUTH_CLIENT_ID</code>, no explicit audience) would
+  accept any token from the issuer, and an empty <code>auth_write_role</code> would
+  authenticate every caller for mutating operations. Both must be explicit.</li>
+</ul>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
