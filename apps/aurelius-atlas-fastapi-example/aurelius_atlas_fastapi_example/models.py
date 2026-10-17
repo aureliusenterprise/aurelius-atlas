@@ -139,7 +139,8 @@ class Settings(BaseSettings, Hashable):
         default="",
         description=(
             "The role mutating endpoints (PUT/DELETE) require: accepted when it appears in the token's "
-            "'realm_access.roles' or in any 'resource_access.<client>.roles' list. Empty disables the "
+            "'realm_access.roles' or in the 'resource_access.<auth_audience>.roles' list (client roles are "
+            "namespaced per client; roles of other clients never satisfy the gate). Empty disables the "
             "authorization check; required outside development mode so a deployment cannot ship "
             "authentication without authorization by forgetting the variable."
         ),

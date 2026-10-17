@@ -210,12 +210,18 @@ def _audience_matches(claims: dict, expected_audience: str) -> bool:
     return expected_audience in audiences
 
 
-def _token_roles(claims: dict) -> set[str]:
-    """Collect all roles a token carries: realm roles plus per-client resource roles.
+def _token_roles(claims: dict, *, client_id: str) -> set[str]:
+    """Collect the roles a token carries for *this* application.
 
-    Keycloak emits realm roles in ``realm_access.roles`` and client roles in
-    ``resource_access.<client-id>.roles``; accepting both keeps the check
-    independent of how the deployment assigns the role (realm- or client-scoped).
+    Keycloak namespaces client roles per client: ``resource_access.<client-id>.roles``
+    lists the roles of the client ``<client-id>``, not of the application reading
+    the token. Client roles are therefore read only under ``client_id`` — the
+    configured audience, which ``user_info`` has already verified appears in the
+    token's ``azp``/``aud`` claims. A same-named role carried under any other
+    client (e.g. ``resource_access.other-client.roles``) is deliberately ignored:
+    it belongs to that client, not to us. Realm roles (``realm_access.roles``)
+    apply across clients and are kept, so a deployment may assign the write role
+    either way. An empty ``client_id`` reads no client roles (realm only).
     """
     roles: set[str] = set()
 
@@ -225,16 +231,16 @@ def _token_roles(claims: dict) -> set[str]:
         case _:
             pass
 
-    match claims.get("resource_access"):
-        case dict() as resource_access:
-            for access in resource_access.values():
-                match access:
-                    case {"roles": list() as client_roles}:
-                        roles.update(r for r in client_roles if isinstance(r, str))
-                    case _:
-                        pass
-        case _:
-            pass
+    if client_id:
+        resource_access = claims.get("resource_access")
+        if isinstance(resource_access, dict):
+            # The client's own entry only: a same-named role under any other
+            # key is another client's role and never satisfies the gate.
+            match resource_access.get(client_id):
+                case {"roles": list() as client_roles}:
+                    roles.update(r for r in client_roles if isinstance(r, str))
+                case _:
+                    pass
 
     return roles
 
@@ -253,7 +259,7 @@ def require_write_access(
     if not settings.auth_write_role:
         return claims
 
-    if settings.auth_write_role not in _token_roles(claims):
+    if settings.auth_write_role not in _token_roles(claims, client_id=settings.auth_audience):
         LOGGER.warning("Token lacks required write role %r", settings.auth_write_role)
         raise HTTPException(status_code=403, detail="Insufficient permissions for this operation")
 
