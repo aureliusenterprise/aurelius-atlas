@@ -1,7 +1,7 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "implicitDependencies": ["aurelius-dev-observability"],
-    "name": "aurelius-dev-keycloak",
+    "implicitDependencies": ["aurelius-atlas-dev-observability"],
+    "name": "aurelius-atlas-dev-keycloak",
     "projectType": "application",
     "release": {
         "version": {

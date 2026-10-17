@@ -16,7 +16,7 @@ in `libs/angular/AGENTS.md`.
 - `tsconfig.base.json` — `aurelius-atlas-ui` path alias used by the frontend.
 - `package.json` — peer deps: keep in sync with the workspace Angular major
   (currently stale at `^21` — update when touching this file).
-- Styling comes from `@aurelius/brand` tokens; new colours belong there, not here.
+- Styling comes from `@aurelius/atlas-brand` tokens; new colours belong there, not here.
 - `chromatic` target depends on `decrypt` (SOPS) for the Chromatic token.
 
 ## Commands
@@ -38,4 +38,4 @@ nx build aurelius-atlas-ui                # ng-packagr-lite package build
 ## Removal
 
 Part of the spine. Removing it means removing the `aurelius-atlas-ui` alias, all
-imports in `aurelius-frontend-example`, and its `mkdocs.yaml` entries.
+imports in `aurelius-atlas-frontend-example`, and its `mkdocs.yaml` entries.

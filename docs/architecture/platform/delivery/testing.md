@@ -302,7 +302,7 @@ approach for provisioning dependent services.
         with DockerCompose(context=context, env_file=dotenv.find_dotenv()) as compose:
             yield compose.waiting_for(
                 {
-                    "aurelius-fastapi-example": HealthcheckWaitStrategy(),
+                    "aurelius-atlas-fastapi-example": HealthcheckWaitStrategy(),
                 },
             )
     ```
@@ -324,7 +324,7 @@ approach for provisioning dependent services.
     helper ensures logs are captured for debugging:
 
     ```python
-    from aurelius_sdk.testing.testcontainers import capture_docker_compose_logs
+    from aurelius_atlas_sdk.testing.testcontainers import capture_docker_compose_logs
 
     with DockerCompose(context=context) as compose:
         yield compose.waiting_for({"service": HealthcheckWaitStrategy()})

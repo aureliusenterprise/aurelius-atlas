@@ -1,4 +1,4 @@
-# aurelius-dev-keycloak
+# aurelius-atlas-dev-keycloak
 
 Local development identity provider. This file covers wiring specific to this
 project; workspace-wide rules live in the root `AGENTS.md`.
@@ -14,7 +14,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 
 ## Wiring Checklist
 
-- `project.json` `implicitDependencies` on `aurelius-dev-observability`; the
+- `project.json` `implicitDependencies` on `aurelius-atlas-dev-observability`; the
   `serve` target chains `decrypt` → `docker-build` → dependency `serve`, and
   exports OTLP over TLS to `https://otel-collector:4317` (JVM truststore
   `/certs/truststore.p12` via `JAVA_OPTS`; Quarkus' gRPC sender ignores
@@ -34,7 +34,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   in-network OAuth clients (Kafka broker, e2e stacks) resolve it without
   `extra_hosts: host-gateway` — that mapping points at `docker0`, which is
   link-down inside the dev container and fails intermittently. Clients join
-  the external `aurelius-dev-keycloak-network` instead.
+  the external `aurelius-atlas-dev-keycloak-network` instead.
 - The `postgres-keycloak` database is TLS-only (`sslmode=verify-full` against
   the CA; server cert via the install-copy startup pattern).
 - Realms/clients/test users live in `import/master.json`; edit there rather
@@ -60,7 +60,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 ## Commands
 
 ```bash
-nx serve aurelius-dev-keycloak   # decrypt + build + observability + up
+nx serve aurelius-atlas-dev-keycloak   # decrypt + build + observability + up
 ```
 
 ## Conventions

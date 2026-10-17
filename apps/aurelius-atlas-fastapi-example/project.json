@@ -1,0 +1,38 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": [
+        "aurelius-atlas-dev-keycloak",
+        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-dev-postgres",
+        "aurelius-atlas-example",
+        "aurelius-atlas-sdk"
+    ],
+    "name": "aurelius-atlas-fastapi-example",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_fastapi_example",
+    "tags": [],
+    "targets": {
+        "serve": {
+            "continuous": true,
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                {
+                    "projects": [
+                        "aurelius-atlas-dev-keycloak",
+                        "aurelius-atlas-dev-postgres",
+                        "aurelius-atlas-dev-observability"
+                    ],
+                    "target": "serve"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Serve the application on a local development server"
+            },
+            "options": {
+                "command": "uv run python -m aurelius_atlas_fastapi_example"
+            }
+        }
+    }
+}

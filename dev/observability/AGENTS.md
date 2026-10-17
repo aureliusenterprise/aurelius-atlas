@@ -1,4 +1,4 @@
-# aurelius-dev-observability
+# aurelius-atlas-dev-observability
 
 Local development telemetry stack (OTel Collector, Prometheus, Loki, Tempo,
 Grafana). This file covers wiring specific to this project; workspace-wide
@@ -7,7 +7,7 @@ rules live in the root `AGENTS.md`.
 ## Layout
 
 - `docker-compose.yaml` — the five services, all on
-  `aurelius-dev-observability-network`
+  `aurelius-atlas-dev-observability-network`
 - `config/` — collector pipelines and Prometheus/Loki/Tempo configs.
   Histograms pushed over OTLP may aggregate exponentially (logfire,
   Keycloak/micrometer); the collector's prometheus exporter converts those
@@ -29,9 +29,9 @@ rules live in the root `AGENTS.md`.
   interaction), the frontend dashboard reads the live cumulative `_bucket`
   instead of `rate()` to avoid NaN between ticks.
 - `config/grafana/` — file-provisioned datasources and the **dashboards**
-  folder: one dashboard per app/dev stack (`aurelius-fastapi`,
-  `aurelius-frontend`, `aurelius-keycloak`, `aurelius-postgres`,
-  `aurelius-observability-stack`), all in the
+  folder: one dashboard per app/dev stack (`aurelius-atlas-fastapi`,
+  `aurelius-atlas-frontend`, `aurelius-atlas-keycloak`, `aurelius-atlas-postgres`,
+  `aurelius-atlas-observability-stack`), all in the
   "Aurelius" folder. They are plain JSON edited in the repo (Grafana's UI
   edits are lost on recreate), keyed by the telemetry identities the slices
   export (`exported_job` / `service_name` / `service.name` = the slice's
@@ -73,7 +73,7 @@ rules live in the root `AGENTS.md`.
 ## Commands
 
 ```bash
-nx serve aurelius-dev-observability   # Grafana on http://localhost:3000
+nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
 ```
 
 > [!NOTE]
@@ -93,4 +93,4 @@ nx serve aurelius-dev-observability   # Grafana on http://localhost:3000
 
 Part of the spine (workflow reference architecture). Removing it means dropping
 the OTLP export wiring from the FastAPI example, Keycloak, and the frontend's
-`/otel` proxy and `aurelius-observability` usage.
+`/otel` proxy and `aurelius-atlas-observability` usage.

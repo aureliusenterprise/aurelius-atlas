@@ -1,0 +1,35 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-observability",
+    "prefix": "aurelius-atlas-observability",
+    "projectType": "library",
+    "sourceRoot": "libs/angular/aurelius-atlas-observability/src",
+    "tags": [],
+    "targets": {
+        "build": {
+            "configurations": {
+                "development": {},
+                "production": {
+                    "tsConfig": "libs/angular/aurelius-atlas-observability/tsconfig.lib.prod.json"
+                }
+            },
+            "defaultConfiguration": "production",
+            "executor": "@nx/angular:ng-packagr-lite",
+            "options": {
+                "project": "libs/angular/aurelius-atlas-observability/ng-package.json",
+                "tsConfig": "libs/angular/aurelius-atlas-observability/tsconfig.lib.json"
+            },
+            "outputs": ["{workspaceRoot}/dist/{projectRoot}"]
+        },
+        "test": {
+            "configurations": {
+                "ci": {
+                    "coverage": true,
+                    "coverageReporters": ["lcov"],
+                    "watch": false
+                }
+            },
+            "executor": "@nx/angular:unit-test"
+        }
+    }
+}

@@ -83,8 +83,8 @@ how it is wired lives in its own `AGENTS.md`. It exists because slice
 boundaries are a workspace-wide rule — which projects may leave together, and
 what to unwire when they do.
 
-The **spine** (keep this): `aurelius-frontend-example`, `aurelius-fastapi-example`,
-`libs/python/aurelius-sdk`, `libs/angular/*`, `dev/postgres`, `dev/keycloak`, `dev/observability`,
+The **spine** (keep this): `aurelius-atlas-frontend-example`, `aurelius-atlas-fastapi-example`,
+`libs/python/aurelius-atlas-sdk`, `libs/angular/*`, `dev/postgres`, `dev/keycloak`, `dev/observability`,
 plus the workflow (CI, pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
@@ -106,8 +106,8 @@ and the `mkdocs.yaml` nav.
 - **Secrets**: Real secrets live in per-project `.env.enc` (SOPS). Plaintext `.env` files hold
   dev defaults only. The age key is generated per developer on first devcontainer start.
 - **Env var prefixes**: Nx injects each project's `.env` into **every** task's environment for
-  that project, so app-owned settings must carry a per-project prefix — `AURELIUS_FASTAPI_`,
-  `AURELIUS_FRONTEND_` — to prevent cross-project shadowing (pydantic `env_prefix`).
+  that project, so app-owned settings must carry a per-project prefix — `AURELIUS_ATLAS_FASTAPI_`,
+  `AURELIUS_ATLAS_FRONTEND_` — to prevent cross-project shadowing (pydantic `env_prefix`).
   Names consumed by **third-party** code stay bare: `OTEL_*`, `POSTGRES_*`/`PG*` (image entrypoints),
   `KC_*`/`KEYCLOAK_*`, `NODE_EXTRA_CA_CERTS`, Node `PORT`, `SONAR_TOKEN`, and
   `TLS_TRUSTSTORE_PASSWORD` (shared compose interpolation). When renaming a key in

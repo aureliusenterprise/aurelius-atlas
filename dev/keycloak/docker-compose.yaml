@@ -1,4 +1,4 @@
-name: aurelius-dev-keycloak
+name: aurelius-atlas-dev-keycloak
 
 services:
     keycloak:
@@ -74,7 +74,7 @@ services:
             default:
                 # The issuer name clients must use (KC_HOSTNAME pins
                 # https://keycloak.localhost:8443). Attaching to this network
-                # (aurelius-dev-keycloak-network) resolves the name in-network,
+                # (aurelius-atlas-dev-keycloak-network) resolves the name in-network,
                 # so OAuth clients (broker, producer, lambda, connect) never
                 # depend on host routing — host-gateway maps to the (often
                 # link-down) docker0 bridge here and flakes.
@@ -143,9 +143,9 @@ services:
 
 networks:
     default:
-        name: aurelius-dev-keycloak-network
+        name: aurelius-atlas-dev-keycloak-network
     observability:
-        name: aurelius-dev-observability-network
+        name: aurelius-atlas-dev-observability-network
         external: true
 
 volumes:

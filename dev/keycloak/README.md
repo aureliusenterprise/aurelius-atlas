@@ -1,4 +1,4 @@
-# aurelius-dev-keycloak
+# aurelius-atlas-dev-keycloak
 
 Local development Keycloak (identity provider) with a pre-imported realm matching
 what the FastAPI backend and Angular frontend expect.
@@ -26,11 +26,11 @@ Part of the template **spine**.
 ## Running
 
 ```bash
-nx serve aurelius-dev-keycloak
+nx serve aurelius-atlas-dev-keycloak
 ```
 
 The `serve` target first runs `decrypt` (SOPS) and the project's `docker-build`,
-and starts its dependencies (`aurelius-dev-observability`). Keycloak can take a
+and starts its dependencies (`aurelius-atlas-dev-observability`). Keycloak can take a
 couple of minutes to become healthy on first start.
 
 > [!NOTE]

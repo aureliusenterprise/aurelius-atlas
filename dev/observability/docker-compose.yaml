@@ -1,4 +1,4 @@
-name: aurelius-dev-observability
+name: aurelius-atlas-dev-observability
 
 services:
     otel-collector:
@@ -101,7 +101,7 @@ services:
 
 networks:
     default:
-        name: aurelius-dev-observability-network
+        name: aurelius-atlas-dev-observability-network
 
 volumes:
     grafana-data:

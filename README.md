@@ -36,7 +36,7 @@ nothing to install by hand beyond Docker and VS Code.
 5. Run an example:
 
     ```bash
-    npx nx serve aurelius-fastapi-example
+    npx nx serve aurelius-atlas-fastapi-example
     ```
 
     Development infrastructure (Keycloak, Postgres, observability) starts automatically.
@@ -44,7 +44,7 @@ nothing to install by hand beyond Docker and VS Code.
 6. Verify your setup:
 
     ```bash
-    nx test aurelius-fastapi-example -c ci
+    nx test aurelius-atlas-fastapi-example -c ci
     ```
 
 ??? WARNING "First-run expectations"
