@@ -10,7 +10,7 @@ truth about what has been ported. Status values: _not started_, _in progress_, _
 | Atlas module                    | Purpose in Atlas                                      | Target                                              | Status      |
 | ------------------------------- | ----------------------------------------------------- | --------------------------------------------------- | ----------- |
 | `intg`                          | Model classes, type system, client-side utilities     | `aurelius-atlas-model`, `aurelius-atlas-typesystem` | in progress |
-| `repository`                    | Stores, services, discovery, lineage, glossary, audit | `aurelius-atlas-core`, `aurelius-atlas-dsl`         | not started |
+| `repository`                    | Stores, services, discovery, lineage, glossary, audit | `aurelius-atlas-core`, `aurelius-atlas-dsl`         | in progress |
 | `graphdb`                       | JanusGraph abstraction and implementation             | `aurelius-atlas-store-es`                           | replaced    |
 | `webapp`                        | REST resources, filters, authentication               | `aurelius-atlas-server`                             | in progress |
 | `server-api`                    | Interfaces shared by server components                | `aurelius-atlas-core`                               | not started |
@@ -20,7 +20,7 @@ truth about what has been ported. Status values: _not started_, _in progress_, _
 | `notification`                  | Kafka hook and entity notifications                   | –                                                   | dropped     |
 | `client`                        | Java client libraries                                 | –                                                   | dropped     |
 | `addons/*-bridge`, `*-shim`     | Hooks for Hive, HBase, Kafka, Sqoop, Storm, …         | –                                                   | dropped     |
-| `addons/models`                 | Built-in type definitions (JSON)                      | loaded by `aurelius-atlas-core` (1.4)               | not started |
+| `addons/models`                 | Built-in type definitions (JSON)                      | loaded by `aurelius-atlas-core` (1.5)               | not started |
 | `distro`, `build-tools`, `docs` | Packaging, build and site                             | template workflow                                   | replaced    |
 | `tools/*`                       | Index repair, classification updater, analyzers       | –                                                   | dropped     |
 
