@@ -10,6 +10,7 @@ from pathlib import Path
 from aurelius_atlas_trace.check import ProjectTests, collect_project, inventory
 from aurelius_atlas_trace.config import TraceConfig
 from aurelius_atlas_trace.inventory import PublicFunction
+from aurelius_atlas_trace.parity import DEVIATION_PROPERTY, ENDPOINT_PROPERTY
 from aurelius_atlas_trace.rules import Rule, read_rules
 from aurelius_atlas_trace.trace import Outcome, read_trace_file
 
@@ -95,6 +96,8 @@ class Report:
     totals: JUnitTotals
     rules: tuple[Row, ...]
     functions: tuple[Row, ...]
+    endpoints: tuple[Row, ...] = ()
+    """One row per endpoint that parity scenarios call (SCN-15)."""
 
 
 def read_junit(paths: Iterable[Path]) -> JUnitTotals:
@@ -169,6 +172,7 @@ def build_report(config: TraceConfig) -> Report:
         totals=read_junit(path for member in config.members for path in sorted(member.glob(JUNIT_GLOB))),
         rules=tuple(_rule_rows(rules.values(), collected, outcomes, config.workspace)),
         functions=tuple(_function_rows(inventory(config), collected, outcomes, coverage, config.workspace)),
+        endpoints=tuple(_endpoint_rows(collected, outcomes)),
     )
 
 
@@ -189,6 +193,26 @@ def _refs(
         for test in project_tests.tests
         if (rule is not None and rule in test.rules) or (target is not None and target in test.targets)
     )
+
+
+def _endpoint_rows(
+    collected: Sequence[ProjectTests], outcomes: dict[tuple[Path, str], Outcome | None]
+) -> Iterable[Row]:
+    """One row per endpoint, in name order, with the scenario tests calling it and their deviations (SCN-15)."""
+    endpoints: dict[str, list[TestRef]] = {}
+    deviations: dict[str, set[str]] = {}
+    for project_tests in collected:
+        root = project_tests.project.root
+        for test in project_tests.tests:
+            for endpoint in test.property_values(ENDPOINT_PROPERTY):
+                endpoints.setdefault(endpoint, []).append(
+                    TestRef(project=root.name, nodeid=test.nodeid, outcome=outcomes.get((root.resolve(), test.nodeid)))
+                )
+                deviations.setdefault(endpoint, set()).update(test.property_values(DEVIATION_PROPERTY))
+    for endpoint in sorted(endpoints):
+        ids = sorted(deviations[endpoint])
+        detail = f"deviations {', '.join(ids)}" if ids else "no deviations"
+        yield Row(name=endpoint, detail=detail, tests=tuple(endpoints[endpoint]))
 
 
 def _rule_rows(
@@ -241,7 +265,7 @@ def render_summary(report: Report) -> str:
         "| | Passed | Failed | Skipped | Not run | Uncovered |",
         "| --- | --- | --- | --- | --- | --- |",
     ]
-    for title, rows in (("Rules", report.rules), ("Functions", report.functions)):
+    for title, rows in (("Rules", report.rules), ("Endpoints", report.endpoints), ("Functions", report.functions)):
         counts = _counts(rows)
         lines.append(
             f"| {title} | {counts[Status.PASSED]} | {counts[Status.FAILED]} | {counts[Status.SKIPPED]} "
@@ -249,7 +273,7 @@ def render_summary(report: Report) -> str:
         )
     problems = [
         f"- {kind} `{row.name}`: {row.status}"
-        for kind, rows in (("rule", report.rules), ("function", report.functions))
+        for kind, rows in (("rule", report.rules), ("endpoint", report.endpoints), ("function", report.functions))
         for row in rows
         if row.status in {Status.FAILED, Status.UNCOVERED}
     ]
@@ -324,6 +348,7 @@ def render_html(report: Report, title: str = "Test report") -> str:
         f"<title>{html.escape(title)}</title><style>{_STYLE}</style></head><body>"
         f"<h1>{html.escape(title)}</h1><h2>Results</h2>{results}"
         + _table("Rules", report.rules, with_coverage=False)
+        + _table("Endpoints", report.endpoints, with_coverage=False)
         + _table("Public functions", report.functions, with_coverage=True)
         + "</body></html>\n"
     )

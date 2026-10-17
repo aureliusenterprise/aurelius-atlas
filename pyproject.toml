@@ -94,6 +94,7 @@ members = [
 # What the traceability check covers (ADR 049, DD-010): every workspace member except these template
 # projects, without their `testing` subpackages, and the rules of every specification from 0.2 on.
 [tool.aurelius-atlas-trace]
+deviations = "docs/architecture/conversion/deviations.md"
 enforce-from = "0.2"
 exclude-projects = [
     "apps/aurelius-atlas-fastapi-example",
