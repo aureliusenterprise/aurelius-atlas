@@ -44,6 +44,11 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+# Test report inputs and output (aurelius-atlas-trace)
+junit.xml
+junit-e2e.xml
+trace.json
+trace-e2e.json
 *.cover
 *.py,cover
 .hypothesis/

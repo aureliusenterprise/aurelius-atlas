@@ -85,6 +85,13 @@ function buildTargets(
                 },
             ],
             executor: "@nxlv/python:run-commands",
+            configurations: {
+                // Result files for the CI test report (ADR 049, DD-011).
+                ci: {
+                    junitxml: "junit-e2e.xml",
+                    "trace-json": "trace-e2e.json",
+                },
+            },
             inputs: ["pythonBase", "^default", "{projectRoot}/tests/**/*", "{projectRoot}/e2e/**/*"],
             metadata: {
                 description: "Run the end-to-end tests for this application",
@@ -150,9 +157,12 @@ function buildTargets(
             ],
             executor: "@nxlv/python:run-commands",
             configurations: {
+                // Coverage for Sonar; JUnit and trace files for the CI test report (ADR 049, DD-011).
                 ci: {
                     "cov-report": "xml:coverage.xml",
                     cov: moduleName,
+                    junitxml: "junit.xml",
+                    "trace-json": "trace.json",
                 },
             },
             inputs: ["pythonBase", "^default", "{projectRoot}/tests/**/*", "{projectRoot}/e2e/**/*"],
