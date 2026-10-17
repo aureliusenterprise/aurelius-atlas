@@ -39,6 +39,18 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   the CA; server cert via the install-copy startup pattern).
 - Realms/clients/test users live in `import/master.json`; edit there rather
   than mutating the running container (changes are lost on recreate otherwise).
+    - `import/master.json` declares the dev identities: `aurelius-writer`
+      (carries the `aurelius-write` client role on the `aurelius` client — the
+      FastAPI example's write gate, `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`) and
+      `aurelius-reader` (read-only), so the authorization model is declarative —
+      no init sidecar. Passwords are `${DEV_USER_*_PASSWORD}` placeholders
+      resolved from the container env (`.env.enc`, `${VAR:?}` guards) by the same
+      `replace-placeholders` flag as the client secrets; the apps' `.env` files
+      point at `aurelius-writer`. The bootstrap `admin` account
+      (`KC_BOOTSTRAP_ADMIN_*`) stays reserved for the admin console. Gotcha (same
+      as secrets): after changing a user/role, delete the realm (or recreate the
+      stack) and re-import — re-imports don't overwrite, and placeholder values
+      never re-resolve for existing users.
 - The `aurelius` client (frontend SPA, public) has explicit loopback redirect
   URIs and web origins: `http(s)://localhost|127.0.0.1:4200` (`nx serve`) and
   `https://localhost:18443` (frontend e2e's fixed host port). Keep them in
@@ -54,8 +66,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 - Realm imports can carry `${VAR}` placeholders resolved from the container
   environment; substitution needs the
   `-Dkeycloak.migration.replace-placeholders=true` JVM flag in `JAVA_OPTS`
-  (without it the literal `${...}` string is imported). The Kafka and
-  OpenMetadata realms that used this were removed with those stacks (ADR 050).
+  (without it the literal `${...}` string is imported). Used by the dev user
+  passwords in `import/master.json` (see above); the Kafka and OpenMetadata
+  realms that also used this were removed with those stacks (ADR 050).
 
 ## Commands
 

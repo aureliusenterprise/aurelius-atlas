@@ -1,9 +1,13 @@
+import base64
 import http.client
+import json
 import ssl
+import time
 from collections.abc import Generator
 from pathlib import Path
 
 import dotenv
+import httpx
 import pytest
 from aurelius_atlas_example import Entity
 from keycloak import KeycloakOpenID
@@ -31,6 +35,9 @@ class Settings(BaseSettings):
     database_username: str
     password: SecretStr
     username: str
+    # Read-only dev identity (import/master.json): exercises the 403 deny path.
+    reader_password: SecretStr
+    reader_username: str
 
     model_config = SettingsConfigDict(
         # Same prefix as the application's Settings (models.ENV_PREFIX): the
@@ -71,7 +78,7 @@ def observability() -> DockerCompose:
 
 
 @pytest.fixture(scope="session")
-def keycloak(observability: DockerCompose) -> DockerCompose:
+def keycloak(observability: DockerCompose, settings: Settings) -> DockerCompose:
     """
     Return a Docker Compose instance for the Keycloak service.
 
@@ -86,11 +93,72 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
 
     compose.start()
 
-    return compose.waiting_for(
+    compose.waiting_for(
         {
             "keycloak": HealthcheckWaitStrategy(),
         },
     )
+
+    _wait_for_dev_users(compose, settings)
+
+    return compose
+
+
+def _mint_token(compose: DockerCompose, settings: Settings, username: str, password: str) -> dict:
+    """Mint an access token for a dev realm user and return its claims."""
+    port = compose.get_service_port("keycloak", 8443)
+    context = ssl.create_default_context(cafile=str(CA_FILE))
+    response = httpx.post(
+        f"https://keycloak.localhost:{port}/realms/master/protocol/openid-connect/token",
+        data={
+            "client_id": settings.auth_client_id,
+            "grant_type": "password",
+            "username": username,
+            "password": password,
+        },
+        verify=context,
+        timeout=10,
+    )
+    response.raise_for_status()
+    access_token = response.json()["access_token"]
+    return json.loads(base64.urlsafe_b64decode(access_token.split(".")[1] + "=="))
+
+
+def _wait_for_dev_users(
+    compose: DockerCompose,
+    settings: Settings,
+    timeout: float = 120.0,
+) -> None:
+    """Wait until the dev realm users are importable and correctly entitled.
+
+    The users and the aurelius-write role are declared in
+    ``dev/keycloak/import/master.json`` (passwords resolved from
+    ``${DEV_USER_*_PASSWORD}``); polling real tokens — rather than a container
+    state — also covers a stack that was already running with a stale realm
+    (the fixture reuses running stacks; the import only applies on recreate).
+    """
+    deadline = time.monotonic() + timeout
+
+    while time.monotonic() < deadline:
+        try:
+            writer = _mint_token(compose, settings, settings.username, settings.password.get_secret_value())
+            reader = _mint_token(
+                compose, settings, settings.reader_username, settings.reader_password.get_secret_value()
+            )
+            writer_roles = set(writer.get("resource_access", {}).get(settings.auth_client_id, {}).get("roles", []))
+            reader_roles = set(reader.get("resource_access", {}).get(settings.auth_client_id, {}).get("roles", []))
+            if "aurelius-write" in writer_roles and "aurelius-write" not in reader_roles:
+                return
+        except httpx.HTTPError, KeyError, ValueError:
+            pass
+        time.sleep(2)
+
+    msg = (
+        f"dev realm users not ready within {timeout}s: expected {settings.username!r} with "
+        f"the aurelius-write role and {settings.reader_username!r} without it. Recreate the "
+        "stack (docker compose down -v up -d) so the changed import/master.json applies."
+    )
+    raise TimeoutError(msg)
 
 
 @pytest.fixture(scope="session")
@@ -249,6 +317,15 @@ def token(keycloak_client: KeycloakOpenID, settings: Settings) -> str:
     return keycloak_client.token(
         settings.username,
         settings.password.get_secret_value(),
+    )["access_token"]
+
+
+@pytest.fixture
+def reader_token(keycloak_client: KeycloakOpenID, settings: Settings) -> str:
+    """Return a valid access token for the read-only dev user (no write role)."""
+    return keycloak_client.token(
+        settings.reader_username,
+        settings.reader_password.get_secret_value(),
     )["access_token"]
 
 

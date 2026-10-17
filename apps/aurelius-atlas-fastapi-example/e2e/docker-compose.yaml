@@ -14,7 +14,14 @@ services:
             AURELIUS_ATLAS_FASTAPI_AUTH_REALM_NAME: ${AURELIUS_ATLAS_FASTAPI_AUTH_REALM_NAME:?}
             AURELIUS_ATLAS_FASTAPI_AUTH_SERVER_URL: https://keycloak.localhost:8443/
             AURELIUS_ATLAS_FASTAPI_AUTH_CA_FILE: /certs/ca.pem
-            AURELIUS_ATLAS_FASTAPI_ENVIRONMENT: ${AURELIUS_ATLAS_FASTAPI_ENVIRONMENT:?}
+            # Production mode on purpose: this stack already serves TLS and
+            # verifies Postgres/auth-server certs, so it runs the strict
+            # startup validators (https auth URL, explicit audience, required
+            # write role) and the write-role authorization gate — e2e exercises
+            # the hardened posture, not the development defaults. The schema is
+            # created by the test fixtures, not auto_create_schema.
+            AURELIUS_ATLAS_FASTAPI_ENVIRONMENT: production
+            AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE: ${AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE:-aurelius-write}
             AURELIUS_ATLAS_FASTAPI_DATABASE_NAME: ${AURELIUS_ATLAS_FASTAPI_DATABASE_NAME:?}
             AURELIUS_ATLAS_FASTAPI_DATABASE_HOST: postgres
             AURELIUS_ATLAS_FASTAPI_DATABASE_PASSWORD: ${AURELIUS_ATLAS_FASTAPI_DATABASE_PASSWORD:?}

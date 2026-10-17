@@ -406,6 +406,55 @@ def test__aurelius_atlas_fastapi_example_put_requires_auth(
     assert response.status == 401, "Expected 401 Unauthorized status for unauthenticated request"
 
 
+def test__aurelius_atlas_fastapi_example_put_requires_write_role(
+    connection: http.client.HTTPConnection,
+    entity: Entity,
+    reader_token: str,
+) -> None:
+    """
+    Test that the update endpoint requires the API write role.
+
+    The read-only dev user (import/master.json) authenticates but has no
+    aurelius-write role.
+
+    Asserts:
+        - The API returns a 403 Forbidden status code for an authenticated
+          caller without the write role.
+    """
+    connection.request(
+        "PUT",
+        "/entities/",
+        entity.model_dump_json(),
+        headers={"Authorization": f"Bearer {reader_token}", "Content-Type": "application/json"},
+    )
+
+    response = connection.getresponse()
+
+    assert response.status == 403, "Expected 403 Forbidden status for a caller without the write role"
+
+
+def test__aurelius_atlas_fastapi_example_get_all_allowed_without_write_role(
+    connection: http.client.HTTPConnection,
+    reader_token: str,
+) -> None:
+    """
+    Test that read endpoints stay available without the write role.
+
+    Asserts:
+        - The API returns a 200 OK status code for an authenticated
+          read-only caller.
+    """
+    connection.request(
+        "GET",
+        "/entities/",
+        headers={"Authorization": f"Bearer {reader_token}"},
+    )
+
+    response = connection.getresponse()
+
+    assert response.status == 200, "Expected 200 OK status for a read-only caller"
+
+
 def test__aurelius_atlas_fastapi_example_delete(
     connection: http.client.HTTPConnection,
     entity: Entity,

@@ -2000,7 +2000,17 @@
             ],
             "account-console": [],
             "admin-cli": [],
-            "aurelius": [],
+            "aurelius": [
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "containerId": "ca2a08b7-da22-499d-a29b-ebbc29806560",
+                    "description": "Write access to the Aurelius example API (PUT/DELETE on /entities)",
+                    "id": "88384ee8-c8c7-49fc-b67d-1904172b3261",
+                    "name": "aurelius-write"
+                }
+            ],
             "broker": [
                 {
                     "attributes": {},
@@ -2280,6 +2290,39 @@
     "ssoSessionMaxLifespan": 36000,
     "ssoSessionMaxLifespanRememberMe": 0,
     "userManagedAccessAllowed": false,
+    "users": [
+        {
+            "clientRoles": {
+                "aurelius": ["aurelius-write"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEV_USER_WRITER_PASSWORD}"
+                }
+            ],
+            "email": "writer@aureliusenterprise.com",
+            "emailVerified": false,
+            "enabled": true,
+            "firstName": "Aurelius",
+            "lastName": "Writer",
+            "username": "aurelius-writer"
+        },
+        {
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEV_USER_READER_PASSWORD}"
+                }
+            ],
+            "email": "reader@aureliusenterprise.com",
+            "emailVerified": false,
+            "enabled": true,
+            "firstName": "Aurelius",
+            "lastName": "Reader",
+            "username": "aurelius-reader"
+        }
+    ],
     "verifiableCredentialsEnabled": false,
     "verifyEmail": false,
     "waitIncrementSeconds": 60,

@@ -23,6 +23,24 @@ Part of the template **spine**.
 - Telemetry is exported via OTLP over TLS to the observability stack
   (`https://otel-collector:4317`, trusted via this project's `certs/truststore.p12`)
 
+## Dev users
+
+`import/master.json` declares two realm users so RBAC works out of the box —
+no post-import scripting:
+
+- `aurelius-writer` — has the `aurelius-write` client role (the FastAPI
+  mutating endpoints require it as `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`)
+- `aurelius-reader` — authenticates but holds no roles (denied on writes)
+
+Their passwords are `${DEV_USER_WRITER_PASSWORD}` / `${DEV_USER_READER_PASSWORD}`
+placeholders resolved from the container environment at import time
+(`-Dkeycloak.migration.replace-placeholders=true`); the values live in this
+project's `.env.enc` like every other dev credential.
+
+> [!NOTE]
+> `--import-realm` uses `IGNORE_EXISTING`: changing users/roles requires
+> recreating the stack (`docker compose down -v && docker compose up -d`).
+
 ## Running
 
 ```bash
@@ -35,4 +53,6 @@ couple of minutes to become healthy on first start.
 
 > [!NOTE]
 > `keycloak.localhost` resolves to 127.0.0.1 on most systems. Log in with the
-> credentials defined in `import/master.json` for the admin console.
+> bootstrap admin credentials (`KC_BOOTSTRAP_ADMIN_USERNAME` /
+> `KC_BOOTSTRAP_ADMIN_PASSWORD` in this project's `.env`) for the admin console;
+> application users are the `aurelius-*` dev users above.
