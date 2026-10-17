@@ -154,11 +154,6 @@ runs:
           if: inputs.python == 'true'
           uses: crazy-max/ghaction-github-runtime@v4
 
-        - name: Update GITHUB_PATH
-          if: inputs.python == 'true'
-          shell: bash
-          run: echo "$(dirname "$(uv python find)")" >> $GITHUB_PATH
-
         - name: Setup Node.js and dependencies
           if: inputs.node == 'true'
           uses: actions/setup-node@v6
