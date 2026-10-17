@@ -6,7 +6,7 @@ Where each part of Apache Atlas 2.4.0 goes. Updated by every increment; the stat
 
 | Atlas module | Purpose in Atlas | Target | Status |
 | --- | --- | --- | --- |
-| `intg` | Model classes, type system, client-side utilities | `aurelius-atlas-model`, `aurelius-atlas-typesystem` | not started |
+| `intg` | Model classes, type system, client-side utilities | `aurelius-atlas-model`, `aurelius-atlas-typesystem` | in progress |
 | `repository` | Stores, services, discovery, lineage, glossary, audit | `aurelius-atlas-core`, `aurelius-atlas-dsl` | not started |
 | `graphdb` | JanusGraph abstraction and implementation | `aurelius-atlas-store-es` | replaced |
 | `webapp` | REST resources, filters, authentication | `aurelius-atlas-server` | in progress |
@@ -29,4 +29,6 @@ Rows are added by each increment for the classes it ports.
 | --- | --- | --- | --- |
 | `AdminResource` (version, status, session, liveness, readiness) | `aurelius_atlas_server.routes.admin` | 0.5 | in progress |
 | `AtlasBaseExceptionMapper` | `aurelius_atlas_server.errors` | 0.5 | ported |
+| `AtlasBaseTypeDef`, `AtlasStructDef`, `AtlasEnumDef`, `AtlasClassificationDef`, `AtlasEntityDef`, `AtlasRelationshipDef`, `AtlasRelationshipEndDef`, `AtlasBusinessMetadataDef` | `aurelius_atlas_model.typedef` | 1.1 | in progress |
+| `AtlasTypeDefHeader`, `AtlasTypesDef`, `TypeCategory` | `aurelius_atlas_model.typedef` | 1.1 | in progress |
 | `AtlasErrorCode` (`INTERNAL_ERROR`) | `aurelius_atlas_server.errors` | 0.5 | in progress |

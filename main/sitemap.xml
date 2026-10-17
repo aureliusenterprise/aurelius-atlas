@@ -37,6 +37,9 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-model/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-parity/</loc>
       </url>
       <url>
@@ -248,6 +251,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/0-6-dashboards/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/</loc>

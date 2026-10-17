@@ -1175,6 +1175,8 @@
       
         
       
+        
+      
     
     
     
@@ -1243,6 +1245,33 @@
     
   
   aurelius-atlas-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-model
 
     
   </span>
@@ -3580,6 +3609,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-020. Typedef models are Pydantic models that read and write Atlas's JSON
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-021. Set-valued fields keep each name once, in first-seen order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3659,6 +3721,8 @@
       
         
           
+        
+      
         
       
         
@@ -3905,6 +3969,33 @@
     
   
   0.6 Dashboards served
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-1-typedef-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.1 Typedef models
 
     
   </span>
@@ -5952,6 +6043,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-020. Typedef models are Pydantic models that read and write Atlas's JSON
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-021. Set-valued fields keep each name once, in first-seen order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6236,6 +6360,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019</a></td>
 <td>The template examples stay until the plan is done</td>
 <td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json">DD-020</a></td>
+<td>Typedef models are Pydantic models that read and write Atlas's JSON</td>
+<td>1.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order">DD-021</a></td>
+<td>Set-valued fields keep each name once, in first-seen order</td>
+<td>1.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022</a></td>
+<td>Typedef timestamps are aware datetimes, written as epoch milliseconds</td>
+<td>1.1</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -6601,6 +6743,58 @@ this fulfils ADR 050's R1 sooner, but the components would have to be restored f
 <p><strong>Consequences.</strong> CI keeps building, testing and scanning the examples. 1.1 follows 0.6 directly.
 The to-do in the roadmap records the scope already agreed for the removal: everything the catalogue
 does not use, apart from <code>dev/keycloak</code>.</p>
+<h3 id="dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json">DD-020. Typedef models are Pydantic models that read and write Atlas's JSON<a class="headerlink" href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> Each Atlas typedef class is a Pydantic model in <code>aurelius_atlas_model.typedef</code> with
+snake_case attributes and the Java getter names as aliases. <code>model_validate</code> reads a request body and
+<code>to_json</code> writes a response body: aliases, null fields left out, empty collections kept. Unknown fields
+are ignored. The Java setters' normalisations run as <code>_</code>-prefixed validators, so they apply when a body
+is read and when a model is built in code, as the Java constructors and setters do.</p>
+<p><strong>Reason.</strong> Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and
+writes it natively, so 1.4 needs no mapping layer. Atlas writes with Jackson <code>NON_NULL</code>, which is
+Pydantic's <code>exclude_none</code>; empty collections stay because Jackson keeps them (DD-013 compares exactly).</p>
+<p><strong>Alternatives.</strong> Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to
+TDM-15 would be custom code. Generating models from Atlas's JSON schema: Atlas publishes none, and the
+normalisations live in Java setters a schema cannot express.</p>
+<p><strong>Consequences.</strong> Response bodies must be written with <code>to_json</code> (or its <code>exclude_none</code>, <code>by_alias</code>
+dump), never with FastAPI's default response model serialisation. Later model packages (entities in 2.1)
+follow the same pattern.</p>
+<h3 id="dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order">DD-021. Set-valued fields keep each name once, in first-seen order<a class="headerlink" href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>superTypes</code>, <code>subTypes</code> and <code>entityTypes</code> are lists without duplicates, kept in the order
+the names were first given.</p>
+<p><strong>Reason.</strong> Java holds them in a <code>HashSet</code> and writes them in hash order, which Atlas does not define and
+no client can rely on. A Python <code>set</code> would make our order vary from run to run; first-seen order is
+stable and keeps what the client sent.</p>
+<p><strong>Alternatives.</strong> Reproduce Java's <code>HashSet</code> iteration order: possible from <code>String.hashCode</code> and the
+table size, but it would copy an accident of the implementation. Sorted order: stable, but reorders
+what clients send.</p>
+<p><strong>Consequences.</strong> The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them
+without order, through the option DD-013 foresees, which 1.4 adds with the first scenario that needs it.</p>
+<h3 id="dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds<a class="headerlink" href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>createTime</code> and <code>updateTime</code> are timezone-aware UTC <code>datetime</code>s. They are written as
+integer milliseconds since the epoch and read from a number, a string of digits or an ISO-8601
+date-time string.</p>
+<p><strong>Reason.</strong> Atlas's REST mapper has no date serialiser, so Jackson writes <code>java.util.Date</code> as epoch
+milliseconds and its <code>StdDateFormat</code> reads numbers, digit strings and ISO-8601. Pydantic would read a
+bare integer as seconds or milliseconds depending on its size, so the conversion is explicit.</p>
+<p><strong>Alternatives.</strong> Keep the raw integer: exact, but every caller would convert. Write ISO-8601 strings:
+readable, but a visible difference from Atlas.</p>
+<p><strong>Consequences.</strong> Jackson's RFC 1123 form (<code>Tue, 17 Oct 2026 10:00:00 GMT</code>) is not read. No Atlas client
+is known to send it; if one does, it becomes a deviation.</p>
 
 
 
