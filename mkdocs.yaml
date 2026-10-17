@@ -94,6 +94,7 @@ nav:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
+                      - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
                 - Styles:
                       - api-reference/libs/styles/index.md
                       - aurelius-atlas-brand: api-reference/libs/styles/aurelius-atlas-brand.md
@@ -162,6 +163,7 @@ nav:
                       - architecture/conversion/increments/index.md
                       - Specification Template: architecture/conversion/increments/template.md
                       - 0.1 Adopt the template: architecture/conversion/increments/0-1-adopt-template.md
+                      - 0.2 Elasticsearch infrastructure: architecture/conversion/increments/0-2-elasticsearch-infrastructure.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

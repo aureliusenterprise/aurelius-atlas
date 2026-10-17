@@ -1,0 +1,29 @@
+# Settings for the single development node, mounted over the image's
+# config/elasticsearch.yml. The hardened image ignores dotted environment
+# variables, so every setting lives here.
+
+cluster.name: aurelius-atlas
+node.name: elasticsearch
+network.host: 0.0.0.0
+discovery.type: single-node
+
+# Security on (DD-005): TLS-only HTTP with a certificate from the workspace CA,
+# basic authentication. Certificates are mounted at config/tls, not
+# config/certs: that directory belongs to security auto-configuration, which
+# must not run because every security setting is explicit.
+xpack.security.enabled: true
+xpack.security.autoconfiguration.enabled: false
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.certificate: tls/elasticsearch.pem
+xpack.security.http.ssl.key: tls/elasticsearch-key.pem
+xpack.security.http.ssl.certificate_authorities: [tls/ca.pem]
+# A single node has no peers to talk to over the transport layer.
+xpack.security.transport.ssl.enabled: false
+
+# No memory-mapped index files: avoids depending on the host's vm.max_map_count
+# (dev machines and CI runners differ). Slower on large indices, irrelevant at
+# dev scale.
+node.store.allow_mmap: false
+
+# Development disks fill up; don't flip indices to read-only at 95%.
+cluster.routing.allocation.disk.threshold_enabled: false

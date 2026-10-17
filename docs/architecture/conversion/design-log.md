@@ -40,6 +40,10 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)   | Atlas code lives in `aurelius-atlas-*` projects split by layer            | 0.1       | Accepted |
 | [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)   | All template projects carry the `aurelius-atlas-` prefix                  | 0.1       | Accepted |
 | [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)      | The SPA keeps tokens in memory and renews them silently                   | 0.1       | Accepted |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)       | The store uses the official async Elasticsearch client, one per store     | 0.2       | Proposed |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)     | Development and tests run Elasticsearch with TLS and authentication on    | 0.2       | Proposed |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)  | The Elasticsearch test fixture ships with the store library               | 0.2       | Proposed |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                  | A yellow cluster is healthy                                               | 0.2       | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -141,3 +145,86 @@ same-site) Keycloak deployment: where browsers block the framing cookie, `check-
 not-signed-in state and the app falls back to a full redirect login (`login()`), which still works.
 If per-tab token durability becomes a product requirement, supersede this entry by adding the BFF —
 not by moving the tokens to storage.
+
+### DD-005. The store uses the official async Elasticsearch client
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** `aurelius-atlas-store-es` talks to Elasticsearch through `AsyncElasticsearch` from the
+official `elasticsearch` Python client, version 9.5 or later within major 9, matching the 9.5 server
+(`dhi.io/elasticsearch:9.5-debian13`; minor upgrades are deliberate, patch releases follow the tag). A
+store instance owns exactly one client, opened and closed with the store (`async with`).
+
+**Reason.** The server is FastAPI and asynchronous; a blocking client would tie up the event loop or
+need a thread pool. The official client tracks the server's API and versioning, ships typed
+request helpers, and includes the query DSL module that search (4.x) will need.
+
+**Alternatives.** `httpx` against the REST API directly: no extra dependency, but every API, retry
+and error type would be rebuilt by hand. `opensearch-py`: a different server; ADR 047 names
+Elasticsearch. One client per request: simple, but loses connection pooling.
+
+**Consequences.** The client's major version moves with the server's (STO-04 guards it). Connection
+pooling and retries are the client's; tuning them is part of 6.4.
+
+### DD-006. Development and tests run Elasticsearch with security on
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** `dev/elasticsearch` and the test fixture run with `xpack.security` enabled: TLS on the
+HTTP layer with a certificate from the workspace CA (dev) or an ephemeral CA (tests), and basic
+authentication for the built-in `elastic` user. The store library has no option to skip certificate
+verification.
+
+**Reason.** It is the posture production needs, and the one `dev/postgres` already has; a store that
+only ever ran without security would meet TLS and authentication for the first time in production.
+
+**Alternatives.** Security disabled in development: faster start-up and simpler `curl`, but a
+different code path (plain HTTP, no credentials) from production, and a verification switch in the
+library that someone eventually leaves off.
+
+**Consequences.** Dev tools need the CA file and the password
+(`curl --cacert dev/elasticsearch/certs/ca.pem -u elastic:…`). A dedicated application user with
+least privilege replaces `elastic` when authorization arrives (6.2).
+
+### DD-007. The Elasticsearch test fixture ships with the store library
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** The testcontainers helper that starts a TLS-enabled Elasticsearch lives in
+`aurelius_atlas_store_es.testing`, behind the library's `testing` extra, next to the code it serves.
+
+**Reason.** Every later project with a store (`-core`, the server, the parity harness) needs the same
+container; the library that defines the settings is the one that knows how to build them for a test
+server, and keeping both together means a settings change cannot break the fixture unnoticed.
+
+**Alternatives.** `aurelius-atlas-sdk.testing`, where the Postgres helper lives: would make the
+generic SDK depend on Elasticsearch. A copy per project: drifts.
+
+**Consequences.** Test-only dependencies (`testcontainers`, `trustme`) stay out of the runtime install;
+consuming projects add `aurelius-atlas-store-es[testing]` to their dev dependencies.
+
+### DD-008. A yellow cluster is healthy
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** The store's health check reports up for cluster status green or yellow and down for red
+(STO-05).
+
+**Reason.** Yellow means every primary shard is assigned and all data is readable and writable; only
+replicas are missing. A single-node cluster, the development and small-installation case
+([ADR 006](../adr/006-the-whole-system-runs-on-one-machine.md)), is yellow as soon as an index has a
+replica. Reporting it down would make every single-node deployment permanently unready.
+
+**Alternatives.** Green only: correct for multi-node clusters, unusable for single-node ones unless
+every index is created with zero replicas. A configurable threshold: one more setting nobody sets.
+
+**Consequences.** Lost redundancy is not visible as a health failure; it is visible in the cluster
+metrics (ESD-06) and should be alerted on there.

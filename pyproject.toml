@@ -13,6 +13,7 @@ dev = [
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
     "aurelius-atlas-sdk[full]",
+    "aurelius-atlas-store-es[testing]",
     "aurelius-atlas-vulnerability-report",
     "alembic>=1.18",
     "mike",
@@ -64,6 +65,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-sdk]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-store-es]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-vulnerability-report]
 workspace = true
 
@@ -72,6 +76,7 @@ members = [
     "apps/aurelius-atlas-fastapi-example",
     "libs/python/aurelius-atlas-example",
     "libs/python/aurelius-atlas-sdk",
+    "libs/python/aurelius-atlas-store-es",
     "reports/aurelius-atlas-license-report",
     "reports/aurelius-atlas-vulnerability-report",
 ]
