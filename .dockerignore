@@ -13,3 +13,7 @@ site/
 build/
 coverage/
 node_modules/
+# Local build output of the vendored dashboards; their build stage installs and builds its own (DD-017).
+apps/aurelius-atlas-dashboard/dashboardv*/node_modules/
+apps/aurelius-atlas-dashboard/dashboardv*/dist/
+apps/aurelius-atlas-dashboard/dashboardv*/public/js/libs/

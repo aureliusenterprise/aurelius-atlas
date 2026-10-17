@@ -1,0 +1,29 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-dashboard",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}",
+    "tags": [],
+    "targets": {
+        "build": {
+            "cache": true,
+            "executor": "nx:run-commands",
+            "inputs": [
+                "{projectRoot}/build.Dockerfile",
+                "{projectRoot}/dashboardv2/package-lock.json",
+                "{projectRoot}/dashboardv2/gruntfile.js",
+                "{projectRoot}/dashboardv2/public/**/*",
+                "{projectRoot}/dashboardv3/package-lock.json",
+                "{projectRoot}/dashboardv3/gruntfile.js",
+                "{projectRoot}/dashboardv3/public/**/*"
+            ],
+            "metadata": {
+                "description": "Build dashboardv2 and dashboardv3 into dist/ (v2 at the root, v3 under n/)"
+            },
+            "options": {
+                "command": "docker buildx build . -f {projectRoot}/build.Dockerfile --output type=local,dest={projectRoot}/dist"
+            },
+            "outputs": ["{projectRoot}/dist"]
+        }
+    }
+}
