@@ -76,38 +76,30 @@ runs:
           if: inputs.disk-cleanup == 'true'
           shell: bash
           run: |
-              # Remove .NET SDKs
-              sudo rm -rf /usr/share/dotnet
-
-              # Remove Swift toolchain
-              sudo rm -rf /usr/share/swift
-
-              # Remove Haskell (GHC)
-              sudo rm -rf /usr/local/.ghcup
-
-              # Remove Julia
-              sudo rm -rf /usr/local/julia*
-
-              # Remove Android SDKs
-              sudo rm -rf /usr/local/lib/android
-
-              # Remove Chromium (optional if not using for browser tests)
-              sudo rm -rf /usr/local/share/chromium
-
-              # Remove Microsoft/Edge and Google Chrome builds
-              sudo rm -rf /opt/microsoft /opt/google
-
-              # Remove Azure CLI
-              sudo rm -rf /opt/az
-
-              # Remove PowerShell
-              sudo rm -rf /usr/local/share/powershell
+              # Deletion is metadata-bound I/O and takes ~2 minutes; run it in
+              # the background so it overlaps with the cache restores and
+              # installs that follow. Nothing later depends on the space being
+              # free yet - the Docker prunes below act on a freshly started,
+              # empty daemon.
+              nohup sudo rm -rf \
+                  /usr/share/dotnet \
+                  /usr/share/swift \
+                  /usr/local/.ghcup \
+                  /usr/local/julia* \
+                  /usr/local/lib/android \
+                  /usr/local/share/chromium \
+                  /opt/microsoft /opt/google \
+                  /opt/az \
+                  /usr/local/share/powershell \
+                  >/dev/null 2>&1 &
 
               docker system prune -af || true
               docker builder prune -af || true
-              df -h
 
         - name: Set up Docker with containerd snapshotter
+          # Only jobs that log in to a registry use Docker; without this gate
+          # the light jobs pay ~20 s for a daemon restart they never need.
+          if: inputs.dockerhub-username != ''
           uses: docker/setup-docker-action@v5
           with:
               daemon-config: |
@@ -165,7 +157,7 @@ runs:
         - name: Update GITHUB_PATH
           if: inputs.python == 'true'
           shell: bash
-          run: echo "$(uv python find)" >> $GITHUB_PATH
+          run: echo "$(dirname "$(uv python find)")" >> $GITHUB_PATH
 
         - name: Setup Node.js and dependencies
           if: inputs.node == 'true'
@@ -178,6 +170,14 @@ runs:
           if: inputs.node == 'true'
           shell: bash
           run: npm install
+
+        - name: Cache Playwright browsers
+          id: cache-playwright
+          if: inputs.playwright == 'true'
+          uses: actions/cache@v5
+          with:
+              path: ~/.cache/ms-playwright
+              key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
 
         - name: Log in to Docker Hub
           if: inputs.dockerhub-username != ''
@@ -202,6 +202,32 @@ runs:
               registry: ghcr.io
               username: ${{ github.actor }}
               password: ${{ inputs.github-token }}
+
+        - name: Prefetch base images (background)
+          if: inputs.dockerhub-username != ''
+          shell: bash
+          run: |
+              # Pull every third-party image the workspace's compose files and
+              # Dockerfiles use, in parallel and detached: the pulls keep
+              # running while later steps (Playwright, Nx build/test) execute,
+              # so docker compose/build find images already in the local store
+              # instead of pulling them serially on the critical path.
+              # Concurrent pulls of the same tag are deduplicated by the
+              # daemon, so a service starting before prefetch finishes just
+              # joins the in-flight pull. Images without a dhi.io prefix are
+              # locally built app images, not pulled.
+              # setsid detaches from the step's process group so the runner
+              # does not kill the in-flight pulls when the step exits.
+              {
+                  grep -rhoE '^[[:space:]]*image:[[:space:]]*[^[:space:]]+' \
+                      --include=docker-compose.yaml dev apps
+                  grep -rhoE '^FROM[[:space:]]+[^[:space:]]+' apps/*/Dockerfile dev/*/Dockerfile 2>/dev/null
+              } |
+                  awk '{print $2}' |
+                  grep '^dhi\.io/' |
+                  sort -u |
+                  setsid xargs -P 4 -n 1 docker pull -q >/tmp/prefetch.log 2>&1 &
+              echo "Base image prefetch started in the background."
 
         - name: Cache Cosign
           id: cache-cosign
@@ -294,6 +320,9 @@ runs:
               echo "$SONAR_ROOT/sonar-scanner-$SONAR_VERSION-linux-x64/bin" >> "$GITHUB_PATH"
 
         - name: Install Playwright
+          # Runs even on a cache hit: --with-deps installs the system libraries
+          # a fresh runner needs to launch the browsers, while the cached
+          # ~/.cache/ms-playwright makes the downloads themselves a no-op.
           if: inputs.playwright == 'true'
           shell: bash
           run: |
