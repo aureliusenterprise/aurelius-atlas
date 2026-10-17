@@ -8,8 +8,8 @@ inputs:
     sops-version:
         description: SOPS version to install
         default: v3.13.3
-    java:
-        description: Set up JDK 21 and Gradle
+    disk-cleanup:
+        description: Remove unneeded pre-installed toolchains and Docker state (for disk-heavy jobs)
         default: "false"
     python:
         description: Set up Python, uv, and install dependencies
@@ -59,12 +59,6 @@ inputs:
     playwright:
         description: Install Playwright browsers with system dependencies
         default: "false"
-    java-version:
-        description: Java version to set up
-        default: "21"
-    java-distribution:
-        description: Java distribution to set up
-        default: temurin
     python-version:
         description: Python version to set up
         default: "3.14"
@@ -76,11 +70,12 @@ runs:
     using: composite
     steps:
         - name: Clean up pre-installed toolchains
+          # Opt-in: this step costs 1-2 minutes (deleting ~20 GB of small files is
+          # metadata-bound I/O) and only pays off for jobs that fill the disk with
+          # Docker images. Other jobs skip it and run faster.
+          if: inputs.disk-cleanup == 'true'
           shell: bash
           run: |
-              # Remove Java (JDKs)
-              sudo rm -rf /usr/lib/jvm
-
               # Remove .NET SDKs
               sudo rm -rf /usr/share/dotnet
 
@@ -107,9 +102,6 @@ runs:
 
               # Remove PowerShell
               sudo rm -rf /usr/local/share/powershell
-
-              # Remove CodeQL and other toolcaches
-              sudo rm -rf /opt/hostedtoolcache
 
               docker system prune -af || true
               docker builder prune -af || true
@@ -142,18 +134,6 @@ runs:
               curl -LO https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64
               sudo mv sops-${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops
               sudo chmod +x /usr/local/bin/sops
-
-        - name: Set up JDK for x64
-          if: inputs.java == 'true'
-          uses: actions/setup-java@v5
-          with:
-              java-version: ${{ inputs.java-version }}
-              distribution: ${{ inputs.java-distribution }}
-              architecture: x64
-
-        - name: Setup Gradle
-          if: inputs.java == 'true'
-          uses: gradle/actions/setup-gradle@v5
 
         - name: Setup Python
           if: inputs.python == 'true'
