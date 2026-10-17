@@ -1,0 +1,6878 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://aureliusenterprise.github.io/phase1-1.1-typedef-models/architecture/conversion/design-log/">
+      
+      
+        <link rel="describedby" href="../../../llms.txt">
+        
+          <link rel="alternate" type="text/markdown" href="./index.md">
+        
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../java-map/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/favicon.ico">
+      <meta name="generator" content="zensical-0.0.71">
+    
+    
+      
+        <title>Design Log - Aurelius Atlas</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../../assets/stylesheets/classic/main.68ef4dbf.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/classic/palette.813d4b3f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/table.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Aurelius Atlas" class="md-header__button md-logo" aria-label="Aurelius Atlas" data-md-component="logo">
+      
+  <img src="../../../assets/favicon.ico" alt="Aurelius Atlas">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Aurelius Atlas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Design Log
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/aureliusenterprise/aurelius-atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aurelius-atlas
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+          
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../user-guide/" class="md-tabs__link">
+          
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../contributor-guide/" class="md-tabs__link">
+          
+  
+  Contributor Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../api-reference/" class="md-tabs__link">
+          
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Aurelius Atlas" class="md-nav__button md-logo" aria-label="Aurelius Atlas" data-md-component="logo">
+      
+  <img src="../../../assets/favicon.ico" alt="Aurelius Atlas">
+
+    </a>
+    Aurelius Atlas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aureliusenterprise/aurelius-atlas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aurelius-atlas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../user-guide/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  User Guide
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../contributor-guide/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contributor Guide
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Contributor Guide
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Development Environment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/ai-assisted-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  AI-Assisted Development
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/adopting-the-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Adopting the Template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Documentation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/version-control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Version Control
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api-reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Reference
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API Reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api-reference/apps/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Apps
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Apps
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-fastapi-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-frontend-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/apps/aurelius-atlas-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api-reference/libs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Libs
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Libs
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api-reference/libs/angular/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Angular
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_2" id="__nav_3_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Angular
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/angular/aurelius-atlas-data-access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-data-access
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/angular/aurelius-atlas-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-ui
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api-reference/libs/python/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Python
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Python
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-model
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-sdk
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-store-es/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-store-es
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-trace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-trace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api-reference/libs/styles/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Styles
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_4" id="__nav_3_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Styles
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/styles/aurelius-atlas-brand/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-brand
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Architecture
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture Decisions
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Architecture Decisions
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ADR Template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/001-single-monorepo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  001. Keep one monorepo for every stack
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/002-modules-are-removable-slices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  002. Modules are removable as whole slices
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/003-every-project-documents-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  003. Every project documents itself
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/004-one-shared-domain-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  004. One shared domain model serves streaming and storage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/005-dev-infra-starts-with-the-app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  005. Development infrastructure starts with the app that needs it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/006-the-whole-system-runs-on-one-machine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  006. The whole system runs on one machine
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/007-one-shared-identity-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  007. One shared identity provider serves every authenticated surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/008-secrets-never-in-plaintext/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  008. Real secrets are encrypted; only dev defaults are committed
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/009-examples-must-run-and-be-tested/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  009. Every example runs and is tested, or it is removed
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/010-the-unit-validated-is-the-unit-that-ships/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  010. The unit validated is the unit that ships
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/011-the-development-environment-is-a-versioned-artifact/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  011. The development environment is a versioned artifact
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/012-validation-runs-against-real-services/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  012. Validation runs against real services, not substitutes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/013-services-prove-who-they-are-at-every-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  013. Services prove who they are at every boundary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/014-the-gate-is-defined-once-and-runs-everywhere/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  014. The gate that refuses a change is defined once
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/015-a-change-answers-for-what-it-caused/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  015. A change answers for what it caused; the state of the world is reviewed on a cadence
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/016-the-system-observes-itself-internally/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  016. The system observes itself; its operational data never leaves it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/017-shared-concepts-change-only-compatibly/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  017. Shared concepts change only in ways that keep readers working
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/018-settings-arrive-at-startup-through-one-channel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  018. Settings arrive at startup through one channel and fail loudly
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/019-the-system-releases-as-one-versioned-whole/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  019. The system releases as one versioned whole
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/020-dependencies-stay-current-by-default/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  020. Dependencies stay current by default; majors move by decision
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/021-a-new-technology-joins-by-recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  021. A new technology joins the system by recipe
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/022-the-codebase-explains-itself-to-its-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  022. The codebase explains itself to the agents that change it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/023-storage-schema-changes-by-recorded-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  023. A storage schema changes only by recorded migration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/024-a-validated-release-is-promoted-by-a-declared-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  024. A validated release is promoted by a declared path
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/025-data-has-a-stated-lifetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  025. Data has a stated lifetime that the system enforces
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/026-the-system-can-be-brought-back-from-a-named-snapshot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  026. The system can be brought back from a named snapshot
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/027-every-stream-carries-a-stated-delivery-guarantee/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  027. Every stream carries a stated delivery guarantee
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/028-operational-secret-handling-has-a-named-owner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  028. Operational secret handling has a named owner and a rehearsed path
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  029. What ships is signed, and its origin can be proven
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/030-interfaces-between-parts-are-verified-not-assumed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  030. Interfaces between parts are verified, not assumed
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/031-runtime-versions-have-a-declared-support-window/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  031. Language and runtime versions have a declared support window
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/032-shared-streams-are-named-by-a-declared-convention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  032. Shared streams are named by a declared convention
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/033-shipped-artifacts-carry-a-contents-inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  033. Shipped artifacts carry a contents inventory
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/034-signals-meet-at-one-replaceable-collection-point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  034. Signals meet at one replaceable collection point
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/035-parts-hand-work-through-a-durable-event-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  035. Parts hand work to each other through a durable event log
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/036-the-delivery-plane-is-a-named-exception-to-the-data-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  036. The delivery plane is a named exception to the data boundary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/037-the-system-itself-promises-nothing-about-staying-up/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  037. The system itself promises nothing about staying up
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  038. What a person may do is decided in one place, apart from who they are
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/039-data-is-protected-where-it-travels-and-where-it-rests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  039. Data is protected where it travels and where it rests
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/040-the-system-raises-its-hand-when-it-is-broken/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  040. The system raises its hand when it is broken
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  041. A failure of the running system has an owner and a rehearsed path
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/042-every-dataset-has-an-owner-who-answers-for-it/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  042. Every dataset has an owner who answers for it
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/043-ai-assisted-review-informs-the-signatures-it-does-not-replace-them/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  043. AI-assisted review informs the two signatures
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/044-every-change-carries-two-human-signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  044. Every change carries two human signatures
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/045-conventions-are-borrowed-before-they-are-invented/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  045. Conventions are borrowed before they are invented
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/046-the-catalogue-keeps-its-public-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  046. The catalogue keeps its public contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/047-one-search-store-is-the-system-of-record/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  047. One search store is the system of record
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  048. Behaviour is proven against the reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/049-every-function-and-rule-is-traceable-to-a-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  049. Every function and rule is traceable to a test
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/050-the-system-carries-only-what-the-catalogue-needs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  050. The system carries only what the catalogue needs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/051-the-conversion-proceeds-in-specified-increments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  051. The conversion proceeds in specified increments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  052. Behaviour is specified by scenarios read from the reference source
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Conversion
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Conversion
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Design Log
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Design Log
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Rules
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entry-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Entry template
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Log
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Log">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-002. Atlas code lives in aurelius-atlas projects split by layer
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-003. Template projects are renamed to the aurelius-atlas prefix
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-004. The SPA keeps tokens in memory and renews them silently
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-005-the-store-uses-the-official-async-elasticsearch-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-005. The store uses the official async Elasticsearch client
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-006-development-and-tests-run-elasticsearch-with-security-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-006. Development and tests run Elasticsearch with security on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-007. The Elasticsearch test fixture ships with the store library
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-008-a-yellow-cluster-is-healthy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-008. A yellow cluster is healthy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-009. Traceability is checked from collected markers, not from a test run
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-010. The traceability check covers Atlas code from increment 0.2 on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-011. The test report is generated from JUnit, coverage and trace files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-012. Parity scenarios are YAML files run as parametrised pytest tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-013. A scenario response is compared exactly, except at declared paths
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-014-scenario-facts-reach-the-report-as-test-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-014. Scenario facts reach the report as test properties
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-015. The server is a FastAPI application with one router per Atlas resource
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-016-the-server-does-not-start-without-its-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-016. The server does not start without its store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-018. The server serves the dashboards from the API's origin
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-019-the-template-examples-stay-until-the-plan-is-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-019. The template examples stay until the plan is done
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-020. Typedef models are Pydantic models that read and write Atlas's JSON
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-021. Set-valued fields keep each name once, in first-seen order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../java-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Java to Python Map
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deviations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deviations from Apache Atlas
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../increments/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Increments
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_3_5" id="__nav_4_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_3_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Increments
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Specification Template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-1-adopt-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.1 Adopt the template
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-2-elasticsearch-infrastructure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.2 Elasticsearch infrastructure
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-3-test-report-traceability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.3 Test report and traceability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-4-parity-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.4 Parity harness
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-5-server-skeleton/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.5 Server skeleton
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-6-dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.6 Dashboards served
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-1-typedef-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.1 Typedef models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../vision-and-strategy/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Vision & Strategy
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Vision & Strategy
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vision-and-strategy/mission-statement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Mission Statement
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vision-and-strategy/business-objectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Business Objectives
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vision-and-strategy/stakeholder-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Stakeholder Analysis
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vision-and-strategy/architecture-roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Architecture Roadmap
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../data-lifecycle-management/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Lifecycle Management
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Lifecycle Management
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-lifecycle-management/data-collection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Collection
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-lifecycle-management/data-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Storage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-lifecycle-management/data-processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Processing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-lifecycle-management/data-sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Sharing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-lifecycle-management/data-archiving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Archiving
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../data-governance/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Governance
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Data Governance
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-governance/roles-and-responsibilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Roles & Responsibilities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-governance/data-dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Dictionary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-governance/data-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Quality
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-governance/data-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-governance/compliance-and-auditability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Compliance & Auditability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../platform/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Platform
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7" id="__nav_4_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Platform
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/components-and-interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Components & Interfaces
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/data-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Pipelines
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../platform/connectivity/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Connectivity
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_4" id="__nav_4_7_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Connectivity
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/connectivity/integration-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Integration Methods
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/connectivity/api-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/connectivity/networking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Networking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../platform/delivery/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Delivery
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_5" id="__nav_4_7_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Delivery
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/delivery/configuration-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/delivery/change-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Change Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/delivery/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/delivery/release-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/delivery/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deployment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../platform/observability/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Observability
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_6" id="__nav_4_7_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Observability
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/observability/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Monitoring
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/observability/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Logging
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/observability/alerting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Alerting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../platform/resilience/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Resilience
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_7" id="__nav_4_7_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Resilience
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/resilience/high-availability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  High Availability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/resilience/incident-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Incident Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/resilience/backup-and-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Backup & Restore
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/resilience/disaster-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Disaster Recovery
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../platform/security/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Security
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_7_8" id="__nav_4_7_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_7_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_7_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Security
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/security/access-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Access Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/security/identity-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Identity Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/security/secrets-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/security/data-encryption/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Encryption
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../CHANGELOG.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Rules
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entry-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Entry template
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Log
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Log">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-002. Atlas code lives in aurelius-atlas projects split by layer
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-003. Template projects are renamed to the aurelius-atlas prefix
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-004. The SPA keeps tokens in memory and renews them silently
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-005-the-store-uses-the-official-async-elasticsearch-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-005. The store uses the official async Elasticsearch client
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-006-development-and-tests-run-elasticsearch-with-security-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-006. Development and tests run Elasticsearch with security on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-007. The Elasticsearch test fixture ships with the store library
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-008-a-yellow-cluster-is-healthy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-008. A yellow cluster is healthy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-009. Traceability is checked from collected markers, not from a test run
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-010. The traceability check covers Atlas code from increment 0.2 on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-011. The test report is generated from JUnit, coverage and trace files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-012. Parity scenarios are YAML files run as parametrised pytest tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-013. A scenario response is compared exactly, except at declared paths
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-014-scenario-facts-reach-the-report-as-test-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-014. Scenario facts reach the report as test properties
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-015. The server is a FastAPI application with one router per Atlas resource
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-016-the-server-does-not-start-without-its-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-016. The server does not start without its store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-018. The server serves the dashboards from the API's origin
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-019-the-template-examples-stay-until-the-plan-is-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-019. The template examples stay until the plan is done
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-020. Typedef models are Pydantic models that read and write Atlas's JSON
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-021. Set-valued fields keep each name once, in first-seen order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../../.." class="md-path__link">
+        
+  
+  <span class="md-ellipsis">
+    Aurelius Project Template
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Conversion
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="design-log">Design Log<a class="headerlink" href="#design-log" title="Permanent link">&para;</a></h1>
+<p>Technical decisions made during the conversion that are too implementation-specific for an ADR
+but must not be lost: storage layout, identifiers, query translation, test tooling. Business-level
+decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
+<h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Entries are numbered <code>DD-NNN</code>, consecutively; numbers are never reused.</li>
+<li>Statuses: <strong>Proposed</strong> → <strong>Accepted</strong>, then optionally <strong>Superseded by DD-NNN</strong>.</li>
+<li>An accepted entry is never edited except its status line. A changed decision is a new entry
+  that supersedes the old one.</li>
+<li>Every entry names the increment that introduced it, so the reasoning can be found next to the
+  code and the specification it belongs to.</li>
+<li>An increment that makes a decision adds its entry in the same pull request.</li>
+</ul>
+<h2 id="entry-template">Entry template<a class="headerlink" href="#entry-template" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="gu">### DD-NNN. Decision as a statement</span>
+
+<span class="k">-</span><span class="w"> </span><span class="gs">**Status:**</span> Proposed | Accepted | Superseded by DD-NNN
+<span class="k">-</span><span class="w"> </span><span class="gs">**Increment:**</span> N.N
+<span class="k">-</span><span class="w"> </span><span class="gs">**Date:**</span> YYYY-MM-DD
+
+<span class="gs">**Decision.**</span> What we do, in one or two sentences.
+
+<span class="gs">**Reason.**</span> Why, in terms of the requirements of the increment.
+
+<span class="gs">**Alternatives.**</span> What else was considered and why it lost.
+
+<span class="gs">**Consequences.**</span> What follows, including what must be revisited and when.
+</code></pre></div>
+<h2 id="log">Log<a class="headerlink" href="#log" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Increment</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001</a></td>
+<td>The reference is Apache Atlas 2.4.0; both dashboards are served unchanged</td>
+<td>0.1</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer">DD-002</a></td>
+<td>Atlas code lives in <code>aurelius-atlas-*</code> projects split by layer</td>
+<td>0.1</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix">DD-003</a></td>
+<td>All template projects carry the <code>aurelius-atlas-</code> prefix</td>
+<td>0.1</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently">DD-004</a></td>
+<td>The SPA keeps tokens in memory and renews them silently</td>
+<td>0.1</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-005-the-store-uses-the-official-async-elasticsearch-client">DD-005</a></td>
+<td>The store uses the official async Elasticsearch client, one per store</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-006-development-and-tests-run-elasticsearch-with-security-on">DD-006</a></td>
+<td>Development and tests run Elasticsearch with TLS and authentication on</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library">DD-007</a></td>
+<td>The Elasticsearch test fixture ships with the store library</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-008-a-yellow-cluster-is-healthy">DD-008</a></td>
+<td>A yellow cluster is healthy</td>
+<td>0.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run">DD-009</a></td>
+<td>Traceability is checked from collected markers, not from a test run</td>
+<td>0.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on">DD-010</a></td>
+<td>The traceability check covers Atlas code from increment 0.2 on</td>
+<td>0.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files">DD-011</a></td>
+<td>The test report is generated from JUnit, coverage and trace files</td>
+<td>0.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests">DD-012</a></td>
+<td>Parity scenarios are YAML files run as parametrised pytest tests</td>
+<td>0.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths">DD-013</a></td>
+<td>A scenario response is compared exactly, except at declared paths</td>
+<td>0.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-014-scenario-facts-reach-the-report-as-test-properties">DD-014</a></td>
+<td>Scenario facts reach the report as test properties</td>
+<td>0.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource">DD-015</a></td>
+<td>The server is a FastAPI application with one router per Atlas resource</td>
+<td>0.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-016-the-server-does-not-start-without-its-store">DD-016</a></td>
+<td>The server does not start without its store</td>
+<td>0.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24">DD-017</a></td>
+<td>The dashboards are vendored unchanged and built with dart-sass on Node 24</td>
+<td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin">DD-018</a></td>
+<td>The server serves the dashboards from the API's origin</td>
+<td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019</a></td>
+<td>The template examples stay until the plan is done</td>
+<td>0.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json">DD-020</a></td>
+<td>Typedef models are Pydantic models that read and write Atlas's JSON</td>
+<td>1.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order">DD-021</a></td>
+<td>Set-valued fields keep each name once, in first-seen order</td>
+<td>1.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022</a></td>
+<td>Typedef timestamps are aware datetimes, written as epoch milliseconds</td>
+<td>1.1</td>
+<td>Proposed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served<a class="headerlink" href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 0.1</li>
+<li><strong>Date:</strong> 2026-10-09</li>
+</ul>
+<p><strong>Decision.</strong> The behaviour to reproduce is that of the <code>release-2.4.0</code> tag of Apache Atlas. Both of
+its user interfaces are served unchanged at the paths Atlas uses: <code>dashboardv2</code> at <code>/</code> and
+<code>dashboardv3</code> at <code>/n/</code>. End-to-end tests cover <code>dashboardv3</code> in depth and <code>dashboardv2</code> with a smoke
+test.</p>
+<p><strong>Reason.</strong> Parity tests need one fixed reference (<a href="../../adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/">ADR 048</a>),
+and 2.4.0 is the latest Apache Atlas release. Atlas 2.4.0 serves the classic interface at the root and
+the newer one under <code>/n/</code>, and each links to the other; serving both keeps every bookmark and link
+working at the cost of one more static build, whereas dropping one would be a visible deviation.</p>
+<p><strong>Alternatives.</strong> Track Atlas <code>master</code>: unstable fixtures, no released artefact to compare against.
+Serve only <code>dashboardv3</code> and redirect <code>/</code> to <code>/n/</code>: one build less, but breaks the switch-back link and
+existing bookmarks, and would need a deviation entry.</p>
+<p><strong>Consequences.</strong> A move to a later Atlas release is a new entry plus a re-recording of all fixtures.
+Features used only by <code>dashboardv2</code> still need backend support; they are found by its smoke test.</p>
+<h3 id="dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer">DD-002. Atlas code lives in aurelius-atlas projects split by layer<a class="headerlink" href="#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 0.1</li>
+<li><strong>Date:</strong> 2026-10-09</li>
+</ul>
+<p><strong>Decision.</strong> Atlas code is split into workspace projects by layer, all prefixed <code>aurelius-atlas-</code>
+(Python packages <code>aurelius_atlas_*</code>): <code>-model</code> (data shapes, no I/O), <code>-typesystem</code> (type registry and
+validation), <code>-store-es</code> (Elasticsearch access), <code>-core</code> (stores and services), <code>-dsl</code> (query language),
+<code>apps/aurelius-atlas-server</code> (REST), <code>apps/aurelius-atlas-dashboard</code> (UI),
+<code>reports/aurelius-atlas-test-report</code>, plus <code>dev/elasticsearch</code> and <code>dev/atlas-reference</code>.</p>
+<p><strong>Reason.</strong> Layers that do not do I/O can be unit-tested without infrastructure; the dependency
+direction (model ← typesystem ← core → store-es; server → core) keeps each increment's change local,
+and each project follows an existing template recipe. The <code>aurelius</code> prefix keeps the organisation's
+naming convention.</p>
+<p><strong>Alternatives.</strong> One large package mirroring the Java module tree: simpler imports, but every change
+touches the same project and nothing can be tested in isolation. A package per Java module (<code>intg</code>,
+<code>repository</code>, <code>webapp</code>): mirrors history rather than the dependency structure we want.</p>
+<p><strong>Consequences.</strong> Projects are created by the increment that first needs them, not up front.</p>
+<h3 id="dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix">DD-003. Template projects are renamed to the aurelius-atlas prefix<a class="headerlink" href="#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 0.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> All workspace projects inherited from the template carry the <code>aurelius-atlas-</code> prefix
+(directories, Nx names, uv/npm package names, Python import packages, env-var prefixes, Sonar keys,
+compose project and network names, Grafana dashboards). The org handle <code>aureliusenterprise</code>, the npm
+scope <code>@aurelius</code>, the Keycloak client/realm ids (<code>aurelius</code>, <code>master</code>), and the DB name (<code>aurelius</code>)
+are identities of the organisation/Keycloak and stay unchanged.</p>
+<p><strong>Reason.</strong> DD-002 fixes the <code>aurelius-atlas-</code> prefix for the Atlas projects; renaming the template
+examples now, while they are the only content, avoids two naming generations in one repo and the
+churn of renaming them piecemeal once Atlas code lands beside them.</p>
+<p><strong>Alternatives.</strong> Rename only new Atlas projects: leaves <code>aurelius-*</code> and <code>aurelius-atlas-*</code> side by
+side, which reads as two projects with different ownership. Keep the template names entirely: makes
+the eventual atlas-vs-template distinction implicit rather than visible in the project graph.</p>
+<p><strong>Consequences.</strong> Docker image names change (<code>ghcr.io/aureliusenterprise/aurelius-atlas-*</code>); Sonar
+projects, Chromatic, and any external CI references must be created/renamed to match. <code>.env.enc</code>
+files were re-encrypted with the new prefixed keys. Old locally built images are stale and should be
+pruned (<code>docker image prune</code> / rebuild via <code>nx e2e</code>).</p>
+<h3 id="dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently">DD-004. The SPA keeps tokens in memory and renews them silently<a class="headerlink" href="#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 0.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The Angular SPA uses Keycloak's default in-memory token store (<code>tokenStore: "default"</code>
+in <code>provideKeycloak</code>, <code>apps/aurelius-atlas-frontend-example/src/app/app.config.ts</code>) with
+<code>onLoad: "check-sso"</code> and a silent-SSO redirect (<code>/silent-check-sso.html</code>). Access and refresh tokens
+never touch <code>localStorage</code> or any other persistent browser storage.</p>
+<p><strong>Reason.</strong> <code>localStorage</code> is readable by any script that achieves XSS on the origin, and is also
+exposed to browser extensions with host permissions; a stolen refresh token there is a durable
+session hijack. With the in-memory store, injected script can read the current access token but the
+attacker's code dies with the page, and a reload forces a fresh authentication check against
+Keycloak rather than replaying stored secrets.</p>
+<p><strong>Alternatives.</strong> <code>tokenStore: "sessionStorage"</code>: survives reload in the tab, but every XSS or
+extension read is still one <code>getItem</code> away — same theft surface, no meaningful gain.
+<code>tokenStore: "localStorage"</code>: survives tab close; strongest theft value, rejected. A confidential
+client with a BFF holding tokens server-side: the right answer at scale, deferred as its own
+increment — it changes the auth topology (new service, cookie session) rather than a setting.</p>
+<p><strong>Consequences.</strong> A page reload re-mints tokens via silent SSO; the user sees no login unless the
+Keycloak SSO session itself has ended. Silent SSO relies on a third-party-cookie-acceptable (or
+same-site) Keycloak deployment: where browsers block the framing cookie, <code>check-sso</code> degrades to a
+not-signed-in state and the app falls back to a full redirect login (<code>login()</code>), which still works.
+If per-tab token durability becomes a product requirement, supersede this entry by adding the BFF —
+not by moving the tokens to storage.</p>
+<h3 id="dd-005-the-store-uses-the-official-async-elasticsearch-client">DD-005. The store uses the official async Elasticsearch client<a class="headerlink" href="#dd-005-the-store-uses-the-official-async-elasticsearch-client" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-store-es</code> talks to Elasticsearch through <code>AsyncElasticsearch</code> from the
+official <code>elasticsearch</code> Python client, version 9.5 or later within major 9, matching the 9.5 server
+(<code>dhi.io/elasticsearch:9.5-debian13</code>; minor upgrades are deliberate, patch releases follow the tag). A
+store instance owns exactly one client, opened and closed with the store (<code>async with</code>).</p>
+<p><strong>Reason.</strong> The server is FastAPI and asynchronous; a blocking client would tie up the event loop or
+need a thread pool. The official client tracks the server's API and versioning, ships typed
+request helpers, and includes the query DSL module that search (4.x) will need.</p>
+<p><strong>Alternatives.</strong> <code>httpx</code> against the REST API directly: no extra dependency, but every API, retry
+and error type would be rebuilt by hand. <code>opensearch-py</code>: a different server; ADR 047 names
+Elasticsearch. One client per request: simple, but loses connection pooling.</p>
+<p><strong>Consequences.</strong> The client's major version moves with the server's (STO-04 guards it). Connection
+pooling and retries are the client's; tuning them is part of 6.4.</p>
+<h3 id="dd-006-development-and-tests-run-elasticsearch-with-security-on">DD-006. Development and tests run Elasticsearch with security on<a class="headerlink" href="#dd-006-development-and-tests-run-elasticsearch-with-security-on" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>dev/elasticsearch</code> and the test fixture run with <code>xpack.security</code> enabled: TLS on the
+HTTP layer with a certificate from the workspace CA (dev) or an ephemeral CA (tests), and basic
+authentication for the built-in <code>elastic</code> user. The store library has no option to skip certificate
+verification.</p>
+<p><strong>Reason.</strong> It is the posture production needs, and the one <code>dev/postgres</code> already has; a store that
+only ever ran without security would meet TLS and authentication for the first time in production.</p>
+<p><strong>Alternatives.</strong> Security disabled in development: faster start-up and simpler <code>curl</code>, but a
+different code path (plain HTTP, no credentials) from production, and a verification switch in the
+library that someone eventually leaves off.</p>
+<p><strong>Consequences.</strong> Dev tools need the CA file and the password
+(<code>curl --cacert dev/elasticsearch/certs/ca.pem -u elastic:…</code>). A dedicated application user with
+least privilege replaces <code>elastic</code> when authorization arrives (6.2).</p>
+<h3 id="dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library">DD-007. The Elasticsearch test fixture ships with the store library<a class="headerlink" href="#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The testcontainers helper that starts a TLS-enabled Elasticsearch lives in
+<code>aurelius_atlas_store_es.testing</code>, behind the library's <code>testing</code> extra, next to the code it serves.</p>
+<p><strong>Reason.</strong> Every later project with a store (<code>-core</code>, the server, the parity harness) needs the same
+container; the library that defines the settings is the one that knows how to build them for a test
+server, and keeping both together means a settings change cannot break the fixture unnoticed.</p>
+<p><strong>Alternatives.</strong> <code>aurelius-atlas-sdk.testing</code>, where the Postgres helper lives: would make the
+generic SDK depend on Elasticsearch. A copy per project: drifts.</p>
+<p><strong>Consequences.</strong> Test-only dependencies (<code>testcontainers</code>, <code>trustme</code>) stay out of the runtime install;
+consuming projects add <code>aurelius-atlas-store-es[testing]</code> to their dev dependencies.</p>
+<h3 id="dd-008-a-yellow-cluster-is-healthy">DD-008. A yellow cluster is healthy<a class="headerlink" href="#dd-008-a-yellow-cluster-is-healthy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.2</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The store's health check reports up for cluster status green or yellow and down for red
+(STO-05).</p>
+<p><strong>Reason.</strong> Yellow means every primary shard is assigned and all data is readable and writable; only
+replicas are missing. A single-node cluster, the development and small-installation case
+(<a href="../../adr/006-the-whole-system-runs-on-one-machine/">ADR 006</a>), is yellow as soon as an index has a
+replica. Reporting it down would make every single-node deployment permanently unready.</p>
+<p><strong>Alternatives.</strong> Green only: correct for multi-node clusters, unusable for single-node ones unless
+every index is created with zero replicas. A configurable threshold: one more setting nobody sets.</p>
+<p><strong>Consequences.</strong> Lost redundancy is not visible as a health failure; it is visible in the cluster
+metrics (ESD-06) and should be alerted on there.</p>
+<h3 id="dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run">DD-009. Traceability is checked from collected markers, not from a test run<a class="headerlink" href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.3</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-trace check</code> runs <code>pytest --collect-only</code> over the unit and end-to-end
+tests of every Atlas project and reads the <code>covers</code> markers from the collected items. Whether the
+naming tests pass is the test job's concern, not the check's.</p>
+<p><strong>Reason.</strong> CI runs <code>nx affected -t test e2e</code>, so the results of one run contain only the affected
+projects' tests; a check over them would report every unaffected function as uncovered (TRC-10).
+Collection imports the tests but starts no containers, so it is cheap enough to run on every change.</p>
+<p><strong>Alternatives.</strong> Merge the trace files of the run with those of the last run on <code>main</code>: needs
+artifact plumbing between workflows and still goes stale when a run on <code>main</code> fails. Run every test
+on every change: correct, but turns a one-minute check into the full end-to-end suite. Parse the test
+sources with <code>ast</code>: misses markers applied through <code>pytestmark</code>, classes and parametrisation.</p>
+<p><strong>Consequences.</strong> A test module that fails to import fails the check, which is the right answer: its
+markers are unknown. A test that names a function but is skipped still counts as naming it; the
+report shows it as skipped.</p>
+<h3 id="dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on">DD-010. The traceability check covers Atlas code from increment 0.2 on<a class="headerlink" href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.3</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> R1 applies to the public functions, methods and properties of every uv workspace
+member that the configuration does not exclude; the template projects (examples, SDK, reports) are
+excluded, and so are <code>testing</code> subpackages, which are test infrastructure. R2 applies to the rules of
+every specification from increment 0.2 on. The configuration is the <code>[tool.aurelius-atlas-trace]</code>
+table of the root <code>pyproject.toml</code>.</p>
+<p><strong>Reason.</strong> Template code is removed or replaced by the conversion (0.5 removes the examples), so
+markers on it would be written to be deleted. Excluding instead of listing makes a new Atlas project
+checked by default. Increment 0.1's rules (ADO-01 to ADO-03) describe the adoption of the template and
+were verified when it merged; 0.2 is the first increment with code, and its manual checks of ESD-01 to
+ESD-06 are replaced by tests in this increment.</p>
+<p><strong>Alternatives.</strong> Check every workspace member: retrofits markers onto code about to be deleted.
+List the Atlas projects explicitly: a new project is silently unchecked until someone adds it.</p>
+<p><strong>Consequences.</strong> A project that leaves the template set (the SDK, if it is kept) is removed from the
+exclusion list and gets its markers in the same change.</p>
+<h3 id="dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files">DD-011. The test report is generated from JUnit, coverage and trace files<a class="headerlink" href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.3</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-trace report</code> turns JUnit XML (<code>pytest --junitxml</code>), Cobertura XML
+(<code>pytest-cov</code>) and the plugin's trace JSON into one static HTML page and a Markdown summary. CI uploads
+the page as the <code>test-report</code> artifact and appends the summary to the run page.</p>
+<p><strong>Reason.</strong> ADR 045's ladder: the input formats are the ecosystem's own, and no framework or community
+tool joins test results to specification rules and to a function inventory, which is the view ADR 049
+R3 asks for. The generator is a few hundred lines with the standard library only.</p>
+<p><strong>Alternatives.</strong> Allure Report: a polished viewer, but it needs its Java CLI, and the per-rule and
+per-function gap view would still be ours to build as labels and post-processing. <code>pytest-html</code>: one
+page of test results, nothing about rules or functions. SonarCloud: shows coverage, not traceability.</p>
+<p><strong>Consequences.</strong> The page is an artifact of the CI run, not a published site; 0.4 adds the parity
+results to it. If a later need (history, trends) outgrows a static page, a viewer is chosen then.</p>
+<h3 id="dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests">DD-012. Parity scenarios are YAML files run as parametrised pytest tests<a class="headerlink" href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.4</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> A scenario is a <code>*.scenario.yaml</code> file in the stage shape of Tavern (<code>request</code>,
+<code>response</code>, <code>save</code>), validated with pydantic. A project's test module turns a directory of them into
+one parametrised test, <code>load_scenarios(directory)</code>, whose body is <code>await run_scenario(scenario, client)</code>;
+the project's fixture decides whether <code>client</code> talks to the application in-process (<code>httpx.ASGITransport</code>)
+or over HTTP to a running server.</p>
+<p><strong>Reason.</strong> ADR 045's ladder: the request/response/save stage is the community's shape for declarative
+API tests, so reviewers who know Tavern read our scenarios at once. Running scenarios as ordinary pytest
+parameters puts them in JUnit, in the trace file and under <code>covers</code> (SCN-04) with public pytest API only.</p>
+<p><strong>Alternatives.</strong> Tavern itself: speaks HTTP through <code>requests</code> only, so the in-process unit level is
+lost, and the exact comparison, volatile paths and deviations (DD-013) would be hooks around it. A
+custom collector for <code>*.scenario.yaml</code>: shorter test modules, but it needs pytest's private fixture
+API to give the items a client. Schemathesis: generates requests from an OpenAPI document, which
+Atlas 2.4.0 does not ship and which states types, not Atlas's answers.</p>
+<p><strong>Consequences.</strong> Every project with scenarios has one small test module and a <code>client</code> fixture. The
+scenario format is ours to keep stable; it is versioned by its rules SCN-01 to SCN-03.</p>
+<h3 id="dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths">DD-013. A scenario response is compared exactly, except at declared paths<a class="headerlink" href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.4</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The expected body must equal the actual body: the same keys, arrays in the same order,
+booleans and null distinct from numbers. Only <code>volatile</code> paths (generated GUIDs, timestamps) skip the
+value, and only <code>deviations</code> entries change the expectation, each naming its <code>DV-NN</code>.</p>
+<p><strong>Reason.</strong> The dashboard and existing clients read fields the scenarios might not think of; an extra,
+missing or <code>null</code> field is a visible difference (<a href="../../adr/046-the-catalogue-keeps-its-public-contract/">ADR 046</a>).
+Atlas serialises its models with Jackson <code>NON_NULL</code> inclusion, so "absent" and <code>null</code> differ there and
+must differ here.</p>
+<p><strong>Alternatives.</strong> Subset matching: short scenarios, but an extra or misnamed field passes. Snapshot
+files written from our own responses: exact, but the expectation would come from the implementation,
+not from Atlas (ADR 052 R1).</p>
+<p><strong>Consequences.</strong> Expectations for large responses are long; scenarios borrow Atlas's own test fixtures
+for request bodies to keep writing them cheap. Arrays whose order Atlas does not define get an explicit
+order-insensitive option when the first increment needs one.</p>
+<h3 id="dd-014-scenario-facts-reach-the-report-as-test-properties">DD-014. Scenario facts reach the report as test properties<a class="headerlink" href="#dd-014-scenario-facts-reach-the-report-as-test-properties" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.4</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The parity plugin adds each scenario's endpoints and deviation ids to the test item's
+<code>user_properties</code> at collection. The trace plugin writes every test's properties to the trace file, so
+<code>check</code> (unknown deviations) and <code>report</code> (one row per endpoint) read them from the collection they
+already do.</p>
+<p><strong>Reason.</strong> <code>user_properties</code> is pytest's own channel for facts about a test, and JUnit carries it too.
+Reading it at collection keeps the report's rule of DD-009: an endpoint whose scenarios did not run in
+this change is <em>not run</em>, not missing.</p>
+<p><strong>Alternatives.</strong> A separate <code>--parity-json</code> file: a second format next to the trace file for the same
+tests. Make the trace library know scenarios: couples the traceability tool to one kind of test.</p>
+<p><strong>Consequences.</strong> The trace file format gains a <code>properties</code> field per test; readers of version 1 files
+without it see no properties. Property names are prefixed with the plugin that sets them (<code>parity.</code>).</p>
+<h3 id="dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource">DD-015. The server is a FastAPI application with one router per Atlas resource<a class="headerlink" href="#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.5</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>apps/aurelius-atlas-server</code> is a FastAPI application built like the template's example
+service (settings, uvicorn entry point, logfire, hardened image), with one router module per Atlas
+REST resource class (<code>AdminResource</code> → <code>routes/admin.py</code>, later <code>EntityREST</code> → <code>routes/entity.py</code>).
+Atlas errors are raised as <code>AtlasError</code> and turned into the Atlas error body by one exception handler,
+as <code>AtlasBaseExceptionMapper</code> does; JSON goes out as <code>application/json; charset=UTF-8</code>.</p>
+<p><strong>Reason.</strong> ADR 045's ladder: FastAPI and the example's wiring are the workspace's convention, already
+gated, observed and packaged. Mirroring the Java resource classes keeps the Java map one row per class
+and lets a reviewer put a router next to its Java resource.</p>
+<p><strong>Alternatives.</strong> Starlette without FastAPI: no validation or OpenAPI for the request models later
+increments need. Routers per URL prefix rather than per Java class: <code>admin</code> would still be one, but
+<code>/v2/entity</code> and <code>/v2/entity/bulk</code> belong to one Java class and would split.</p>
+<p><strong>Consequences.</strong> The example service is no longer the only FastAPI app; it stays until the plan is done
+(DD-019). Later
+increments add routers and error codes; the error handler and media type stay.</p>
+<h3 id="dd-016-the-server-does-not-start-without-its-store">DD-016. The server does not start without its store<a class="headerlink" href="#dd-016-the-server-does-not-start-without-its-store" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.5</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The server opens the Elasticsearch store in its start-up and stops with an error when the
+store cannot be opened (unreachable, rejected, or not Elasticsearch 9). Once running, <code>readiness</code>
+reports the store's health on every call, and <code>liveness</code> and <code>status</code> do not depend on it.</p>
+<p><strong>Reason.</strong> The store is the only system of record (<a href="../../adr/047-one-search-store-is-the-system-of-record/">ADR 047</a>);
+a server without it cannot answer anything but the admin endpoints. Failing at start-up shows a wrong
+setting at once (<a href="../../adr/018-settings-arrive-at-startup-through-one-channel/">ADR 018</a>) and lets an
+orchestrator restart the container, while readiness covers a store that goes away later.</p>
+<p><strong>Alternatives.</strong> Start without the store and retry in the background: a misconfigured server would run
+and only its readiness would say so. Make liveness depend on the store: an outage of Elasticsearch would
+make an orchestrator restart every server, which does not help.</p>
+<p><strong>Consequences.</strong> Start-up order matters: <code>nx serve</code> and the end-to-end tests start the dev store first.</p>
+<h3 id="dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24">DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24<a class="headerlink" href="#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>apps/aurelius-atlas-dashboard/dashboardv2</code> and <code>dashboardv3</code> are copies of the
+<code>release-2.4.0</code> tag, byte for byte, with Atlas's <code>LICENSE</code> and <code>NOTICE</code>. Every change is a patch listed
+in <code>PATCHES.md</code> and made in its own commit. The first patch replaces <code>node-sass</code> with <code>sass</code> (dart-sass)
+in both <code>gruntfile.js</code> files and <code>package.json</code> files. Both dashboards are built with
+<code>grunt build-minify</code>, as Atlas's Maven build does, in the hardened Node 24 image; only the built files
+leave the build. The workspace's formatters, linters and hooks skip the vendored directories.</p>
+<p><strong>Reason.</strong> DD-001 asks for the dashboards unchanged; a vendored copy lets a reviewer prove that with a
+diff against the tag. <code>node-sass</code> 9 is a native module with builds for Node 16 to 20 only, and Node 20
+is past its end of life; dart-sass is pure JavaScript, the maintained Sass compiler, and <code>grunt-sass</code>
+supports it. A trial build on Node 24 gave the same files as Atlas's toolchain on Node 20, with
+identical JavaScript; only the two compiled stylesheets differ.</p>
+<p><strong>Alternatives.</strong> Build unchanged on Node 20: no patch, but an unsupported Node and a native compile in
+every build. Download the tag at build time and apply patch files: a smaller repository, but the source
+the build uses is not in review. Commit the built files: no legacy toolchain at all, but the shipped
+files cannot be reviewed or rebuilt.</p>
+<p><strong>Consequences.</strong> The vendored <code>package-lock.json</code> files keep their 2020-era dependencies; they only run
+inside the build container and are not part of the server image, so Dependabot does not watch them.
+Moving to another Atlas release replaces both directories and re-applies <code>PATCHES.md</code>.</p>
+<h3 id="dd-018-the-server-serves-the-dashboards-from-the-apis-origin">DD-018. The server serves the dashboards from the API's origin<a class="headerlink" href="#dd-018-the-server-serves-the-dashboards-from-the-apis-origin" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The server mounts the built <code>dashboardv3</code> at <code>/n/</code> and <code>dashboardv2</code> at <code>/</code> as static
+files, after the API routes, when <code>AURELIUS_ATLAS_SERVER_DASHBOARD_DIR</code> names their directory. The
+server image contains the built dashboards and sets that setting.</p>
+<p><strong>Reason.</strong> The dashboards call <code>api/atlas/...</code> with relative URLs and rely on the session cookie of the
+same origin, as in Atlas's web application. Serving them from the server keeps that without a proxy or
+cross-origin configuration, and one image is the whole product.</p>
+<p><strong>Alternatives.</strong> A separate static file server or the template's Angular serving: a second container
+and a proxy to keep one origin. Serving through a CDN: possible later in front of the server; nothing
+here prevents it.</p>
+<p><strong>Consequences.</strong> API paths must never collide with dashboard files; the API is matched first. Unit
+tests build their settings without the environment and serve no dashboards unless a test sets the
+directory; <code>nx serve</code> builds the dashboards first and its <code>.env</code> points at <code>dist/</code>.</p>
+<h3 id="dd-019-the-template-examples-stay-until-the-plan-is-done">DD-019. The template examples stay until the plan is done<a class="headerlink" href="#dd-019-the-template-examples-stay-until-the-plan-is-done" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.6</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The removal of the template's examples, planned as increment 0.7, moves to a to-do
+after 6.4. Until then, the FastAPI example service, the Angular example screen and its libraries,
+<code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code> and <code>dev/postgres</code> stay in the workspace. They remain
+the named deviation of ADR 050.</p>
+<p><strong>Reason.</strong> The project's second phase needs these components again. Removing them now and
+restoring them from the template later would cost more than keeping them.</p>
+<p><strong>Alternatives.</strong> Remove them now, as ADR 050 plans once the server and the dashboards replace them:
+this fulfils ADR 050's R1 sooner, but the components would have to be restored for the second phase.</p>
+<p><strong>Consequences.</strong> CI keeps building, testing and scanning the examples. 1.1 follows 0.6 directly.
+The to-do in the roadmap records the scope already agreed for the removal: everything the catalogue
+does not use, apart from <code>dev/keycloak</code>.</p>
+<h3 id="dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json">DD-020. Typedef models are Pydantic models that read and write Atlas's JSON<a class="headerlink" href="#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> Each Atlas typedef class is a Pydantic model in <code>aurelius_atlas_model.typedef</code> with
+snake_case attributes and the Java getter names as aliases. <code>model_validate</code> reads a request body and
+<code>to_json</code> writes a response body: aliases, null fields left out, empty collections kept. Unknown fields
+are ignored. The Java setters' normalisations run as <code>_</code>-prefixed validators, so they apply when a body
+is read and when a model is built in code, as the Java constructors and setters do.</p>
+<p><strong>Reason.</strong> Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and
+writes it natively, so 1.4 needs no mapping layer. Atlas writes with Jackson <code>NON_NULL</code>, which is
+Pydantic's <code>exclude_none</code>; empty collections stay because Jackson keeps them (DD-013 compares exactly).</p>
+<p><strong>Alternatives.</strong> Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to
+TDM-15 would be custom code. Generating models from Atlas's JSON schema: Atlas publishes none, and the
+normalisations live in Java setters a schema cannot express.</p>
+<p><strong>Consequences.</strong> Response bodies must be written with <code>to_json</code> (or its <code>exclude_none</code>, <code>by_alias</code>
+dump), never with FastAPI's default response model serialisation. Later model packages (entities in 2.1)
+follow the same pattern.</p>
+<h3 id="dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order">DD-021. Set-valued fields keep each name once, in first-seen order<a class="headerlink" href="#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>superTypes</code>, <code>subTypes</code> and <code>entityTypes</code> are lists without duplicates, kept in the order
+the names were first given.</p>
+<p><strong>Reason.</strong> Java holds them in a <code>HashSet</code> and writes them in hash order, which Atlas does not define and
+no client can rely on. A Python <code>set</code> would make our order vary from run to run; first-seen order is
+stable and keeps what the client sent.</p>
+<p><strong>Alternatives.</strong> Reproduce Java's <code>HashSet</code> iteration order: possible from <code>String.hashCode</code> and the
+table size, but it would copy an accident of the implementation. Sorted order: stable, but reorders
+what clients send.</p>
+<p><strong>Consequences.</strong> The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them
+without order, through the option DD-013 foresees, which 1.4 adds with the first scenario that needs it.</p>
+<h3 id="dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds<a class="headerlink" href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.1</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> <code>createTime</code> and <code>updateTime</code> are timezone-aware UTC <code>datetime</code>s. They are written as
+integer milliseconds since the epoch and read from a number, a string of digits or an ISO-8601
+date-time string.</p>
+<p><strong>Reason.</strong> Atlas's REST mapper has no date serialiser, so Jackson writes <code>java.util.Date</code> as epoch
+milliseconds and its <code>StdDateFormat</code> reads numbers, digit strings and ISO-8601. Pydantic would read a
+bare integer as seconds or milliseconds depending on its size, so the conversion is explicit.</p>
+<p><strong>Alternatives.</strong> Keep the raw integer: exact, but every caller would convert. Write ISO-8601 strings:
+readable, but a visible difference from Atlas.</p>
+<p><strong>Consequences.</strong> Jackson's RFC 1123 form (<code>Tue, 17 Oct 2026 10:00:00 GMT</code>) is not read. No Atlas client
+is known to send it; if one does, it becomes a deviation.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Aurelius Enterprise
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/aureliusenterprise/aurelius-atlas" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      
+<div class="md-progress" data-md-component="progress" role="progressbar" aria-label="Loading"></div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../../..","features":["content.code.copy","navigation.indexes","navigation.instant","navigation.instant.progress","navigation.path","navigation.sections","navigation.tabs","search.highlight"],"redirect":null,"search":"../../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"alias":true,"provider":"mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

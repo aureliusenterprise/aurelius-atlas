@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase1-1.1-typedef-models",
+    "title": "phase1-1.1-typedef-models",
+    "aliases": []
+  },
+  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
