@@ -1,0 +1,13 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-atlas-dev-observability"],
+    "name": "aurelius-atlas-dev-elasticsearch",
+    "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
+    "tags": [],
+    "targets": {}
+}

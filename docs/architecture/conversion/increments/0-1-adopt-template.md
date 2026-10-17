@@ -1,7 +1,8 @@
 # 0.1 Adopt the template
 
-- **Status:** in review
-- **Records:** ADR 046–051, DD-001, DD-002, DV-01, DV-02
+- **Status:** done
+- **Pull request:** [#1](https://github.com/aureliusenterprise/aurelius-atlas/pull/1), follow-ups 0.1a–0.1h (#57–#75)
+- **Records:** ADR 046–051, DD-001, DD-002, DD-003, DV-01, DV-02
 
 ## Scope
 

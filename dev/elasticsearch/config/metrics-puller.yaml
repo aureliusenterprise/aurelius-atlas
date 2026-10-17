@@ -1,0 +1,39 @@
+# Slice-owned metrics puller: scrapes this Elasticsearch and pushes OTLP to
+# the dev collector (https://otel-collector:4317, external network — see
+# docker-compose.yaml). Elasticsearch speaks no OTLP for its own metrics, so a
+# puller sidecar is the only push option; dev/observability stays
+# project-agnostic by convention (ESD-06).
+#
+# TLS: the workspace CA (certs/ca.pem) validates the server leaf, whose SANs
+# cover "elasticsearch".
+
+receivers:
+    elasticsearch:
+        endpoint: https://elasticsearch:9200
+        username: elastic
+        password: ${env:ELASTICSEARCH_PASSWORD}
+        tls:
+            ca_file: /certs/ca.pem
+        collection_interval: 30s
+
+processors:
+    resource:
+        attributes:
+            # Prometheus attribution: series carry exported_job="dev-elasticsearch".
+            - action: upsert
+              key: service.name
+              value: dev-elasticsearch
+    batch:
+
+exporters:
+    otlp:
+        endpoint: https://otel-collector:4317
+        tls:
+            ca_file: /certs/ca.pem
+
+service:
+    pipelines:
+        metrics:
+            receivers: [elasticsearch]
+            processors: [resource, batch]
+            exporters: [otlp]
