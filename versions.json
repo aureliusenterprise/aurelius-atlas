@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase0-0.4-scenario-harness",
+    "title": "phase0-0.4-scenario-harness",
+    "aliases": []
+  },
+  {
     "version": "phase0-0.3-test-report-traceability",
     "title": "phase0-0.3-test-report-traceability",
     "aliases": []
