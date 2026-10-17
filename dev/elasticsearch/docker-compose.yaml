@@ -26,7 +26,7 @@ services:
         healthcheck:
             # The hardened image has no curl; openssl speaks HTTPS, verifies the
             # server against the workspace CA, and authenticates as elastic.
-            # Healthy means the cluster status is green or yellow (DD-007).
+            # Healthy means the cluster status is green or yellow (DD-008).
             test:
                 [
                     "CMD-SHELL",

@@ -1,4 +1,4 @@
-"""A TLS-enabled Elasticsearch in a container, for tests that need a real server (DD-006).
+"""A TLS-enabled Elasticsearch in a container, for tests that need a real server (DD-007).
 
 Note:
     Please install the `testing` extra to use this module.
@@ -107,7 +107,7 @@ def elasticsearch_container(
 ) -> Generator[StoreSettings]:
     """Start a single-node Elasticsearch with TLS and authentication on, and yield settings for it.
 
-    The node is configured like ``dev/elasticsearch`` (DD-005): HTTPS only with a certificate from an
+    The node is configured like ``dev/elasticsearch`` (DD-006): HTTPS only with a certificate from an
     ephemeral CA, basic authentication for ``elastic`` with a random password. The container and the
     TLS material are removed on exit.
 

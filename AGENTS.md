@@ -84,9 +84,9 @@ boundaries are a workspace-wide rule — which projects may leave together, and
 what to unwire when they do.
 
 The **spine** (keep this): `aurelius-atlas-frontend-example`, `aurelius-atlas-fastapi-example`,
-`libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`, `libs/angular/*`,
-`dev/elasticsearch`, `dev/postgres`, `dev/keycloak`, `dev/observability`, plus the workflow (CI,
-pre-commit, SBOM, docs, release).
+`libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`,
+`libs/python/aurelius-atlas-trace`, `libs/angular/*`, `dev/elasticsearch`, `dev/postgres`, `dev/keycloak`,
+`dev/observability`, plus the workflow (CI, pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
 slices and its Java tooling were removed when the template was adopted (ADR 050).
@@ -208,7 +208,8 @@ Atlas behaviour (ADR 051):
 2. **One increment per pull request**, roughly 1,500 changed lines of production code at most.
    Split before coding when a slice is larger.
 3. **Every public function has a test that names it**, and every rule id has a test that names it,
-   via `@pytest.mark.covers("<dotted.path>", rules=["ENT-07"])` (ADR 049). CI fails otherwise.
+   via `@pytest.mark.covers("<dotted.path>", rules=["ENT-07"])` (ADR 049). CI fails otherwise;
+   run `uv run aurelius-atlas-trace check` locally to see the gaps first.
 4. **Parity before acceptance.** REST behaviour is compared against recorded responses of the
    reference Java Atlas (ADR 048). Fixtures are only re-recorded on purpose and reviewed as code.
 5. **Decisions are recorded where they are made.** Business-level decisions become ADRs;
