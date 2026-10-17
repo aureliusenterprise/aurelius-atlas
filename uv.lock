@@ -14,6 +14,7 @@ members = [
     "aurelius-atlas-server",
     "aurelius-atlas-store-es",
     "aurelius-atlas-trace",
+    "aurelius-atlas-typesystem",
     "aurelius-atlas-vulnerability-report",
 ]
 
@@ -227,6 +228,7 @@ dev = [
     { name = "aurelius-atlas-server" },
     { name = "aurelius-atlas-store-es", extra = ["testing"] },
     { name = "aurelius-atlas-trace" },
+    { name = "aurelius-atlas-typesystem" },
     { name = "aurelius-atlas-vulnerability-report" },
     { name = "griffe-pydantic" },
     { name = "mike" },
@@ -272,6 +274,7 @@ dev = [
     { name = "aurelius-atlas-server", editable = "apps/aurelius-atlas-server" },
     { name = "aurelius-atlas-store-es", extras = ["testing"], editable = "libs/python/aurelius-atlas-store-es" },
     { name = "aurelius-atlas-trace", editable = "libs/python/aurelius-atlas-trace" },
+    { name = "aurelius-atlas-typesystem", editable = "libs/python/aurelius-atlas-typesystem" },
     { name = "aurelius-atlas-vulnerability-report", editable = "reports/aurelius-atlas-vulnerability-report" },
     { name = "griffe-pydantic", specifier = ">=1.3.2" },
     { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=2d4ad799442f4592db8ad53b179bfb33db8c69ac" },
@@ -521,6 +524,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "pytest", specifier = ">=8.4.1" }]
+
+[[package]]
+name = "aurelius-atlas-typesystem"
+version = "0.6.1"
+source = { editable = "libs/python/aurelius-atlas-typesystem" }
+dependencies = [
+    { name = "aurelius-atlas-model" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" }]
 
 [[package]]
 name = "aurelius-atlas-vulnerability-report"

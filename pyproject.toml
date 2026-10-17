@@ -18,6 +18,7 @@ dev = [
     "aurelius-atlas-server",
     "aurelius-atlas-store-es[testing]",
     "aurelius-atlas-trace",
+    "aurelius-atlas-typesystem",
     "aurelius-atlas-vulnerability-report",
     "alembic>=1.18",
     "mike",
@@ -84,6 +85,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-trace]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-typesystem]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-vulnerability-report]
 workspace = true
 
@@ -97,6 +101,7 @@ members = [
     "libs/python/aurelius-atlas-sdk",
     "libs/python/aurelius-atlas-store-es",
     "libs/python/aurelius-atlas-trace",
+    "libs/python/aurelius-atlas-typesystem",
     "reports/aurelius-atlas-license-report",
     "reports/aurelius-atlas-vulnerability-report",
 ]

@@ -99,6 +99,7 @@ nav:
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
                       - aurelius-atlas-trace: api-reference/libs/python/aurelius-atlas-trace.md
+                      - aurelius-atlas-typesystem: api-reference/libs/python/aurelius-atlas-typesystem.md
                 - Styles:
                       - api-reference/libs/styles/index.md
                       - aurelius-atlas-brand: api-reference/libs/styles/aurelius-atlas-brand.md

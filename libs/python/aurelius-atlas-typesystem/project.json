@@ -1,0 +1,9 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-atlas-model"],
+    "name": "aurelius-atlas-typesystem",
+    "projectType": "library",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_typesystem",
+    "tags": [],
+    "targets": {}
+}
