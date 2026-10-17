@@ -93,6 +93,7 @@ nav:
                 - Python:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
+                      - aurelius-atlas-parity: api-reference/libs/python/aurelius-atlas-parity.md
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
                       - aurelius-atlas-trace: api-reference/libs/python/aurelius-atlas-trace.md
@@ -155,6 +156,7 @@ nav:
                 - 049. Every function and rule is traceable to a test: architecture/adr/049-every-function-and-rule-is-traceable-to-a-test.md
                 - 050. The system carries only what the catalogue needs: architecture/adr/050-the-system-carries-only-what-the-catalogue-needs.md
                 - 051. The conversion proceeds in specified increments: architecture/adr/051-the-conversion-proceeds-in-specified-increments.md
+                - 052. Behaviour is specified by scenarios read from the reference source: architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md
@@ -166,6 +168,7 @@ nav:
                       - 0.1 Adopt the template: architecture/conversion/increments/0-1-adopt-template.md
                       - 0.2 Elasticsearch infrastructure: architecture/conversion/increments/0-2-elasticsearch-infrastructure.md
                       - 0.3 Test report and traceability: architecture/conversion/increments/0-3-test-report-traceability.md
+                      - 0.4 Parity harness: architecture/conversion/increments/0-4-parity-harness.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

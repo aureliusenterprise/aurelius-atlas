@@ -31,7 +31,9 @@ uv run aurelius-atlas-trace report --output dist/test-report/index.html --summar
 `check` collects the tests of every Atlas project without running them, so its answer does not depend
 on which projects a change touches. `report` joins the files the `ci` configuration of the Nx `test`
 and `e2e` targets writes (`junit*.xml`, `coverage.xml`, `trace*.json`) into one page; rules and
-functions whose tests did not run in this change show as _not run_.
+functions whose tests did not run in this change show as _not run_. Parity scenarios
+([aurelius-atlas-parity](../aurelius-atlas-parity/README.md)) get one row per endpoint, and `check`
+refuses a scenario whose deviation id is not in the deviations table.
 
 What counts as an Atlas project, and from which increment rules are enforced, is configured in the
 `[tool.aurelius-atlas-trace]` table of the root `pyproject.toml`.

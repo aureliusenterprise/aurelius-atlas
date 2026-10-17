@@ -43,13 +43,13 @@ def test__outcome_combine_lets_failure_win(current: Outcome | None, phase: Outco
     "aurelius_atlas_trace.trace.TracedTest.to_json",
     "aurelius_atlas_trace.trace.TracedTest.from_json",
     "aurelius_atlas_trace.trace.read_trace_file",
-    rules=["TRC-11"],
+    rules=["TRC-11", "SCN-14"],
 )
 def test__traced_tests_round_trip_through_a_trace_file(tmp_path: Path) -> None:
     """What the plugin writes, the reader reads back, including tests that did not run."""
     tests = (
         TracedTest(nodeid="tests/test__a.py::test__a", targets=("m.f",), rules=("ABC-01",), outcome=Outcome.FAILED),
-        TracedTest(nodeid="tests/test__a.py::test__b", targets=(), rules=("ABC-02",)),
+        TracedTest(nodeid="tests/test__a.py::test__b", targets=(), rules=("ABC-02",), properties=(("k", "v"),)),
     )
     path = tmp_path / "trace.json"
     document = {"version": TRACE_FORMAT_VERSION, "rootdir": str(tmp_path), "tests": [t.to_json() for t in tests]}
@@ -69,3 +69,18 @@ def test__read_trace_file_rejects_an_unknown_version(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="trace format version 99 is not supported"):
         read_trace_file(path)
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_trace.trace.TracedTest.from_json",
+    "aurelius_atlas_trace.trace.TracedTest.property_values",
+    rules=["SCN-14"],
+)
+def test__traced_test_without_properties_reads_as_none() -> None:
+    """A test written before properties existed has none; repeated names keep every value in order."""
+    old = TracedTest.from_json({"nodeid": "t", "targets": [], "rules": [], "outcome": None})
+    new = TracedTest(nodeid="t", targets=(), rules=(), properties=(("a", "1"), ("b", "2"), ("a", "3")))
+
+    assert old.properties == ()
+    assert new.property_values("a") == ("1", "3")
+    assert new.property_values("c") == ()

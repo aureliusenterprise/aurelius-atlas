@@ -11,6 +11,7 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and `libs/python/
 - `aurelius_atlas_trace/config.py` — reads `[tool.aurelius-atlas-trace]` and the uv workspace members
 - `aurelius_atlas_trace/check.py` — collects every Atlas project's markers in a subprocess and finds gaps
 - `aurelius_atlas_trace/report.py` — HTML page and Markdown summary; `cli.py` — `aurelius-atlas-trace`
+- `aurelius_atlas_trace/parity.py` — the `parity.*` test property names and the deviations table reader
 - `aurelius_atlas_trace/testing.py` — a sample workspace for this lib's own tests
 - `tests/` — `pytester` tests for the plugin; sample workspaces for the check and the report
 
@@ -19,7 +20,8 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and `libs/python/
 - Registered in root `pyproject.toml` (workspace members, dev group, `uv.sources`) — the dev group is
   what loads the plugin into every project's pytest run.
 - `[tool.aurelius-atlas-trace]` in the root `pyproject.toml`: `specs`, `enforce-from`,
-  `exclude-projects` (template projects), `exclude-subpackages` (`testing`).
+  `exclude-projects` (template projects), `exclude-subpackages` (`testing`), `deviations` (the table
+  that scenario deviation ids are checked against).
 - `tools/plugins/python.ts`: the `ci` configuration of `test` and `e2e` passes `--junitxml` and
   `--trace-json` next to the coverage options.
 - `.github/workflows/ci.yaml`: `check` in the `validate` job; `report` and the `test-report` artifact in
@@ -37,6 +39,8 @@ uv run aurelius-atlas-trace check
 - Rule ids are `XXX-NN` (TRC-03); specs are `N-M-slug.md` (TRC-08). Changing either format means
   changing `marker.RULE_ID_PATTERN` or `rules.SPEC_FILE_PATTERN` and their tests together.
 - Standard library only beyond pytest: the report reads JUnit and Cobertura XML, nothing else (TRC-12).
+- Parity scenarios reach the check and the report only as test properties (DD-014); the property names in
+  `parity.py` and in `aurelius-atlas-parity` change together.
 - A new Atlas project needs no change here; a project that should not be checked goes into
   `exclude-projects` with a reason in the design log.
 

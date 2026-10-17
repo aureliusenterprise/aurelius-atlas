@@ -387,3 +387,27 @@ def test__collect_only_records_tests_without_outcomes(pytester: pytest.Pytester)
     (test,) = read_trace_file(pytester.path / "trace.json").tests
     assert test.outcome is None
     assert test.rules == ("ABC-01",)
+
+
+@pytest.mark.covers("aurelius_atlas_trace.plugin.TraceRecorder.pytest_collection_modifyitems", rules=["SCN-14"])
+def test__trace_file_records_user_properties_at_collection(pytester: pytest.Pytester) -> None:
+    """Properties a plugin adds while collecting reach the trace file; values become strings."""
+    pytester.makeconftest(
+        """
+        def pytest_itemcollected(item):
+            item.user_properties.extend([("kind", "sample"), ("count", 2)])
+        """
+    )
+    result = run_tests(
+        pytester,
+        """
+        def test__one():
+            pass
+        """,
+        "--trace-json",
+        "trace.json",
+    )
+
+    assert result.ret == pytest.ExitCode.OK
+    (test,) = read_trace_file(pytester.path / "trace.json").tests
+    assert test.properties == (("kind", "sample"), ("count", "2"))

@@ -72,6 +72,14 @@ def test__not_run_here():
     pass
 """
 
+SCENARIO_CONFTEST = """
+def pytest_itemcollected(item):
+    if item.name == "test__passes":
+        item.user_properties += [("parity.endpoint", "GET /a"), ("parity.deviation", "DV-01")]
+    if item.name == "test__fails":
+        item.user_properties += [("parity.endpoint", "GET /a"), ("parity.endpoint", "POST /b")]
+"""
+
 RULES = "| ABC-01 | Passes |\n| ABC-02 | Fails |\n| ABC-03 | Skipped |\n| ABC-04 | Not run |\n| ABC-05 | Uncovered |\n"
 
 JUNIT = """<?xml version="1.0" encoding="utf-8"?>
@@ -96,7 +104,7 @@ def coverage_xml(source: Path, filename: str, hits: dict[int, int]) -> str:
 @pytest.fixture
 def run_workspace(make_workspace: Callable[..., SampleWorkspace]) -> SampleWorkspace:
     """A workspace whose unit tests ran as the CI ``test -c ci`` target runs them; the e2e tests did not run."""
-    workspace = make_workspace(code=CODE, tests=TESTS, e2e=E2E, rules=RULES)
+    workspace = make_workspace(code=CODE, tests=TESTS, e2e=E2E, rules=RULES, conftest=SCENARIO_CONFTEST)
     subprocess.run(  # noqa: S603 - fixed arguments
         [
             sys.executable,
@@ -207,6 +215,22 @@ def test__build_report_joins_results_with_rules_and_functions(run_workspace: Sam
     assert (report.totals.tests, report.totals.failures, report.totals.skipped) == (3, 1, 1)
 
 
+@pytest.mark.covers("aurelius_atlas_trace.report.build_report", rules=["SCN-15"])
+def test__build_report_has_one_row_per_endpoint(run_workspace: SampleWorkspace) -> None:
+    """Scenario tests are grouped by the endpoints they call, with their outcomes and deviations."""
+    report = build_report(load_config(run_workspace.root))
+
+    rows = {row.name: row for row in report.endpoints}
+    assert list(rows) == ["GET /a", "POST /b"]
+    assert rows["GET /a"].status is Status.FAILED
+    assert rows["GET /a"].detail == "deviations DV-01"
+    assert [test.nodeid for test in rows["GET /a"].tests] == [
+        "tests/test__sample.py::test__passes",
+        "tests/test__sample.py::test__fails",
+    ]
+    assert rows["POST /b"].detail == "no deviations"
+
+
 def sample_report() -> Report:
     """A report with one row of each status that needs attention, and one passing row."""
     passed = TestRef(project="p", nodeid="tests/test__a.py::test__ok", outcome=Outcome.PASSED)
@@ -223,6 +247,10 @@ def sample_report() -> Report:
             Row(name="ABC-04", detail="0.2 · spec.md", tests=()),
         ),
         functions=(Row(name="m.f", detail="m.py:1", tests=(passed,), coverage=0.5),),
+        endpoints=(
+            Row(name="GET /api/version", detail="deviations DV-01", tests=(passed,)),
+            Row(name="POST /api/entity", detail="no deviations", tests=(failed,)),
+        ),
     )
 
 
@@ -242,13 +270,24 @@ def test__render_html_is_one_self_contained_page() -> None:
     assert "<td>50%</td>" in page
 
 
-@pytest.mark.covers("aurelius_atlas_trace.report.render_summary", rules=["TRC-15"])
+@pytest.mark.covers("aurelius_atlas_trace.report.render_html", rules=["SCN-15"])
+def test__render_html_has_an_endpoint_section() -> None:
+    """Endpoints get their own table with statuses and deviations."""
+    page = render_html(sample_report())
+
+    assert "<h2>Endpoints (2)</h2>" in page
+    assert '<code>GET /api/version</code><div class="detail">deviations DV-01</div>' in page
+
+
+@pytest.mark.covers("aurelius_atlas_trace.report.render_summary", rules=["TRC-15", "SCN-15"])
 def test__render_summary_counts_and_lists_what_needs_attention() -> None:
     """The Markdown summary has counts per status and lists failed and uncovered items and failed tests."""
     summary = render_summary(sample_report())
 
     assert "| Rules | 1 | 1 | 0 | 1 | 1 |" in summary
     assert "| Functions | 1 | 0 | 0 | 0 | 0 |" in summary
+    assert "| Endpoints | 1 | 1 | 0 | 0 | 0 |" in summary
+    assert "- endpoint `POST /api/entity`: failed" in summary
     assert "- rule `ABC-02`: failed" in summary
     assert "- rule `ABC-04`: uncovered" in summary
     assert "ABC-03" not in summary

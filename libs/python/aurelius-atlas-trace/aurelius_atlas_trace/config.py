@@ -14,6 +14,7 @@ TEST_DIRECTORIES = ("tests", "e2e")
 
 MISSING_TABLE_ERROR = "{path} has no [tool.{table}] table"
 BAD_SETTING_ERROR = "{path}: [tool.{table}] needs 'specs' and 'enforce-from' (N.M): {error}"
+NO_DEVIATIONS_ERROR = "{path}: [tool.{table}] deviations: {file} does not exist"
 NO_PACKAGE_ERROR = "{project} declares no package in [tool.hatch.build.targets.wheel] packages"
 
 
@@ -41,6 +42,8 @@ class TraceConfig:
     excluded_subpackages: tuple[str, ...]
     members: tuple[Path, ...]
     """Every uv workspace member, excluded or not: where the report looks for test results."""
+    deviations: Path | None = None
+    """The deviations table that parity scenarios name their deviations from (SCN-13), if configured."""
 
 
 def _read_toml(path: Path) -> dict[str, Any]:
@@ -71,7 +74,8 @@ def load_config(workspace: Path) -> TraceConfig:
 
     The table holds ``specs`` (directory of the specifications), ``enforce-from`` (first increment whose
     rules count), ``exclude-projects`` (workspace members left out, as listed in ``members``) and
-    ``exclude-subpackages`` (subpackage names left out of every package, default ``["testing"]``).
+    ``exclude-subpackages`` (subpackage names left out of every package, default ``["testing"]``) and
+    ``deviations`` (the deviations table, optional).
 
     Raises:
         ConfigError: The table or one of its settings is missing, or a project declares no package.
@@ -89,6 +93,9 @@ def load_config(workspace: Path) -> TraceConfig:
         enforce_from = Increment.parse(table["enforce-from"])
     except (KeyError, ValueError) as error:
         raise ConfigError(BAD_SETTING_ERROR.format(path=path, table=CONFIG_TABLE, error=error)) from error
+    deviations = workspace / table["deviations"] if "deviations" in table else None
+    if deviations is not None and not deviations.is_file():
+        raise ConfigError(NO_DEVIATIONS_ERROR.format(path=path, table=CONFIG_TABLE, file=deviations))
 
     return TraceConfig(
         workspace=workspace,
@@ -97,4 +104,5 @@ def load_config(workspace: Path) -> TraceConfig:
         projects=tuple(_project(root) for root in _roots(workspace, members, excluded)),
         excluded_subpackages=tuple(table.get("exclude-subpackages", ("testing",))),
         members=tuple(_roots(workspace, members, set())),
+        deviations=deviations,
     )
