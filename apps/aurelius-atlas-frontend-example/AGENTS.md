@@ -32,19 +32,32 @@ rules live in the root `AGENTS.md`.
   assets, so secrets never leak into production bundles.
 - `tsconfig.base.json` — add a path alias when consuming a new Angular lib.
 - `package.json` — `@aurelius/atlas-brand` is a `file:` dependency.
-- `Dockerfile` — static nginx (`dhi.io/nginx`, port 8080), with locale routing baked
-  in from `nginx.conf`. Optional `/etc/nginx/app.d/*.conf` fragments are included at
-  server scope for per-deployment extras. E2E ships its own full `default.conf`
-  (`e2e/config/nginx.conf`, TLS + verified `/api/` + `/otel/` proxies); keep the
-  security headers and proxy paths in sync when either changes.
-- `nginx.conf` — production also reverse-proxies `/api/` → the FastAPI upstream and
-  `/otel/` → the OTLP collector (prefix stripped, mirroring `proxy.conf.json`), so
-  the CSP can stay `connect-src 'self'`. Upstreams are the stack's service names —
-  template material like the CSP's Keycloak origins: deployments edit them (or
-  override the file) for their topology. Hostnames are variables resolved through
-  `resolver` per request (Docker DNS `127.0.0.11` by default), so a missing backend
-  returns 502 instead of blocking container start. Upstream TLS verification is off
-  (no mounted CA); `e2e/config/nginx.conf` shows the verified variant.
+- `Dockerfile` — static nginx (`dhi.io/nginx`, port 8080) serving the locale tree;
+  bakes `nginx.conf.template` over the stock `/etc/nginx/conf.d/default.conf`.
+  No entrypoint, no render-on-start (deliberately: the hardened runtime image
+  has no shell tooling, and the `-dev` variant with envsubst runs as root —
+  see the dhi guides). Optional `/etc/nginx/app.d/*.conf` fragments are
+  included at server scope for per-deployment extras. Consumers that run the
+  image mount their own **fully resolved** copy over
+  `/etc/nginx/conf.d/default.conf` — E2E ships `e2e/config/nginx.conf` (static
+  file, hard-filled values: TLS + verified `/api/` + `/otel/` proxies);
+  deployments do the same with their topology (ConfigMap/secret, compose
+  config, …). Keep the security headers and proxy paths in sync when either
+  changes.
+- `nginx.conf.template` — production also reverse-proxies `/api/` → the FastAPI
+  upstream and `/otel/` → the OTLP collector (prefix stripped, mirroring
+  `proxy.conf.json`), so the CSP can stay `connect-src 'self'`. Topology is
+  parameterized with `${AURELIUS_ATLAS_FRONTEND_*}` placeholders
+  (`API_UPSTREAM[_NAME]`, `OTEL_UPSTREAM[_NAME]`, `TLS_CA_FILE`,
+  `DNS_RESOLVER`, `KEYCLOAK_ORIGINS` in the CSP `connect-src`/`frame-src`) —
+  resolved **by the consumer at deploy time** (envsubst/sed/kustomize), never
+  at container start: nginx treats `${NAME}` as an unknown nginx variable, so
+  an unresolved file fails `nginx -t` loudly instead of serving. Upstream TLS
+  is verified against `TLS_CA_FILE`'s resolved value (mount the CA beside the
+  config). Hostnames go through `resolver` per request, so a missing backend
+  returns 502 instead of blocking container start. Quick syntax check of a
+  resolved copy:
+  `docker run --rm -v ./resolved.conf:/etc/nginx/conf.d/default.conf:ro <image> -t`.
 - `mkdocs.yaml` — user-guide pages referencing this app.
 
 ## Commands
