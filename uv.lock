@@ -8,6 +8,7 @@ members = [
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
+    "aurelius-atlas-parity",
     "aurelius-atlas-sdk",
     "aurelius-atlas-store-es",
     "aurelius-atlas-trace",
@@ -218,6 +219,7 @@ dev = [
     { name = "aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report" },
+    { name = "aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extra = ["full"] },
     { name = "aurelius-atlas-store-es", extra = ["testing"] },
     { name = "aurelius-atlas-trace" },
@@ -260,6 +262,7 @@ dev = [
     { name = "aurelius-atlas-example", editable = "libs/python/aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example", editable = "apps/aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
+    { name = "aurelius-atlas-parity", editable = "libs/python/aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extras = ["full"], editable = "libs/python/aurelius-atlas-sdk" },
     { name = "aurelius-atlas-store-es", extras = ["testing"], editable = "libs/python/aurelius-atlas-store-es" },
     { name = "aurelius-atlas-trace", editable = "libs/python/aurelius-atlas-trace" },
@@ -363,6 +366,25 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
+]
+
+[[package]]
+name = "aurelius-atlas-parity"
+version = "0.6.1"
+source = { editable = "libs/python/aurelius-atlas-parity" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pytest" },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
 [[package]]

@@ -34,12 +34,12 @@ Not in scope:
 
 ### The scenario format
 
-| Id     | Rule                                                                                                                                                                                                                     |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SCN-01 | A scenario is one YAML file named `*.scenario.yaml` with a `name`, a non-empty `source` list citing where in Atlas 2.4.0 the expectation was read, optional `rules`, `covers` and `deviations`, and one or more `stages` |
-| SCN-02 | A stage has a `request` (`method`, `url`, optional `params`, `headers` and a `json` or `text` body) and a `response` (`status`, optional `headers`, a `json` or `text` body, `volatile` paths and `save` names)          |
-| SCN-03 | A file that does not parse or does not match the format fails the collection of the test module that loads it, naming the file and the problem; unknown keys are problems                                                |
-| SCN-04 | Each scenario becomes one test whose id is its path below the scenario directory without the suffix; its `rules` and `covers` become a `covers` marker of that test                                                      |
+| Id     | Rule                                                                                                                                                                                                                                                                       |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SCN-01 | A scenario is one YAML file named `*.scenario.yaml` with a `name`, a non-empty `source` list citing where in Atlas 2.4.0 the expectation was read, optional `rules` and `covers`, and one or more `stages`                                                                 |
+| SCN-02 | A stage has an optional `name`, a `request` (`method`, `url`, optional `params`, `headers` and a `json` or `text` body) and a `response` (`status`, optional `headers`, a `json` or `text` body, and, with a `json` body, `volatile` paths, `save` names and `deviations`) |
+| SCN-03 | A file that does not parse or does not match the format fails the collection of the test module that loads it, naming the file and the problem; unknown keys, keys given twice and unquoted dates are problems                                                             |
+| SCN-04 | Each scenario becomes one test whose id is its path below the scenario directory without the suffix; its `rules` and `covers` become a `covers` marker of that test                                                                                                        |
 
 ### Running and comparing
 
@@ -55,17 +55,17 @@ Not in scope:
 
 ### Deviations
 
-| Id     | Rule                                                                                                                                                                                                                    |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SCN-12 | The expectation in a scenario is the Atlas response; a deliberate difference is a `deviations` entry with a `DV-NN` id, a path, and the Aurelius `value` or `absent: true`, applied to the expectation before comparing |
-| SCN-13 | `aurelius-atlas-trace check` lists every scenario that names a deviation id the [deviations](../deviations.md) table does not define                                                                                    |
+| Id     | Rule                                                                                                                                                                                                                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SCN-12 | The expectation in a scenario is the Atlas response; a deliberate difference is a `deviations` entry of the stage's response with a `DV-NN` id, a path, and the Aurelius `value` or `absent: true`, applied to the expectation before comparing; a deviation that changes nothing fails the stage |
+| SCN-13 | `aurelius-atlas-trace check` lists every scenario that names a deviation id the [deviations](../deviations.md) table does not define                                                                                                                                                              |
 
 ### The report
 
-| Id     | Rule                                                                                                                                                                                                              |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SCN-14 | The trace file records every test's `user_properties`; each scenario test carries one `parity.endpoint` property per stage (method and URL before substitution) and one `parity.deviation` property per deviation |
-| SCN-15 | The report has a section with one row per endpoint: its scenarios with their outcomes and deviations, with the same statuses as rules; the Markdown summary counts endpoints                                      |
+| Id     | Rule                                                                                                                                                                                                                                                                        |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SCN-14 | The trace file records every test's `user_properties` after collection; each scenario test carries one `parity.endpoint` property per endpoint its stages call (method and URL before substitution, without the query) and one `parity.deviation` property per deviation id |
+| SCN-15 | The report has a section with one row per endpoint: its scenarios with their outcomes and deviations, with the same statuses as rules; the Markdown summary counts endpoints                                                                                                |
 
 Rule SCN-01 is ADR 052 R1: a scenario without a citation is not a scenario. The format borrows the stage
 shape of Tavern, and scenarios run as ordinary parametrised pytest tests

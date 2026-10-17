@@ -85,8 +85,9 @@ what to unwire when they do.
 
 The **spine** (keep this): `aurelius-atlas-frontend-example`, `aurelius-atlas-fastapi-example`,
 `libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`,
-`libs/python/aurelius-atlas-trace`, `libs/angular/*`, `dev/elasticsearch`, `dev/postgres`, `dev/keycloak`,
-`dev/observability`, plus the workflow (CI, pre-commit, SBOM, docs, release).
+`libs/python/aurelius-atlas-trace`, `libs/python/aurelius-atlas-parity`, `libs/angular/*`,
+`dev/elasticsearch`, `dev/postgres`, `dev/keycloak`, `dev/observability`, plus the workflow (CI,
+pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
 slices and its Java tooling were removed when the template was adopted (ADR 050).
