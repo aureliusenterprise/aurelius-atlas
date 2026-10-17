@@ -16,7 +16,7 @@ The ledger in this section is the central record of the conversion:
 - [ ] Semantics spec in `increments/`, every rule has an id
 - [ ] Every new public function has a test that names it (`@pytest.mark.covers`)
 - [ ] Every rule id is named by at least one test
-- [ ] Parity scenarios for the endpoints in scope pass against the recorded reference
+- [ ] Parity scenarios for the endpoints in scope pass, each citing its Atlas source (ADR 052)
 - [ ] `nx affected -t lint typecheck test e2e -c ci` is green and the coverage gate holds
 - [ ] Design log, Java map and deviations updated; ADR written if a business-level decision was made
 - [ ] The test report shows the increment's rules and endpoints as green
@@ -31,7 +31,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 0.1 | Adopt the template | Remove unused slices, rename, ADRs 046–051, this ledger | – | done |
 | 0.2 | Elasticsearch infrastructure | `dev/elasticsearch`, store library skeleton, health check | – | done |
 | 0.3 | Test report and traceability | `covers` marker, function-to-test checker, HTML test report in CI | – | in progress |
-| 0.4 | Parity harness | Reference Atlas container, scenario format, recorder, normaliser, replay | – | planned |
+| 0.4 | Parity harness | Scenario format, runner, comparison, deviations, report section | – | in progress |
 | 0.5 | Server and dashboard skeleton | Admin version/session/status endpoints, dashboard served; template examples removed | `AdminResource` (part) | planned |
 | 1.1 | Typedef models | Enum, struct, classification, entity, relationship, business-metadata definitions | `intg/.../model/typedef` | planned |
 | 1.2 | Type registry | Attribute types, supertypes, constraints, validation errors | `AtlasTypeRegistry`, `AtlasStructType`, … | planned |

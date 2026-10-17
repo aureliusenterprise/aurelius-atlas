@@ -35,6 +35,9 @@ Modules:
 - **`marker`** –
 
   The `covers` marker: what a test names, validated against the code it names.
+- **`parity`** –
+
+  What the check and the report know of parity scenarios: their test properties and the deviations table.
 - **`plugin`** –
 
   The pytest plugin: registers `covers`, validates it at collection and writes the trace file.
@@ -211,6 +214,7 @@ Findings(
     uncovered_functions: tuple[PublicFunction, ...],
     unchecked_rules: tuple[Rule, ...],
     unknown_rules: tuple[tuple[str, str], ...],
+    unknown_deviations: tuple[tuple[str, str], ...] = (),
 )
 ```
 
@@ -223,6 +227,9 @@ Attributes:
   Whether nothing is missing.
 - **`unchecked_rules`** (`tuple[Rule, ...]`) –
 - **`uncovered_functions`** (`tuple[PublicFunction, ...]`) –
+- **`unknown_deviations`** (`tuple[tuple[str, str], ...]`) –
+
+  Pairs of (test node id, deviation id) for deviations the deviations table does not define (SCN-13).
 - **`unknown_rules`** (`tuple[tuple[str, str], ...]`) –
 
   Pairs of (test node id, rule id) for rules that no specification defines.
@@ -246,6 +253,14 @@ unchecked_rules: tuple[Rule, ...]
 ```
 uncovered_functions: tuple[PublicFunction, ...]
 ```
+
+#### unknown\_deviations
+
+```
+unknown_deviations: tuple[tuple[str, str], ...] = ()
+```
+
+Pairs of (test node id, deviation id) for deviations the deviations table does not define (SCN-13).
 
 #### unknown\_rules
 
@@ -297,10 +312,38 @@ Raises:
 ### find\_gaps
 
 ```
-find_gaps(functions: Iterable[PublicFunction], rules: dict[str, Rule], tests: Iterable[TracedTest]) -> Findings
+find_gaps(
+    functions: Iterable[PublicFunction],
+    rules: dict[str, Rule],
+    tests: Iterable[TracedTest],
+    deviations: set[str] | None = None,
+) -> Findings
 ```
 
 Compare what the tests name with the functions and rules that must be named (TRC-09).
+
+Parameters:
+
+- #### **`functions`**
+
+  (`Iterable[PublicFunction]`) –
+
+  The public functions that must be named.
+- #### **`rules`**
+
+  (`dict[str, Rule]`) –
+
+  The rules that must be named, by id.
+- #### **`tests`**
+
+  (`Iterable[TracedTest]`) –
+
+  The collected tests.
+- #### **`deviations`**
+
+  (`set[str] | None`, default: `None` ) –
+
+  The deviation ids scenarios may name (SCN-13); None skips that comparison.
 
 ### format\_findings
 
@@ -353,6 +396,7 @@ Attributes:
 - **`BAD_SETTING_ERROR`** –
 - **`CONFIG_TABLE`** –
 - **`MISSING_TABLE_ERROR`** –
+- **`NO_DEVIATIONS_ERROR`** –
 - **`NO_PACKAGE_ERROR`** –
 - **`PYPROJECT`** –
 - **`TEST_DIRECTORIES`** –
@@ -375,6 +419,12 @@ CONFIG_TABLE = 'aurelius-atlas-trace'
 
 ```
 MISSING_TABLE_ERROR = '{path} has no [tool.{table}] table'
+```
+
+### NO\_DEVIATIONS\_ERROR
+
+```
+NO_DEVIATIONS_ERROR = '{path}: [tool.{table}] deviations: {file} does not exist'
 ```
 
 ### NO\_PACKAGE\_ERROR
@@ -445,6 +495,7 @@ TraceConfig(
     projects: tuple[Project, ...],
     excluded_subpackages: tuple[str, ...],
     members: tuple[Path, ...],
+    deviations: Path | None = None,
 )
 ```
 
@@ -452,6 +503,9 @@ The check's view of the workspace.
 
 Attributes:
 
+- **`deviations`** (`Path | None`) –
+
+  The deviations table that parity scenarios name their deviations from (SCN-13), if configured.
 - **`enforce_from`** (`Increment`) –
 - **`excluded_subpackages`** (`tuple[str, ...]`) –
 - **`members`** (`tuple[Path, ...]`) –
@@ -460,6 +514,14 @@ Attributes:
 - **`projects`** (`tuple[Project, ...]`) –
 - **`spec_dir`** (`Path`) –
 - **`workspace`** (`Path`) –
+
+#### deviations
+
+```
+deviations: Path | None = None
+```
+
+The deviations table that parity scenarios name their deviations from (SCN-13), if configured.
 
 #### enforce\_from
 
@@ -507,7 +569,7 @@ load_config(workspace: Path) -> TraceConfig
 
 Read `[tool.aurelius-atlas-trace]` and the uv workspace members of the root `pyproject.toml`.
 
-The table holds `specs` (directory of the specifications), `enforce-from` (first increment whose rules count), `exclude-projects` (workspace members left out, as listed in `members`) and `exclude-subpackages` (subpackage names left out of every package, default `["testing"]`).
+The table holds `specs` (directory of the specifications), `enforce-from` (first increment whose rules count), `exclude-projects` (workspace members left out, as listed in `members`) and `exclude-subpackages` (subpackage names left out of every package, default `["testing"]`) and `deviations` (the deviations table, optional).
 
 Raises:
 
@@ -752,16 +814,27 @@ tests: int = 0
 ### Report
 
 ```
-Report(totals: JUnitTotals, rules: tuple[Row, ...], functions: tuple[Row, ...])
+Report(totals: JUnitTotals, rules: tuple[Row, ...], functions: tuple[Row, ...], endpoints: tuple[Row, ...] = ())
 ```
 
 Everything the page and the summary show.
 
 Attributes:
 
+- **`endpoints`** (`tuple[Row, ...]`) –
+
+  One row per endpoint that parity scenarios call (SCN-15).
 - **`functions`** (`tuple[Row, ...]`) –
 - **`rules`** (`tuple[Row, ...]`) –
 - **`totals`** (`JUnitTotals`) –
+
+#### endpoints
+
+```
+endpoints: tuple[Row, ...] = ()
+```
+
+One row per endpoint that parity scenarios call (SCN-15).
 
 #### functions
 
@@ -1154,7 +1227,7 @@ Classes:
   The content of one trace file: the pytest root directory and its tests.
 - **`TracedTest`** –
 
-  One collected test: its node id, what it names, and how it ended (None when it did not run).
+  One collected test: its node id, what it names, how it ended (None when it did not run), and its properties.
 
 Functions:
 
@@ -1262,16 +1335,27 @@ tests: tuple[TracedTest, ...]
 ### TracedTest
 
 ```
-TracedTest(nodeid: str, targets: tuple[str, ...], rules: tuple[str, ...], outcome: Outcome | None = None)
+TracedTest(
+    nodeid: str,
+    targets: tuple[str, ...],
+    rules: tuple[str, ...],
+    outcome: Outcome | None = None,
+    properties: tuple[tuple[str, str], ...] = (),
+)
 ```
 
-One collected test: its node id, what it names, and how it ended (None when it did not run).
+One collected test: its node id, what it names, how it ended (None when it did not run), and its properties.
+
+The properties are the test's `user_properties` at collection, as name and value pairs (SCN-14).
 
 Methods:
 
 - **`from_json`** –
 
   Read a test from its JSON form.
+- **`property_values`** –
+
+  Return the values of every property with this name, in order.
 - **`to_json`** –
 
   Return the JSON form of this test.
@@ -1280,6 +1364,7 @@ Attributes:
 
 - **`nodeid`** (`str`) –
 - **`outcome`** (`Outcome | None`) –
+- **`properties`** (`tuple[tuple[str, str], ...]`) –
 - **`rules`** (`tuple[str, ...]`) –
 - **`targets`** (`tuple[str, ...]`) –
 
@@ -1293,6 +1378,12 @@ nodeid: str
 
 ```
 outcome: Outcome | None = None
+```
+
+#### properties
+
+```
+properties: tuple[tuple[str, str], ...] = ()
 ```
 
 #### rules
@@ -1314,6 +1405,14 @@ from_json(data: dict[str, Any]) -> TracedTest
 ```
 
 Read a test from its JSON form.
+
+#### property\_values
+
+```
+property_values(name: str) -> tuple[str, ...]
+```
+
+Return the values of every property with this name, in order.
 
 #### to\_json
 

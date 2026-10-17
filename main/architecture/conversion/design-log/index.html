@@ -1144,6 +1144,8 @@
       
         
       
+        
+      
     
     
     
@@ -1212,6 +1214,33 @@
     
   
   aurelius-atlas-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-parity
 
     
   </span>
@@ -1529,6 +1558,8 @@
       
         
           
+        
+      
         
       
         
@@ -3095,6 +3126,33 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  052. Behaviour is specified by scenarios read from the reference source
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -3405,6 +3463,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-012. Parity scenarios are YAML files run as parametrised pytest tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-013. A scenario response is compared exactly, except at declared paths
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-014-scenario-facts-reach-the-report-as-test-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-014. Scenario facts reach the report as test properties
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3484,6 +3575,8 @@
       
         
           
+        
+      
         
       
         
@@ -3643,6 +3736,33 @@
     
   
   0.3 Test report and traceability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-4-parity-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.4 Parity harness
 
     
   </span>
@@ -5602,6 +5722,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-012. Parity scenarios are YAML files run as parametrised pytest tests
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-013. A scenario response is compared exactly, except at declared paths
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-014-scenario-facts-reach-the-report-as-test-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-014. Scenario facts reach the report as test properties
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5840,6 +5993,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td>0.3</td>
 <td>Proposed</td>
 </tr>
+<tr>
+<td><a href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests">DD-012</a></td>
+<td>Parity scenarios are YAML files run as parametrised pytest tests</td>
+<td>0.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths">DD-013</a></td>
+<td>A scenario response is compared exactly, except at declared paths</td>
+<td>0.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-014-scenario-facts-reach-the-report-as-test-properties">DD-014</a></td>
+<td>Scenario facts reach the report as test properties</td>
+<td>0.4</td>
+<td>Proposed</td>
+</tr>
 </tbody>
 </table>
 <h3 id="dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served<a class="headerlink" href="#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served" title="Permanent link">&para;</a></h3>
@@ -6050,6 +6221,63 @@ per-function gap view would still be ours to build as labels and post-processing
 page of test results, nothing about rules or functions. SonarCloud: shows coverage, not traceability.</p>
 <p><strong>Consequences.</strong> The page is an artifact of the CI run, not a published site; 0.4 adds the parity
 results to it. If a later need (history, trends) outgrows a static page, a viewer is chosen then.</p>
+<h3 id="dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests">DD-012. Parity scenarios are YAML files run as parametrised pytest tests<a class="headerlink" href="#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.4</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> A scenario is a <code>*.scenario.yaml</code> file in the stage shape of Tavern (<code>request</code>,
+<code>response</code>, <code>save</code>), validated with pydantic. A project's test module turns a directory of them into
+one parametrised test, <code>load_scenarios(directory)</code>, whose body is <code>await run_scenario(scenario, client)</code>;
+the project's fixture decides whether <code>client</code> talks to the application in-process (<code>httpx.ASGITransport</code>)
+or over HTTP to a running server.</p>
+<p><strong>Reason.</strong> ADR 045's ladder: the request/response/save stage is the community's shape for declarative
+API tests, so reviewers who know Tavern read our scenarios at once. Running scenarios as ordinary pytest
+parameters puts them in JUnit, in the trace file and under <code>covers</code> (SCN-04) with public pytest API only.</p>
+<p><strong>Alternatives.</strong> Tavern itself: speaks HTTP through <code>requests</code> only, so the in-process unit level is
+lost, and the exact comparison, volatile paths and deviations (DD-013) would be hooks around it. A
+custom collector for <code>*.scenario.yaml</code>: shorter test modules, but it needs pytest's private fixture
+API to give the items a client. Schemathesis: generates requests from an OpenAPI document, which
+Atlas 2.4.0 does not ship and which states types, not Atlas's answers.</p>
+<p><strong>Consequences.</strong> Every project with scenarios has one small test module and a <code>client</code> fixture. The
+scenario format is ours to keep stable; it is versioned by its rules SCN-01 to SCN-03.</p>
+<h3 id="dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths">DD-013. A scenario response is compared exactly, except at declared paths<a class="headerlink" href="#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.4</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The expected body must equal the actual body: the same keys, arrays in the same order,
+booleans and null distinct from numbers. Only <code>volatile</code> paths (generated GUIDs, timestamps) skip the
+value, and only <code>deviations</code> entries change the expectation, each naming its <code>DV-NN</code>.</p>
+<p><strong>Reason.</strong> The dashboard and existing clients read fields the scenarios might not think of; an extra,
+missing or <code>null</code> field is a visible difference (<a href="../../adr/046-the-catalogue-keeps-its-public-contract/">ADR 046</a>).
+Atlas serialises its models with Jackson <code>NON_NULL</code> inclusion, so "absent" and <code>null</code> differ there and
+must differ here.</p>
+<p><strong>Alternatives.</strong> Subset matching: short scenarios, but an extra or misnamed field passes. Snapshot
+files written from our own responses: exact, but the expectation would come from the implementation,
+not from Atlas (ADR 052 R1).</p>
+<p><strong>Consequences.</strong> Expectations for large responses are long; scenarios borrow Atlas's own test fixtures
+for request bodies to keep writing them cheap. Arrays whose order Atlas does not define get an explicit
+order-insensitive option when the first increment needs one.</p>
+<h3 id="dd-014-scenario-facts-reach-the-report-as-test-properties">DD-014. Scenario facts reach the report as test properties<a class="headerlink" href="#dd-014-scenario-facts-reach-the-report-as-test-properties" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 0.4</li>
+<li><strong>Date:</strong> 2026-10-17</li>
+</ul>
+<p><strong>Decision.</strong> The parity plugin adds each scenario's endpoints and deviation ids to the test item's
+<code>user_properties</code> at collection. The trace plugin writes every test's properties to the trace file, so
+<code>check</code> (unknown deviations) and <code>report</code> (one row per endpoint) read them from the collection they
+already do.</p>
+<p><strong>Reason.</strong> <code>user_properties</code> is pytest's own channel for facts about a test, and JUnit carries it too.
+Reading it at collection keeps the report's rule of DD-009: an endpoint whose scenarios did not run in
+this change is <em>not run</em>, not missing.</p>
+<p><strong>Alternatives.</strong> A separate <code>--parity-json</code> file: a second format next to the trace file for the same
+tests. Make the trace library know scenarios: couples the traceability tool to one kind of test.</p>
+<p><strong>Consequences.</strong> The trace file format gains a <code>properties</code> field per test; readers of version 1 files
+without it see no properties. Property names are prefixed with the plugin that sets them (<code>parity.</code>).</p>
 
 
 

@@ -55,10 +55,11 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [045](<https://aureliusenterprise.github.io/main/architecture/adr/045-conventions-are-borrowed-before-they-are-invented/index.md>) | Conventions are borrowed before they are invented — framework, then community, then invention; the preference outlives the brands. | Accepted |
 | [046](<https://aureliusenterprise.github.io/main/architecture/adr/046-the-catalogue-keeps-its-public-contract/index.md>) | The catalogue keeps its public contract while its implementation is replaced; every visible difference is a recorded deviation. | Accepted |
 | [047](<https://aureliusenterprise.github.io/main/architecture/adr/047-one-search-store-is-the-system-of-record/index.md>) | One search store is the only system of record for metadata — no separate graph, relational store or index. | Accepted |
-| [048](<https://aureliusenterprise.github.io/main/architecture/adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/index.md>) | Behaviour is proven against recorded responses of the reference implementation before it is accepted. | Proposed |
+| [048](<https://aureliusenterprise.github.io/main/architecture/adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/index.md>) | Behaviour is proven against recorded responses of the reference implementation before it is accepted. | Superseded by 052 |
 | [049](<https://aureliusenterprise.github.io/main/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>) | Every function and every specified rule is traceable to a test, and the trace is published per change. | Accepted |
 | [050](<https://aureliusenterprise.github.io/main/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>) | The system carries only the capabilities the catalogue needs — a named deviation from the template spine. | Accepted |
 | [051](<https://aureliusenterprise.github.io/main/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>) | The conversion proceeds in increments, each defined by a written specification before it is built. | Accepted |
+| [052](<https://aureliusenterprise.github.io/main/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/index.md>) | Behaviour is specified by scenarios read from the reference source and its tests, each citing where; the reference is never run. | Proposed |
 
 ## Why record decisions
 
