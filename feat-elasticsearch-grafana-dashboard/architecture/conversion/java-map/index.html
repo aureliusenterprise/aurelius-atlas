@@ -802,6 +802,8 @@
       
         
       
+        
+      
     
     
     
@@ -897,6 +899,33 @@
     
   
   aurelius-atlas-frontend-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/apps/aurelius-atlas-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-server
 
     
   </span>
@@ -1144,6 +1173,8 @@
       
         
       
+        
+      
     
     
     
@@ -1212,6 +1243,33 @@
     
   
   aurelius-atlas-example
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-parity
 
     
   </span>
@@ -1529,6 +1587,8 @@
       
         
           
+        
+      
         
       
         
@@ -3095,6 +3155,33 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  052. Behaviour is specified by scenarios read from the reference source
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -3356,6 +3443,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3505,6 +3596,60 @@
     
   
   0.3 Test report and traceability
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-4-parity-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.4 Parity harness
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/0-5-server-skeleton/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.5 Server skeleton
 
     
   </span>
@@ -5496,7 +5641,7 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>webapp</code></td>
 <td>REST resources, filters, authentication</td>
 <td><code>aurelius-atlas-server</code></td>
-<td>not started</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td><code>server-api</code></td>
@@ -5573,10 +5718,22 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 </thead>
 <tbody>
 <tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td><code>AdminResource</code> (version, status, session, liveness, readiness)</td>
+<td><code>aurelius_atlas_server.routes.admin</code></td>
+<td>0.5</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>AtlasBaseExceptionMapper</code></td>
+<td><code>aurelius_atlas_server.errors</code></td>
+<td>0.5</td>
+<td>ported</td>
+</tr>
+<tr>
+<td><code>AtlasErrorCode</code> (<code>INTERNAL_ERROR</code>)</td>
+<td><code>aurelius_atlas_server.errors</code></td>
+<td>0.5</td>
+<td>in progress</td>
 </tr>
 </tbody>
 </table>

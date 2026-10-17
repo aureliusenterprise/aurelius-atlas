@@ -9,7 +9,7 @@ Where each part of Apache Atlas 2.4.0 goes. Updated by every increment; the stat
 | `intg` | Model classes, type system, client-side utilities | `aurelius-atlas-model`, `aurelius-atlas-typesystem` | not started |
 | `repository` | Stores, services, discovery, lineage, glossary, audit | `aurelius-atlas-core`, `aurelius-atlas-dsl` | not started |
 | `graphdb` | JanusGraph abstraction and implementation | `aurelius-atlas-store-es` | replaced |
-| `webapp` | REST resources, filters, authentication | `aurelius-atlas-server` | not started |
+| `webapp` | REST resources, filters, authentication | `aurelius-atlas-server` | in progress |
 | `server-api` | Interfaces shared by server components | `aurelius-atlas-core` | not started |
 | `common` | Shared utilities | where used | not started |
 | `authorization` | Simple and Ranger authorizers | `aurelius-atlas-server` (simple authorizer only) | not started |
@@ -27,4 +27,6 @@ Rows are added by each increment for the classes it ports.
 
 | Java class | Python module | Increment | Status |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| `AdminResource` (version, status, session, liveness, readiness) | `aurelius_atlas_server.routes.admin` | 0.5 | in progress |
+| `AtlasBaseExceptionMapper` | `aurelius_atlas_server.errors` | 0.5 | ported |
+| `AtlasErrorCode` (`INTERNAL_ERROR`) | `aurelius_atlas_server.errors` | 0.5 | in progress |

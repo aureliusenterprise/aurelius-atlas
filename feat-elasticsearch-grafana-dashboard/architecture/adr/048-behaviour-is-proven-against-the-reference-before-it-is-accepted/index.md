@@ -1,6 +1,6 @@
 # 048\. Behaviour is proven against the reference implementation before it is accepted
 
-- **Status:** Proposed (becomes Accepted when increment 0.4 provides the parity harness)
+- **Status:** Superseded by [052](<https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/index.md>)
 - **Date:** 2026-10-09
 - **Deciders:** Aurelius Enterprise
 

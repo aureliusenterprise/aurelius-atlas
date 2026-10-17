@@ -16,6 +16,9 @@
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/api-reference/apps/aurelius-atlas-frontend-example/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/api-reference/apps/aurelius-atlas-server/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/api-reference/libs/</loc>
       </url>
       <url>
@@ -32,6 +35,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/api-reference/libs/python/aurelius-atlas-example/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/api-reference/libs/python/aurelius-atlas-parity/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/api-reference/libs/python/aurelius-atlas-sdk/</loc>
@@ -208,6 +214,9 @@
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/adr/051-the-conversion-proceeds-in-specified-increments/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/adr/template/</loc>
       </url>
       <url>
@@ -230,6 +239,12 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/conversion/increments/0-3-test-report-traceability/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/conversion/increments/0-4-parity-harness/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/conversion/increments/0-5-server-skeleton/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-elasticsearch-grafana-dashboard/architecture/conversion/increments/template/</loc>
