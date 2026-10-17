@@ -1,6 +1,6 @@
 # 0.2 Elasticsearch infrastructure
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** [#78](https://github.com/aureliusenterprise/aurelius-atlas/pull/78)
 - **Records:** ADR 047 (becomes Accepted), DD-005, DD-006, DD-007, DD-008
 
