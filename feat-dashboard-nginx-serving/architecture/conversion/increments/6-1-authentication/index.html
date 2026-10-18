@@ -5772,7 +5772,7 @@
 <ul>
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> <a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/91">#91</a>, extended onto 0.6</li>
-<li><strong>Records:</strong> DD-036 to DD-040; DV-10, DV-11, DV-12 (DV-04 and DV-06 are retired when this lands);
+<li><strong>Records:</strong> DD-036 to DD-041; DV-10, DV-11, DV-12 (DV-04 and DV-06 are retired when this lands);
   relies on ADR 007, ADR 039, ADR 046, ADR 052, DD-034</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
@@ -5851,7 +5851,7 @@ config of <code>AtlasSecurityConfig#adapterDeploymentContext</code>
 </tr>
 <tr>
 <td>AUTH-03</td>
-<td>A request carrying <code>Authorization: Bearer &lt;token&gt;</code> is authenticated by verifying the token against the issuer's JWKS (signature, <code>iss</code>, <code>aud</code>, <code>exp</code>); it never creates or touches a session; an invalid bearer is answered 401</td>
+<td>A request carrying <code>Authorization: Bearer &lt;token&gt;</code> is authenticated by verifying the token against the issuer's JWKS (signature, <code>iss</code>, <code>aud</code>, <code>exp</code>) and requiring the access-token type (<code>typ: Bearer</code> — an ID token proves a login, not API access); it never creates or touches a session; an invalid bearer is answered 401</td>
 </tr>
 <tr>
 <td>AUTH-04</td>
@@ -5874,23 +5874,23 @@ config of <code>AtlasSecurityConfig#adapterDeploymentContext</code>
 <tbody>
 <tr>
 <td>AUTH-06</td>
-<td><code>GET /api/atlas/auth/login</code>, reached for a guarded page load without a valid session (DSH-07), 302s to the issuer's authorization endpoint (authorization-code flow with PKCE, <code>state</code> and <code>nonce</code> kept server-side) with the registered redirect URI; the intended URL is kept and returned to after login</td>
+<td><code>GET /api/atlas/auth/login</code>, reached for a guarded page load without a valid session (DSH-07), 302s to the issuer's authorization endpoint (authorization-code flow with PKCE, <code>state</code> and <code>nonce</code> kept server-side) with the registered redirect URI; the intended URL is kept and returned to after login (only paths of this origin — leading-<code>//</code>, backslash and control-character forms are dropped); the flow is bound to the browser by a short-lived <code>HttpOnly</code> <code>Secure</code> <code>SameSite=Lax</code> flow cookie (DD-041)</td>
 </tr>
 <tr>
 <td>AUTH-07</td>
-<td><code>GET /api/atlas/auth/callback</code> exchanges the code, validates the <code>id_token</code> (JWKS signature, <code>iss</code>, <code>nonce</code>, expiry — the login belongs to this flow) and the <code>access_token</code> (signature, <code>iss</code>, <code>aud</code>, expiry), creates the session from the <strong>access token's</strong> claims (DD-038 — Keycloak keeps roles out of the <code>id_token</code>, as <code>AtlasKeycloakAuthenticationProvider</code> reads the access token), and 302s to the kept URL; a <code>state</code> mismatch or a failed exchange is answered 401 and creates no session</td>
+<td><code>GET /api/atlas/auth/callback</code> exchanges the code, validates the <code>id_token</code> (JWKS signature, <code>iss</code>, <code>nonce</code>, expiry — the login belongs to this flow) and the <code>access_token</code> (signature, <code>iss</code>, <code>aud</code>, expiry), creates the session from the <strong>access token's</strong> claims (DD-038 — Keycloak keeps roles out of the <code>id_token</code>, as <code>AtlasKeycloakAuthenticationProvider</code> reads the access token), and 302s to the kept URL; a <code>state</code> mismatch, a missing or foreign flow cookie, or a failed exchange is answered 401 and creates no session (DD-041: the callback mints a session only in the browser that started the flow)</td>
 </tr>
 <tr>
 <td>AUTH-08</td>
-<td>The session cookie is <code>ATLASSESSIONID</code> — <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code>; the session id is minted at login and never accepted from the query string (no URL rewriting); the server keeps sessions in memory (in-process)</td>
+<td>The session cookie is <code>ATLASSESSIONID</code> — <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code>; the session id is minted at login and never accepted from the query string (no URL rewriting); the server keeps sessions in memory (in-process) and sweeps every expired or over-lifetime session on store activity, so abandoned sessions are reclaimed (DD-041)</td>
 </tr>
 <tr>
 <td>AUTH-09</td>
-<td>The server refreshes the session's access token with the stored refresh token before it expires; when the refresh fails, the session is destroyed and requests to it are answered as unauthenticated (AUTH-04 for the API, AUTH-06 for a page load)</td>
+<td>The server refreshes the session's access token with the stored refresh token before it expires — the window capped to half the token's issued lifetime — and updates the session's user and groups from the refreshed token, so a role change reaches the session; a session without a refresh token authenticates only until its access token expires; when the refresh fails, the session is destroyed and requests to it are answered as unauthenticated (AUTH-04 for the API, AUTH-06 for a page load)</td>
 </tr>
 <tr>
 <td>AUTH-10</td>
-<td><code>GET</code> or <code>POST</code> <code>/logout.html</code> at the origin destroys the session, expires the cookie, and sends the browser to the issuer's end-session endpoint, with <code>/login.jsp</code> as the post-logout redirect — Atlas's <code>logoutSuccessUrl</code> — and landing back at it, where the login page answers and the login flow starts again (DV-10, DD-040)</td>
+<td><code>GET</code> or <code>POST</code> <code>/logout.html</code> at the origin destroys the session, expires the cookie, and sends the browser to the issuer's end-session endpoint, with <code>/login.jsp</code> on the deployment's own origin as the post-logout redirect — Atlas's <code>logoutSuccessUrl</code> — and landing back at it, where the login page answers and the login flow starts again; the issuer allowlists each installation's landing (DV-10, DD-040)</td>
 </tr>
 </tbody>
 </table>

@@ -6090,16 +6090,17 @@ authorization-code flow with PKCE and returns to the kept URL.</p>
     N--&gt;&gt;B: 302 /api/atlas/auth/login?next=/n/ (error_page lands in @login)
     B-&gt;&gt;S: GET /api/atlas/auth/login?next=/n/ (proxied /api/)
     Note over S: keeps next=/n/ and mints state + nonce (AUTH-06)
-    S--&gt;&gt;B: 302 authorize URL (PKCE, registered redirect_uri)
+    S--&gt;&gt;B: 302 authorize URL (PKCE, registered redirect_uri) with Set-Cookie ATLASFLOWID (DD-041)
     B-&gt;&gt;K: GET /protocol/openid-connect/auth?...
     K--&gt;&gt;B: login form (#kc-form-login)
     B-&gt;&gt;K: username + password
     Note over K: signs an access token (realm roles) and an id_token (nonce)
     K--&gt;&gt;B: 302 callback?code=...&amp;state=...
     B-&gt;&gt;S: GET /api/atlas/auth/callback (AUTH-07)
+    Note over S: state and flow cookie must name the same flow (DD-041)
     S-&gt;&gt;K: POST token (code + PKCE verifier)
     K--&gt;&gt;S: access_token, id_token, refresh_token
-    Note over S: verifies both, session minted from the ACCESS token claims (DD-038)
+    Note over S: verifies both, session minted from the ACCESS token claims (DD-038) and flow cookie cleared
     S--&gt;&gt;B: 302 /n/ with Set-Cookie ATLASSESSIONID
     B-&gt;&gt;N: GET /n/ again
     N-&gt;&gt;S: auth_request /api/atlas/auth/check
@@ -6110,6 +6111,13 @@ keeps realm and client roles out of the <code>id_token</code>, and Atlas's own
 <code>AtlasKeycloakAuthenticationProvider</code> reads the access token too — which the token-exchange test
 asserts with a roleless <code>id_token</code> and a roled access token. <code>GET /api/atlas/admin/session</code> then
 reports <code>userName</code> and <code>groups</code> (the union of realm and client roles) to the dashboard (ADM-06).</p>
+<p>Two bindings keep the dance honest (DD-041). The kept URL is only ever a path of this origin — the
+scheme+host, leading-<code>//</code>, backslash and control-character shapes a browser would still resolve
+off-origin all fall back to the root (AUTH-06). And the flow belongs to the browser that started
+it: the login start sets a short-lived <code>HttpOnly</code> <code>Secure</code> <code>SameSite=Lax</code> <code>ATLASFLOWID</code> cookie, and
+the callback consumes its state only when the request carries it — a callback URL handed to another
+browser is answered 401 and mints no session, closing the login-CSRF shape PKCE and the nonce
+cannot see (AUTH-07).</p>
 <h2 id="signing-out-and-back-to-the-dashboard-you-left">Signing out, and back to the dashboard you left<a class="headerlink" href="#signing-out-and-back-to-the-dashboard-you-left" title="Permanent link">&para;</a></h2>
 <p>The two vendored dashboards record the UI a person is on in the browser's
 <code>localStorage.last_ui_load</code> (v3's header and 401 handler write <code>"v2"</code>, v2's write <code>"v1"</code>) and both
