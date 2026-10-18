@@ -1,9 +1,6 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": ["aurelius-atlas-dev-elasticsearch", "aurelius-atlas-server"],
-    "metadata": {
-        "dockerCompose": { "serve": false }
-    },
     "name": "aurelius-atlas-dashboard",
     "projectType": "application",
     "release": {

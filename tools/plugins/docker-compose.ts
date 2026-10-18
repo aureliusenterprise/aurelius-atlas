@@ -43,32 +43,25 @@ function createNodesInternal(
     // container that mounts ./certs is started.
     const certgen = existsSync(join(projectRoot, "tls.json")) ? [{ target: "certgen" }] : [];
 
-    // A project whose dev loop is the detached stack (`up`) rather than a foreground run can opt out
-    // of the continuous `serve` target in its project.json metadata: `"dockerCompose": {"serve":
-    // false}`. Nx cannot remove an inferred target from project.json (there is no removal marker), so
-    // the plugin that infers it offers the switch.
-    const projectJson = readJsonFile<ProjectConfiguration>(join(projectRoot, "project.json"));
-    const compose = projectJson.metadata?.dockerCompose as { serve?: boolean } | undefined;
     const targets: Record<string, TargetConfiguration> = {};
-    if (compose?.serve !== false) {
-        targets[serveTargetName] = {
-            continuous: true,
-            command: "docker compose up",
-            dependsOn: [
-                { target: "decrypt" },
-                ...certgen,
-                { target: "docker-build" },
-                { target: "docker-build", dependencies: true },
-                { target: serveTargetName, dependencies: true },
-            ],
-            metadata: {
-                description: "Run the service locally.",
-            },
-            options: {
-                cwd: projectRoot,
-            },
-        };
-    }
+    targets[serveTargetName] = {
+        continuous: true,
+        command: "docker compose up",
+        dependsOn: [
+            { target: "decrypt" },
+            ...certgen,
+            { target: "docker-build" },
+            { target: "docker-build", dependencies: true },
+            { target: serveTargetName, dependencies: true },
+        ],
+        metadata: {
+            description: "Run the service locally.",
+        },
+        options: {
+            cwd: projectRoot,
+        },
+    };
+
     targets[upTargetName] = {
         command: "docker compose up -d --wait",
         dependsOn: [
