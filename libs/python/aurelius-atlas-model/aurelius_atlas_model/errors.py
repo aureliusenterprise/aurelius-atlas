@@ -32,6 +32,9 @@ class AtlasErrorCode(Enum):
         "Cardinality of attribute {0}.{1} requires a list or set type",
     )
     TYPE_NAME_INVALID = (400, "ATLAS-400-00-014", "Type {0} with name {1} does not exist")
+    PATCH_NOT_APPLICABLE_FOR_TYPE = (400, "ATLAS-400-00-016", "{0} - invalid patch for type {1}")
+    PATCH_FOR_UNKNOWN_TYPE = (400, "ATLAS-400-00-017", "{0} - patch references unknown type {1}")
+    PATCH_INVALID_DATA = (400, "ATLAS-400-00-018", "{0} - patch data is invalid for type {1}")
     TYPE_NAME_INVALID_FORMAT = (
         400,
         "ATLAS-400-00-019",
@@ -146,6 +149,11 @@ class AtlasErrorCode(Enum):
         400,
         "ATLAS-400-00-081",
         "{0}.{1}: invalid attribute type. Attribute cannot be of type classification",
+    )
+    PATCH_MISSING_RELATIONSHIP_LABEL = (
+        400,
+        "ATLAS-400-00-08B",
+        "{0} - must include relationship label for type {1}",
     )
     APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED = (
         400,

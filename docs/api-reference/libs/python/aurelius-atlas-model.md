@@ -6,7 +6,8 @@ Atlas data shapes for Aurelius Atlas, without I/O
 ([DD-002](../../../architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
 Since increment [1.1](../../../architecture/conversion/increments/1-1-typedef-models.md): the Apache
 Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata),
-their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON.
+their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since
+[1.5](../../../architecture/conversion/increments/1-5-builtin-models.md): the patch record `AtlasPatch`.
 
 ```python
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -27,3 +28,5 @@ workspace = true
 ## Documentation
 
 ::: aurelius_atlas_model.typedef
+
+::: aurelius_atlas_model.patches

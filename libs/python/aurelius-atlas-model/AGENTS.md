@@ -8,6 +8,7 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 
 - `aurelius_atlas_model/typedef.py` — the typedef models (`org.apache.atlas.model.typedef`), their enums
   and the built-in type names
+- `aurelius_atlas_model/patches.py` — `AtlasPatch` and `PatchStatus` (`org.apache.atlas.model.patches`)
 - `tests/` — TDM-01 to TDM-20; `tests/fixtures/` holds Atlas's `0010-base_model.json` and
   `0011-glossary_model.json`, unchanged
 
