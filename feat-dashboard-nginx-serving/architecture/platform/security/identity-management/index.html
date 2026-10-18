@@ -5503,6 +5503,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Identity Management
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -5518,6 +5535,92 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-provider-one-relying-party" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        One provider, one relying party
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The guard
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Signing in
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-out-and-back-to-the-dashboard-you-left" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Signing out, and back to the dashboard you left
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#csrf-and-the-api-from-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CSRF, and the API from scripts
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-development-arrangement" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The development arrangement
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5651,6 +5754,80 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-provider-one-relying-party" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        One provider, one relying party
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The guard
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Signing in
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-out-and-back-to-the-dashboard-you-left" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Signing out, and back to the dashboard you left
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#csrf-and-the-api-from-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        CSRF, and the API from scripts
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-development-arrangement" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The development arrangement
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -5820,6 +5997,197 @@
 
 
 <h1 id="identity-management">Identity Management<a class="headerlink" href="#identity-management" title="Permanent link">&para;</a></h1>
+<p>This page answers how a person is admitted to Aurelius Atlas and where that lives, from the
+identity record (<a href="../../../adr/007-one-shared-identity-provider/">ADR 007</a>). The authoritative
+rule set is the increment spec
+<a href="../../../conversion/increments/6-1-authentication/">6.1 Authentication</a>; this page is the
+narrative and the diagrams, and cites rule ids (<code>AUTH-*</code>, <code>CRS-*</code>, <code>DSH-*</code>) rather than restating them.</p>
+<h2 id="one-provider-one-relying-party">One provider, one relying party<a class="headerlink" href="#one-provider-one-relying-party" title="Permanent link">&para;</a></h2>
+<p>Aurelius Atlas holds no user accounts and implements no sign-in page of its own. Keycloak is the
+only place people exist (<a href="../../../adr/007-one-shared-identity-provider/">ADR 007</a>), and
+<code>aurelius-atlas-server</code> is its <strong>OpenID Connect relying party</strong>: it starts the browser flow,
+exchanges the code, verifies the tokens the provider issued, and keeps a session for the person
+the provider admitted. The server decides <em>who</em> a request is from; what that person may <em>do</em> is
+the authorizer's question (increment 6.2, DV-13).</p>
+<p>The whole flow runs on the <strong>dashboard origin</strong> (<code>https://localhost:8444</code> in dev). The session
+cookie and the dashboards' relative URLs need one origin, so the dashboard image serves the pages,
+gates them, and proxies <code>/api/</code> to the server on the same origin
+(DD-034 in the <a href="../../../conversion/design-log/">design log</a>,
+<a href="../../../conversion/deviations/">DV-09</a>); the OIDC flow itself lives in the server (DD-036).
+nginx only asks the server whether a request has a session and redirects — it holds no token or
+session logic.</p>
+<h2 id="the-guard">The guard<a class="headerlink" href="#the-guard" title="Permanent link">&para;</a></h2>
+<p>Every request reaches one middleware in a fixed order (<code>aurelius_atlas_server.auth.guard</code>).
+Authentication is on when an issuer is configured (<code>AURELIUS_ATLAS_SERVER_AUTH_ISSUER</code>); with no
+issuer the server answers as an open installation (AUTH-01, the retired DV-04's surviving case).</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Decision</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Authentication off, or a public path (<code>admin/status</code>, <code>admin/version</code>, the liveness/readiness probes, <code>/api/atlas/auth/*</code>, <code>/logout.html</code>) — pass</td>
+<td>AUTH-01, AUTH-02, DV-12</td>
+</tr>
+<tr>
+<td>2</td>
+<td>The CSRF check for a browser <code>User-Agent</code>, before any authorisation</td>
+<td>CRS-01</td>
+</tr>
+<tr>
+<td>3</td>
+<td>A bearer token verifies against the issuer's JWKS and authenticates on its own, never touching a session</td>
+<td>AUTH-03</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Otherwise the <code>ATLASSESSIONID</code> session, refreshed before its access token expires</td>
+<td>AUTH-08, AUTH-09</td>
+</tr>
+<tr>
+<td>5</td>
+<td>No principal: a navigation (Accept: text/html, not <code>/api/</code>) starts the login flow; an API call is answered 401 with the Atlas error body</td>
+<td>AUTH-04, AUTH-06, DV-11</td>
+</tr>
+</tbody>
+</table>
+<pre class="mermaid"><code>flowchart TD
+    R[request] --&gt; A{auth on?}
+    A -- no --&gt; P[pass through]
+    A -- yes --&gt; PUB{public path?}
+    PUB -- yes --&gt; P
+    PUB -- no --&gt; CSRF{CSRF ok?}
+    CSRF -- no --&gt; D4[400 CSRF body]
+    CSRF -- yes --&gt; B{bearer token?}
+    B -- yes --&gt; BV{verifies?}
+    BV -- yes --&gt; OK[Principal from token]
+    BV -- no --&gt; D5[401]
+    B -- no --&gt; S{session valid?}
+    S -- yes --&gt; OK2[Principal from session]
+    S -- no --&gt; W{navigation?}
+    W -- yes --&gt; L[302 login start, URL kept]
+    W -- no --&gt; D6[401 Atlas error body]</code></pre>
+<h2 id="signing-in">Signing in<a class="headerlink" href="#signing-in" title="Permanent link">&para;</a></h2>
+<p>The dashboard's page load is the entry point. nginx asks the server <code>/api/atlas/auth/check</code> as an
+<code>auth_request</code> subrequest (the session cookie rides it) and, on a 401, redirects to the server's
+login start (<code>error_page 401 = @login</code>) with the intended page kept — never through an <code>/api/…</code>
+<code>error_page</code> path, which would re-enter the <code>/api/</code> proxy (DD-036). The server runs the
+authorization-code flow with PKCE and returns to the kept URL.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant N as nginx (dashboard origin)
+    participant S as aurelius-atlas-server
+    participant K as Keycloak (issuer)
+    B-&gt;&gt;N: GET /n/ (page load)
+    N-&gt;&gt;S: auth_request /api/atlas/auth/check (cookie rides)
+    S--&gt;&gt;N: 401 (no session)
+    N--&gt;&gt;B: 302 /api/atlas/auth/login?next=/n/ (error_page lands in @login)
+    B-&gt;&gt;S: GET /api/atlas/auth/login?next=/n/ (proxied /api/)
+    Note over S: keeps next=/n/ and mints state + nonce (AUTH-06)
+    S--&gt;&gt;B: 302 authorize URL (PKCE, registered redirect_uri)
+    B-&gt;&gt;K: GET /protocol/openid-connect/auth?...
+    K--&gt;&gt;B: login form (#kc-form-login)
+    B-&gt;&gt;K: username + password
+    Note over K: signs an access token (realm roles) and an id_token (nonce)
+    K--&gt;&gt;B: 302 callback?code=...&amp;state=...
+    B-&gt;&gt;S: GET /api/atlas/auth/callback (AUTH-07)
+    S-&gt;&gt;K: POST token (code + PKCE verifier)
+    K--&gt;&gt;S: access_token, id_token, refresh_token
+    Note over S: verifies both, session minted from the ACCESS token claims (DD-038)
+    S--&gt;&gt;B: 302 /n/ with Set-Cookie ATLASSESSIONID
+    B-&gt;&gt;N: GET /n/ again
+    N-&gt;&gt;S: auth_request /api/atlas/auth/check
+    S--&gt;&gt;N: 200 (session)
+    N--&gt;&gt;B: dashboardv3</code></pre>
+<p>The session's principal comes from the <strong>access token</strong>, not the <code>id_token</code> (DD-038): Keycloak
+keeps realm and client roles out of the <code>id_token</code>, and Atlas's own
+<code>AtlasKeycloakAuthenticationProvider</code> reads the access token too — which the token-exchange test
+asserts with a roleless <code>id_token</code> and a roled access token. <code>GET /api/atlas/admin/session</code> then
+reports <code>userName</code> and <code>groups</code> (the union of realm and client roles) to the dashboard (ADM-06).</p>
+<h2 id="signing-out-and-back-to-the-dashboard-you-left">Signing out, and back to the dashboard you left<a class="headerlink" href="#signing-out-and-back-to-the-dashboard-you-left" title="Permanent link">&para;</a></h2>
+<p>The two vendored dashboards record the UI a person is on in the browser's
+<code>localStorage.last_ui_load</code> (v3's header and 401 handler write <code>"v2"</code>, v2's write <code>"v1"</code>) and both
+navigate to the same <code>/logout.html</code>, so the server cannot tell the source UI from a request. Atlas
+2.4.0 keeps that decision in the <strong>login page</strong>: logout's <code>logoutSuccessUrl</code> is <code>/login.jsp</code>, and
+under Keycloak the URI stays off the ignore list so the adapter runs the dance through it, where
+the page's script (<code>atlasLogin.js</code>) reads <code>last_ui_load</code> and lands you back where you were.</p>
+<p>Aurelius Atlas answers the same URI (DD-040, DSH-09): logout sends the browser to the issuer's
+end-session endpoint with <code>/login.jsp</code> as the post-logout redirect, <code>/login.jsp</code> is the fifth
+gated page, and on a session it serves the dashboard project's own login page
+(<code>apps/aurelius-atlas-dashboard/webapp/login.html</code>) — its inline script repeats the vendored
+resolver, so the vendored JavaScript is never edited (ADR 046).</p>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant N as nginx (dashboard origin)
+    participant S as aurelius-atlas-server
+    participant K as Keycloak (issuer)
+    Note over B: on dashboardv3, the header writes localStorage last_ui_load = v2
+    B-&gt;&gt;N: GET /logout.html (ungated, proxied)
+    N-&gt;&gt;S: ... (AUTH-10)
+    S--&gt;&gt;B: destroys session, deletes cookie, 302 to end-session with post_logout_redirect_uri=origin/login.jsp
+    B-&gt;&gt;K: end-session (Atlas logoutSuccessUrl, DD-040)
+    K--&gt;&gt;B: logout confirm (#kc-logout), then 302 origin/login.jsp
+    B-&gt;&gt;N: GET /login.jsp without a session
+    N--&gt;&gt;B: 302 /api/atlas/auth/login?next=/login.jsp (fifth gated page, DSH-09)
+    Note over B,K: the sign-in dance runs again, keeping next=/login.jsp
+    S--&gt;&gt;B: 302 /login.jsp with a fresh cookie
+    B-&gt;&gt;N: GET /login.jsp on a session
+    N--&gt;&gt;B: webapp/login.html (the login page)
+    B-&gt;&gt;S: XHR /api/atlas/admin/session (the page script)
+    S--&gt;&gt;B: atlas.ui.default.version = v2
+    Note over B: resolver of atlasLogin.js: last_ui_load = v2 wins, so /n/index.html
+    B-&gt;&gt;N: location.replace /n/index.html
+    N--&gt;&gt;B: dashboardv3 - back where they left</code></pre>
+<h2 id="csrf-and-the-api-from-scripts">CSRF, and the API from scripts<a class="headerlink" href="#csrf-and-the-api-from-scripts" title="Permanent link">&para;</a></h2>
+<p>A browser <code>User-Agent</code> on a state-changing method must carry the session's CSRF token in
+<code>X-XSRF-HEADER</code>; a missing or wrong header is answered 400 with Atlas's body (CRS-01). A
+non-browser <code>User-Agent</code> — every service client and every bearer call — is exempt, as in Atlas
+(CRS-03). A programmatic caller that holds no session uses a bearer token instead (AUTH-03), which
+the guard verifies against the JWKS and never turns into a session.</p>
+<h2 id="the-development-arrangement">The development arrangement<a class="headerlink" href="#the-development-arrangement" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The realm, clients, and dev users</td>
+<td><code>dev/keycloak/import/master.json</code>, imported on start (<code>dev/keycloak/README.md</code>)</td>
+</tr>
+<tr>
+<td>The relying-party client</td>
+<td>the <code>aurelius-atlas</code> confidential client (PKCE <code>S256</code>, front-channel logout)</td>
+</tr>
+<tr>
+<td>Dev users</td>
+<td><code>aurelius-writer</code> (realm <code>ADMIN</code>, client <code>aurelius-write</code>), <code>aurelius-reader</code> (no roles)</td>
+</tr>
+<tr>
+<td>The server's settings</td>
+<td><code>AURELIUS_ATLAS_SERVER_AUTH_*</code> (<code>aurelius_atlas_server/settings.py</code>)</td>
+</tr>
+<tr>
+<td>The page gate and login page</td>
+<td><code>apps/aurelius-atlas-dashboard/nginx.conf</code> and <code>webapp/login.html</code></td>
+</tr>
+</tbody>
+</table>
+<p>The issuer is <code>https://keycloak.localhost:8443/realms/master</code>; its TLS listener carries every
+E2E/CI path, and the plaintext listener (8080) is the developer-browser convenience that
+<a href=".././data-encryption/">Data Encryption</a> records as the named relaxation of ADR 039. <code>nx up
+aurelius-atlas-dashboard</code> starts Keycloak with the product, so the authenticated path is
+exercised end to end wherever the system runs (ADR 007); the Playwright suite walks the whole
+sign-in and the sign-out-and-back dance.</p>
 
 
 

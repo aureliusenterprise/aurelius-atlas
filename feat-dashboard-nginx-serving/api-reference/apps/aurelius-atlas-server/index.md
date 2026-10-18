@@ -129,6 +129,81 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "format": "file-path",
 >       "title": "Elasticsearch Ca Certs",
 >       "type": "string"
+>     },
+>     "auth_issuer": {
+>       "anyOf": [
+>         {
+>           "format": "uri",
+>           "maxLength": 2083,
+>           "minLength": 1,
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Auth Issuer"
+>     },
+>     "auth_client_id": {
+>       "default": "aurelius-atlas",
+>       "title": "Auth Client Id",
+>       "type": "string"
+>     },
+>     "auth_client_secret": {
+>       "anyOf": [
+>         {
+>           "format": "password",
+>           "type": "string",
+>           "writeOnly": true
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Auth Client Secret"
+>     },
+>     "auth_redirect_uri": {
+>       "anyOf": [
+>         {
+>           "format": "uri",
+>           "maxLength": 2083,
+>           "minLength": 1,
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Auth Redirect Uri"
+>     },
+>     "auth_ca_file": {
+>       "anyOf": [
+>         {
+>           "format": "file-path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Auth Ca File"
+>     },
+>     "auth_session_idle_seconds": {
+>       "anyOf": [
+>         {
+>           "minimum": 60,
+>           "type": "integer"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Auth Session Idle Seconds"
 >     }
 >   },
 >   "required": [
@@ -161,10 +236,73 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `elasticsearch_username` (`str`)
 > - `elasticsearch_password` (`SecretStr`)
 > - `elasticsearch_ca_certs` (`FilePath`)
+> - `auth_issuer` (`HttpUrl | None`)
+> - `auth_client_id` (`str`)
+> - `auth_client_secret` (`SecretStr | None`)
+> - `auth_redirect_uri` (`HttpUrl | None`)
+> - `auth_ca_file` (`FilePath | None`)
+> - `auth_session_idle_seconds` (`int | None`)
 >
 > Validators:
 >
 > - `_tls_pair`
+> - `_auth_trio`
+>
+> ### auth\_ca\_file
+>
+> ```
+> auth_ca_file: FilePath | None = None
+> ```
+>
+> PEM file with the certificate authority to verify the issuer's TLS with; by default the system store.
+>
+> ### auth\_client\_id
+>
+> ```
+> auth_client_id: str = 'aurelius-atlas'
+> ```
+>
+> The client this server registers as at the issuer (AUTH-06), its audience (AUTH-03).
+>
+> ### auth\_client\_secret
+>
+> ```
+> auth_client_secret: SecretStr | None = None
+> ```
+>
+> The secret of `auth_client_id`; the confidential client proves itself at the token endpoints.
+>
+> ### auth\_enabled
+>
+> ```
+> auth_enabled: bool
+> ```
+>
+> Whether the server demands a principal (AUTH-01): an issuer is configured.
+>
+> ### auth\_issuer
+>
+> ```
+> auth_issuer: HttpUrl | None = None
+> ```
+>
+> The OIDC issuer that vouches for users, e.g. `https://keycloak.localhost:8443/realms/master`; with it unset the server answers without authentication (AUTH-01, DV-04).
+>
+> ### auth\_redirect\_uri
+>
+> ```
+> auth_redirect_uri: HttpUrl | None = None
+> ```
+>
+> The registered redirect URI of the browser flow — this deployment's `/api/atlas/auth/callback`.
+>
+> ### auth\_session\_idle\_seconds
+>
+> ```
+> auth_session_idle_seconds: int | None = None
+> ```
+>
+> How long a session lives without use; reported to the dashboard as `atlas.session.timeout.secs` when set (ADM-07).
 >
 > ### elasticsearch\_ca\_certs
 >
@@ -410,9 +548,6 @@ The admin endpoints of `AdminResource`: version, status, session, liveness and r
 
 Functions:
 
-- **`csrf_token`** –
-
-  A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
@@ -421,7 +556,7 @@ Functions:
   Whether the server can serve requests: its store must be healthy (ADM-04).
 - **`get_session`** –
 
-  The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+  The user interface settings and the user of this session (ADM-05, ADM-06).
 - **`get_status`** –
 
   The service state, which is always `ACTIVE` while the server runs (ADM-02).
@@ -438,7 +573,6 @@ Attributes:
 
   The only service state: Aurelius Atlas has no high-availability states.
 - **`ADMIN`** –
-- **`CSRF_TOKEN_LENGTH`** –
 - **`DESCRIPTION`** –
 
   What `admin/version` reports instead of Apache Atlas's name and description (DV-03).
@@ -462,12 +596,6 @@ The only service state: Aurelius Atlas has no high-availability states.
 
 ```
 ADMIN = APIRouter(prefix='/api/atlas/admin', tags=['Admin'])
-```
-
-### CSRF\_TOKEN\_LENGTH
-
-```
-CSRF_TOKEN_LENGTH = 20
 ```
 
 ### DESCRIPTION
@@ -525,14 +653,6 @@ UI_SETTINGS: dict[str, Any] = {
 
 The session's settings at the defaults of Atlas 2.4.0 (`AdminResource`, `AtlasCSRFPreventionFilter`, `AtlasConfiguration`).
 
-### csrf\_token
-
-```
-csrf_token() -> str
-```
-
-A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
-
 ### get\_liveness
 
 ```
@@ -558,10 +678,12 @@ Raises:
 ### get\_session
 
 ```
-get_session() -> dict[str, Any]
+get_session(request: Request) -> dict[str, Any]
 ```
 
-The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+The user interface settings and the user of this session (ADM-05, ADM-06).
+
+Without authentication the user is nobody (DV-04). With it, `userName` and `groups` name the principal the guard resolved (ADM-06) and `_csrfToken` is the session's token, minted here at the first call and kept for the session's life (CRS-02); a bearer-authenticated call has no session and reports a fresh token, as Atlas does for a request whose container session is new.
 
 ### get\_status
 

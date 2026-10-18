@@ -312,6 +312,11 @@ One scenario file (SCN-01).
       "title": "Covers",
       "type": "array"
     },
+    "needs_auth": {
+      "default": false,
+      "title": "Needs Auth",
+      "type": "boolean"
+    },
     "stages": {
       "items": {
         "$ref": "#/$defs/Stage"
@@ -339,6 +344,7 @@ Fields:
 - `source` (`list[str]`)
 - `rules` (`list[str]`)
 - `covers` (`list[str]`)
+- `needs_auth` (`bool`)
 - `stages` (`list[Stage]`)
 
 #### covers
@@ -366,6 +372,14 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 ```
 name: str
 ```
+
+#### needs\_auth
+
+```
+needs_auth: bool = False
+```
+
+Whether only an installation with authentication on can answer it (SCN-16; DD-038).
 
 #### rules
 
@@ -416,12 +430,12 @@ A stage's response differs from its expectation; the message lists every differe
 ### load\_scenarios
 
 ```
-load_scenarios(directory: Path) -> list[Any]
+load_scenarios(directory: Path, *, authenticated_run: bool = False) -> list[Any]
 ```
 
 Read every `*.scenario.yaml` below a directory as pytest parameters, one test per scenario (SCN-04).
 
-Use it with `pytest.mark.parametrize("scenario", load_scenarios(...))`. A scenario's `rules` and `covers` become a `covers` marker of its test.
+Use it with `pytest.mark.parametrize("scenario", load_scenarios(...))`. A scenario's `rules` and `covers` become a `covers` marker of its test. A scenario with `needs_auth: true` gets a skip mark unless the caller declares an authenticated run (SCN-16): only a guard-on installation can answer it, and the plain (unit) harness runs the guard-off application (AUTH-01).
 
 Raises:
 
@@ -435,7 +449,7 @@ Raises:
 ### run\_scenario
 
 ```
-run_scenario(scenario: Scenario, client: AsyncClient) -> None
+run_scenario(scenario: Scenario, client: AsyncClient, *, saved: Mapping[str, Any] | None = None) -> None
 ```
 
 Run a scenario's stages in order through the client (SCN-05).
@@ -452,6 +466,11 @@ Parameters:
   (`AsyncClient`) –
 
   Talks to the application under test, in-process or over HTTP; the caller owns it.
+- #### **`saved`**
+
+  (`Mapping[str, Any] | None`, default: `None` ) –
+
+  Values the caller supplies for the stages' `{name}` placeholders before stage 1 (6.1: an authenticated scenario's bearer token, which only the caller can mint). Stages' `save` entries add to and override these.
 
 Raises:
 
@@ -1255,6 +1274,11 @@ One scenario file (SCN-01).
       "title": "Covers",
       "type": "array"
     },
+    "needs_auth": {
+      "default": false,
+      "title": "Needs Auth",
+      "type": "boolean"
+    },
     "stages": {
       "items": {
         "$ref": "#/$defs/Stage"
@@ -1282,6 +1306,7 @@ Fields:
 - `source` (`list[str]`)
 - `rules` (`list[str]`)
 - `covers` (`list[str]`)
+- `needs_auth` (`bool`)
 - `stages` (`list[Stage]`)
 
 #### covers
@@ -1309,6 +1334,14 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 ```
 name: str
 ```
+
+#### needs\_auth
+
+```
+needs_auth: bool = False
+```
+
+Whether only an installation with authentication on can answer it (SCN-16; DD-038).
 
 #### rules
 
@@ -1645,6 +1678,7 @@ Functions:
 Attributes:
 
 - **`FAILURE_HEADER`** –
+- **`NEEDS_AUTH_SKIP`** –
 - **`NOT_JSON_ERROR`** –
 - **`NO_DIRECTORY_ERROR`** –
 - **`SAVE_NOT_ONE_ERROR`** –
@@ -1654,6 +1688,12 @@ Attributes:
 
 ```
 FAILURE_HEADER = 'scenario {scenario}, stage {number} ({name}): {endpoint}'
+```
+
+### NEEDS\_AUTH\_SKIP
+
+```
+NEEDS_AUTH_SKIP = '{scenario} needs an installation with authentication on (needs_auth: true, SCN-16)'
 ```
 
 ### NOT\_JSON\_ERROR
@@ -1721,12 +1761,12 @@ Raises:
 ### load\_scenarios
 
 ```
-load_scenarios(directory: Path) -> list[Any]
+load_scenarios(directory: Path, *, authenticated_run: bool = False) -> list[Any]
 ```
 
 Read every `*.scenario.yaml` below a directory as pytest parameters, one test per scenario (SCN-04).
 
-Use it with `pytest.mark.parametrize("scenario", load_scenarios(...))`. A scenario's `rules` and `covers` become a `covers` marker of its test.
+Use it with `pytest.mark.parametrize("scenario", load_scenarios(...))`. A scenario's `rules` and `covers` become a `covers` marker of its test. A scenario with `needs_auth: true` gets a skip mark unless the caller declares an authenticated run (SCN-16): only a guard-on installation can answer it, and the plain (unit) harness runs the guard-off application (AUTH-01).
 
 Raises:
 
@@ -1740,7 +1780,7 @@ Raises:
 ### run\_scenario
 
 ```
-run_scenario(scenario: Scenario, client: AsyncClient) -> None
+run_scenario(scenario: Scenario, client: AsyncClient, *, saved: Mapping[str, Any] | None = None) -> None
 ```
 
 Run a scenario's stages in order through the client (SCN-05).
@@ -1757,6 +1797,11 @@ Parameters:
   (`AsyncClient`) –
 
   Talks to the application under test, in-process or over HTTP; the caller owns it.
+- #### **`saved`**
+
+  (`Mapping[str, Any] | None`, default: `None` ) –
+
+  Values the caller supplies for the stages' `{name}` placeholders before stage 1 (6.1: an authenticated scenario's bearer token, which only the caller can mint). Stages' `save` entries add to and override these.
 
 Raises:
 

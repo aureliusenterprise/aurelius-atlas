@@ -36,3 +36,6 @@ Rows are added by each increment for the classes it ports.
 | `AtlasTypeDefGraphStore`, `AtlasTypeDefGraphStoreV2`, `Atlas*DefStoreV2` (checks and stored form; graph replaced, DD-028) | `aurelius_atlas_core.typedef_store` | 1.4 | in progress |
 | `AtlasTypeDefStoreInitializer` (model loading and typedef patches), `AtlasPatchRegistry` (typedef patches, DD-031), `AtlasPatch` | `aurelius_atlas_core.model_loader`, `aurelius_atlas_model.patches` | 1.5 | in progress |
 | `AtlasErrorCode`, `AtlasBaseException` (the codes each increment raises) | `aurelius_atlas_model.errors` (DD-023) | 0.5, 1.2 | in progress |
+| `AtlasKeycloakAuthenticationProvider`, the Keycloak mode of `AtlasSecurityConfig` (browser entry point, session policy, logout) | `aurelius_atlas_server.auth` | 6.1 | in progress |
+| `AtlasLoginServlet`, `login.html.template` (`/login.jsp`, the `last_ui_load` resolver of its script) | `apps/aurelius-atlas-dashboard/webapp/login.html` (DSH-09, DD-040 — replaced: this project's page answers the URI) | 6.1 | in progress |
+| `AtlasCSRFPreventionFilter` | `aurelius_atlas_server.auth.csrf` | 6.1 | in progress |
