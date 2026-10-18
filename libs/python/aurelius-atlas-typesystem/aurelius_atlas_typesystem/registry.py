@@ -344,6 +344,15 @@ class TransientTypeRegistry(TypeRegistry):
             self._update(typedef)
         self._resolve()
 
+    def update_types_without_resolving(self, typedefs: Iterable[AtlasBaseTypeDef] | AtlasTypesDef | None) -> None:
+        """Replace each definition by GUID, else by name, and leave resolving to the next change (MDL-03).
+
+        ``updateTypesWithNoRefResolve``: ``createUpdateTypesDef`` replaces the updated definitions first, so
+        that the definitions it then creates resolve against them.
+        """
+        for typedef in self._flatten(typedefs):
+            self._update(typedef)
+
     def remove_types(self, types_def: AtlasTypesDef | None) -> None:
         """Remove each definition by its GUID when it has one, else by its name, then resolve (TRG-08, TRG-09)."""
         if types_def is not None and not types_def.is_empty():
