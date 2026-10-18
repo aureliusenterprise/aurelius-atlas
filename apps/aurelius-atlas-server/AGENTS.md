@@ -8,6 +8,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 - `aurelius_atlas_server/app.py` — `create_app`: the store's lifetime, the error handler, the routers;
   `mount_dashboards`: the built dashboards after the routers (DD-018)
 - `aurelius_atlas_server/settings.py` — `ServerSettings` (`AURELIUS_ATLAS_SERVER_` prefix)
+- the lifespan in `app.py` opens the store, then loads the type registry through `TypedefStore` (TDS-12);
+  `app.state.type_registry` and `app.state.typedef_store` hold them
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point

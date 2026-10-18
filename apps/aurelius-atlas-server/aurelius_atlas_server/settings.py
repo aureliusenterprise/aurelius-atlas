@@ -45,6 +45,10 @@ class ServerSettings(BaseSettings):
     """The built dashboards: ``dashboardv2`` at its root and ``dashboardv3`` in ``n/``; None serves the API only
     (DSH-04)."""
 
+    typedef_refresh_seconds: float = Field(default=5.0, ge=0)
+    """How long the server answers from its type registry before it checks for another process's type change
+    (TDS-13, DD-029)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
 

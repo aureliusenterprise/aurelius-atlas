@@ -25,6 +25,13 @@ The server also serves the Apache Atlas 2.4.0 dashboards from
 `dashboardv3` at `/n/`. The API is matched first. The image contains them; outside the image,
 `AURELIUS_ATLAS_SERVER_DASHBOARD_DIR` names the built directory, and without it only the API is served.
 
+## Type definitions
+
+At start-up the server loads the type definitions stored in Elasticsearch (the `aurelius-atlas-typedefs`
+index) into its type registry, through [`aurelius-atlas-core`](../../libs/python/aurelius-atlas-core/README.md).
+It checks for another process's type change at most every `AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS`
+(default 5). The `/v2/types` endpoints arrive in 1.6.
+
 ## Running it
 
 ```bash

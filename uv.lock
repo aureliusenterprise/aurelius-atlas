@@ -490,6 +490,7 @@ name = "aurelius-atlas-server"
 version = "0.6.1"
 source = { editable = "apps/aurelius-atlas-server" }
 dependencies = [
+    { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-store-es" },
     { name = "fastapi" },
@@ -502,6 +503,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
     { name = "fastapi", specifier = ">=0.141.1" },
