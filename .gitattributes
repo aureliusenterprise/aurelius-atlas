@@ -1,3 +1,5 @@
 * text=auto eol=lf
 *.jar binary
 *.rpm binary
+# Built-in models vendored from Apache Atlas release-2.4.0 keep their bytes, CRLF included (DD-032)
+libs/python/aurelius-atlas-core/aurelius_atlas_core/models/** -text
