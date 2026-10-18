@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_server.settings import DEFAULT_PORT, ServerSettings
 from pydantic import ValidationError
 
@@ -14,7 +15,9 @@ def environment(monkeypatch: pytest.MonkeyPatch, ca_file: Path) -> pytest.Monkey
     return monkeypatch
 
 
-@pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.store_settings", rules=["SRV-01", "SRV-03"])
+@pytest.mark.covers(
+    "aurelius_atlas_server.settings.ServerSettings.store_settings", rules=["SRV-01", "SRV-03", "MDL-16"]
+)
 def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPatch, ca_file: Path) -> None:
     """Prefixed variables set the settings; unprefixed ones of other projects do not; the port defaults to 21000."""
     environment.setenv("PORT", "8000")
@@ -23,6 +26,7 @@ def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPa
     store = settings.store_settings()
 
     assert settings.port == DEFAULT_PORT == 21000
+    assert settings.models_dir == BUILTIN_MODELS_DIR
     assert store.host_urls == ["https://es:9200"]
     assert store.password.get_secret_value() == "secret"
     assert store.ca_certs_path == ca_file

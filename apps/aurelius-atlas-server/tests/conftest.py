@@ -18,14 +18,15 @@ def ca_file(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def settings(ca_file: Path) -> ServerSettings:
-    """Settings for a server on a local store."""
+def settings(ca_file: Path, tmp_path: Path) -> ServerSettings:
+    """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16)."""
     return ServerSettings.model_validate(
         {
             "elasticsearch_hosts": ["https://localhost:9200"],
             "elasticsearch_password": "test-password",
             "elasticsearch_ca_certs": ca_file,
             "revision": "abc123",
+            "models_dir": tmp_path / "no-models",
         }
     )
 

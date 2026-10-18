@@ -30,7 +30,10 @@ The server also serves the Apache Atlas 2.4.0 dashboards from
 At start-up the server loads the type definitions stored in Elasticsearch (the `aurelius-atlas-typedefs`
 index) into its type registry, through [`aurelius-atlas-core`](../../libs/python/aurelius-atlas-core/README.md).
 It checks for another process's type change at most every `AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS`
-(default 5). The `/v2/types` endpoints arrive in 1.6.
+(default 5). Then it loads Apache Atlas's built-in models and applies their patches, as Atlas does from
+`$ATLAS_HOME/models`: by default the 2.4.0 models shipped with the server, or the directory
+`AURELIUS_ATLAS_SERVER_MODELS_DIR` names, laid out as Atlas's. Only new types, newer `typeVersion`s and patches
+not applied before change anything, so a restart writes nothing. The `/v2/types` endpoints arrive in 1.6.
 
 ## Running it
 

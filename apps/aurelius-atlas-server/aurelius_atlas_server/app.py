@@ -7,6 +7,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import logfire
+from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_store_es import ElasticsearchStore
@@ -45,7 +46,8 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
         store: The store to use; by default one built from the settings. It is opened when the application
             starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
 
-    The type registry is loaded from the stored type definitions when the application starts (TDS-12).
+    The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
+    models are loaded and patched (MDL-16).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
@@ -61,6 +63,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
                 refresh_seconds=settings.typedef_refresh_seconds,
             )
             await typedef_store.load()
+            await ModelLoader(typedef_store).load(settings.models_dir)
             app.state.typedef_store = typedef_store
             yield
         finally:
