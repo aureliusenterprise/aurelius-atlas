@@ -1177,6 +1177,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.typedef_refresh_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;typedef_refresh_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.store_settings" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1838,6 +1849,8 @@
       
         
       
+        
+      
     
     
     
@@ -1889,6 +1902,33 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../libs/python/aurelius-atlas-core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-core
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
                 
               
                 
@@ -4088,6 +4128,8 @@
       
         
       
+        
+      
     
     
     
@@ -4399,6 +4441,33 @@
     
   
   1.3 Type hierarchies
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/1-4-typedef-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.4 Typedef store
 
     
   </span>
@@ -6380,6 +6449,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.typedef_refresh_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;typedef_refresh_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.store_settings" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7013,6 +7093,12 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dashboard Dir"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"typedef_refresh_seconds"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Typedef Refresh Seconds"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"revision"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UNKNOWN"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Revision"</span><span class="p">,</span>
@@ -7119,6 +7205,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.dashboard_dir)" href="./#aurelius_atlas_server.settings.ServerSettings.dashboard_dir">dashboard_dir</a></code>
                 (<code><span title="pydantic.DirectoryPath">DirectoryPath</span> | None</code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            typedef_refresh_seconds
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.typedef_refresh_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.typedef_refresh_seconds">typedef_refresh_seconds</a></code>
+                (<code><span title="float">float</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            revision
@@ -7496,6 +7591,31 @@ Elasticsearch settings; it does not start without its store.</p>
 
 </div>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.typedef_refresh_seconds" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">typedef_refresh_seconds</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.typedef_refresh_seconds" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">typedef_refresh_seconds</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">5.0</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>How long the server answers from its type registry before it checks for another process's type change
+(TDS-13, DD-029).</p>
+
+    </div>
+
+</div>
+
 
 
 
@@ -7754,6 +7874,7 @@ starts, which fails when the store cannot be opened (SRV-02), and closed when it
           </div>
         </li>
     </ul>
+        <p>The type registry is loaded from the stored type definitions when the application starts (TDS-12).</p>
 
 
     </div>

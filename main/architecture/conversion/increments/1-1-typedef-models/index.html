@@ -1179,6 +1179,8 @@
       
         
       
+        
+      
     
     
     
@@ -1230,6 +1232,33 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-core
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
                 
               
                 
@@ -3444,6 +3473,8 @@
       
         
       
+        
+      
     
     
     
@@ -3859,6 +3890,33 @@
     
   
   1.3 Type hierarchies
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../1-4-typedef-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.4 Typedef store
 
     
   </span>
@@ -5862,6 +5920,8 @@
       
         
       
+        
+      
     
     
     
@@ -5930,19 +5990,19 @@
 </tr>
 <tr>
 <td>Storing type definitions; the built-in models at start-up</td>
-<td>1.4</td>
+<td>1.4, 1.5</td>
 </tr>
 <tr>
 <td><code>/v2/types/...</code>; malformed bodies answered with Atlas's error and 400</td>
-<td>1.5</td>
+<td>1.6</td>
 </tr>
 <tr>
 <td>Order-insensitive comparison of set-valued arrays in parity scenarios</td>
-<td>1.5 (DD-013)</td>
+<td>1.6 (DD-013)</td>
 </tr>
 <tr>
 <td>The paged lists (<code>AtlasStructDefs</code>, … built on <code>PList</code>)</td>
-<td>1.5</td>
+<td>1.6</td>
 </tr>
 </tbody>
 </table>
@@ -6056,7 +6116,7 @@ response.</p>
 </ul>
 <h2 id="deviations">Deviations<a class="headerlink" href="#deviations" title="Permanent link">&para;</a></h2>
 <p>None. Java writes sets in <code>HashSet</code> order, which Atlas does not define; parity scenarios will compare
-those arrays without order (DD-013, from 1.5).</p>
+those arrays without order (DD-013, from 1.6).</p>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>libs/python/aurelius-atlas-model/tests/</code> — TDM-01 to TDM-20, with JSON bodies taken from Atlas's

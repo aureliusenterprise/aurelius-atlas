@@ -99,6 +99,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Dashboard Dir"
 >     },
+>     "typedef_refresh_seconds": {
+>       "default": 5.0,
+>       "minimum": 0,
+>       "title": "Typedef Refresh Seconds",
+>       "type": "number"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
@@ -156,6 +162,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tls_cert_file` (`FilePath | None`)
 > - `tls_key_file` (`FilePath | None`)
 > - `dashboard_dir` (`DirectoryPath | None`)
+> - `typedef_refresh_seconds` (`float`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
 > - `elasticsearch_username` (`str`)
@@ -268,6 +275,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > PEM private key of `tls_cert_file`.
 >
+> ### typedef\_refresh\_seconds
+>
+> ```
+> typedef_refresh_seconds: float = 5.0
+> ```
+>
+> How long the server answers from its type registry before it checks for another process's type change (TDS-13, DD-029).
+>
 > ### store\_settings
 >
 > ```
@@ -339,6 +354,8 @@ Parameters:
   (`ElasticsearchStore | None`, default: `None` ) –
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
+
+The type registry is loaded from the stored type definitions when the application starts (TDS-12).
 
 ### mount\_dashboards
 

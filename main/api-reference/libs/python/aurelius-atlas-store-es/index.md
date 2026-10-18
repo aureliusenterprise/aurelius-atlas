@@ -564,6 +564,9 @@ Classes:
 - **`FakeCluster`** –
 
   The `cluster` namespace of the fake client.
+- **`FakeIndices`** –
+
+  The `indices` namespace of the fake client: aliases and index creation.
 
 Functions:
 
@@ -596,20 +599,37 @@ Methods:
 - **`close`** –
 
   Count the call.
+- **`get`** –
+
+  Answer like `GET index/_doc/id`, raising `NotFoundError` for a missing document.
+- **`index`** –
+
+  Store `document`, raising `ConflictError` like Elasticsearch for `op_type=create` or `if_seq_no`.
 - **`info`** –
 
   Answer like `GET /`, or raise the configured error.
 
 Attributes:
 
+- **`aliases`** (`dict[str, str]`) –
 - **`close_calls`** –
 - **`cluster`** –
 - **`cluster_name`** –
 - **`cluster_status`** –
+- **`documents`** (`dict[str, dict[str, tuple[dict[str, Any], int]]]`) –
 - **`health_error`** (`BaseException | None`) –
+- **`indices`** –
 - **`info_error`** (`BaseException | None`) –
 - **`kwargs`** –
+- **`primary_term`** –
+- **`seq_no`** –
 - **`version`** –
+
+#### aliases
+
+```
+aliases: dict[str, str] = {}
+```
 
 #### close\_calls
 
@@ -635,10 +655,22 @@ cluster_name = 'aurelius-atlas'
 cluster_status = 'green'
 ```
 
+#### documents
+
+```
+documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
+```
+
 #### health\_error
 
 ```
 health_error: BaseException | None = None
+```
+
+#### indices
+
+```
+indices = FakeIndices(self)
 ```
 
 #### info\_error
@@ -651,6 +683,18 @@ info_error: BaseException | None = None
 
 ```
 kwargs = kwargs
+```
+
+#### primary\_term
+
+```
+primary_term = 1
+```
+
+#### seq\_no
+
+```
+seq_no = -1
 ```
 
 #### version
@@ -666,6 +710,31 @@ close() -> None
 ```
 
 Count the call.
+
+#### get
+
+```
+get(*, index: str, id: str, source: bool = True) -> dict[str, Any]
+```
+
+Answer like `GET index/_doc/id`, raising `NotFoundError` for a missing document.
+
+#### index
+
+```
+index(
+    *,
+    index: str,
+    id: str,
+    document: dict[str, Any],
+    op_type: str | None = None,
+    if_seq_no: int | None = None,
+    if_primary_term: int | None = None,
+    **_options: object,
+) -> dict[str, Any]
+```
+
+Store `document`, raising `ConflictError` like Elasticsearch for `op_type=create` or `if_seq_no`.
 
 #### info
 
@@ -696,6 +765,39 @@ health() -> dict[str, Any]
 ```
 
 Answer like `GET _cluster/health`, or raise the configured error.
+
+### FakeIndices
+
+```
+FakeIndices(client: FakeClient)
+```
+
+The `indices` namespace of the fake client: aliases and index creation.
+
+Methods:
+
+- **`create`** –
+
+  Create `index` with `aliases`; settings and mappings are accepted and ignored.
+- **`exists_alias`** –
+
+  Whether `name` is an alias of a created index.
+
+#### create
+
+```
+create(*, index: str, aliases: dict[str, Any] | None = None, **_settings: object) -> dict[str, Any]
+```
+
+Create `index` with `aliases`; settings and mappings are accepted and ignored.
+
+#### exists\_alias
+
+```
+exists_alias(*, name: str) -> bool
+```
+
+Whether `name` is an alias of a created index.
 
 ### response\_meta
 

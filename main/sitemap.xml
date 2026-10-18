@@ -34,6 +34,9 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-core/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/</loc>
       </url>
       <url>
@@ -263,6 +266,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-3-type-hierarchies/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-4-typedef-store/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/</loc>

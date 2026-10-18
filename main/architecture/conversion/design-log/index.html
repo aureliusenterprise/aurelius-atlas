@@ -1179,6 +1179,8 @@
       
         
       
+        
+      
     
     
     
@@ -1230,6 +1232,33 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-core
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
                 
               
                 
@@ -3726,6 +3755,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-028-the-type-definitions-are-one-elasticsearch-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-028. The type definitions are one Elasticsearch document
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-029-server-processes-share-the-type-definitions-through-the-documents-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-029. Server processes share the type definitions through the document's version
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-030. The store asks the entity store whether a type is in use
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3805,6 +3867,8 @@
       
         
           
+        
+      
         
       
         
@@ -4138,6 +4202,33 @@
     
   
   1.3 Type hierarchies
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-4-typedef-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.4 Typedef store
 
     
   </span>
@@ -6273,6 +6364,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-028-the-type-definitions-are-one-elasticsearch-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-028. The type definitions are one Elasticsearch document
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-029-server-processes-share-the-type-definitions-through-the-documents-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-029. Server processes share the type definitions through the document's version
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-030. The store asks the entity store whether a type is in use
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6605,6 +6729,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-027-derived-type-sets-keep-first-seen-order">DD-027</a></td>
 <td>Derived type sets keep first-seen order</td>
 <td>1.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-028-the-type-definitions-are-one-elasticsearch-document">DD-028</a></td>
+<td>The type definitions are one Elasticsearch document</td>
+<td>1.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-029-server-processes-share-the-type-definitions-through-the-documents-version">DD-029</a></td>
+<td>Server processes share the type definitions through the document's version</td>
+<td>1.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use">DD-030</a></td>
+<td>The store asks the entity store whether a type is in use</td>
+<td>1.4</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -6982,7 +7124,7 @@ snake_case attributes and the Java getter names as aliases. <code>model_validate
 are ignored. The Java setters' normalisations run as <code>_</code>-prefixed validators, so they apply when a body
 is read and when a model is built in code, as the Java constructors and setters do.</p>
 <p><strong>Reason.</strong> Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and
-writes it natively, so 1.5 needs no mapping layer. Atlas writes with Jackson <code>NON_NULL</code>, which is
+writes it natively, so 1.6 needs no mapping layer. Atlas writes with Jackson <code>NON_NULL</code>, which is
 Pydantic's <code>exclude_none</code>; empty collections stay because Jackson keeps them (DD-013 compares exactly).</p>
 <p><strong>Alternatives.</strong> Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to
 TDM-15 would be custom code. Generating models from Atlas's JSON schema: Atlas publishes none, and the
@@ -7005,7 +7147,7 @@ stable and keeps what the client sent.</p>
 table size, but it would copy an accident of the implementation. Sorted order: stable, but reorders
 what clients send.</p>
 <p><strong>Consequences.</strong> The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them
-without order, through the option DD-013 foresees, which 1.5 adds with the first scenario that needs it.</p>
+without order, through the option DD-013 foresees, which 1.6 adds with the first scenario that needs it.</p>
 <h3 id="dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds">DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds<a class="headerlink" href="#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Proposed</li>
@@ -7066,7 +7208,7 @@ and later the hierarchies (1.3). Their value side (<code>isValidValue</code>, <c
 <code>validateValue</code>, <code>createDefaultValue</code>, <code>areEqualValues</code>) is ported with entity validation in 2.1. Their
 JanusGraph side (vertex property names, unique property names, index field names, index-query escaping)
 is not ported.</p>
-<p><strong>Reason.</strong> Types REST (1.5) needs only the definition side; values first matter for entities (2.1),
+<p><strong>Reason.</strong> Types REST (1.6) needs only the definition side; values first matter for entities (2.1),
 which is where Atlas's tests for them can be run. The JanusGraph names have no meaning in
 Elasticsearch: the index mapping is designed in 2.2.</p>
 <p><strong>Alternatives.</strong> Port each class whole: one increment several times the size limit, with value code
@@ -7102,7 +7244,67 @@ order is stable, as for the definitions' own sets (DD-021). Where the order pick
 inherited relationship attributes, Java's winner is equally arbitrary.</p>
 <p><strong>Alternatives.</strong> Sort them by name: stable too, but unrelated to how the hierarchy was declared.</p>
 <p><strong>Consequences.</strong> <code>subTypes</code> in responses may be ordered differently from Atlas's; parity scenarios
-compare them without order (DD-021, from 1.5).</p>
+compare them without order (DD-021, from 1.6).</p>
+<h3 id="dd-028-the-type-definitions-are-one-elasticsearch-document">DD-028. The type definitions are one Elasticsearch document<a class="headerlink" href="#dd-028-the-type-definitions-are-one-elasticsearch-document" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.4</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> All stored type definitions are one document, <code>typedefs</code>, in the index
+<code>aurelius-atlas-typedefs</code> (through an alias, so a reindex can swap it). The document holds the
+definitions in their stored form (TDS-05, TDS-06), grouped by kind as in <code>AtlasTypesDef</code>. Every change
+replaces the whole document, guarded by <code>if_seq_no</code> and <code>if_primary_term</code>.</p>
+<p><strong>Reason.</strong> Atlas changes several definitions in one graph transaction: <code>createTypesDef</code> stores all of
+a request or none (TDS-10). Elasticsearch has no transaction across documents, but writes one document
+atomically, so one document makes every typedef change atomic and its sequence number a single version
+of all types (DD-029). The registry, not Elasticsearch, answers every query over types; the document is
+read whole at start-up and on change. Atlas's built-in models with all patches are about 1 MB of JSON,
+well inside Elasticsearch's limits.</p>
+<p><strong>Alternatives.</strong> One document per definition, keyed by name: queryable, and a create can use
+<code>op_type=create</code> for uniqueness, but a request touching several definitions needs a hand-written
+rollback when one write fails, and other processes see half a change. A changes log of operations,
+replayed at start-up: atomic per entry, but every process replays the whole history and compaction is
+extra work.</p>
+<p><strong>Consequences.</strong> The document's size grows with the number of types; a deployment with tens of
+thousands of custom types would revisit this. Type changes are serialised across the cluster, as
+Atlas serialises them with its update lock.</p>
+<h3 id="dd-029-server-processes-share-the-type-definitions-through-the-documents-version">DD-029. Server processes share the type definitions through the document's version<a class="headerlink" href="#dd-029-server-processes-share-the-type-definitions-through-the-documents-version" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.4</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> Each process remembers the <code>_seq_no</code> and <code>_primary_term</code> of the <code>typedefs</code> document its
+registry was built from. Before a type change it reloads when the stored document is newer; it then
+writes conditionally on what it read. A conflict means another process changed types first: the process
+reloads, applies the change again on the new definitions, and gives up with
+<code>FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK</code> after a second conflict. Readers reload when the document changed,
+checked at most every <code>AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS</code> (default 5).</p>
+<p><strong>Reason.</strong> Atlas runs one active server and keeps its registry in memory (DD-024 is per process).
+Several processes behind a load balancer must not lose each other's changes, and a change must reach the
+others without a restart. Optimistic concurrency on one document gives both with one cheap <code>GET</code> of
+the document's version.</p>
+<p><strong>Alternatives.</strong> A lock document: needs expiry and recovery when its holder dies. Change notification
+through a message bus: a component the system does not have (ADR 050).</p>
+<p><strong>Consequences.</strong> For up to the refresh interval, a process may answer from older types than another;
+a type change is visible at once only on the process that made it. 6.4 measures whether the interval
+needs tuning.</p>
+<h3 id="dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use">DD-030. The store asks the entity store whether a type is in use<a class="headerlink" href="#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.4</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> The typedef store takes a <code>TypeUsage</code> callback that answers whether entities,
+classifications or relationships of a type exist; deleting a type that is in use fails with
+<code>TYPE_HAS_REFERENCES</code>. Until the entity store exists (2.2) the callback answers "not in use".</p>
+<p><strong>Reason.</strong> Atlas checks <code>typeHasInstanceVertex</code> before deleting a type. The instances live in the
+entity store, which the typedef store must not depend on; a callback keeps the dependency pointing from
+core's entity store to the typedef store.</p>
+<p><strong>Alternatives.</strong> Query the entity index from the typedef store: couples it to an index that does not
+exist yet.</p>
+<p><strong>Consequences.</strong> 2.2 passes its own check when it builds the stores.</p>
 
 
 

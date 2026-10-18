@@ -84,6 +84,9 @@ Methods:
 - **`classification_type`** –
 
   The classification type named `name`, or None (TRG-04).
+- **`clear`** –
+
+  Drop every definition, keeping the built-in types (`AtlasTransientTypeRegistry.clear`).
 - **`copy_of`** –
 
   A copy holding the registry's definitions as new, unresolved types (TRG-05).
@@ -233,6 +236,14 @@ classification_type(name: str | None) -> ClassificationType | None
 ```
 
 The classification type named `name`, or None (TRG-04).
+
+#### clear
+
+```
+clear() -> None
+```
+
+Drop every definition, keeping the built-in types (`AtlasTransientTypeRegistry.clear`).
 
 #### copy\_of
 
