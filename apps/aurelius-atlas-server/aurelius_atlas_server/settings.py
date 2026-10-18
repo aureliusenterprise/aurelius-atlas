@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Literal, Self
 
+from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
 from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -44,6 +45,10 @@ class ServerSettings(BaseSettings):
     dashboard_dir: DirectoryPath | None = None
     """The built dashboards: ``dashboardv2`` at its root and ``dashboardv3`` in ``n/``; None serves the API only
     (DSH-04)."""
+
+    models_dir: Path = BUILTIN_MODELS_DIR
+    """The models loaded at start-up: by default ``addons/models`` of Apache Atlas 2.4.0; a missing directory loads
+    none (MDL-01, MDL-16, DD-032)."""
 
     typedef_refresh_seconds: float = Field(default=5.0, ge=0)
     """How long the server answers from its type registry before it checks for another process's type change

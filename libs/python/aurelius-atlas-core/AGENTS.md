@@ -1,6 +1,7 @@
 # aurelius-atlas-core
 
-Atlas stores and services (DD-002): the typedef store (DD-028, DD-029, DD-030). This file covers wiring
+Atlas stores and services (DD-002): the typedef store (DD-028, DD-029, DD-030) and the built-in models
+(DD-031, DD-032, DD-033). This file covers wiring
 specific to this lib; workspace-wide rules — including the scaffold recipe for Python libs — live in the
 root `AGENTS.md` and `libs/python/AGENTS.md`.
 
@@ -11,10 +12,14 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 - `aurelius_atlas_core/stored_form.py` — what Atlas keeps of a definition (the attribute multiplicity round
   trip, relationship defaults, audit fields)
 - `aurelius_atlas_core/typedef_document.py` — `TypedefDocument` and its Elasticsearch implementation: one
-  document, written with `if_seq_no`/`if_primary_term`
+  document of definitions and patch records (`StoredTypedefs`), written with `if_seq_no`/`if_primary_term`
+- `aurelius_atlas_core/model_loader.py` — `ModelLoader` (`AtlasTypeDefStoreInitializer`): the load order of a
+  models directory and the nine typedef patch actions
+- `aurelius_atlas_core/models/` — `addons/models` of Atlas 2.4.0, byte for byte: never edit, reformat or
+  re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar)
 - `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` for unit tests
-- `tests/` — TDS-01 to TDS-13 on the in-memory document and the fake client; `tests/fixtures/` holds Atlas's
-  `0010-base_model.json`, unchanged and skipped by the hooks
+- `tests/` — TDS-01 to TDS-13 and MDL-01 to MDL-15 on the in-memory document and the fake client;
+  `tests/fixtures/` holds Atlas's `0010-base_model.json`, unchanged and skipped by the hooks
 - `e2e/` — the store on the dev Elasticsearch, each test on an alias of its own
 
 ## Conventions
@@ -26,6 +31,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 - Checks copy Atlas's def stores, in Java's order; a Java check that the registry's resolution makes
   unreachable keeps its code with `# pragma: no cover` and a comment saying so.
 - Whether a type is in use is the `TypeUsage` callback's question (DD-030); never query entity indices here.
+- A patch handler only decides: it reads the registry and returns a `PatchChange`; the store applies it and
+  writes the record in the same change (DD-031). Errors Java raises as `AtlasBaseException` are `AtlasError`
+  (the patch is `FAILED`); its runtime exceptions are `PatchDataError` (the patch file stops).
 
 ## Wiring Checklist
 

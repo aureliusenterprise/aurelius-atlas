@@ -1,12 +1,15 @@
-"""The typedef store on the dev Elasticsearch, two processes sharing one document (TDS-10 to TDS-13)."""
+"""The typedef store on the dev Elasticsearch, two processes sharing one document (TDS-10 to TDS-13, MDL-15)."""
 
+import asyncio
 import json
 from pathlib import Path
 
 import pytest
+from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, ModelLoader
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_model.patches import PatchStatus
 from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef, TypeCategory
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -72,3 +75,30 @@ async def test__a_rejected_change_leaves_elasticsearch_unchanged(
 
     assert raised.value.code is AtlasErrorCode.TYPE_ALREADY_EXISTS
     assert restarted.registry.typedef_names(TypeCategory.ENTITY) == ["kept"]
+
+
+@pytest.mark.covers(rules=["MDL-15"])
+async def test__two_processes_starting_together_load_the_models_once(
+    dev_store: ElasticsearchStore, typedef_index: str
+) -> None:
+    """DD-033: every file loads, each patch is applied by one process only, and both end with the same types."""
+    one = await loaded_store(dev_store, typedef_index)
+    two = await loaded_store(dev_store, typedef_index)
+
+    first, second = await asyncio.gather(
+        ModelLoader(one).load(BUILTIN_MODELS_DIR), ModelLoader(two).load(BUILTIN_MODELS_DIR)
+    )
+    await one.refresh(force=True)
+    await two.refresh(force=True)
+    stored, _ = await ElasticsearchTypedefDocument(dev_store.client, typedef_index).read()
+
+    assert first.failed_files == second.failed_files == []
+    twice = [
+        patch_id
+        for patch_id, status in first.patches.items()
+        if status is PatchStatus.APPLIED and second.patches.get(patch_id) is PatchStatus.APPLIED
+    ]
+    assert twice == []
+    assert stored is not None
+    assert len({patch.id for patch in stored.patches}) == len(stored.patches)
+    assert sorted(one.registry.all_type_names()) == sorted(two.registry.all_type_names())

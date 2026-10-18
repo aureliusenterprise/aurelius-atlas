@@ -17,3 +17,5 @@ uv.lock
 **/.dockerignore
 **/.prettierignore
 .angular
+# Built-in models vendored from Apache Atlas release-2.4.0, kept byte-identical (DD-032)
+/libs/python/aurelius-atlas-core/aurelius_atlas_core/models

@@ -1,8 +1,9 @@
 """The stored type definitions: one Elasticsearch document, written with optimistic concurrency (DD-028, DD-029)."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from aurelius_atlas_model.patches import AtlasPatch
 from aurelius_atlas_model.typedef import AtlasTypesDef
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 
@@ -21,6 +22,26 @@ class DocumentVersion:
     primary_term: int
 
 
+@dataclass
+class StoredTypedefs:
+    """What the document holds: the definitions, and the record of each typedef patch (DD-028, DD-031)."""
+
+    types_def: AtlasTypesDef
+    patches: list[AtlasPatch] = field(default_factory=list)
+
+    def to_json(self) -> dict[str, Any]:
+        """The document's source: ``typesDef`` and ``patches``."""
+        return {"typesDef": self.types_def.to_json(), "patches": [patch.to_json() for patch in self.patches]}
+
+    @classmethod
+    def from_json(cls, source: dict[str, Any]) -> StoredTypedefs:
+        """Read a document's source; one written before 1.5 has no ``patches``."""
+        return cls(
+            AtlasTypesDef.model_validate(source["typesDef"]),
+            [AtlasPatch.model_validate(patch) for patch in source.get("patches", [])],
+        )
+
+
 class VersionConflictError(Exception):
     """Another process wrote the document since this one read it (TDS-11)."""
 
@@ -33,7 +54,7 @@ class TypedefDocument(Protocol):
         """Make sure the definitions can be read and written, such as by creating an index."""
         ...
 
-    async def read(self) -> tuple[AtlasTypesDef | None, DocumentVersion | None]:
+    async def read(self) -> tuple[StoredTypedefs | None, DocumentVersion | None]:
         """The stored definitions and their version; ``(None, None)`` when nothing is stored."""
         ...
 
@@ -41,7 +62,7 @@ class TypedefDocument(Protocol):
         """The version of the stored definitions, without reading them."""
         ...
 
-    async def write(self, types_def: AtlasTypesDef, expected: DocumentVersion | None) -> DocumentVersion:
+    async def write(self, stored: StoredTypedefs, expected: DocumentVersion | None) -> DocumentVersion:
         """Replace the stored definitions, if they are still at ``expected``.
 
         Raises:
@@ -67,14 +88,14 @@ class ElasticsearchTypedefDocument:
                 settings={"number_of_shards": 1},
             )
 
-    async def read(self) -> tuple[AtlasTypesDef | None, DocumentVersion | None]:
+    async def read(self) -> tuple[StoredTypedefs | None, DocumentVersion | None]:
         """The stored definitions and their version; ``(None, None)`` when nothing is stored (TDS-12)."""
         try:
             response = await self._client.get(index=self._index, id=TYPEDEF_DOCUMENT_ID)
         except NotFoundError:
             return None, None
         source: dict[str, Any] = response["_source"]
-        return AtlasTypesDef.model_validate(source["typesDef"]), _version_of(response)
+        return StoredTypedefs.from_json(source), _version_of(response)
 
     async def version(self) -> DocumentVersion | None:
         """The version of the stored definitions, or None when nothing is stored (TDS-13)."""
@@ -84,13 +105,13 @@ class ElasticsearchTypedefDocument:
             return None
         return _version_of(response)
 
-    async def write(self, types_def: AtlasTypesDef, expected: DocumentVersion | None) -> DocumentVersion:
+    async def write(self, stored: StoredTypedefs, expected: DocumentVersion | None) -> DocumentVersion:
         """Replace the stored definitions if they are still at ``expected``; create them when it is None (TDS-11).
 
         Raises:
             VersionConflictError: Another process wrote the document first.
         """
-        document = {"typesDef": types_def.to_json()}
+        document = stored.to_json()
         try:
             if expected is None:
                 response = await self._client.index(

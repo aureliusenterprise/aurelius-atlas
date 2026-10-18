@@ -335,6 +335,27 @@ def test__updating_replaces_by_guid_else_by_name() -> None:
 
 
 @pytest.mark.covers(
+    "aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving", rules=["MDL-03"]
+)
+def test__updating_without_resolving_leaves_the_types_unresolved_until_the_next_change() -> None:
+    """``updateTypesWithNoRefResolve``: an attribute of a type not yet added fails only when resolving."""
+    registry = registry_with(AtlasStructDef(name="s", attribute_defs=[AtlasAttributeDef(name="a", type_name="string")]))
+    with registry.update() as transient:
+        transient.update_types_without_resolving(
+            AtlasTypesDef(
+                struct_defs=[AtlasStructDef(name="s", attribute_defs=[AtlasAttributeDef(name="b", type_name="t")])]
+            )
+        )
+        transient.update_types_without_resolving(None)
+        transient.add_types([AtlasStructDef(name="t", attribute_defs=[AtlasAttributeDef(name="c", type_name="int")])])
+
+    struct = registry.struct_type("s")
+    assert struct is not None
+    assert list(struct.all_attributes) == ["b"]
+    assert [typedef.name for typedef in transient.updated] == ["s"]
+
+
+@pytest.mark.covers(
     "aurelius_atlas_typesystem.registry.TransientTypeRegistry.remove_types",
     "aurelius_atlas_typesystem.registry.TransientTypeRegistry.remove_type_by_guid",
     "aurelius_atlas_typesystem.registry.TransientTypeRegistry.remove_type_by_name",
