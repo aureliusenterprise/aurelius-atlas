@@ -304,6 +304,10 @@ class TransientTypeRegistry(TypeRegistry):
                 transient._data.add(typedef)
         return transient
 
+    def clear(self) -> None:
+        """Drop every definition, keeping the built-in types (``AtlasTransientTypeRegistry.clear``)."""
+        self._data = _Definitions()
+
     def add_type(self, typedef: AtlasBaseTypeDef | None) -> None:
         """Add a definition, then resolve every type (TRG-06, TRG-09)."""
         if typedef is not None:
