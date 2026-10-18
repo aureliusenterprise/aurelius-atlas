@@ -6063,6 +6063,10 @@ answer yet. That is the expected state, not a deviation.</p>
 <td>DSH-06</td>
 <td>In a browser, each dashboard loads from the dashboard image and asks it for <code>/api/atlas/admin/session</code>, which answers 200</td>
 </tr>
+<tr>
+<td>DSH-10</td>
+<td>The proxy forwards the origin's Host, port included, so an upstream-generated absolute redirect (FastAPI's slash normalization) keeps the public origin</td>
+</tr>
 </tbody>
 </table>
 <p>DSH-05 keeps the dashboards those of Atlas 2.4.0: the vendored source is byte-identical to the tag and
@@ -6094,8 +6098,8 @@ identical to Atlas's build.</p>
 aurelius-atlas-dashboard</code> and by the dashboard image's build.</li>
 <li><code>apps/aurelius-atlas-dashboard/</code> — its stack (<code>docker-compose.yaml</code>) runs the dashboard image and the
   API-only server on the dev store, and its <code>e2e/</code> tests prove both dashboards, the <code>/n</code> redirect, the
-  proxy's precedence and the server's API-only origin (DSH-01 to DSH-04) against it, plus both
-  dashboards in Chromium against the dashboard image (DSH-05, DSH-06).</li>
+  proxy's precedence, the forwarded Host and the server's API-only origin (DSH-01 to DSH-04, DSH-10)
+  against it, plus both dashboards in Chromium against the dashboard image (DSH-05, DSH-06).</li>
 </ul>
 
 
