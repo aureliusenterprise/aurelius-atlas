@@ -24,10 +24,10 @@ Not in scope:
 | --------------------------------------------------------------------- | ------------ |
 | Resolving type names, supertypes and constraints; validation errors   | 1.2          |
 | Defaults the type registry fills in (relationship category, tags, …)  | 1.3          |
-| Storing type definitions; the built-in models at start-up             | 1.4          |
-| `/v2/types/...`; malformed bodies answered with Atlas's error and 400 | 1.5          |
-| Order-insensitive comparison of set-valued arrays in parity scenarios | 1.5 (DD-013) |
-| The paged lists (`AtlasStructDefs`, … built on `PList`)               | 1.5          |
+| Storing type definitions; the built-in models at start-up             | 1.4, 1.5     |
+| `/v2/types/...`; malformed bodies answered with Atlas's error and 400 | 1.6          |
+| Order-insensitive comparison of set-valued arrays in parity scenarios | 1.6 (DD-013) |
+| The paged lists (`AtlasStructDefs`, … built on `PList`)               | 1.6          |
 
 ## Semantics
 
@@ -77,7 +77,7 @@ Apache Atlas `release-2.4.0`, `intg/src/main/java/org/apache/atlas/model/`:
 ## Deviations
 
 None. Java writes sets in `HashSet` order, which Atlas does not define; parity scenarios will compare
-those arrays without order (DD-013, from 1.5).
+those arrays without order (DD-013, from 1.6).
 
 ## Acceptance
 

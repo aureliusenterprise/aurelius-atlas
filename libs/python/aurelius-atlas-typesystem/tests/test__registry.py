@@ -410,3 +410,16 @@ def test__every_change_resolves_every_type_again() -> None:
     struct = registry.struct_type("paint")
     assert struct is not None
     assert isinstance(struct.attribute_type("colour"), EnumType)
+
+
+@pytest.mark.covers("aurelius_atlas_typesystem.registry.TransientTypeRegistry.clear", rules=["TRG-08"])
+def test__clearing_a_copy_keeps_only_the_built_in_types() -> None:
+    """``ttr.clear()`` before reloading every definition from the store."""
+    registry = registry_with(AtlasEnumDef(name="e"), AtlasStructDef(name="s"))
+    with registry.update() as transient:
+        transient.clear()
+        transient.add_types([AtlasEnumDef(name="fresh")])
+
+    assert registry.typedef_names(TypeCategory.ENUM) == ["fresh"]
+    assert registry.typedef_names(TypeCategory.STRUCT) == []
+    assert registry.is_registered("string")

@@ -1,6 +1,7 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": [
+        "aurelius-atlas-core",
         "aurelius-atlas-dashboard",
         "aurelius-atlas-dev-elasticsearch",
         "aurelius-atlas-dev-observability",

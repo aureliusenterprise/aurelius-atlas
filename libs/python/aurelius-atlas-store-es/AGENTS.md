@@ -21,6 +21,8 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   `docs/architecture/conversion/increments/0-2-elasticsearch-infrastructure.md`; every test names the
   functions and rules it checks with `@pytest.mark.covers` (ADR 049), and `aurelius-atlas-trace check`
   fails when a public function or rule is named by no test.
+- `project.json` sets `parallelism: false` on `e2e`: its persistence test restarts the shared dev store, so
+  no other task may run beside it (another project's e2e lost its connection when they ran together).
 - The container helper uses the same image tag as `dev/elasticsearch/docker-compose.yaml`; change both
   together.
 

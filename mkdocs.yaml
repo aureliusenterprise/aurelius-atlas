@@ -93,6 +93,7 @@ nav:
                       - aurelius-atlas-ui: api-reference/libs/angular/aurelius-atlas-ui.md
                 - Python:
                       - api-reference/libs/python/index.md
+                      - aurelius-atlas-core: api-reference/libs/python/aurelius-atlas-core.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
                       - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
                       - aurelius-atlas-parity: api-reference/libs/python/aurelius-atlas-parity.md
@@ -177,6 +178,7 @@ nav:
                       - 1.1 Typedef models: architecture/conversion/increments/1-1-typedef-models.md
                       - 1.2 Type registry: architecture/conversion/increments/1-2-type-registry.md
                       - 1.3 Type hierarchies: architecture/conversion/increments/1-3-type-hierarchies.md
+                      - 1.4 Typedef store: architecture/conversion/increments/1-4-typedef-store.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

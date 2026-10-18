@@ -10,7 +10,7 @@ truth about what has been ported. Status values: _not started_, _in progress_, _
 | Atlas module                    | Purpose in Atlas                                      | Target                                              | Status      |
 | ------------------------------- | ----------------------------------------------------- | --------------------------------------------------- | ----------- |
 | `intg`                          | Model classes, type system, client-side utilities     | `aurelius-atlas-model`, `aurelius-atlas-typesystem` | in progress |
-| `repository`                    | Stores, services, discovery, lineage, glossary, audit | `aurelius-atlas-core`, `aurelius-atlas-dsl`         | not started |
+| `repository`                    | Stores, services, discovery, lineage, glossary, audit | `aurelius-atlas-core`, `aurelius-atlas-dsl`         | in progress |
 | `graphdb`                       | JanusGraph abstraction and implementation             | `aurelius-atlas-store-es`                           | replaced    |
 | `webapp`                        | REST resources, filters, authentication               | `aurelius-atlas-server`                             | in progress |
 | `server-api`                    | Interfaces shared by server components                | `aurelius-atlas-core`                               | not started |
@@ -20,7 +20,7 @@ truth about what has been ported. Status values: _not started_, _in progress_, _
 | `notification`                  | Kafka hook and entity notifications                   | –                                                   | dropped     |
 | `client`                        | Java client libraries                                 | –                                                   | dropped     |
 | `addons/*-bridge`, `*-shim`     | Hooks for Hive, HBase, Kafka, Sqoop, Storm, …         | –                                                   | dropped     |
-| `addons/models`                 | Built-in type definitions (JSON)                      | loaded by `aurelius-atlas-core` (1.4)               | not started |
+| `addons/models`                 | Built-in type definitions (JSON)                      | loaded by `aurelius-atlas-core` (1.5)               | not started |
 | `distro`, `build-tools`, `docs` | Packaging, build and site                             | template workflow                                   | replaced    |
 | `tools/*`                       | Index repair, classification updater, analyzers       | –                                                   | dropped     |
 
@@ -36,4 +36,5 @@ Rows are added by each increment for the classes it ports.
 | `AtlasTypeDefHeader`, `AtlasTypesDef`, `TypeCategory`                                                                                                                           | `aurelius_atlas_model.typedef`         | 1.1       | in progress |
 | `AtlasTypeRegistry`, `AtlasType`, `AtlasBuiltInTypes`, `AtlasArrayType`, `AtlasMapType`, `AtlasEnumType`, `AtlasStructType` (definition side, DD-025)                           | `aurelius_atlas_typesystem`            | 1.2       | in progress |
 | `AtlasEntityType`, `AtlasClassificationType`, `AtlasRelationshipType`, `AtlasBusinessMetadataType` (definition side, DD-025, DD-026)                                            | `aurelius_atlas_typesystem`            | 1.3       | in progress |
+| `AtlasTypeDefGraphStore`, `AtlasTypeDefGraphStoreV2`, `Atlas*DefStoreV2` (checks and stored form; graph replaced, DD-028)                                                       | `aurelius_atlas_core.typedef_store`    | 1.4       | in progress |
 | `AtlasErrorCode`, `AtlasBaseException` (the codes each increment raises)                                                                                                        | `aurelius_atlas_model.errors` (DD-023) | 0.5, 1.2  | in progress |

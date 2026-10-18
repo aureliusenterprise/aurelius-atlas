@@ -5,6 +5,7 @@ requires-python = ">=3.14"
 [manifest]
 members = [
     "aurelius-atlas",
+    "aurelius-atlas-core",
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
@@ -219,6 +220,7 @@ source = { virtual = "." }
 [package.dev-dependencies]
 dev = [
     { name = "alembic" },
+    { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report" },
@@ -265,6 +267,7 @@ dev = [
 [package.metadata.requires-dev]
 dev = [
     { name = "alembic", specifier = ">=1.18" },
+    { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-example", editable = "libs/python/aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example", editable = "apps/aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
@@ -304,6 +307,25 @@ dev = [
     { name = "timeout-decorator", specifier = ">=0.5.0" },
     { name = "trustme", specifier = ">=1.1" },
     { name = "zensical", specifier = ">=0.0.70" },
+]
+
+[[package]]
+name = "aurelius-atlas-core"
+version = "0.6.1"
+source = { editable = "libs/python/aurelius-atlas-core" }
+dependencies = [
+    { name = "aurelius-atlas-model" },
+    { name = "aurelius-atlas-store-es" },
+    { name = "aurelius-atlas-typesystem" },
+    { name = "elasticsearch", extra = ["async"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
+    { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
+    { name = "aurelius-atlas-typesystem", editable = "libs/python/aurelius-atlas-typesystem" },
+    { name = "elasticsearch", extras = ["async"], specifier = ">=9.5.1,<10" },
 ]
 
 [[package]]
@@ -468,6 +490,7 @@ name = "aurelius-atlas-server"
 version = "0.6.1"
 source = { editable = "apps/aurelius-atlas-server" }
 dependencies = [
+    { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-store-es" },
     { name = "fastapi" },
@@ -480,6 +503,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
     { name = "fastapi", specifier = ">=0.141.1" },
