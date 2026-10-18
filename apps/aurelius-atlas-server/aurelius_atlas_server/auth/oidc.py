@@ -23,7 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 DISCOVERY_PATH = "/.well-known/openid-configuration"
 REFRESH_SKEW_SECONDS = 60
-"""Refresh the session's access token this long before it expires (AUTH-09)."""
+"""Refresh the session's access token at most this long before it expires (AUTH-09).
+
+Capped to half of each token's own lifetime, so a short-lived issuer (the dev realm issues 60 s tokens)
+is refreshed within its lifetime instead of on every request the moment the token is minted.
+"""
 
 KEYS_TTL_SECONDS = 3600
 """How long the issuer's JWKS is cached before it is fetched again; a rotated kid reloads it sooner."""
@@ -32,6 +36,7 @@ MALFORMED_JWT_ERROR = "malformed token"
 AUDIENCE_MISMATCH_ERROR = "token audience mismatch"
 NONCE_MISMATCH_ERROR = "id_token nonce mismatch"
 NO_SUBJECT_ERROR = "token carries no subject"
+NOT_BEARER_ERROR = "not an access token"
 
 
 class OpenIdConfig(BaseModel):
@@ -61,6 +66,9 @@ class Tokens:
     refresh_token: str | None
     expires_at: float
     """Monotonic time the access token expires at."""
+
+    lifetime_seconds: float = 300.0
+    """The issued access token's lifetime (``expires_in``): the guard caps its refresh window by it."""
 
     claims: dict[str, Any] = field(default_factory=dict)
 
@@ -155,14 +163,19 @@ class OidcClient:
             },
         )
         await self._verify_jwt(payload["id_token"], nonce=nonce)  # the login belongs to this flow
-        claims = await self._verify_jwt(payload["access_token"])
+        claims = await self._verify_jwt(payload["access_token"], expect_bearer=True)
         return self._tokens(payload, claims)
 
     async def refresh(self, refresh_token: str) -> Tokens:
         """Refresh the tokens of a session (AUTH-09).
 
+        The response's ``access_token`` is verified like every other one and its claims returned:
+        the session's identity is taken from them after a refresh, so a role change at the issuer
+        reaches the session (a refresh response carries no ``id_token`` — the new access token is
+        the fresh proof of the user and its roles).
+
         Raises:
-            TokenError: the issuer refused the refresh token.
+            TokenError: the issuer refused the refresh token, or its access token does not verify.
         """
         config = await self.config()
         payload = await self._token_request(
@@ -174,18 +187,22 @@ class OidcClient:
                 "client_secret": self._client_secret,
             },
         )
-        return self._tokens(payload, {})
+        claims = await self._verify_jwt(payload["access_token"], expect_bearer=True)
+        return self._tokens(payload, claims)
 
     async def verify_access_token(self, token: str) -> dict[str, Any]:
         """Verify a bearer access token against the issuer's JWKS (AUTH-03).
+
+        Keycloak's own ``typ`` must say ``Bearer``: an ID token proves a login, not API access, and
+        is refused here even though it is signed by the same issuer for the same client.
 
         Raises:
             TokenError: the token does not verify.
             OidcError: the JWKS could not be fetched.
         """
-        return await self._verify_jwt(token)
+        return await self._verify_jwt(token, expect_bearer=True)
 
-    async def _verify_jwt(self, token: str, *, nonce: str | None = None) -> dict[str, Any]:
+    async def _verify_jwt(self, token: str, *, nonce: str | None = None, expect_bearer: bool = False) -> dict[str, Any]:
         try:
             header = jwt.get_unverified_header(token)
         except jwt.PyJWTError as e:
@@ -203,6 +220,11 @@ class OidcClient:
         except jwt.PyJWTError as e:
             problem = f"token does not verify: {e}"
             raise TokenError(problem) from e
+        if expect_bearer and str(claims.get("typ", "")).lower() != "bearer":
+            # AUTH-03: Keycloak marks its access tokens with the payload claim ``typ: Bearer`` and its
+            # id tokens with ``typ: ID``. An ID token is proof of a login, not an API credential, and
+            # is refused here although the same issuer signs it for the same client.
+            raise TokenError(NOT_BEARER_ERROR)
         if not self._audience_matches(claims):
             raise TokenError(AUDIENCE_MISMATCH_ERROR)
         if nonce is not None and claims.get("nonce") != nonce:
@@ -262,10 +284,12 @@ class OidcClient:
         return response.json()
 
     def _tokens(self, payload: dict[str, Any], claims: dict[str, Any]) -> Tokens:
+        lifetime = float(payload.get("expires_in", 300))
         return Tokens(
             access_token=payload["access_token"],
             refresh_token=payload.get("refresh_token"),
-            expires_at=time.monotonic() + float(payload.get("expires_in", 300)),
+            expires_at=time.monotonic() + lifetime,
+            lifetime_seconds=lifetime,
             claims=claims,
         )
 

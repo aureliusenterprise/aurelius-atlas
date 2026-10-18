@@ -31,12 +31,21 @@ LOGGER = logging.getLogger(__name__)
 SESSION_COOKIE = "ATLASSESSIONID"
 """The session cookie's name, which Atlas's logout deletes."""
 
+FLOW_COOKIE = "ATLASFLOWID"
+"""The login-flow cookie (DD-041): binds a started flow to the browser that started it."""
+
 LOGIN_PATH = "/api/atlas/auth/login"
 CALLBACK_PATH = "/api/atlas/auth/callback"
 CHECK_PATH = "/api/atlas/auth/check"
 LOGOUT_PATH = "/logout.html"
 LOGIN_JSP_PATH = "/login.jsp"
 """Atlas's ``logoutSuccessUrl``: the login page the browser lands on after logout (DD-040)."""
+
+FLOW_TTL_SECONDS = 600
+"""How long a started flow may finish, on both the kept state and the flow cookie."""
+
+_LOWEST_PRINTABLE = 0x20
+_DELETE = 0x7F
 
 AUTH = APIRouter(prefix="/api/atlas/auth", tags=["Auth"])
 """The relying party's endpoints, under ``/api/`` so the dashboard origin's proxy carries them."""
@@ -86,6 +95,9 @@ class PendingLogin:
     verifier: str = ""
     """The PKCE verifier the authorization URL was built with, kept for the exchange (AUTH-07)."""
 
+    flow_id: str = ""
+    """The id kept in the flow cookie (DD-041): the callback must come from this browser."""
+
 
 class LoginStates:
     """The login flows in flight between the login start and its callback (AUTH-06, AUTH-07)."""
@@ -102,6 +114,7 @@ class LoginStates:
             nonce=secrets.token_urlsafe(16),
             next=next_url,
             created_at=time.monotonic(),
+            flow_id=secrets.token_urlsafe(24),
         )
         self._pending[pending.state] = pending
         return pending
@@ -145,10 +158,17 @@ def safe_next(raw: str | None) -> str:
     """The URL a login may return to: a path of this origin, or the root.
 
     A URL with a scheme or host, or one not starting at the root, is dropped so the login start cannot
-    be aimed at another site (an open redirect).
+    be aimed at another site (an open redirect). The extra-leading-slash form and the backslash form a
+    browser still resolves off-origin are refused too, as are control characters.
     """
     if raw is None:
         return "/"
+    if any(ord(c) < _LOWEST_PRINTABLE or ord(c) == _DELETE for c in raw):
+        return "/"  # a control character in a Location is a request-splitting risk, not a path
+    if "\\" in raw:
+        return "/"
+    if raw.startswith("//"):
+        return "/"  # scheme-relative: the browser reads the host after the slashes
     parts = urlsplit(raw)
     if parts.scheme or parts.netloc or not raw.startswith("/"):
         return "/"
@@ -179,14 +199,33 @@ def _origin_of(settings: ServerSettings) -> str:
     return redirect[: redirect.index("/api/")]
 
 
-async def _refresh_if_due(oidc: OidcClient, sessions: SessionStore, session: Session) -> Session | None:
+async def _refresh_if_due(
+    oidc: OidcClient, sessions: SessionStore, session: Session, *, client_id: str
+) -> Session | None:
     """Refresh the session's access token when it nears expiry, or destroy the session (AUTH-09).
+
+    The window is ``REFRESH_SKEW_SECONDS`` capped to half the token's own lifetime, so a short-lived
+    issuer (the dev realm issues 60 s tokens) is refreshed within its lifetime rather than being
+    already-due on mint. A session without a refresh token has no means to renew: it authenticates
+    only until its access token expires, and is destroyed at its next use. A successful refresh
+    updates the session's identity from the new access token's claims, so a role change at the
+    issuer reaches the session.
 
     Returns:
         The session, or None when the refresh failed and the session was destroyed.
     """
-    if session.refresh_token is None or session.access_expires_at - time.monotonic() > REFRESH_SKEW_SECONDS:
+    near_expiry = session.access_expires_at - time.monotonic() <= min(
+        REFRESH_SKEW_SECONDS, session.access_lifetime_seconds / 2
+    )
+    if not near_expiry:
         return session
+    if session.refresh_token is None:
+        # No means to renew: a session without a refresh token lives only as long as its access
+        # token. Without this, the idle timeout — unset by default — would let its cookie
+        # authenticate indefinitely past the token's expiry.
+        LOGGER.info("A session whose access token expired without a refresh token is destroyed")
+        sessions.destroy(session.sid)
+        return None
     try:
         tokens = await oidc.refresh(session.refresh_token)
     except (OidcError, TokenError) as error:
@@ -196,6 +235,8 @@ async def _refresh_if_due(oidc: OidcClient, sessions: SessionStore, session: Ses
     session.access_token = tokens.access_token
     session.refresh_token = tokens.refresh_token or session.refresh_token
     session.access_expires_at = tokens.expires_at
+    session.access_lifetime_seconds = tokens.lifetime_seconds
+    session.username, session.groups = principal_of(tokens.claims, client_id)
     return session
 
 
@@ -220,7 +261,7 @@ async def authenticate(request: Request) -> Principal | NoPrincipal | BearerReje
     session = sessions.get(request.cookies.get(SESSION_COOKIE))
     if session is None:
         return NoPrincipal()
-    refreshed = await _refresh_if_due(oidc, sessions, session)
+    refreshed = await _refresh_if_due(oidc, sessions, session, client_id=settings.auth_client_id)
     if refreshed is None:
         return NoPrincipal()
     return Principal(refreshed.username, refreshed.groups, refreshed)
@@ -245,7 +286,19 @@ async def login_start(request: Request, next: str | None = None) -> Response:  #
         LOGGER.exception("The login cannot start, the issuer is unreachable")
         return issuer_error_response()
     pending.verifier = verifier
-    return Response(status_code=302, headers={"location": url})
+    response = Response(status_code=302, headers={"location": url})
+    # The flow is bound to this browser (DD-041): the callback must carry the same cookie, so a
+    # callback URL handed to somebody else mints no session in their jar (login CSRF).
+    response.set_cookie(
+        FLOW_COOKIE,
+        pending.flow_id,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/api/atlas/auth",  # only the flow's endpoints read it (DD-041)
+        max_age=FLOW_TTL_SECONDS,
+    )
+    return response
 
 
 @AUTH.get("/callback")
@@ -255,8 +308,11 @@ async def login_callback(request: Request, code: str | None = None, state: str |
     oidc: OidcClient = request.app.state.oidc
     sessions: SessionStore = request.app.state.sessions
     pending = request.app.state.login_states.take(state)
-    if not code or pending is None:
-        LOGGER.info("A login callback was rejected: unknown state or missing code")
+    flow_cookie = request.cookies.get(FLOW_COOKIE)
+    if not code or pending is None or flow_cookie != pending.flow_id:
+        # The state is consumed and its flow cookie compared: a callback that reaches a browser other
+        # than the one that started the flow mints no session (DD-041, login CSRF).
+        LOGGER.info("A login callback was rejected: unknown state, missing code, or unbound flow")
         return unauthorized_response()
     try:
         tokens = await oidc.exchange(
@@ -281,6 +337,7 @@ async def login_callback(request: Request, code: str | None = None, state: str |
     )
     response = Response(status_code=302, headers={"location": pending.next})
     response.set_cookie(SESSION_COOKIE, session.sid, httponly=True, secure=True, samesite="lax", path="/")
+    response.delete_cookie(FLOW_COOKIE, path="/api/atlas/auth")  # the flow is spent
     return response
 
 
@@ -367,7 +424,7 @@ def install_auth(app: FastAPI) -> None:
         ca_file=str(settings.auth_ca_file) if settings.auth_ca_file else None,
     )
     app.state.sessions = SessionStore(idle_seconds=settings.auth_session_idle_seconds)
-    app.state.login_states = LoginStates()
+    app.state.login_states = LoginStates(ttl_seconds=FLOW_TTL_SECONDS)
     app.middleware("http")(guard)
     app.include_router(AUTH)
     app.add_api_route(LOGOUT_PATH, logout, methods=["GET", "POST"], include_in_schema=False)

@@ -59,6 +59,8 @@ class FakeOidc:
         self.verify_raises: Exception | None = None
         self.exchange_raises: Exception | None = None
         self.refresh_raises: Exception | None = None
+        self.refresh_claims: dict[str, object] | None = None
+        """Claims the scripted refresh answers with; None keeps the login's identity (AUTH-09)."""
         self.end_session: str | None = f"{ISSUER}/protocol/openid-connect/logout"
         self.end_session_raises = False
         self.closed = False
@@ -91,11 +93,19 @@ class FakeOidc:
         )
 
     async def refresh(self, refresh_token: str) -> Tokens:  # noqa: ARG002 - the interface, unused by the answer
-        """The refreshed tokens, or the scripted refusal."""
+        """The refreshed tokens with their claims (the real client verifies the new access token).
+
+        Or the scripted refusal.
+        """
         self.refresh_calls += 1
         if self.refresh_raises is not None:
             raise self.refresh_raises
-        return Tokens(access_token=ISSUER_AT2, refresh_token=ISSUER_RT2, expires_at=time.monotonic() + 300)
+        return Tokens(
+            access_token=ISSUER_AT2,
+            refresh_token=ISSUER_RT2,
+            expires_at=time.monotonic() + 300,
+            claims=dict(self.refresh_claims if self.refresh_claims is not None else CLAIMS),
+        )
 
     async def verify_access_token(self, token: str) -> dict[str, object]:  # noqa: ARG002 - the interface
         """The claims a bearer verifies to, or the scripted refusal."""
@@ -301,12 +311,19 @@ def test__a_navigation_is_told_from_an_api_call(accept: str, path: str, *, html:
         ("/api/atlas/admin/session?a=1", "/api/atlas/admin/session?a=1"),
         ("https://evil.example/steal", "/"),
         ("//evil.example/steal", "/"),
+        ("///evil.example/steal", "/"),
+        ("/\\evil.example/steal", "/"),
+        ("/a\tb", "/"),
         ("javascript:alert(1)", "/"),
         ("relative/path", "/"),
     ],
 )
 def test__a_login_returns_only_to_paths_of_this_origin(raw: str | None, kept: str) -> None:
-    """The kept URL is a path of this origin; anything else falls back to the root (no open redirect)."""
+    """The kept URL is a path of this origin, or the root.
+
+    Anything a browser resolves off-origin — scheme+host, scheme-relative, the extra-slash and
+    backslash forms, control characters — falls back to the root.
+    """
     assert safe_next(raw) == kept
 
 
@@ -431,6 +448,28 @@ async def test__the_browser_flow_ends_with_a_session_cookie(
     assert session.status_code == 200
     assert session.json()["userName"] == "writer"
     assert session.json()["groups"] == ["ADMIN", "aurelius-write"]  # ADM-06
+
+
+@pytest.mark.covers("aurelius_atlas_server.auth.guard.login_callback", rules=["AUTH-07"])
+async def test__a_callback_from_another_browser_mints_no_session(
+    auth_client: tuple[httpx.AsyncClient, FakeOidc, FastAPI],
+) -> None:
+    """The flow belongs to the browser that started it (DD-041).
+
+    Its callback URL, handed to a second browser, answers 401 and mints no session there — the flow
+    cookie is absent from that jar.
+    """
+    client, _, app = auth_client
+    start = await client.get("/api/atlas/auth/login?next=/n/v2", follow_redirects=False)
+    state = httpx.URL(start.headers["location"]).params["state"]
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url=ORIGIN, follow_redirects=False
+    ) as victim:  # a second browser: its own jar, no flow cookie
+        callback = await victim.get("/api/atlas/auth/callback", params={"code": "code-1", "state": state})
+    assert callback.status_code == 401
+    assert "set-cookie" not in callback.headers
+    assert len(app.state.sessions) == 0
 
 
 @pytest.mark.covers("aurelius_atlas_server.auth.guard.login_callback", rules=["AUTH-07"])
@@ -604,6 +643,74 @@ async def test__a_session_near_expiry_refreshes_and_a_failed_refresh_destroys_it
     destroyed = await client.get("/api/atlas/admin/session", headers=_cookie(sid))
     assert destroyed.status_code == 401
     assert app.state.sessions.get(sid) is None  # AUTH-09: destroyed, not answered
+
+
+@pytest.mark.covers("aurelius_atlas_server.auth.guard.authenticate", rules=["AUTH-09"])
+async def test__a_short_lived_token_refreshes_within_its_own_lifetime(
+    auth_client: tuple[httpx.AsyncClient, FakeOidc, FastAPI],
+) -> None:
+    """The refresh window is capped to half the token's lifetime (DD-041).
+
+    A 60 s token is not due while it has more than 30 s left — with the uncapped 60 s skew it
+    would be due on mint.
+    """
+    client, fake, app = auth_client
+    sid, _ = await _login(client)
+    session = app.state.sessions.get(sid)
+    assert session is not None
+    session.access_lifetime_seconds = 60  # what the dev realm issues
+
+    session.access_expires_at = time.monotonic() + 45  # outside the capped 30 s window
+    assert (await client.get("/api/atlas/admin/session", headers=_cookie(sid))).status_code == 200
+    assert fake.refresh_calls == 0
+
+    session.access_expires_at = time.monotonic() + 20  # inside it
+    assert (await client.get("/api/atlas/admin/session", headers=_cookie(sid))).status_code == 200
+    assert fake.refresh_calls == 1
+
+
+@pytest.mark.covers("aurelius_atlas_server.auth.guard.authenticate", rules=["AUTH-09"])
+async def test__a_session_without_a_refresh_token_expires_with_its_access_token(
+    auth_client: tuple[httpx.AsyncClient, FakeOidc, FastAPI],
+) -> None:
+    """A session the issuer gave no refresh token lives only as long as its access token (DD-041).
+
+    Past its expiry the cookie answers 401 and the session is gone — it cannot renew, and the idle
+    timeout does not hold it either.
+    """
+    client, _, app = auth_client
+    sid, _ = await _login(client)
+    session = app.state.sessions.get(sid)
+    assert session is not None
+    session.refresh_token = None
+
+    assert (await client.get("/api/atlas/admin/session", headers=_cookie(sid))).status_code == 200  # still alive
+
+    session.access_expires_at = time.monotonic() - 1  # the token is past
+    assert (await client.get("/api/atlas/admin/session", headers=_cookie(sid))).status_code == 401
+    assert app.state.sessions.get(sid) is None
+
+
+@pytest.mark.covers("aurelius_atlas_server.auth.guard.authenticate", rules=["AUTH-09"])
+async def test__a_refresh_updates_the_sessions_identity(
+    auth_client: tuple[httpx.AsyncClient, FakeOidc, FastAPI],
+) -> None:
+    """The session's user and groups come from the refreshed token (DD-041).
+
+    A role change at the issuer appears in the session instead of being frozen at login.
+    """
+    client, fake, app = auth_client
+    sid, _ = await _login(client)
+    session = app.state.sessions.get(sid)
+    assert session is not None
+    fake.refresh_claims = {**CLAIMS, "realm_access": {"roles": ["reader"]}, "resource_access": {}}
+    session.access_expires_at = time.monotonic() + 10  # inside the window
+
+    response = await client.get("/api/atlas/admin/session", headers=_cookie(sid))
+
+    assert response.status_code == 200
+    assert response.json()["groups"] == ["reader"]
+    assert session.groups == ["reader"]
 
 
 @pytest.mark.covers("aurelius_atlas_server.auth.guard.logout", rules=["AUTH-10"])

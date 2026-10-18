@@ -101,6 +101,35 @@ def test__a_destroyed_session_is_gone() -> None:
     assert len(store) == 0
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_server.auth.sessions.SessionStore.create",
+    "aurelius_atlas_server.auth.sessions.SessionStore.destroy",
+    rules=["AUTH-08"],
+)
+def test__store_activity_sweeps_the_sessions_nobody_presents_anymore() -> None:
+    """An abandoned session is reclaimed by the store's own activity, not only by its cookie (DD-041).
+
+    An idle session goes on the next create or destroy, and one past its absolute lifetime goes
+    even when it keeps being used — the retention bound for the default, timeout-less configuration.
+    """
+    store = SessionStore(idle_seconds=60)
+    abandoned = _create(store)
+    abandoned.last_used_at = time.time() - 61  # its browser closed: nobody presents its cookie
+
+    store.create(
+        username="x", groups=[], access_token=ACCESS, refresh_token=None, access_expires_at=time.monotonic() + 300
+    )
+    assert len(store) == 1  # create swept the idle one
+
+    store2 = SessionStore(idle_seconds=None, max_lifetime_seconds=1)  # no timeout: the bound holds
+    old = _create(store2)
+    old.created_at = time.time() - 2
+    old.last_used_at = time.time()  # kept busy — the bound still applies
+    store2.destroy(None)
+    assert store2.get(old.sid) is None  # destroyed by the sweep, never answered
+    assert len(store2) == 0
+
+
 @pytest.mark.covers("aurelius_atlas_server.auth.csrf.is_browser", rules=["CRS-03"])
 @pytest.mark.parametrize(
     ("user_agent", "browser"),

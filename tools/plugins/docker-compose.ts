@@ -42,6 +42,10 @@ function createNodesInternal(
     // Projects that own TLS material must generate their certificates before any
     // container that mounts ./certs is started.
     const certgen = existsSync(join(projectRoot, "tls.json")) ? [{ target: "certgen" }] : [];
+    // Dependency stacks mount *their* projects' certificates too (the dashboard stack mounts
+    // ../aurelius-atlas-server/certs), so their certgen runs before this stack starts — on a fresh
+    // checkout those PEM files exist only after it. Projects without a certgen target are skipped.
+    const certgenDeps = [{ target: "certgen", dependencies: true }];
 
     const targets: Record<string, TargetConfiguration> = {};
     targets[serveTargetName] = {
@@ -52,6 +56,7 @@ function createNodesInternal(
             ...certgen,
             { target: "docker-build" },
             { target: "docker-build", dependencies: true },
+            ...certgenDeps,
             { target: serveTargetName, dependencies: true },
         ],
         metadata: {
@@ -69,6 +74,7 @@ function createNodesInternal(
             ...certgen,
             { target: "docker-build" },
             { target: "docker-build", dependencies: true },
+            ...certgenDeps,
             { target: upTargetName, dependencies: true },
         ],
         metadata: {

@@ -143,9 +143,22 @@ def sign_in(auth_client: httpx.AsyncClient) -> SignIn:
 
     async def sign_in(next_url: str = "/", *, username: str = WRITER) -> httpx.Response:
         start = await auth_client.get(f"/api/atlas/auth/login?next={next_url}")
-        authorize = await auth_client.get(  # the issuer's login form
-            start.headers["location"], follow_redirects=True
-        )
+        # Walk the issuer's redirects as a browser would, one step at a time: it answers either
+        # its login form or — when its own session is still alive, as after a logout that never
+        # followed the end-session redirect — the callback straight away.
+        authorize = await auth_client.get(start.headers["location"], follow_redirects=False)
+        for _ in range(5):  # a redirect chain that never settles is a bug, not a loop to trust
+            if authorize.status_code in (
+                301,
+                302,
+                303,
+                307,
+                308,
+            ) and "/api/atlas/auth/callback" in authorize.headers.get("location", ""):
+                return await auth_client.get(authorize.headers["location"])  # the SSO path skips the form
+            if "kc-form-login" in authorize.text:
+                break
+            authorize = await auth_client.get(authorize.headers["location"], follow_redirects=False)
         action = _form_action(authorize.text)
         granted = await auth_client.post(action, data={"username": username, "password": _password(username)})
         return await auth_client.get(granted.headers["location"])

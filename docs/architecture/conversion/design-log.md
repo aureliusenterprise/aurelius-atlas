@@ -76,6 +76,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-038](#dd-038-the-sessions-principal-comes-from-the-access-token-not-the-id_token)            | The session's principal comes from the access token, not the id_token            | 6.1       | Proposed             |
 | [DD-039](#dd-039-an-authenticated-scenario-declares-needs_auth-and-skips-off-the-guard-on-stack) | An authenticated scenario declares `needs_auth` and skips off the guard-on stack | 6.1       | Proposed             |
 | [DD-040](#dd-040-the-login-page-is-served-at-loginjsp-and-resolves-to-the-dashboard-in-use)      | The login page is served at `/login.jsp` and resolves to the dashboard in use    | 6.1       | Proposed             |
+| [DD-041](#dd-041-the-relying-party-binds-logins-to-the-browser-and-bounds-its-sessions)          | The relying party binds logins to the browser and bounds its sessions            | 6.1       | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -1052,3 +1053,61 @@ to `dist/` so `nx build` stays a pure build of the vendored source; the dashboar
 untouched (ADR 046). The page resolves in the browser, so no server-side state is added; a browser
 without storage or a failing session call falls back to dashboardv2 as the vendored resolver's
 error branch does.
+
+### DD-041. The relying party binds logins to the browser and bounds its sessions
+
+- **Status:** Proposed
+- **Increment:** 6.1
+- **Date:** 2026-10-18
+
+**Decision.** Five tightenings of the relying party, each a rule of the 6.1 spec:
+
+1. A login flow belongs to the browser that started it. `login_start` sets `ATLASFLOWID` — a random
+   id kept with the pending state — as an `HttpOnly`, `Secure`, `SameSite=Lax` cookie scoped to the
+   auth paths; `login_callback` consumes the state only when the request carries the cookie of that
+   flow, and clears it. A callback from another browser is answered 401 and mints no session.
+2. A bearer credential must be an access token: `verify_access_token` requires the JWT payload's
+   Keycloak type field (`typ: Bearer`, which Keycloak keeps in the payload — the header says `JWT`),
+   so an `id_token` for this client is refused (AUTH-03).
+3. `safe_next` refuses every shape a browser resolves off-origin despite looking like a path:
+   scheme-relative (`//host`), the backslash forms (`/\host`, `\host`) and control characters,
+   beside the scheme+host forms it already refused (AUTH-06).
+4. A session without a refresh token authenticates only until its access token expires, then is
+   destroyed; it cannot renew, and no idle timeout keeps it (AUTH-09).
+5. The refresh window is capped to half the token's issued lifetime (`expires_in`), and a refresh
+   verifies the new access token and re-derives the session's user and groups from its claims
+   (AUTH-09). The session store sweeps expired and over-lifetime entries on every store activity,
+   and no session outlives `MAX_LIFETIME_SECONDS` (8 h) even while its cookie keeps being presented
+   (AUTH-08).
+
+**Reason.** The review found the OIDC dance and the session store too trusting. State was consumed
+globally: an attacker who logged in and handed the unconsumed callback URL to a victim gave the
+victim the attacker's session (login CSRF) — PKCE and the nonce pass, since both live in that state
+entry; only a browser-held secret separates the two browsers. An `id_token` is proof of a login, not
+an API credential; Atlas's adapter reads roles from the access token, and accepting any signed JWT
+lets a long-lived ID token act as a bearer. A `Location` of `///evil.example` or `/\evil.example`
+leaves the origin in a browser, so a kept `next` was still an open redirect after login. A session
+whose issuer gave no refresh token kept authenticating after its tokens expired — with the default
+timeout-less configuration, forever. The dev realm issues 60 s access tokens, exactly the fixed 60 s
+refresh skew, so every session-authenticated request refreshed; and the session's identity was
+frozen at login, so a role change at the issuer never reached `/admin/session` while the adapter of
+Atlas 2.4.0 re-reads roles from the live token. Sessions were reclaimed only when their exact cookie
+was presented; an abandoned session (closed browser, replaced cookie) held memory for the process's
+lifetime.
+
+**Alternatives.** Stateless login (signed state carrying the binding): the server-side entry stays
+for the PKCE verifier, so it saves nothing here. Checking the JWS `typ` header: Keycloak signs with
+`typ: JWT` there and puts `Bearer` in the payload — verified against the running dev issuer.
+Refreshing only at exact expiry: requests racing the expiry would use dead tokens. A background
+reaper task: a task to start, stop and test; store activity is the only moment the size matters.
+A TTL cache library: the store's rules are three (idle, absolute, per-session token expiry), not one.
+
+**Consequences.** AUTH-03, AUTH-06, AUTH-07, AUTH-08 and AUTH-09 state the tightened rules; each has
+a named test (`test__a_callback_from_another_browser_mints_no_session`,
+`test__an_id_token_is_no_bearer_credential`, the `safe_next` table, the refresh and sweep tests).
+The flow cookie is a second cookie beside the session (documented with the flow in
+`docs/architecture/platform/security/identity-management.md`); it names no user and lives ten
+minutes. Dev sessions on 60 s tokens now refresh at the 30 s mark, not per request. A deployment
+issuing sub-minute tokens refreshes proportionally instead of storming the token endpoint. The
+role-change path costs one `principal_of` per refresh, not per request. 8 h matches a dev working
+day; it is a constructor parameter for deployments that want another bound.

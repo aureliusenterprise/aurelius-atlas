@@ -1467,7 +1467,7 @@
                 "display.on.consent.screen": "false",
                 "frontchannel.logout.session.required": "true",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://localhost:8444/*",
+                "post.logout.redirect.uris": "https://localhost:8444/*##https://localhost:21000/*",
                 "realm_client": "false"
             },
             "authenticationFlowBindingOverrides": {},

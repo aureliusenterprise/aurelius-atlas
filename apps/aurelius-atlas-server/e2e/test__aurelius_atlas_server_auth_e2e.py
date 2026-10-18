@@ -6,6 +6,7 @@ login start answers instead (DD-036 splits the same flow between the two). The u
 same rules against a scripted issuer; these prove the port talks to a real one.
 """
 
+import html
 import re
 from collections.abc import Awaitable, Callable
 from urllib.parse import parse_qs, urlparse
@@ -92,6 +93,28 @@ async def test__logout_ends_the_session_and_sends_the_browser_to_the_issuer(
     again = await auth_client.get("/api/atlas/auth/login?next=/")  # a fresh flow starts as before
     assert again.status_code == 302
     assert again.headers["location"].startswith("https://keycloak.localhost:8443")
+
+    # Following the issuer redirect instead of only inspecting its URL: on a session, the end-session
+    # endpoint answers its confirm page (the landing URI is registered — an unregistered one is
+    # refused with an error instead) and confirming walks the browser to the post-logout landing
+    # (DD-040: the direct-server stack's /login.jsp, registered beside the dashboard's).
+    await sign_in()
+    left = await auth_client.get("/logout.html")
+    assert left.status_code == 302
+    confirm = await auth_client.get(left.headers["location"])
+    assert confirm.status_code == 200
+    assert 'id="kc-logout"' in confirm.text  # Keycloak accepted the landing and asks for the final click
+    action = re.search(r'<form class="form-actions" action="([^"]+)"', confirm.text)  # the confirm form
+    session_code = re.search(r'name="session_code" value="([^"]*)"', confirm.text)  # its one hidden field
+    assert action is not None
+    assert session_code is not None
+    # The form's action is relative to the issuer; the client's base is the server, so join it
+    # against the confirm response's own URL.
+    done = await auth_client.post(
+        str(confirm.url.join(html.unescape(action.group(1)))), data={"session_code": session_code.group(1)}
+    )
+    assert done.status_code == 302
+    assert done.headers["location"] == "https://localhost:21000/login.jsp"
 
 
 @pytest.mark.asyncio(loop_scope="module")

@@ -77,16 +77,17 @@ sequenceDiagram
     N-->>B: 302 /api/atlas/auth/login?next=/n/ (error_page lands in @login)
     B->>S: GET /api/atlas/auth/login?next=/n/ (proxied /api/)
     Note over S: keeps next=/n/ and mints state + nonce (AUTH-06)
-    S-->>B: 302 authorize URL (PKCE, registered redirect_uri)
+    S-->>B: 302 authorize URL (PKCE, registered redirect_uri) with Set-Cookie ATLASFLOWID (DD-041)
     B->>K: GET /protocol/openid-connect/auth?...
     K-->>B: login form (#kc-form-login)
     B->>K: username + password
     Note over K: signs an access token (realm roles) and an id_token (nonce)
     K-->>B: 302 callback?code=...&state=...
     B->>S: GET /api/atlas/auth/callback (AUTH-07)
+    Note over S: state and flow cookie must name the same flow (DD-041)
     S->>K: POST token (code + PKCE verifier)
     K-->>S: access_token, id_token, refresh_token
-    Note over S: verifies both, session minted from the ACCESS token claims (DD-038)
+    Note over S: verifies both, session minted from the ACCESS token claims (DD-038) and flow cookie cleared
     S-->>B: 302 /n/ with Set-Cookie ATLASSESSIONID
     B->>N: GET /n/ again
     N->>S: auth_request /api/atlas/auth/check
@@ -99,6 +100,14 @@ keeps realm and client roles out of the `id_token`, and Atlas's own
 `AtlasKeycloakAuthenticationProvider` reads the access token too — which the token-exchange test
 asserts with a roleless `id_token` and a roled access token. `GET /api/atlas/admin/session` then
 reports `userName` and `groups` (the union of realm and client roles) to the dashboard (ADM-06).
+
+Two bindings keep the dance honest (DD-041). The kept URL is only ever a path of this origin — the
+scheme+host, leading-`//`, backslash and control-character shapes a browser would still resolve
+off-origin all fall back to the root (AUTH-06). And the flow belongs to the browser that started
+it: the login start sets a short-lived `HttpOnly` `Secure` `SameSite=Lax` `ATLASFLOWID` cookie, and
+the callback consumes its state only when the request carries it — a callback URL handed to another
+browser is answered 401 and mints no session, closing the login-CSRF shape PKCE and the nonce
+cannot see (AUTH-07).
 
 ## Signing out, and back to the dashboard you left
 

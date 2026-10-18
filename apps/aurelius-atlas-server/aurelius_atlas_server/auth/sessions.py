@@ -14,6 +14,10 @@ from typing import Any
 CSRF_TOKEN_LENGTH = 20
 _CSRF_ALPHABET = string.ascii_letters + string.digits
 
+MAX_LIFETIME_SECONDS = 8 * 3600
+"""The absolute bound on a session's life (DD-041): with no idle timeout configured, this is the
+retention policy — a session is gone by its next store activity after it, however often it was used."""
+
 
 def csrf_token() -> str:
     """A new random CSRF token of 20 letters and digits, as ``AdminResource.getUserProfile`` makes one."""
@@ -37,6 +41,10 @@ class Session:
     last_used_at: float
     """Wall time, so the idle check survives a restart of the monotonic clock being irrelevant."""
 
+    access_lifetime_seconds: float = 300.0
+    """The access token's issued lifetime: caps the refresh window, so a short-lived token refreshes
+    within its own lifetime (AUTH-09)."""
+
     transient: dict[str, Any] = field(default_factory=dict)
     """Per-login scratch (``state``/``nonce``/``next`` of the flow, removed once used)."""
 
@@ -44,9 +52,10 @@ class Session:
 class SessionStore:
     """The in-memory sessions keyed by their id cookie (AUTH-08)."""
 
-    def __init__(self, *, idle_seconds: int | None = None) -> None:
+    def __init__(self, *, idle_seconds: int | None = None, max_lifetime_seconds: float = MAX_LIFETIME_SECONDS) -> None:
         self._sessions: dict[str, Session] = {}
         self._idle_seconds = idle_seconds
+        self._max_lifetime_seconds = max_lifetime_seconds
 
     def __len__(self) -> int:
         return len(self._sessions)
@@ -61,6 +70,7 @@ class SessionStore:
         access_expires_at: float,
     ) -> Session:
         """A new session for an authenticated user (AUTH-07)."""
+        self._sweep()
         now = time.time()
         session = Session(
             sid=secrets.token_urlsafe(32),
@@ -70,6 +80,9 @@ class SessionStore:
             access_token=access_token,
             refresh_token=refresh_token,
             access_expires_at=access_expires_at,
+            # The expiry handed in was minted as "now + expires_in", so the difference here recovers
+            # the token's issued lifetime — the value the refresh window is capped by (AUTH-09).
+            access_lifetime_seconds=max(access_expires_at - time.monotonic(), 0.0),
             created_at=now,
             last_used_at=now,
         )
@@ -95,6 +108,23 @@ class SessionStore:
 
     def destroy(self, sid: str | None) -> Session | None:
         """Remove and return the session, for logout (AUTH-10) or a failed refresh (AUTH-09)."""
+        self._sweep()
         if sid is None:
             return None
         return self._sessions.pop(sid, None)
+
+    def _sweep(self) -> None:
+        """Drop every expired session, whether or not its cookie is being presented (DD-041).
+
+        Runs on store activity — the events that grow the store — so a closed browser or a replaced
+        cookie cannot leave a session resident for the process's lifetime: each is gone by the next
+        activity after it went idle (when a timeout is configured) or past its absolute lifetime.
+        """
+        now = time.time()
+        for sid in [
+            sid
+            for sid, session in self._sessions.items()
+            if (self._idle_seconds is not None and now - session.last_used_at > self._idle_seconds)
+            or now - session.created_at > self._max_lifetime_seconds
+        ]:
+            del self._sessions[sid]

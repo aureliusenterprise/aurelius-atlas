@@ -73,6 +73,11 @@ def _claims(**overrides: Any) -> dict[str, Any]:  # noqa: ANN401 - claim values 
     return claims
 
 
+def _access_claims(**overrides: Any) -> dict[str, Any]:  # noqa: ANN401 - claim values are arbitrary JSON
+    """Claims as an access token carries them: Keycloak marks those with ``typ: Bearer`` in the payload."""
+    return _claims(typ="Bearer", **overrides)
+
+
 def _issuer(private_key: rsa.RSAPrivateKey, tokens: dict[str, Any] | None = None) -> httpx.MockTransport:
     """The transport answering discovery, JWKS and the token endpoint for one client."""
 
@@ -130,11 +135,25 @@ async def test__the_authorization_url_starts_a_code_flow_with_pkce(private_key: 
 async def test__a_bearer_token_the_issuer_signs_verifies(private_key: rsa.RSAPrivateKey) -> None:
     """A token signed by the issuer with this client's audience gives its claims back."""
     client = _client(private_key)
-    token = _token(private_key, _claims())
+    token = _token(private_key, _access_claims())
 
     claims = await client.verify_access_token(token)
 
     assert claims["preferred_username"] == "writer"
+    await client.aclose()
+
+
+@pytest.mark.covers("aurelius_atlas_server.auth.oidc.OidcClient.verify_access_token", rules=["AUTH-03"])
+async def test__an_id_token_is_no_bearer_credential(private_key: rsa.RSAPrivateKey) -> None:
+    """An ID token is refused as a bearer credential (AUTH-03, DD-041).
+
+    The same issuer, this client, all shared checks passed — it proves a login, not API access.
+    """
+    client = _client(private_key)
+    id_token = _token(private_key, _claims(typ="ID"))
+
+    with pytest.raises(TokenError, match="not an access token"):
+        await client.verify_access_token(id_token)
     await client.aclose()
 
 
@@ -154,7 +173,7 @@ async def test__a_bearer_token_that_does_not_verify_is_rejected(
     """A token from another issuer, for another client, or past its expiry is refused (AUTH-03)."""
     client = _client(private_key)
     _ = problem
-    token = _token(private_key, _claims(**claim_overrides))
+    token = _token(private_key, _access_claims(**claim_overrides))
 
     with pytest.raises(TokenError):
         await client.verify_access_token(token)
@@ -190,9 +209,9 @@ async def test__a_rotated_key_is_found_by_reloading_the_jwks(private_key: rsa.RS
         client_secret=RP_CREDENTIAL,
         http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
     )
-    await client.verify_access_token(_token(private_key, _claims()))  # warms the JWKS cache
+    await client.verify_access_token(_token(private_key, _access_claims()))  # warms the JWKS cache
 
-    claims = await client.verify_access_token(_token(rotated, _claims(), kid="rotated"))
+    claims = await client.verify_access_token(_token(rotated, _access_claims(), kid="rotated"))
     assert claims["preferred_username"] == "writer"
     await client.aclose()
 
@@ -212,7 +231,7 @@ async def test__a_token_signed_by_nobody_we_trust_is_rejected(private_key: rsa.R
 async def test__the_callback_exchange_verifies_the_id_token(private_key: rsa.RSAPrivateKey) -> None:
     """The code exchange returns verified tokens; the id_token's nonce must match the login's."""
     id_token = _token(private_key, _claims(nonce="n0nce"))
-    access_token = _token(private_key, _claims())
+    access_token = _token(private_key, _access_claims())
     tokens = {"access_token": access_token, "refresh_token": ISSUER_RT, "expires_in": 300, "id_token": id_token}
     client = _client(private_key, tokens)
 
@@ -232,7 +251,7 @@ async def test__the_session_claims_come_from_the_access_token(private_key: rsa.R
     groups. Atlas's provider reads the access token, so the exchange verifies it and takes its claims.
     """
     id_token = _token(private_key, _claims(nonce="n0nce", realm_access=None, resource_access=None))
-    access_token = _token(private_key, _claims(aud="aurelius"))  # what a real Keycloak issues: aud=resource
+    access_token = _token(private_key, _access_claims(aud="aurelius"))  # what a real Keycloak issues: aud=resource
     tokens = {
         "access_token": access_token,
         "refresh_token": ISSUER_RT,
@@ -263,16 +282,36 @@ async def test__an_id_token_with_the_wrong_nonce_is_refused(private_key: rsa.RSA
 
 
 @pytest.mark.covers("aurelius_atlas_server.auth.oidc.OidcClient.refresh", rules=["AUTH-09"])
-async def test__a_refresh_gives_new_access_without_an_id_token(private_key: rsa.RSAPrivateKey) -> None:
-    """The refresh grant returns a new access token; no id_token is verified."""
-    tokens = {"access_token": ISSUER_AT2, "refresh_token": ISSUER_RT2, "expires_in": 300}
+async def test__a_refresh_verifies_the_new_access_token_and_returns_its_claims(private_key: rsa.RSAPrivateKey) -> None:
+    """The refresh grant returns a verified new access token and its claims (AUTH-09).
+
+    The session's identity is taken from them; no id_token appears in a refresh response.
+    """
+    access2 = _token(private_key, _access_claims(realm_access={"roles": ["reader"]}, resource_access={}))
+    tokens = {"access_token": access2, "refresh_token": ISSUER_RT2, "expires_in": 300}
     client = _client(private_key, tokens)
 
     refreshed = await client.refresh("rt")
 
-    assert refreshed.access_token == ISSUER_AT2
+    assert refreshed.access_token == access2
     assert refreshed.refresh_token == ISSUER_RT2
-    assert refreshed.claims == {}
+    assert principal_of(refreshed.claims, CLIENT_ID)[1] == ["reader"]
+    assert refreshed.lifetime_seconds == 300
+    await client.aclose()
+
+
+@pytest.mark.covers("aurelius_atlas_server.auth.oidc.OidcClient.refresh", rules=["AUTH-09"])
+async def test__a_refresh_answering_an_unverifiable_access_token_is_refused(private_key: rsa.RSAPrivateKey) -> None:
+    """A refresh response whose access token does not verify is a TokenError.
+
+    The session is not kept on an unverifiable credential.
+    """
+    stranger = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    tokens = {"access_token": _token(stranger, _access_claims()), "expires_in": 300}
+    client = _client(private_key, tokens)
+
+    with pytest.raises(TokenError):
+        await client.refresh("rt")
     await client.aclose()
 
 
