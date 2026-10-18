@@ -3485,6 +3485,8 @@
       
         
       
+        
+      
     
     
     
@@ -3823,6 +3825,33 @@
     
   
   1.4 Typedef store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-5-builtin-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.5 Built-in models and patches
 
     
   </span>
@@ -5809,6 +5838,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Until 6.1, absent</td>
 <td>There is no login until 6.1; removed then</td>
 <td>1.4</td>
+</tr>
+<tr>
+<td>DV-07</td>
+<td>Types</td>
+<td>The built-in model types and the patch records name the operating system account the server runs as</td>
+<td>Name no user</td>
+<td>The account is an accident of deployment, and is the same for every type a process loads</td>
+<td>1.5</td>
+</tr>
+<tr>
+<td>DV-08</td>
+<td>Types</td>
+<td>A patch without an id is recorded, without an id, at every start</td>
+<td>Is applied at every start and not recorded</td>
+<td>A record without an id cannot be found again; Atlas never matches it either</td>
+<td>1.5</td>
 </tr>
 </tbody>
 </table>

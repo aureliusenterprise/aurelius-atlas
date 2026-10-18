@@ -1,6 +1,6 @@
 # aurelius-atlas-model
 
-Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON.
+Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): the patch record `AtlasPatch`.
 
 ```
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -3716,15 +3716,6 @@ The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
   "type": "object"
 }
 ```
-
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
 
 #### model\_config
 
@@ -7672,3 +7663,287 @@ map_type_name(key_type_name: str, value_type_name: str) -> str
 ```
 
 The name of the map type from `key_type_name` to `value_type_name`: `map<K,V>` (TDM-19).
+
+## aurelius\_atlas\_model.patches
+
+Patch records: which patch was applied, and how it ended (`org.apache.atlas.model.patches`, MDL-06).
+
+Classes:
+
+- **`AtlasPatch`** –
+
+  The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
+- **`PatchStatus`** –
+
+  How a patch ended (`AtlasPatch.PatchStatus`).
+
+Attributes:
+
+- **`TYPEDEF_PATCH_TYPE`** –
+
+  The `type` of a typedef patch's record (`AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE`).
+
+### TYPEDEF\_PATCH\_TYPE
+
+```
+TYPEDEF_PATCH_TYPE = 'TYPEDEF_PATCH'
+```
+
+The `type` of a typedef patch's record (`AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE`).
+
+### AtlasPatch
+
+Bases: `AtlasModel`
+
+The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "PatchStatus": {
+      "description": "How a patch ended (``AtlasPatch.PatchStatus``).",
+      "enum": [
+        "UNKNOWN",
+        "APPLIED",
+        "SKIPPED",
+        "FAILED"
+      ],
+      "title": "PatchStatus",
+      "type": "string"
+    }
+  },
+  "description": "The record of one patch (``AtlasPatch``); the times are epoch milliseconds.",
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Type"
+    },
+    "action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Action"
+    },
+    "updatedBy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Updatedby"
+    },
+    "createdBy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Createdby"
+    },
+    "createdTime": {
+      "default": 0,
+      "title": "Createdtime",
+      "type": "integer"
+    },
+    "updatedTime": {
+      "default": 0,
+      "title": "Updatedtime",
+      "type": "integer"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PatchStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "AtlasPatch",
+  "type": "object"
+}
+```
+
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
+Fields:
+
+- `id` (`str | None`)
+- `description` (`str | None`)
+- `type` (`str | None`)
+- `action` (`str | None`)
+- `updated_by` (`str | None`)
+- `created_by` (`str | None`)
+- `created_time` (`int`)
+- `updated_time` (`int`)
+- `status` (`PatchStatus | None`)
+
+#### action
+
+```
+action: str | None = None
+```
+
+#### created\_by
+
+```
+created_by: str | None = None
+```
+
+#### created\_time
+
+```
+created_time: int = 0
+```
+
+#### description
+
+```
+description: str | None = None
+```
+
+#### id
+
+```
+id: str | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### status
+
+```
+status: PatchStatus | None = None
+```
+
+#### type
+
+```
+type: str | None = None
+```
+
+#### updated\_by
+
+```
+updated_by: str | None = None
+```
+
+#### updated\_time
+
+```
+updated_time: int = 0
+```
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+### PatchStatus
+
+Bases: `StrEnum`
+
+How a patch ended (`AtlasPatch.PatchStatus`).
+
+Attributes:
+
+- **`APPLIED`** –
+- **`FAILED`** –
+- **`SKIPPED`** –
+- **`UNKNOWN`** –
+
+#### APPLIED
+
+```
+APPLIED = 'APPLIED'
+```
+
+#### FAILED
+
+```
+FAILED = 'FAILED'
+```
+
+#### SKIPPED
+
+```
+SKIPPED = 'SKIPPED'
+```
+
+#### UNKNOWN
+
+```
+UNKNOWN = 'UNKNOWN'
+```

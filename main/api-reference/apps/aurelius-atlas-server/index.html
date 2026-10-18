@@ -1122,6 +1122,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.models_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;models_dir
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.port" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -4130,6 +4141,8 @@
       
         
       
+        
+      
     
     
     
@@ -4468,6 +4481,33 @@
     
   
   1.4 Typedef store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/1-5-builtin-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.5 Built-in models and patches
 
     
   </span>
@@ -6394,6 +6434,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.models_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;models_dir
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.port" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7093,6 +7144,12 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dashboard Dir"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"models_dir"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/home/runner/work/aurelius-atlas/aurelius-atlas/libs/python/aurelius-atlas-core/aurelius_atlas_core/models"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"path"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Models Dir"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"typedef_refresh_seconds"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
@@ -7205,6 +7262,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.dashboard_dir)" href="./#aurelius_atlas_server.settings.ServerSettings.dashboard_dir">dashboard_dir</a></code>
                 (<code><span title="pydantic.DirectoryPath">DirectoryPath</span> | None</code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            models_dir
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.models_dir)" href="./#aurelius_atlas_server.settings.ServerSettings.models_dir">models_dir</a></code>
+                (<code><span title="pathlib.Path">Path</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            typedef_refresh_seconds
@@ -7466,6 +7532,36 @@ Elasticsearch settings; it does not start without its store.</p>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.models_dir" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">models_dir</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.models_dir" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">models_dir</span><span class="p">:</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            BUILTIN_MODELS_DIR
+
+
+  
+      module-attribute
+   (aurelius_atlas_core.model_loader.BUILTIN_MODELS_DIR)" href="../../libs/python/aurelius-atlas-core/#aurelius_atlas_core.model_loader.BUILTIN_MODELS_DIR">BUILTIN_MODELS_DIR</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The models loaded at start-up: by default <code>addons/models</code> of Apache Atlas 2.4.0; a missing directory loads
+none (MDL-01, MDL-16, DD-032).</p>
 
     </div>
 
@@ -7874,7 +7970,8 @@ starts, which fails when the store cannot be opened (SRV-02), and closed when it
           </div>
         </li>
     </ul>
-        <p>The type registry is loaded from the stored type definitions when the application starts (TDS-12).</p>
+        <p>The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
+models are loaded and patched (MDL-16).</p>
 
 
     </div>

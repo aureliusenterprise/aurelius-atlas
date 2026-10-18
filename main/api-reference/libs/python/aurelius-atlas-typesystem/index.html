@@ -1936,6 +1936,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;update_types_without_resolving
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6327,6 +6338,8 @@
       
         
       
+        
+      
     
     
     
@@ -6665,6 +6678,33 @@
     
   
   1.4 Typedef store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/1-5-builtin-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.5 Built-in models and patches
 
     
   </span>
@@ -8882,6 +8922,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;update_types
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;update_types_without_resolving
       </span>
     </span>
   </a>
@@ -11800,6 +11851,13 @@ and release it with or without committing; until the commit, readers see the reg
               <p>Replace each definition by GUID, else by name, then resolve (TRG-07, TRG-09).</p>
             </div>
           </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            update_types_without_resolving (aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving)" href="./#aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving">update_types_without_resolving</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Replace each definition by GUID, else by name, and leave resolving to the next change (MDL-03).</p>
+            </div>
+          </li>
     </ul>
 
 
@@ -12674,6 +12732,38 @@ and release it with or without committing; until the commit, readers see the reg
     <div class="doc doc-contents ">
 
         <p>Replace each definition by GUID, else by name, then resolve (TRG-07, TRG-09).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">update_types_without_resolving</span>
+
+
+<a href="#aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">update_types_without_resolving</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_typesystem.registry.TransientTypeRegistry.update_types_without_resolving(typedefs)">typedefs</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Iterable">Iterable</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            AtlasBaseTypeDef
+
+
+  
+      pydantic-model
+   (aurelius_atlas_model.typedef.AtlasBaseTypeDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasBaseTypeDef">AtlasBaseTypeDef</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasTypesDef
+
+
+  
+      pydantic-model
+   (aurelius_atlas_model.typedef.AtlasTypesDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasTypesDef">AtlasTypesDef</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Replace each definition by GUID, else by name, and leave resolving to the next change (MDL-03).</p>
+<p><code>updateTypesWithNoRefResolve</code>: <code>createUpdateTypesDef</code> replaces the updated definitions first, so
+that the definitions it then creates resolve against them.</p>
 
 
     </div>

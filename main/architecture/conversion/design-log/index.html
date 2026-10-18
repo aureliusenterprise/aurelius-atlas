@@ -3788,6 +3788,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-031-the-patch-records-live-in-the-typedef-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-031. The patch records live in the typedef document
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-032. The built-in models are vendored unchanged and read from a directory
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-033. Start-up loading is one change per model file and per patch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3867,6 +3900,8 @@
       
         
           
+        
+      
         
       
         
@@ -4229,6 +4264,33 @@
     
   
   1.4 Typedef store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-5-builtin-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.5 Built-in models and patches
 
     
   </span>
@@ -6397,6 +6459,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-031-the-patch-records-live-in-the-typedef-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-031. The patch records live in the typedef document
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-032. The built-in models are vendored unchanged and read from a directory
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-033. Start-up loading is one change per model file and per patch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6747,6 +6842,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use">DD-030</a></td>
 <td>The store asks the entity store whether a type is in use</td>
 <td>1.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-031-the-patch-records-live-in-the-typedef-document">DD-031</a></td>
+<td>The patch records live in the typedef document</td>
+<td>1.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory">DD-032</a></td>
+<td>The built-in models are vendored unchanged and read from a directory</td>
+<td>1.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch">DD-033</a></td>
+<td>Start-up loading is one change per model file and per patch</td>
+<td>1.5</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -7305,6 +7418,61 @@ core's entity store to the typedef store.</p>
 <p><strong>Alternatives.</strong> Query the entity index from the typedef store: couples it to an index that does not
 exist yet.</p>
 <p><strong>Consequences.</strong> 2.2 passes its own check when it builds the stores.</p>
+<h3 id="dd-031-the-patch-records-live-in-the-typedef-document">DD-031. The patch records live in the typedef document<a class="headerlink" href="#dd-031-the-patch-records-live-in-the-typedef-document" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.5</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> The <code>typedefs</code> document of DD-028 holds, next to <code>typesDef</code>, a list <code>patches</code> of
+<code>AtlasPatch</code> records: one per typedef patch id, with its description, type, action, status and times.
+A patch's record is written in the same document write as the type change it makes.</p>
+<p><strong>Reason.</strong> Atlas keeps patch records as graph vertices and commits them after the type change, so a
+crash between the two applies a patch twice, which the <code>typeVersion</code> check mostly hides. One document
+makes the change and its record atomic, and gives both the single version of DD-029: a process that
+loses a race reloads the records with the types, and sees the patch as already applied (MDL-15).</p>
+<p><strong>Alternatives.</strong> A second document, or an index of patch records: queryable by <code>admin/patches</code>, but two
+writes per patch, and a race between processes needs its own conditional write.</p>
+<p><strong>Consequences.</strong> <code>admin/patches</code> (2.2) reads the records from the document. The Java patches of 2.2,
+which change entities rather than types, may keep their records elsewhere; 2.2 decides.</p>
+<h3 id="dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory">DD-032. The built-in models are vendored unchanged and read from a directory<a class="headerlink" href="#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.5</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> <code>addons/models</code> of Apache Atlas <code>release-2.4.0</code> is copied byte for byte into the package
+<code>aurelius_atlas_core.models</code>, and kept out of the formatting hooks. The server loads models from
+<code>AURELIUS_ATLAS_SERVER_MODELS_DIR</code>, which defaults to that package directory.</p>
+<p><strong>Reason.</strong> Atlas reads its models from <code>$ATLAS_HOME/models</code>, so operators add their own model files and
+patches there;
+a directory setting keeps that. Unchanged copies let a reviewer prove them unchanged with a diff against
+the tag, as for the dashboards (DD-017), and ship in the wheel without a build step. The line endings are
+kept too: one patch file has CRLF, so the directory is <code>-text</code> in <code>.gitattributes</code>.</p>
+<p><strong>Alternatives.</strong> Converting the models to Python data: no diff against Atlas, and no way to add models
+without a release. Reading them from a checkout of Atlas at build time: the build would depend on a
+second repository.</p>
+<p><strong>Consequences.</strong> A newer Atlas version's models are a new copy and a check of the new patches against
+the nine actions.</p>
+<h3 id="dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch">DD-033. Start-up loading is one change per model file and per patch<a class="headerlink" href="#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.5</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> Each model file and each patch is one change of the typedef store (DD-029): what to create,
+update or patch is decided inside the change, on the definitions and patch records just read, and decided
+again when a conditional write loses to another process.</p>
+<p><strong>Reason.</strong> Atlas loads models only on its one active server. Here every process starts the same way,
+possibly at the same moment; deciding inside the change makes a second process see the first one's types
+and records, so it creates, updates and patches nothing twice. One change per file and per patch keeps
+Atlas's isolation: a failing file or patch leaves the others applied (MDL-04, MDL-06).</p>
+<p><strong>Alternatives.</strong> All files and patches in one change: one write, but a failure would need the transient
+registry to roll back part of a change. A lock document held while loading: needs expiry when its
+holder dies (as in DD-029).</p>
+<p><strong>Consequences.</strong> The first start against an empty store writes the document once per model file and
+patch, a few hundred writes of the whole document; later starts write nothing unless a model or patch is
+new. Two processes starting together may each retry once per change.</p>
 
 
 

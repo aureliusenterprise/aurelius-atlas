@@ -99,6 +99,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Dashboard Dir"
 >     },
+>     "models_dir": {
+>       "default": "/home/runner/work/aurelius-atlas/aurelius-atlas/libs/python/aurelius-atlas-core/aurelius_atlas_core/models",
+>       "format": "path",
+>       "title": "Models Dir",
+>       "type": "string"
+>     },
 >     "typedef_refresh_seconds": {
 >       "default": 5.0,
 >       "minimum": 0,
@@ -162,6 +168,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tls_cert_file` (`FilePath | None`)
 > - `tls_key_file` (`FilePath | None`)
 > - `dashboard_dir` (`DirectoryPath | None`)
+> - `models_dir` (`Path`)
 > - `typedef_refresh_seconds` (`float`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
@@ -234,6 +241,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 > model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra='ignore')
 > ```
+>
+> ### models\_dir
+>
+> ```
+> models_dir: Path = BUILTIN_MODELS_DIR
+> ```
+>
+> The models loaded at start-up: by default `addons/models` of Apache Atlas 2.4.0; a missing directory loads none (MDL-01, MDL-16, DD-032).
 >
 > ### port
 >
@@ -355,7 +370,7 @@ Parameters:
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
 
-The type registry is loaded from the stored type definitions when the application starts (TDS-12).
+The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16).
 
 ### mount\_dashboards
 

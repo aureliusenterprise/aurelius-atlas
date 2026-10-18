@@ -156,6 +156,9 @@ Methods:
 - **`update_types`** –
 
   Replace each definition by GUID, else by name, then resolve (TRG-07, TRG-09).
+- **`update_types_without_resolving`** –
+
+  Replace each definition by GUID, else by name, and leave resolving to the next change (MDL-03).
 
 Attributes:
 
@@ -450,6 +453,16 @@ update_types(typedefs: Iterable[AtlasBaseTypeDef] | AtlasTypesDef | None) -> Non
 ```
 
 Replace each definition by GUID, else by name, then resolve (TRG-07, TRG-09).
+
+#### update\_types\_without\_resolving
+
+```
+update_types_without_resolving(typedefs: Iterable[AtlasBaseTypeDef] | AtlasTypesDef | None) -> None
+```
+
+Replace each definition by GUID, else by name, and leave resolving to the next change (MDL-03).
+
+`updateTypesWithNoRefResolve`: `createUpdateTypesDef` replaces the updated definitions first, so that the definitions it then creates resolve against them.
 
 ### TypeRegistry
 
