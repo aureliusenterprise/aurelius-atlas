@@ -77,6 +77,22 @@ async def test__dashboardv3_without_a_slash_redirects(dashboard_client: httpx.As
 
 
 @pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.covers(rules=["DSH-10"])
+async def test__an_upstream_redirect_keeps_the_origin_port(dashboard: str, dashboard_client: httpx.AsyncClient) -> None:
+    """A redirect the server generates keeps the browser's origin, port included (DSH-10).
+
+    FastAPI slash-normalizes ``/api/atlas/admin/liveness/`` with an absolute 307 built from the Host
+    header the proxy forwards; ``$host`` would drop the published port and send the client to
+    ``https://localhost/`` — off-origin. The proxy forwards ``$http_host``, so the Location stays on
+    this origin.
+    """
+    response = await dashboard_client.get("/api/atlas/admin/liveness/", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == f"{dashboard}/api/atlas/admin/liveness"
+
+
+@pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.covers(rules=["DSH-03"])
 @pytest.mark.parametrize(
     ("path", "status"), [("/api/atlas/admin/status", 200), ("/missing.js", 404), ("/n/missing.js", 404)]

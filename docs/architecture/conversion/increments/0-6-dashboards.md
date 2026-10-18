@@ -41,6 +41,7 @@ answer yet. That is the expected state, not a deviation.
 | DSH-04 | The server serves the API only: on its own origin, no dashboard path answers                                                                                |
 | DSH-05 | The dashboards are built from the vendored `release-2.4.0` source, changed only by the patches in `apps/aurelius-atlas-dashboard/PATCHES.md`                |
 | DSH-06 | In a browser, each dashboard loads from the dashboard image and asks it for `/api/atlas/admin/session`, which answers 200                                   |
+| DSH-10 | The proxy forwards the origin's Host, port included, so an upstream-generated absolute redirect (FastAPI's slash normalization) keeps the public origin     |
 
 DSH-05 keeps the dashboards those of Atlas 2.4.0: the vendored source is byte-identical to the tag and
 every change is one reviewed patch
@@ -75,5 +76,5 @@ identical to Atlas's build.
 aurelius-atlas-dashboard` and by the dashboard image's build.
 - `apps/aurelius-atlas-dashboard/` — its stack (`docker-compose.yaml`) runs the dashboard image and the
   API-only server on the dev store, and its `e2e/` tests prove both dashboards, the `/n` redirect, the
-  proxy's precedence and the server's API-only origin (DSH-01 to DSH-04) against it, plus both
-  dashboards in Chromium against the dashboard image (DSH-05, DSH-06).
+  proxy's precedence, the forwarded Host and the server's API-only origin (DSH-01 to DSH-04, DSH-10)
+  against it, plus both dashboards in Chromium against the dashboard image (DSH-05, DSH-06).

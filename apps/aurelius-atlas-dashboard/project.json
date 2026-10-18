@@ -56,7 +56,8 @@
             "options": {
                 "command": "uv run pytest e2e",
                 "cwd": "{projectRoot}"
-            }
+            },
+            "outputs": ["{projectRoot}/junit-e2e.xml", "{projectRoot}/trace-e2e.json"]
         }
     }
 }
