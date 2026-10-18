@@ -1,0 +1,5 @@
+{
+    "services": {
+        "aurelius-atlas-dashboard": ["aurelius-atlas-dashboard", "localhost", "127.0.0.1"]
+    }
+}

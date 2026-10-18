@@ -5,8 +5,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 
 ## Layout
 
-- `aurelius_atlas_server/app.py` — `create_app`: the store's lifetime, the error handler, the routers;
-  `mount_dashboards`: the built dashboards after the routers (DD-018)
+- `aurelius_atlas_server/app.py` — `create_app`: the store's lifetime, the error handler, the routers.
+  The API only: the dashboards live in the dashboard image (DD-034)
 - `aurelius_atlas_server/settings.py` — `ServerSettings` (`AURELIUS_ATLAS_SERVER_` prefix)
 - the lifespan in `app.py` opens the store, loads the type registry through `TypedefStore` (TDS-12), then
   the models of `models_dir` through `ModelLoader` (MDL-16); `app.state.type_registry` and
@@ -14,9 +14,16 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   since Atlas's models take seconds to load; only the MDL-16 test loads them
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
+- `aurelius_atlas_server/auth/` — the OIDC relying party (6.1): `guard.py` is the one middleware the
+  request pipeline runs (public paths, CSRF, bearer, session, login start — AUTH-01..10/CRS-01..03);
+  `oidc.py` the issuer client, `sessions.py` the in-memory store, `csrf.py` the filter's check. The
+  browser flow starts at the dashboard origin, which gates pages and proxies `/api/` here (DD-036);
+  rules in the [6.1 spec](../../docs/architecture/conversion/increments/6-1-authentication.md),
+  flow and diagrams in [Identity Management](../../docs/architecture/platform/security/identity-management.md)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
-- `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the image over HTTPS on the dev store
+- `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the server image AND the dashboard
+  image over HTTPS on the dev store (the dashboard origin proxies `/api/` here)
 
 ## Porting an Atlas resource
 
@@ -29,22 +36,22 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 
 ## Wiring Checklist
 
-- `project.json` — `implicitDependencies` and `serve` `dependsOn` (dev Elasticsearch, observability, the
-  dashboard build). `docker-build` and `docker-publish` repeat the plugin's `dependsOn` and add the
-  dashboard build: the plugin only chains the dependencies' `docker-build`, which the dashboard has not.
+- `project.json` — `implicitDependencies` and `serve` `dependsOn` (dev Elasticsearch, observability).
 - `.env.enc` — dev settings; the Elasticsearch password mirrors `dev/elasticsearch/.env`. Re-run
   `nx encrypt aurelius-atlas-server` after changing `.env`.
 - `tls.json` — the server's certificate (`nx certgen`), used by `serve` and `e2e`.
-- `Dockerfile` — installs the wheel `nx build` makes, with the workspace libraries bundled in, and copies
-  the built dashboards (`aurelius-atlas-dashboard/dist`).
-- `e2e/docker-compose.yaml` — the image on the dev store's network, reached as `elasticsearch:9200`.
+- `Dockerfile` — installs the wheel `nx build` makes, with the workspace libraries bundled in. It serves
+  the API only (DD-034).
+- `e2e/docker-compose.yaml` — the server image on the dev store's network, the stack the parity
+  scenarios run against. The dashboards and their proxy live with the dashboard project
+  (`apps/aurelius-atlas-dashboard/e2e/`, DD-034).
 
 ## Commands
 
 ```bash
-npx nx serve aurelius-atlas-server
+npx nx serve aurelius-atlas-server        # API only, https://localhost:21000
 npx nx test aurelius-atlas-server -c ci
-npx nx e2e aurelius-atlas-server -c ci    # builds the image, starts the dev store
+npx nx e2e aurelius-atlas-server -c ci    # parity scenarios: builds the image, starts the dev store
 uv run pytest apps/aurelius-atlas-server/tests
 ```
 

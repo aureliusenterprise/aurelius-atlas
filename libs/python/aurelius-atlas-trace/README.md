@@ -35,5 +35,7 @@ functions whose tests did not run in this change show as _not run_. Parity scena
 ([aurelius-atlas-parity](../aurelius-atlas-parity/README.md)) get one row per endpoint, and `check`
 refuses a scenario whose deviation id is not in the deviations table.
 
-What counts as an Atlas project, and from which increment rules are enforced, is configured in the
-`[tool.aurelius-atlas-trace]` table of the root `pyproject.toml`.
+An Atlas project is an Nx project: any directory with a `project.json`, so a project that ships no
+Python — a container image, a dashboard — is checked for its rules too (DD-035). `exclude-projects`
+in the `[tool.aurelius-atlas-trace]` table of the root `pyproject.toml` leaves projects out on
+purpose, and `enforce-from` sets the first increment whose rules count.

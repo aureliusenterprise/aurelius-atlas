@@ -1,0 +1,99 @@
+name: aurelius-atlas-dashboard
+
+services:
+    aurelius-atlas-dashboard:
+        # The dashboard origin (DD-034): the whole product for `nx up aurelius-atlas-dashboard`, and the
+        # stack the e2e tests run against (their conftest starts exactly this compose). The nginx image
+        # serves dashboardv2 at / and dashboardv3 at /n/, with /api/ proxied to the server below. The
+        # stack mounts the fully resolved site config over the image's template —
+        # the resolved values are this stack's topology: the server service over its TLS port, verified
+        # against the dev CA (both projects' certgen issue from the one mkcert root). TLS on the public
+        # port as in the frontend example's e2e stack (ADR 039 relaxation).
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-dashboard:local
+        depends_on:
+            aurelius-atlas-server:
+                condition: service_healthy
+        configs:
+            - source: dashboard_nginx_config
+              target: /etc/nginx/conf.d/default.conf
+        networks:
+            # The stack's own network, shared only with this compose's server service: nginx resolves
+            # the /api/ proxy name here and nowhere else. The server's own e2e stack (apps/
+            # aurelius-atlas-server/e2e/docker-compose.yaml) advertises the same service name on the
+            # shared dev network, so a shared attachment here would let nginx resolve that container
+            # when both stacks run — whose teardown nginx would then cache as a dead upstream.
+            - aurelius-atlas-dashboard-network
+        ports:
+            # Fixed host port: the dev URL of the whole product is https://localhost:8444. The e2e
+            # conftest discovers the port, as every stack here does. 6.1 moved it from 8080: the
+            # identity provider's plaintext dev listener (dev/keycloak, an up/e2e dependency since
+            # then) publishes host 8080, and the two stacks now run together (DD-036).
+            - 8444:8080
+        volumes:
+            # This project's certificate and its copy of the dev CA.
+            - ./certs:/certs:ro
+
+    aurelius-atlas-server:
+        # The API-only server (DD-034): the dashboard origin answers / and /n/, and proxies /api/ here.
+        # Its healthcheck gates the dashboard start, and `compose up --wait` returns once it is healthy.
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        environment:
+            # ${VAR:?} guards: Nx injects the project's .env into the task environment (up, e2e); a
+            # missing value would otherwise only show as a settings error inside the started container.
+            # The password mirrors dev/elasticsearch/.env, as the server's own .env does.
+            AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            # The dev store, reached on its network by its service name (in its certificate).
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_DASHBOARD_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            # HTTPS with the server project's certificate (its `nx certgen`); its healthcheck verifies it.
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # Authentication on (AUTH-01): the server becomes an OIDC relying party against this
+            # stack's Keycloak (dev/keycloak, started by the up/e2e dependency chain). The issuer URL
+            # is the name Keycloak itself advertises (KC_HOSTNAME), which resolves on the keycloak
+            # network below; the client and its secret are the realm import's `aurelius-atlas` RP
+            # (dev/keycloak/import/master.json), and the redirect URI is this stack's dashboard origin
+            # — port 8444 on the host, where the browser actually is. The CA is the one mkcert root
+            # both projects' certgen issue from, so the server verifies Keycloak's TLS like it
+            # verifies Elasticsearch.
+            AURELIUS_ATLAS_SERVER_AUTH_ISSUER: https://keycloak.localhost:8443/realms/master
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID: aurelius-atlas
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_DASHBOARD_ATLAS_RP_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_REDIRECT_URI: https://localhost:8444/api/atlas/auth/callback
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+        networks:
+            - aurelius-atlas-dashboard-network
+            - aurelius-atlas-dev-elasticsearch-network
+            - aurelius-atlas-dev-observability-network
+            # Reaching the issuer: keycloak.localhost resolves (network alias) only on the keycloak
+            # stack's network — the same name the browser resolves through /etc/hosts.
+            - aurelius-atlas-dev-keycloak-network
+        ports:
+            # Discovered by the e2e conftest: the direct-server check (DSH-04) proves the server answers
+            # the API only on its own origin.
+            - 21000
+        volumes:
+            # The server project's certificate and its copy of the dev CA.
+            - ../aurelius-atlas-server/certs:/certs:ro
+
+configs:
+    dashboard_nginx_config:
+        file: ./nginx.conf
+
+networks:
+    # Created with the stack (compose up/down); nginx + this file's server, nothing else. The name is
+    # explicit so `docker network ls` shows it beside the dev stacks' (see the dashboard service above
+    # for why the proxy must not resolve on a shared network).
+    aurelius-atlas-dashboard-network:
+        name: aurelius-atlas-dashboard-network
+    # Started by the dev stacks the up/e2e targets bring up first.
+    aurelius-atlas-dev-elasticsearch-network:
+        external: true
+    aurelius-atlas-dev-observability-network:
+        external: true
+    aurelius-atlas-dev-keycloak-network:
+        external: true

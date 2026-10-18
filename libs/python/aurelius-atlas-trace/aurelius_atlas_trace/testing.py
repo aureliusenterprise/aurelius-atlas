@@ -9,9 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT_PYPROJECT = """
-[tool.uv.workspace]
-members = ["libs/sample", "libs/template"]
-
 [tool.aurelius-atlas-trace]
 enforce-from = "0.2"
 exclude-projects = ["libs/template"]
@@ -26,6 +23,9 @@ packages = ["{package}"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 """
+
+PROJECT_JSON = "{}\n"
+"""A minimal project.json: enough for a directory to be an Nx project (TRC-07)."""
 
 
 @dataclass(frozen=True)
@@ -72,6 +72,7 @@ def build_sample_workspace(  # noqa: PLR0913 - one keyword per part of the works
     """
     workspace = SampleWorkspace(root=root, package=package)
     _write(root / "pyproject.toml", ROOT_PYPROJECT)
+    _write(workspace.project / "project.json", PROJECT_JSON)
     _write(workspace.project / "pyproject.toml", PROJECT_PYPROJECT.replace("{package}", package))
     _write(workspace.project / package / "__init__.py", code.replace("{package}", package))
     _write(workspace.project / "tests" / "test__sample.py", tests.replace("{package}", package))
@@ -79,7 +80,7 @@ def build_sample_workspace(  # noqa: PLR0913 - one keyword per part of the works
         _write(workspace.project / "tests" / "conftest.py", conftest.replace("{package}", package))
     if e2e is not None:
         _write(workspace.project / "e2e" / "test__sample_e2e.py", e2e.replace("{package}", package))
-    _write(root / "libs" / "template" / "pyproject.toml", "[project]\nname = 'template'\n")
+    _write(root / "libs" / "template" / "project.json", PROJECT_JSON)
     _write(root / "specs" / "0-1-old.md", "| OLD-01 | Before the check |\n")
     _write(root / "specs" / "0-2-sample.md", "| Id | Rule |\n| --- | --- |\n" + rules)
     _write(root / "specs" / "template.md", "| XYZ-01 | Not a specification |\n")

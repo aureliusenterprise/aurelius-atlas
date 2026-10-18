@@ -29,6 +29,18 @@ class ProjectTests:
 
     project: Project
     tests: tuple[TracedTest, ...]
+    rootdir: Path | None = None
+    """The pytest root directory of the collection, which the node ids are relative to.
+
+    A project with no pytest ini of its own (no ``pyproject.toml``, no ini file upward within its
+    rootdir search) collects with the workspace root as rootdir, and its node ids then carry the
+    project's path as a prefix (DD-035). ``None`` when no collection ran, which is the project itself.
+    """
+
+    @property
+    def trace_rootdir(self) -> Path:
+        """The directory the collected node ids are relative to."""
+        return self.rootdir if self.rootdir is not None else self.project.root
 
 
 @dataclass(frozen=True)
@@ -82,8 +94,10 @@ def collect_project(project: Project) -> ProjectTests:
                     project=project.root.name, code=result.returncode, output=result.stdout + result.stderr
                 )
             )
-        tests = read_trace_file(trace_file).tests if trace_file.exists() else ()
-    return ProjectTests(project=project, tests=tests)
+        if not trace_file.exists():
+            return ProjectTests(project=project, tests=())
+        trace = read_trace_file(trace_file)
+    return ProjectTests(project=project, tests=trace.tests, rootdir=trace.rootdir)
 
 
 def inventory(config: TraceConfig) -> list[PublicFunction]:

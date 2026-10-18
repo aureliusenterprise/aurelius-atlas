@@ -2,8 +2,8 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": [
         "aurelius-atlas-core",
-        "aurelius-atlas-dashboard",
         "aurelius-atlas-dev-elasticsearch",
+        "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-model",
         "aurelius-atlas-store-es"
@@ -14,17 +14,12 @@
     "tags": [],
     "targets": {
         "docker-build": {
-            "dependsOn": [
-                { "target": "build" },
-                { "dependencies": true, "target": "docker-build" },
-                { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
-            ]
+            "dependsOn": [{ "target": "build" }, { "dependencies": true, "target": "docker-build" }]
         },
         "docker-publish": {
             "dependsOn": [
                 { "target": "build" },
-                { "dependencies": true, "params": "forward", "target": "docker-publish" },
-                { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
+                { "dependencies": true, "params": "forward", "target": "docker-publish" }
             ]
         },
         "serve": {
@@ -35,12 +30,11 @@
                 {
                     "projects": ["aurelius-atlas-dev-elasticsearch", "aurelius-atlas-dev-observability"],
                     "target": "serve"
-                },
-                { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
+                }
             ],
             "executor": "@nxlv/python:run-commands",
             "metadata": {
-                "description": "Serve the Atlas API and the dashboards on https://localhost:21000 against the dev store"
+                "description": "Serve the Atlas API on https://localhost:21000 against the dev store; the dashboards come from the dashboard image (DD-034)"
             },
             "options": {
                 "command": "uv run python -m aurelius_atlas_server"

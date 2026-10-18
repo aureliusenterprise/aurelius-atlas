@@ -1,7 +1,17 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": [
+        "aurelius-atlas-dev-elasticsearch",
+        "aurelius-atlas-dev-keycloak",
+        "aurelius-atlas-server"
+    ],
     "name": "aurelius-atlas-dashboard",
     "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
     "sourceRoot": "{projectRoot}",
     "tags": [],
     "targets": {
@@ -24,6 +34,30 @@
                 "command": "docker buildx build . -f {projectRoot}/build.Dockerfile --output type=local,dest={projectRoot}/dist"
             },
             "outputs": ["{projectRoot}/dist"]
+        },
+        "e2e": {
+            "cache": true,
+            "configurations": {
+                "ci": {
+                    "junitxml": "junit-e2e.xml",
+                    "trace-json": "trace-e2e.json"
+                }
+            },
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                { "target": "up" },
+                { "dependencies": true, "target": "up" }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Run the dashboard tests against the nginx origin and the API-only server, on the dev store"
+            },
+            "options": {
+                "command": "uv run pytest e2e",
+                "cwd": "{projectRoot}"
+            },
+            "outputs": ["{projectRoot}/junit-e2e.xml", "{projectRoot}/trace-e2e.json"]
         }
     }
 }

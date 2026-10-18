@@ -19,7 +19,10 @@ Part of the template **spine**.
 - Realm/client definitions are imported from `import/master.json` on startup —
   edit those files to change realms, clients, or test users:
     - `import/master.json` — the `master` realm: admin console plus the
-      FastAPI/Angular clients and test users
+      FastAPI/Angular clients, the `aurelius-atlas` relying-party client the
+      Atlas server signs its browser logins through (6.1: PKCE S256, the
+      dashboard-origin callback URIs, `${ATLAS_RP_CLIENT_SECRET}`), and the
+      test users
 - Telemetry is exported via OTLP over TLS to the observability stack
   (`https://otel-collector:4317`, trusted via this project's `certs/truststore.p12`)
 
@@ -28,8 +31,10 @@ Part of the template **spine**.
 `import/master.json` declares two realm users so RBAC works out of the box —
 no post-import scripting:
 
-- `aurelius-writer` — has the `aurelius-write` client role (the FastAPI
-  mutating endpoints require it as `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`)
+- `aurelius-writer` — carries the `ADMIN` realm role (the Atlas admin group,
+  what the session reports as a group — 6.1) and the `aurelius-write` client
+  role (the FastAPI mutating endpoints require it as
+  `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`)
 - `aurelius-reader` — authenticates but holds no roles (denied on writes)
 
 Their passwords are `${DEV_USER_WRITER_PASSWORD}` / `${DEV_USER_READER_PASSWORD}`

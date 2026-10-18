@@ -17,7 +17,7 @@ from aurelius_atlas_trace.trace import Outcome, read_trace_file
 JUNIT_GLOB = "junit*.xml"
 COVERAGE_GLOB = "coverage.xml"
 TRACE_GLOB = "trace*.json"
-"""File names the report reads from each workspace member's directory, where the Nx test targets write them."""
+"""File names the report reads from each project directory, where the Nx test targets write them."""
 
 
 class Status(StrEnum):
@@ -192,7 +192,7 @@ def _refs(
         TestRef(
             project=project_tests.project.root.name,
             nodeid=test.nodeid,
-            outcome=outcomes.get((project_tests.project.root.resolve(), test.nodeid)),
+            outcome=outcomes.get((project_tests.trace_rootdir.resolve(), test.nodeid)),
         )
         for project_tests in collected
         for test in project_tests.tests
@@ -211,7 +211,11 @@ def _endpoint_rows(
         for test in project_tests.tests:
             for endpoint in test.property_values(ENDPOINT_PROPERTY):
                 endpoints.setdefault(endpoint, []).append(
-                    TestRef(project=root.name, nodeid=test.nodeid, outcome=outcomes.get((root.resolve(), test.nodeid)))
+                    TestRef(
+                        project=root.name,
+                        nodeid=test.nodeid,
+                        outcome=outcomes.get((project_tests.trace_rootdir.resolve(), test.nodeid)),
+                    )
                 )
                 deviations.setdefault(endpoint, set()).update(test.property_values(DEVIATION_PROPERTY))
     for endpoint in sorted(endpoints):

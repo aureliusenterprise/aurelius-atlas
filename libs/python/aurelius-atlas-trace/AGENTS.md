@@ -8,7 +8,8 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and `libs/python/
 - `aurelius_atlas_trace/marker.py` — the `covers` marker: validation and target resolution
 - `aurelius_atlas_trace/plugin.py` — the pytest plugin (`pytest11` entry point), `--trace-json`
 - `aurelius_atlas_trace/inventory.py` — public functions of a package; `rules.py` — rule ids of the specs
-- `aurelius_atlas_trace/config.py` — reads `[tool.aurelius-atlas-trace]` and the uv workspace members
+- `aurelius_atlas_trace/config.py` — reads `[tool.aurelius-atlas-trace]` and discovers the Nx projects
+  (directories with a `project.json`; DD-035)
 - `aurelius_atlas_trace/check.py` — collects every Atlas project's markers in a subprocess and finds gaps
 - `aurelius_atlas_trace/report.py` — HTML page and Markdown summary; `cli.py` — `aurelius-atlas-trace`
 - `aurelius_atlas_trace/parity.py` — the `parity.*` test property names and the deviations table reader

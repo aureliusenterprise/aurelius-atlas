@@ -47,7 +47,7 @@ Every project under `apps/`, `libs/`, `connectors/`, `dev/`, `docker/`, and `rep
   (Java modules), `package.json` (`file:` dependencies), `tsconfig.base.json` (`paths`).
 - `mkdocs.yaml` nav entries and `docs/api-reference/` page paths.
 - ESLint config `prefix` values in per-project `eslint.config.mjs` files.
-- Compose project/network names in `dev/**/docker-compose.yaml` and `apps/*/e2e/docker-compose.yaml`.
+- Compose project/network names in `dev/**/docker-compose.yaml` and `apps/**/docker-compose.yaml`.
 
 ??? TIP "Check your work with Nx"
 

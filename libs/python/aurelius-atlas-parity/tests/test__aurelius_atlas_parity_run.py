@@ -78,6 +78,39 @@ async def test__run_scenario_sends_params_headers_and_bodies(
     await run_scenario(scenario, client)
 
 
+@pytest.mark.covers("aurelius_atlas_parity.run.run_scenario", rules=["SCN-06"])
+async def test__run_scenario_substitutes_the_values_the_caller_seeds(
+    write_scenario: WriteScenario, client: httpx.AsyncClient
+) -> None:
+    """A seeded value fills a stage's placeholder; a stage's own save takes the name from there on (6.1).
+
+    The runner cannot mint an issuer's token, so the caller seeds one; a stage that saves the same name
+    overrides the seed for the stages after it, as with any saved value.
+    """
+    scenario = scenario_from(
+        write_scenario,
+        """
+        name: Seeded
+        source: [none]
+        stages:
+          - request: {method: GET, url: /api/echo, headers: {X-Test: "{seed}"}}
+            response: {status: 200, json: {params: {}, test: seeded}, save: {seed: $.test}}
+          - request: {method: GET, url: /api/echo, headers: {X-Test: "{seed}"}}
+            response: {status: 200, json: {params: {}, test: seeded}}
+          - name: the saved name now wins over the seed
+            request: {method: GET, url: /api/version}
+            response:
+              status: 200
+              json: {Version: "2.4.0", Name: apache-atlas, Description: Metadata}
+              save: {seed: $.Version}
+          - request: {method: GET, url: /api/echo, headers: {X-Test: "{seed}"}}
+            response: {status: 200, json: {params: {}, test: "2.4.0"}}
+        """,
+    )
+
+    await run_scenario(scenario, client, saved={"seed": "seeded"})
+
+
 @pytest.mark.covers("aurelius_atlas_parity.run.run_scenario", rules=["SCN-05", "SCN-11"])
 async def test__run_scenario_lists_every_difference_and_stops(
     write_scenario: WriteScenario, client: httpx.AsyncClient, app: SampleApp
@@ -240,6 +273,36 @@ def test__load_scenarios_gives_one_parameter_per_file(write_scenario: WriteScena
 
 
 STAGE = "stages: [{request: {method: GET, url: /x}, response: {status: 200}}]\n"
+
+
+@pytest.mark.covers("aurelius_atlas_parity.run.load_scenarios", rules=["SCN-16"])
+def test__load_scenarios_skips_an_authenticated_scenario_in_a_plain_run(
+    write_scenario: WriteScenario, tmp_path: Path
+) -> None:
+    """needs_auth marks the parameter to skip; an authenticated run takes it as it is (SCN-16)."""
+    write_scenario("open.scenario.yaml", "name: open\nsource: [x]\n" + STAGE)
+    write_scenario("closed.scenario.yaml", "name: closed\nsource: [x]\nneeds_auth: true\n" + STAGE)
+
+    plain = load_scenarios(tmp_path / "scenarios")
+    guarded = load_scenarios(tmp_path / "scenarios", authenticated_run=True)
+
+    assert [parameter.id for parameter in plain] == ["closed", "open"]
+    skips = {parameter.id: [mark for mark in parameter.marks if mark.name == "skip"] for parameter in plain}
+    assert len(skips["closed"]) == 1
+    assert skips["open"] == []
+    assert all(not [mark for mark in parameter.marks if mark.name == "skip"] for parameter in guarded)
+
+
+@pytest.mark.covers("aurelius_atlas_parity.run.load_scenarios", rules=["SCN-16"])
+def test__load_scenarios_names_the_scenario_it_skips(write_scenario: WriteScenario, tmp_path: Path) -> None:
+    """The skip reason names the scenario id and the flag, so a skip explains itself."""
+    write_scenario("closed.scenario.yaml", "name: closed\nsource: [x]\nneeds_auth: true\n" + STAGE)
+
+    parameter = load_scenarios(tmp_path / "scenarios")[0]
+
+    (skip,) = [mark for mark in parameter.marks if mark.name == "skip"]
+    assert "closed" in skip.args[0]
+    assert "needs_auth" in skip.args[0]
 
 
 @pytest.mark.covers("aurelius_atlas_parity.run.load_scenarios", rules=["SCN-03"])

@@ -3,8 +3,9 @@ import zoneinfo
 
 import httpx
 import pytest
+from aurelius_atlas_server.auth.sessions import csrf_token
 from aurelius_atlas_server.errors import ATLAS_JSON_MEDIA_TYPE
-from aurelius_atlas_server.routes.admin import csrf_token, time_zones
+from aurelius_atlas_server.routes.admin import time_zones
 from aurelius_atlas_store_es.testing.fake import FakeClient
 
 
@@ -28,7 +29,9 @@ async def test__readiness_fails_while_the_store_is_unhealthy(client: httpx.Async
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_server.routes.admin.get_session", "aurelius_atlas_server.routes.admin.csrf_token", rules=["ADM-05"]
+    "aurelius_atlas_server.routes.admin.get_session",
+    "aurelius_atlas_server.auth.sessions.csrf_token",
+    rules=["ADM-05"],
 )
 async def test__session_gives_a_new_token_of_letters_and_digits(client: httpx.AsyncClient) -> None:
     """The CSRF token has 20 letters and digits and differs between sessions."""

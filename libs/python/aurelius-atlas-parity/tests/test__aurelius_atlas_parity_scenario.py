@@ -20,6 +20,7 @@ source:
   - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getById
 rules: [ABC-01]
 covers: [aurelius_atlas_parity.run.run_scenario]
+needs_auth: true
 stages:
   - name: create
     request:
@@ -61,6 +62,7 @@ def test__read_scenario_reads_every_part(write_scenario: WriteScenario) -> None:
     assert scenario.source[0].endswith("#createOrUpdate")
     assert scenario.rules == ["ABC-01"]
     assert scenario.covers == ["aurelius_atlas_parity.run.run_scenario"]
+    assert scenario.needs_auth
     create, read, ping = scenario.stages
     assert create.name == "create"
     assert create.request.json_body == {"name": "x"}

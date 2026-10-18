@@ -140,6 +140,8 @@ class Scenario(_Strict):
     """Where in Atlas 2.4.0 the expectation was read: files, classes, methods or Atlas test fixtures."""
     rules: list[str] = Field(default_factory=list)
     covers: list[str] = Field(default_factory=list)
+    needs_auth: bool = False
+    """Whether only an installation with authentication on can answer it (SCN-16; DD-038)."""
     stages: Annotated[list[Stage], Field(min_length=1)]
 
     def __str__(self) -> str:

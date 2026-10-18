@@ -1,4 +1,11 @@
-import { createNodesFromFiles, CreateNodesResult, CreateNodes } from "@nx/devkit";
+import {
+    createNodesFromFiles,
+    CreateNodesResult,
+    CreateNodes,
+    ProjectConfiguration,
+    readJsonFile,
+    TargetConfiguration,
+} from "@nx/devkit";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -35,46 +42,54 @@ function createNodesInternal(
     // Projects that own TLS material must generate their certificates before any
     // container that mounts ./certs is started.
     const certgen = existsSync(join(projectRoot, "tls.json")) ? [{ target: "certgen" }] : [];
+    // Dependency stacks mount *their* projects' certificates too (the dashboard stack mounts
+    // ../aurelius-atlas-server/certs), so their certgen runs before this stack starts — on a fresh
+    // checkout those PEM files exist only after it. Projects without a certgen target are skipped.
+    const certgenDeps = [{ target: "certgen", dependencies: true }];
+
+    const targets: Record<string, TargetConfiguration> = {};
+    targets[serveTargetName] = {
+        continuous: true,
+        command: "docker compose up",
+        dependsOn: [
+            { target: "decrypt" },
+            ...certgen,
+            { target: "docker-build" },
+            { target: "docker-build", dependencies: true },
+            ...certgenDeps,
+            { target: serveTargetName, dependencies: true },
+        ],
+        metadata: {
+            description: "Run the service locally.",
+        },
+        options: {
+            cwd: projectRoot,
+        },
+    };
+
+    targets[upTargetName] = {
+        command: "docker compose up -d --wait",
+        dependsOn: [
+            { target: "decrypt" },
+            ...certgen,
+            { target: "docker-build" },
+            { target: "docker-build", dependencies: true },
+            ...certgenDeps,
+            { target: upTargetName, dependencies: true },
+        ],
+        metadata: {
+            description: "Start the service in the background and wait for it to become healthy.",
+        },
+        options: {
+            cwd: projectRoot,
+        },
+    };
 
     return {
         projects: {
             [projectRoot]: {
                 tags: ["docker-compose"],
-                targets: {
-                    [serveTargetName]: {
-                        continuous: true,
-                        command: "docker compose up",
-                        dependsOn: [
-                            { target: "decrypt" },
-                            ...certgen,
-                            { target: "docker-build" },
-                            { target: "docker-build", dependencies: true },
-                            { target: serveTargetName, dependencies: true },
-                        ],
-                        metadata: {
-                            description: "Run the service locally.",
-                        },
-                        options: {
-                            cwd: projectRoot,
-                        },
-                    },
-                    [upTargetName]: {
-                        command: "docker compose up -d --wait",
-                        dependsOn: [
-                            { target: "decrypt" },
-                            ...certgen,
-                            { target: "docker-build" },
-                            { target: "docker-build", dependencies: true },
-                            { target: upTargetName, dependencies: true },
-                        ],
-                        metadata: {
-                            description: "Start the service in the background and wait for it to become healthy.",
-                        },
-                        options: {
-                            cwd: projectRoot,
-                        },
-                    },
-                },
+                targets,
             },
         },
     };

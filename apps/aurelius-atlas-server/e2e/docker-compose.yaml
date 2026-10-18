@@ -15,15 +15,33 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # Authentication on (AUTH-01): this stack is the auth-enabled installation (6.1). The
+            # issuer is dev/keycloak on its TLS listener, reached by its network alias below; the
+            # redirect URI is this stack's own published port — the login flow runs against the
+            # server origin itself, and the client registration (dev/keycloak/import/master.json)
+            # lists it beside the dashboard's. The secret is the realm import's placeholder value,
+            # which conftest loads from dev/keycloak/.env; the same mkcert root signed both.
+            AURELIUS_ATLAS_SERVER_AUTH_ISSUER: https://keycloak.localhost:8443/realms/master
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID: aurelius-atlas
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_RP_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_REDIRECT_URI: https://localhost:21000/api/atlas/auth/callback
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
+            # ADM-07: the idle timeout this stack configures, so the session reports it and the e2e
+            # scenario expects it; 900 s, the minutes-long dev session Atlas's own default matches.
+            AURELIUS_ATLAS_SERVER_AUTH_SESSION_IDLE_SECONDS: 900
             OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
         networks:
             - aurelius-atlas-dev-elasticsearch-network
             - aurelius-atlas-dev-observability-network
+            # Reaching the issuer: keycloak.localhost resolves here (its network alias).
+            - aurelius-atlas-dev-keycloak-network
         extra_hosts:
             - otel-collector:host-gateway
         ports:
-            - 21000
+            # Fixed host port: the client's registered redirect URI is https://localhost:21000/..., so
+            # the browser (here: the test client) must find this stack's server on exactly that port.
+            - 21000:21000
         volumes:
             - ../certs:/certs:ro
 
@@ -31,4 +49,6 @@ networks:
     aurelius-atlas-dev-elasticsearch-network:
         external: true
     aurelius-atlas-dev-observability-network:
+        external: true
+    aurelius-atlas-dev-keycloak-network:
         external: true

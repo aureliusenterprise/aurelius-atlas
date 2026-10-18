@@ -39,6 +39,14 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   the CA; server cert via the install-copy startup pattern).
 - Realms/clients/test users live in `import/master.json`; edit there rather
   than mutating the running container (changes are lost on recreate otherwise).
+    - The `aurelius-atlas` client (6.1) is the Atlas server's OIDC
+      relying party — a confidential client (secret `${ATLAS_RP_CLIENT_SECRET}`,
+      mirrored in the dashboard and server stacks' `.env.enc`) with PKCE S256,
+      the dashboard-origin and direct-server callback URIs registered, and each
+      installation's `/login.jsp` landing allowlisted for post-logout redirects
+      (dashboard origin and direct-server stack, DD-040). The issuer each
+      consumer names must be `keycloak.localhost:8443` — the advertised
+      hostname — or the tokens fail `iss` verification.
     - `import/master.json` declares the dev identities: `aurelius-writer`
       (carries the `aurelius-write` client role on the `aurelius` client — the
       FastAPI example's write gate, `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`) and

@@ -10,20 +10,37 @@ Atlas resource. What is ported, and how, is tracked in the
 
 ## Endpoints
 
-| Endpoint                         | Answers                                                              |
-| -------------------------------- | -------------------------------------------------------------------- |
-| `GET /api/atlas/admin/version`   | Name, release and revision of the server                             |
-| `GET /api/atlas/admin/status`    | `{"Status": "ACTIVE"}` while the server runs                         |
-| `GET /api/atlas/admin/session`   | The dashboard's settings and the user (no login until 6.1)           |
-| `GET /api/atlas/admin/liveness`  | `Service is live` while the server runs                              |
-| `GET /api/atlas/admin/readiness` | `Service is ready to accept requests` while Elasticsearch is healthy |
+| Endpoint                         | Answers                                                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `GET /api/atlas/admin/version`   | Name, release and revision of the server                                                      |
+| `GET /api/atlas/admin/status`    | `{"Status": "ACTIVE"}` while the server runs                                                  |
+| `GET /api/atlas/admin/session`   | The dashboard's settings and the user; the user is named once a login backs the session (6.1) |
+| `GET /api/atlas/admin/liveness`  | `Service is live` while the server runs                                                       |
+| `GET /api/atlas/admin/readiness` | `Service is ready to accept requests` while Elasticsearch is healthy                          |
+
+## Authentication
+
+With an issuer configured (`AURELIUS_ATLAS_SERVER_AUTH_ISSUER`), the server is an OpenID Connect
+relying party of the shared Keycloak
+([ADR 007](../../docs/architecture/adr/007-one-shared-identity-provider.md)): a browser without a
+session is sent through the login start under `/api/atlas/auth/login` (authorization-code flow with
+PKCE, the intended URL kept) and returns on an `ATLASSESSIONID` session whose principal comes from
+the verified **access token**; `/logout.html` ends both sessions and lands on the login page, which
+resolves to the dashboard in use (DD-040). The guard is one middleware
+(`aurelius_atlas_server.auth.guard`); a bearer token authenticates an API call on its own and never
+becomes a session. With no issuer configured the server answers as before (AUTH-01).
+
+The rules are AUTH-01 to AUTH-10 and CRS-01 to CRS-03 in the
+[6.1 spec](../../docs/architecture/conversion/increments/6-1-authentication.md); the flow, with its
+diagrams, is told in
+[Identity Management](../../docs/architecture/platform/security/identity-management.md).
 
 ## Dashboards
 
-The server also serves the Apache Atlas 2.4.0 dashboards from
-[`aurelius-atlas-dashboard`](../aurelius-atlas-dashboard/README.md): `dashboardv2` at `/` and
-`dashboardv3` at `/n/`. The API is matched first. The image contains them; outside the image,
-`AURELIUS_ATLAS_SERVER_DASHBOARD_DIR` names the built directory, and without it only the API is served.
+The server answers the API only. The Apache Atlas 2.4.0 dashboards come from
+[`aurelius-atlas-dashboard`](../aurelius-atlas-dashboard/README.md): its nginx image serves
+`dashboardv2` at `/` and `dashboardv3` at `/n/`, and keeps the API on the same origin by proxying
+`/api/` here (DD-034). `nx up aurelius-atlas-dashboard` runs the whole product.
 
 ## Type definitions
 
@@ -38,7 +55,8 @@ not applied before change anything, so a restart writes nothing. The `/v2/types`
 ## Running it
 
 ```bash
-npx nx serve aurelius-atlas-server   # builds the dashboards, starts the dev store and observability; https://localhost:21000
+npx nx serve aurelius-atlas-server   # the API: starts the dev store and observability; https://localhost:21000
+npx nx up aurelius-atlas-dashboard   # the dashboards, Keycloak and this API; https://localhost:8444
 ```
 
 The server does not start without its store. Settings are environment variables prefixed
