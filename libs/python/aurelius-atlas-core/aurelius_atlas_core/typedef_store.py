@@ -2,7 +2,8 @@
 
 Ported from ``AtlasTypeDefGraphStore`` and its def stores (``Atlas*DefStoreV2``) of Apache Atlas 2.4.0. A change
 is tried on the registry's transient copy, checked as Atlas's def stores check it, written as one document
-(DD-028) and only then committed to the registry (TDS-10).
+(DD-028) and only then committed to the registry (TDS-10). The document also holds the record of each typedef
+patch, written with the patch's change (DD-031).
 """
 
 import asyncio
@@ -14,6 +15,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_model.patches import TYPEDEF_PATCH_TYPE, AtlasPatch, PatchStatus
 from aurelius_atlas_model.typedef import (
     ATLAS_BUILTIN_TYPES,
     ATTR_OPTION_APPLICABLE_ENTITY_TYPES,
@@ -40,7 +42,12 @@ from aurelius_atlas_core.stored_form import (
     stamp_updated,
     stored_typedef,
 )
-from aurelius_atlas_core.typedef_document import DocumentVersion, TypedefDocument, VersionConflictError
+from aurelius_atlas_core.typedef_document import (
+    DocumentVersion,
+    StoredTypedefs,
+    TypedefDocument,
+    VersionConflictError,
+)
 
 DEFAULT_REFRESH_SECONDS = 5.0
 """How long a process answers from its registry before it checks for another process's change (DD-029)."""
@@ -63,6 +70,11 @@ _LIST_FIELD = {
     TypeCategory.RELATIONSHIP: "relationship_defs",
     TypeCategory.BUSINESS_METADATA: "business_metadata_defs",
 }
+
+ADD_MANDATORY_ATTRIBUTE = "ADD_MANDATORY_ATTRIBUTE"
+"""The patch action under which an update may add mandatory attributes (``TYPEDEF_PATCH_ADD_MANDATORY_ATTRIBUTE``)."""
+
+_DONE = {PatchStatus.APPLIED, PatchStatus.SKIPPED}
 
 type TypeUsage = Callable[[str], Awaitable[bool]]
 """Whether entities, classifications or relationships of a type exist (DD-030)."""
@@ -94,7 +106,7 @@ def _of_kind(types_def: AtlasTypesDef, kind: TypeCategory) -> list[AtlasBaseType
     return list(getattr(types_def, _LIST_FIELD[kind]) or [])
 
 
-def _types_def(typedefs: Iterable[AtlasBaseTypeDef]) -> AtlasTypesDef:
+def types_def_of(typedefs: Iterable[AtlasBaseTypeDef]) -> AtlasTypesDef:
     """An ``AtlasTypesDef`` holding ``typedefs``, each in the list of its kind."""
     result = AtlasTypesDef()
     for typedef in typedefs:
@@ -155,15 +167,98 @@ def rectify(types_def: AtlasTypesDef) -> AtlasTypesDef:
     return result
 
 
+def java_compare(left: str, right: str) -> int:
+    """Compare as Java's ``String.compareTo`` does: by UTF-16 code unit (MDL-01, MDL-02)."""
+    left_units, right_units = left.encode("utf-16-be"), right.encode("utf-16-be")
+    return (left_units > right_units) - (left_units < right_units)
+
+
+def is_newer_version(new: str | None, old: str | None) -> bool:
+    """``ObjectUtils.compare(new, old) > 0``: compared as strings, an absent version less than any (MDL-02)."""
+    if new is None:
+        return False
+    return old is None or java_compare(new, old) > 0
+
+
+def types_to_create(types_def: AtlasTypesDef, registry: TypeRegistry) -> AtlasTypesDef:
+    """The definitions whose name is not registered, as any kind or built-in (``getTypesToCreate``, MDL-02)."""
+    return types_def_of(typedef for typedef in _all(types_def) if not registry.is_registered(typedef.name))
+
+
+def types_to_update(types_def: AtlasTypesDef, registry: TypeRegistry, *, check_type_version: bool) -> AtlasTypesDef:
+    """The definitions registered as the same kind, when newer (``getTypesToUpdate``, MDL-02).
+
+    With ``check_type_version``, only those whose ``typeVersion`` is greater than the registered one. Each keeps
+    the registered attributes, or an enum the registered elements, that it lacks.
+    """
+    result: list[AtlasBaseTypeDef] = []
+    for kind in _KINDS:
+        for new in _of_kind(types_def, kind):
+            old = registry.typedef_by_name(new.name)
+            if old is None or old.category is not kind:
+                continue
+            if check_type_version and not is_newer_version(new.type_version, old.type_version):
+                continue
+            result.append(_keeping_registered(new.model_copy(deep=True), old))
+    return types_def_of(result)
+
+
+def _keeping_registered(update: AtlasBaseTypeDef, old: AtlasBaseTypeDef) -> AtlasBaseTypeDef:
+    """``updateTypeAttributes`` and the enum's elements: what ``old`` has and ``update`` lacks is appended."""
+    if isinstance(update, AtlasEnumDef) and isinstance(old, AtlasEnumDef):
+        for element in old.element_defs:
+            if not update.has_element(element.value):
+                update.add_element(element)
+    elif isinstance(update, AtlasStructDef) and isinstance(old, AtlasStructDef):
+        for attribute in old.attribute_defs:
+            if not update.has_attribute(attribute.name):
+                update.add_attribute(attribute)
+    return update
+
+
+@dataclass
+class PatchChange:
+    """What a typedef patch decided (MDL-07): its status, and the definitions it updates, if any.
+
+    ``patching`` names the action when the update runs "in type patching" (``RequestContext.isInTypePatching``):
+    attributes may then be removed, a relationship's category may change and its ends may swap, and under
+    ``ADD_MANDATORY_ATTRIBUTE`` mandatory attributes may be added (MDL-10, MDL-11).
+    """
+
+    status: PatchStatus
+    update: AtlasTypesDef | None = None
+    patching: str | None = None
+
+
 @dataclass
 class _Stored:
-    """The stored definitions by name, in the order they were stored."""
+    """The stored definitions by name, in the order they were stored, and the patch records by id."""
 
     by_name: dict[str, AtlasBaseTypeDef] = field(default_factory=dict)
+    patches: dict[str, AtlasPatch] = field(default_factory=dict)
 
     @classmethod
-    def of(cls, types_def: AtlasTypesDef | None) -> _Stored:
-        return cls({str(typedef.name): typedef for typedef in _all(types_def or AtlasTypesDef())})
+    def of(cls, stored: StoredTypedefs) -> _Stored:
+        return cls(
+            {str(typedef.name): typedef for typedef in _all(stored.types_def)},
+            {str(patch.id): patch for patch in stored.patches if patch.id},
+        )
+
+    def copy(self) -> _Stored:
+        return _Stored(dict(self.by_name), dict(self.patches))
+
+    def record(self, patch: AtlasPatch, status: PatchStatus, now: datetime) -> None:
+        """Record how ``patch`` ended, keeping an existing record's created time (``register``, MDL-06)."""
+        millis = int(now.timestamp() * 1000)
+        existing = self.patches.get(str(patch.id))
+        self.patches[str(patch.id)] = patch.model_copy(
+            update={
+                "type": TYPEDEF_PATCH_TYPE,
+                "status": status,
+                "created_time": existing.created_time if existing is not None else millis,
+                "updated_time": millis,
+            }
+        )
 
     def find(self, kind: TypeCategory, guid: str | None, name: str | None) -> AtlasBaseTypeDef | None:
         """The stored definition of ``kind`` with ``guid`` when it is not blank, else named ``name``."""
@@ -172,8 +267,29 @@ class _Stored:
         found = self.by_name.get(str(name))
         return found if found is not None and found.category is kind else None
 
-    def as_types_def(self) -> AtlasTypesDef:
-        return _types_def(_without_derived(typedef) for typedef in self.by_name.values())
+    def as_document(self) -> StoredTypedefs:
+        return StoredTypedefs(
+            types_def_of(_without_derived(typedef) for typedef in self.by_name.values()), list(self.patches.values())
+        )
+
+
+@dataclass
+class _Outcome[T]:
+    """A change's result, what to write (None: nothing) and whether to commit the transient registry."""
+
+    result: T
+    stored: _Stored | None
+    commit: bool = True
+
+
+def _add_resolving(transient: TransientTypeRegistry, types_def: AtlasTypesDef) -> None:
+    """``tryTypeCreation``: add and resolve; a type not found is a bad request (TDS-01, MDL-03)."""
+    try:
+        transient.add_types(types_def)
+    except AtlasError as error:
+        if error.code in _NOT_FOUND:
+            raise AtlasError(AtlasErrorCode.BAD_REQUEST, error.message) from error
+        raise
 
 
 class TypedefStore:
@@ -207,12 +323,12 @@ class TypedefStore:
             await self._load()
 
     async def _load(self) -> None:
-        types_def, version = await self._document.read()
-        repaired = rectify(types_def or AtlasTypesDef())
+        stored, version = await self._document.read()
+        repaired = rectify(stored.types_def if stored is not None else AtlasTypesDef())
         with self.registry.update() as transient:
             transient.clear()
             transient.add_types(repaired)
-        self._stored = _Stored.of(repaired)
+        self._stored = _Stored.of(StoredTypedefs(repaired, stored.patches if stored is not None else []))
         self._version = version
         self._checked_at = self._clock()
 
@@ -234,22 +350,33 @@ class TypedefStore:
         await self._load()
         return True
 
-    async def _change[T](self, apply: Callable[[TransientTypeRegistry], Awaitable[tuple[T, _Stored]]]) -> T:
-        """Apply a change on the transient registry, write it, then commit it (TDS-10, TDS-11)."""
+    async def _change[T](self, apply: Callable[[TransientTypeRegistry], Awaitable[_Outcome[T]]]) -> T:
+        """Apply a change on the transient registry, write it, then commit it (TDS-10, TDS-11).
+
+        ``apply`` is called again after a conflict, on the reloaded definitions (DD-029, DD-033). It may leave the
+        document unwritten, or the registry uncommitted, as its outcome says.
+        """
         async with self._lock:
             await self._reload_if_changed()
             for attempt in (1, 2):
+                transient = self.registry.lock_for_update()
                 try:
-                    with self.registry.update() as transient:
-                        result, stored = await apply(transient)
-                        self._version = await self._document.write(stored.as_types_def(), self._version)
+                    outcome = await apply(transient)
+                    if outcome.stored is not None:
+                        self._version = await self._document.write(outcome.stored.as_document(), self._version)
                 except VersionConflictError as conflict:
+                    self.registry.release(transient, commit=False)
                     if attempt == 2:  # noqa: PLR2004 - the retry of DD-029
                         raise AtlasError(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK) from conflict
                     await self._load()
                     continue
-                self._stored = stored
-                return result
+                except BaseException:
+                    self.registry.release(transient, commit=False)
+                    raise
+                self.registry.release(transient, commit=outcome.commit)
+                if outcome.stored is not None:
+                    self._stored = outcome.stored
+                return outcome.result
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
     async def create_types_def(self, types_def: AtlasTypesDef, user: str | None = None) -> AtlasTypesDef:
@@ -262,17 +389,12 @@ class TypedefStore:
             AtlasError: A definition is invalid, exists already or refers to an unknown type.
         """
 
-        async def apply(transient: TransientTypeRegistry) -> tuple[AtlasTypesDef, _Stored]:
-            try:
-                transient.add_types(types_def)
-            except AtlasError as error:
-                if error.code in _NOT_FOUND:
-                    raise AtlasError(AtlasErrorCode.BAD_REQUEST, error.message) from error
-                raise
-            stored = _Stored(dict(self._stored.by_name))
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[AtlasTypesDef]:
+            _add_resolving(transient, types_def)
+            stored = self._stored.copy()
             created = _Creation(transient, stored, self._now(), user).run(types_def)
             transient.update_types(created)
-            return created, stored
+            return _Outcome(created, stored)
 
         return await self._change(apply)
 
@@ -286,17 +408,91 @@ class TypedefStore:
             AtlasError: A definition is not found, or changes what may not change.
         """
 
-        async def apply(transient: TransientTypeRegistry) -> tuple[AtlasTypesDef, _Stored]:
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[AtlasTypesDef]:
+            stored = self._stored.copy()
+            return _Outcome(self._update(transient, stored, types_def, user), stored)
+
+        return await self._change(apply)
+
+    def _update(
+        self,
+        transient: TransientTypeRegistry,
+        stored: _Stored,
+        types_def: AtlasTypesDef,
+        user: str | None,
+        patching: str | None = None,
+    ) -> AtlasTypesDef:
+        try:
+            transient.update_types(types_def)
+        except AtlasError as error:
+            if error.code is AtlasErrorCode.TYPE_NAME_NOT_FOUND:
+                raise AtlasError(AtlasErrorCode.BAD_REQUEST, error.message) from error
+            raise
+        updated = _Update(transient, stored, self._now(), user, patching).run(types_def)
+        transient.update_types(updated)
+        return updated
+
+    async def create_update_types_def(
+        self, types_def: AtlasTypesDef, *, check_type_version: bool = False, user: str | None = None
+    ) -> AtlasTypesDef:
+        """Create the definitions not registered and update the registered ones, all or none (MDL-02, MDL-03).
+
+        ``createUpdateTypesDef``: what to create and update is decided on the newest stored definitions, and again
+        after a conflict (DD-033). With ``check_type_version``, as at start-up, only definitions with a greater
+        ``typeVersion`` are updated. Nothing is written when there is nothing to create or update.
+
+        Returns:
+            The created and updated definitions, as stored.
+
+        Raises:
+            AtlasError: A definition is invalid or refers to an unknown type.
+        """
+
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[AtlasTypesDef]:
+            to_create = types_to_create(types_def, self.registry)
+            to_update = types_to_update(types_def, self.registry, check_type_version=check_type_version)
+            if to_create.is_empty() and to_update.is_empty():
+                return _Outcome(AtlasTypesDef(), None, commit=False)
+            transient.update_types_without_resolving(to_update)
+            _add_resolving(transient, to_create)
+            stored = self._stored.copy()
+            now = self._now()
+            created = _all(_Creation(transient, stored, now, user).run(to_create))
+            updated = _all(_Update(transient, stored, now, user).run(to_update))
+            result = types_def_of([*created, *updated])
+            transient.update_types(result)
+            return _Outcome(result, stored)
+
+        return await self._change(apply)
+
+    async def apply_patch(self, patch: AtlasPatch, decide: Callable[[TypeRegistry], PatchChange]) -> PatchStatus | None:
+        """Apply a typedef patch unless its record says it is done, and record how it ended (MDL-05, MDL-06).
+
+        ``decide`` looks at the registry and says what the patch does; an ``AtlasError`` from it, or from the update
+        it asks for, makes the patch ``FAILED``, and leaves the definitions as they were. Any other error is
+        raised. The patch's record is written with its change (DD-031); a patch without an id is not recorded.
+
+        Returns:
+            How the patch ended, or None when its record says it was applied or skipped before.
+        """
+
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[PatchStatus | None]:
+            recorded = self._stored.patches.get(str(patch.id)) if patch.id else None
+            if recorded is not None and recorded.status in _DONE:
+                return _Outcome(None, None, commit=False)
+            stored = self._stored.copy()
             try:
-                transient.update_types(types_def)
-            except AtlasError as error:
-                if error.code is AtlasErrorCode.TYPE_NAME_NOT_FOUND:
-                    raise AtlasError(AtlasErrorCode.BAD_REQUEST, error.message) from error
-                raise
-            stored = _Stored(dict(self._stored.by_name))
-            updated = _Update(transient, stored, self._now(), user).run(types_def)
-            transient.update_types(updated)
-            return updated, stored
+                change = decide(self.registry)
+                if change.update is not None:
+                    self._update(transient, stored, change.update, None, change.patching)
+                status, changed = change.status, change.update is not None
+            except AtlasError:
+                stored, status, changed = self._stored.copy(), PatchStatus.FAILED, False
+            if patch.id:
+                stored.record(patch, status, self._now())
+            elif not changed:
+                return _Outcome(status, None, commit=False)
+            return _Outcome(status, stored, commit=changed)
 
         return await self._change(apply)
 
@@ -307,11 +503,11 @@ class TypedefStore:
             AtlasError: A definition is not found, is in use or is referred to.
         """
 
-        async def apply(transient: TransientTypeRegistry) -> tuple[None, _Stored]:
-            stored = _Stored(dict(self._stored.by_name))
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[None]:
+            stored = self._stored.copy()
             await _Deletion(stored, self._usage).run(types_def)
             transient.remove_types(types_def)
-            return None, stored
+            return _Outcome(None, stored)
 
         await self._change(apply)
 
@@ -328,7 +524,7 @@ class TypedefStore:
         typedef = self.registry.typedef_by_name(name)
         if typedef is None:
             raise AtlasError(AtlasErrorCode.SYSTEM_TYPE, type_.category.name)
-        await self.delete_types_def(_types_def([typedef]))
+        await self.delete_types_def(types_def_of([typedef]))
 
 
 def _validate_name(typedef: AtlasBaseTypeDef) -> None:
@@ -386,7 +582,7 @@ class _Creation:
         for typedef in others:
             self._create(typedef)
             created.append(self._store(typedef))
-        return _types_def(created)
+        return types_def_of(created)
 
     def _pre_create(self, typedef: AtlasBaseTypeDef) -> None:
         _validate_name(typedef)
@@ -439,9 +635,10 @@ class _Update:
     stored: _Stored
     now: datetime
     user: str | None
+    patching: str | None = None
 
     def run(self, types_def: AtlasTypesDef) -> AtlasTypesDef:
-        return _types_def(self._update(typedef) for typedef in _all(types_def))
+        return types_def_of(self._update(typedef) for typedef in _all(types_def))
 
     def _update(self, typedef: AtlasBaseTypeDef) -> AtlasBaseTypeDef:
         _validate_name(typedef)
@@ -462,7 +659,7 @@ class _Update:
             _check_enum(typedef)
         else:
             if isinstance(typedef, AtlasRelationshipDef) and isinstance(current, AtlasRelationshipDef):
-                _check_relationship_update(typedef, current)
+                _check_relationship_update(typedef, current, patching=self.patching is not None)
             if isinstance(typedef, AtlasBusinessMetadataDef) and isinstance(current, AtlasBusinessMetadataDef):
                 _check_applicable_entity_types(typedef, current)
             skipped = self._check_struct_update(typedef, current)
@@ -490,7 +687,7 @@ class _Update:
             return set()  # pragma: no cover - enums are checked before
         names = [attribute.name for attribute in typedef.attribute_defs]
         for attribute in current.attribute_defs:
-            if attribute.name not in names:
+            if attribute.name not in names and self.patching is None:
                 raise AtlasError(AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED, typedef.name, attribute.name)
         skipped: set[str] = set()
         for attribute in typedef.attribute_defs:
@@ -498,14 +695,14 @@ class _Update:
             if existing is None and _is_legacy_relationship_end(self.transient, typedef.name, attribute.name):
                 skipped.add(str(attribute.name))
                 continue
-            _check_updated_attribute(typedef, attribute, existing)
+            _check_updated_attribute(typedef, attribute, existing, mandatory=self.patching == ADD_MANDATORY_ATTRIBUTE)
         return skipped
 
 
 def _check_updated_attribute(
-    typedef: AtlasStructDef, attribute: AtlasAttributeDef, existing: AtlasAttributeDef | None
+    typedef: AtlasStructDef, attribute: AtlasAttributeDef, existing: AtlasAttributeDef | None, *, mandatory: bool
 ) -> None:
-    if existing is None and not attribute.is_optional:
+    if existing is None and not attribute.is_optional and not mandatory:
         raise AtlasError(AtlasErrorCode.CANNOT_ADD_MANDATORY_ATTRIBUTE, typedef.name, attribute.name)
     if not attribute.name:
         # Java's check; unreachable, the registry's resolution rejects this first.
@@ -527,23 +724,39 @@ def _is_legacy_relationship_end(transient: TransientTypeRegistry, type_name: str
     return False
 
 
-def _check_relationship_update(typedef: AtlasRelationshipDef, current: AtlasRelationshipDef) -> None:
-    """``preUpdateCheck``: a relationship's name, category and ends stay (TDS-08)."""
+def _check_relationship_update(
+    typedef: AtlasRelationshipDef, current: AtlasRelationshipDef, *, patching: bool = False
+) -> None:
+    """``preUpdateCheck``: a relationship's name, category and ends stay (TDS-08).
+
+    While patching, the category may change and the ends may swap (MDL-11).
+    """
     if current.name != typedef.name:
         raise AtlasError(AtlasErrorCode.RELATIONSHIPDEF_INVALID_NAME_UPDATE, typedef.guid, current.name, typedef.name)
-    if current.relationship_category != typedef.relationship_category:
+    if current.relationship_category != typedef.relationship_category and not patching:
         raise AtlasError(
             AtlasErrorCode.RELATIONSHIPDEF_INVALID_CATEGORY_UPDATE,
             typedef.name,
             None if typedef.relationship_category is None else typedef.relationship_category.value,
             None if current.relationship_category is None else current.relationship_category.value,
         )
-    for code, new, existing in (
-        (AtlasErrorCode.RELATIONSHIPDEF_INVALID_END1_UPDATE, typedef.end_def1, current.end_def1),
-        (AtlasErrorCode.RELATIONSHIPDEF_INVALID_END2_UPDATE, typedef.end_def2, current.end_def2),
-    ):
-        if not _same_end(existing, new):
-            raise AtlasError(code, typedef.name, java_end_string(new), java_end_string(existing))
+    new_end1, new_end2 = typedef.end_def1, typedef.end_def2
+    if not _same_end(current.end_def1, new_end1):
+        if not (patching and _same_end(current.end_def1, new_end2)):
+            raise AtlasError(
+                AtlasErrorCode.RELATIONSHIPDEF_INVALID_END1_UPDATE,
+                typedef.name,
+                java_end_string(new_end1),
+                java_end_string(current.end_def1),
+            )
+        new_end2 = new_end1
+    if not _same_end(current.end_def2, new_end2):
+        raise AtlasError(
+            AtlasErrorCode.RELATIONSHIPDEF_INVALID_END2_UPDATE,
+            typedef.name,
+            java_end_string(new_end2),
+            java_end_string(current.end_def2),
+        )
 
 
 def _same_end(current: AtlasRelationshipEndDef | None, new: AtlasRelationshipEndDef | None) -> bool:

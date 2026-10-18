@@ -776,8 +776,10 @@ which change entities rather than types, may keep their records elsewhere; 2.2 d
 `AURELIUS_ATLAS_SERVER_MODELS_DIR`, which defaults to that package directory.
 
 **Reason.** Atlas reads its models from `$ATLAS_HOME/models`, so operators add their own model files and
-patches there; a directory setting keeps that. Unchanged copies can be compared with the reference source
-by a checksum, like the dashboards of 0.6, and are shipped in the wheel without a build step.
+patches there;
+a directory setting keeps that. Unchanged copies let a reviewer prove them unchanged with a diff against
+the tag, as for the dashboards (DD-017), and ship in the wheel without a build step. The line endings are
+kept too: one patch file has CRLF, so the directory is `-text` in `.gitattributes`.
 
 **Alternatives.** Converting the models to Python data: no diff against Atlas, and no way to add models
 without a release. Reading them from a checkout of Atlas at build time: the build would depend on a

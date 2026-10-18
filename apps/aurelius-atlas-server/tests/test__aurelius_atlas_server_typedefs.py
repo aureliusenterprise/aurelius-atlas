@@ -1,7 +1,7 @@
 from typing import cast
 
 import pytest
-from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
+from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument, StoredTypedefs
 from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_store_es.testing.fake import FakeClient
@@ -15,7 +15,7 @@ async def test__the_registry_is_loaded_from_the_stored_types_at_start_up(
     """The lifespan opens the store, then loads the typedef document into the server's registry."""
     stored = ElasticsearchTypedefDocument(cast("AsyncElasticsearch", fake_es))
     await stored.prepare()
-    await stored.write(AtlasTypesDef(entity_defs=[AtlasEntityDef(name="stored_type")]), None)
+    await stored.write(StoredTypedefs(AtlasTypesDef(entity_defs=[AtlasEntityDef(name="stored_type")])), None)
     app = create_app(settings.model_copy(update={"typedef_refresh_seconds": 30.0}))
 
     async with app.router.lifespan_context(app):
