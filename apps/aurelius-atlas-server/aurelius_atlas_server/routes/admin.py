@@ -1,7 +1,5 @@
 """The admin endpoints of ``AdminResource``: version, status, session, liveness and readiness (ADM-01 to ADM-05)."""
 
-import secrets
-import string
 from functools import cache
 from importlib.metadata import version
 from typing import Any
@@ -11,6 +9,7 @@ from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
 
+from aurelius_atlas_server.auth.sessions import csrf_token
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_server.settings import ServerSettings
 
@@ -26,9 +25,6 @@ ACTIVE = "ACTIVE"
 LIVE = "Service is live"
 READY = "Service is ready to accept requests"
 NOT_READY = "Service not ready to accept client requests"
-
-CSRF_TOKEN_LENGTH = 20
-_CSRF_ALPHABET = string.ascii_letters + string.digits
 
 UI_SETTINGS: dict[str, Any] = {
     "atlas.rest-csrf.enabled": True,
@@ -56,11 +52,6 @@ def time_zones() -> list[str]:
     return sorted(available_timezones())
 
 
-def csrf_token() -> str:
-    """A new random token of 20 letters and digits, as ``AdminResource.getUserProfile`` makes one."""
-    return "".join(secrets.choice(_CSRF_ALPHABET) for _ in range(CSRF_TOKEN_LENGTH))
-
-
 @ADMIN.get("/version")
 async def get_version(request: Request) -> dict[str, str]:
     """The server's name, release and revision (ADM-01, DV-03)."""
@@ -80,17 +71,33 @@ async def get_status() -> dict[str, str]:
 
 
 @ADMIN.get("/session")
-async def get_session() -> dict[str, Any]:
-    """The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04)."""
-    return {
+async def get_session(request: Request) -> dict[str, Any]:
+    """The user interface settings and the user of this session (ADM-05, ADM-06).
+
+    Without authentication the user is nobody (DV-04). With it, ``userName`` and ``groups`` name the
+    principal the guard resolved (ADM-06) and ``_csrfToken`` is the session's token, minted here at the
+    first call and kept for the session's life (CRS-02); a bearer-authenticated call has no session and
+    reports a fresh token, as Atlas does for a request whose container session is new.
+    """
+    session = getattr(request.state, "session", None)
+    username: str | None = getattr(request.state, "username", None)
+    groups: list[str] = getattr(request.state, "groups", [])
+    response: dict[str, Any] = {
         **UI_SETTINGS,
-        "atlas.entity.update.allowed": False,
+        "atlas.entity.update.allowed": False,  # the authorizer's answer arrives in 6.2
         "atlas.entity.create.allowed": False,
-        "userName": None,
-        "groups": [],
+        "userName": username,
+        "groups": list(groups),
         "timezones": time_zones(),
-        "_csrfToken": csrf_token(),
     }
+    idle = getattr(request.app.state.settings, "auth_session_idle_seconds", None)
+    if idle is not None:
+        response["atlas.session.timeout.secs"] = idle  # ADM-07, AtlasConfiguration.SESSION_TIMEOUT_SECS
+    if session is not None:
+        response["_csrfToken"] = session.csrf_token
+    else:
+        response["_csrfToken"] = csrf_token()
+    return response
 
 
 @ADMIN.get("/liveness", response_class=PlainTextResponse)

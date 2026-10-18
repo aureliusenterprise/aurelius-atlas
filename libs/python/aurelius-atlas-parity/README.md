@@ -46,6 +46,8 @@ stages:
   [Deviations](../../../docs/architecture/conversion/deviations.md).
 - **Paths** are the JSONPath subset `$`, `.name`, `['name']`, `[n]` and `[*]`. Quote them in YAML
   flow style (`"$[*]"`).
+- **`needs_auth: true`** marks a scenario only a guard-on installation can answer; a plain run skips
+  it and a harness that runs an authenticated server passes `authenticated_run=True` (SCN-16, DD-039).
 
 ## Running scenarios
 

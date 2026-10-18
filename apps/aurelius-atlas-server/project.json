@@ -3,6 +3,7 @@
     "implicitDependencies": [
         "aurelius-atlas-core",
         "aurelius-atlas-dev-elasticsearch",
+        "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-model",
         "aurelius-atlas-store-es"

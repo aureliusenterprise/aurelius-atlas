@@ -1,0 +1,128 @@
+<!doctype html>
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Atlas Login</title>
+        <style>
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f5f6f8;
+                font:
+                    14px/1.4 "Helvetica Neue",
+                    Helvetica,
+                    Arial,
+                    sans-serif;
+                color: #6b7280;
+            }
+            .card {
+                text-align: center;
+                padding: 2rem 3rem;
+            }
+            .spinner {
+                width: 28px;
+                height: 28px;
+                margin: 0 auto 1rem;
+                border: 3px solid #d1d5db;
+                border-top-color: #2f6fed;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="spinner"></div>
+            <p>Signing you in&hellip;</p>
+        </div>
+        <script>
+            (function () {
+                "use strict";
+                var baseUrl = window.location.pathname.replace(/\/[\w-]+.(jsp|html)|\/+$/gi, "");
+                var landed = false;
+                var land = function (indexpath) {
+                    if (landed) {
+                        return;
+                    }
+                    landed = true;
+                    var target = baseUrl + indexpath;
+                    if (window.location.hash.length > 2) {
+                        target += window.location.hash;
+                    }
+                    window.location.replace(target);
+                };
+                var resolve = function (data) {
+                    var primaryUi = "v2";
+                    var indexpath = "/n/index.html";
+                    if (data && data["atlas.ui.default.version"]) {
+                        primaryUi = data["atlas.ui.default.version"];
+                    }
+                    if (primaryUi !== "v2") {
+                        indexpath = "/index.html";
+                    }
+                    var last = null;
+                    try {
+                        last = window.localStorage.getItem("last_ui_load");
+                    } catch (e) {
+                        last = null;
+                    }
+                    if (last === "v1") {
+                        indexpath = "/index.html";
+                    } else if (last === "v2") {
+                        indexpath = "/n/index.html";
+                    }
+                    land(indexpath);
+                };
+                var request = new XMLHttpRequest();
+                request.open("GET", baseUrl + "/api/atlas/admin/session", true);
+                request.timeout = 5000;
+                request.onload = function () {
+                    var data = null;
+                    if (request.status === 200) {
+                        try {
+                            data = JSON.parse(request.responseText);
+                        } catch (e) {
+                            data = null;
+                        }
+                    }
+                    if (data === null) {
+                        land("/index.html");
+                        return;
+                    }
+                    resolve(data);
+                };
+                request.ontimeout = function () {
+                    land("/index.html");
+                };
+                request.onerror = request.ontimeout;
+                request.send();
+            })();
+        </script>
+    </body>
+</html>

@@ -30,6 +30,10 @@ services:
             # guards fail interpolation (not the import) when unset.
             DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
             DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
+            # The aurelius-atlas relying-party client (import/master.json) carries its secret as the
+            # same ${...} placeholder, resolved by the same replace-placeholders mechanism; without it
+            # the import stores the literal text and every token exchange fails 401.
+            ATLAS_RP_CLIENT_SECRET: ${ATLAS_RP_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.

@@ -14,6 +14,12 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   since Atlas's models take seconds to load; only the MDL-16 test loads them
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
+- `aurelius_atlas_server/auth/` — the OIDC relying party (6.1): `guard.py` is the one middleware the
+  request pipeline runs (public paths, CSRF, bearer, session, login start — AUTH-01..10/CRS-01..03);
+  `oidc.py` the issuer client, `sessions.py` the in-memory store, `csrf.py` the filter's check. The
+  browser flow starts at the dashboard origin, which gates pages and proxies `/api/` here (DD-036);
+  rules in the [6.1 spec](../../docs/architecture/conversion/increments/6-1-authentication.md),
+  flow and diagrams in [Identity Management](../../docs/architecture/platform/security/identity-management.md)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
 - `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the server image AND the dashboard

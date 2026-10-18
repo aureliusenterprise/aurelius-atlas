@@ -181,6 +181,9 @@ class AtlasErrorCode(Enum):
             "or '_' characters"
         ),
     )
+    # Atlas 2.4.0 answers an unauthenticated request with the container's own redirect or body, never an
+    # Atlas error; Aurelius Atlas answers the Atlas error body instead (DV-11), for which this code.
+    UNAUTHENTICATED = (401, "ATLAS-401-00-001", "Authentication is required")
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     TYPE_GUID_NOT_FOUND = (404, "ATLAS-404-00-002", "Given type guid {0} was invalid")
     TYPE_ALREADY_EXISTS = (409, "ATLAS-409-00-001", "Given type {0} already exists")

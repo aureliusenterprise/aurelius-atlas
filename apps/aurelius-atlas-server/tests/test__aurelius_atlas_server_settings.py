@@ -10,7 +10,7 @@ from pydantic import ValidationError
 def environment(monkeypatch: pytest.MonkeyPatch, ca_file: Path) -> pytest.MonkeyPatch:
     """The required settings as environment variables."""
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS", '["https://es:9200"]')
-    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD", "secret")
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD", "sup3rs3cr3t")
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS", str(ca_file))
     return monkeypatch
 
@@ -21,6 +21,7 @@ def environment(monkeypatch: pytest.MonkeyPatch, ca_file: Path) -> pytest.Monkey
 def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPatch, ca_file: Path) -> None:
     """Prefixed variables set the settings; unprefixed ones of other projects do not; the port defaults to 21000."""
     environment.setenv("PORT", "8000")
+    environment.setenv("AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET", "rp-secret")
 
     settings = ServerSettings()  # pyright: ignore[reportCallIssue] - read from the environment
     store = settings.store_settings()
@@ -28,9 +29,10 @@ def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPa
     assert settings.port == DEFAULT_PORT == 21000
     assert settings.models_dir == BUILTIN_MODELS_DIR
     assert store.host_urls == ["https://es:9200"]
-    assert store.password.get_secret_value() == "secret"
+    assert store.password.get_secret_value() == "sup3rs3cr3t"
     assert store.ca_certs_path == ca_file
-    assert "secret" not in repr(settings)
+    assert "sup3rs3cr3t" not in repr(settings)
+    assert "rp-secret" not in repr(settings)
 
 
 @pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.store_settings", rules=["SRV-01"])
@@ -70,3 +72,19 @@ def test__tls_needs_both_certificate_and_key(environment: pytest.MonkeyPatch, tm
 
     environment.setenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE", str(key))
     assert ServerSettings().tls == (certificate, key)  # pyright: ignore[reportCallIssue]
+
+
+@pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.auth_enabled", rules=["AUTH-01"])
+def test__authentication_is_on_with_an_issuer_and_needs_its_trio(environment: pytest.MonkeyPatch) -> None:
+    """No issuer means no authentication; an issuer without its secret or redirect URI is an error."""
+    assert ServerSettings().auth_enabled is False  # pyright: ignore[reportCallIssue]
+
+    environment.setenv("AURELIUS_ATLAS_SERVER_AUTH_ISSUER", "https://keycloak.localhost:8443/realms/master")
+    with pytest.raises(ValidationError, match="AUTH_CLIENT_SECRET"):
+        ServerSettings()  # pyright: ignore[reportCallIssue]
+
+    environment.setenv("AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET", "rp-secret")
+    environment.setenv("AURELIUS_ATLAS_SERVER_AUTH_REDIRECT_URI", "https://localhost:8444/api/atlas/auth/callback")
+    settings = ServerSettings()  # pyright: ignore[reportCallIssue]
+    assert settings.auth_enabled is True
+    assert settings.auth_client_id == "aurelius-atlas"

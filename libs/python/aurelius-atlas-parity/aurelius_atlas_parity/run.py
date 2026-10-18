@@ -21,6 +21,7 @@ SAVE_NOT_ONE_ERROR = "save {name}: {path} matches {count} values in the response
 NOT_JSON_ERROR = "the body is not JSON: {body!r}"
 NO_DIRECTORY_ERROR = "{directory} is not a directory of scenarios"
 FAILURE_HEADER = "scenario {scenario}, stage {number} ({name}): {endpoint}"
+NEEDS_AUTH_SKIP = "{scenario} needs an installation with authentication on (needs_auth: true, SCN-16)"
 
 
 class ScenarioFailedError(AssertionError):
@@ -31,11 +32,13 @@ class _StageError(Exception):
     """Something in a stage, other than a difference, that fails it: a missing name or a bad save path."""
 
 
-def load_scenarios(directory: Path) -> list[Any]:
+def load_scenarios(directory: Path, *, authenticated_run: bool = False) -> list[Any]:
     """Read every ``*.scenario.yaml`` below a directory as pytest parameters, one test per scenario (SCN-04).
 
     Use it with ``pytest.mark.parametrize("scenario", load_scenarios(...))``. A scenario's ``rules`` and
-    ``covers`` become a ``covers`` marker of its test.
+    ``covers`` become a ``covers`` marker of its test. A scenario with ``needs_auth: true`` gets a skip mark
+    unless the caller declares an authenticated run (SCN-16): only a guard-on installation can answer it,
+    and the plain (unit) harness runs the guard-off application (AUTH-01).
 
     Raises:
         ScenarioError: A file does not parse or does not match the format (SCN-03).
@@ -48,6 +51,8 @@ def load_scenarios(directory: Path) -> list[Any]:
         scenario = read_scenario(file, directory)
         named = scenario.rules or scenario.covers
         marks = [pytest.mark.covers(*scenario.covers, rules=scenario.rules)] if named else []
+        if scenario.needs_auth and not authenticated_run:
+            marks.append(pytest.mark.skip(NEEDS_AUTH_SKIP.format(scenario=scenario.id)))
         parameters.append(pytest.param(scenario, id=scenario.id, marks=marks))
     return parameters
 
@@ -86,27 +91,32 @@ def _saved(name: str, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - any JS
     return saved[name]
 
 
-async def run_scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
+async def run_scenario(
+    scenario: Scenario, client: httpx.AsyncClient, *, saved: Mapping[str, Any] | None = None
+) -> None:
     """Run a scenario's stages in order through the client (SCN-05).
 
     Args:
         scenario: The scenario, as ``load_scenarios`` gives it.
         client: Talks to the application under test, in-process or over HTTP; the caller owns it.
+        saved: Values the caller supplies for the stages' ``{name}`` placeholders before stage 1 (6.1:
+            an authenticated scenario's bearer token, which only the caller can mint). Stages' ``save``
+            entries add to and override these.
 
     Raises:
         ScenarioFailedError: A stage's response differs from its expectation, or the stage cannot run; later
             stages do not run.
     """
-    saved: dict[str, Any] = {}
+    seeded: dict[str, Any] = dict(saved or {})
     for number, stage in enumerate(scenario.stages, start=1):
         differences: list[str | Difference]
         try:
-            response = await client.send(_build_request(client, stage.request, saved))
+            response = await client.send(_build_request(client, stage.request, seeded))
             await response.aread()
-            expected = substitute(stage.response.json_body, saved) if stage.response.has_json else None
+            expected = substitute(stage.response.json_body, seeded) if stage.response.has_json else None
             differences = check_response(stage.response, expected, response)
             if not differences:
-                saved.update(_save(stage.response, response))
+                seeded.update(_save(stage.response, response))
         except (KeyError, _StageError, ValueError) as error:
             differences = [str(error.args[0]) if error.args else str(error)]
         if differences:

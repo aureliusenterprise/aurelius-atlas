@@ -13,6 +13,7 @@ from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 
+from aurelius_atlas_server.auth.guard import install_auth
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.routes import ADMIN
 from aurelius_atlas_server.settings import ServerSettings
@@ -51,6 +52,8 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
             yield
         finally:
             await store.close()
+            if settings.auth_enabled:
+                await app.state.oidc.aclose()
             LOGGER.info("Stopped %s", app.title)
 
     app = FastAPI(
@@ -67,6 +70,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     app.state.type_registry = registry
     app.add_exception_handler(AtlasError, atlas_error_handler)
     app.include_router(ADMIN)
+    install_auth(app)
 
     logfire.configure(
         send_to_logfire=False,

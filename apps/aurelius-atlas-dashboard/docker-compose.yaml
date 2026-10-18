@@ -20,9 +20,11 @@ services:
             # Shared with the server service, so its service name resolves for the /api/ proxy.
             - aurelius-atlas-dev-elasticsearch-network
         ports:
-            # Fixed host port: the dev URL of the whole product is https://localhost:8080. The e2e
-            # conftest discovers the port, as every stack here does.
-            - 8080:8080
+            # Fixed host port: the dev URL of the whole product is https://localhost:8444. The e2e
+            # conftest discovers the port, as every stack here does. 6.1 moved it from 8080: the
+            # identity provider's plaintext dev listener (dev/keycloak, an up/e2e dependency since
+            # then) publishes host 8080, and the two stacks now run together (DD-036).
+            - 8444:8080
         volumes:
             # This project's certificate and its copy of the dev CA.
             - ./certs:/certs:ro
@@ -44,11 +46,27 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # Authentication on (AUTH-01): the server becomes an OIDC relying party against this
+            # stack's Keycloak (dev/keycloak, started by the up/e2e dependency chain). The issuer URL
+            # is the name Keycloak itself advertises (KC_HOSTNAME), which resolves on the keycloak
+            # network below; the client and its secret are the realm import's `aurelius-atlas` RP
+            # (dev/keycloak/import/master.json), and the redirect URI is this stack's dashboard origin
+            # — port 8444 on the host, where the browser actually is. The CA is the one mkcert root
+            # both projects' certgen issue from, so the server verifies Keycloak's TLS like it
+            # verifies Elasticsearch.
+            AURELIUS_ATLAS_SERVER_AUTH_ISSUER: https://keycloak.localhost:8443/realms/master
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID: aurelius-atlas
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_DASHBOARD_ATLAS_RP_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_REDIRECT_URI: https://localhost:8444/api/atlas/auth/callback
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
             OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
         networks:
             - aurelius-atlas-dev-elasticsearch-network
             - aurelius-atlas-dev-observability-network
+            # Reaching the issuer: keycloak.localhost resolves (network alias) only on the keycloak
+            # stack's network — the same name the browser resolves through /etc/hosts.
+            - aurelius-atlas-dev-keycloak-network
         ports:
             # Discovered by the e2e conftest: the direct-server check (DSH-04) proves the server answers
             # the API only on its own origin.
@@ -66,4 +84,6 @@ networks:
     aurelius-atlas-dev-elasticsearch-network:
         external: true
     aurelius-atlas-dev-observability-network:
+        external: true
+    aurelius-atlas-dev-keycloak-network:
         external: true

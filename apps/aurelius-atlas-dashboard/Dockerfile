@@ -15,6 +15,11 @@ LABEL org.opencontainers.image.version="${VERSION}"
 # root as it stands (DD-034).
 COPY --chown=root:root --chmod=0755 apps/aurelius-atlas-dashboard/dist /usr/share/nginx/html
 
+# The serving project's own pages (not the vendored source): the login page nginx answers at
+# /login.jsp — Atlas's login URI and logoutSuccessUrl — where the OIDC flow returns the browser
+# (DD-040). Kept out of dist/ so `nx build` stays a pure build of the vendored dashboards.
+COPY --chown=root:root --chmod=0755 apps/aurelius-atlas-dashboard/webapp /usr/share/nginx/html
+
 # Ship the site config (locale layout of Atlas's webapp + the proxies that keep the API on the same
 # origin) over the stock one. It is a template: the ${AURELIUS_ATLAS_DASHBOARD_*} placeholders are
 # resolved by the deployment, which mounts its filled-in copy over /etc/nginx/conf.d/default.conf

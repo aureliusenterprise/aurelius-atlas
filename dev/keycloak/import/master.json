@@ -1459,6 +1459,49 @@
             "webOrigins": ["http://localhost:4200", "http://127.0.0.1:4200", "https://localhost:18443"]
         },
         {
+            "adminUrl": "",
+            "alwaysDisplayInConsole": false,
+            "attributes": {
+                "backchannel.logout.revoke.offline.tokens": "false",
+                "backchannel.logout.session.required": "true",
+                "display.on.consent.screen": "false",
+                "frontchannel.logout.session.required": "true",
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:8444/*",
+                "realm_client": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "The Aurelius Atlas server as OpenID Connect relying party (6.1)",
+            "directAccessGrantsEnabled": true,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "id": "3b86bb5a-5e7e-4c92-9aa2-8882afab1fff",
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas",
+            "nodeReRegistrationTimeout": -1,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [
+                "https://localhost:8444/api/atlas/auth/callback",
+                "https://localhost:21000/api/atlas/auth/callback"
+            ],
+            "rootUrl": "",
+            "secret": "${ATLAS_RP_CLIENT_SECRET}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": ["https://localhost:8444"]
+        },
+        {
             "alwaysDisplayInConsole": false,
             "attributes": {
                 "post.logout.redirect.uris": "+",
@@ -2274,6 +2317,15 @@
                 "description": "${role_admin}",
                 "id": "4179f759-af9b-4db3-bf6c-9a4d9ad833b5",
                 "name": "admin"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "containerId": "3754b9be-62c4-482a-8c06-cbd401298cd0",
+                "description": "The Atlas admin group the session reports (6.1; the Apache Atlas ADMIN group of users-credentials.properties)",
+                "id": "99f8561a-6eaa-4e7b-9eb7-c6a56dce2b5f",
+                "name": "ADMIN"
             }
         ]
     },
@@ -2306,6 +2358,7 @@
             "enabled": true,
             "firstName": "Aurelius",
             "lastName": "Writer",
+            "realmRoles": ["ADMIN"],
             "username": "aurelius-writer"
         },
         {

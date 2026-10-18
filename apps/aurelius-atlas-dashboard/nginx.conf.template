@@ -21,6 +21,11 @@ server {
 
     # Version-disclosure hardening: keep the nginx version out of the Server header and error pages.
     server_tokens off;
+    # Redirects stay relative (the gate's @login below): nginx would absolutize them from this
+    # container's own listener — the container port, not the published port the browser came in
+    # on. A relative Location is what RFC 9110 allows and what a browser resolves against the
+    # origin it is on.
+    absolute_redirect off;
 
     # The built dashboards, laid out as Atlas's web application: dashboardv2 at the root, dashboardv3 in
     # n/ (the build of apps/aurelius-atlas-dashboard writes exactly this tree).
@@ -82,9 +87,23 @@ server {
         proxy_redirect off;
     }
 
-    # The login form's target, at the origin root (public/js/modules/atlasLogin.js). Not implemented by
-    # the server until 6.1, when authentication lands: until then this answers 404 like the server's own
-    # route table does today, and 6.1 needs no nginx change to become reachable.
+    # The login page of Atlas (AtlasLoginServlet serves it, and Atlas's logout lands there —
+    # logoutSuccessUrl("/login.jsp"); the vendored UI's 401 handler navigates here too, ADR 046
+    # forbids editing the JS). Under Keycloak, Atlas keeps it off the ignore list and runs the dance
+    # through it; here the gate does the same: an anonymous visit takes the login start with this URI
+    # kept, and a visit on a session gets the login page (webapp/login.html, DD-040) — this project's
+    # own resolver, answering with the dashboard the user was on, as the vendored form's script does.
+    location = /login.jsp {
+        auth_request /_auth;
+        error_page 401 = @login;
+        try_files /login.html =404;
+    }
+
+    # The old form login's target (public/js/modules/atlasLogin.js, the script of the login page the
+    # OIDC flow replaced). The vendored UI never posts here in this mode and Atlas 2.4.0's Keycloak
+    # chain guards it like any other URI, so the proxy lets the server's guard answer it: an
+    # anonymous navigation starts the login flow (AUTH-06), an anonymous call is 401 (AUTH-04). The
+    # way in is the gated page load (DSH-07) or login.jsp above; the way out is /logout.html.
     location = /j_spring_security_check {
         proxy_pass $atlas_upstream;
         proxy_http_version 1.1;
@@ -100,22 +119,98 @@ server {
         proxy_redirect off;
     }
 
+    # The dashboard's logout link (dashboardv2/public/js/views/site/Header.js navigates the browser to
+    # /logout.html on this origin): the server destroys the session, expires the cookie and answers the
+    # issuer's end-session URL (AUTH-10). Public: logging out without a session is a no-op, not a loop,
+    # so this location carries no gate.
+    location = /logout.html {
+        proxy_pass $atlas_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_DASHBOARD_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_DASHBOARD_API_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # The page-load gate of DSH-07 (DD-036): the server's /api/atlas/auth/check answers for the
+    # request's session (its cookie rides the subrequest), and a page without one is redirected to the
+    # server's login start, which runs the Keycloak code flow and returns to the kept URL. Only the
+    # page locations below carry the gate — assets stay open as in Atlas's ignore list (DSH-08), and
+    # the API guards itself in the server (AUTH-02), so /api/ above is not gated here. The 401 lands
+    # in @login rather than error_page's path to /api/...: that path would re-enter location /api/
+    # and be proxied, answering the browser with the issuer's URL directly; @login's return sends
+    # the browser to the login start itself, where the kept URL is visible (DSH-07).
+    location = /_auth {
+        internal;
+        proxy_pass $atlas_upstream/api/atlas/auth/check;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_DASHBOARD_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_DASHBOARD_API_UPSTREAM_NAME};
+    }
+
+    # The gated pages. Exact matches, so an unknown path under / or /n/ never lands here: it is an
+    # asset (404 unless the file exists), not a page. / resolves through try_files to index.html
+    # without a redirect, keeping Utils.getBaseUrl at the origin root as before.
+    location = / {
+        auth_request /_auth;
+        error_page 401 = @login;
+        try_files /index.html =404;
+    }
+
+    location = /index.html {
+        auth_request /_auth;
+        error_page 401 = @login;
+        try_files $uri =404;
+    }
+
+    location = /n/ {
+        auth_request /_auth;
+        error_page 401 = @login;
+        try_files /n/index.html =404;
+    }
+
+    location = /n/index.html {
+        auth_request /_auth;
+        error_page 401 = @login;
+        try_files $uri =404;
+    }
+
+    # The gate's answer to a page without a session: the browser goes to the login start on this
+    # origin, which starts the flow with the page kept (AUTH-06, DSH-07).
+    location @login {
+        return 302 /api/atlas/auth/login?next=$request_uri;
+    }
+
     # `/n` reaches `/n/` as a directory does; Atlas's webapp (a servlet container) redirects too, and
     # the server's StaticFiles mount did before DD-034. 308 keeps the method, as the old 307 did (DV-09).
     location = /n {
         return 308 /n/;
     }
 
-    # dashboardv3 under /n/. No SPA fallback: the dashboards route on the URL fragment (Backbone hash
-    # routes), so the server never sees a deep path to hand to index.html, and an unknown file must stay
-    # a 404 — a 200 with HTML where JavaScript was expected is how a missing asset becomes a stack trace
-    # elsewhere (DSH-03).
+    # dashboardv3 under /n/ — its assets, ungated (DSH-08); the page locations above carry the gate. No
+    # SPA fallback: the dashboards route on the URL fragment (Backbone hash routes), so the server never
+    # sees a deep path to hand to index.html, and an unknown file must stay a 404 — a 200 with HTML
+    # where JavaScript was expected is how a missing asset becomes a stack trace elsewhere (DSH-03).
     location /n/ {
         try_files $uri $uri/ =404;
     }
 
-    # dashboardv2 at the root. `/` resolves through the index directive to index.html *without* a
-    # redirect, which is what keeps Utils.getBaseUrl(window.location.pathname) at the origin root.
+    # dashboardv2 at the root — its assets, ungated (DSH-08); the page locations above carry the gate.
     location / {
         try_files $uri $uri/ =404;
     }

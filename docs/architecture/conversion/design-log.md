@@ -34,43 +34,48 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 
 ## Log
 
-| #                                                                                           | Decision                                                                   | Increment | Status               |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------- | -------------------- |
-| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)              | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged  | 0.1       | Accepted             |
-| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                | Atlas code lives in `aurelius-atlas-*` projects split by layer             | 0.1       | Accepted             |
-| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                | All template projects carry the `aurelius-atlas-` prefix                   | 0.1       | Accepted             |
-| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                   | The SPA keeps tokens in memory and renews them silently                    | 0.1       | Accepted             |
-| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                    | The store uses the official async Elasticsearch client, one per store      | 0.2       | Proposed             |
-| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                  | Development and tests run Elasticsearch with TLS and authentication on     | 0.2       | Proposed             |
-| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)               | The Elasticsearch test fixture ships with the store library                | 0.2       | Proposed             |
-| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                               | A yellow cluster is healthy                                                | 0.2       | Proposed             |
-| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)        | Traceability is checked from collected markers, not from a test run        | 0.3       | Proposed             |
-| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)             | The traceability check covers Atlas code from increment 0.2 on             | 0.3       | Proposed             |
-| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)          | The test report is generated from JUnit, coverage and trace files          | 0.3       | Proposed             |
-| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)          | Parity scenarios are YAML files run as parametrised pytest tests           | 0.4       | Proposed             |
-| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)          | A scenario response is compared exactly, except at declared paths          | 0.4       | Proposed             |
-| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                        | Scenario facts reach the report as test properties                         | 0.4       | Proposed             |
-| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)    | The server is a FastAPI application with one router per Atlas resource     | 0.5       | Proposed             |
-| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                               | The server does not start without its store                                | 0.5       | Proposed             |
-| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24) | The dashboards are vendored unchanged and built with dart-sass on Node 24  | 0.6       | Proposed             |
-| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                     | The server serves the dashboards from the API's origin                     | 0.6       | Superseded by DD-034 |
-| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                         | The template examples stay until the plan is done                          | 0.6       | Proposed             |
-| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)        | Typedef models are Pydantic models that read and write Atlas's JSON        | 1.1       | Proposed             |
-| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                 | Set-valued fields keep each name once, in first-seen order                 | 1.1       | Proposed             |
-| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)      | Typedef timestamps are aware datetimes, written as epoch milliseconds      | 1.1       | Proposed             |
-| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                    | Atlas errors live in the model library                                     | 1.2       | Proposed             |
-| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)       | The registry is updated on a transient copy under a re-entrant lock        | 1.2       | Proposed             |
-| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                            | The type system ports the definition side only                             | 1.2       | Proposed             |
-| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)           | Dynamic attributes and search lookups wait for their increments            | 1.3       | Proposed             |
-| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                   | Derived type sets keep first-seen order                                    | 1.3       | Proposed             |
-| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                       | The type definitions are one Elasticsearch document                        | 1.4       | Proposed             |
-| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version) | Server processes share the type definitions through the document's version | 1.4       | Proposed             |
-| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                  | The store asks the entity store whether a type is in use                   | 1.4       | Proposed             |
-| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                            | The patch records live in the typedef document                             | 1.5       | Proposed             |
-| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)      | The built-in models are vendored unchanged and read from a directory       | 1.5       | Proposed             |
-| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)               | Start-up loading is one change per model file and per patch                | 1.5       | Proposed             |
-| [DD-034](#dd-034-the-dashboard-image-serves-the-dashboards-and-proxies-the-api)             | The dashboard image serves the dashboards and proxies the API              | 0.6       | Proposed             |
-| [DD-035](#dd-035-an-atlas-project-is-an-nx-project)                                         | An Atlas project is an Nx project                                          | 0.6       | Proposed             |
+| #                                                                                                | Decision                                                                         | Increment | Status               |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | --------- | -------------------- |
+| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)                   | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged        | 0.1       | Accepted             |
+| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                     | Atlas code lives in `aurelius-atlas-*` projects split by layer                   | 0.1       | Accepted             |
+| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                     | All template projects carry the `aurelius-atlas-` prefix                         | 0.1       | Accepted             |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                        | The SPA keeps tokens in memory and renews them silently                          | 0.1       | Accepted             |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                         | The store uses the official async Elasticsearch client, one per store            | 0.2       | Proposed             |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                       | Development and tests run Elasticsearch with TLS and authentication on           | 0.2       | Proposed             |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)                    | The Elasticsearch test fixture ships with the store library                      | 0.2       | Proposed             |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                                    | A yellow cluster is healthy                                                      | 0.2       | Proposed             |
+| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)             | Traceability is checked from collected markers, not from a test run              | 0.3       | Proposed             |
+| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)                  | The traceability check covers Atlas code from increment 0.2 on                   | 0.3       | Proposed             |
+| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)               | The test report is generated from JUnit, coverage and trace files                | 0.3       | Proposed             |
+| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)               | Parity scenarios are YAML files run as parametrised pytest tests                 | 0.4       | Proposed             |
+| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)               | A scenario response is compared exactly, except at declared paths                | 0.4       | Proposed             |
+| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                             | Scenario facts reach the report as test properties                               | 0.4       | Proposed             |
+| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)         | The server is a FastAPI application with one router per Atlas resource           | 0.5       | Proposed             |
+| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                                    | The server does not start without its store                                      | 0.5       | Proposed             |
+| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)      | The dashboards are vendored unchanged and built with dart-sass on Node 24        | 0.6       | Proposed             |
+| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                          | The server serves the dashboards from the API's origin                           | 0.6       | Superseded by DD-034 |
+| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                              | The template examples stay until the plan is done                                | 0.6       | Proposed             |
+| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)             | Typedef models are Pydantic models that read and write Atlas's JSON              | 1.1       | Proposed             |
+| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                      | Set-valued fields keep each name once, in first-seen order                       | 1.1       | Proposed             |
+| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)           | Typedef timestamps are aware datetimes, written as epoch milliseconds            | 1.1       | Proposed             |
+| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                         | Atlas errors live in the model library                                           | 1.2       | Proposed             |
+| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)            | The registry is updated on a transient copy under a re-entrant lock              | 1.2       | Proposed             |
+| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                                 | The type system ports the definition side only                                   | 1.2       | Proposed             |
+| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)                | Dynamic attributes and search lookups wait for their increments                  | 1.3       | Proposed             |
+| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                        | Derived type sets keep first-seen order                                          | 1.3       | Proposed             |
+| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                            | The type definitions are one Elasticsearch document                              | 1.4       | Proposed             |
+| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version)      | Server processes share the type definitions through the document's version       | 1.4       | Proposed             |
+| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                       | The store asks the entity store whether a type is in use                         | 1.4       | Proposed             |
+| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                                 | The patch records live in the typedef document                                   | 1.5       | Proposed             |
+| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)           | The built-in models are vendored unchanged and read from a directory             | 1.5       | Proposed             |
+| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)                    | Start-up loading is one change per model file and per patch                      | 1.5       | Proposed             |
+| [DD-034](#dd-034-the-dashboard-image-serves-the-dashboards-and-proxies-the-api)                  | The dashboard image serves the dashboards and proxies the API                    | 0.6       | Proposed             |
+| [DD-035](#dd-035-an-atlas-project-is-an-nx-project)                                              | An Atlas project is an Nx project                                                | 0.6       | Proposed             |
+| [DD-036](#dd-036-nginx-gates-page-loads-and-the-server-owns-the-oidc-flow)                       | nginx gates page loads and the server owns the OIDC flow                         | 6.1       | Proposed             |
+| [DD-037](#dd-037-the-server-is-the-relying-party-and-keeps-its-oidc-plumbing)                    | The server is the relying party and keeps its OIDC plumbing                      | 6.1       | Proposed             |
+| [DD-038](#dd-038-the-sessions-principal-comes-from-the-access-token-not-the-id_token)            | The session's principal comes from the access token, not the id_token            | 6.1       | Proposed             |
+| [DD-039](#dd-039-an-authenticated-scenario-declares-needs_auth-and-skips-off-the-guard-on-stack) | An authenticated scenario declares `needs_auth` and skips off the guard-on stack | 6.1       | Proposed             |
+| [DD-040](#dd-040-the-login-page-is-served-at-loginjsp-and-resolves-to-the-dashboard-in-use)      | The login page is served at `/login.jsp` and resolves to the dashboard in use    | 6.1       | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -884,3 +889,166 @@ inventory loses a guard: a Python project that forgets its `[tool.hatch.build.ta
 packages now contributes no functions instead of failing the check — its tests still name the rules,
 and R1's functions only go missing silently for a project that declares itself Python without
 declaring packages, which the code review of its `pyproject.toml` owns.
+
+### DD-036. nginx gates page loads and the server owns the OIDC flow
+
+- **Status:** Proposed
+- **Increment:** 6.1
+- **Date:** 2026-10-18
+
+**Decision.** The dashboard origin's nginx gates unauthenticated _page loads_ — `auth_request` to a
+server check endpoint, `error_page 401 = @login`, and `@login` answers `302 /api/atlas/auth/login
+?next=$request_uri` (the redirect answers through a named location rather than error_page's own
+path: a path under `/api/` would re-enter the API proxy and reach the browser as the issuer's URL,
+and `absolute_redirect off` keeps it relative so nginx does not absolutize it from the container's
+own port) — and the server owns the whole OIDC flow (authorization-code, callback, session, bearer
+verification, CSRF). The `/api/` proxy is unchanged, so the session cookie and the CSRF header ride
+it. The resolved `nginx.conf` and the shipped `nginx.conf.template` gain the locations together.
+
+**Reason.** In Java Atlas one process guards statics and API, so the entry point redirects the
+browser to Keycloak before the UI loads (DV-10's reason). Here nginx serves the statics (DD-034);
+gating them in nginx keeps that one redirect on the browser path, where it works. Answering an
+unauthenticated _API_ request with a redirect would instead hand Keycloak's login HTML to a JSON
+call that fails CORS — the dashboards' own 401 handler (`CommonViewFunction.userDataFetch`) expects
+a status, not a redirect (AUTH-04, DV-11). The split keeps each half on the path its protocol
+belongs to: nginx redirects navigations, the server answers APIs.
+
+**Alternatives.** Guard everything in the server and let nginx proxy the statics through it: one
+guard, but every asset request pays a proxy hop to a second container, the API image restarts
+discard cached pages, and DD-034's serving split — the reason the image exists — is reversed.
+Keycloak-side gateway or nginx `openid_connect` module (the ngx_auth_openidc pattern): the proxy
+would hold the session, but the session must live where the API reads it, so the token store,
+refresh, and CSRF token would sit in nginx config rather than ported code — untraceable (ADR 049),
+and the Java classes' behaviour would have no Python home.
+
+**Consequences.** The vendored dashboards are untouched (ADR 046): the old form login
+(`j_spring_security_check`) stays unused and answers through the server's guard like any other URI,
+and logout's `/logout.html` answers at the origin through the server. The UI's 401 landing URI
+`login.jsp` (`Utils.defaultErrorHandler` navigates there on any 401/419, so it is where a logged-out
+browser arrives) answers the login start with the dashboard root kept — the same way in, not the
+Atlas form page, which OIDC replaced (DV-10). A second nginx variant appears in
+`aurelius-atlas-frontend-example`'s style when the frontend example retires. The auth subrequest
+endpoint must answer fast and never redirect (it answers 200 or 401 only); the dev stack's `nx up` /
+e2e compose must start `dev/keycloak` first.
+
+### DD-037. The server is the relying party and keeps its OIDC plumbing
+
+- **Status:** Proposed
+- **Increment:** 6.1
+- **Date:** 2026-10-18
+
+**Decision.** The OIDC relying-party code (discovery, JWKS, token verification, session store,
+refresh) lives inside `aurelius_atlas_server` as an `auth` module, with settings under the server's
+own prefix. No new shared library is extracted, and the FastAPI example keeps its own
+`providers/auth.py` untouched until it retires (DD-019).
+
+**Reason.** The two verifiers answer different contracts: the example checks a bearer on its own
+routes; the server must additionally mint a session, refresh tokens, extract groups for the session
+endpoint, and port the CSRF filter. A shared library would be shaped by the union of two consumers
+where one is leaving (DD-019), which is the premature abstraction ADR 007's R5 does not ask for —
+the _interface_ that stays stable is OIDC itself, not our helper code.
+
+**Alternatives.** Extract `libs/python/aurelius-atlas-auth` now: one place to fix, but the example
+would have to migrate too (its own increment's churn) and the lib's shape would change again when
+the example leaves. Reuse the example as an import: server code reaching into an example project
+violates the spine/optional-slice boundary in the root `AGENTS.md`.
+
+**Consequences.** When the template examples retire (after the plan), the example's verifier dies
+with it and the server's `auth` module is the survivor; if a third verifier ever appears, extracting
+the library becomes an increment then. The Keycloak client registration, secrets, and dev users stay
+declarative in `dev/keycloak/import/master.json` (the slice's rule — no init sidecar, re-import
+needs a stack recreate).
+
+### DD-038. The session's principal comes from the access token, not the id_token
+
+- **Status:** Proposed
+- **Increment:** 6.1
+- **Date:** 2026-10-18
+
+**Decision.** `OidcClient.exchange` verifies the `id_token` (its `nonce` must belong to the login, so a
+replayed code is refused) but builds the session's `userName` and `groups` from the verified
+**access token**, not the `id_token`. The `id_token` proves the login happened; the access token says
+who it was for.
+
+**Reason.** Keycloak keeps realm and client roles out of the `id_token` — a live realm returns
+`realm_access` on the access token (`aud` the resource server) and nothing on the `id_token`
+(`aud` the client). A session built from the `id_token` therefore reports no groups, and the ADM-06
+session shows `groups: []` for a user who holds `ADMIN`. This mirrors
+`AtlasKeycloakAuthenticationProvider`, which authenticates on the access token; it also matches the
+bearer path, which already verifies the access token, and `refresh`, whose response carries no
+`id_token` at all — one source for both paths.
+
+**Alternatives.** Read the groups from the `id_token`: needs a Keycloak protocol mapper to move the
+realm role into it, which configures the identity provider to fit our code rather than porting
+Atlas. Do a separate userinfo call: another round trip for data the access token already signed.
+
+**Consequences.** `exchange` verifies two tokens (nonce check on the `id_token`, audience/exp on the
+access token); the exchange's unit fixture signs both. `principal_of` is unchanged and reads whichever
+claims it is handed.
+
+### DD-039. An authenticated scenario declares `needs_auth` and skips off the guard-on stack
+
+- **Status:** Proposed
+- **Increment:** 6.1
+- **Date:** 2026-10-18
+
+**Decision.** A scenario may set `needs_auth: true`. `load_scenarios(..., authenticated_run=True)`
+takes it as it is; the default (a plain unit run) gives the scenario a `skip` mark. The server keeps
+one `admin/session.scenario.yaml`, run by the e2e harness with `authenticated_run=True` and skipped
+by the guard-off unit harness.
+
+**Reason.** The unit harness runs the installation with no issuer configured — AUTH-01's guard-off
+installation, which reports no user (the DV-04 behaviour the session scenario no longer expects) and
+cannot verify a bearer. The authenticated expectations (ADM-06 `groups: [ADMIN]`, ADM-07 the idle
+timeout) are only answerable on the e2e stack, where the guard is on and a `{bearer}` can be minted.
+The trace check reads a scenario's `covers`/`rules` at collection time (SCN-14), so a scenario that
+skips at runtime still names its functions and rules; skipping it in the harness that cannot serve it
+costs nothing in coverage and stops the unit run from failing on an expectation it was never meant to
+meet.
+
+**Alternatives.** A second scenario file for the unauthenticated case: two files that must be kept in
+step, and the guard-off answer is DV-04's already, which the unit endpoint tests cover directly. A
+`pytest.mark.skipif` in each project's test module: duplicates the reason in every project rather than
+once in the loader. Environment sniffing inside the loader: hidden, and a unit run must say it is not
+authenticated.
+
+**Consequences.** SCN-16 is the rule; the flag is part of the scenario format (SCN-01's optional keys).
+`needs_auth` skips are visible in the test report as skips, not silent. The bearer seed itself stays
+the caller's (the e2e conftest mints it); the loader knows only _whether_ a scenario needs auth, not
+which token.
+
+### DD-040. The login page is served at `/login.jsp` and resolves to the dashboard in use
+
+- **Status:** Proposed
+- **Increment:** 6.1
+- **Date:** 2026-10-19
+
+**Decision.** `/login.jsp` is a gated page: an anonymous visit is redirected to the login start with
+`/login.jsp` kept, and a visit on a session is served `webapp/login.html` — the dashboard project's
+own login page. Its inline script repeats the vendored form's resolver (`atlasLogin.js`,
+`redirect()`): ask the session, take `atlas.ui.default.version` as the default dashboard, let the
+browser's `last_ui_load` win over it, carry the URL fragment, and `location.replace` to the result.
+Logout sends the browser to the issuer's end-session endpoint with `/login.jsp` as the post-logout
+redirect — Atlas's `logoutSuccessUrl`.
+
+**Reason.** The vendored dashboards record the UI the user is on in `localStorage.last_ui_load`
+(v2's header and 401 handler write `"v1"`, v3's write `"v2"`) and both navigate to the same
+`/logout.html`, so the server cannot tell the source UI from the request. In Atlas 2.4.0 that value
+is read by the login page's script: logout lands on `/login.jsp` (`AtlasSecurityConfig.configure`,
+`logoutSuccessUrl("/login.jsp")`), and under Keycloak the URI stays off the ignore list
+(`if (!keycloakEnabled) matchers.add("/login.jsp")`) so the adapter runs the dance through the same
+page. Signing out of dashboardv3 and back in therefore returns to v3. Landing on the origin root
+instead — what DD-036's logout did — answers every return with dashboardv2, which the vendored UI
+treats as losing the user's last choice.
+
+**Alternatives.** A `next` on the logout link built from `last_ui_load` in the page: needs a JS edit
+to both dashboards (ADR 046 forbids). A query marker on `/logout.html` from the header's navigate:
+same forbidden edit. Serving nothing at `/login.jsp` and redirecting the login start to the root:
+Atlas never answers the URI that way, and the UI loss is the bug being fixed.
+
+**Consequences.** DSH-09 is the rule; AUTH-10's landing is `/login.jsp`, not the origin. The login
+page is a serving-project file (`apps/aurelius-atlas-dashboard/webapp/`), copied into the image next
+to `dist/` so `nx build` stays a pure build of the vendored source; the dashboards' JS stays
+untouched (ADR 046). The page resolves in the browser, so no server-side state is added; a browser
+without storage or a failing session call falls back to dashboardv2 as the vendored resolver's
+error branch does.
