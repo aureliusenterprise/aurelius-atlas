@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase1-1.5-builtin-models",
+    "title": "phase1-1.5-builtin-models",
+    "aliases": []
+  },
+  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
