@@ -34,35 +34,38 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 
 ## Log
 
-| #                                                                                           | Decision                                                                  | Increment | Status   |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------- | -------- |
-| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)              | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged | 0.1       | Accepted |
-| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                | Atlas code lives in `aurelius-atlas-*` projects split by layer            | 0.1       | Accepted |
-| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                | All template projects carry the `aurelius-atlas-` prefix                  | 0.1       | Accepted |
-| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                   | The SPA keeps tokens in memory and renews them silently                   | 0.1       | Accepted |
-| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                    | The store uses the official async Elasticsearch client, one per store     | 0.2       | Proposed |
-| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                  | Development and tests run Elasticsearch with TLS and authentication on    | 0.2       | Proposed |
-| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)               | The Elasticsearch test fixture ships with the store library               | 0.2       | Proposed |
-| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                               | A yellow cluster is healthy                                               | 0.2       | Proposed |
-| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)        | Traceability is checked from collected markers, not from a test run       | 0.3       | Proposed |
-| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)             | The traceability check covers Atlas code from increment 0.2 on            | 0.3       | Proposed |
-| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)          | The test report is generated from JUnit, coverage and trace files         | 0.3       | Proposed |
-| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)          | Parity scenarios are YAML files run as parametrised pytest tests          | 0.4       | Proposed |
-| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)          | A scenario response is compared exactly, except at declared paths         | 0.4       | Proposed |
-| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                        | Scenario facts reach the report as test properties                        | 0.4       | Proposed |
-| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)    | The server is a FastAPI application with one router per Atlas resource    | 0.5       | Proposed |
-| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                               | The server does not start without its store                               | 0.5       | Proposed |
-| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24) | The dashboards are vendored unchanged and built with dart-sass on Node 24 | 0.6       | Proposed |
-| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                     | The server serves the dashboards from the API's origin                    | 0.6       | Proposed |
-| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                         | The template examples stay until the plan is done                         | 0.6       | Proposed |
-| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)        | Typedef models are Pydantic models that read and write Atlas's JSON       | 1.1       | Proposed |
-| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                 | Set-valued fields keep each name once, in first-seen order                | 1.1       | Proposed |
-| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)      | Typedef timestamps are aware datetimes, written as epoch milliseconds     | 1.1       | Proposed |
-| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                    | Atlas errors live in the model library                                    | 1.2       | Proposed |
-| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)       | The registry is updated on a transient copy under a re-entrant lock       | 1.2       | Proposed |
-| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                            | The type system ports the definition side only                            | 1.2       | Proposed |
-| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)           | Dynamic attributes and search lookups wait for their increments           | 1.3       | Proposed |
-| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                   | Derived type sets keep first-seen order                                   | 1.3       | Proposed |
+| #                                                                                           | Decision                                                                   | Increment | Status   |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------- | -------- |
+| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)              | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged  | 0.1       | Accepted |
+| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                | Atlas code lives in `aurelius-atlas-*` projects split by layer             | 0.1       | Accepted |
+| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                | All template projects carry the `aurelius-atlas-` prefix                   | 0.1       | Accepted |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                   | The SPA keeps tokens in memory and renews them silently                    | 0.1       | Accepted |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                    | The store uses the official async Elasticsearch client, one per store      | 0.2       | Proposed |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                  | Development and tests run Elasticsearch with TLS and authentication on     | 0.2       | Proposed |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)               | The Elasticsearch test fixture ships with the store library                | 0.2       | Proposed |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                               | A yellow cluster is healthy                                                | 0.2       | Proposed |
+| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)        | Traceability is checked from collected markers, not from a test run        | 0.3       | Proposed |
+| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)             | The traceability check covers Atlas code from increment 0.2 on             | 0.3       | Proposed |
+| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)          | The test report is generated from JUnit, coverage and trace files          | 0.3       | Proposed |
+| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)          | Parity scenarios are YAML files run as parametrised pytest tests           | 0.4       | Proposed |
+| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)          | A scenario response is compared exactly, except at declared paths          | 0.4       | Proposed |
+| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                        | Scenario facts reach the report as test properties                         | 0.4       | Proposed |
+| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)    | The server is a FastAPI application with one router per Atlas resource     | 0.5       | Proposed |
+| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                               | The server does not start without its store                                | 0.5       | Proposed |
+| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24) | The dashboards are vendored unchanged and built with dart-sass on Node 24  | 0.6       | Proposed |
+| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                     | The server serves the dashboards from the API's origin                     | 0.6       | Proposed |
+| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                         | The template examples stay until the plan is done                          | 0.6       | Proposed |
+| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)        | Typedef models are Pydantic models that read and write Atlas's JSON        | 1.1       | Proposed |
+| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                 | Set-valued fields keep each name once, in first-seen order                 | 1.1       | Proposed |
+| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)      | Typedef timestamps are aware datetimes, written as epoch milliseconds      | 1.1       | Proposed |
+| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                    | Atlas errors live in the model library                                     | 1.2       | Proposed |
+| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)       | The registry is updated on a transient copy under a re-entrant lock        | 1.2       | Proposed |
+| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                            | The type system ports the definition side only                             | 1.2       | Proposed |
+| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)           | Dynamic attributes and search lookups wait for their increments            | 1.3       | Proposed |
+| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                   | Derived type sets keep first-seen order                                    | 1.3       | Proposed |
+| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                       | The type definitions are one Elasticsearch document                        | 1.4       | Proposed |
+| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version) | Server processes share the type definitions through the document's version | 1.4       | Proposed |
+| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                  | The store asks the entity store whether a type is in use                   | 1.4       | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -514,7 +517,7 @@ are ignored. The Java setters' normalisations run as `_`-prefixed validators, so
 is read and when a model is built in code, as the Java constructors and setters do.
 
 **Reason.** Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and
-writes it natively, so 1.5 needs no mapping layer. Atlas writes with Jackson `NON_NULL`, which is
+writes it natively, so 1.6 needs no mapping layer. Atlas writes with Jackson `NON_NULL`, which is
 Pydantic's `exclude_none`; empty collections stay because Jackson keeps them (DD-013 compares exactly).
 
 **Alternatives.** Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to
@@ -543,7 +546,7 @@ table size, but it would copy an accident of the implementation. Sorted order: s
 what clients send.
 
 **Consequences.** The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them
-without order, through the option DD-013 foresees, which 1.5 adds with the first scenario that needs it.
+without order, through the option DD-013 foresees, which 1.6 adds with the first scenario that needs it.
 
 ### DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
 
@@ -618,7 +621,7 @@ and later the hierarchies (1.3). Their value side (`isValidValue`, `getNormalize
 JanusGraph side (vertex property names, unique property names, index field names, index-query escaping)
 is not ported.
 
-**Reason.** Types REST (1.5) needs only the definition side; values first matter for entities (2.1),
+**Reason.** Types REST (1.6) needs only the definition side; values first matter for entities (2.1),
 which is where Atlas's tests for them can be run. The JanusGraph names have no meaning in
 Elasticsearch: the index mapping is designed in 2.2.
 
@@ -664,4 +667,76 @@ inherited relationship attributes, Java's winner is equally arbitrary.
 **Alternatives.** Sort them by name: stable too, but unrelated to how the hierarchy was declared.
 
 **Consequences.** `subTypes` in responses may be ordered differently from Atlas's; parity scenarios
-compare them without order (DD-021, from 1.5).
+compare them without order (DD-021, from 1.6).
+
+### DD-028. The type definitions are one Elasticsearch document
+
+- **Status:** Proposed
+- **Increment:** 1.4
+- **Date:** 2026-10-18
+
+**Decision.** All stored type definitions are one document, `typedefs`, in the index
+`aurelius-atlas-typedefs` (through an alias, so a reindex can swap it). The document holds the
+definitions in their stored form (TDS-05, TDS-06), grouped by kind as in `AtlasTypesDef`. Every change
+replaces the whole document, guarded by `if_seq_no` and `if_primary_term`.
+
+**Reason.** Atlas changes several definitions in one graph transaction: `createTypesDef` stores all of
+a request or none (TDS-10). Elasticsearch has no transaction across documents, but writes one document
+atomically, so one document makes every typedef change atomic and its sequence number a single version
+of all types (DD-029). The registry, not Elasticsearch, answers every query over types; the document is
+read whole at start-up and on change. Atlas's built-in models with all patches are about 1 MB of JSON,
+well inside Elasticsearch's limits.
+
+**Alternatives.** One document per definition, keyed by name: queryable, and a create can use
+`op_type=create` for uniqueness, but a request touching several definitions needs a hand-written
+rollback when one write fails, and other processes see half a change. A changes log of operations,
+replayed at start-up: atomic per entry, but every process replays the whole history and compaction is
+extra work.
+
+**Consequences.** The document's size grows with the number of types; a deployment with tens of
+thousands of custom types would revisit this. Type changes are serialised across the cluster, as
+Atlas serialises them with its update lock.
+
+### DD-029. Server processes share the type definitions through the document's version
+
+- **Status:** Proposed
+- **Increment:** 1.4
+- **Date:** 2026-10-18
+
+**Decision.** Each process remembers the `_seq_no` and `_primary_term` of the `typedefs` document its
+registry was built from. Before a type change it reloads when the stored document is newer; it then
+writes conditionally on what it read. A conflict means another process changed types first: the process
+reloads, applies the change again on the new definitions, and gives up with
+`FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` after a second conflict. Readers reload when the document changed,
+checked at most every `AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS` (default 5).
+
+**Reason.** Atlas runs one active server and keeps its registry in memory (DD-024 is per process).
+Several processes behind a load balancer must not lose each other's changes, and a change must reach the
+others without a restart. Optimistic concurrency on one document gives both with one cheap `GET` of
+the document's version.
+
+**Alternatives.** A lock document: needs expiry and recovery when its holder dies. Change notification
+through a message bus: a component the system does not have (ADR 050).
+
+**Consequences.** For up to the refresh interval, a process may answer from older types than another;
+a type change is visible at once only on the process that made it. 6.4 measures whether the interval
+needs tuning.
+
+### DD-030. The store asks the entity store whether a type is in use
+
+- **Status:** Proposed
+- **Increment:** 1.4
+- **Date:** 2026-10-18
+
+**Decision.** The typedef store takes a `TypeUsage` callback that answers whether entities,
+classifications or relationships of a type exist; deleting a type that is in use fails with
+`TYPE_HAS_REFERENCES`. Until the entity store exists (2.2) the callback answers "not in use".
+
+**Reason.** Atlas checks `typeHasInstanceVertex` before deleting a type. The instances live in the
+entity store, which the typedef store must not depend on; a callback keeps the dependency pointing from
+core's entity store to the typedef store.
+
+**Alternatives.** Query the entity index from the typedef store: couples it to an index that does not
+exist yet.
+
+**Consequences.** 2.2 passes its own check when it builds the stores.

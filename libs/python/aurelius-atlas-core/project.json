@@ -1,0 +1,13 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": [
+        "aurelius-atlas-dev-elasticsearch",
+        "aurelius-atlas-store-es",
+        "aurelius-atlas-typesystem"
+    ],
+    "name": "aurelius-atlas-core",
+    "projectType": "library",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_core",
+    "tags": [],
+    "targets": {}
+}

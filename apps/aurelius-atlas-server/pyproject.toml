@@ -1,5 +1,6 @@
 [project]
 dependencies = [
+    "aurelius-atlas-core",
     "aurelius-atlas-model",
     "aurelius-atlas-store-es",
     "fastapi>=0.141.1",
@@ -24,6 +25,9 @@ packages = ["aurelius_atlas_server"]
 asyncio_default_fixture_loop_scope = "module"
 asyncio_mode = "auto"
 required_plugins = ["pytest-asyncio"]
+
+[tool.uv.sources.aurelius-atlas-core]
+workspace = true
 
 [tool.uv.sources.aurelius-atlas-model]
 workspace = true

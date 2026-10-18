@@ -49,7 +49,7 @@ Not in scope:
 | THY-13 | Error messages follow `MessageFormat`: an apostrophe starts or ends quoted text, which is copied as is and loses the apostrophe, and two apostrophes are one; collection parameters are written as `[a, b]`                                                                                                                                                                                                                                                                                           |
 
 THY-04, THY-11 and THY-12 change the definitions the registry holds, as Java does. The definitions Types
-REST returns (1.5) therefore carry `subTypes`, `relationshipAttributeDefs` and `businessAttributeDefs`.
+REST returns (1.6) therefore carry `subTypes`, `relationshipAttributeDefs` and `businessAttributeDefs`.
 
 ## Java origin
 

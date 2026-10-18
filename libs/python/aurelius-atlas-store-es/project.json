@@ -5,5 +5,12 @@
     "projectType": "library",
     "sourceRoot": "{projectRoot}/aurelius_atlas_store_es",
     "tags": [],
-    "targets": {}
+    "targets": {
+        "e2e": {
+            "metadata": {
+                "description": "Run the e2e tests alone: one restarts the shared dev Elasticsearch (docker compose down/up)"
+            },
+            "parallelism": false
+        }
+    }
 }
