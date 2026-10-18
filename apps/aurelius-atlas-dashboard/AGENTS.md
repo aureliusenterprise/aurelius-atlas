@@ -18,8 +18,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   (`API_UPSTREAM[_NAME]`, `TLS_CA_FILE`, `DNS_RESOLVER`) the deployment resolves at mount time
 - `docker-compose.yaml` + `nginx.conf` — the dev stack: nginx in front, the API-only server and the
   dev store behind; `nginx.conf` is the resolved config the stack mounts over the image's template.
-  The compose plugin infers `up` from this file (`serve` is opted out in `project.json` metadata —
-  the dev loop here is the detached stack, not a foreground run)
+  The compose plugin infers `up` and `serve` from this file as for every compose project; the dev
+  loop here is the detached stack (`up`), not the foreground `serve`
 - `nginx.conf` also carries the page-load gate (DSH-07, DD-036): `auth_request /_auth` on the five
   page locations (`/`, `/index.html`, `/n/`, `/n/index.html`, `/login.jsp`) asks the server's
   `/api/atlas/auth/check` and a 401 redirects to its login start (`@login`, relative); on a session
@@ -48,10 +48,9 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 
 ## Wiring Checklist
 
-- `project.json` — the `build` target and its inputs; the `up` `dependsOn`, which adds the server
-  image, the server's certificate, the dev store and — since 6.1, via `implicitDependencies` —
-  dev/keycloak, to what the compose plugin infers; and the `metadata.dockerCompose.serve = false`
-  opt-out that drops the inferred `serve` target.
+- `project.json` — the `build` target and its inputs, and the `e2e` target (its `up` prerequisite
+  chain — the server image, its certificate, the dev store and, since 6.1, dev/keycloak — arrives
+  through `implicitDependencies`, on top of what the compose plugin infers).
 - `Dockerfile` — `COPY dist/` as the site root (its layout is Atlas's webapp layout: v2 at the root,
   v3 in `n/`) and `COPY webapp/` beside it (the login page ships without a `dist/` rebuild); the
   docker plugin infers the `docker-*` targets from its name, and its `dependsOn` `build` writes
