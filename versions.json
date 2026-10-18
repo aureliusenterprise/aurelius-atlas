@@ -43,5 +43,10 @@
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
+  },
+  {
+    "version": "feat-dashboard-nginx-serving",
+    "title": "feat-dashboard-nginx-serving",
+    "aliases": []
   }
 ]
