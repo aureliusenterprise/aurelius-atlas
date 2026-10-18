@@ -5,7 +5,7 @@ from typing import Literal, Self
 
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
-from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr, model_validator
+from pydantic import Field, FilePath, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_PREFIX = "AURELIUS_ATLAS_SERVER_"
@@ -41,10 +41,6 @@ class ServerSettings(BaseSettings):
 
     tls_key_file: FilePath | None = None
     """PEM private key of ``tls_cert_file``."""
-
-    dashboard_dir: DirectoryPath | None = None
-    """The built dashboards: ``dashboardv2`` at its root and ``dashboardv3`` in ``n/``; None serves the API only
-    (DSH-04)."""
 
     models_dir: Path = BUILTIN_MODELS_DIR
     """The models loaded at start-up: by default ``addons/models`` of Apache Atlas 2.4.0; a missing directory loads

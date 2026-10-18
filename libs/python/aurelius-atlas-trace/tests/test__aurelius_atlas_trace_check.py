@@ -99,6 +99,14 @@ def test__collect_project_without_tests_has_no_tests(tmp_path: Path) -> None:
     assert collect_project(project).tests == ()
 
 
+@pytest.mark.covers("aurelius_atlas_trace.check.ProjectTests.trace_rootdir", rules=["TRC-10"])
+def test__collected_tests_live_under_the_collected_rootdir(tmp_path: Path) -> None:
+    """Without a collection there is no pytest rootdir, which is the project itself (DD-035)."""
+    project = Project(root=tmp_path, packages=(), test_dirs=())
+
+    assert collect_project(project).trace_rootdir == tmp_path
+
+
 @pytest.mark.covers("aurelius_atlas_trace.check.inventory", rules=["TRC-06"])
 def test__inventory_covers_every_atlas_project(make_workspace: Callable[..., SampleWorkspace]) -> None:
     """The inventory is the public functions of every Atlas project's packages."""

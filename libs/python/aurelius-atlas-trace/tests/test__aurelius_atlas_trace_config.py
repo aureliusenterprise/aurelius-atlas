@@ -8,8 +8,8 @@ from aurelius_atlas_trace.testing import SampleWorkspace
 
 
 @pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["TRC-07"])
-def test__load_config_checks_every_member_not_excluded(make_workspace: Callable[..., SampleWorkspace]) -> None:
-    """Workspace members are Atlas projects unless excluded; their packages and test directories are found."""
+def test__load_config_checks_every_project_not_excluded(make_workspace: Callable[..., SampleWorkspace]) -> None:
+    """Nx projects are Atlas projects unless excluded; their packages and test directories are found."""
     workspace = make_workspace(code="", tests="", e2e="")
 
     config = load_config(workspace.root)
@@ -42,17 +42,30 @@ def test__load_config_reads_an_optional_deviations_table(make_workspace: Callabl
 
 @pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["TRC-07"])
 def test__load_config_picks_up_a_new_project(make_workspace: Callable[..., SampleWorkspace]) -> None:
-    """A member added to the workspace is checked without touching the trace configuration."""
+    """A directory with a project.json is checked without touching the trace configuration."""
     workspace = make_workspace(code="", tests="")
-    pyproject = workspace.root / "pyproject.toml"
-    pyproject.write_text(pyproject.read_text().replace('"libs/sample",', '"libs/sample", "libs/new",'))
     new = workspace.root / "libs" / "new"
     new.mkdir()
-    (new / "pyproject.toml").write_text('[tool.hatch.build.targets.wheel]\npackages = ["new_package"]\n')
+    (new / "project.json").write_text("{}\n")
 
     config = load_config(workspace.root)
 
     assert [project.root.name for project in config.projects] == ["new", "sample"]
+
+
+@pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["TRC-07"])
+def test__load_config_includes_a_project_without_python(make_workspace: Callable[..., SampleWorkspace]) -> None:
+    """A project without a pyproject.toml ships no package; its tests are still collected (DD-035)."""
+    workspace = make_workspace(code="", tests="")
+    image = workspace.root / "libs" / "image"
+    (image / "e2e").mkdir(parents=True)
+    (image / "project.json").write_text("{}\n")
+
+    config = load_config(workspace.root)
+
+    discovered = {project.root.name: project for project in config.projects}
+    assert discovered["image"].packages == ()
+    assert discovered["image"].test_dirs == (image / "e2e",)
 
 
 @pytest.mark.covers("aurelius_atlas_trace.config.load_config")
@@ -62,14 +75,10 @@ def test__load_config_picks_up_a_new_project(make_workspace: Callable[..., Sampl
         ("[project]\nname = 'x'\n", r"has no \[tool.aurelius-atlas-trace\] table"),
         ("[tool.aurelius-atlas-trace]\nspecs = 'specs'\n", "needs 'specs' and 'enforce-from'"),
         ("[tool.aurelius-atlas-trace]\nspecs = 'specs'\nenforce-from = 'one'\n", "needs 'specs' and 'enforce-from'"),
-        (
-            "[tool.uv.workspace]\nmembers = ['lib']\n[tool.aurelius-atlas-trace]\nspecs = 's'\nenforce-from = '0.2'\n",
-            "lib declares no package",
-        ),
     ],
 )
 def test__load_config_explains_what_is_missing(tmp_path: Path, pyproject: str, problem: str) -> None:
-    """A missing table, setting or package is a ConfigError that says what is missing."""
+    """A missing table or setting is a ConfigError that says what is missing."""
     (tmp_path / "pyproject.toml").write_text(pyproject)
     (tmp_path / "lib").mkdir()
     (tmp_path / "lib" / "pyproject.toml").write_text("[project]\nname = 'lib'\n")

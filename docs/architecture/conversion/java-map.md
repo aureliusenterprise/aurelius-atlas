@@ -16,7 +16,7 @@ truth about what has been ported. Status values: _not started_, _in progress_, _
 | `server-api`                    | Interfaces shared by server components                | `aurelius-atlas-core`                               | not started |
 | `common`                        | Shared utilities                                      | where used                                          | not started |
 | `authorization`                 | Simple and Ranger authorizers                         | `aurelius-atlas-server` (simple authorizer only)    | not started |
-| `dashboardv2`, `dashboardv3`    | Web UIs (served at `/` and `/n/`)                     | `aurelius-atlas-dashboard` (unchanged)              | in progress |
+| `dashboardv2`, `dashboardv3`    | Web UIs (served at `/` and `/n/`)                     | `aurelius-atlas-dashboard` (unchanged, nginx image) | in progress |
 | `notification`                  | Kafka hook and entity notifications                   | –                                                   | dropped     |
 | `client`                        | Java client libraries                                 | –                                                   | dropped     |
 | `addons/*-bridge`, `*-shim`     | Hooks for Hive, HBase, Kafka, Sqoop, Storm, …         | –                                                   | dropped     |

@@ -5,8 +5,9 @@ The two user interfaces of Apache Atlas 2.4.0, `dashboardv2` and `dashboardv3`, 
 ([DD-017](../../docs/architecture/conversion/design-log.md#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)).
 
 Introduced by increment [0.6](../../docs/architecture/conversion/increments/0-6-dashboards.md). The
-`aurelius-atlas-server` serves them where Atlas does: `dashboardv2` at `/` and `dashboardv3` at `/n/`
-([DD-018](../../docs/architecture/conversion/design-log.md#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)).
+dashboard image — this project's nginx container — serves them where Atlas does: `dashboardv2` at `/`
+and `dashboardv3` at `/n/`, with the API proxied from the server on the same origin
+([DD-034](../../docs/architecture/conversion/design-log.md#dd-028-the-dashboard-image-serves-the-dashboards-and-proxies-the-api)).
 Until the later increments port the endpoints they call, the dashboards load and report errors for
 those calls.
 
@@ -18,6 +19,19 @@ npx nx build aurelius-atlas-dashboard
 
 The build runs `grunt build-minify` for both dashboards inside the hardened Node 24 image, as Atlas's
 Maven build does, and writes only the static files to `dist/`. It needs Docker with `buildx`.
+
+## Serving
+
+```bash
+npx nx docker-build aurelius-atlas-dashboard   # the nginx image around dist/
+npx nx up aurelius-atlas-dashboard             # whole product on https://localhost:8080
+```
+
+The image bakes `nginx.conf.template` over the stock site config; the `${AURELIUS_ATLAS_DASHBOARD_*}`
+placeholders are resolved by the deployment, which mounts its filled-in copy over
+`/etc/nginx/conf.d/default.conf` (an unresolved container fails `nginx -t` at start). The template keeps
+the API on the same origin: `/api/` is proxied to the server without stripping the prefix, and the login
+root `j_spring_security_check` is proxied for when 6.1 adds the route.
 
 ## License
 

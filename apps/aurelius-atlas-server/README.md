@@ -20,10 +20,10 @@ Atlas resource. What is ported, and how, is tracked in the
 
 ## Dashboards
 
-The server also serves the Apache Atlas 2.4.0 dashboards from
-[`aurelius-atlas-dashboard`](../aurelius-atlas-dashboard/README.md): `dashboardv2` at `/` and
-`dashboardv3` at `/n/`. The API is matched first. The image contains them; outside the image,
-`AURELIUS_ATLAS_SERVER_DASHBOARD_DIR` names the built directory, and without it only the API is served.
+The server answers the API only. The Apache Atlas 2.4.0 dashboards come from
+[`aurelius-atlas-dashboard`](../aurelius-atlas-dashboard/README.md): its nginx image serves
+`dashboardv2` at `/` and `dashboardv3` at `/n/`, and keeps the API on the same origin by proxying
+`/api/` here (DD-034). `nx up aurelius-atlas-dashboard` runs the whole product.
 
 ## Type definitions
 
@@ -38,7 +38,8 @@ not applied before change anything, so a restart writes nothing. The `/v2/types`
 ## Running it
 
 ```bash
-npx nx serve aurelius-atlas-server   # builds the dashboards, starts the dev store and observability; https://localhost:21000
+npx nx serve aurelius-atlas-server   # the API: starts the dev store and observability; https://localhost:21000
+npx nx up aurelius-atlas-dashboard   # the dashboards in front of that API; https://localhost:8080
 ```
 
 The server does not start without its store. Settings are environment variables prefixed

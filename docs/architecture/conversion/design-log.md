@@ -34,41 +34,43 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 
 ## Log
 
-| #                                                                                           | Decision                                                                   | Increment | Status   |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------- | -------- |
-| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)              | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged  | 0.1       | Accepted |
-| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                | Atlas code lives in `aurelius-atlas-*` projects split by layer             | 0.1       | Accepted |
-| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                | All template projects carry the `aurelius-atlas-` prefix                   | 0.1       | Accepted |
-| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                   | The SPA keeps tokens in memory and renews them silently                    | 0.1       | Accepted |
-| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                    | The store uses the official async Elasticsearch client, one per store      | 0.2       | Proposed |
-| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                  | Development and tests run Elasticsearch with TLS and authentication on     | 0.2       | Proposed |
-| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)               | The Elasticsearch test fixture ships with the store library                | 0.2       | Proposed |
-| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                               | A yellow cluster is healthy                                                | 0.2       | Proposed |
-| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)        | Traceability is checked from collected markers, not from a test run        | 0.3       | Proposed |
-| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)             | The traceability check covers Atlas code from increment 0.2 on             | 0.3       | Proposed |
-| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)          | The test report is generated from JUnit, coverage and trace files          | 0.3       | Proposed |
-| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)          | Parity scenarios are YAML files run as parametrised pytest tests           | 0.4       | Proposed |
-| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)          | A scenario response is compared exactly, except at declared paths          | 0.4       | Proposed |
-| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                        | Scenario facts reach the report as test properties                         | 0.4       | Proposed |
-| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)    | The server is a FastAPI application with one router per Atlas resource     | 0.5       | Proposed |
-| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                               | The server does not start without its store                                | 0.5       | Proposed |
-| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24) | The dashboards are vendored unchanged and built with dart-sass on Node 24  | 0.6       | Proposed |
-| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                     | The server serves the dashboards from the API's origin                     | 0.6       | Proposed |
-| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                         | The template examples stay until the plan is done                          | 0.6       | Proposed |
-| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)        | Typedef models are Pydantic models that read and write Atlas's JSON        | 1.1       | Proposed |
-| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                 | Set-valued fields keep each name once, in first-seen order                 | 1.1       | Proposed |
-| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)      | Typedef timestamps are aware datetimes, written as epoch milliseconds      | 1.1       | Proposed |
-| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                    | Atlas errors live in the model library                                     | 1.2       | Proposed |
-| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)       | The registry is updated on a transient copy under a re-entrant lock        | 1.2       | Proposed |
-| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                            | The type system ports the definition side only                             | 1.2       | Proposed |
-| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)           | Dynamic attributes and search lookups wait for their increments            | 1.3       | Proposed |
-| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                   | Derived type sets keep first-seen order                                    | 1.3       | Proposed |
-| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                       | The type definitions are one Elasticsearch document                        | 1.4       | Proposed |
-| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version) | Server processes share the type definitions through the document's version | 1.4       | Proposed |
-| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                  | The store asks the entity store whether a type is in use                   | 1.4       | Proposed |
-| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                            | The patch records live in the typedef document                             | 1.5       | Proposed |
-| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)      | The built-in models are vendored unchanged and read from a directory       | 1.5       | Proposed |
-| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)               | Start-up loading is one change per model file and per patch                | 1.5       | Proposed |
+| #                                                                                           | Decision                                                                   | Increment | Status               |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------- | -------------------- |
+| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)              | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged  | 0.1       | Accepted             |
+| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                | Atlas code lives in `aurelius-atlas-*` projects split by layer             | 0.1       | Accepted             |
+| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                | All template projects carry the `aurelius-atlas-` prefix                   | 0.1       | Accepted             |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                   | The SPA keeps tokens in memory and renews them silently                    | 0.1       | Accepted             |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                    | The store uses the official async Elasticsearch client, one per store      | 0.2       | Proposed             |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                  | Development and tests run Elasticsearch with TLS and authentication on     | 0.2       | Proposed             |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)               | The Elasticsearch test fixture ships with the store library                | 0.2       | Proposed             |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                               | A yellow cluster is healthy                                                | 0.2       | Proposed             |
+| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)        | Traceability is checked from collected markers, not from a test run        | 0.3       | Proposed             |
+| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)             | The traceability check covers Atlas code from increment 0.2 on             | 0.3       | Proposed             |
+| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)          | The test report is generated from JUnit, coverage and trace files          | 0.3       | Proposed             |
+| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)          | Parity scenarios are YAML files run as parametrised pytest tests           | 0.4       | Proposed             |
+| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)          | A scenario response is compared exactly, except at declared paths          | 0.4       | Proposed             |
+| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                        | Scenario facts reach the report as test properties                         | 0.4       | Proposed             |
+| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)    | The server is a FastAPI application with one router per Atlas resource     | 0.5       | Proposed             |
+| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                               | The server does not start without its store                                | 0.5       | Proposed             |
+| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24) | The dashboards are vendored unchanged and built with dart-sass on Node 24  | 0.6       | Proposed             |
+| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                     | The server serves the dashboards from the API's origin                     | 0.6       | Superseded by DD-034 |
+| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                         | The template examples stay until the plan is done                          | 0.6       | Proposed             |
+| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)        | Typedef models are Pydantic models that read and write Atlas's JSON        | 1.1       | Proposed             |
+| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                 | Set-valued fields keep each name once, in first-seen order                 | 1.1       | Proposed             |
+| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)      | Typedef timestamps are aware datetimes, written as epoch milliseconds      | 1.1       | Proposed             |
+| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                    | Atlas errors live in the model library                                     | 1.2       | Proposed             |
+| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)       | The registry is updated on a transient copy under a re-entrant lock        | 1.2       | Proposed             |
+| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                            | The type system ports the definition side only                             | 1.2       | Proposed             |
+| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)           | Dynamic attributes and search lookups wait for their increments            | 1.3       | Proposed             |
+| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                   | Derived type sets keep first-seen order                                    | 1.3       | Proposed             |
+| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                       | The type definitions are one Elasticsearch document                        | 1.4       | Proposed             |
+| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version) | Server processes share the type definitions through the document's version | 1.4       | Proposed             |
+| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                  | The store asks the entity store whether a type is in use                   | 1.4       | Proposed             |
+| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                            | The patch records live in the typedef document                             | 1.5       | Proposed             |
+| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)      | The built-in models are vendored unchanged and read from a directory       | 1.5       | Proposed             |
+| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)               | Start-up loading is one change per model file and per patch                | 1.5       | Proposed             |
+| [DD-034](#dd-034-the-dashboard-image-serves-the-dashboards-and-proxies-the-api)             | The dashboard image serves the dashboards and proxies the API              | 0.6       | Proposed             |
+| [DD-035](#dd-035-an-atlas-project-is-an-nx-project)                                         | An Atlas project is an Nx project                                          | 0.6       | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -466,7 +468,7 @@ Moving to another Atlas release replaces both directories and re-applies `PATCHE
 
 ### DD-018. The server serves the dashboards from the API's origin
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-034
 - **Increment:** 0.6
 - **Date:** 2026-10-17
 
@@ -810,3 +812,75 @@ holder dies (as in DD-029).
 **Consequences.** The first start against an empty store writes the document once per model file and
 patch, a few hundred writes of the whole document; later starts write nothing unless a model or patch is
 new. Two processes starting together may each retry once per change.
+
+### DD-034. The dashboard image serves the dashboards and proxies the API
+
+- **Status:** Proposed
+- **Increment:** 0.6
+- **Date:** 2026-10-18
+
+**Decision.** `apps/aurelius-atlas-dashboard` builds an nginx image (the hardened `dhi.io/nginx`) that
+serves the built `dashboardv2` at `/` and `dashboardv3` at `/n/` and reverse-proxies `/api/`, with the
+prefix kept, to the Aurelius Atlas server on a private network. The site config is a template baked to
+`/etc/nginx/conf.d/default.conf`, whose `${AURELIUS_ATLAS_DASHBOARD_*}` placeholders the deployment
+resolves when it mounts its copy — the model of `aurelius-atlas-frontend-example`. The server serves
+the API only: its image no longer contains the dashboards, and `AURELIUS_ATLAS_SERVER_DASHBOARD_DIR` and
+`mount_dashboards` are gone. This supersedes DD-018; the origin stays the dashboards' one, only its
+process changes.
+
+**Reason.** The same origin DD-018 chose is still required — the dashboards derive their API base from
+`window.location.pathname` and ride the session cookie (their source is vendored unchanged, ADR 046) —
+but serving it from nginx matches the workspace's serving pattern (the frontend example), keeps the API
+image small and its restarts free of static content, and lets the two halves scale, upgrade and sit
+behind different TLS endpoints independently. DD-018 rejected the second container because it needs a
+proxy to keep one origin; the proxy is now the point rather than the cost: it is the same component the
+frontend example ships, it answers the login root (`j_spring_security_check`) the moment 6.1 adds the
+route without any nginx change, and a CDN or TLS terminator in front of the UI no longer has to reach
+the API image.
+
+**Alternatives.** Keep DD-018's single image: one artifact less, but the template's serving pattern goes
+unused and every API restart re-serves static files. Serve the dashboards from the API origin through a
+CDN only: no proxy of ours, but the session cookie's SameSite story and the login root become the CDN's
+problem. Keep both serving modes: two ways to be wrong about precedence (DSH-03); one path per rule.
+
+**Consequences.** DSH-01 to DSH-06 now hold at the dashboard origin: the tests that proved them against
+`mount_dashboards` in-process prove them through nginx instead, in the dashboard project's own tests
+and stack, which runs both images; `nx up aurelius-atlas-dashboard` brings up the whole product on
+`https://localhost:8080`.
+
+Externally visible differences are recorded as DV-09: `/n` redirects 308 where the server answered 307,
+the hardening headers nginx adds, and per-container TLS. The server image no longer depends on the
+dashboard build; the dashboard image `dependsOn` it. No CSP is served: the vendored dashboards use
+inline scripts and `eval`, and ADR 046 keeps their look and behaviour untouched (DV-09).
+
+### DD-035. An Atlas project is an Nx project
+
+- **Status:** Proposed
+- **Increment:** 0.6
+- **Date:** 2026-10-18
+
+**Decision.** The trace check (ADR 049) discovers the Atlas projects as the Nx projects: every
+workspace directory with a `project.json`, except the `exclude-projects` of its configuration (TRC-07,
+revised here). A project without a `pyproject.toml` ships no Python and contributes no functions to
+the inventory; its `tests/` and `e2e/` are still collected, so the rules its tests name count. The
+report reads the result files from the same directories.
+
+**Reason.** The rule is about the product's projects, not about Python: increment 0.6 proved the old
+derivation wrong by counterexample, when the dashboard's e2e tests moved into a project that ships no
+Python. Making it a uv workspace member to satisfy the check meant a `pyproject.toml` and a package
+holding nothing but a docstring — machinery in service of the tool, not the product. `project.json`
+is the one file every project in this workspace has, and `aurelius-atlas-frontend-example` already
+runs Python e2e tests as a project with no `pyproject.toml`, which the old rule left unchecked.
+
+**Alternatives.** Keep uv membership: every non-Python project that owns tests needs a fake Python
+package. A listing in `[tool.aurelius-atlas-trace]`: explicit, but it drifts — TRC-07's point is that
+a new project is checked without anyone remembering to register it. Scanning for `tests/` or `e2e/`
+directories alone: collects test directories that belong to no project.
+
+**Consequences.** A project's pytest `rootdir` is no longer always its own directory: without an ini
+file of its own, pytest walks up and finds the workspace root's, so the trace file records the
+rootdir and the report joins outcomes through it rather than through the project directory. The
+inventory loses a guard: a Python project that forgets its `[tool.hatch.build.targets.wheel]`
+packages now contributes no functions instead of failing the check — its tests still name the rules,
+and R1's functions only go missing silently for a project that declares itself Python without
+declaring packages, which the code review of its `pyproject.toml` owns.

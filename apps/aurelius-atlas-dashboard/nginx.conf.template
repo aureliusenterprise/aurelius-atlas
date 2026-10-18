@@ -1,0 +1,122 @@
+# Serving for the Apache Atlas 2.4.0 dashboards (DD-034): dashboardv2 at `/` and dashboardv3 at `/n/`,
+# with the API proxied on the same origin.
+#
+# This file is baked to /etc/nginx/conf.d/default.conf by apps/aurelius-atlas-dashboard/Dockerfile and is
+# a *template*: the ${AURELIUS_ATLAS_DASHBOARD_*} placeholders (API upstream origin + name, trust anchor
+# path, DNS resolver) are resolved by the deployment, which mounts its filled-in copy over that path —
+# apps/aurelius-atlas-dashboard/nginx.conf is this project's own resolved variant, mounted by its
+# docker-compose.yaml. The hardened runtime image has no shell tooling to render at start, on
+# purpose; an unresolved container fails at nginx config parse instead of serving with template defaults.
+# NOTE: the hardened image includes this file at *server* level, so only server-scoped directives are
+# allowed here (no http-level `map`, no `upstream`).
+#
+# The two paths the dashboards ask for are fixed by the vendored source, not by us: they compute their
+# API base from window.location.pathname (dashboardv2|3/public/js/utils/UrlLinks.js + Utils.getBaseUrl,
+# which strips a trailing `/n` segment), so the API must answer on *this* origin under `/api/`; and the
+# login posts to `j_spring_security_check` at the origin root (public/js/modules/atlasLogin.js). The
+# session rides that same cookie jar, which is why a proxy and not CORS (DD-018's reason, kept by
+# DD-034: one origin; only the process serving it changed).
+server {
+    listen 8080;
+
+    # Version-disclosure hardening: keep the nginx version out of the Server header and error pages.
+    server_tokens off;
+
+    # The built dashboards, laid out as Atlas's web application: dashboardv2 at the root, dashboardv3 in
+    # n/ (the build of apps/aurelius-atlas-dashboard writes exactly this tree).
+    root /usr/share/nginx/html;
+    index index.html;
+
+    include /etc/nginx/app.d/*.conf;
+
+    # Security headers. No Content-Security-Policy on purpose: the vendored dashboards ship inline
+    # scripts (public/index.html.tpl rewrites the URL to index.html from an inline <script>) and run
+    # their templates through eval (Underscore/Backbone), so any script-src stricter than 'unsafe-eval'
+    # breaks the UI — and the UI's behaviour and look are fixed (ADR 046, DD-001). The API is proxied on
+    # this origin, so a CSP would have to be written for a UI that cannot honour one. The headers below
+    # are the ones Atlas's own webapp does not need to opt out of; DV-09 records them as additions.
+    #   - X-Frame-Options SAMEORIGIN rather than DENY: the vendored bundles create same-origin iframes
+    #     (js/external_lib/idealTimeout/store.min.js), which DENY would block.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # The API upstream, as one variable used by both proxied locations below. The upstream name is the
+    # service name of this repo's stacks (compose project / k8s Service name), and its value carries no
+    # path or trailing slash — with a variable in proxy_pass, a URI part would replace the request URI
+    # rather than keep it, and keeping it is what the /api/ location needs. The whole block follows the
+    # same "parameterize for your topology" rule as every other deployment knob here — resolved by the
+    # consumer at deploy time, never at container start, because nginx reads ${NAME} as an nginx variable
+    # and an unresolved file fails `nginx -t` loudly.
+    #
+    # The hostname goes through a variable so nginx resolves it via `resolver` *per request* — a missing
+    # backend then returns 502 instead of refusing to boot the dashboards. 127.0.0.11 is Docker's built-in
+    # DNS; change it for other environments (e.g. kube-dns at 10.96.0.10).
+    set $atlas_upstream ${AURELIUS_ATLAS_DASHBOARD_API_UPSTREAM};
+    resolver ${AURELIUS_ATLAS_DASHBOARD_DNS_RESOLVER} valid=10s ipv6=off;
+
+    # The Atlas REST API. Unlike the frontend example's proxy, the prefix is *kept*: the server's routes
+    # already begin with /api/atlas (aurelius_atlas_server/routes/admin.py), so the request URI is
+    # forwarded as it stands. Because this prefix location is longer than `location /`, an API path is
+    # answered by the API even when a dashboard file carries the same name — DSH-03's precedence, now
+    # nginx's longest-prefix match instead of Starlette's mount order.
+    #
+    # Upstream TLS is verified, not merely used: this proxy carries the session cookie, so an unverified
+    # upstream lets a network-path attacker impersonate the server and harvest every session. The trust
+    # anchor is deployment-specific: AURELIUS_ATLAS_DASHBOARD_TLS_CA_FILE (dev/e2e mounts the project CA
+    # at /certs/ca.pem; deployments mount their own). nginx refuses to start when the file is missing —
+    # failing loudly beats silently unverified.
+    location /api/ {
+        proxy_pass $atlas_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_DASHBOARD_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_DASHBOARD_API_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # The login form's target, at the origin root (public/js/modules/atlasLogin.js). Not implemented by
+    # the server until 6.1, when authentication lands: until then this answers 404 like the server's own
+    # route table does today, and 6.1 needs no nginx change to become reachable.
+    location = /j_spring_security_check {
+        proxy_pass $atlas_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_DASHBOARD_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_DASHBOARD_API_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # `/n` reaches `/n/` as a directory does; Atlas's webapp (a servlet container) redirects too, and
+    # the server's StaticFiles mount did before DD-034. 308 keeps the method, as the old 307 did (DV-09).
+    location = /n {
+        return 308 /n/;
+    }
+
+    # dashboardv3 under /n/. No SPA fallback: the dashboards route on the URL fragment (Backbone hash
+    # routes), so the server never sees a deep path to hand to index.html, and an unknown file must stay
+    # a 404 — a 200 with HTML where JavaScript was expected is how a missing asset becomes a stack trace
+    # elsewhere (DSH-03).
+    location /n/ {
+        try_files $uri $uri/ =404;
+    }
+
+    # dashboardv2 at the root. `/` resolves through the index directive to index.html *without* a
+    # redirect, which is what keeps Utils.getBaseUrl(window.location.pathname) at the origin root.
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
