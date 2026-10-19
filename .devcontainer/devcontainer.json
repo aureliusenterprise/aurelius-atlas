@@ -107,7 +107,7 @@
             "version": "21.0.9-tem"
         },
         "ghcr.io/devcontainers/features/node:2": {
-            "version": "lts"
+            "version": "24"
         },
         "ghcr.io/devcontainers/features/python:1": {
             "toolsToInstall": ["uv"],

@@ -1,12 +1,30 @@
-# Aurelius Project Template
+# Aurelius Atlas
 
-Welcome to the documentation for the Aurelius Project Template!
+**Data governance made simple.** Aurelius Atlas is an open-source data governance solution that
+enables business users to find, understand, and trust their data without waiting on IT: discover
+data assets and their context in seconds, see who is accountable for them and whether they are fit
+for purpose, follow the journey and transformations of data across systems, and keep sensitive
+information in line with regulations such as GDPR.
 
-## What is this project?
+It is one all-in-one data catalogue, designed to be business-user-friendly, meeting the demands of
+modern distributed data environments.
 
-This template is designed to help you quickly set up a new project. It includes a basic structure for organizing
-your code, documentation, and other resources. Also included are some common utilities for working with core components
-like Apache Kafka.
+This repository builds the new engine behind that product: a Python re-implementation of
+[Apache Atlas](https://atlas.apache.org) that keeps the Atlas 2.4.0 REST API and the Atlas dashboard,
+with Elasticsearch 9 as the only backend instead of JanusGraph, HBase and Solr — so the catalogue is
+far easier to run and cheaper to operate. The original Java Atlas is converted in small, reviewed
+increments, each proven against the Atlas 2.4.0 source code, so the clients, integrations, and
+dashboards organisations rely on keep working exactly as they do today.
+
+Start with the [User Guide](user-guide/index.md) for what the catalogue does for your organisation,
+the [Conversion roadmap](architecture/conversion/index.md) for plan and status, the
+[Architecture](architecture/index.md) overview for the system as it will stand, and the
+[Contributor Guide](contributor-guide/index.md) to set up your machine.
+
+The [User Guide](user-guide/index.md) is intentionally short: until the conversion is complete, the
+[Apache Atlas documentation](https://atlas.apache.org/2.4.0/index.html) describes the behaviour this
+system reproduces, and every intended difference is listed in
+[Deviations from Apache Atlas](architecture/conversion/deviations.md).
 
 ## About the team
 
