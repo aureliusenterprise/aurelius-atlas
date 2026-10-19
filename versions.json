@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase1-1.6-types-rest",
+    "title": "phase1-1.6-types-rest",
+    "aliases": []
+  },
+  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
