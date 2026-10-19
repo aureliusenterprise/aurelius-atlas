@@ -3642,6 +3642,8 @@
       
         
       
+        
+      
     
     
     
@@ -4007,6 +4009,33 @@
     
   
   1.5 Built-in models and patches
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-6-types-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.6 Types REST
 
     
   </span>
@@ -6019,6 +6048,22 @@ Atlas clients expect when it lands).</p>
 <td>Is applied at every start and not recorded</td>
 <td>A record without an id cannot be found again; Atlas never matches it either</td>
 <td>1.5</td>
+</tr>
+<tr>
+<td>DV-09</td>
+<td>Types</td>
+<td><code>/v2/types/typedefs</code> and its headers list each kind in the hash order of the registry; of two <code>notsupertype</code> filters, the first in the request parameters' hash order applies</td>
+<td>Each kind sorted by name; the first <code>notsupertype</code> in the request applies</td>
+<td>Hash order is not something a client can rely on (DD-034)</td>
+<td>1.6</td>
+</tr>
+<tr>
+<td>DV-10</td>
+<td>Types</td>
+<td>A write body that is not an <code>AtlasTypesDef</code> is answered by Jersey's JSON provider</td>
+<td><code>400 BAD_REQUEST</code> with Atlas's error body</td>
+<td>Atlas's source and tests do not state its answer</td>
+<td>1.6</td>
 </tr>
 </tbody>
 </table>

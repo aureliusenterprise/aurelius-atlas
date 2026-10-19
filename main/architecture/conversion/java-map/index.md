@@ -35,4 +35,5 @@ Rows are added by each increment for the classes it ports.
 | `AtlasEntityType`, `AtlasClassificationType`, `AtlasRelationshipType`, `AtlasBusinessMetadataType` (definition side, DD-025, DD-026) | `aurelius_atlas_typesystem` | 1.3 | in progress |
 | `AtlasTypeDefGraphStore`, `AtlasTypeDefGraphStoreV2`, `Atlas*DefStoreV2` (checks and stored form; graph replaced, DD-028) | `aurelius_atlas_core.typedef_store` | 1.4 | in progress |
 | `AtlasTypeDefStoreInitializer` (model loading and typedef patches), `AtlasPatchRegistry` (typedef patches, DD-031), `AtlasPatch` | `aurelius_atlas_core.model_loader`, `aurelius_atlas_model.patches` | 1.5 | in progress |
+| `TypesREST`; `AtlasTypeDefGraphStore` reads and `searchTypesDef`; `FilterUtil`, `SearchFilter` | `aurelius_atlas_server.routes.types`, `aurelius_atlas_core.type_search` | 1.6 | in progress |
 | `AtlasErrorCode`, `AtlasBaseException` (the codes each increment raises) | `aurelius_atlas_model.errors` (DD-023) | 0.5, 1.2 | in progress |

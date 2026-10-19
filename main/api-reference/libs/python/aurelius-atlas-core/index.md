@@ -172,6 +172,18 @@ Methods:
 - **`delete_types_def`** –
 
   Delete the definitions found by GUID, else name, unless something refers to them (TDS-09, TDS-10).
+- **`get_by_guid`** –
+
+  The registered definition with `guid`, of any kind (`getByGuid`, TYR-02).
+- **`get_by_name`** –
+
+  The registered definition named `name`, of any kind (`getByName`, TYR-01).
+- **`get_def_by_guid`** –
+
+  The registered definition of `kind` with `guid` (`get{Kind}DefByGuid`, TYR-03).
+- **`get_def_by_name`** –
+
+  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
 - **`load`** –
 
   Prepare the document and load every stored definition into the registry (`init`, TDS-12).
@@ -279,6 +291,62 @@ Raises:
 - `AtlasError` –
 
   A definition is not found, is in use or is referred to.
+
+#### get\_by\_guid
+
+```
+get_by_guid(guid: str) -> AtlasBaseTypeDef
+```
+
+The registered definition with `guid`, of any kind (`getByGuid`, TYR-02).
+
+Raises:
+
+- `AtlasError` –
+
+  `TYPE_GUID_NOT_FOUND` for a blank or unknown GUID.
+
+#### get\_by\_name
+
+```
+get_by_name(name: str) -> AtlasBaseTypeDef
+```
+
+The registered definition named `name`, of any kind (`getByName`, TYR-01).
+
+Raises:
+
+- `AtlasError` –
+
+  `TYPE_NAME_INVALID` for a blank name, `TYPE_NAME_NOT_FOUND` for an unknown one and `SYSTEM_TYPE` for a built-in, array or map type.
+
+#### get\_def\_by\_guid
+
+```
+get_def_by_guid(kind: TypeCategory, guid: str) -> AtlasBaseTypeDef
+```
+
+The registered definition of `kind` with `guid` (`get{Kind}DefByGuid`, TYR-03).
+
+Raises:
+
+- `AtlasError` –
+
+  `TYPE_GUID_NOT_FOUND` when no definition of `kind` has the GUID.
+
+#### get\_def\_by\_name
+
+```
+get_def_by_name(kind: TypeCategory, name: str) -> AtlasBaseTypeDef
+```
+
+The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+
+Raises:
+
+- `AtlasError` –
+
+  `TYPE_NAME_NOT_FOUND` when no definition of `kind` has the name.
 
 #### load
 
@@ -477,6 +545,9 @@ Attributes:
 - **`PATCH_HANDLERS`** (`dict[str, PatchHandler]`) –
 
   The patch actions of Atlas 2.4.0 (`applyTypePatches`, MDL-07 to MDL-14).
+- **`RACE_ATTEMPTS`** –
+
+  How often a model file or patch is tried while another process keeps writing first (MDL-15, DD-036).
 - **`REMOVE_LEGACY_REF_ATTRIBUTES`** –
 
   The patch action under which an update may remove attributes and swap a relationship's ends (MDL-11).
@@ -520,6 +591,14 @@ PATCH_HANDLERS: dict[str, PatchHandler] = {
 ```
 
 The patch actions of Atlas 2.4.0 (`applyTypePatches`, MDL-07 to MDL-14).
+
+### RACE\_ATTEMPTS
+
+```
+RACE_ATTEMPTS = 10
+```
+
+How often a model file or patch is tried while another process keeps writing first (MDL-15, DD-036).
 
 ### REMOVE\_LEGACY\_REF\_ATTRIBUTES
 

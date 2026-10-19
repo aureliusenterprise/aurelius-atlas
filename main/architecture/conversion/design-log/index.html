@@ -3976,6 +3976,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-034-lists-of-type-definitions-are-sorted-by-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-034. Lists of type definitions are sorted by name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-035. Type scenarios create what they read and delete it at their end
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-036-start-up-loading-tries-a-raced-change-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-036. Start-up loading tries a raced change again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4055,6 +4088,8 @@
       
         
           
+        
+      
         
       
         
@@ -4446,6 +4481,33 @@
     
   
   1.5 Built-in models and patches
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/1-6-types-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  1.6 Types REST
 
     
   </span>
@@ -6647,6 +6709,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-034-lists-of-type-definitions-are-sorted-by-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-034. Lists of type definitions are sorted by name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-035. Type scenarios create what they read and delete it at their end
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-036-start-up-loading-tries-a-raced-change-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-036. Start-up loading tries a raced change again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7015,6 +7110,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch">DD-033</a></td>
 <td>Start-up loading is one change per model file and per patch</td>
 <td>1.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-034-lists-of-type-definitions-are-sorted-by-name">DD-034</a></td>
+<td>Lists of type definitions are sorted by name</td>
+<td>1.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end">DD-035</a></td>
+<td>Type scenarios create what they read and delete it at their end</td>
+<td>1.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-036-start-up-loading-tries-a-raced-change-again">DD-036</a></td>
+<td>Start-up loading tries a raced change again</td>
+<td>1.6</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -7628,6 +7741,57 @@ holder dies (as in DD-029).</p>
 <p><strong>Consequences.</strong> The first start against an empty store writes the document once per model file and
 patch, a few hundred writes of the whole document; later starts write nothing unless a model or patch is
 new. Two processes starting together may each retry once per change.</p>
+<h3 id="dd-034-lists-of-type-definitions-are-sorted-by-name">DD-034. Lists of type definitions are sorted by name<a class="headerlink" href="#dd-034-lists-of-type-definitions-are-sorted-by-name" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.6</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> <code>GET /v2/types/typedefs</code> and <code>GET /v2/types/typedefs/headers</code> list the definitions of each kind
+sorted by name, compared as Java's <code>String.compareTo</code>.</p>
+<p><strong>Reason.</strong> Atlas lists them in the iteration order of the <code>ConcurrentHashMap</code>s of its registry: deterministic,
+but a function of Java's string hashes and the maps' resize history, which no client can rely on and no
+scenario can state without computing it. A sorted list is stable across restarts, processes and updates, which
+the order of the stored document is not: an update moves a definition to its end.</p>
+<p><strong>Alternatives.</strong> The order of the stored document: changes with every update. Emulating Java's hash order:
+costly, and still not something a client could use.</p>
+<p><strong>Consequences.</strong> DV-09. A scenario that lists several definitions of a kind states them sorted by name.</p>
+<h3 id="dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end">DD-035. Type scenarios create what they read and delete it at their end<a class="headerlink" href="#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.6</li>
+<li><strong>Date:</strong> 2026-10-18</li>
+</ul>
+<p><strong>Decision.</strong> Each types scenario creates the definitions it needs, all named <code>scenario_…</code>, and deletes them in
+its last stage. Before the server e2e runs its scenarios, it deletes any <code>scenario_…</code> definition left in the
+store by an earlier run that stopped half-way.</p>
+<p><strong>Reason.</strong> The in-process scenarios start each from an empty store, but the e2e runs them all against one
+server on the persistent dev store, which <code>nx serve</code> uses too. Self-contained scenarios pass on both, in any
+order, and a run never touches a developer's own types.</p>
+<p><strong>Alternatives.</strong> Deleting the typedef index before the e2e: also deletes the developer's types and makes the
+server load the models again. A separate index per e2e run: needs an index-name setting that nothing else
+needs.</p>
+<p><strong>Consequences.</strong> Scenario names must be unique across scenarios; a scenario's expectations cannot depend on
+types another scenario creates.</p>
+<h3 id="dd-036-start-up-loading-tries-a-raced-change-again">DD-036. Start-up loading tries a raced change again<a class="headerlink" href="#dd-036-start-up-loading-tries-a-raced-change-again" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 1.6 (a fix to 1.5's MDL-15)</li>
+<li><strong>Date:</strong> 2026-10-19</li>
+</ul>
+<p><strong>Decision.</strong> When the typedef store gives up on a model file or patch with <code>FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK</code>
+(two lost conditional writes, DD-029), the model loader makes the change again, up to ten times, before it
+treats the file as failed or the patch as <code>FAILED</code>. The REST endpoints keep DD-029's single retry.</p>
+<p><strong>Reason.</strong> DD-033 assumed a process starting next to another loses at most once per change. CI showed
+otherwise: two processes write a few hundred changes in near lockstep, and between one's reload and its retry
+the other may write its next file, so it loses twice and skipped a model file. Every lost race is another
+process's write, so trying again always makes progress, and a file or patch is never skipped for a race.</p>
+<p><strong>Alternatives.</strong> More retries in the store itself: also lengthens a REST request's wait under contention,
+where Atlas answers <code>FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK</code> at once. No limit: a store that never stops changing
+would hang start-up.</p>
+<p><strong>Consequences.</strong> DD-033's "may each retry once per change" becomes "until it wins, up to ten times". A
+process that loses ten times in a row still reports the file or patch as failed, as Atlas does on a lock
+failure.</p>
 
 
 

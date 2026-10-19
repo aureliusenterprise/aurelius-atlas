@@ -49,7 +49,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 1.3 | Type hierarchies | Entity and classification super and sub types, inherited attributes, relationship and business metadata types | `AtlasEntityType`, `AtlasRelationshipType`, … | in progress |
 | 1.4 | Typedef store | Typedefs in Elasticsearch: create, update, delete with the store's checks; loaded at start-up | `AtlasTypeDefGraphStore`, def stores | in progress |
 | 1.5 | Built-in models and patches | `addons/models` loaded at start-up, model patches | `AtlasTypeDefStoreInitializer`, model patches | in progress |
-| 1.6 | Types REST | `/v2/types/...` read and write | `TypesREST` | planned |
+| 1.6 | Types REST | `/v2/types/...` read and write | `TypesREST` | in progress |
 | 2.1 | Entity models and validation | `AtlasEntity`, extended info, headers, validation | `intg/.../model/instance`, `AtlasEntityType` | planned |
 | 2.2 | Entity store | Index layout, GUIDs, unique attributes, optimistic versioning | `AtlasEntityStoreV2` | planned |
 | 2.3 | Entity read REST | By GUID, by unique attributes, bulk, headers | `EntityREST` | planned |
