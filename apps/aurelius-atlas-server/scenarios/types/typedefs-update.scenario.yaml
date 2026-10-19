@@ -1,0 +1,160 @@
+name: An update raises the version and is what later reads answer
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#updateAtlasTypeDefs
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#updateTypesDef
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEnumDefStoreV2.java#update
+    - "repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasTypeDefGraphStoreV2.java#updateTypeVertex (markVertexUpdated:
+      version + 1; a blank description is kept)"
+    - webapp/src/test/java/org/apache/atlas/web/integration/TypedefsJerseyResourceIT.java#testUpdate
+rules:
+    - TYR-09
+    - TYR-10
+    - TDS-07
+covers:
+    - aurelius_atlas_server.routes.types.update_typedefs
+    - aurelius_atlas_server.routes.types.delete_typedef_by_name
+stages:
+    - name: create an enum
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              enumDefs:
+                  - name: scenario_update_colour
+                    elementDefs:
+                        - value: RED
+                          ordinal: 1
+      response:
+          status: 200
+          json:
+              enumDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_update_colour
+                    description: scenario_update_colour
+                    typeVersion: "1.0"
+                    elementDefs:
+                        - value: RED
+                          ordinal: 1
+                    category: ENUM
+                    createdBy: admin
+                    updatedBy: admin
+              structDefs: []
+              classificationDefs: []
+              entityDefs: []
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.enumDefs[0].guid
+              - $.enumDefs[0].createTime
+              - $.enumDefs[0].updateTime
+          save:
+              guid: $.enumDefs[0].guid
+          deviations:
+              - id: DV-06
+                path: $.enumDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.enumDefs[0].updatedBy
+                absent: true
+    - name: add an element
+      request:
+          method: PUT
+          url: /api/atlas/v2/types/typedefs
+          json:
+              enumDefs:
+                  - name: scenario_update_colour
+                    elementDefs:
+                        - value: RED
+                          ordinal: 1
+                        - value: GREEN
+                          ordinal: 2
+      response:
+          status: 200
+          json:
+              enumDefs:
+                  - guid: "{guid}"
+                    createTime: 0
+                    updateTime: 0
+                    version: 2
+                    name: scenario_update_colour
+                    description: scenario_update_colour
+                    typeVersion: "1.0"
+                    elementDefs:
+                        - value: RED
+                          ordinal: 1
+                        - value: GREEN
+                          ordinal: 2
+                    category: ENUM
+                    createdBy: admin
+                    updatedBy: admin
+              structDefs: []
+              classificationDefs: []
+              entityDefs: []
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.enumDefs[0].createTime
+              - $.enumDefs[0].updateTime
+          deviations:
+              - id: DV-06
+                path: $.enumDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.enumDefs[0].updatedBy
+                absent: true
+    - name: the update is what is read
+      request:
+          method: GET
+          url: /api/atlas/v2/types/enumdef/name/scenario_update_colour
+      response:
+          status: 200
+          json:
+              guid: "{guid}"
+              createTime: 0
+              updateTime: 0
+              version: 2
+              name: scenario_update_colour
+              description: scenario_update_colour
+              typeVersion: "1.0"
+              elementDefs:
+                  - value: RED
+                    ordinal: 1
+                  - value: GREEN
+                    ordinal: 2
+              category: ENUM
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: an unknown type cannot be updated
+      request:
+          method: PUT
+          url: /api/atlas/v2/types/typedefs
+          json:
+              enumDefs:
+                  - name: scenario_update_missing
+                    elementDefs:
+                        - value: RED
+                          ordinal: 1
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-001
+              errorMessage: Given typename scenario_update_missing was invalid
+    - name: clean up
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_update_colour
+      response:
+          status: 204
