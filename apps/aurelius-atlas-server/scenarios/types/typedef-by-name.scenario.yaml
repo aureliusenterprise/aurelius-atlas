@@ -1,0 +1,82 @@
+name: A definition of any kind is found by its name, and deleted by it
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getTypeDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#deleteAtlasTypeByName
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#getByName
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#getTypeDefFromTypeWithNoAuthz
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEnumDefStoreV2.java#create (the stored form)
+    - webapp/src/test/java/org/apache/atlas/web/integration/TypedefsJerseyResourceIT.java#testDeleteAtlasTypeByName
+rules: [TYR-01, TYR-09, TYR-10, TYR-12, TDS-03]
+covers:
+    - aurelius_atlas_server.routes.types.get_typedef_by_name
+    - aurelius_atlas_server.routes.types.create_typedefs
+    - aurelius_atlas_server.routes.types.delete_typedef_by_name
+stages:
+    - name: create an enum
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json: { enumDefs: [{ name: scenario_by_name_colour, elementDefs: [{ value: RED, ordinal: 1 }] }] }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              enumDefs:
+                  - category: ENUM
+                    guid: "a random UUID"
+                    createdBy: admin
+                    updatedBy: admin
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_by_name_colour
+                    description: scenario_by_name_colour
+                    typeVersion: "1.0"
+                    elementDefs: [{ value: RED, ordinal: 1 }]
+              structDefs: []
+              classificationDefs: []
+              entityDefs: []
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - "$.enumDefs[0].guid"
+              - "$.enumDefs[0].createTime"
+              - "$.enumDefs[0].updateTime"
+          save: { guid: "$.enumDefs[0].guid" }
+          deviations:
+              - { id: DV-06, path: "$.enumDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.enumDefs[0].updatedBy", absent: true }
+    - name: found by its name
+      request: { method: GET, url: /api/atlas/v2/types/typedef/name/scenario_by_name_colour }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              category: ENUM
+              guid: "{guid}"
+              createdBy: admin
+              updatedBy: admin
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_by_name_colour
+              description: scenario_by_name_colour
+              typeVersion: "1.0"
+              elementDefs: [{ value: RED, ordinal: 1 }]
+          volatile: ["$.createTime", "$.updateTime"]
+          deviations:
+              - { id: DV-06, path: $.createdBy, absent: true }
+              - { id: DV-06, path: $.updatedBy, absent: true }
+    - name: a built-in type has no definition
+      request: { method: GET, url: /api/atlas/v2/types/typedef/name/string }
+      response:
+          status: 400
+          json: { errorCode: ATLAS-400-00-024, errorMessage: PRIMITIVE is a System-type }
+    - name: deleted by its name
+      request: { method: DELETE, url: /api/atlas/v2/types/typedef/name/scenario_by_name_colour }
+      response: { status: 204 }
+    - name: gone after the delete
+      request: { method: GET, url: /api/atlas/v2/types/typedef/name/scenario_by_name_colour }
+      response:
+          status: 404
+          json: { errorCode: ATLAS-404-00-001, errorMessage: Given typename scenario_by_name_colour was invalid }

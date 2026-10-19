@@ -145,6 +145,7 @@ class AtlasErrorCode(Enum):
             "supertypes entityTypes"
         ),
     )
+    INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
     ATTRIBUTE_TYPE_INVALID = (
         400,
         "ATLAS-400-00-081",

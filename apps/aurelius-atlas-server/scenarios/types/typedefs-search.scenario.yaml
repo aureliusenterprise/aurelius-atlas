@@ -1,0 +1,303 @@
+name: The type definitions and their headers are listed through the filter of the query
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getAllTypeDefs
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getTypeDefHeaders
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getSearchFilter
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#searchTypesDef
+    - repository/src/main/java/org/apache/atlas/repository/util/FilterUtil.java#getPredicateFromSearchFilter
+    - intg/src/main/java/org/apache/atlas/type/AtlasTypeUtil.java#toTypeDefHeader
+    - webapp/src/test/java/org/apache/atlas/web/integration/TypedefsJerseyResourceIT.java#testListTypesByFilter
+rules:
+    - TYR-05
+    - TYR-06
+    - TYR-08
+    - TYR-10
+covers:
+    - aurelius_atlas_server.routes.types.get_all_typedefs
+    - aurelius_atlas_server.routes.types.get_typedef_headers
+    - aurelius_atlas_server.routes.types.delete_typedefs
+stages:
+    - name: create entity types in a hierarchy and an enum, of one service type
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              enumDefs:
+                  - name: scenario_search_enum
+                    serviceType: scenario_search
+                    elementDefs:
+                        - value: ONE
+                          ordinal: 1
+              entityDefs:
+                  - name: scenario_search_base
+                    serviceType: scenario_search
+                  - name: scenario_search_child
+                    serviceType: scenario_search
+                    superTypes:
+                        - scenario_search_base
+      response:
+          status: 200
+          json:
+              enumDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_enum
+                    description: scenario_search_enum
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    elementDefs:
+                        - value: ONE
+                          ordinal: 1
+                    category: ENUM
+                    createdBy: admin
+                    updatedBy: admin
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_base
+                    description: scenario_search_base
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    attributeDefs: []
+                    superTypes: []
+                    subTypes:
+                        - scenario_search_child
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_child
+                    description: scenario_search_child
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    attributeDefs: []
+                    superTypes:
+                        - scenario_search_base
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.enumDefs[0].guid
+              - $.enumDefs[0].createTime
+              - $.enumDefs[0].updateTime
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.entityDefs[1].guid
+              - $.entityDefs[1].createTime
+              - $.entityDefs[1].updateTime
+          save:
+              enum: $.enumDefs[0].guid
+              base: $.entityDefs[0].guid
+              child: $.entityDefs[1].guid
+          deviations:
+              - id: DV-06
+                path: $.enumDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.enumDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].updatedBy
+                absent: true
+    - name: every definition of the service type, each kind sorted by name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/typedefs
+          params:
+              servicetype: scenario_search
+      response:
+          status: 200
+          json:
+              enumDefs:
+                  - guid: "{enum}"
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_enum
+                    description: scenario_search_enum
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    elementDefs:
+                        - value: ONE
+                          ordinal: 1
+                    category: ENUM
+                    createdBy: admin
+                    updatedBy: admin
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: "{base}"
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_base
+                    description: scenario_search_base
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    attributeDefs: []
+                    superTypes: []
+                    subTypes:
+                        - scenario_search_child
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: "{child}"
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_child
+                    description: scenario_search_child
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    attributeDefs: []
+                    superTypes:
+                        - scenario_search_base
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.enumDefs[0].createTime
+              - $.enumDefs[0].updateTime
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.entityDefs[1].createTime
+              - $.entityDefs[1].updateTime
+          deviations:
+              - id: DV-06
+                path: $.enumDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.enumDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].updatedBy
+                absent: true
+    - name: the entity types with a super type
+      request:
+          method: GET
+          url: /api/atlas/v2/types/typedefs
+          params:
+              servicetype: scenario_search
+              supertype: scenario_search_base
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: "{child}"
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_search_child
+                    description: scenario_search_child
+                    typeVersion: "1.0"
+                    serviceType: scenario_search
+                    attributeDefs: []
+                    superTypes:
+                        - scenario_search_base
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+    - name: the headers of the service type, except one name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/typedefs/headers
+          params:
+              servicetype: scenario_search
+              notname: scenario_search_child
+      response:
+          status: 200
+          json:
+              - guid: "{enum}"
+                name: scenario_search_enum
+                serviceType: scenario_search
+                category: ENUM
+              - guid: "{base}"
+                name: scenario_search_base
+                serviceType: scenario_search
+                category: ENTITY
+    - name: the headers of one kind, the type ignoring case
+      request:
+          method: GET
+          url: /api/atlas/v2/types/typedefs/headers
+          params:
+              servicetype: scenario_search
+              type: enum
+      response:
+          status: 200
+          json:
+              - guid: "{enum}"
+                name: scenario_search_enum
+                serviceType: scenario_search
+                category: ENUM
+    - name: clean up
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedefs
+          json:
+              enumDefs:
+                  - name: scenario_search_enum
+              entityDefs:
+                  - name: scenario_search_child
+                  - name: scenario_search_base
+      response:
+          status: 204

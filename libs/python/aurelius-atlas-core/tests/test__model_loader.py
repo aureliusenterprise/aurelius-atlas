@@ -12,6 +12,7 @@ import pytest
 from aurelius_atlas_core.model_loader import (
     BUILTIN_MODELS_DIR,
     PATCH_HANDLERS,
+    RACE_ATTEMPTS,
     ModelLoader,
     PatchDataError,
     TypedefPatch,
@@ -287,13 +288,13 @@ async def test__an_error_other_than_atlas_s_ends_the_patch_file(store: TypedefSt
 async def test__a_patch_that_cannot_be_recorded_is_reported_failed(
     store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path
 ) -> None:
-    """Losing the write twice (``FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK``) fails the patch unrecorded; loading goes on."""
+    """Losing every write (``FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK``) fails the patch unrecorded; loading goes on."""
     write_json(tmp_path / "1.json", model(entity()))
     write_json(tmp_path / "patches" / "1.json", patches(patch("SET_SERVICE_TYPE").to_json()))
     loader = ModelLoader(store)
     await loader.load(tmp_path.parent / "nothing")
     await store.create_update_types_def(types_def_of([entity()]))
-    document.conflicts = 2
+    document.conflicts = 2 * RACE_ATTEMPTS
 
     result = await loader.load(tmp_path)
 
@@ -779,3 +780,22 @@ async def test__the_vendored_models_load_as_in_atlas(store: TypedefStore, docume
     assert hbase_namespace.relationship_label == "__hbase_table.namespace"
     assert not stored(store, "hbase_table", AtlasEntityDef).has_attribute("namespace")
     assert not stored(store, "kafka_topic", AtlasEntityDef).has_attribute("replicationFactor")
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["MDL-15"])
+async def test__a_file_and_a_patch_that_lose_races_are_tried_again(
+    store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path
+) -> None:
+    """DD-036: the store gives up after two conflicts; the loader tries the change again until it wins."""
+    write_json(tmp_path / "1.json", model(entity()))
+    loader = ModelLoader(store)
+    document.conflicts = 5
+    loaded = await loader.load(tmp_path)
+    write_json(tmp_path / "patches" / "1.json", patches(patch("SET_SERVICE_TYPE").to_json()))
+    document.conflicts = 5
+
+    patched = await loader.load(tmp_path)
+
+    assert loaded.failed_files == patched.failed_files == []
+    assert patched.patches == {"SET_SERVICE_TYPE-t": PatchStatus.APPLIED}
+    assert document.conflicts == 0

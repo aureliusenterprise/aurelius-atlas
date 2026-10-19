@@ -1,0 +1,78 @@
+name: A definition of any kind is found by its GUID
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getTypeDefByGuid
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#getByGuid
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasClassificationDefStoreV2.java#create (the stored form)
+    - intg/src/main/java/org/apache/atlas/type/AtlasClassificationType.java#resolveReferencesPhase3 (subTypes)
+rules: [TYR-02, TYR-09, TYR-10]
+covers:
+    - aurelius_atlas_server.routes.types.get_typedef_by_guid
+    - aurelius_atlas_server.routes.types.delete_typedef_by_name
+stages:
+    - name: create a classification
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json: { classificationDefs: [{ name: scenario_by_guid_pii }] }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs:
+                  - category: CLASSIFICATION
+                    guid: "a random UUID"
+                    createdBy: admin
+                    updatedBy: admin
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_by_guid_pii
+                    description: scenario_by_guid_pii
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+              entityDefs: []
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - "$.classificationDefs[0].guid"
+              - "$.classificationDefs[0].createTime"
+              - "$.classificationDefs[0].updateTime"
+          save: { guid: "$.classificationDefs[0].guid" }
+          deviations:
+              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
+    - name: found by its GUID
+      request: { method: GET, url: "/api/atlas/v2/types/typedef/guid/{guid}" }
+      response:
+          status: 200
+          json:
+              category: CLASSIFICATION
+              guid: "{guid}"
+              createdBy: admin
+              updatedBy: admin
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_by_guid_pii
+              description: scenario_by_guid_pii
+              typeVersion: "1.0"
+              attributeDefs: []
+              superTypes: []
+              entityTypes: []
+              subTypes: []
+          volatile: ["$.createTime", "$.updateTime"]
+          deviations:
+              - { id: DV-06, path: $.createdBy, absent: true }
+              - { id: DV-06, path: $.updatedBy, absent: true }
+    - name: an unknown GUID
+      request: { method: GET, url: /api/atlas/v2/types/typedef/guid/scenario-by-guid-missing }
+      response:
+          status: 404
+          json: { errorCode: ATLAS-404-00-002, errorMessage: Given type guid scenario-by-guid-missing was invalid }
+    - name: clean up
+      request: { method: DELETE, url: /api/atlas/v2/types/typedef/name/scenario_by_guid_pii }
+      response: { status: 204 }

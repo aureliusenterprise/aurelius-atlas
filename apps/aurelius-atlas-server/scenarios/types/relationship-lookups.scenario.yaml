@@ -1,0 +1,350 @@
+name: Entity and relationship definitions are found by name and GUID of their kind
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getEntityDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getEntityDefByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getRelationshipDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getRelationshipDefByGuid
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#getEntityDefByName
+    - intg/src/main/java/org/apache/atlas/type/AtlasEntityType.java#resolveReferencesPhase3 (subTypes, relationshipAttributeDefs)
+    - intg/src/main/java/org/apache/atlas/type/AtlasRelationshipType.java#addRelationshipAttributeToEndType
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipDefStoreV2.java#toRelationshipDef (no
+      label, propagateTags NONE)
+rules:
+    - TYR-03
+    - TYR-10
+covers:
+    - aurelius_atlas_server.routes.types.kind_by_name
+    - aurelius_atlas_server.routes.types.kind_by_guid
+    - aurelius_atlas_server.routes.types.delete_typedef_by_name
+stages:
+    - name: create an entity type and a relationship on it
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_link_node
+              relationshipDefs:
+                  - name: scenario_link_next
+                    relationshipCategory: ASSOCIATION
+                    endDef1:
+                        type: scenario_link_node
+                        name: next
+                        cardinality: SINGLE
+                    endDef2:
+                        type: scenario_link_node
+                        name: previous
+                        cardinality: SINGLE
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_link_node
+                    description: scenario_link_node
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: next
+                          typeName: scenario_link_node
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_link_next
+                          isLegacyAttribute: false
+                        - name: previous
+                          typeName: scenario_link_node
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_link_next
+                          isLegacyAttribute: false
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_link_next
+                    description: scenario_link_next
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: NONE
+                    endDef1:
+                        type: scenario_link_node
+                        name: next
+                        isContainer: false
+                        cardinality: SINGLE
+                        isLegacyAttribute: false
+                    endDef2:
+                        type: scenario_link_node
+                        name: previous
+                        isContainer: false
+                        cardinality: SINGLE
+                        isLegacyAttribute: false
+                    category: RELATIONSHIP
+                    createdBy: admin
+                    updatedBy: admin
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.relationshipDefs[0].guid
+              - $.relationshipDefs[0].createTime
+              - $.relationshipDefs[0].updateTime
+          save:
+              entity: $.entityDefs[0].guid
+              relationship: $.relationshipDefs[0].guid
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].updatedBy
+                absent: true
+    - name: entitydef by name, with its relationship attributes
+      request:
+          method: GET
+          url: /api/atlas/v2/types/entitydef/name/scenario_link_node
+      response:
+          status: 200
+          json:
+              guid: "{entity}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_link_node
+              description: scenario_link_node
+              typeVersion: "1.0"
+              attributeDefs: []
+              superTypes: []
+              subTypes: []
+              relationshipAttributeDefs:
+                  - name: next
+                    typeName: scenario_link_node
+                    isOptional: true
+                    cardinality: SINGLE
+                    valuesMinCount: -1
+                    valuesMaxCount: -1
+                    isUnique: false
+                    isIndexable: false
+                    includeInNotification: false
+                    searchWeight: -1
+                    relationshipTypeName: scenario_link_next
+                    isLegacyAttribute: false
+                  - name: previous
+                    typeName: scenario_link_node
+                    isOptional: true
+                    cardinality: SINGLE
+                    valuesMinCount: -1
+                    valuesMaxCount: -1
+                    isUnique: false
+                    isIndexable: false
+                    includeInNotification: false
+                    searchWeight: -1
+                    relationshipTypeName: scenario_link_next
+                    isLegacyAttribute: false
+              businessAttributeDefs: {}
+              category: ENTITY
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: entitydef by GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/entitydef/guid/{entity}
+      response:
+          status: 200
+          json:
+              guid: "{entity}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_link_node
+              description: scenario_link_node
+              typeVersion: "1.0"
+              attributeDefs: []
+              superTypes: []
+              subTypes: []
+              relationshipAttributeDefs:
+                  - name: next
+                    typeName: scenario_link_node
+                    isOptional: true
+                    cardinality: SINGLE
+                    valuesMinCount: -1
+                    valuesMaxCount: -1
+                    isUnique: false
+                    isIndexable: false
+                    includeInNotification: false
+                    searchWeight: -1
+                    relationshipTypeName: scenario_link_next
+                    isLegacyAttribute: false
+                  - name: previous
+                    typeName: scenario_link_node
+                    isOptional: true
+                    cardinality: SINGLE
+                    valuesMinCount: -1
+                    valuesMaxCount: -1
+                    isUnique: false
+                    isIndexable: false
+                    includeInNotification: false
+                    searchWeight: -1
+                    relationshipTypeName: scenario_link_next
+                    isLegacyAttribute: false
+              businessAttributeDefs: {}
+              category: ENTITY
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: relationshipdef by name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/relationshipdef/name/scenario_link_next
+      response:
+          status: 200
+          json:
+              guid: "{relationship}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_link_next
+              description: scenario_link_next
+              typeVersion: "1.0"
+              attributeDefs: []
+              relationshipCategory: ASSOCIATION
+              propagateTags: NONE
+              endDef1:
+                  type: scenario_link_node
+                  name: next
+                  isContainer: false
+                  cardinality: SINGLE
+                  isLegacyAttribute: false
+              endDef2:
+                  type: scenario_link_node
+                  name: previous
+                  isContainer: false
+                  cardinality: SINGLE
+                  isLegacyAttribute: false
+              category: RELATIONSHIP
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: relationshipdef by GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/relationshipdef/guid/{relationship}
+      response:
+          status: 200
+          json:
+              guid: "{relationship}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_link_next
+              description: scenario_link_next
+              typeVersion: "1.0"
+              attributeDefs: []
+              relationshipCategory: ASSOCIATION
+              propagateTags: NONE
+              endDef1:
+                  type: scenario_link_node
+                  name: next
+                  isContainer: false
+                  cardinality: SINGLE
+                  isLegacyAttribute: false
+              endDef2:
+                  type: scenario_link_node
+                  name: previous
+                  isContainer: false
+                  cardinality: SINGLE
+                  isLegacyAttribute: false
+              category: RELATIONSHIP
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: an entity's lookup does not find a relationship
+      request:
+          method: GET
+          url: /api/atlas/v2/types/entitydef/name/scenario_link_next
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-001
+              errorMessage: Given typename scenario_link_next was invalid
+    - name: clean up the relationship
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_link_next
+      response:
+          status: 204
+    - name: clean up the entity type
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_link_node
+      response:
+          status: 204

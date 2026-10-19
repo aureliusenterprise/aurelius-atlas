@@ -1,0 +1,452 @@
+name: Enum, struct, classification and business metadata definitions are found by name and GUID of their kind
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getEnumDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getEnumDefByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getStructDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getStructDefByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getClassificationDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getClassificationDefByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getBusinessMetadataDefByName
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#getBusinessMetadataDefByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java#deleteAtlasTypeDefs
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#getEnumDefByName (TYPE_NAME_NOT_FOUND
+      when the registry has no enum of that name)
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/AtlasTypeDefGraphStore.java#getStructDefByGuid (TYPE_GUID_NOT_FOUND
+      when the registry has no struct with that GUID)
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasStructDefStoreV2.java#toAttributeDefFromJson (the
+      stored attribute)
+    - webapp/src/test/java/org/apache/atlas/web/integration/TypedefsJerseyResourceIT.java#testInvalidGets
+rules:
+    - TYR-03
+    - TYR-05
+    - TYR-09
+    - TYR-10
+covers:
+    - aurelius_atlas_server.routes.types.kind_by_name
+    - aurelius_atlas_server.routes.types.kind_by_guid
+    - aurelius_atlas_server.routes.types.delete_typedefs
+stages:
+    - name: create one definition of four kinds
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json: &id001
+              enumDefs:
+                  - name: scenario_kinds_enum
+                    elementDefs:
+                        - value: ONE
+                          ordinal: 1
+              structDefs:
+                  - name: scenario_kinds_struct
+                    attributeDefs:
+                        - name: note
+                          typeName: string
+              classificationDefs:
+                  - name: scenario_kinds_tag
+              businessMetadataDefs:
+                  - name: scenario_kinds_bm
+      response:
+          status: 200
+          json:
+              enumDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_kinds_enum
+                    description: scenario_kinds_enum
+                    typeVersion: "1.0"
+                    elementDefs:
+                        - value: ONE
+                          ordinal: 1
+                    category: ENUM
+                    createdBy: admin
+                    updatedBy: admin
+              structDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_kinds_struct
+                    description: scenario_kinds_struct
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: note
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    category: STRUCT
+                    createdBy: admin
+                    updatedBy: admin
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_kinds_tag
+                    description: scenario_kinds_tag
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: admin
+                    updatedBy: admin
+              entityDefs: []
+              relationshipDefs: []
+              businessMetadataDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_kinds_bm
+                    description: scenario_kinds_bm
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    category: BUSINESS_METADATA
+                    createdBy: admin
+                    updatedBy: admin
+          volatile:
+              - $.enumDefs[0].guid
+              - $.enumDefs[0].createTime
+              - $.enumDefs[0].updateTime
+              - $.structDefs[0].guid
+              - $.structDefs[0].createTime
+              - $.structDefs[0].updateTime
+              - $.classificationDefs[0].guid
+              - $.classificationDefs[0].createTime
+              - $.classificationDefs[0].updateTime
+              - $.businessMetadataDefs[0].guid
+              - $.businessMetadataDefs[0].createTime
+              - $.businessMetadataDefs[0].updateTime
+          save:
+              enum: $.enumDefs[0].guid
+              struct: $.structDefs[0].guid
+              tag: $.classificationDefs[0].guid
+              bm: $.businessMetadataDefs[0].guid
+          deviations:
+              - id: DV-06
+                path: $.enumDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.enumDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.structDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.structDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.classificationDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.classificationDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.businessMetadataDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.businessMetadataDefs[0].updatedBy
+                absent: true
+    - name: enumdef by name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/enumdef/name/scenario_kinds_enum
+      response:
+          status: 200
+          json:
+              guid: "{enum}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_enum
+              description: scenario_kinds_enum
+              typeVersion: "1.0"
+              elementDefs:
+                  - value: ONE
+                    ordinal: 1
+              category: ENUM
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: enumdef by GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/enumdef/guid/{enum}
+      response:
+          status: 200
+          json:
+              guid: "{enum}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_enum
+              description: scenario_kinds_enum
+              typeVersion: "1.0"
+              elementDefs:
+                  - value: ONE
+                    ordinal: 1
+              category: ENUM
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: structdef by name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/structdef/name/scenario_kinds_struct
+      response:
+          status: 200
+          json:
+              guid: "{struct}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_struct
+              description: scenario_kinds_struct
+              typeVersion: "1.0"
+              attributeDefs:
+                  - name: note
+                    typeName: string
+                    isOptional: false
+                    cardinality: SINGLE
+                    valuesMinCount: 1
+                    valuesMaxCount: 1
+                    isUnique: false
+                    isIndexable: false
+                    includeInNotification: false
+                    searchWeight: -1
+              category: STRUCT
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: structdef by GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/structdef/guid/{struct}
+      response:
+          status: 200
+          json:
+              guid: "{struct}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_struct
+              description: scenario_kinds_struct
+              typeVersion: "1.0"
+              attributeDefs:
+                  - name: note
+                    typeName: string
+                    isOptional: false
+                    cardinality: SINGLE
+                    valuesMinCount: 1
+                    valuesMaxCount: 1
+                    isUnique: false
+                    isIndexable: false
+                    includeInNotification: false
+                    searchWeight: -1
+              category: STRUCT
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: classificationdef by name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/classificationdef/name/scenario_kinds_tag
+      response:
+          status: 200
+          json:
+              guid: "{tag}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_tag
+              description: scenario_kinds_tag
+              typeVersion: "1.0"
+              attributeDefs: []
+              superTypes: []
+              entityTypes: []
+              subTypes: []
+              category: CLASSIFICATION
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: classificationdef by GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/classificationdef/guid/{tag}
+      response:
+          status: 200
+          json:
+              guid: "{tag}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_tag
+              description: scenario_kinds_tag
+              typeVersion: "1.0"
+              attributeDefs: []
+              superTypes: []
+              entityTypes: []
+              subTypes: []
+              category: CLASSIFICATION
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: businessmetadatadef by name
+      request:
+          method: GET
+          url: /api/atlas/v2/types/businessmetadatadef/name/scenario_kinds_bm
+      response:
+          status: 200
+          json:
+              guid: "{bm}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_bm
+              description: scenario_kinds_bm
+              typeVersion: "1.0"
+              attributeDefs: []
+              category: BUSINESS_METADATA
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: businessmetadatadef by GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/businessmetadatadef/guid/{bm}
+      response:
+          status: 200
+          json:
+              guid: "{bm}"
+              createTime: 0
+              updateTime: 0
+              version: 1
+              name: scenario_kinds_bm
+              description: scenario_kinds_bm
+              typeVersion: "1.0"
+              attributeDefs: []
+              category: BUSINESS_METADATA
+              createdBy: admin
+              updatedBy: admin
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations:
+              - id: DV-06
+                path: $.createdBy
+                absent: true
+              - id: DV-06
+                path: $.updatedBy
+                absent: true
+    - name: an enum's lookup does not find a struct
+      request:
+          method: GET
+          url: /api/atlas/v2/types/enumdef/name/scenario_kinds_struct
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-001
+              errorMessage: Given typename scenario_kinds_struct was invalid
+    - name: a struct's lookup does not find an enum's GUID
+      request:
+          method: GET
+          url: /api/atlas/v2/types/structdef/guid/{enum}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-002
+              errorMessage: Given type guid {enum} was invalid
+    - name: clean up
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedefs
+          json: *id001
+      response:
+          status: 204
+    - name: all gone
+      request:
+          method: GET
+          url: /api/atlas/v2/types/typedefs
+          params:
+              name: scenario_kinds_tag
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs: []
+              relationshipDefs: []
+              businessMetadataDefs: []

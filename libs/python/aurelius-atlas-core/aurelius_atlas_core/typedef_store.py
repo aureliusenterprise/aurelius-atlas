@@ -518,13 +518,58 @@ class TypedefStore:
             AtlasError: ``TYPE_NAME_INVALID`` for a blank name, ``TYPE_NAME_NOT_FOUND`` for an unknown one and
                 ``SYSTEM_TYPE`` for a built-in, array or map type.
         """
+        await self.delete_types_def(types_def_of([self.get_by_name(name)]))
+
+    def get_by_name(self, name: str) -> AtlasBaseTypeDef:
+        """The registered definition named ``name``, of any kind (``getByName``, TYR-01).
+
+        Raises:
+            AtlasError: ``TYPE_NAME_INVALID`` for a blank name, ``TYPE_NAME_NOT_FOUND`` for an unknown one and
+                ``SYSTEM_TYPE`` for a built-in, array or map type.
+        """
         if not name.strip():
             raise AtlasError(AtlasErrorCode.TYPE_NAME_INVALID, "", name)
         type_ = self.registry.get_type(name)
         typedef = self.registry.typedef_by_name(name)
         if typedef is None:
             raise AtlasError(AtlasErrorCode.SYSTEM_TYPE, type_.category.name)
-        await self.delete_types_def(types_def_of([typedef]))
+        return typedef
+
+    def get_by_guid(self, guid: str) -> AtlasBaseTypeDef:
+        """The registered definition with ``guid``, of any kind (``getByGuid``, TYR-02).
+
+        Raises:
+            AtlasError: ``TYPE_GUID_NOT_FOUND`` for a blank or unknown GUID.
+        """
+        if not guid.strip():
+            raise AtlasError(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid)
+        self.registry.get_type_by_guid(guid)
+        typedef = self.registry.typedef_by_guid(guid)
+        if typedef is None:  # pragma: no cover - every type with a GUID has a definition
+            raise AtlasError(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid)
+        return typedef
+
+    def get_def_by_name(self, kind: TypeCategory, name: str) -> AtlasBaseTypeDef:
+        """The registered definition of ``kind`` named ``name`` (``get{Kind}DefByName``, TYR-03).
+
+        Raises:
+            AtlasError: ``TYPE_NAME_NOT_FOUND`` when no definition of ``kind`` has the name.
+        """
+        typedef = self.registry.typedef_by_name(name)
+        if typedef is None or typedef.category is not kind:
+            raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name)
+        return typedef
+
+    def get_def_by_guid(self, kind: TypeCategory, guid: str) -> AtlasBaseTypeDef:
+        """The registered definition of ``kind`` with ``guid`` (``get{Kind}DefByGuid``, TYR-03).
+
+        Raises:
+            AtlasError: ``TYPE_GUID_NOT_FOUND`` when no definition of ``kind`` has the GUID.
+        """
+        typedef = self.registry.typedef_by_guid(guid)
+        if typedef is None or typedef.category is not kind:
+            raise AtlasError(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid)
+        return typedef
 
 
 def _validate_name(typedef: AtlasBaseTypeDef) -> None:
