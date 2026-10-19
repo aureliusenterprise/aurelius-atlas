@@ -53,10 +53,5 @@
     "version": "feat-dashboard-nginx-serving",
     "title": "feat-dashboard-nginx-serving",
     "aliases": []
-  },
-  {
-    "version": "ci-chromatic-affected-gate",
-    "title": "ci-chromatic-affected-gate",
-    "aliases": []
   }
 ]
