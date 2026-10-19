@@ -7,7 +7,9 @@ Atlas stores and services for Aurelius Atlas
 Since increment [1.4](../../../docs/architecture/conversion/increments/1-4-typedef-store.md): the typedef
 store, which keeps type definitions in one Elasticsearch document and serves them from the type registry.
 Since [1.5](../../../docs/architecture/conversion/increments/1-5-builtin-models.md): Apache Atlas's built-in
-models and their typedef patches, loaded at start-up.
+models and their typedef patches, loaded at start-up. Since
+[1.6](../../../docs/architecture/conversion/increments/1-6-types-rest.md): the store's reads and the search of
+`/v2/types/typedefs`.
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -15,6 +17,8 @@ await store.load()  # every stored definition into the registry
 created = await store.create_types_def(types_def)
 await store.refresh()  # pick up another process's change (at most every 5 s)
 await ModelLoader(store).load(BUILTIN_MODELS_DIR)  # addons/models of Atlas 2.4.0, and their patches
+store.get_by_name("hive_table")  # the registered definition, as resolution completed it
+search_types_def(store.registry, TypeSearchFilter.from_query([("type", "ENTITY")]))  # each kind sorted by name
 ```
 
 ## Installation
@@ -39,6 +43,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ## Documentation
 
 ::: aurelius_atlas_core.typedef_store
+
+::: aurelius_atlas_core.type_search
 
 ::: aurelius_atlas_core.model_loader
 
