@@ -39,10 +39,10 @@ area you are about to work in; the rest can wait.
 | [025](./025-data-has-a-stated-lifetime.md)                                           | Data has a stated lifetime — every kind expires on a named schedule the system enforces.                                               | Proposed          |
 | [026](./026-the-system-can-be-brought-back-from-a-named-snapshot.md)                 | The system can be brought back from a named snapshot — backups stated, recovery rehearsed, loss bounded.                               | Proposed          |
 | [027](./027-every-stream-carries-a-stated-delivery-guarantee.md)                     | Every stream carries a stated delivery guarantee — duplication and loss decided per stream, not defaulted.                             | Proposed          |
-| [028](./028-operational-secret-handling-has-a-named-owner.md)                        | Operational secret handling has a named owner — rotation, loss, and break-glass rehearsed, not invented.                               | Proposed          |
+| [028](./028-operational-secret-handling-has-a-named-owner.md)                        | Operational secret handling has a named owner — rotation, loss, and break-glass rehearsed, not invented.                               | Accepted          |
 | [029](./029-shipped-artifacts-are-signed-and-their-origin-is-provable.md)            | What ships is signed and its origin provable — verification is part of delivery, not a later hope.                                     | Accepted          |
-| [030](./030-interfaces-between-parts-are-verified-not-assumed.md)                    | Interfaces between parts are verified, not assumed — the agreement is stated once and drift fails the change.                          | Proposed          |
-| [031](./031-runtime-versions-have-a-declared-support-window.md)                      | Runtime versions have a declared support window — one answer per runtime, bumps planned, nothing floating.                             | Proposed          |
+| [030](./030-interfaces-between-parts-are-verified-not-assumed.md)                    | Interfaces between parts are verified, not assumed — the agreement is stated once and drift fails the change.                          | Accepted          |
+| [031](./031-runtime-versions-have-a-declared-support-window.md)                      | Runtime versions have a declared support window — one answer per runtime, bumps planned, nothing floating.                             | Accepted          |
 | [032](./032-shared-streams-are-named-by-a-declared-convention.md)                    | Shared streams are named by a declared convention — the name says what flows and which version, never where.                           | Accepted          |
 | [033](./033-shipped-artifacts-carry-a-contents-inventory.md)                         | Shipped artifacts carry a contents inventory — what is in what we ran is a lookup, not a reconstruction.                               | Accepted          |
 | [034](./034-signals-meet-at-one-replaceable-collection-point.md)                     | Signals meet at one replaceable collection point — parts export to a seam, never to a backend directly.                                | Accepted          |
@@ -52,7 +52,7 @@ area you are about to work in; the rest can wait.
 | [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md) | What a person may do is decided in one place — permission apart from identity; one answer, one act to revoke.                          | Proposed          |
 | [039](./039-data-is-protected-where-it-travels-and-where-it-rests.md)                | Data is protected where it travels and rests — declared arrangements, not assumed properties.                                          | Accepted          |
 | [040](./040-the-system-raises-its-hand-when-it-is-broken.md)                         | The system raises its hand when it is broken — named triggers, named destinations; silence is a condition.                             | Proposed          |
-| [041](./041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path.md)    | A failure of the running system has an owner and a rehearsed path — response owned, written, practised.                                | Proposed          |
+| [041](./041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path.md)    | A failure of the running system has an owner and a rehearsed path — response owned, written, practised.                                | Accepted          |
 | [042](./042-every-dataset-has-an-owner-who-answers-for-it.md)                        | Every dataset has an owner who answers for it — sharing is a stated answer, never an absence.                                          | Proposed          |
 | [043](./043-ai-assisted-review-informs-the-signatures-it-does-not-replace-them.md)   | AI-assisted review informs the two signatures — it does not replace them, and its findings follow the blocking rule.                   | Accepted          |
 | [044](./044-every-change-carries-two-human-signatures.md)                            | Every change carries two human signatures — the task owner who answers for it and a reviewer who confirms understanding.               | Accepted          |
@@ -69,7 +69,7 @@ area you are about to work in; the rest can wait.
 
 - **Decisions are inherited.** Every codebase is read first by people who were
   not in the room — onboarding, handover, a fork. Without the reasoning, they
-  cannot tell a deliberate constraint from an accident, and will "fix"
+  cannot tell a deliberate constraint from an accident, and "fix"
   decisions that were the whole point.
 - **Decisions outlive implementations.** Frameworks and libraries change; the
   business reasoning behind a modular, removable design does not.
@@ -113,17 +113,18 @@ property survives the replacement and says what replaced it.
   are never reused.
 - Statuses: **Proposed** → **Accepted**, then optionally **Superseded** (by a
   later record) or **Deprecated**.
-- **Accepted** means the decision is made and the mechanism that makes it
-  true exists in the spine of the system. A single part or stack that
-  deviates is a named deviation: it belongs in the record's follow-ups and
-  does not by itself block acceptance. **Proposed** means the decision is
-  not yet made, or the mechanism does not yet exist where it must. The test
-  is where the mechanism lives, not how uniformly it is used: a part that
-  skips an existing mechanism is a named deviation under an Accepted record;
-  a rule with no enforcement point anywhere is Proposed. A stated convention
-  that the parts follow is itself an enforcement point: the record is
-  Accepted and a missing automated check is a named gap, not a Proposed
-  status.
+
+??? QUESTION "Proposed or Accepted — what exactly is the test?"
+
+    Where the mechanism lives, not how uniformly it is used. **Accepted** means the
+    decision is made and the mechanism that makes it true exists in the spine of the
+    system; a part that skips an existing mechanism is a named deviation in the
+    record's follow-ups, which does not by itself block acceptance. **Proposed**
+    means the decision is not yet made, or the mechanism does not yet exist where it
+    must. A stated convention the parts follow is itself an enforcement point: the
+    record is Accepted and a missing automated check is a named gap, not a Proposed
+    status.
+
 - Never edit the decision of an accepted record. When the business situation
   changes, write a new record that supersedes it and update the old record's
   status line only.
@@ -156,7 +157,10 @@ definitions.
 - **Spine** — the parts of the codebase that stay no matter which optional
   capabilities are removed: the example apps, shared libraries, and the
   development infrastructure
-  ([002](./002-modules-are-removable-slices.md)).
+  ([002](./002-modules-are-removable-slices.md)). In this repository the
+  catalogue's own server, dashboard, and search store form the spine — a
+  named deviation recorded by
+  [050](./050-the-system-carries-only-what-the-catalogue-needs.md).
 - **Slice** — an optional capability and the infrastructure it owns, removed
   as one unit ([002](./002-modules-are-removable-slices.md)).
 - **The gate** — the shared rule set that runs at commit time and in the
@@ -166,10 +170,13 @@ definitions.
   **stream**, it means one of the platform's topics, named by
   [032](./032-shared-streams-are-named-by-a-declared-convention.md) and
   guaranteed per [027](./027-every-stream-carries-a-stated-delivery-guarantee.md).
+  The slice was removed by
+  [050](./050-the-system-carries-only-what-the-catalogue-needs.md); the term
+  appears only in the records written for that slice.
 - **Collection point** — the single seam where parts hand over traces,
   metrics, and logs ([016](./016-the-system-observes-itself-internally.md)).
 - **Taught path** — the arrangement an example demonstrates, which a future
-  reader will copy ([009](./009-examples-must-run-and-be-tested.md)).
+  reader copies ([009](./009-examples-must-run-and-be-tested.md)).
 - **Delivery plane** — the pipeline activity that validates and releases the
   system, distinct from the running system; the only place the data boundary
   may be crossed, and only at named points
@@ -177,6 +184,10 @@ definitions.
 - **Dataset owner** — the named role that answers for a dataset's shape,
   lifetime, and quality
   ([042](./042-every-dataset-has-an-owner-who-answers-for-it.md)).
+- **Swept (date tag)** — a note in a record's status block that its wording
+  passed the plain-language readability sweep on that date (the rules of the
+  [writing style guide](../../contributor-guide/writing-style.md)); the tag
+  touches wording only, never the decision, status, or trigger lines.
 
 ## Gaps with a record but no mechanism yet
 
@@ -185,13 +196,26 @@ all. Each now has one, Proposed: the question is framed, the requirements are
 written, and the decision — including the numbers and owners those records
 defer — is what acceptance adds.
 
+??? INFO "Which records are Proposed"
+
+    Eight: [023](./023-storage-schema-changes-by-recorded-migration.md),
+    [025](./025-data-has-a-stated-lifetime.md),
+    [026](./026-the-system-can-be-brought-back-from-a-named-snapshot.md),
+    [027](./027-every-stream-carries-a-stated-delivery-guarantee.md) (its slice
+    removed by [050](./050-the-system-carries-only-what-the-catalogue-needs.md)),
+    [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md),
+    [040](./040-the-system-raises-its-hand-when-it-is-broken.md),
+    [042](./042-every-dataset-has-an-owner-who-answers-for-it.md), and
+    [052](./052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md)
+    — the governance mechanisms that need an enforcement point before they are
+    decisions the system keeps; 052's harness arrives with increment 0.4. Each
+    is listed in the log above as Proposed.
+
 The gaps also sequence the work: taking on real stored data needs the
 migration path ([023](./023-storage-schema-changes-by-recorded-migration.md))
 and the recovery path
 ([026](./026-the-system-can-be-brought-back-from-a-named-snapshot.md))
-first; and credentials cannot honestly claim rotation until operational secret
-handling
-([028](./028-operational-secret-handling-has-a-named-owner.md)) is decided.
+first.
 
 - **Storage schema lifecycle** —
   [023](./023-storage-schema-changes-by-recorded-migration.md), which
@@ -206,35 +230,19 @@ handling
 - **Event delivery guarantees** —
   [027](./027-every-stream-carries-a-stated-delivery-guarantee.md), the
   behaviour beside the content that
-  [017](./017-shared-concepts-change-only-compatibly.md) does not cover.
-- **Operational secret handling** —
-  [028](./028-operational-secret-handling-has-a-named-owner.md), the half
-  [008](./008-secrets-never-in-plaintext.md) named as nobody's decision.
-- **Interface verification** —
-  [030](./030-interfaces-between-parts-are-verified-not-assumed.md), the
-  standing question [004](./004-one-shared-domain-model.md) left open for
-  travelling representations.
-- **Runtime support windows** —
-  [031](./031-runtime-versions-have-a-declared-support-window.md), what
-  [020](./020-dependencies-stay-current-by-default.md) does not speak to.
+  [017](./017-shared-concepts-change-only-compatibly.md) does not cover. The
+  slice it governs was removed by
+  [050](./050-the-system-carries-only-what-the-catalogue-needs.md); the record
+  stays open in case a queue returns.
 - **Authorization** —
   [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md),
   the permission question the identity record
   ([007](./007-one-shared-identity-provider.md)) deliberately leaves open.
-- **Data protection in transit and at rest** —
-  [039](./039-data-is-protected-where-it-travels-and-where-it-rests.md), the
-  protection of the data itself that the credential rule
-  ([008](./008-secrets-never-in-plaintext.md)) does not cover.
 - **Alerting** —
   [040](./040-the-system-raises-its-hand-when-it-is-broken.md), the noticing
   the collection point
   ([034](./034-signals-meet-at-one-replaceable-collection-point.md)) does not
   do by itself.
-- **Incident response** —
-  [041](./041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path.md),
-  the path that begins where
-  [040](./040-the-system-raises-its-hand-when-it-is-broken.md)'s announcement
-  arrives.
 - **Dataset ownership** —
   [042](./042-every-dataset-has-an-owner-who-answers-for-it.md), the answer
   the migration path

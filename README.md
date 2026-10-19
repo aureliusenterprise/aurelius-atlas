@@ -1,6 +1,12 @@
 # Aurelius Atlas
 
-A Python re-implementation of [Apache Atlas](https://atlas.apache.org): the same REST API and the same
+_Data governance made simple_: an open-source data governance solution that helps business users
+find, understand, and trust their data — discover assets and their context in seconds, see who is
+accountable, track lineage, and keep sensitive data compliant — with faster information access and
+less IT dependency.
+
+This repository is the engine of that solution: a Python re-implementation of
+[Apache Atlas](https://atlas.apache.org) — the same REST API and the same
 dashboard, with Elasticsearch 9 as the only backend instead of JanusGraph, HBase and Solr. The Java
 code base is converted in small, reviewed increments, each proven against the reference Java Atlas.
 
