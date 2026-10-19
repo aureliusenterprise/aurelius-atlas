@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2499,6 +2654,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5701,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5801,6 +5995,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5832,7 +6065,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6034,149 +6267,183 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Routine dependency updates arrive by themselves, one dependency at a time, and
+are accepted only when the automated checks pass. Upgrading a framework the
+system is built on is planned work, decided by a person. A dependency runs old
+only by a recorded choice.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Third-party dependencies are kept current by default: every ecosystem the
-system consumes — packages, containers, workflow actions, tooling — is
-monitored on a schedule, and routine updates arrive as reviewable changes
-automatically, one dependency at a time. The same gate that refuses
-hand-written changes refuses them (<a href=".././014-the-gate-is-defined-once-and-runs-everywhere/">014</a>),
-so an update is accepted by evidence, not by trust.</p>
-<p>Breaking changes are the exception, and are handled deliberately. Where an
-update crosses a major boundary for a dependency whose upgrade is a project
-rather than a bump — the frameworks the system is built on — automation
-proposes nothing and the upgrade happens as planned work, on a date the team
-chooses. Everything else, including majors of ordinary libraries, flows
-through the automatic channel and is judged by the gate.</p>
-<p>The default is currency: a dependency is old only because someone chose to
-keep it that way, and the choice is visible.</p>
+<p><strong>Being up to date is the default.</strong> Every ecosystem the system consumes —
+packages, container images, workflow actions, tooling — is monitored on a
+schedule, and routine updates arrive as automatic, reviewable changes, one
+dependency at a time. Each one passes the gate (the shared set of checks every
+change must pass, run at commit time and in the pipeline
+(<a href=".././014-the-gate-is-defined-once-and-runs-everywhere/">014</a>)), so an update
+is accepted by test evidence, not by trust in the automation.</p>
+<p><strong>Framework upgrades are the exception, handled deliberately.</strong> Where an
+update crosses a major boundary of a framework the system is built on — an
+upgrade that is a project, not a bump — the update automation deliberately
+stays away from it, and the upgrade happens as planned work on a date the team
+chooses. Everything else, including major versions of ordinary libraries,
+flows through the automatic channel and is judged by the gate.</p>
+<details class="question">
+<summary>Why not automate framework majors too?</summary>
+<p>Because the gate cannot judge them. The tests can stay green across a
+framework major while the upgrade is really a migration of how the system
+is written; merging on green tests alone ships a decision nobody made
+(R4).</p>
+</details>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The system stands on a large base of third-party code: language packages in
-three ecosystems, container images for every backing service, CI actions, and
-the toolchain itself. None of it is frozen; all of it changes underneath the
-system whether the system acts or not. The question this record answers is
-who decides when the base moves, and how quickly.</p>
-<p>Two failure modes bracket the options. Let updates accumulate and the system
-ages into a position where every dependency is several generations behind and
-each catch-up is a breaking change compounded with the next — the upgrade that
-was avoidable weekly becomes unavoidable and expensive yearly, and security
-fixes arrive only as part of those expensive jumps. Chase every update the
-moment it publishes, on the other hand, and the team spends its attention on
-churn: most updates fix nothing the system cares about, and some carry real
-regressions that deserve a human deciding whether the affected part is worth
-the risk this week.</p>
-<p>The arrangement that resolves the bracket is to separate the two kinds of
-movement by their cost, not by their version number. An update that the gate
-can judge — build it, test it, and see — is cheap to accept and cheap to
-revert, so it should arrive automatically and often: small, single-purpose,
-reviewable changes, exactly like ordinary commits. An update the gate cannot
-judge — where the tests pass but the upgrade is a migration of how the system
-is written — is not a bump at all, and automating it produces a stream of
-changes nobody can meaningfully review. The frameworks the system is built on
-are the case in point: their majors are deliberate, batched decisions, so
-automation is pointed away from them and toward everything else, where its
-judgement (the gate's) is actually the right instrument.</p>
+<p>The system stands on a large base of third-party code — packages in three
+ecosystems, container images, CI actions, the toolchain — and all of it moves
+whether the system acts or not. The question is who decides when the base
+moves, and how quickly. Two failure modes bracket the answers:</p>
+<ul>
+<li><strong>Updates accumulate.</strong> The system ages several generations behind; every
+  catch-up is a breaking change compounded with the next, and security fixes
+  arrive only inside those expensive jumps.</li>
+<li><strong>We chase every update the day it appears.</strong> Most updates fix nothing this
+  system cares about, attention goes to churn, and real regressions deserve a
+  human deciding whether the affected part is worth the risk this week.</li>
+</ul>
+<p>The resolution separates the two kinds of movement <strong>by cost, not by version
+number</strong>:</p>
+<ul>
+<li>An update the gate can judge — build it, test it, see — is cheap to accept
+  and cheap to revert, so it arrives automatically and often: small,
+  single-purpose, reviewable, like any ordinary commit.</li>
+<li>An update the gate cannot judge — the tests pass, but the upgrade is a
+  migration of how the system is written — is not a bump at all. Framework
+  majors are this case, so the automation is pointed away from them, toward
+  the movement the gate's judgement is the right instrument for.</li>
+</ul>
 <p>This record is the input side of the delivery rule
-(<a href=".././019-the-system-releases-as-one-versioned-whole/">019</a>): a released
-version is a consistent snapshot only if the base under it is known and
-recent, and lockstep release is what makes an accepted update actually reach
-users rather than sitting unreleased.</p>
+(<a href=".././019-the-system-releases-as-one-versioned-whole/">019</a>): a release is a
+consistent snapshot only if the base under it is known and recent, and
+releasing as one whole is what makes an accepted update reach users.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — No ecosystem left unwatched.</strong> Every kind of third-party thing the
-  system consumes is monitored; "we forgot to watch the containers" is not a
-  failure mode the arrangement permits.</li>
-<li><strong>R2 — Routine updates need no human initiative.</strong> A person does not
-  remember to check for updates; they arrive as proposed changes on a
-  cadence, small enough that each is one dependency's movement.</li>
-<li><strong>R3 — Updates are judged like changes.</strong> A proposed update passes the same
-  gate as a hand-written commit; an update that breaks the system is refused
-  by evidence rather than discovered after merge.</li>
-<li><strong>R4 — Framework majors are planned, not automatic.</strong> Upgrading what the
-  system is built on is scheduled work with a decision in front of it, not a
-  bot's pull request merged under time pressure.</li>
-<li><strong>R5 — Age is visible.</strong> A dependency that is deliberately held back is
-  recorded as held back, with the hold a choice someone made rather than
-  drift; a dependency nobody thought about is distinguishable from one
-  someone pinned on purpose.</li>
-<li><strong>R6 — Security fixes are not gated by cadence.</strong> A fix for a known
-  vulnerability reaches the system through the same automatic channel at
-  least the same speed as everything else — the default posture is what makes
-  this automatic rather than heroic.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>No ecosystem left unwatched.</strong> Every kind of third-party thing consumed is monitored.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>No human initiative for routine updates.</strong> They arrive as proposed changes on a cadence, one each.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Updates are judged like changes.</strong> The same gate; breakage refused by evidence, not found in prod.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Framework majors are planned, not automatic.</strong> Scheduled work with a decision in front of it.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Age is visible.</strong> A held dependency is recorded as held, with a reason — a choice, not drift.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>Security fixes are not gated by cadence.</strong> They ride the same automatic channel as everything else.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Update by hand, when someone remembers.</strong> The pre-automation default. It
-  fails R2 and R6 outright — the update arrives when a person happens to care,
-  which correlates with novelty, not need — and R1, since watching eight
-  ecosystems by hand is a job nobody holds. It is the arrangement this record
-  exists to replace.</li>
-<li><strong>Update everything automatically, majors included.</strong> Maximum currency,
-  minimum ceremony. It fails R4: a major of a foundational framework is a
-  migration dressed as a bump, and merging it on gate-green evidence alone
-  ships a decision nobody made — the gate proves the old code still runs, not
-  that the new idiom was adopted deliberately. It also fails R5 in reverse,
-  because a system that never holds anything back has no record of what it
-  depends on being stable.</li>
-<li><strong>Pin everything, upgrade on a fixed schedule (quarterly review).</strong> A
-  stability-first posture. It passes R4 and R5 comfortably but fails R6 — a
-  vulnerability fix waits for the review — and fails R3's spirit: batched
-  upgrades arrive as large multi-dependency changes the gate can judge only
-  as a bundle, so a failure names ten suspects instead of one.</li>
-<li><strong>Update only what has a known vulnerability (security-only automation).</strong>
-  The minimal posture. It fails the premise: by the time a vulnerability is
-  published and scanned, the system has been running the flaw for however
-  long the version was old, and the fix lands as the same kind of jump this
-  record exists to avoid. It fails R2 and R6 — currency by exception is
-  currency by heroics.</li>
-<li><strong>Do nothing (no update automation at all).</strong> Zero setup cost. It fails R1,
-  R2, R5 and R6 by definition, and quietly fails R3 as well: un-updated
-  dependencies eventually demand a large change, which is the least reviewable
-  kind.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Update by hand, when someone remembers</td>
+<td>R2, R6: updates correlate with novelty, not need. R1: watching eight ecosystems by hand is a job nobody holds. This is the arrangement the record replaces.</td>
+</tr>
+<tr>
+<td>Automate everything, majors included</td>
+<td>R4: a framework major is a migration dressed as a bump — green tests ship a decision nobody made. R5: a policy of never holding anything records no choices at all.</td>
+</tr>
+<tr>
+<td>Pin everything, review quarterly</td>
+<td>R6: a vulnerability fix waits for the review. R3: a batched upgrade names ten suspects when it fails.</td>
+</tr>
+<tr>
+<td>Update only known vulnerabilities</td>
+<td>By the time a CVE is published, the system has run the flaw for the age of the version. R2, R6: updating only in response to published flaws puts the whole burden on emergencies.</td>
+</tr>
+<tr>
+<td>Do nothing</td>
+<td>R1, R2, R5, R6 by definition; R3 quietly — un-updated dependencies eventually demand the least reviewable change of all.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> the base under the system is known-recent at every release
-  (supports <a href=".././019-the-system-releases-as-one-versioned-whole/">019</a>);
-  updates arrive one-at-a-time so a failure names one suspect (R3); security
-  fixes ride the default channel rather than an emergency one (R6); watching
-  is automated across every ecosystem, so coverage is a configuration fact,
-  not a habit (R1).</li>
-<li><strong>Negative:</strong> review volume is a real cost — most proposed updates fix
-  nothing the system cares about, and the team must build the reflex of
-  merging gate-green single-dependency changes quickly, or the queue rots and
-  the posture decays into the batched-upgrade failure mode it replaced; the
-  line between "ordinary library" and "framework the system is built on" is a
-  judgement that must be maintained as the system grows, and a wrong call
-  either spams the team with migration PRs or silently automates one; and
-  held-back dependencies need their holds recorded, which is a small
-  discipline with no immediate payoff.</li>
-<li><strong>Neutral / follow-ups:</strong> the automation configuration's ignore list is
-  the registry of holds, and each entry carries the reason for its hold, so a
-  deliberate pin is distinguishable from an oversight (R5) — keeping those
-  reasons current as holds change is the standing discipline, and the list is
-  where a future operational review should look first, because a held
-  dependency is a known liability with a shelf life; watching covers the
-  manifests each ecosystem names, but not every pin: the tool versions a hook
-  file lists beside its own hooks are a dependency surface the current
-  monitoring does not watch, and R1 is unmet there until it does; a security
-  fix rides the ordinary queue, and a queue that rots stalls it like anything
-  else — the cadence review that consumes the vulnerability reports is where
-  a stalled security fix must be escalated, because no blocking check will
-  (<a href=".././015-a-change-answers-for-what-it-caused/">015</a> keeps those findings
-  advisory), and without that link R6 is only as fast as the queue; if the
-  gate ever grows a security-scanning stage that can fail a change
-  (<a href=".././014-the-gate-is-defined-once-and-runs-everywhere/">014</a> leaves that
-  open), this record's R6 is its main justification; and the cadence itself
-  (weekly proposals) is an operational parameter, not part of the decision —
-  the decision is that the default is currency and the exception is
-  deliberate; and this record covers the libraries inside a runtime, not the
-  runtime itself — the support window for a language or runtime version, and
-  who decides its major bumps, is owned by
-  <a href=".././031-runtime-versions-have-a-declared-support-window/">031</a>, which
-  names the seam between the two records as still unowned for runtime minor
-  releases.</li>
+<li>The base is known-recent at every release — the input
+  <a href=".././019-the-system-releases-as-one-versioned-whole/">019</a> needs.</li>
+<li>A failure names one suspect: updates arrive one at a time (R3).</li>
+<li>Security fixes ride the default channel, not an emergency one (R6).</li>
+<li>Coverage is a configuration fact, not a habit (R1).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Review volume: most updates fix nothing the system cares about, so the
+  team's habit must be merging single-dependency changes that pass the gate,
+  quickly.</li>
+<li>The line between "ordinary library" and "framework the system is built on"
+  is a judgement maintained as the system grows; a wrong call fills the queue
+  with migration pull requests, or automates one without anyone noticing.</li>
+<li>Holds must be recorded — a small discipline with no immediate payoff.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">The decay mode</p>
+<p>This arrangement fails without any alarm: nothing breaks, updates just
+stop being merged. A proposal queue that sits unmerged decays into the
+batched-upgrade failure this record replaces. The fix is the habit:
+updates that pass the gate are routine work, not a backlog.</p>
+</div>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The automation's ignore list is the registry of holds, each entry with its
+  reason (R5). A held dependency is a known liability with a shelf life: keep
+  the reasons current, and look here first in any operational review.</li>
+<li>Tool versions a hook file lists beside its own hooks are a dependency
+  surface current monitoring does not watch — R1 is unmet there until it
+  does.</li>
+<li>A security fix rides the ordinary queue, so a stalled fix must be escalated
+  at the cadence review that consumes the vulnerability reports — no blocking
+  check enforces the escalation
+  (<a href=".././015-a-change-answers-for-what-it-caused/">015</a> keeps those findings
+  advisory), and without that escalation R6 is only as fast as the queue.
+  If the gate ever grows a security-scanning stage
+  (<a href=".././014-the-gate-is-defined-once-and-runs-everywhere/">014</a> leaves that
+  open), this record's R6 is its main justification.</li>
+<li>Cadence (weekly proposals) is an operational parameter, not part of the
+  decision: the decision is that being up to date is the default and running
+  old is a choice.</li>
+<li>This record covers libraries inside a runtime, not the runtime itself — the
+  support window for a language version belongs to
+  <a href=".././031-runtime-versions-have-a-declared-support-window/">031</a>, which
+  leaves the seam for runtime minor bumps unowned.</li>
+</ul>
+<details class="question">
+<summary>Can a dependency deliberately stay old?</summary>
+<p>Yes — that is a "hold", and R5 requires recording it: the ignore list
+carries each held dependency with the reason for its hold. Keeping a
+dependency old on purpose is a recorded decision; getting old by
+forgetting is drift.</p>
+</details>
 
 
 

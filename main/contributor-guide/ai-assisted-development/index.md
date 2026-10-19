@@ -1,16 +1,20 @@
 # AI-Assisted Development
 
-Automated agents write a routine share of the changes in this repository — alongside bot-authored dependency updates, which have been routine for years. The rule that makes this safe is short: **an assistant is a generator, not a signatory.** It cannot approve, own, or operate what it wrote, so the gate and the human signatures a change needs are exactly the same as if a person had typed every line. This page describes how we work with assistants under that rule: what counts as done, who signs off, and where the guardrails live. It is written for people reading the system; the machine-facing instructions that agents read are a separate layer, and this page deliberately stands without them.
+Automated agents write a routine share of the changes in this repository — alongside bot-authored dependency updates, which have been routine for years. The rule that makes this safe is short: **an assistant is a generator, not a signatory.** It cannot approve, own, or operate what it wrote, so the gate (the shared set of checks defined in [ADR 014](<https://aureliusenterprise.github.io/main/architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/index.md>)) and the human signatures a change needs are exactly the same as if a person had typed every line.
+
+This page describes how we work with assistants under that rule: what counts as done, who signs off, and where the guardrails live. It is written for people reading the system; the machine-facing instructions that agents read are a separate layer, and this page deliberately stands without them.
 
 ## The premise: same discipline, faster generator
 
-An assistant changes the speed at which code appears, not the obligations that come with it. A change is judged as a change: whoever — or whatever — produced a diff, it passes the same gate, the same review, and the same release rules as any other. The reasoning behind that rule is recorded in [ADR 022](<https://aureliusenterprise.github.io/main/architecture/adr/022-the-codebase-explains-itself-to-its-agents/index.md>); the gate itself is defined once and runs everywhere ([ADR 014](<https://aureliusenterprise.github.io/main/architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/index.md>)), and a change answers only for what it caused ([ADR 015](<https://aureliusenterprise.github.io/main/architecture/adr/015-a-change-answers-for-what-it-caused/index.md>)).
+An assistant changes the speed at which code appears, not the obligations that come with it. A change is judged as a change: whoever — or whatever — produced a diff, it passes the same gate, the same review, and the same release rules as any other.
+
+The reasoning behind that rule is recorded in [ADR 022](<https://aureliusenterprise.github.io/main/architecture/adr/022-the-codebase-explains-itself-to-its-agents/index.md>); the gate itself is defined once and runs everywhere ([ADR 014](<https://aureliusenterprise.github.io/main/architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/index.md>)), and a change answers only for what it caused ([ADR 015](<https://aureliusenterprise.github.io/main/architecture/adr/015-a-change-answers-for-what-it-caused/index.md>)).
 
 Because the assistant cannot sign, the responsibility for a change rests with the person who asked for it. What that person is agreeing to is defined next.
 
 ## The guarantee
 
-A merged change always gives the same guarantee, whoever produced it: the gate runs the full ladder on every pull request — the commit checks (formatting, lint, types, secret scanning), the unit tests, and the end-to-end tests against real services — and all of it must pass before the change is accepted.
+A merged change always gives the same guarantee, whoever produced it: the gate runs the complete set of checks on every pull request — the commit checks (formatting, lint, types, secret scanning), the unit tests, and the end-to-end tests against real services — and all of it must pass before the change is accepted.
 
 This is the standard both signatures below are given against. It is stated here, before them, so that "I verified it" has a fixed meaning: it means the change meets this guarantee, not that its author liked the prompt.
 

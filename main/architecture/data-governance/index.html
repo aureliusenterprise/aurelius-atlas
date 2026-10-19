@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5597,7 +5752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5665,7 +5820,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5766,6 +5921,55 @@
 
 
 <h1 id="data-governance">Data Governance<a class="headerlink" href="#data-governance" title="Permanent link">&para;</a></h1>
+<p>Governance in the terms the business uses: people discover and understand data, know who is
+accountable for it, see how it flows and how sensitive it is, and can prove all of it. Concretely,
+that is how Aurelius Atlas describes, classifies, connects, and accounts for data — the catalogue's
+own subject: the type system, lineage, glossary, classifications, and audit trail. The rules live in
+the increment <a href="../conversion/increments/">semantics specs</a>; these pages assemble them into the
+governance view.</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Scope</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="roles-and-responsibilities/">Roles &amp; Responsibilities</a></td>
+<td>Who owns and who may act: authorizer roles, dataset ownership</td>
+<td>6.2 (ADR 042)</td>
+</tr>
+<tr>
+<td><a href="data-dictionary/">Data Dictionary</a></td>
+<td>The type system as the catalogue's dictionary: typedefs, built-in models, inheritance</td>
+<td>1.6 (material exists from 1.1–1.5)</td>
+</tr>
+<tr>
+<td><a href="data-quality/">Data Quality</a></td>
+<td>Glossary, terms, business metadata, labels as quality signals</td>
+<td>5.2, 5.3</td>
+</tr>
+<tr>
+<td><a href="data-lineage/">Data Lineage</a></td>
+<td>Processes, inputs/outputs, depth and direction, on-demand lineage</td>
+<td>5.1</td>
+</tr>
+<tr>
+<td><a href="compliance-and-auditability/">Compliance &amp; Auditability</a></td>
+<td>Entity audit events, classifications with validity, audit REST</td>
+<td>3.5, 6.2</td>
+</tr>
+</tbody>
+</table>
+<details class="question">
+<summary>Every page here is Planned — where do I read the rules?</summary>
+<p>In the increment specs, which are written with the code and are the authority
+(<a href="../conversion/increments/">semantics specs</a>); the dictionary's material, for
+example, exists from increments 1.1–1.5 even though its page lands with 1.6. A <code>Planned</code>
+marker names the increment whose spec to read instead.</p>
+</details>
 
 
 

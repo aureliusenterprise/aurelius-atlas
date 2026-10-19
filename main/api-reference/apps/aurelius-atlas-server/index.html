@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -1211,6 +1366,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Design
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -6253,7 +6419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -6523,6 +6689,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Design
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -6948,7 +7125,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -7747,6 +7924,63 @@ none (MDL-01, MDL-16, DD-032).</p>
     </div>
 
 </div></details>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<p>The technology-specific detail of how the server runs. The properties it must keep are in the
+architecture: <a href="../../../architecture/platform/delivery/configuration-management/">Configuration Management</a>
+(ADR 018), <a href="../../../architecture/platform/components-and-interfaces/">Components &amp; Interfaces</a>.</p>
+<p><strong>Settings.</strong> Read once at start-up into a frozen <code>ServerSettings</code>; a validation failure (missing
+key, bad scheme, half a TLS pair) stops start-up with a message naming the variable (SRV-01,
+SRV-02). All names carry the <code>AURELIUS_ATLAS_SERVER_</code> prefix. What a deployment must supply, with
+no defaults:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>..._ELASTICSEARCH_HOSTS</code></td>
+<td>JSON list of store node URLs, e.g. <code>["https://es-0:9200"]</code> — <code>https</code> only</td>
+</tr>
+<tr>
+<td><code>..._ELASTICSEARCH_PASSWORD</code></td>
+<td>Store password — a <code>SecretStr</code>, never shown in logs</td>
+</tr>
+<tr>
+<td><code>..._ELASTICSEARCH_CA_CERTS</code></td>
+<td>PEM CA of the store certificate; the store link is https-only (ADR 039)</td>
+</tr>
+<tr>
+<td><code>..._TLS_CERT_FILE</code> + <code>..._TLS_KEY_FILE</code></td>
+<td>PEM pair for serving HTTPS: both set, or both unset — enforced at start-up</td>
+</tr>
+</tbody>
+</table>
+<p>With defaults: <code>HOST</code> (<code>0.0.0.0</code> in the image), <code>PORT</code> (21000, Atlas's port — kept so existing
+clients find the catalogue where Atlas was, ADR 046), <code>LOG_LEVEL</code>, <code>REVISION</code> (reported by
+<code>admin/version</code>, ADM-01), <code>DASHBOARD_DIR</code> (None serves the API only, DSH-04), <code>MODELS_DIR</code>
+(default: the vendored Atlas 2.4.0 <code>addons/models</code>, MDL-16/DD-032),
+<code>TYPEDEF_REFRESH_SECONDS</code> (5.0 — how long the server answers from its type registry before
+checking for another process's type change, TDS-13/DD-029).</p>
+<div class="admonition warning">
+<p class="admonition-title">A half TLS pair stops the server from starting</p>
+<p><code>TLS_CERT_FILE</code> and <code>TLS_KEY_FILE</code> are both set, or both unset — the pairing is enforced at
+start-up. A container that mounts only the certificate exits with a message naming the
+missing variable; this is the design working, not a broken image.</p>
+</div>
+<p><strong>The image</strong> (<code>apps/aurelius-atlas-server/Dockerfile</code>: hardened base, runs as <code>nonroot</code>) bakes in
+the production defaults — listen on <code>0.0.0.0:21000</code>, dashboards served from
+<code>/application/dashboard</code> — and a liveness healthcheck against <code>/api/atlas/admin/liveness</code> that
+verifies the server's own certificate when TLS is on. Liveness is the probe a restart decision
+uses; readiness also fails while the store is away (DD-016).</p>
+<p><strong>Parity scenarios.</strong> <code>scenarios/&lt;resource&gt;/*.scenario.yaml</code> state each expectation as Atlas's own
+answer — e.g. <code>scenarios/admin/version.scenario.yaml</code> expects <code>Version: "2.4.0"</code>,
+<code>Name: apache-atlas</code>, the exact content type — each cited to the Java source that produces it.
+Build-varying fields are marked volatile; the two places Aurelius Atlas must answer differently
+(name, description) carry a <code>deviations: DV-03</code> entry. Anything else that differs fails the
+scenario (ADR 052).</p>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 
 

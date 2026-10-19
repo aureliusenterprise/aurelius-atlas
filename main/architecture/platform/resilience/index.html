@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5599,7 +5754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5667,7 +5822,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5808,6 +5963,43 @@
 
 
 <h1 id="resilience">Resilience<a class="headerlink" href="#resilience" title="Permanent link">&para;</a></h1>
+<p>How Aurelius Atlas fails, recovers, and is kept recoverable. The system promises nothing about
+staying up (ADR 037) but promises a rehearsed path back (ADRs 026, 041).</p>
+<div class="admonition info">
+<p class="admonition-title">Planned</p>
+<p>To be written by increment 6.4 (hardening); see <a href="../../">Architecture</a>.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Scope</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="high-availability/">High Availability</a></td>
+<td>Single-node posture, what fails together, the store as the critical dependency</td>
+<td>6.4</td>
+</tr>
+<tr>
+<td><a href="incident-management/">Incident Management</a></td>
+<td>Owner and rehearsed path per failure (ADR 041)</td>
+<td>6.4</td>
+</tr>
+<tr>
+<td><a href="backup-and-restore/">Backup &amp; Restore</a></td>
+<td>Store snapshots, restore drill (ADR 026)</td>
+<td>6.4</td>
+</tr>
+<tr>
+<td><a href="disaster-recovery/">Disaster Recovery</a></td>
+<td>Rebuild from image + snapshot, objectives</td>
+<td>6.4</td>
+</tr>
+</tbody>
+</table>
 
 
 

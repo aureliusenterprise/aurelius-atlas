@@ -265,6 +265,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../CHANGELOG.md" class="md-tabs__link">
+      <a href="../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -480,6 +490,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -665,6 +685,114 @@
   
   
     <li class="md-nav__item">
+      <a href="./writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./secrets-management/" class="md-nav__link">
         
   
@@ -673,6 +801,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5577,7 +5732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../CHANGELOG.md" class="md-nav__link">
+      <a href="../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5645,7 +5800,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5662,6 +5817,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5708,6 +5873,67 @@
 
 
 <h1 id="how-to-contribute">How to Contribute<a class="headerlink" href="#how-to-contribute" title="Permanent link">&para;</a></h1>
+<p>Aurelius Atlas is built one reviewed increment at a time (ADR 051). Start with the
+<a href="development-environment/">Development Environment</a> to get a working machine, then the
+<a href="../architecture/conversion/">Conversion roadmap</a> to see what is in flight and how an
+increment runs: spec, code, parity scenarios, traceability, two approvals.</p>
+<table>
+<thead>
+<tr>
+<th>Guide</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="development-environment/">Development Environment</a></td>
+<td>First setup: devcontainer, Docker Hub login, SOPS key, first run</td>
+</tr>
+<tr>
+<td><a href="secrets-management/">Secrets Management</a></td>
+<td>The age key, <code>.env</code>/<code>.env.enc</code>, encrypting after edits</td>
+</tr>
+<tr>
+<td><a href="operations-ownership/">Operations Ownership</a></td>
+<td>Who owns secret handling and incident response, and the written paths (ADRs 028/041/042)</td>
+</tr>
+<tr>
+<td><a href="version-control/">Version Control</a></td>
+<td>Branches, conventional commits, the two-signature gate (ADR 044)</td>
+</tr>
+<tr>
+<td><a href="ai-assisted-development/">AI-Assisted Development</a></td>
+<td><code>AGENTS.md</code> files, agents as contributors (ADR 022)</td>
+</tr>
+<tr>
+<td><a href="documentation/">Documentation</a></td>
+<td>Docs tooling, the stub and filling-map convention</td>
+</tr>
+<tr>
+<td><a href="writing-style/">Writing Style</a></td>
+<td>The prose style: short sections, callouts, diagrams; the page pass rules</td>
+</tr>
+<tr>
+<td><a href="testing/">Testing</a></td>
+<td>Running the gate locally, test conventions, the <code>covers</code> marker</td>
+</tr>
+<tr>
+<td><a href="tls-certificates/">TLS Certificates</a></td>
+<td><code>tls.json</code>, <code>nx certgen</code>, the local CA, cleanup, named relaxations</td>
+</tr>
+<tr>
+<td><a href="releasing/">Releasing</a></td>
+<td><code>prerelease</code>/<code>release</code>, the changelog rule, docs publishing</td>
+</tr>
+<tr>
+<td><a href="adopting-the-template/">Adopting the Template</a></td>
+<td>For template forks: the rename and re-founding checklist</td>
+</tr>
+</tbody>
+</table>
+<p>Workspace-wide rules for humans and agents live in the root
+<a href="https://github.com/aureliusenterprise/aurelius-atlas/blob/main/AGENTS.md"><code>AGENTS.md</code></a>; every project
+carries a colocated <code>AGENTS.md</code> and <code>README.md</code> with its own wiring (ADR 003).</p>
 
 
 

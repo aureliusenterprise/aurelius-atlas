@@ -11,8 +11,13 @@
 - [Development Environment](<https://aureliusenterprise.github.io/main/contributor-guide/development-environment/index.md>)
 - [Documentation](<https://aureliusenterprise.github.io/main/contributor-guide/documentation/index.md>)
 - [How to Contribute](<https://aureliusenterprise.github.io/main/contributor-guide/index.md>)
+- [Operations Ownership](<https://aureliusenterprise.github.io/main/contributor-guide/operations-ownership/index.md>)
+- [Releasing](<https://aureliusenterprise.github.io/main/contributor-guide/releasing/index.md>)
 - [Secrets Management](<https://aureliusenterprise.github.io/main/contributor-guide/secrets-management/index.md>)
+- [Testing](<https://aureliusenterprise.github.io/main/contributor-guide/testing/index.md>)
+- [TLS Certificates](<https://aureliusenterprise.github.io/main/contributor-guide/tls-certificates/index.md>)
 - [Version Control](<https://aureliusenterprise.github.io/main/contributor-guide/version-control/index.md>)
+- [Writing Style](<https://aureliusenterprise.github.io/main/contributor-guide/writing-style/index.md>)
 
 ## API Reference
 
@@ -23,7 +28,7 @@
 - [API Reference](<https://aureliusenterprise.github.io/main/api-reference/index.md>)
 - [aurelius-atlas-data-access](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-data-access/index.md>)
 - [aurelius-atlas-ui](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/aurelius-atlas-ui/index.md>)
-- [Index](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/index.md>)
+- [Angular](<https://aureliusenterprise.github.io/main/api-reference/libs/angular/index.md>)
 - [Libs](<https://aureliusenterprise.github.io/main/api-reference/libs/index.md>)
 - [aurelius-atlas-core](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-core/index.md>)
 - [aurelius-atlas-example](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/index.md>)
@@ -35,7 +40,7 @@
 - [aurelius-atlas-typesystem](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-typesystem/index.md>)
 - [Python](<https://aureliusenterprise.github.io/main/api-reference/libs/python/index.md>)
 - [aurelius-atlas-brand](<https://aureliusenterprise.github.io/main/api-reference/libs/styles/aurelius-atlas-brand/index.md>)
-- [Index](<https://aureliusenterprise.github.io/main/api-reference/libs/styles/index.md>)
+- [Styles](<https://aureliusenterprise.github.io/main/api-reference/libs/styles/index.md>)
 
 ## Architecture
 
@@ -157,3 +162,5 @@
 - [Stakeholder Analysis](<https://aureliusenterprise.github.io/main/architecture/vision-and-strategy/stakeholder-analysis/index.md>)
 
 ## Changelog
+
+- [Changelog](<https://aureliusenterprise.github.io/main/CHANGELOG/index.md>)

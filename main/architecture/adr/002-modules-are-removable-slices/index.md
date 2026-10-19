@@ -4,39 +4,70 @@
 - **Date:** 2026-10-06
 - **Deciders:** Aurelius Enterprise
 
+Every module is spine (always stays) or an optional capability that leaves as a whole slice: delete its directories and the remainder works. Partial removal is not a supported state — a team takes a capability in full, or not at all.
+
 ## Decision
 
-Every module in the repository belongs to exactly one of two categories: it is part of the spine — the core that always stays, in every copy of this system — or it belongs to an optional capability that can be removed as a whole slice.
+**Two categories, no third.** A module is part of the spine — the core that stays in every copy of this system — or it belongs to an optional capability.
 
-A capability owns its applications, libraries, and development infrastructure together, and deleting it — code, wiring, configuration, and documentation in one pass — leaves the remainder working. Partial removal is not a supported state: a team either takes a capability in full or does not take it at all.
+**A capability owns its applications, libraries, and development infrastructure together.** Deleting it — code, wiring, configuration, documentation in one pass — leaves the remainder working. A team takes a capability in full or does not take it at all.
+
+> [!NOTE]
+>
+> **What is the spine today?**
+>
+> The spine is listed in the root `AGENTS.md`: the server, dashboard, store, parity, and trace projects, the dev infrastructure, and the template's example apps — which stay in the spine until increment 6.4 retires them as their own slice ([DD-019](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-019-the-template-examples-stay-until-the-plan-is-done>)). The template's Kafka streaming and AWS Lambda slices and its Java tooling were the first capabilities to leave this way ([050](<https://aureliusenterprise.github.io/main/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>)).
 
 ## Context
 
-The repository holds a complete business system: an interface, backend services, a streaming data pipeline, shared libraries, and the development infrastructure that runs them. One multi-disciplinary team builds all of it today, and no capability is currently being removed.
+The repository holds a complete business system, built by one team, with nothing being removed today. It is also meant to be read and reused as a whole — the reason it lives in one repository ([001](<https://aureliusenterprise.github.io/main/architecture/adr/001-single-monorepo/index.md>)) — and work taken from it takes a subset: a form-driven service has no use for a streaming pipeline; a serverless team's infrastructure needs differ from a long-lived-services team's.
 
-The system is also meant to be read and reused as a whole, which is the reason it lives in one repository (see [001](<https://aureliusenterprise.github.io/main/architecture/adr/001-single-monorepo/index.md>)). Work taken from it is expected to take a subset: a form-driven service has no use for a streaming pipeline, and a team running workloads on serverless infrastructure has different infrastructure needs than one running long-lived services. That creates a tension: the more capabilities the system demonstrates, the more useful it is as a reference, and the more a person has to sift through to find the part relevant to them.
+The tension: the more capabilities the system demonstrates, the more useful it is as a reference — and the more a reader must sift to find their part.
 
-Without a rule about how the system may be taken apart, two failure modes are open. Someone who wants to drop a capability has to discover, by trial and error, which libraries, build wiring, configuration keys, and documents belong to it — and will usually leave some behind. A capability added with no rule has no reason to stay separable, so it threads a dependency through the middle of something general-purpose. Either way the repository accumulates parts that belong to no one, and the cost of understanding it rises for everyone who reads it.
+Without a rule about how the system may be taken apart, two failure modes are open:
+
+- **Removal by archaeology.** Someone dropping a capability discovers by trial and error which libraries, wiring, keys, and documents belong to it — and usually leaves some behind.
+- **Threading.** A capability added with no rule has no reason to stay separable, so it threads a dependency through something general-purpose.
+
+Either way the repository accumulates parts that belong to no one, and the cost of understanding it rises for everyone who reads it.
 
 ## Requirements
 
 Any acceptable arrangement must deliver:
 
-- **R1 — Complete removal by deletion.** A capability can be removed by deleting the directories that belong to it, without digging through the rest of the repository to find hidden wiring.
-- **R2 — The remainder still works.** After removal, what remains builds, tests, and runs without reference to anything deleted.
-- **R3 — Wiring is not interleaved.** A capability's build wiring, configuration, and documentation are not interleaved with those of the rest of the system, so removal is not an editing task on files someone else owns.
-- **R4 — Cheap to take back.** Adding a capability later does not require reworking what is already there.
-- **R5 — Cheap to keep true.** The rule holds with a small team maintaining it, without a dedicated owner per capability.
+|  | Requirement |
+| --- | --- |
+| **R1** | **Complete removal by deletion.** Delete the capability's directories; no hunting for hidden wiring. |
+| **R2** | **The remainder still works.** What remains builds, tests, and runs without reference to what was deleted. |
+| **R3** | **Wiring is not interleaved.** Removal is deletion, not an editing task on files someone else owns. |
+| **R4** | **Cheap to take back.** Adding a capability later needs no rework of what exists. |
+| **R5** | **Cheap to keep true.** The rule holds with a small team, no dedicated owner per capability. |
 
 ## Alternatives
 
-- **Free-form composition: any module may depend on any other.** Maximum flexibility, and the default state of a repository nobody disciplines. It fails R1 and R2: there is no boundary at which a capability ends, so removal becomes a hunt through shared build files and configuration, and the remover cannot tell what is safe to delete. It fails R3 outright: the wiring of one capability runs through files the whole system shares.
-- **Fine-grained modules, one per reusable component.** Precise dependency graphs and maximal reuse. It fails R5: keeping a large graph of small modules coherent — their wiring, versions, and documentation — is ongoing work a small team cannot fund. It also degrades R1, because "which parts form the streaming capability?" stops having a single answer.
-- **Fork per capability combination.** Each team takes the subset it needs and maintains a fork. It appears to satisfy R1, but fails R2 in the direction that matters: the fork diverges, so fixes stop flowing between it and the original, and R4 fails because taking an improvement back from the original is a rework of everything the fork already changed.
-- **Do nothing (document nothing about removal).** Zero cost today. It fails R1 and R2 by default: the first team to drop a capability discovers the boundaries by breaking the build, and writes down nothing for the next one.
+| Alternative | Why it fails |
+| --- | --- |
+| Free-form composition (any module, any dep) | R1, R2: no boundary at which a capability ends, so removal is a hunt through shared files. R3 outright: one capability's wiring runs through files the whole system shares. |
+| Fine-grained modules, one per component | R5: keeping a graph of small modules coherent is ongoing work a small team cannot fund. R1 degrades: "which parts form the streaming capability?" stops having one answer. |
+| Fork per capability combination | R2 in the direction that matters: the fork diverges, fixes stop flowing. R4: taking an improvement back is a rework of everything the fork changed. |
+| Do nothing (document nothing about removal) | R1, R2 by default: the first remover discovers boundaries by breaking the build, and writes down nothing for the next one. |
 
 ## Tradeoffs
 
-- **Positive:** a capability can be taken or dropped as a unit, so the system serves teams that need only part of it (R1, R2); ownership is legible, because everything belonging to a capability sits together (R3); the rule costs little to honour, since it asks for colocated wiring rather than new machinery (R5).
-- **Negative:** capabilities cannot share infrastructure freely — where two of them rely on the same backing service, one of them has to own it, and removing that owner leaves the other with a service and no reason for it; some general-purpose work is duplicated rather than shared, because sharing it would cut a capability in half; every addition has to be classified as core or optional, a judgement call that occasionally needs re-litigating.
-- **Neutral / follow-ups:** nothing in the build enforces these boundaries, so the rule holds only because the repository makes each capability's parts easy to see — which depends on every project documenting itself ([003](<https://aureliusenterprise.github.io/main/architecture/adr/003-every-project-documents-itself/index.md>)). Two obligations follow from the rule itself rather than from any particular state of the repository, and both are carried by the documentation rule rather than by new machinery: infrastructure shared by more than one capability is owned by the capability whose directory holds it, and that ownership is stated in the capability's own documentation, where a remover will read it; and a part belongs to its capability by sitting in the capability's directories and being listed in the capability's documentation — a part that is neither is invisible to a removal sweep, which is a defect in that documentation, not bad luck.
+### What it buys
+
+- A capability is taken or dropped as a unit — the system serves teams that need only part (R1, R2).
+- Ownership is legible: everything belonging to a capability sits together (R3).
+- The rule asks for colocated wiring, not new machinery (R5).
+
+### What it costs
+
+- Capabilities cannot share infrastructure freely: where two rely on one backing service, one must own it — and removing that owner strands the other.
+- Some general-purpose work is duplicated rather than shared, because sharing would cut a capability in half.
+- Every addition is classified core-or-optional, a judgement occasionally re-litigated.
+
+### Watch
+
+- Nothing in the build enforces the boundaries: the rule holds because the repository makes each capability's parts easy to see — which depends on every project documenting itself ([003](<https://aureliusenterprise.github.io/main/architecture/adr/003-every-project-documents-itself/index.md>)).
+- Infrastructure shared by several capabilities is owned by the capability whose directory holds it, stated in that capability's own documentation, where a remover reads it.
+- A part belongs to its capability by sitting in its directories **and** being listed in its documentation; a part that is neither is invisible to a removal sweep — a defect in that documentation, not bad luck.

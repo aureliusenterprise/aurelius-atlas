@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5597,7 +5752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5717,7 +5872,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5849,6 +6004,14 @@ the status of each one.</p>
 </tbody>
 </table>
 <h2 id="definition-of-done-for-an-increment">Definition of done for an increment<a class="headerlink" href="#definition-of-done-for-an-increment" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph LR
+    S[Semantics spec] --&gt;|PR| C[Code + scenarios]
+    C --&gt;|parity + trace green| R[Two approvals]
+    R --&gt;|merged| D[Done]
+    D -.-&gt;|records| L[Design log, Java map, deviations]</code></pre>
+<p>An increment is specified before it is built and proven before it is accepted
+(<a href="../adr/051-the-conversion-proceeds-in-specified-increments/">ADR 051</a>). The
+checks a PR must pass:</p>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> Semantics spec in <code>increments/</code>, every rule has an id</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> Every new public function has a test that names it (<code>@pytest.mark.covers</code>)</li>
@@ -6113,13 +6276,24 @@ the status of each one.</p>
 </tbody>
 </table>
 <h2 id="after-phase-0">After phase 0<a class="headerlink" href="#after-phase-0" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Two expat CVEs are accepted on a temporary basis</p>
+<p>CVE-2026-77214 and CVE-2026-102633 (<code>expat</code>/<code>libexpat</code> 2.8.5-r1, from the server image's
+hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened
+base image carried the fix yet. The acceptance expires with the next base-image refresh —
+the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.</p>
+</div>
 <p>To do once the last 0.x increment is done:</p>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Re-check the accepted expat vulnerabilities.</strong> CVE-2026-77214 and CVE-2026-102633 in
       <code>expat</code> and <code>libexpat</code> 2.8.5-r1 come from the base image <code>dhi.io/python:3.14-alpine3.24</code> of
       <code>aurelius-atlas-server</code>, and are fixed in 2.9.0-r0. They were accepted in SonarCloud on #85, because
-      no hardened image with the fix existed yet. Check that the current base image ships expat 2.9.0 or
-      later, and that SonarCloud has closed the four issues as fixed. If not, reopen them and decide again.</li>
+      no hardened image with the fix existed yet. Before closing them:<ul>
+<li>Check that the current base image ships expat 2.9.0 or later.</li>
+<li>Check that SonarCloud has closed the four issues as fixed.</li>
+<li>If either check fails, reopen the issues and decide again.</li>
+</ul>
+</li>
 </ul>
 <h2 id="after-the-plan">After the plan<a class="headerlink" href="#after-the-plan" title="Permanent link">&para;</a></h2>
 <p>To do once 6.4 is done, not numbered as an increment yet
@@ -6127,10 +6301,12 @@ the status of each one.</p>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Remove the template's examples.</strong> The FastAPI example service, the Angular example screen,
       <code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code>, <code>libs/angular/*</code>, <code>libs/styles</code>, <code>dev/postgres</code>
-      and the Angular, Storybook and Chromatic toolchain leave (ADR 050). <code>dev/keycloak</code> stays for 6.1
-      and takes over <code>pg_hba.conf</code> from <code>dev/postgres</code>. The rules are tested by a test-only
-      <code>tools/workspace</code> project without a Sonar target. They are kept until then because the project's
-      second phase needs them again.</li>
+      and the Angular, Storybook and Chromatic toolchain leave (ADR 050).<ul>
+<li><code>dev/keycloak</code> stays for 6.1 and takes over <code>pg_hba.conf</code> from <code>dev/postgres</code>.</li>
+<li>The rules are tested by a test-only <code>tools/workspace</code> project without a Sonar target.</li>
+<li>They are kept until then because the project's second phase needs them again.</li>
+</ul>
+</li>
 </ul>
 
 

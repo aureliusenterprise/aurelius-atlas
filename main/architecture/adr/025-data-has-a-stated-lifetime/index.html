@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2634,6 +2789,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5701,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5801,6 +5995,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5832,7 +6065,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6034,102 +6267,156 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Acceptance trigger (swept 2026-10-19): increment 6.4 sets retention for catalogue data and
+operational signals and names the periods the record requires at acceptance; accepted in that pull
+request.</p>
+<p>Every kind of data the system keeps has a stated lifetime, and the system
+enforces expiry on a schedule. A store with no stated lifetime is a defect:
+name the lifetime, or own "unbounded" in writing.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Every kind of data the system keeps has a stated lifetime, and expiry is
-enforced by the system rather than left to defaults or to nobody. Data whose
-lifetime has passed is removed by a mechanism, on schedule, without a person
-deciding per record. A store with no stated lifetime is treated as a defect:
-either its lifetime is named, or it is declared unbounded and the cost and
-risk of that are owned in writing.</p>
+<p><strong>Every kind of data has a named lifetime, and expiry is a mechanism.</strong> Data
+whose lifetime has passed is removed on schedule, without a person deciding per
+record. A store with no stated lifetime is treated as a defect: <strong>either its
+lifetime is named, or it is declared unbounded and the cost and risk of that
+are owned in writing.</strong></p>
 <p>No lifetime is stated or enforced anywhere today — operational data sits at
 library defaults, one signal's expiry is effectively switched off, and stored
-business data has no declared lifetime at all. This record is Proposed
-because the decision has not been made.</p>
+business data has no declared lifetime at all. This record is Proposed because
+the decision has not been made.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The system accumulates data in several kinds of place, and each grows on its
-own schedule: operational signals from every part, business rows in databases,
-events waiting in streams. Growth is not neutral. Storage has a cost that
-arrives as a bill or a full disk; old operational data keeps answering
-questions nobody asked anymore while burying the ones people do ask; and data
-that can identify people or customers creates obligations that grow with the
-time it is kept.</p>
+<p>The system accumulates data in several kinds of place, each growing on its own
+schedule: operational signals from every part, business rows in stores. Growth
+is not neutral: <strong>storage has a cost that arrives as a bill or a full disk</strong>;
+old operational data keeps answering questions nobody asked anymore while
+burying the ones people do ask; and data that can identify people or customers
+creates obligations that grow with the time it is kept.</p>
 <p>The system deliberately keeps all of this inside its own boundary — no
-operational data is shipped to a hosted service — which means the
-organisation that runs the system also owns the question of how long the data
-lives inside that boundary. That decision was named as the owner's problem
-when the boundary was drawn, and it has not been made since. Defaults are
-currently making it by accident, and one default is "forever".</p>
-<p>The question this record answers is not which tool expires what; it is who
+operational data ships to a hosted service
+(<a href=".././016-the-system-observes-itself-internally/">016</a>) — which means the
+organisation that runs the system owns the question of how long the data lives
+inside that boundary. That decision was named as the operator's problem when
+the boundary was drawn, and it has not been made since. <strong>The software's own
+defaults currently make that decision, and one of them is "keep it forever."</strong></p>
+<div class="admonition warning">
+<p class="admonition-title">The default this record replaces: keep it forever</p>
+<p>No expiry is a decision with a date on it — the day it bites is a full disk,
+a slow query, or an audit question about data the organisation should not
+hold. The record does not add risk by naming lifetimes; it removes the risk
+of the unnamed default.</p>
+</div>
+<p>The question this record answers is not which tool expires what. It is <strong>who
 says how long each kind of data is kept, what enforces the answer, and what
-happens when the answer changes.</p>
+happens when the answer changes.</strong></p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — Every kind has a stated lifetime.</strong> For each kind of data the system
-  keeps, the period is written down where a person answering "why do you
-  still have this?" can read it.</li>
-<li><strong>R2 — Expiry is automatic.</strong> The stated lifetime is enforced by a
-  mechanism on a schedule; it does not depend on anyone remembering to clean
-  up.</li>
-<li><strong>R3 — Lifetimes differ by kind.</strong> Operational signals, stored business
-  data, and queued events are different kinds with different reasons to keep
-  or drop; one global number is not an answer to three questions.</li>
-<li><strong>R4 — The statement is answerable.</strong> "How long do we keep X?" has an
-  answer from the system's own configuration, not from a person's memory.</li>
-<li><strong>R5 — Change is a recorded change.</strong> Extending or shortening a lifetime is
-  a deliberate, reviewable act, not a side effect of upgrading a tool.</li>
-<li><strong>R6 — Cheap to keep true.</strong> A new store inherits a stated default lifetime
-  rather than arriving with an undeclared one.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>Every kind has a stated lifetime.</strong> The period is written where a person answering "why do you still have this?" can read it.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Expiry is automatic.</strong> A mechanism on a schedule enforces the lifetime — nobody remembering to clean up.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Lifetimes differ by kind.</strong> Each kind has its own reason to keep or drop; one global number answers three questions badly.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The statement is answerable.</strong> "How long do we keep X?" is answered from the system's configuration, not a person's memory.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Change is a recorded change.</strong> Extending or shortening is deliberate and reviewable, not a side effect of upgrading a tool.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>Cheap to keep true.</strong> A new store inherits a stated default lifetime rather than arriving undeclared.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Upstream defaults (the status quo).</strong> Every tool keeps data for however
-  long its documentation says. It fails R1 — the lifetime is whatever a
-  vendor chose, which nobody read — and R4, because the answer requires
-  auditing every tool's configuration. It fails R2 in one place today, where
-  the default is effectively no expiry at all.</li>
-<li><strong>Keep everything forever.</strong> The simplest policy to state and the most
-  expensive to hold: it fails R1's purpose (a lifetime of infinity is the
-  absence of a decision), grows cost without limit, and maximises the
-  exposure of anything personal the system ever recorded.</li>
-<li><strong>Periodic manual cleanup.</strong> A person prunes on a schedule. It fails R2 by
-  definition, and R4, because what was pruned and when lives in their notes.
-  Manual cleanup also fails R5 in practice: the cleanup that is skipped during
-  a busy month is a silent policy change.</li>
-<li><strong>One global retention number.</strong> Easy to state and audit. It fails R3:
-  debug traces and customer records do not share a reason to exist, and a
-  single number is always wrong for at least one kind — too long for the
-  sensitive, too short for the useful.</li>
-<li><strong>Do nothing.</strong> Costs nothing today and lets every tool's vendor make the
-  decision per upgrade; it fails every requirement by leaving the question
-  unasked, which is the current state described as a choice.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upstream defaults (status quo)</td>
+<td>R1: the lifetime is whatever a vendor chose, which nobody read. R4: the answer requires auditing every tool's configuration. R2 fails in one place today, where the default is effectively no expiry.</td>
+</tr>
+<tr>
+<td>Keep everything forever</td>
+<td>The simplest policy to state and the most expensive to hold: R1's purpose — a lifetime of infinity is the absence of a decision. Cost grows without limit, and exposure of anything personal is maximised.</td>
+</tr>
+<tr>
+<td>Periodic manual cleanup</td>
+<td>R2 by definition, R4: what was pruned and when lives in their notes. R5 in practice: the cleanup skipped during a busy month is a silent policy change.</td>
+</tr>
+<tr>
+<td>One global retention number</td>
+<td>Easy to state and audit; R3: debug traces and customer records do not share a reason to exist, and one number is always wrong for at least one kind — too long for the sensitive, too short for the useful.</td>
+</tr>
+<tr>
+<td>Do nothing</td>
+<td>Costs nothing today and lets every vendor make the decision per upgrade. Every requirement fails by leaving the question unasked — the current state described as a choice.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> the organisation can answer retention questions about its own
-  data without an audit (R1, R4); storage cost becomes bounded and predictable
-  because growth is matched by enforced expiry (R2); the exposure that comes
-  with keeping data is limited to a chosen period (R3); retention changes
-  become visible decisions (R5).</li>
-<li><strong>Negative:</strong> enforced expiry destroys data irreversibly, so a wrong
-  lifetime is discovered after the fact — the failure mode is losing something
-  that mattered, which argues for starting generous and tightening; every
-  store's expiry is one more mechanism to operate and verify; and a stated
-  lifetime invites the question of exceptions, which must be refused or
-  recorded, not absorbed.</li>
-<li><strong>Neutral / follow-ups:</strong> the boundary inside which these lifetimes apply is
-  drawn by the observability record
-  (<a href=".././016-the-system-observes-itself-internally/">016</a>), which names
-  retention as the operator's problem and hands it to this record; the
-  lifetime of business rows in storage interacts with schema change
-  (<a href=".././023-storage-schema-changes-by-recorded-migration/">023</a>) — deleting
-  old rows is easy, deleting old <em>shapes</em> is a migration; queued events whose
-  lifetime is shorter than the slowest consumer's recovery window turn
-  retention into a delivery question owned by
-  <a href=".././027-every-stream-carries-a-stated-delivery-guarantee/">027</a>; and the
-  periods themselves — the actual numbers — belong to whoever owns each kind
-  of data and must be named when this record is accepted, not later.</li>
+<li>The organisation can answer retention questions about its own data without an
+  audit (R1, R4).</li>
+<li>Storage cost becomes bounded and predictable: growth is matched by enforced
+  expiry (R2).</li>
+<li>The exposure that comes with keeping data is limited to a chosen period (R3);
+  retention changes become visible decisions (R5).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Enforced expiry destroys data irreversibly: a wrong lifetime is discovered
+  after the fact — <strong>the failure is losing something that mattered</strong>, which
+  argues for starting generous and tightening.</li>
+<li>Every store's expiry is one more mechanism to operate and verify.</li>
+<li>A stated lifetime invites exceptions: they must be refused or recorded, not
+  absorbed.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The boundary inside which these lifetimes apply is drawn by
+  <a href=".././016-the-system-observes-itself-internally/">016</a>, which names retention
+  as the operator's problem and hands it to this record.</li>
+<li>The lifetime of business rows interacts with schema change
+  (<a href=".././023-storage-schema-changes-by-recorded-migration/">023</a>): deleting old
+  rows is easy, deleting old <em>shapes</em> is a migration.</li>
+<li>The periods themselves — the actual numbers — belong to whoever owns each kind
+  of data and <strong>must be named when this record is accepted, not later.</strong></li>
+<li>Queued events: the reasoning for them stands, and the streaming slice that
+  carried them left with the catalogue's scope
+  (<a href=".././050-the-system-carries-only-what-the-catalogue-needs/">050</a>); if a queue
+  returns, an event lifetime shorter than the slowest consumer's recovery window
+  turns retention into a delivery question owned by
+  <a href=".././027-every-stream-carries-a-stated-delivery-guarantee/">027</a>.</li>
+</ul>
+<details class="question">
+<summary>Why is 'unbounded' allowed at all?</summary>
+<p>Because pretending every store expires is how stores end up expiring by
+accident. Declaring a store unbounded forces the cheap conversation —
+cost, exposure, an owner in writing (R1) — that "nobody set a TTL" avoids.
+The defect is the undeclared default, not the length.</p>
+</details>
 
 
 
