@@ -1,20 +1,24 @@
 # Data Encryption
 
-This page answers where data is encrypted, from the data-protection record ([ADR 039](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>)). Whether a path is protected is answered from configuration, not by probing a running system (R5) — this page names where the configuration lives.
+This page answers where data is encrypted, from the data-protection record ([ADR 039](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>)). Whether a path is protected is answered from configuration, not by probing a running system (that record's R5) — this page names the rule per path; where each knob lives is in the component's design documentation.
 
-## In transit
+## In transit (production)
 
-Every path data travels on inside the system is TLS with certificate verification against a local certificate authority:
+Every path data travels on inside the system is TLS with certificate verification, by role:
 
-| Path | Mechanism |
+| Path | Rule |
 | --- | --- |
-| Browser → nginx / FastAPI | TLS (`ssl_certificate` in the nginx config, uvicorn `ssl_certfile`); the dev-server proxy and E2E verify (browser page loads: named relaxation below). |
-| Service → PostgreSQL | `sslmode=verify-full` + CA bundle; server `ssl=on` with TLS-only client authentication. |
-| Service → Kafka / Schema Registry | TLS listeners only: apps use SASL\_SSL (OAuth bearer tokens, ADR 013), infrastructure links use SSL (mTLS); registry and Connect serve HTTPS; clients pass the CA (or JVM truststore) explicitly — also for the token-endpoint call to Keycloak. |
-| Service → OpenTelemetry collector | OTLP over TLS (gRPC 4317 / HTTP 4318); exporters trust the CA. |
-| Service → Keycloak (token verify) | HTTPS issuer with CA trust in CI/E2E; the local development browser path is the named relaxation below. |
+| Browser → catalogue service | TLS with the deployment's own certificate; the E2E suite proves the served image over TLS |
+| Service → search store | TLS only — plain endpoints are rejected by settings validation, before connecting |
+| Service → relational store (examples only) | TLS with full verification; the catalogue spine has no relational store (ADR 047) |
+| Service → signal collector | TLS; exporters trust the deployment's CA |
+| Service → identity provider (token verify) | TLS issuer with CA trust in CI/E2E; the local browser path is the named relaxation below |
 
-The PostgreSQL posture is tested, not just configured: unit-test containers (`aurelius_atlas_sdk.testing.tls`, via `tls_certificates` and `configure_tls_postgres`) start the same hardened image with `ssl=on` and a TLS-only client authentication file using an ephemeral per-run certificate authority, and connect with `sslmode=verify-full` — the same arrangement the dev and E2E services use.
+The knobs that make each row true — the setting names, verification flags, and trust material per component — live in the components' design documentation ([server](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/api-reference/apps/aurelius-atlas-server/index.md>), [store](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/api-reference/libs/python/aurelius-atlas-store-es/index.md>)).
+
+## Proven in development and CI
+
+The posture is tested, not just configured: the store library rejects plain endpoints; the dev store serves TLS only and is health-checked over it; the server's e2e runs the built image over HTTPS against that store; the template examples' relational-store containers start with TLS-only client authentication and connect with full verification. The per-command proofs are in the slice READMEs under `dev/` and each project's `e2e/`.
 
 ## At rest
 
@@ -22,12 +26,10 @@ Encryption at rest is owned by the stores and is not configured in this reposito
 
 ## Named relaxation (development arrangement only)
 
-- Keycloak additionally serves a plaintext HTTP listener (port 8080) so the developer browser opens a familiar URL; its TLS listener (8443) serves every CI/E2E path.
-- Browser-facing developer surfaces (SPA dev-server, Grafana, Kafka UI, Node-RED, Storybook) stay plaintext on a developer machine.
-- Playwright's bundled browsers carry their own trust stores and cannot enroll the mkcert root, so frontend E2E page navigation skips browser certificate verification (`ignore_https_errors`). The E2E suite verifies the same browser-facing endpoint against the CA out-of-band (hostname + chain), and nginx still verifies the backend with `proxy_ssl_verify`.
+Plaintext exists only in the development arrangement, each occurrence deliberate: a browser-facing dev convenience listener on the identity provider, plaintext developer-only surfaces on a developer machine, and the E2E browser navigating with certificate verification skipped — every one of them recorded, with its reason, its out-of-band verification, and the commands around it, in [TLS Certificates](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/tls-certificates/#named-development-relaxations>).
 
-CI and E2E run all of these paths over TLS and verify certificates, except the browser navigation relaxation above. Each plaintext occurrence in this repository carries a comment naming ADR 039.
-
-## Certificates
-
-Each project that serves or consumes TLS owns a `tls.json` listing the certificates it needs; `nx certgen` issues them from an `mkcert` local CA into the project's own gitignored `certs/` directory — PEM keypairs, PKCS12 keystores, a JVM `truststore.p12` where needed, and a `ca.pem` copy for pure clients. The CA itself has no workspace home: `certgen` installs mkcert's own root CA into the system trust stores (it lives in mkcert's store, outside the repository) and copies it into each project's `certs/`. Generation is on demand: `serve` and `e2e` targets declare a `certgen` dependency, which also depends on `decrypt` because truststore passwords live encrypted in each project's `.env.enc`. Per-project `certclean` removes a project's material but never the CA; `mkcert -uninstall` drops the CA and its system trust entries entirely. They are development material only — a deployment replaces the CA and key material with its own.
+> [!IMPORTANT]
+>
+> **A deployment replicates the posture, not the conveniences**
+>
+> Every production path is verified TLS. The plaintext listeners are development material with named reasons, commented in the repository at each occurrence, citing ADR 039 — they never travel to a deployment.

@@ -4,43 +4,69 @@
 - **Date:** 2026-10-07
 - **Deciders:** Aurelius Enterprise
 
+Every setting a part needs arrives through the environment it starts in and is validated once, at startup. A missing setting stops the start; nothing environment-specific is compiled into a part.
+
 ## Decision
 
-Every setting a running part needs — addresses, ports, feature switches, credentials it reads rather than owns — arrives through the environment the part starts in, and is read and validated once, at startup. A part that starts has therefore been told everything it needs and found it usable; a missing or malformed setting stops the start rather than surfacing at first use.
+**One channel: the start-up environment.** Addresses, ports, feature switches, credentials a part reads rather than owns — all arrive through the environment the part starts in, read and validated once, at startup. A part that has started has been told everything it needs and found it usable; **a missing or malformed setting stops the start** rather than surfacing at first use.
 
-Nothing environment-specific is compiled into a part. The same unit that was validated is reconfigured for each environment by changing what it is told at startup, never by rebuilding it — which is what makes the deployment rule in [010](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>) possible at all. The channel is defined by who supplies the settings — the environment the part is deployed into — not by the mechanism that delivers them: a part rendered in a browser cannot read a server's environment, so its deployment places the settings beside it for pickup at run start, which is the same channel one step removed. Where a setting is a secret, this record governs how it arrives, not where it rests: that is decided elsewhere ([008](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/008-secrets-never-in-plaintext/index.md>)).
+**Nothing environment-specific is compiled in.** The validated unit is reconfigured per environment by changing what it is told, never by rebuilding — which is what makes [010](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>) possible at all.
+
+The channel is defined by **who supplies the settings** — the deployment — not by the delivery mechanism: a part rendered in a browser cannot read a server's environment, so its deployment places the settings beside it for pickup at run start, the same channel one step removed. Where a setting is a secret, this record governs how it arrives, not where it rests ([008](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/008-secrets-never-in-plaintext/index.md>)).
 
 ## Context
 
-The system's parts are configured by different forces: an engineer changes a port to avoid a collision, the pipeline points a part at a throwaway service, a deployment points the same part at the real one. The settings themselves belong to the part; the values belong to the environment. Every stack in the repository has its own historical habit for how a value reaches code — a compiled-in file per environment here, a settings document there, a value read deep inside a request path somewhere else — and each habit carries the same two costs.
+Parts are configured by different forces: an engineer changes a port to avoid a collision, the pipeline points a part at a throwaway service, a deployment points it at the real one. The settings belong to the part; **the values belong to the environment.** Every stack in the repository has its own historical habit for how a value reaches code — a compiled-in file per environment, a settings document, a value read deep in a request path — and each habit carries the same two costs.
 
-The first cost is the rebuild trap. A setting fixed at build time means a new environment is a new build, which quietly breaks the rule that the unit validated is the unit deployed: the deployment then carries a build no validation ever saw. The second cost is late failure. A setting read when first used fails at an ordinary-looking moment, far from the start-up that omitted it, and a part that starts broken and fails at first use is worse to operate than one that refuses to start: the second is obvious, the first is a support ticket.
+- **The rebuild trap.** A setting fixed at build time makes a new environment a new build, quietly breaking the rule that the validated unit is the deployed unit: the deployment then carries a build no validation ever saw.
+- **Late failure.** A setting read when first used fails at an ordinary-looking moment, far from the start that omitted it. A part that starts broken and fails at first use is worse to operate than one that refuses to start: the second is obvious, the first is a support ticket.
 
-The team is small and multi-disciplinary and moves between stacks, so a different configuration habit per stack is a different habit to remember per stack — and the person debugging a misconfigured part at two in the afternoon does not care which ecosystem the part was written in.
-
-The decision to make is how a setting reaches a running part, and when a wrong setting is allowed to reveal itself.
+The team is small, multi-disciplinary, and moves between stacks — a different configuration habit per stack is a different habit to remember per stack, and the person debugging a misconfigured part at two in the afternoon does not care which ecosystem the part was written in.
 
 ## Requirements
 
 Any acceptable arrangement must deliver:
 
-- **R1 — One channel for every stack.** A setting reaches a running part the same way regardless of which technology the part is written in, so one mental model covers the system.
-- **R2 — Reconfiguring never rebuilds.** Pointing a part at a new environment changes only what it is told at startup; the unit itself is untouched, so the validated unit is still the deployed unit.
-- **R3 — Bad settings fail at startup.** A missing or malformed setting stops the part from starting, with a message naming the setting — not a failure at first use.
-- **R4 — The running configuration is knowable.** What a running part was told can be enumerated from the outside, so a misconfiguration is a fact that can be checked rather than a hypothesis.
-- **R5 — Configuration and secrets stay distinct.** Ordinary settings are safe to carry as committed dev defaults; a value that is not safe to publish follows the secrets arrangement rather than this one.
-- **R6 — Cheap to keep true.** Adding a setting is a local edit to the part and its environment description by the person adding it.
+|  | Requirement |
+| --- | --- |
+| **R1** | **One channel for every stack.** A setting reaches a part the same way in every technology — one mental model. |
+| **R2** | **Reconfiguring never rebuilds.** A new environment changes only what the part is told; the validated unit is untouched. |
+| **R3** | **Bad settings fail at startup.** A missing or malformed setting stops the start, naming the setting. |
+| **R4** | **The running configuration is knowable.** What a part was told can be enumerated from outside — a fact, not a hypothesis. |
+| **R5** | **Configuration and secrets stay distinct.** Ordinary settings may be committed dev defaults; secrets follow [008](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/008-secrets-never-in-plaintext/index.md>). |
+| **R6** | **Cheap to keep true.** Adding a setting is a local edit to the part and its environment description. |
 
 ## Alternatives
 
-- **Compile settings into the part per environment.** The traditional per-environment build: a config file chosen at build time. It fails R2 outright — every environment becomes its own build — and with it the confidence transfer [010](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>) exists to protect; it fails R1 in spirit too, because the environment's values now live in the build system rather than with the environment.
-- **A central configuration service.** One service answers "what should this part be told?", live. It passes R1 and R4 elegantly but fails the arrangement the system runs under: every start would wait on a service and a network ([006](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)), so the offline machine and the unattended run need a fallback — and that fallback is a local file, which means the organisation now has two channels and has decided nothing.
-- **Settings files beside the code, read at will.** Each part keeps its own config document and reads what it needs when it needs it. It fails R2 — the file travels inside the unit, so environment values ship inside the artifact — and R3, because a value read at first use fails at first use; it fails R1 as well, since the mechanism is whatever each stack's library happens to offer.
-- **Framework defaults with silent fallbacks.** The part runs on built-in defaults unless told otherwise. It fails R3 by design: a missing setting is indistinguishable from an intentional default, so a part pointed at the wrong place by omission looks healthy until it writes somewhere wrong.
-- **Do nothing (each stack keeps its habit).** This is the current state and costs nothing to keep. It fails R1 by default — every stack answers the same question differently — and R3 unevenly, because some habits fail loudly and some do not, which is worse than all failing loudly.
+| Alternative | Why it fails |
+| --- | --- |
+| Compile settings in per environment | R2 outright: every environment becomes its own build, taking the confidence transfer [010](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>) with it. R1 in spirit: the environment's values live in the build system, not with the environment. |
+| A central configuration service | R1 and R4 elegantly; the arrangement the system runs under, no: every start waits on a service and a network ([006](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)), so offline and unattended runs need a fallback — a local file — and the organisation now has two channels and has decided nothing. |
+| Settings files beside the code, read at will | R2: the file travels inside the unit, so environment values ship inside the artifact. R3: a value read at first use fails at first use. R1: the mechanism is whatever each stack's library offers. |
+| Framework defaults with silent fallbacks | R3 by design: a missing setting is indistinguishable from an intentional default, so a part pointed at the wrong place by omission looks healthy until it writes somewhere wrong. |
+| Do nothing (each stack keeps its habit) | The current state, costs nothing. R1 by default: every stack answers the same question differently. R3 unevenly — some habits fail loudly and some don't, which is worse than all failing loudly. |
 
 ## Tradeoffs
 
-- **Positive:** one question — "what was this part told at startup?" — answers configuration for every stack (R1, R4); environments differ by values, never by builds, so the deployment rule holds (R2); a misconfigured part is loud at start instead of quiet at first use (R3); adding a setting is local work (R6).
-- **Negative:** the environment description becomes part of every run path, so a typo in an environment file is now a startup failure the organisation has to tolerate being the commonest incident — the correct trade, but the incidents are real; startup validation must be written deliberately for each part, because a part that merely reads strings discovers its problems late; and a browser-rendered part cannot read a server's environment, so its settings are fetched at run start from where its deployment placed them, which is the same channel one step removed and needs the same startup-validation habit to be worth anything.
-- **Neutral / follow-ups:** the deviations are named rather than tolerated: the Node-RED example bakes its production settings document into its unit — an environment value inside the artifact — and reads its settings through the host framework rather than validating them at startup; the browser-rendered example fetches its settings at run start but does not validate them, so a missing or malformed document surfaces at first use — the failure R3 forbids. All deviate until their settings arrive at startup and are checked. The line between an ordinary setting and a secret is enforced by the check [008](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/008-secrets-never-in-plaintext/index.md>) already owes; and the enumerated startup configuration is where a future operational review will look first, which makes the startup message's quality a standing obligation rather than a nicety.
+### What it buys
+
+- One question — "what was this part told at startup?" — answers configuration for every stack (R1, R4).
+- Environments differ by values, never by builds, so the deployment rule holds (R2).
+- A misconfigured part is loud at start instead of quiet at first use (R3); adding a setting is local work (R6).
+
+### What it costs
+
+- The environment description joins every run path, so **a typo in an environment file becomes the commonest incident** — the correct trade, but the incidents are real.
+- Startup validation must be written deliberately for each part: a part that merely reads strings discovers its problems late.
+
+### Watch
+
+- The browser-rendered part fetches its settings at run start, which is the same channel one step removed — it needs the same startup-validation habit to be worth anything. The example now validates the fetched document at bootstrap and fails loudly (`apps/aurelius-atlas-frontend-example/src/app/config.ts`) — the deviation this record named is closed.
+- The Node-RED example that baked its production settings into its unit left with its slice ([050](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>)).
+- The setting/secret line is enforced by the check [008](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/008-secrets-never-in-plaintext/index.md>) already owes. The startup message's quality is a standing obligation: the enumerated startup configuration is where an operational review looks first.
+
+> [!NOTE]
+>
+> **Why not a configuration service — live settings, one source?**
+>
+> Because every start would then wait on it. The offline laptop and the unattended pipeline run need the part to start with what it was given ([006](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)), so the service would need a local fallback — and a fallback file plus a service is two channels, which is the state this record exists to end.

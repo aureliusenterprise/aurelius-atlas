@@ -17,10 +17,10 @@
         
       
       
-        <link rel="prev" href="../documentation/">
+        <link rel="prev" href="../releasing/">
       
       
-        <link rel="next" href="../version-control/">
+        <link rel="next" href="../operations-ownership/">
       
       
         
@@ -265,6 +265,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -480,6 +490,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -662,6 +682,114 @@
                   
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
     
   
   
@@ -773,6 +901,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -5670,7 +5825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5790,7 +5945,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5807,6 +5962,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5889,6 +6054,12 @@ to the list of <code>age</code> keys. Each key is separated by a comma and a new
 merge the changes into the <code>main</code> branch. Have a team member review and approve the pull request. Once it is
 merged, a GitHub action rotates the encryption on all encrypted files in the repository to include your public
 key and pushes the re-encrypted files to <code>main</code>.</p>
+<pre class="mermaid"><code>graph LR
+    K[Add your public key to .sops.yaml] --&gt;|PR| RV[Team review]
+    RV --&gt;|approve + merge| RT[Rotation workflow]
+    RT --&gt;|re-encrypts all .env.enc| M[main]
+    M --&gt; Y[You can decrypt]</code></pre>
+<p>Review is the security gate: rotation runs only on <code>main</code>, so a key works only after a human verified it.</p>
 <div class="admonition important">
 <p class="admonition-title">Reviewing .sops.yaml changes is the security gate</p>
 <p>The rotation workflow holds the key that decrypts every <code>.env.enc</code> in the repository, so it deliberately runs

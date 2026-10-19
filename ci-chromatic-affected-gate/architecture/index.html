@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../CHANGELOG.md" class="md-tabs__link">
+      <a href="../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5595,7 +5750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../CHANGELOG.md" class="md-nav__link">
+      <a href="../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5636,6 +5791,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-trees" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The trees
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -5663,7 +5837,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5726,6 +5900,68 @@
 
 
 <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
+<p>Aurelius Atlas helps an organisation discover, understand, and trust its data — and stays easy to
+run, because a catalogue that is expensive to operate governs nothing. The engine behind that is a
+Python re-implementation of Apache Atlas 2.4.0 with Elasticsearch 9 as its only store.
+The two <strong>working records</strong> of the system are the <a href="conversion/">conversion roadmap</a> — the
+increments, their status and their semantics specs — and the <a href="adr/">architecture decisions</a>,
+the ADRs that constrain every change. Both are kept current by every pull request.</p>
+<details class="question">
+<summary>What is a 'working record'?</summary>
+<p>A page that states the system's current truth and is updated by the pull requests that change
+it — unlike a reference page, which describes a planned state and is written once, by the
+increment that builds it. If a working record and the code disagree, the record is wrong.</p>
+</details>
+<p>The remaining trees are the <strong>reference architecture</strong>: they describe the system as it will stand when
+the plan is done. They are written increment by increment — each page names the increment that writes
+it, so a page is written in the pull request of that increment, while its facts are fresh (ADR 051).
+Pages not yet written carry a <code>Planned</code> marker naming their increment; the convention is in
+<a href="../contributor-guide/documentation/#architecture-pages">Documentation</a>.</p>
+<details class="info">
+<summary>Why two kinds of pages</summary>
+<p>A mid-conversion system has no single accurate description: the code is the plan partly built.
+Splitting the records (what is true now, maintained by every PR) from the reference (what will
+be true, written as each increment lands) keeps both statements honest — each page names the
+increment, spec, or code that owns its facts.</p>
+</details>
+<h2 id="the-trees">The trees<a class="headerlink" href="#the-trees" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tree</th>
+<th>Subject</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="vision-and-strategy/">Vision &amp; Strategy</a></td>
+<td>Why the system exists, for whom, and where it is going</td>
+<td>written (ADRs 046–052, the roadmap)</td>
+</tr>
+<tr>
+<td><a href="data-lifecycle-management/">Data Lifecycle Management</a></td>
+<td>How catalogue data enters, lives, is shared, and is retired</td>
+<td>0.2 → 6.3, per page</td>
+</tr>
+<tr>
+<td><a href="data-governance/">Data Governance</a></td>
+<td>Types, lineage, quality, ownership, auditability</td>
+<td>1.6 → 6.2, per page</td>
+</tr>
+<tr>
+<td><a href="platform/">Platform</a></td>
+<td>Connectivity, delivery, observability, resilience, security</td>
+<td>0.2 → 6.4, per page</td>
+</tr>
+</tbody>
+</table>
+<p>Each tree index page carries its own per-page filling map.</p>
+<p>These pages state the system's properties by <strong>role</strong> — the search store, the identity provider,
+the collector — so the description survives a change of product. The knobs, ports, and commands
+of each part live in its own documentation: the <a href="../api-reference/">API Reference</a> pages
+(design documentation per component), the <a href="../contributor-guide/">Contributor Guide</a>
+(cross-cutting how-tos), and each <code>dev/</code> slice's README (development topology).</p>
 
 
 

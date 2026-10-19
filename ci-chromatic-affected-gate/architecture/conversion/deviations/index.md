@@ -2,6 +2,12 @@
 
 Every behaviour of Aurelius Atlas that a client could observe and that differs from Apache Atlas 2.4.0 ([ADR 046](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/046-the-catalogue-keeps-its-public-contract/index.md>)). The parity report links each tolerated difference to its entry here; a difference without an entry is a defect.
 
+> [!NOTE]
+>
+> **DV-04 is temporary**
+>
+> The most visible row in this table — "no endpoint needs a login" — is the current state of a planned sequence, not a security posture: authentication arrives with increment 6.1 and the deviation is removed then. Until 6.1, read every anonymous call in this repository as development-arrangement behaviour, not production design ([ADR 039](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>) names the boundary; [ADR 046](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/046-the-catalogue-keeps-its-public-contract/index.md>) keeps the shape Atlas clients expect when it lands).
+
 | \# | Area | Apache Atlas behaviour | Aurelius Atlas behaviour | Reason | Increment |
 | --- | --- | --- | --- | --- | --- |
 | DV-01 | Notifications | Publishes entity changes to Kafka; consumes hook messages | Not supported | Out of scope ([ADR 050](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>)) | 0.1 |

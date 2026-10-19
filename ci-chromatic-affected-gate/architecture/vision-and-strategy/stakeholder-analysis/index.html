@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5609,7 +5764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5677,7 +5832,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5776,6 +5931,71 @@
 
 
 <h1 id="stakeholder-analysis">Stakeholder Analysis<a class="headerlink" href="#stakeholder-analysis" title="Permanent link">&para;</a></h1>
+<p>Whom Aurelius Atlas serves, and what each of them needs the system to be.</p>
+<table>
+<thead>
+<tr>
+<th>Stakeholder</th>
+<th>Needs</th>
+<th>Where it is answered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Business users</td>
+<td>Find data and its context in seconds; see who to ask; a familiar, friendly interface</td>
+<td>Dashboard served at <code>/</code> and <code>/n/</code> (increment 0.6), search in phase 4</td>
+</tr>
+<tr>
+<td>Data stewards and owners</td>
+<td>Know which assets they are accountable for; classify data and record its quality</td>
+<td>Classifications in 3.3, glossary in 5.2, <a href="../../data-governance/roles-and-responsibilities/">roles</a> in 6.2</td>
+</tr>
+<tr>
+<td>Compliance and audit</td>
+<td>Sensitive data identified, access controlled, changes on the record (GDPR and similar rules)</td>
+<td>Phase 6 (identity provider, authorizer, audit), <a href="../../platform/security/">security tree</a></td>
+</tr>
+<tr>
+<td>Analysts and data scientists</td>
+<td>Lineage and impact analysis; trustworthy, fit-for-purpose data</td>
+<td>Lineage in 5.1, quality signals in 5.2/5.3</td>
+</tr>
+<tr>
+<td>Migrating Atlas users</td>
+<td>Existing clients and integrations keep working; behaviour differences disclosed</td>
+<td>ADR 046, <a href="../../conversion/deviations/">deviations</a>, export/import in 6.3</td>
+</tr>
+<tr>
+<td>Security and compliance reviewers</td>
+<td>Identity, authorization, audit trail, encryption with named owners</td>
+<td>Phase 6, <a href="../../platform/security/">security tree</a></td>
+</tr>
+<tr>
+<td>Catalogue operators</td>
+<td>Run the whole system on one machine; one store to back up; loud failure</td>
+<td>ADR 006, ADR 047, <a href="../../platform/resilience/">resilience tree</a></td>
+</tr>
+<tr>
+<td>The maintaining team</td>
+<td>Every rule has a spec and a test; decisions are recorded where made</td>
+<td>ADR 049, ADR 051, this ledger</td>
+</tr>
+<tr>
+<td>AI coding agents</td>
+<td>Nearest-first instructions, specs as the source of behaviour</td>
+<td>ADR 022, per-project <code>AGENTS.md</code></td>
+</tr>
+</tbody>
+</table>
+<details class="info">
+<summary>Why AI coding agents are a stakeholder</summary>
+<p>The repository is changed routinely by automated agents as well as by people, so they are a
+real consumer of its documentation: colocated <code>AGENTS.md</code> files give them nearest-first
+instructions, and the specs give them the source of behaviour to code against
+(<a href="../../adr/022-the-codebase-explains-itself-to-its-agents/">ADR 022</a>). Serving them well is a
+documentation requirement like serving a new hire well — the same material answers for both.</p>
+</details>
 
 
 

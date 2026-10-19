@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2580,6 +2735,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5701,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5801,6 +5995,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5832,7 +6065,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6034,100 +6267,147 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Acceptance trigger (swept 2026-10-19): the mechanism is scheduled, not missing — the first
+Elasticsearch mapping change that must move existing data, after increment 2.2 lays the entity index
+layout. The record is accepted in the pull request that lands that migration mechanism, and the
+drop-and-recreate shortcut stays legitimate for throwaway development databases, named as the
+exception wherever documented.</p>
+<p>Every change to stored structure is a recorded, ordered migration applied the
+same way everywhere, and a database can state how far along it has reached.
+Nothing evolves a schema as a side effect of starting up.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Every change to the structure of stored business data is a recorded, ordered
-migration that is applied the same way in every environment, and a database
-can always state which migrations it has applied. A release that needs a
-storage change ships that change as a reviewable artifact; nothing creates or
-evolves a schema as a side effect of starting up.</p>
-<p>The mechanism that makes this true does not exist yet — today a schema is
-created automatically only where none exists, and an existing database is
-never moved. This record is Proposed for exactly that reason: the decision is
-that schema change becomes a recorded artifact, and the mechanism is the work
-this record commissions.</p>
+<p><strong>Schema change is a recorded artifact.</strong> Every change to the structure of
+stored business data is an ordered migration, applied identically in every
+environment, and a database can always state which migrations it has applied.
+A release that needs a storage change ships it as a reviewable artifact;
+<strong>nothing creates or evolves a schema as a side effect of starting up.</strong></p>
+<p>The mechanism does not exist yet — today a schema is created automatically only
+where none exists, and an existing database is never moved. This record is
+Proposed for exactly that reason: the decision is that schema change becomes a
+recorded artifact, and <strong>the mechanism is the work this record commissions.</strong></p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Business data outlives the release that wrote it. The concepts stored in
-databases keep changing — a field added, a meaning split, a table divided —
-and each change has to meet data that already exists. That meeting is where
-storage differs from every other artifact in the system: code can be replaced,
-but rows persist, and the rows in one environment are not the rows in another.</p>
-<p>The system releases as one versioned whole, so every release implicitly
-answers the question "what does the database behind this version look like?"
-Today that question is answered by a startup routine that creates tables where
-they are missing and does nothing where they exist. That answer is correct
-exactly once, on an empty database. The de-facto procedure for a schema change
-since then is to drop the data and recreate it — acceptable while every
-database is a throwaway development database, and unacceptable the first time
-a database holds anything the business wants to keep.</p>
-<p>A migration tool is already wired into the build but has never been switched
-on, because no project has activated it. So the organisation holds the intent
-without the decision: whether schema change is a recorded artifact, who
-reviews it, and how two environments running different versions are reconciled
-is re-answered by omission in every release.</p>
+<p>Business data outlives the release that wrote it. The stored concepts keep
+changing — a field added, a meaning split, a table divided — and each change
+must meet data that already exists. That meeting is where storage differs from
+every other artifact: <strong>code can be replaced, but rows persist</strong>, and the rows
+in one environment are not the rows in another.</p>
+<p>The system releases as one versioned whole
+(<a href=".././019-the-system-releases-as-one-versioned-whole/">019</a>), so every release
+implicitly answers "what does the database behind this version look like?"
+Today a startup routine answers it: create tables where missing, do nothing
+where they exist — an answer that is correct exactly once, on an empty
+database.</p>
+<p>The de-facto procedure since then is <strong>drop and recreate</strong>: acceptable while
+every database is a throwaway, unacceptable the first time a database holds
+anything the business wants to keep.</p>
+<p>A migration tool is wired into the build and has never been switched on,
+because no project has activated it. So the organisation holds the intent
+without the decision — whether schema change is a recorded artifact, who
+reviews it, how two environments running different versions reconcile — and
+every release re-answers by omission.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — Existing data is moved, not replaced.</strong> A database holding real
-  data reaches the schema a release expects without anyone deleting anything.</li>
-<li><strong>R2 — One ordered path.</strong> Every environment reaches a given version's
-  schema through the same sequence of changes, so two databases on the same
-  version are structurally identical.</li>
-<li><strong>R3 — Position is knowable.</strong> Any database can state how far along that
-  path it has reached, without a person remembering.</li>
-<li><strong>R4 — The change is reviewable.</strong> A schema change is authored, reviewed,
-  and released like any other change, and can be refused before it runs.</li>
-<li><strong>R5 — Schema and concepts move together.</strong> A change to what is stored and
-  a change to the concept it stores land as one release, not as two changes
-  that must be coordinated by hand.</li>
-<li><strong>R6 — Cheap for the routine case.</strong> Adding an optional field costs a
-  small recorded step, not a ceremony; a throwaway development database may
-  still be created from scratch.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>Existing data is moved, not replaced.</strong> A database with real data reaches the schema a release expects, without anyone deleting anything.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>One ordered path.</strong> Every environment reaches a version's schema through the same sequence; two databases on one version are structurally identical.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Position is knowable.</strong> Any database can state how far along the path it has reached, without a person remembering.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The change is reviewable.</strong> Authored, reviewed, released like any change — it can be refused before it runs.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Schema and concepts move together.</strong> The stored change and the concept change land as one release, not coordinated by hand.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>Cheap for the routine case.</strong> An optional field costs a small recorded step; a throwaway development database may be created from scratch.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Create-only startup (the status quo).</strong> Zero cost while every database is
-  disposable. It fails R1 by construction — it cannot move existing data —
-  and R2, because two databases that were dropped and recreated at different
-  times have no guaranteed relationship. It is a mechanism for first runs
-  mistaken for a mechanism for change.</li>
-<li><strong>Hand-run SQL per environment.</strong> A person applies statements where needed.
-  It fails R2 — environments drift the first time one is patched and another
-  is not — and R3, because position lives in that person's memory. It fails
-  R4: statements run against a live database cannot be reviewed after.</li>
-<li><strong>Treat every database as disposable.</strong> Honest, and true of the current
-  deployment. It fails R1 the moment data is worth keeping, and R5, because
-  "drop and recreate" is not a way of moving with a concept — it is a way of
-  losing what the concept accumulated.</li>
-<li><strong>Do nothing (keep the dormant tooling).</strong> The wiring suggests the decision
-  was made when it was not: an unused tool is not an arrangement. It fails
-  every requirement by leaving them to the next incident.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create-only startup (status quo)</td>
+<td>R1 by construction: it cannot move existing data. R2: two databases dropped and recreated at different times have no guaranteed relationship. A mechanism for first runs, mistaken for a mechanism for change.</td>
+</tr>
+<tr>
+<td>Hand-run SQL per environment</td>
+<td>R2: environments drift the first time one is patched and another is not. R3: position lives in that person's memory. R4: statements run against a live database cannot be reviewed after.</td>
+</tr>
+<tr>
+<td>Treat every database as disposable</td>
+<td>Honest, and true of the current deployment. R1 the moment data is worth keeping. R5: "drop and recreate" is not a way of moving with a concept — it is a way of losing what the concept accumulated.</td>
+</tr>
+<tr>
+<td>Do nothing (keep dormant tooling)</td>
+<td>The wiring suggests the decision was made when it was not; an unused tool is not an arrangement. Every requirement is left to the next incident.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> a release carries a complete answer to "what happens to the
-  data" (R1, R5); environments are comparable because they share one path
-  (R2, R3); schema change becomes reviewable work rather than an operational
-  surprise (R4).</li>
-<li><strong>Negative:</strong> every storage change gains a step it does not pay today, and
-  in a system whose databases are all disposable that step is pure overhead
-  until a real database exists; migrations are ordered artifacts, so parallel
-  changes must be reconciled with each other, a cost the create-only approach
-  never charges; and the team operates a migration mechanism, including its
-  testing, which the startup routine got for free.</li>
-<li><strong>Neutral / follow-ups:</strong> the dormant migration tooling in the build is
-  evidence of intent, not of a decision — activating it, or replacing it with
-  a mechanism that fits the stacks actually in use, is this record's first
-  act on acceptance; the drop-and-recreate shortcut remains legitimate for
-  throwaway development databases and must be named as such wherever it is
-  documented, so it is visibly the exception and not the mechanism; and
-  migrating stored data to match a changed concept — backfills, dual writes,
-  the period where two shapes coexist — is a change-management question this
-  record makes possible but does not answer; and the schema this record
-  protects is what the retention rule (<a href=".././025-data-has-a-stated-lifetime/">025</a>)
-  and the recovery rule
-  (<a href=".././026-the-system-can-be-brought-back-from-a-named-snapshot/">026</a>)
-  later land on — a recorded migration path is a precondition for both.</li>
+<li>A release carries a complete answer to "what happens to the data" (R1, R5).</li>
+<li>Environments are comparable because they share one path (R2, R3).</li>
+<li>Schema change becomes reviewable work, not an operational surprise (R4).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Every storage change gains a step it does not pay today, and in a system whose
+  databases are all disposable that step is pure overhead until a real database
+  exists.</li>
+<li>Migrations are ordered, so parallel changes must reconcile with each other —
+  a cost the create-only approach never charges.</li>
+<li>The team operates a migration mechanism, including testing it, which the
+  startup routine got for free.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The dormant tooling is evidence of intent, not of a decision: activating it,
+  or replacing it with a mechanism that fits the stacks actually in use, is this
+  record's first act on acceptance.</li>
+<li>Drop-and-recreate stays legitimate for throwaway development databases and
+  must be <strong>named as the exception wherever documented</strong> — visibly the
+  exception, not the mechanism.</li>
+<li>Backfills, dual writes, the period where two shapes coexist: change-management
+  questions this record makes possible but does not answer.</li>
+<li>The schema this record protects is what the retention rule
+  (<a href=".././025-data-has-a-stated-lifetime/">025</a>) and recovery rule
+  (<a href=".././026-the-system-can-be-brought-back-from-a-named-snapshot/">026</a>) later
+  land on — a recorded migration path is a precondition for both.</li>
+</ul>
+<details class="question">
+<summary>Why is this Proposed and not Accepted?</summary>
+<p>The decision is that schema change becomes a recorded artifact; the
+mechanism that makes it true — the migration tool, its convention, the
+startup check — does not exist yet. Accepting now would record an intent
+no change can honour; the record is accepted in the pull request that
+lands the mechanism, where the claims become testable.</p>
+</details>
 
 
 

@@ -4,6 +4,9 @@
         <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/CHANGELOG/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/api-reference/</loc>
       </url>
       <url>
@@ -427,10 +430,25 @@
         <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/documentation/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/operations-ownership/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/releasing/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/secrets-management/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/testing/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/tls-certificates/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/version-control/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/writing-style/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/ci-chromatic-affected-gate/user-guide/</loc>

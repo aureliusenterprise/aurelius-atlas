@@ -13,6 +13,16 @@ The ledger in this section is the central record of the conversion:
 
 ## Definition of done for an increment
 
+```
+graph LR
+    S[Semantics spec] -->|PR| C[Code + scenarios]
+    C -->|parity + trace green| R[Two approvals]
+    R -->|merged| D[Done]
+    D -.->|records| L[Design log, Java map, deviations]
+```
+
+An increment is specified before it is built and proven before it is accepted ([ADR 051](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>)). The checks a PR must pass:
+
 - [ ] Semantics spec in `increments/`, every rule has an id
 - [ ] Every new public function has a test that names it (`@pytest.mark.covers`)
 - [ ] Every rule id is named by at least one test
@@ -65,12 +75,26 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 
 ## After phase 0
 
+> [!WARNING]
+>
+> **Two expat CVEs are accepted on a temporary basis**
+>
+> CVE-2026-77214 and CVE-2026-102633 (`expat`/`libexpat` 2.8.5-r1, from the server image's hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened base image carried the fix yet. The acceptance expires with the next base-image refresh — the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.
+
 To do once the last 0.x increment is done:
 
-- [ ] **Re-check the accepted expat vulnerabilities.** CVE-2026-77214 and CVE-2026-102633 in `expat` and `libexpat` 2.8.5-r1 come from the base image `dhi.io/python:3.14-alpine3.24` of `aurelius-atlas-server`, and are fixed in 2.9.0-r0. They were accepted in SonarCloud on \#85, because no hardened image with the fix existed yet. Check that the current base image ships expat 2.9.0 or later, and that SonarCloud has closed the four issues as fixed. If not, reopen them and decide again.
+- [ ] **Re-check the accepted expat vulnerabilities.** CVE-2026-77214 and CVE-2026-102633 in `expat` and `libexpat` 2.8.5-r1 come from the base image `dhi.io/python:3.14-alpine3.24` of `aurelius-atlas-server`, and are fixed in 2.9.0-r0. They were accepted in SonarCloud on \#85, because no hardened image with the fix existed yet. Before closing them:
+
+  - Check that the current base image ships expat 2.9.0 or later.
+  - Check that SonarCloud has closed the four issues as fixed.
+  - If either check fails, reopen the issues and decide again.
 
 ## After the plan
 
 To do once 6.4 is done, not numbered as an increment yet ([DD-019](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/conversion/design-log/#dd-019-the-template-examples-stay-until-the-plan-is-done>)):
 
-- [ ] **Remove the template's examples.** The FastAPI example service, the Angular example screen, `aurelius-atlas-example`, `aurelius-atlas-sdk`, `libs/angular/*`, `libs/styles`, `dev/postgres` and the Angular, Storybook and Chromatic toolchain leave (ADR 050). `dev/keycloak` stays for 6.1 and takes over `pg_hba.conf` from `dev/postgres`. The rules are tested by a test-only `tools/workspace` project without a Sonar target. They are kept until then because the project's second phase needs them again.
+- [ ] **Remove the template's examples.** The FastAPI example service, the Angular example screen, `aurelius-atlas-example`, `aurelius-atlas-sdk`, `libs/angular/*`, `libs/styles`, `dev/postgres` and the Angular, Storybook and Chromatic toolchain leave (ADR 050).
+
+  - `dev/keycloak` stays for 6.1 and takes over `pg_hba.conf` from `dev/postgres`.
+  - The rules are tested by a test-only `tools/workspace` project without a Sonar target.
+  - They are kept until then because the project's second phase needs them again.

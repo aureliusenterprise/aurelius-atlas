@@ -25,7 +25,7 @@
     
     
       
-        <title>Aurelius Project Template - Aurelius Atlas</title>
+        <title>Aurelius Atlas - Aurelius Atlas</title>
       
     
     
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Aurelius Project Template
+              Aurelius Atlas
             
           </span>
         </div>
@@ -257,6 +257,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -351,7 +361,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="./CHANGELOG.md" class="md-tabs__link">
+      <a href="./CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -470,6 +480,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -652,6 +672,114 @@
   
   
     <li class="md-nav__item">
+      <a href="./contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -660,6 +788,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5564,7 +5719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./CHANGELOG.md" class="md-nav__link">
+      <a href="./CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5612,17 +5767,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-this-project" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        What is this project?
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#about-the-team" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -5661,12 +5805,28 @@
   
 
 
-<h1 id="aurelius-project-template">Aurelius Project Template<a class="headerlink" href="#aurelius-project-template" title="Permanent link">&para;</a></h1>
-<p>Welcome to the documentation for the Aurelius Project Template!</p>
-<h2 id="what-is-this-project">What is this project?<a class="headerlink" href="#what-is-this-project" title="Permanent link">&para;</a></h2>
-<p>This template is designed to help you quickly set up a new project. It includes a basic structure for organizing
-your code, documentation, and other resources. Also included are some common utilities for working with core components
-like Apache Kafka.</p>
+<h1 id="aurelius-atlas">Aurelius Atlas<a class="headerlink" href="#aurelius-atlas" title="Permanent link">&para;</a></h1>
+<p><strong>Data governance made simple.</strong> Aurelius Atlas is an open-source data governance solution that
+enables business users to find, understand, and trust their data without waiting on IT: discover
+data assets and their context in seconds, see who is accountable for them and whether they are fit
+for purpose, follow the journey and transformations of data across systems, and keep sensitive
+information in line with regulations such as GDPR.</p>
+<p>It is one all-in-one data catalogue, designed to be business-user-friendly, meeting the demands of
+modern distributed data environments.</p>
+<p>This repository builds the new engine behind that product: a Python re-implementation of
+<a href="https://atlas.apache.org">Apache Atlas</a> that keeps the Atlas 2.4.0 REST API and the Atlas dashboard,
+with Elasticsearch 9 as the only backend instead of JanusGraph, HBase and Solr — so the catalogue is
+far easier to run and cheaper to operate. The original Java Atlas is converted in small, reviewed
+increments, each proven against the Atlas 2.4.0 source code, so the clients, integrations, and
+dashboards organisations rely on keep working exactly as they do today.</p>
+<p>Start with the <a href="user-guide/">User Guide</a> for what the catalogue does for your organisation,
+the <a href="architecture/conversion/">Conversion roadmap</a> for plan and status, the
+<a href="architecture/">Architecture</a> overview for the system as it will stand, and the
+<a href="contributor-guide/">Contributor Guide</a> to set up your machine.</p>
+<p>The <a href="user-guide/">User Guide</a> is intentionally short: until the conversion is complete, the
+<a href="https://atlas.apache.org/2.4.0/index.html">Apache Atlas documentation</a> describes the behaviour this
+system reproduces, and every intended difference is listed in
+<a href="architecture/conversion/deviations/">Deviations from Apache Atlas</a>.</p>
 <h2 id="about-the-team">About the team<a class="headerlink" href="#about-the-team" title="Permanent link">&para;</a></h2>
 <p>This project is maintained by the Aurelius Enterprise team. Please feel free to reach out if you have any questions,
 need assistance, or would like to contribute.</p>

@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2391,6 +2546,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5701,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5801,6 +5995,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5832,7 +6065,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6034,132 +6267,147 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Traces, metrics, and logs are produced and consumed inside the system, at one
+collection point the system runs itself. No operational data ships to a vendor:
+understanding the system requires nothing outside it.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The running picture of the system — its traces, metrics, and logs — is
-produced and consumed inside the system. Every part exports the same three
-signals to one collection point that is part of the system, and the tools that
-read the picture run beside it. No operational data is shipped to a vendor or
-a hosted service: understanding the system requires nothing outside it.</p>
-<p>The collection point itself — that parts hand their signals to one seam over
-a standard protocol, and that the tools behind it can be changed without
-touching the parts — is a separate decision
-(<a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a>); this
-record covers where the picture lives. The rule follows the data wherever it
-is generated: a part that runs inside a user's browser — the frontend — sends
-its signals to the collection point its deployment names, so a customer's
-deployment keeps that picture inside the same boundary as the rest. A part
-that emits nothing is a blind spot this record treats as a defect, not a
-simplification.</p>
+<p><strong>The running picture lives inside.</strong> Every part exports the same three signals
+— traces, metrics, logs — to one collection point that is part of the system,
+and the tools that read the picture run beside it. Nothing is shipped to a
+hosted service.</p>
+<p><strong>The rule follows the data to its source.</strong> A part running in a user's browser
+sends its signals to the collection point its deployment names, so a customer's
+deployment keeps the picture inside the same boundary. <strong>A part that emits
+nothing is a blind spot, treated as a defect, not a simplification.</strong></p>
+<p>The collection seam itself — one protocol, replaceable tools — is a separate
+decision (<a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a>);
+this record covers where the picture lives.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The behaviour of the business system lives in the conversations between its
-parts, so when something misbehaves, the evidence needed is spread across
-them: which request entered where, how long each hop took, what each part
-decided. Assembling that picture is what observability is for, and the
-organisation has to decide where the picture is produced and who can see the
-raw material.</p>
-<p>The conventional answer — a hosted observability service — is cheap to operate
-and powerful, and it moves the raw material outside the organisation.
-Operational data is not neutral: traces carry request data, logs carry
-identifiers, and what they reveal about customers and operations grows as the
-system grows. Once that data flows to a vendor, every environment that runs
-the system needs an account, a network path, and a data-processing agreement,
-and an environment that cannot grant them — an offline machine, a restricted
-site, a demonstration — runs blind.</p>
-<p>The system is also meant to be understood wherever it runs: on the machine of
-the person doing the work, in the pipeline, in a customer's environment
-(<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>). An arrangement where
-the picture exists only where a vendor is reachable makes the system legible
-in only one place. And because the examples in the codebase are how the
-organisation teaches (<a href=".././009-examples-must-run-and-be-tested/">009</a>), the
-debugging path is part of what is taught: if observing the system required an
-external account, the taught path would be one the learner cannot walk.</p>
-<p>The decision to make is where the running picture is assembled, and who
-outside the system is allowed to hold its raw material.</p>
+parts, so when something misbehaves, the evidence is spread across them: which
+request entered where, how long each hop took, what each part decided. The
+question is where the picture is assembled and who may hold its raw material.</p>
+<p><strong>The conventional answer moves the raw material outside.</strong> A hosted
+observability service is cheap to operate, and operational data is not neutral:
+traces carry request data, logs carry identifiers, and what they reveal about
+customers grows as the system grows. Once the data flows to a vendor, every
+environment needs an account, a network path, and a data-processing agreement —
+and an environment that cannot grant them (an offline machine, a restricted
+site, a demonstration) runs blind.</p>
+<p><strong>The system is meant to be legible wherever it runs</strong>: a person's machine, the
+pipeline, a customer's environment
+(<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>). And because the
+examples are how the organisation teaches
+(<a href=".././009-examples-must-run-and-be-tested/">009</a>), the debugging path is part
+of what is taught — if observing required an external account, the taught path
+would be one the learner cannot walk.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — The picture is assembled inside.</strong> Traces, metrics, and logs from
-  every part come together somewhere the system itself runs, and reading them
-  needs nothing the system does not already carry.</li>
-<li><strong>R2 — The system runs where data may not leave.</strong> Some environments
-  forbid operational data from crossing their boundary; the system must run
-  unchanged in every one of them, so running it can never depend on a
-  third-party data agreement.</li>
-<li><strong>R3 — Observing needs no accounts or network.</strong> A person on their own
-  machine, and an unattended run, get the same picture without provisioning
-  access to anything outside.</li>
-<li><strong>R4 — The path is exercised where the system is validated.</strong> The debugging
-  path is live in local runs and pipeline runs, so it is exercised routinely
-  rather than discovered under pressure.</li>
-<li><strong>R5 — Cheap to keep true.</strong> Instrumenting a new part, or adding the
-  observability stack to a new environment, is a local change by the person
-  making it.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>The picture is assembled inside.</strong> Signals from every part meet where the system runs; reading them needs nothing external.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>The system runs where data may not leave.</strong> Running it can never depend on a third-party data agreement.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Observing needs no accounts or network.</strong> A person on their machine and an unattended run get the same picture.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The path is exercised where validation runs.</strong> The debugging path is live in local and pipeline runs, not discovered under pressure.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Cheap to keep true.</strong> Instrumenting a part, or adding the stack to an environment, is a local change.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>A hosted observability service.</strong> The industry default: rich tooling, no
-  stack to operate. It fails R2 — the raw material leaves the boundary — and
-  with it R3, because every environment needs an account and a network path;
-  an offline or restricted run loses the picture entirely, which contradicts
-  the arrangement in
-  <a href=".././006-the-whole-system-runs-on-one-machine/">006</a>. It also fails R4: the
-  debugging path exists only where the vendor is reachable, so the taught
-  path and the shipped path diverge.</li>
-<li><strong>A self-hosted stack that is not part of the system.</strong> An observability
-  deployment the organisation runs, but outside the system it observes. It
-  answers R2 — the data stays the organisation's — and fails R1 and R3: the
-  picture is assembled where the system does not run, so an environment
-  needs the stack provisioning beside it, which is the account-and-network
-  dependency again with a different owner. It fails R5 for the same reason:
-  every new environment now installs two things instead of one.</li>
-<li><strong>The cloud platform's monitoring services.</strong> Use the monitoring built into
-  whichever platform runs production. It fails R2 — the data leaves the
-  boundary, to the platform's owner rather than a vendor's — and it
-  fails R3 for every environment that does not run on that platform.</li>
-<li><strong>Logs only, no traces or metrics.</strong> The minimal arrangement: every part
-  writes logs, a person reads them. It passes R2 and R3 but fails R1: the
-  picture of a request crossing several parts cannot be reassembled from
-  uncorrelated text, which is precisely the failure mode the system's shape
-  makes common.</li>
-<li><strong>Each part exports to whichever backend it needs.</strong> No collection point;
-  parts point at their own storage. It fails R1 in practice, because a
-  picture spread over unlinked backends is not one picture — and the seam
-  those backends would sit behind is what
-  <a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a> decides.</li>
-<li><strong>Do nothing (debug with prints and local reproduction).</strong> It costs nothing
-  to keep. It fails R1 by default — the evidence of a production incident is
-  whatever the logs happened to catch — and R4, because the debugging path is
-  invented per incident rather than exercised daily.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A hosted observability service</td>
+<td>R2: the raw material leaves the boundary; R3: every environment needs an account and a network path, so an offline run loses the picture — contradicting <a href=".././006-the-whole-system-runs-on-one-machine/">006</a>. R4: the debugging path exists only where the vendor is reachable, so the taught path and the shipped path diverge.</td>
+</tr>
+<tr>
+<td>Self-hosted stack, outside the system</td>
+<td>R2 yes; R1 and R3 no: the picture is assembled where the system does not run, so every environment provisions the stack beside it — the account-and-network dependency with a different owner. R5: every new environment installs two things.</td>
+</tr>
+<tr>
+<td>The cloud platform's monitoring</td>
+<td>R2: the data leaves the boundary, to the platform's owner. R3 for every environment not on that platform.</td>
+</tr>
+<tr>
+<td>Logs only, no traces or metrics</td>
+<td>R2 and R3 pass, R1 fails: the picture of a request crossing several parts cannot be reassembled from uncorrelated text — precisely the failure mode the system's shape makes common.</td>
+</tr>
+<tr>
+<td>Each part exports to its own backend</td>
+<td>R1 in practice: a picture spread over unlinked backends is not one picture — and the seam those backends would sit behind is what <a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a> decides.</td>
+</tr>
+<tr>
+<td>Do nothing (prints and local reproduction)</td>
+<td>R1 by default: the evidence of an incident is whatever the logs happened to catch. R4: the debugging path is invented per incident, not exercised daily.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> the system is legible wherever it runs, including offline and
-  in a customer's environment, with no account to provision (R1, R3); no
-  operational data crosses the boundary, so running the system never requires
-  a data-processing agreement (R2); the debugging path is live in every
-  validation run, so it is trusted before it is needed (R4).</li>
-<li><strong>Negative:</strong> the organisation operates its own observation stack — its
-  availability, retention, and dashboards are its problem, and a hosted
-  service's polish is paid for in upkeep; the picture is bounded by what a
-  self-hosted stack at the scale of the run can hold, so long retention and
-  fleet-wide aggregation are not what this arrangement provides; and every
-  part that ships without instrumentation is a blind spot its owner has to
-  close, because the picture is only as complete as its least-instrumented
-  part.</li>
-<li><strong>Neutral / follow-ups:</strong> parts that currently emit nothing are deviations
-  this record names rather than tolerates, and each needs its instrumentation
-  or a stated reason not to have it; a part that emits only some of the three
-  signals is a partial blind spot treated the same way; the collection point
-  speaks a standard protocol
-  (<a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a>) so that
-  a future production arrangement may export elsewhere — whether production
-  ships its operational data out is a decision this record does not make, and
-  no export may begin without a new record superseding this one; sampling
-  rates that keep runs affordable are a tuning decision per part, owned by
-  the part; and how long the signals the collection point holds are kept is a
-  lifetime question owned by
-  <a href=".././025-data-has-a-stated-lifetime/">025</a>, not by this record.</li>
+<li>The system is legible wherever it runs — offline, in a customer's environment —
+  with no account to provision (R1, R3).</li>
+<li>No operational data crosses the boundary, so running the system never requires
+  a data-processing agreement (R2).</li>
+<li>The debugging path is live in every validation run: trusted before it is needed
+  (R4).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The organisation operates its own observation stack — availability, retention,
+  dashboards are its problem; a hosted service's polish is paid for in upkeep.</li>
+<li>The picture is bounded by what a self-hosted stack at the scale of the run can
+  hold: long retention and fleet-wide aggregation are not on offer.</li>
+<li>Every part that ships uninstrumented is a blind spot its owner must close —
+  the picture is only as complete as its least-instrumented part.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Parts that currently emit nothing are deviations this record <strong>names rather
+  than tolerates</strong>: each needs instrumentation or a stated reason not to have
+  it. A part emitting only some of the three signals is a partial blind spot,
+  treated the same way.</li>
+<li>The collection point speaks a standard protocol
+  (<a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a>) so a future
+  production arrangement may export elsewhere — <strong>no export may begin without a
+  new record superseding this one.</strong></li>
+<li>Sampling rates are a tuning decision per part; how long signals are kept is a
+  lifetime question owned by <a href=".././025-data-has-a-stated-lifetime/">025</a>.</li>
+</ul>
+<details class="question">
+<summary>Why not a hosted service for production only?</summary>
+<p>Because the rule is about the system, not the environment. A production
+export splits the debugging path in two — the legible arrangement taught
+locally, an opaque one where it matters most — and the split is exactly
+what <a href=".././006-the-whole-system-runs-on-one-machine/">006</a> removes
+elsewhere. Export requires superseding this record first.</p>
+</details>
 
 
 

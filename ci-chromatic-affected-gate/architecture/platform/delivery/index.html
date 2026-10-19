@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5599,7 +5754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5667,7 +5822,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5810,6 +5965,45 @@
 
 
 <h1 id="delivery">Delivery<a class="headerlink" href="#delivery" title="Permanent link">&para;</a></h1>
+<p>How changes reach production: configuration, change control, testing, release, and deployment.
+Parts of this tree are already written (<a href="change-management/">Change Management</a>,
+<a href="testing/">Testing</a>); the rest is filled per the map below.</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Scope</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="configuration-management/">Configuration Management</a></td>
+<td>Production env-var contract (ADR 018); dev/CI secrets and prefixes</td>
+<td>written (0.5)</td>
+</tr>
+<tr>
+<td><a href="change-management/">Change Management</a></td>
+<td>Release → acceptance/production hand-over (ADR 024); dev + pipeline after</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="testing/">Testing</a></td>
+<td>Layer map, CI gate (production bar); developer-side conventions after</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="release-management/">Release Management</a></td>
+<td>One versioned whole (ADR 019): version, inventory, signing, promotion</td>
+<td>written (0.1)</td>
+</tr>
+<tr>
+<td><a href="deployment/">Deployment</a></td>
+<td>Image-per-service, compose layouts, promote-by-declared-path (ADR 024)</td>
+<td>6.4</td>
+</tr>
+</tbody>
+</table>
 
 
 

@@ -1,6 +1,6 @@
 # Documentation
 
-This page provides guidelines for contributing to the documentation.
+The documentation is Markdown under `docs/`, built by Zensical, checked by markdownlint and Prettier, and published on every merge to `main`. What good prose looks like is the [Writing Style](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/writing-style/index.md>) guide; this page is the tooling around it.
 
 ## Tools
 
@@ -33,6 +33,26 @@ To add a new page to the documentation, create a new Markdown file in the `docs`
 Next, update the `nav` section in the `mkdocs.yaml` file to include the new page. The `nav` section defines the structure of the documentation and the order in which the pages are displayed in the navigation bar.
 
 Please ensure that the folder structure in the `docs` directory matches the structure defined in the `nav` section.
+
+## Architecture Pages
+
+The reference-architecture trees under `docs/architecture/` (Vision &amp; Strategy, Data Lifecycle Management, Data Governance, Platform) are written **increment by increment**: the [filling maps](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/architecture/index.md>) on the tree index pages name the increment that writes each page. A page is written in the pull request of the increment that claims it — the facts are fresh there, and the increment's Definition of Done covers it.
+
+A page not yet written is not left empty. It carries the standard marker, so a reader can tell a planned page from a forgotten one:
+
+```
+# Data Storage
+
+!!! INFO "Planned"
+
+    To be written by increment 2.2 (material exists since 0.2 and 1.4), from the increment's
+    semantics spec. See the [filling map](index.md) for the page scope and the
+    [conversion roadmap](../../conversion/index.md) for increment status.
+```
+
+The rules: the `Planned` admonition names exactly one increment (or the page's material is already merged, written when convenient), the tree index carries the per-page map, and a page whose increment has merged is written in that same PR — not later. Removing the marker *is* writing the page.
+
+What an architecture page may say is governed by the litmus test — *would this detail still matter if we replaced every technology in the stack?* Role-level properties stay; design detail goes to the component's [API Reference](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/api-reference/index.md>) page (each doubles as its design documentation), a Contributor Guide page, or the slice's README — with a pointer left behind. The rules are on the [Writing Style](<https://aureliusenterprise.github.io/ci-chromatic-affected-gate/contributor-guide/writing-style/#structure-rules>) page.
 
 ## Architecture Decisions
 

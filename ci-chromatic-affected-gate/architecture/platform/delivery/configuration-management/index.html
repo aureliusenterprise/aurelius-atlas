@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -4905,6 +5060,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration Management
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -4920,6 +5092,48 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#production" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Production
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-and-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Development and CI
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5611,7 +5825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5652,6 +5866,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#production" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Production
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-and-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Development and CI
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -5679,7 +5923,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5822,6 +6066,52 @@
 
 
 <h1 id="configuration-management">Configuration Management<a class="headerlink" href="#configuration-management" title="Permanent link">&para;</a></h1>
+<p>Settings arrive at start-up through one channel and fail loudly
+(<a href="../../../adr/018-settings-arrive-at-startup-through-one-channel/">ADR 018</a>).
+The contract is the same everywhere; what differs is who supplies the values.
+Production is first below, and the development and CI arrangements come after.</p>
+<h2 id="production">Production<a class="headerlink" href="#production" title="Permanent link">&para;</a></h2>
+<p>The unit that ships is the container image
+(<a href="../release-management/">release management</a>). Its configuration is the environment, read once at
+start-up into a frozen settings object — no library reads the environment afterwards, and apps
+pass settings objects down. Validation failures (missing key, bad scheme, half a TLS pair) stop
+start-up with a message naming the variable, so a misconfigured deployment never serves traffic.</p>
+<p>What a deployment must supply has no defaults — the service does not start without it (SRV-01,
+SRV-02): the store's endpoints and credentials, and the CA that signs the store's certificate.
+Where those values come from — an orchestrator secret store, certificate provisioning — is the
+<a href="../deployment/">deployment</a> page's subject (6.4). The knobs are named, with defaults and
+validation, in the server's design documentation:
+<a href="../../../../api-reference/apps/aurelius-atlas-server/#configuration">Configuration</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">A half TLS pair stops the server from starting</p>
+<p>The serving certificate and key are a pair: both set, or both unset — enforced at start-up.
+A container that mounts only the certificate exits with a message naming the missing
+variable; this is the design working, not a broken image.</p>
+</div>
+<p><strong>Naming.</strong> App-owned settings carry a per-project prefix, so two projects in one workspace can
+never read each other's values. Keys that third-party code (the platform's, the observability
+exporter's, infrastructure images) reads must stay bare to be read at all — the prefix list lives
+in the root <code>AGENTS.md</code>.</p>
+<details class="question">
+<summary>Why do the variable names carry such long prefixes?</summary>
+<p>One project's environment leaks into all of that project's tasks, so a bare <code>PORT</code> set by the
+frontend example would be visible to the server's tests. The prefix is what keeps two
+projects' settings from shadowing each other; keys the ecosystem's own images read must stay
+bare to be read at all.</p>
+</details>
+<h2 id="development-and-ci">Development and CI<a class="headerlink" href="#development-and-ci" title="Permanent link">&para;</a></h2>
+<p>The same channel, with repository-local plumbing: each project's plaintext <code>.env</code> carries dev
+defaults, and its real settings travel with the code as ciphertext
+(<a href="../../../adr/008-secrets-never-in-plaintext/">ADR 008</a>). The rules that keep the two in step —
+decryption as a task dependency, ciphertext as the source of truth, TLS material as
+configuration — are the secrets guide's, with the commands:
+<a href="../../../../contributor-guide/secrets-management/">Secrets Management</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Editing <code>.env</code> alone is undone by the next CI run</p>
+<p>Ciphertext is the source of truth and plaintext is generated from it. An <code>.env</code> edit that is
+not re-encrypted disappears the moment CI decrypts — the change works locally and fails in
+the pipeline, with the plaintext file as the only visible symptom.</p>
+</div>
 
 
 

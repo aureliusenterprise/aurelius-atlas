@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3039,6 +3194,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5701,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5801,6 +5995,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5832,7 +6065,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6034,115 +6267,161 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Acceptance trigger (swept 2026-10-19): increment 6.4 names the conditions, the destinations, and the
+silence trigger as alert rules in the observability stack; accepted in that pull request, recorded
+in the observability tree as it fills.</p>
 <p>A condition that matters to the business has a named trigger and a named
-destination: the system notices it and tells someone, without that person
-watching a screen. Signals that are collected but never examined are treated
-as a blind spot with extra steps, and a condition nobody is told about is a
-defect of the arrangement, not bad luck.</p>
+destination: the system notices and tells someone, without that person watching
+a screen. Collected signals nobody examines are a blind spot with extra steps.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p><strong>Noticing is an arrangement, not a habit.</strong> A condition that matters to the
+business has a named trigger and a named destination: the system notices it and
+tells someone, without that person watching a screen. <strong>Signals collected but
+never examined are treated as a blind spot with extra steps</strong>, and a condition
+nobody is told about is a defect of the arrangement, not bad luck.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The system already produces its own picture and gathers it in one place:
-traces, metrics, and logs from every part meet at a collection point the
-system runs itself
-(<a href=".././016-the-system-observes-itself-internally/">016</a>,
+traces, metrics, and logs from every part meet at a collection point the system
+runs itself (<a href=".././016-the-system-observes-itself-internally/">016</a>,
 <a href=".././034-signals-meet-at-one-replaceable-collection-point/">034</a>). That
-arrangement was made so the picture is available wherever the system runs. It
-says nothing about anyone looking.</p>
+arrangement made the picture available wherever the system runs. <strong>It says
+nothing about anyone looking.</strong></p>
 <p>Today nobody is told anything. The collection point holds the signals and a
-person reads them when they already suspect something — which means the
-system's failures are discovered by whoever notices a symptom, usually a
-person outside the system, after the fact. The collection point's own storage
-can fill, a part can stop emitting and the picture simply goes quiet, and
-neither event announces itself. A picture nobody looks at is a log with extra
-steps.</p>
-<p>The tension is between noticing and noise. A trigger for everything trains
-people to ignore triggers, and an ignored trigger is worse than none because
-it carries a false promise. The tension is sharper here than in a typical
-deployment because the boundary rule
-(<a href=".././016-the-system-observes-itself-internally/">016</a>) keeps the whole
-picture inside: there is no hosted service with alerting on by default, so
-noticing is the organisation's own mechanism or nobody's. And the availability
-posture (<a href=".././037-the-system-itself-promises-nothing-about-staying-up/">037</a>)
-makes this record the system's only honest answer to "how would you know?" —
-the system promises no prevention, so detection is what remains.</p>
-<p>The decision to make is what the system must announce, to whom, by what
-mechanism, and what keeps the announcements worth reading.</p>
+person reads them when they already suspect something — so the system's
+failures are discovered by whoever notices a symptom, usually a person outside
+the system, after the fact. The collection point's own storage can fill, a part
+can stop emitting and the picture simply goes quiet, <strong>and neither event
+announces itself.</strong></p>
+<p>The tension is between noticing and noise: <strong>a trigger for everything trains
+people to ignore triggers, and an ignored trigger is worse than none because it
+carries a false promise.</strong></p>
+<p>The tension is sharper here than in a typical deployment because the boundary
+rule (<a href=".././016-the-system-observes-itself-internally/">016</a>) keeps the whole
+picture inside: there is no hosted service with alerting switched on by
+default, so noticing a failure is either a mechanism the organisation builds
+itself, or nobody does it.</p>
+<p>And the availability posture
+(<a href=".././037-the-system-itself-promises-nothing-about-staying-up/">037</a>) makes
+this record the system's only honest answer to "how would you know?" — <strong>the
+system promises no prevention, so detection is what remains.</strong></p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — Conditions are named, not improvised.</strong> The conditions worth
-  announcing are written down where a reviewer can see them; a trigger exists
-  because someone chose it.</li>
-<li><strong>R2 — Every trigger has a destination.</strong> Each named condition says who is
-  told and how; a trigger that reaches nobody is a log line with a siren on.</li>
-<li><strong>R3 — Silence is itself a condition.</strong> A part that stops emitting, or a
-  collection point that stops receiving, is a named trigger: the picture going
-  quiet is an event, not an absence.</li>
-<li><strong>R4 — Triggers stay worth reading.</strong> A condition that fires without action
-  being needed is revised or removed; the arrangement is graded by whether its
-  announcements still mean something.</li>
-<li><strong>R5 — The mechanism lives inside the boundary.</strong> Noticing uses the signals
-  the collection point already holds; it sends nothing outside that the
-  boundary rule forbids.</li>
-<li><strong>R6 — The path is exercised where the system is validated.</strong> A trigger can
-  be demonstrated to fire in a local or pipeline run; a trigger nobody has
-  seen fire is decoration.</li>
-<li><strong>R7 — Cheap to keep true.</strong> A new part inherits the basic triggers — it is
-  emitting, it is reachable — rather than arriving mute.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>Conditions are named, not improvised.</strong> The conditions worth announcing are written where a reviewer can see them; a trigger exists because someone chose it.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Every trigger has a destination.</strong> Who is told and how; a trigger that reaches nobody is a log line with a siren on.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Silence is itself a condition.</strong> A part that stops emitting, or a collection point that stops receiving, is a named trigger — the picture going quiet is an event.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Triggers stay worth reading.</strong> A condition that fires without action is revised or removed; the arrangement is graded by whether its announcements still mean something.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>The mechanism lives inside the boundary.</strong> Noticing uses the signals the collection point already holds; nothing outside that the boundary forbids.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>The path is exercised where validation runs.</strong> A trigger can be demonstrated to fire locally or in the pipeline; a trigger nobody has seen fire is decoration.</td>
+</tr>
+<tr>
+<td><strong>R7</strong></td>
+<td><strong>Cheap to keep true.</strong> A new part inherits the basic triggers — it is emitting, it is reachable — rather than arriving mute.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Dashboards only (the status quo).</strong> The picture exists for whoever looks.
-  It fails R2 and R3 by definition: nothing is announced, and the picture
-  going quiet is precisely what a dashboard cannot show you.</li>
-<li><strong>Alert on everything the tools can measure.</strong> It fails R4: a stream nobody
-  triages becomes wallpaper, and the wallpaper hides the one announcement that
-  mattered.</li>
-<li><strong>Watch the platform, not the conditions.</strong> Triggers on machine-level
-  signals — disk, memory, process state. It fails R1 for the business: a
-  service can be healthy on every gauge and wrong in every answer, and the
-  conditions the business cares about are answers, not gauges.</li>
-<li><strong>Rely on users to report.</strong> The cheapest detector ever built. It fails R2's
-  purpose — the first informed person is the affected customer — and R3,
-  because a system quiet enough to be broken quietly produces no complaints
-  worth trusting.</li>
-<li><strong>A hosted alerting service.</strong> Mature and low-upkeep. It fails R5: the raw
-  material of noticing is the operational picture, and the boundary rule
-  keeps that inside
-  (<a href=".././016-the-system-observes-itself-internally/">016</a>); a hosted alert
-  would ship the evidence out to announce it.</li>
-<li><strong>Do nothing.</strong> Costs nothing today; it fails every requirement above the
-  way the status quo does, and it leaves the availability posture
-  (<a href=".././037-the-system-itself-promises-nothing-about-staying-up/">037</a>) with
-  no detection to stand on.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboards only (status quo)</td>
+<td>The picture exists for whoever looks. R2 and R3 by definition: nothing is announced, and the picture going quiet is precisely what a dashboard cannot show you.</td>
+</tr>
+<tr>
+<td>Alert on everything measurable</td>
+<td>R4: a stream nobody triages becomes wallpaper, and the wallpaper hides the one announcement that mattered.</td>
+</tr>
+<tr>
+<td>Watch the platform, not the conditions</td>
+<td>R1 for the business: a service can be healthy on every gauge and wrong in every answer — the conditions the business cares about are answers, not gauges.</td>
+</tr>
+<tr>
+<td>Rely on users to report</td>
+<td>The cheapest detector ever built. R2's purpose: the first informed person is the affected customer. R3: a system quiet enough to be broken quietly produces no complaints worth trusting.</td>
+</tr>
+<tr>
+<td>A hosted alerting service</td>
+<td>Mature and low-upkeep; R5: the raw material of noticing is the operational picture, and the boundary keeps that inside (<a href=".././016-the-system-observes-itself-internally/">016</a>) — a hosted alert would ship the evidence out to announce it.</td>
+</tr>
+<tr>
+<td>Do nothing</td>
+<td>Free today; fails every requirement the way the status quo does, and leaves the availability posture (<a href=".././037-the-system-itself-promises-nothing-about-staying-up/">037</a>) with no detection to stand on.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> failures announce themselves instead of being excavated (R1,
-  R2); the blind spot of a quiet part or a full store closes (R3); the
-  boundary holds — noticing happens on the picture the system already keeps
-  (R5); and the incident path has something to start from, which the
-  incident-response question needs before it can be answered at all.</li>
-<li><strong>Negative:</strong> triggers are upkeep — each one is a condition to tune, a
-  destination to keep current, and a false alarm to learn from; the first
-  honest set of triggers will be wrong in both directions until it is
-  exercised; and naming a destination for every trigger forces a question the
-  organisation has not answered — who is told at what hour — which belongs to
-  the incident record but cannot be dodged here.</li>
-<li><strong>Neutral / follow-ups:</strong> this record is Proposed because the decision has
-  not been made: the collection point holds the signals and no trigger reads
-  them. The placeholder page on alerting under the architecture section
-  remains a heading until this record is accepted and written from its answer;
-  what a person does after the hand is raised — who owns the failure and along
-  what path — is the incident record's question, and that record leans on
-  this one for the moment the incident begins; the thresholds and numbers
-  themselves belong to whoever accepts this record and must be named at
-  acceptance, not deferred; and a part that emits nothing is a deviation the
-  observability record already names
-  (<a href=".././016-the-system-observes-itself-internally/">016</a>) — an uninstrumented
-  part cannot raise its hand, and this record inherits that blind spot until
-  each part is instrumented or excused in writing.</li>
+<li>Failures announce themselves instead of being excavated (R1, R2).</li>
+<li>The blind spot of a quiet part or a full store closes (R3).</li>
+<li>The boundary holds — noticing happens on the picture the system already keeps
+  (R5).</li>
+<li>The incident path has something to start from, which the incident-response
+  question needs before it can be answered at all.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Triggers are upkeep: each one a condition to tune, a destination to keep
+  current, a false alarm to learn from.</li>
+<li>The first honest set of triggers is wrong in both directions until it is
+  exercised.</li>
+<li>Naming a destination for every trigger forces a question the organisation has
+  not answered — who is told at what hour — which belongs to the incident record
+  but cannot be dodged here.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>This record is Proposed because the decision has not been made: the collection
+  point holds the signals and no trigger reads them. The alerting placeholder
+  page stays a heading until acceptance writes it from this answer.</li>
+<li>What a person does after the hand is raised is the incident record's question
+  (<a href=".././041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path/">041</a>),
+  and that record leans on this one for the moment the incident begins.</li>
+<li>The thresholds and numbers belong to whoever accepts this record and <strong>must be
+  named at acceptance, not deferred.</strong></li>
+<li>A part that emits nothing is a deviation the observability record already
+  names (<a href=".././016-the-system-observes-itself-internally/">016</a>): an
+  uninstrumented part cannot raise its hand, and this record inherits that blind
+  spot until each part is instrumented or excused in writing.</li>
+</ul>
+<details class="question">
+<summary>Why is silence a trigger — isn't quiet normal?</summary>
+<p>Quiet is normal; <em>unexplained</em> quiet is the failure. A part that stops
+emitting and a collection point that stops receiving make the picture look
+healthy-by-absence (R3) — the one failure mode where "nothing to report"
+is indistinguishable from "no way to report." A heartbeat turns that
+ambiguity into an event.</p>
+</details>
 
 
 

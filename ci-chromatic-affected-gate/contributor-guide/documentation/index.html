@@ -20,7 +20,7 @@
         <link rel="prev" href="../adopting-the-template/">
       
       
-        <link rel="next" href="../secrets-management/">
+        <link rel="next" href="../writing-style/">
       
       
         
@@ -265,6 +265,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -480,6 +490,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -732,6 +752,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#architecture-pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Architecture Pages
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#architecture-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -808,6 +839,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../secrets-management/" class="md-nav__link">
         
   
@@ -816,6 +955,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5720,7 +5886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5794,6 +5960,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Adding a New Page
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Architecture Pages
       </span>
     </span>
   </a>
@@ -5890,7 +6067,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5907,6 +6084,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5953,7 +6140,10 @@
 
 
 <h1 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h1>
-<p>This page provides guidelines for contributing to the documentation.</p>
+<p>The documentation is Markdown under <code>docs/</code>, built by Zensical, checked by
+markdownlint and Prettier, and published on every merge to <code>main</code>. What good
+prose looks like is the <a href="../writing-style/">Writing Style</a> guide; this page is
+the tooling around it.</p>
 <h2 id="tools">Tools<a class="headerlink" href="#tools" title="Permanent link">&para;</a></h2>
 <p>The documentation is built using <a href="https://zensical.org/">Zensical</a>, a static site generator built by the
 creators of Material for MkDocs. It converts Markdown files into a website and reads the existing
@@ -5977,6 +6167,30 @@ The changes you make to the documentation will be automatically reflected in the
 <p>Next, update the <code>nav</code> section in the <code>mkdocs.yaml</code> file to include the new page. The <code>nav</code> section defines the
 structure of the documentation and the order in which the pages are displayed in the navigation bar.</p>
 <p>Please ensure that the folder structure in the <code>docs</code> directory matches the structure defined in the <code>nav</code> section.</p>
+<h2 id="architecture-pages">Architecture Pages<a class="headerlink" href="#architecture-pages" title="Permanent link">&para;</a></h2>
+<p>The reference-architecture trees under <code>docs/architecture/</code> (Vision &amp; Strategy, Data Lifecycle
+Management, Data Governance, Platform) are written <strong>increment by increment</strong>: the
+<a href="../../architecture/">filling maps</a> on the tree index pages name the increment that writes each
+page. A page is written in the pull request of the increment that claims it — the facts are fresh
+there, and the increment's Definition of Done covers it.</p>
+<p>A page not yet written is not left empty. It carries the standard marker, so a reader can tell a
+planned page from a forgotten one:</p>
+<div class="highlight"><pre><span></span><code><span class="gh"># Data Storage</span>
+
+!!! INFO "Planned"
+
+    To be written by increment 2.2 (material exists since 0.2 and 1.4), from the increment's
+    semantics spec. See the [<span class="nt">filling map</span>](<span class="na">index.md</span>) for the page scope and the
+    [<span class="nt">conversion roadmap</span>](<span class="na">../../conversion/index.md</span>) for increment status.
+</code></pre></div>
+<p>The rules: the <code>Planned</code> admonition names exactly one increment (or the page's material is already
+merged, written when convenient), the tree index carries the per-page map, and a page whose increment
+has merged is written in that same PR — not later. Removing the marker <em>is</em> writing the page.</p>
+<p>What an architecture page may say is governed by the litmus test — <em>would this detail still matter
+if we replaced every technology in the stack?</em> Role-level properties stay; design detail goes to
+the component's <a href="../../api-reference/">API Reference</a> page (each doubles as its design
+documentation), a Contributor Guide page, or the slice's README — with a pointer left behind.
+The rules are on the <a href="../writing-style/#structure-rules">Writing Style</a> page.</p>
 <h2 id="architecture-decisions">Architecture Decisions<a class="headerlink" href="#architecture-decisions" title="Permanent link">&para;</a></h2>
 <p>Significant technical and organisational decisions are recorded as
 <a href="../../architecture/adr/">Architecture Decision Records</a> under

@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2229,6 +2384,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5701,7 +5895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5801,6 +5995,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5832,7 +6065,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6034,98 +6267,119 @@
 <li><strong>Date:</strong> 2026-10-06</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Every part ships as one packaged unit, and that same unit is what development
+and the pipeline validate. Environments differ in configuration and
+orchestration — never in artifact.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Every part of the system ships as one packaged unit: the same unit that is
-built and validated on an engineer's machine and in the pipeline is the unit
-deployed to production. Environments may differ in configuration and in the
-orchestration that runs the unit — production is deployed by the orchestration
-the organisation operates for it, which need not be how the system runs in
-development or CI — but not in artifact.</p>
-<p>A run that passes on a unit is evidence about that unit, and a deployment is
-only ever of that same unit. Where a difference between places is unavoidable
-in configuration, it is expressed as configuration of the unit, never as a
-differently built unit.</p>
+<p><strong>One packaged unit per part.</strong> The unit built and validated on an engineer's
+machine and in the pipeline is the unit deployed to production. Environments
+may differ in configuration and in the orchestration that runs the unit —
+production runs on the orchestration the organisation operates, which need not
+be how the system runs in development or CI — <strong>but not in artifact</strong>.</p>
+<p><strong>A run is evidence about a unit; a deployment is of that unit.</strong> Where a
+difference between places is unavoidable, it is expressed as configuration of
+the unit, never as a differently built unit.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The system is validated in several places: on an engineer's machine, in the
-pipeline, and in production. Each validation produces a claim — the system
-behaves this way — and the claims are only worth acting on if they are about
-the same thing.</p>
-<p>If the artifact validated differs from the artifact deployed, then a passing
-run and a healthy deployment are claims about two different objects, and
-confidence does not transfer from one to the other. The organisation is then
-left reasoning about the gap between them: which failures belong to the
-packaging step, which to the environment, which to the code — a question that
+<p>The system is validated in several places — an engineer's machine, the
+pipeline, production — and each validation produces a claim: <em>the system
+behaves this way</em>. The claims are worth acting on only if they are about the
+same thing.</p>
+<p>If the validated artifact differs from the deployed artifact, a passing run and
+a healthy deployment are claims about two objects, and confidence does not
+transfer. The organisation is left reasoning about the gap: which failures
+belong to packaging, which to environment, which to code — a question that
 exists only because two builds happened where one could have.</p>
-<p>The decision to make is what the unit of validation and delivery is, and what
-must be true of it for validation performed in one place to count in all
-others.</p>
+<details class="question">
+<summary>What does a green run <em>not</em> prove?</summary>
+<p>The unit, not the environment: scale, live traffic, third-party behaviour,
+and the production orchestration itself are named exceptions this record
+refuses to claim. A passing run transfers its evidence about the artifact —
+configuration and orchestration differences are stated, not silently
+absorbed, and the gap is a list, not a fog.</p>
+</details>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — One build, everywhere used.</strong> Each part of the system is packaged
-  once per change, and every place that runs or validates it consumes that
-  package rather than rebuilding or reassembling from source.</li>
-<li><strong>R2 — Validation transfers to production.</strong> A passing run against the unit
-  is evidence about what will be deployed, because they are the same artifact;
-  differences between places are configuration, not artifact.</li>
-<li><strong>R3 — The unit is self-contained.</strong> The unit carries everything needed to
-  run it; where it depends on services outside itself, those dependencies are
-  declared, not assumed from the surrounding machine.</li>
-<li><strong>R4 — Deploy is a selection, not a transformation.</strong> Releasing means
-  pointing the operating environment at an already-validated unit, not
-  rebuilding, repackaging, or patching it on the way.</li>
-<li><strong>R5 — Cheap to keep true.</strong> Packaging a new part, or changing how it is
-  packaged, is a local edit to that part's definition by the person making
-  the change, not a change request to whoever owns the delivery path.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>One build, everywhere used.</strong> Packaged once per change; every consumer takes that package, never rebuilds.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Validation transfers to production.</strong> A passing run is evidence about what deploys — differences are config, not artifact.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>The unit is self-contained.</strong> Carries what it needs to run; external dependencies are declared, not assumed from the machine.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Deploy is a selection, not a transformation.</strong> Point the environment at a validated unit — no rebuild, repackage, or patch on the way.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Cheap to keep true.</strong> Packaging a part is a local edit by the person making the change.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Build per environment.</strong> Each environment builds or assembles its own copy
-  from source at deploy time, the traditional per-server pattern. It fails
-  R1 by construction, and with it the transfer of confidence this record
-  exists to secure: the unit tested and the unit serving users are produced by
-  different builds at different times, and every difference between the two
-  builds is an unvalidated difference. R4 then fails too — deploying means
-  running the build, so the release path contains a step no validation
-  covered.</li>
-<li><strong>Patch the validated unit at release.</strong> Validate a package, then modify it
-  on its way to production — inject configuration by rewriting contents, patch
-  a dependency, tune a setting inside the artifact. It fails R4 directly: the
-  deployed unit is the validated unit plus an unvalidated edit, and the
-  pipeline's claim ends where the edit begins.</li>
-<li><strong>Deploy source, build in place.</strong> Skip packaging and let each environment
-  run from source it checks out and assembles itself. It fails R1: every
-  environment's copy is assembled by that environment's toolchain, so two
-  environments can produce two different running things from one commit; and
-  R4, because the running thing has no identity to roll back to.</li>
-<li><strong>Do nothing (each place takes what it takes).</strong> Zero cost today. It fails
-  R1 by default — machine, pipeline, and production each assemble their own
-  copy — and R2 by default: green locally and green in production become
-  claims about different things, and the gap is investigated only when they
-  disagree.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build per environment</td>
+<td>R1 by construction — the tested unit and the serving unit come from different builds at different times, every difference unvalidated. R4: deploying runs a build, so the release path contains a step no validation covered.</td>
+</tr>
+<tr>
+<td>Patch the validated unit at release</td>
+<td>R4 directly: the deployed unit is the validated unit plus an unvalidated edit, and the pipeline's claim ends where the edit begins.</td>
+</tr>
+<tr>
+<td>Deploy source, build in place</td>
+<td>R1: each environment's toolchain assembles its own copy — two environments, two running things, one commit. R4: the running thing has no identity to roll back to.</td>
+</tr>
+<tr>
+<td>Do nothing (each place takes what it takes)</td>
+<td>R1 by default: machine, pipeline, and production each assemble a copy. R2 by default: green here and green there are claims about different things; the gap is investigated when they disagree.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> a passing run means the same thing on a machine, in the
-  pipeline, and production, because they all ran the same unit (R1, R2);
-  releasing is a selection, so rollback is a selection too — pointing back at
-  the previously validated unit (R4); the running unit has an identity, so an
-  incident can be tied to exactly the code that is running.</li>
-<li><strong>Negative:</strong> every part must be packageable, which rules out arrangements
-  that only work in place, and the packaging step becomes part of every
-  delivery path — packaging bugs become release bugs; configuration that
-  differs per environment must live outside the unit, which means a stated
-  place for it and a habit of keeping secrets and environment values out of
-  the package.</li>
-<li><strong>Neutral / follow-ups:</strong> the confidence claim stops at the environment
-  boundary — scale, live traffic, third-party behaviour, and the production
-  orchestration itself are not proven by validating the unit, and remain named
-  exceptions; parts whose packaging is not yet uniform (an application run
-  from source rather than from its package) deviate from this record until
-  they ship the unit that was tested. The image that developers and the
-  pipeline work in is not a deliverable and is not the unit this record
-  governs: it is a tool for producing and validating the unit, and a change to
-  it is not a release.</li>
+<li>A passing run means the same thing on a machine, in the pipeline, and in production (R1, R2).</li>
+<li>Releasing is a selection, so rollback is a selection: point back at the previously validated unit (R4).</li>
+<li>The running unit has an identity, so an incident ties to exactly the code that runs.</li>
+</ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Every part must be packageable — arrangements that only work in place are out —
+  and packaging joins every delivery path, so packaging bugs become release bugs.</li>
+<li>Per-environment configuration must live outside the unit: a stated place for it,
+  and the habit of keeping secrets and environment values out of the package.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The confidence claim stops at the environment boundary: scale, live traffic,
+  third-party behaviour, and the production orchestration itself are <strong>named
+  exceptions</strong>, not proven by validating the unit.</li>
+<li>Parts packaged non-uniformly (an app run from source, not its package) deviate
+  from this record until they ship the unit that was tested.</li>
+<li>The image developers and the pipeline work in is not a deliverable and not the
+  unit this record governs: it is a tool for producing and validating the unit,
+  and a change to it is not a release.</li>
 </ul>
 
 
