@@ -48,5 +48,10 @@
     "version": "feat-dashboard-nginx-serving",
     "title": "feat-dashboard-nginx-serving",
     "aliases": []
+  },
+  {
+    "version": "docs-editorial-pass",
+    "title": "docs-editorial-pass",
+    "aliases": []
   }
 ]
