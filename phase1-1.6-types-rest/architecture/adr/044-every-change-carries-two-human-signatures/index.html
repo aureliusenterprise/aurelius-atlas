@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3147,6 +3302,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,105 +6296,147 @@
 <li><strong>Date:</strong> 2026-10-08</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Every change that merges carries two human signatures — the task owner and one
+reviewer — enforced by a mechanism that refuses the merge. An assistant may
+produce, test, and review a change; it signs nothing.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Every change that merges into the mainline carries two human signatures: the
-<strong>task owner</strong> — the person who asked for the change, who can explain it, and
-who states how far they verified it locally — and <strong>one reviewer</strong>, a
-second person who confirms independent understanding. An automated assistant
-may produce, test, and review a change, but it signs nothing: accountability
-is carried by the team and cannot be offloaded to a tool. The rule is enforced
-by a mechanism that refuses the merge, not by custom: a change without the
-second approval cannot merge.</p>
+<p><strong>Two signatures, both human.</strong> Every change that merges into the mainline
+carries the <strong>task owner</strong> — the person who asked for the change, who can
+explain it, and who states how far they verified it locally — and <strong>one
+reviewer</strong>, a second person who confirms independent understanding.</p>
+<p><strong>A tool signs nothing.</strong> An automated assistant may produce, test, and review
+a change, but accountability is carried by the team and cannot be offloaded to
+a tool.</p>
+<p><strong>The rule has an enforcement point.</strong> A mechanism refuses the merge without
+the second approval; the rule is not held by custom.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The repository is changed routinely by automated agents as well as by people,
 and the cost of producing a plausible diff has fallen sharply. The obligation
 attached to a change has not: the team must be able to own what it ships, and
 ownership requires understanding.</p>
-<p>Before fast generation, the author's understanding was largely a side effect
-of writing the code by hand. Now a change can arrive working, gated, and
-reviewed by machines while nobody on the team fully understands it. The
-failure is quiet: it surfaces at the next incident, the next change to the
-same area, the next handover — with a delay, which is what makes it debt
-rather than a defect.</p>
-<p>The organisation already requires a second pair of eyes: the contributor
-guide has always stated that every pull request is reviewed by at least one
-other team member. That rule was written for a slower generator; what changes
-when code is produced quickly is how load-bearing it becomes, and a rule held
-only by custom is the first thing a fast queue erodes.</p>
-<p>The decision to make is what a change must carry before it merges, and who is
-answerable when the author is a tool.</p>
+<ul>
+<li><strong>Understanding is no longer a side effect.</strong> Before fast generation, the
+  author's understanding came free with writing the code by hand. Now a change
+  can arrive working, gated, and reviewed by machines while nobody on the team
+  fully understands it. The failure is quiet — it surfaces at the next
+  incident, the next change to the same area, the next handover — and the
+  delay is what makes it debt rather than a defect.</li>
+<li><strong>The oldest review rule needs teeth.</strong> The contributor guide has always
+  required a second pair of eyes. That rule was written for a slower
+  generator; what changes when code is produced quickly is how load-bearing it
+  becomes, and a rule held only by custom is the first thing a fast queue
+  erodes.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — A human answers for every change.</strong> For every merged change there is
-  a named person who can explain it and who carries it; a tool cannot be that
-  person, and "the assistant wrote it" is not an answer to "who owns this?".</li>
-<li><strong>R2 — Understanding is independent.</strong> At least one person besides the task
-  owner reads the change for understanding before it merges; self-approval is
-  not approval.</li>
-<li><strong>R3 — Verification is stated, not assumed.</strong> The task owner records how
-  far they verified the change locally, so a reviewer knows whether "it works"
-  means lint passed or the real system ran; the pipeline's full gate is the
-  guarantee, and the statement is the owner's honest report of what they have
-  personally seen.</li>
-<li><strong>R4 — The rule has an enforcement point.</strong> The second signature is required
-  by a mechanism that refuses the merge, not by a convention that erodes when
-  delivery is late.</li>
-<li><strong>R5 — Cheap enough to keep.</strong> Two signatures on a small team's typical
-  change is minutes, not a ceremony; the rule must not push people to route
-  around it.</li>
-<li><strong>R6 — Knowledge moves with review.</strong> The reviewer is chosen at least partly
-  for who should learn the area, so review doubles as knowledge spread rather
-  than rubber-stamping.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>A human answers for every change.</strong> A named person can explain each merged change and carries it; "the assistant wrote it" is not an answer to "who owns this?".</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Understanding is independent.</strong> At least one person besides the task owner reads the change for understanding before it merges; self-approval is not approval.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Verification is stated, not assumed.</strong> The task owner records how far they verified locally, so a reviewer knows whether "it works" means lint passed or the real system ran.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The rule has an enforcement point.</strong> A mechanism refuses the merge without the second signature — not a convention that erodes when delivery is late.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Cheap enough to keep.</strong> Two signatures on a typical change is minutes, not a ceremony; the rule must not push people to route around it.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>Knowledge moves with review.</strong> The reviewer is chosen at least partly for who should learn the area, so review doubles as knowledge spread.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>One signature (the status quo).</strong> The task owner merges whatever passes
-  the gate. It fails R2: the gate checks the change's form and behavior, not
-  whether anyone understands it, and R6 — knowledge concentrates in whoever
-  prompted the change.</li>
-<li><strong>Machine review is enough.</strong> Let automated review and the gate stand in for
-  the second human. It fails R1 and R2: a machine verdict is evidence, not
-  accountability, and the organisation still needs a person who can explain
-  the change six months from now.</li>
-<li><strong>Committee approval for agent-authored changes.</strong> Treat agent changes as
-  riskier and require more sign-offs. It fails R5 and contradicts the
-  no-privileged-path rule (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>):
-  risk follows the change's blast radius, not the identity of the typist, and
-  a special lane trains the team to avoid declaring assistant involvement.</li>
-<li><strong>Custom only.</strong> Hold the rule by convention, with nothing refusing the
-  merge. It fails R4: the first urgent merge that skips review establishes the
-  exception, and at generated volume the exceptions become the rule silently.</li>
-<li><strong>Do nothing.</strong> Costs nothing today; it fails R1 the first time a change
-  breaks and nobody on the team can explain it.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One signature (the status quo)</td>
+<td>R2: the gate checks form and behavior, not whether anyone understands; R6: knowledge concentrates in whoever prompted the change.</td>
+</tr>
+<tr>
+<td>Machine review is enough</td>
+<td>R1 and R2: a machine verdict is evidence, not accountability — the organisation still needs a person who can explain the change six months from now.</td>
+</tr>
+<tr>
+<td>Committee approval for agent changes</td>
+<td>R5, and it contradicts the no-privileged-path rule (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>): risk follows blast radius, not the typist's identity, and a special lane trains the team to hide assistant involvement.</td>
+</tr>
+<tr>
+<td>Custom only</td>
+<td>R4: the first urgent merge that skips review establishes the exception, and at generated volume the exceptions become the rule silently.</td>
+</tr>
+<tr>
+<td>Do nothing</td>
+<td>R1, the first time a change breaks and nobody on the team can explain it.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> every merged change has a human who can explain it (R1) and a
-  second human who is starting to (R2, R6); the verification statement makes
-  the strength of "it works" visible at review time (R3); the merge mechanism
-  turns the oldest review rule in the guide into an enforcement point (R4),
-  which is what
+<li>Every merged change has a human who can explain it (R1) and a second human
+  who is starting to (R2, R6).</li>
+<li>The verification statement makes the strength of "it works" visible at
+  review time (R3).</li>
+<li>The merge mechanism turns the oldest review rule in the guide into an
+  enforcement point (R4) — what
   <a href=".././017-shared-concepts-change-only-compatibly/">017</a> asks of
   review-only conventions.</li>
-<li><strong>Negative:</strong> two humans per change is the scarcest budget in a small team,
-  and generation volume can make the second signature the bottleneck — the
-  pressure will be to approve quickly, which R6 mitigates only if reviewer
-  selection stays deliberate; declaring the task owner adds one line of
-  ceremony to every pull request; and the merge mechanism can be overridden by
-  repository administrators, so it needs the same habit as the gate.</li>
-<li><strong>Neutral / follow-ups:</strong> the mechanism that makes R4 true lives in the
-  hosting platform's merge settings — an implementation detail of where the
-  rule is enforced, not part of the decision itself. The pull request template
-  carries the two signatures and the verification statement. Review by an
-  assistant is
-  governed separately
+</ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Two humans per change is the scarcest budget in a small team, and
+  generation volume can make the second signature the bottleneck — the
+  pressure is to approve quickly, which R6 mitigates only if reviewer
+  selection stays deliberate.</li>
+<li>Declaring the task owner adds one line of ceremony to every pull request.</li>
+<li>The merge mechanism can be overridden by repository administrators, so it
+  needs the same habit as the gate (the shared set of checks every change must pass, <a href=".././014-the-gate-is-defined-once-and-runs-everywhere/">014</a>).</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The mechanism that makes R4 true lives in the hosting platform's merge
+  settings — an implementation detail of where the rule is enforced, not part
+  of the decision. The pull request template carries the two signatures and
+  the verification statement.</li>
+<li>Assistant review is governed separately
   (<a href=".././043-ai-assisted-review-informs-the-signatures-it-does-not-replace-them/">043</a>);
   the no-privileged-path rule is this record's neighbour, not its source
   (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>); what the
   reviewer may rely on the gate for is decided by the blocking rule
   (<a href=".././015-a-change-answers-for-what-it-caused/">015</a>).</li>
 </ul>
+<details class="question">
+<summary>The owner understands the change — why is a second human needed?</summary>
+<p>The owner's understanding is exactly what generation makes unreliable: a
+change can arrive working and gated while nobody, including the owner,
+fully grasps it (R2). The second reader is the only independent check
+that understanding exists at all — and choosing that reader deliberately
+is how knowledge spreads instead of concentrating (R6).</p>
+</details>
 
 
 

@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2985,6 +3140,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,106 +6296,147 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Acceptance trigger (swept 2026-10-19): increment 6.2 makes the authorizer's policy the one
+permission answer on every endpoint; accepted in that pull request. Until then the record's stated
+condition stands: every admitted person may do everything.</p>
+<p>The answer to "what is this person allowed to do?" lives in one named place,
+apart from the answer to "who is this person?". Surfaces ask and act; they do
+not invent permission rules in code.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The answer to "what is this person allowed to do?" is held and enforced in one
-named place, deliberately apart from the answer to "who is this person?".
-Surfaces ask that place and act on the answer; they do not invent their own
-rules in code. Until this record is accepted, every authenticated person can
-do everything on every surface, and that is a stated condition, not a
-security property.</p>
+<p><strong>One authorizer, consulted not embedded.</strong> The answer to "what is this person
+allowed to do?" is held and enforced in one named place, deliberately apart
+from the answer to "who is this person?" (<a href=".././007-one-shared-identity-provider/">007</a>).
+Surfaces ask that place and act on the answer; <strong>they do not invent their own
+rules in code.</strong></p>
+<p>Until this record is accepted, every authenticated person can do everything on
+every surface, and that is <strong>a stated condition, not a security property.</strong></p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The system already knows who a person is: one identity provider admits people
-and every surface verifies what it issues, so no surface keeps its own
-account list. That answers admission. It does not answer permission. Today,
-once a person is admitted anywhere, they are admitted everywhere: the screens,
-the APIs behind them, and the operational tooling act on the verified identity
-and nothing else.</p>
+and every surface verifies what it issues, so no surface keeps its own account
+list. That answers admission; it does not answer permission. Today, once a
+person is admitted anywhere, they are admitted everywhere: the screens, the
+APIs behind them, and the operational tooling act on the verified identity and
+nothing else.</p>
 <p>For the system as it stands — an arrangement being validated, with examples
 that demonstrate the shape — that is workable, and pretending otherwise would
-be false. But the system is meant to be deployed into environments that keep
-business data, and there the question "why could this person change that?"
-has to have an answer. Without a decided arrangement, the answer arrives by
-accident: the first feature that needs a restriction grows a private check,
-the second feature grows a different one, and permission — the one security
-property auditors ask about most directly — becomes folklore scattered through
-surface code.</p>
+be false. <strong>But the system is meant to be deployed into environments that keep
+business data</strong>, and there "why could this person change that?" has to have an
+answer.</p>
+<p><strong>If nobody decides, the arrangement that exists is accidental:</strong> the first
+feature that needs a restriction grows a private check, the second grows a
+different one, and permission — the one security property auditors ask about
+most directly — becomes folklore scattered through surface code.</p>
 <p>The forces are the same ones that settled identity: several surfaces, one
-truth, and revocation that must take effect everywhere at once. Permission
-inherits those forces and adds one: a permission rule that lives inside a
-surface can only be changed by releasing that surface, while the business
-reason for the rule changes on its own schedule.</p>
-<p>The decision to make is where the answer to "what may this person do?" lives,
-who enforces it, and what a surface must do to honour it. It is deliberately
-separate from the identity decision: a system can change how it authenticates
-without rewriting its permissions, and vice versa.</p>
+truth, revocation that takes effect everywhere at once. Permission inherits
+them and adds one: <strong>a rule inside a surface can only change by releasing that
+surface, while the business reason for the rule changes on its own schedule.</strong></p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — One answer about permission.</strong> Exactly one authoritative statement of
-  what each person or role may do; no surface keeps a private rule that
-  overrides or supplements it.</li>
-<li><strong>R2 — Revocation of permission is one action.</strong> Withdrawing an allowance
-  withdraws it at every surface without releasing those surfaces.</li>
-<li><strong>R3 — Surfaces ask, then act.</strong> A surface enforces by consulting the
-  decided answer, not by embedding the rule itself; the security-critical
-  judgement is written, reviewed, and patched once.</li>
-<li><strong>R4 — The answer is auditable.</strong> "Who could do X, and when?" can be
-  answered from the arrangement's own records rather than reconstructed from
-  surface code and logs.</li>
-<li><strong>R5 — Permission runs where validation runs.</strong> The permission path is live
-  on one machine and in the pipeline, so the restricted path is exercised
-  routinely, not discovered in a production incident.</li>
-<li><strong>R6 — Cheap to keep true.</strong> A new surface or a new action joins the decided
-  arrangement rather than inventing its own; the default is the shared answer,
-  not a private check.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>One answer about permission.</strong> One authoritative statement of what each person or role may do; no private surface rules.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Revocation is one action.</strong> Withdrawing an allowance withdraws it at every surface, without releasing those surfaces.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Surfaces ask, then act.</strong> Enforcement consults the decided answer; the security-critical judgement is written, reviewed, and patched once.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The answer is auditable.</strong> "Who could do X, and when?" answered from the arrangement's records, not a code survey.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Permission runs where validation runs.</strong> The restricted path is live on one machine and in the pipeline, exercised routinely.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>Cheap to keep true.</strong> A new surface or action joins the decided arrangement; the default is the shared answer, not a private check.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Permission inside each surface.</strong> Each part decides for itself what an
-  authenticated person may do. It fails R1 — the truth is wherever the last
-  check was written — R2, because withdrawal is a release per surface, and
-  R4, because the audit is a code survey.</li>
-<li><strong>Permission at the network edge only.</strong> One gate in front of everything
-  decides. It fails R3 for anything the edge cannot see — an event consumed
-  directly, a call between parts — and R4, because the edge knows what was
-  attempted, not what the business action meant.</li>
-<li><strong>Role names baked into surface code.</strong> Familiar and quick. It fails R2 and
-  R3: the meaning of a role is then distributed across every release, and
-  changing what a role may do is a code change everywhere at once.</li>
-<li><strong>Defer permission entirely (the status quo).</strong> Honest for a system with no
-  business data yet. It fails R1 by leaving the question unowned, and it
-  fails R6 by making the first urgent restriction a bespoke check under time
-  pressure — the arrangement every later one copies.</li>
-<li><strong>Do nothing and hope the deployment adds it.</strong> It fails R5: a permission
-  path that exists only in a deployment is a path no earlier run has
-  exercised.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Permission inside each surface</td>
+<td>R1: the truth is wherever the last check was written. R2: withdrawal is a release per surface. R4: the audit is a code survey.</td>
+</tr>
+<tr>
+<td>Permission at the network edge only</td>
+<td>R3 for anything the edge can't see — an event consumed directly, a call between parts. R4: the edge knows what was attempted, not what the business action meant.</td>
+</tr>
+<tr>
+<td>Role names baked into surface code</td>
+<td>Familiar and quick; R2 and R3: the meaning of a role is distributed across every release, and changing what a role may do is a code change everywhere at once.</td>
+</tr>
+<tr>
+<td>Defer permission entirely (status quo)</td>
+<td>Honest for a system with no business data yet. R1: the question is unowned. R6: the first urgent restriction is a bespoke check under time pressure — the arrangement every later one copies.</td>
+</tr>
+<tr>
+<td>Do nothing, hope the deployment adds it</td>
+<td>R5: a permission path that exists only in a deployment is a path no earlier run has exercised.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> permission questions have one address (R1, R4); withdrawal is
-  one act instead of a release checklist (R2); surfaces stay thin, as identity
-  made them thin; and the restricted path is exercised where every other
-  security path is exercised (R5).</li>
-<li><strong>Negative:</strong> one more decision point in the request path, with its own
-  failure mode to design for — what a surface does when the permission answer
-  is unreachable is a question this record must eventually answer; the
-  arrangement is one more part to run locally and in the pipeline; and naming
-  roles is a business act that will be wrong sometimes, so the arrangement
-  must make being wrong cheap to fix.</li>
-<li><strong>Neutral / follow-ups:</strong> this record is Proposed because the decision has
-  not been made: today every authenticated person can do everything, and no
-  mechanism enforces otherwise. The identity arrangement it sits beside is
-  already accepted
-  (<a href=".././007-one-shared-identity-provider/">007</a>) and this record deliberately
-  does not re-open it — admission and permission stay separate answers even if
-  one product ends up holding both. The placeholder page on access management
-  under the architecture section remains a heading until this record is
-  accepted and written from its answer; the machine-identity question for
-  part-to-part calls is owned by the boundary-identity record
-  (<a href=".././013-services-prove-who-they-are-at-every-boundary/">013</a>) and is not
-  this record's to decide; and when this record is accepted, the named
-  mechanism must exist in the spine before the status changes.</li>
+<li>Permission questions have one address (R1, R4); withdrawal is one act, not a
+  release checklist (R2).</li>
+<li>Surfaces stay thin, as identity made them thin.</li>
+<li>The restricted path is exercised where every other security path is exercised
+  (R5).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>One more decision point in the request path, with its own failure mode to
+  design for: <strong>what a surface does when the permission answer is unreachable
+  is a question this record must eventually answer.</strong></li>
+<li>The arrangement is one more part to run locally and in the pipeline.</li>
+<li>Naming roles is a business act that is wrong sometimes, so the
+  arrangement must make being wrong cheap to fix.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The identity arrangement it sits beside is accepted
+  (<a href=".././007-one-shared-identity-provider/">007</a>) and stays re-opened-free:
+  admission and permission remain separate answers even if one product holds
+  both. The access-management placeholder page stays a heading until this record
+  is accepted and written from its answer.</li>
+<li>Machine identity for part-to-part calls belongs to
+  <a href=".././013-services-prove-who-they-are-at-every-boundary/">013</a>, not here.</li>
+<li>On acceptance, <strong>the named mechanism must exist in the spine (the parts that
+  always stay, <a href=".././002-modules-are-removable-slices/">002</a>) before the status
+  changes.</strong></li>
+</ul>
+<details class="question">
+<summary>What if the authorizer is unreachable — fail open or closed?</summary>
+<p>Failing open would make availability the tiebreaker on every security
+question; this record's posture
+(<a href=".././037-the-system-itself-promises-nothing-about-staying-up/">037</a>)
+refuses promises it can't keep in either direction. The posture it takes
+is the obligation: the behaviour is a named design decision at the seam,
+not an accident of timeout handling.</p>
+</details>
 
 
 

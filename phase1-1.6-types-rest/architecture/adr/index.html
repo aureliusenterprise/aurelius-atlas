@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5626,7 +5781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5790,7 +5945,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6141,7 +6296,7 @@ area you are about to work in; the rest can wait.</p>
 <tr>
 <td><a href="./028-operational-secret-handling-has-a-named-owner/">028</a></td>
 <td>Operational secret handling has a named owner — rotation, loss, and break-glass rehearsed, not invented.</td>
-<td>Proposed</td>
+<td>Accepted</td>
 </tr>
 <tr>
 <td><a href="./029-shipped-artifacts-are-signed-and-their-origin-is-provable/">029</a></td>
@@ -6151,12 +6306,12 @@ area you are about to work in; the rest can wait.</p>
 <tr>
 <td><a href="./030-interfaces-between-parts-are-verified-not-assumed/">030</a></td>
 <td>Interfaces between parts are verified, not assumed — the agreement is stated once and drift fails the change.</td>
-<td>Proposed</td>
+<td>Accepted</td>
 </tr>
 <tr>
 <td><a href="./031-runtime-versions-have-a-declared-support-window/">031</a></td>
 <td>Runtime versions have a declared support window — one answer per runtime, bumps planned, nothing floating.</td>
-<td>Proposed</td>
+<td>Accepted</td>
 </tr>
 <tr>
 <td><a href="./032-shared-streams-are-named-by-a-declared-convention/">032</a></td>
@@ -6206,7 +6361,7 @@ area you are about to work in; the rest can wait.</p>
 <tr>
 <td><a href="./041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path/">041</a></td>
 <td>A failure of the running system has an owner and a rehearsed path — response owned, written, practised.</td>
-<td>Proposed</td>
+<td>Accepted</td>
 </tr>
 <tr>
 <td><a href="./042-every-dataset-has-an-owner-who-answers-for-it/">042</a></td>
@@ -6269,7 +6424,7 @@ area you are about to work in; the rest can wait.</p>
 <ul>
 <li><strong>Decisions are inherited.</strong> Every codebase is read first by people who were
   not in the room — onboarding, handover, a fork. Without the reasoning, they
-  cannot tell a deliberate constraint from an accident, and will "fix"
+  cannot tell a deliberate constraint from an accident, and "fix"
   decisions that were the whole point.</li>
 <li><strong>Decisions outlive implementations.</strong> Frameworks and libraries change; the
   business reasoning behind a modular, removable design does not.</li>
@@ -6331,17 +6486,19 @@ property survives the replacement and says what replaced it.</p>
   are never reused.</li>
 <li>Statuses: <strong>Proposed</strong> → <strong>Accepted</strong>, then optionally <strong>Superseded</strong> (by a
   later record) or <strong>Deprecated</strong>.</li>
-<li><strong>Accepted</strong> means the decision is made and the mechanism that makes it
-  true exists in the spine of the system. A single part or stack that
-  deviates is a named deviation: it belongs in the record's follow-ups and
-  does not by itself block acceptance. <strong>Proposed</strong> means the decision is
-  not yet made, or the mechanism does not yet exist where it must. The test
-  is where the mechanism lives, not how uniformly it is used: a part that
-  skips an existing mechanism is a named deviation under an Accepted record;
-  a rule with no enforcement point anywhere is Proposed. A stated convention
-  that the parts follow is itself an enforcement point: the record is
-  Accepted and a missing automated check is a named gap, not a Proposed
-  status.</li>
+</ul>
+<details class="question">
+<summary>Proposed or Accepted — what exactly is the test?</summary>
+<p>Where the mechanism lives, not how uniformly it is used. <strong>Accepted</strong> means the
+decision is made and the mechanism that makes it true exists in the spine of the
+system; a part that skips an existing mechanism is a named deviation in the
+record's follow-ups, which does not by itself block acceptance. <strong>Proposed</strong>
+means the decision is not yet made, or the mechanism does not yet exist where it
+must. A stated convention the parts follow is itself an enforcement point: the
+record is Accepted and a missing automated check is a named gap, not a Proposed
+status.</p>
+</details>
+<ul>
 <li>Never edit the decision of an accepted record. When the business situation
   changes, write a new record that supersedes it and update the old record's
   status line only.</li>
@@ -6373,7 +6530,10 @@ definitions.</p>
 <li><strong>Spine</strong> — the parts of the codebase that stay no matter which optional
   capabilities are removed: the example apps, shared libraries, and the
   development infrastructure
-  (<a href="./002-modules-are-removable-slices/">002</a>).</li>
+  (<a href="./002-modules-are-removable-slices/">002</a>). In this repository the
+  catalogue's own server, dashboard, and search store form the spine — a
+  named deviation recorded by
+  <a href="./050-the-system-carries-only-what-the-catalogue-needs/">050</a>.</li>
 <li><strong>Slice</strong> — an optional capability and the infrastructure it owns, removed
   as one unit (<a href="./002-modules-are-removable-slices/">002</a>).</li>
 <li><strong>The gate</strong> — the shared rule set that runs at commit time and in the
@@ -6382,11 +6542,14 @@ definitions.</p>
   (<a href="./005-dev-infra-starts-with-the-app/">005</a>); where a record speaks of a
   <strong>stream</strong>, it means one of the platform's topics, named by
   <a href="./032-shared-streams-are-named-by-a-declared-convention/">032</a> and
-  guaranteed per <a href="./027-every-stream-carries-a-stated-delivery-guarantee/">027</a>.</li>
+  guaranteed per <a href="./027-every-stream-carries-a-stated-delivery-guarantee/">027</a>.
+  The slice was removed by
+  <a href="./050-the-system-carries-only-what-the-catalogue-needs/">050</a>; the term
+  appears only in the records written for that slice.</li>
 <li><strong>Collection point</strong> — the single seam where parts hand over traces,
   metrics, and logs (<a href="./016-the-system-observes-itself-internally/">016</a>).</li>
 <li><strong>Taught path</strong> — the arrangement an example demonstrates, which a future
-  reader will copy (<a href="./009-examples-must-run-and-be-tested/">009</a>).</li>
+  reader copies (<a href="./009-examples-must-run-and-be-tested/">009</a>).</li>
 <li><strong>Delivery plane</strong> — the pipeline activity that validates and releases the
   system, distinct from the running system; the only place the data boundary
   may be crossed, and only at named points
@@ -6394,19 +6557,36 @@ definitions.</p>
 <li><strong>Dataset owner</strong> — the named role that answers for a dataset's shape,
   lifetime, and quality
   (<a href="./042-every-dataset-has-an-owner-who-answers-for-it/">042</a>).</li>
+<li><strong>Swept (date tag)</strong> — a note in a record's status block that its wording
+  passed the plain-language readability sweep on that date (the rules of the
+  <a href="../../contributor-guide/writing-style/">writing style guide</a>); the tag
+  touches wording only, never the decision, status, or trigger lines.</li>
 </ul>
 <h2 id="gaps-with-a-record-but-no-mechanism-yet">Gaps with a record but no mechanism yet<a class="headerlink" href="#gaps-with-a-record-but-no-mechanism-yet" title="Permanent link">&para;</a></h2>
 <p>Some questions the records lean on were listed here when they had no record at
 all. Each now has one, Proposed: the question is framed, the requirements are
 written, and the decision — including the numbers and owners those records
 defer — is what acceptance adds.</p>
+<details class="info">
+<summary>Which records are Proposed</summary>
+<p>Eight: <a href="./023-storage-schema-changes-by-recorded-migration/">023</a>,
+<a href="./025-data-has-a-stated-lifetime/">025</a>,
+<a href="./026-the-system-can-be-brought-back-from-a-named-snapshot/">026</a>,
+<a href="./027-every-stream-carries-a-stated-delivery-guarantee/">027</a> (its slice
+removed by <a href="./050-the-system-carries-only-what-the-catalogue-needs/">050</a>),
+<a href="./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are/">038</a>,
+<a href="./040-the-system-raises-its-hand-when-it-is-broken/">040</a>,
+<a href="./042-every-dataset-has-an-owner-who-answers-for-it/">042</a>, and
+<a href="./052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">052</a>
+— the governance mechanisms that need an enforcement point before they are
+decisions the system keeps; 052's harness arrives with increment 0.4. Each
+is listed in the log above as Proposed.</p>
+</details>
 <p>The gaps also sequence the work: taking on real stored data needs the
 migration path (<a href="./023-storage-schema-changes-by-recorded-migration/">023</a>)
 and the recovery path
 (<a href="./026-the-system-can-be-brought-back-from-a-named-snapshot/">026</a>)
-first; and credentials cannot honestly claim rotation until operational secret
-handling
-(<a href="./028-operational-secret-handling-has-a-named-owner/">028</a>) is decided.</p>
+first.</p>
 <ul>
 <li><strong>Storage schema lifecycle</strong> —
   <a href="./023-storage-schema-changes-by-recorded-migration/">023</a>, which
@@ -6421,35 +6601,19 @@ handling
 <li><strong>Event delivery guarantees</strong> —
   <a href="./027-every-stream-carries-a-stated-delivery-guarantee/">027</a>, the
   behaviour beside the content that
-  <a href="./017-shared-concepts-change-only-compatibly/">017</a> does not cover.</li>
-<li><strong>Operational secret handling</strong> —
-  <a href="./028-operational-secret-handling-has-a-named-owner/">028</a>, the half
-  <a href="./008-secrets-never-in-plaintext/">008</a> named as nobody's decision.</li>
-<li><strong>Interface verification</strong> —
-  <a href="./030-interfaces-between-parts-are-verified-not-assumed/">030</a>, the
-  standing question <a href="./004-one-shared-domain-model/">004</a> left open for
-  travelling representations.</li>
-<li><strong>Runtime support windows</strong> —
-  <a href="./031-runtime-versions-have-a-declared-support-window/">031</a>, what
-  <a href="./020-dependencies-stay-current-by-default/">020</a> does not speak to.</li>
+  <a href="./017-shared-concepts-change-only-compatibly/">017</a> does not cover. The
+  slice it governs was removed by
+  <a href="./050-the-system-carries-only-what-the-catalogue-needs/">050</a>; the record
+  stays open in case a queue returns.</li>
 <li><strong>Authorization</strong> —
   <a href="./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are/">038</a>,
   the permission question the identity record
   (<a href="./007-one-shared-identity-provider/">007</a>) deliberately leaves open.</li>
-<li><strong>Data protection in transit and at rest</strong> —
-  <a href="./039-data-is-protected-where-it-travels-and-where-it-rests/">039</a>, the
-  protection of the data itself that the credential rule
-  (<a href="./008-secrets-never-in-plaintext/">008</a>) does not cover.</li>
 <li><strong>Alerting</strong> —
   <a href="./040-the-system-raises-its-hand-when-it-is-broken/">040</a>, the noticing
   the collection point
   (<a href="./034-signals-meet-at-one-replaceable-collection-point/">034</a>) does not
   do by itself.</li>
-<li><strong>Incident response</strong> —
-  <a href="./041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path/">041</a>,
-  the path that begins where
-  <a href="./040-the-system-raises-its-hand-when-it-is-broken/">040</a>'s announcement
-  arrives.</li>
 <li><strong>Dataset ownership</strong> —
   <a href="./042-every-dataset-has-an-owner-who-answers-for-it/">042</a>, the answer
   the migration path

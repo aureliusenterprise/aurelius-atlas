@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3337,6 +3492,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,43 +6296,104 @@
 <li><strong>Date:</strong> 2026-10-09</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>The catalogue is converted in increments: one reviewable change, one named
+behaviour, one written specification that comes before the code. An increment
+is not complete until its rules are tested, its parity checks pass, and its
+decisions are recorded.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>We will convert the catalogue in increments. Each increment is one change of reviewable size that
-ports one named behaviour; it begins with a short written specification of the behaviour — scope,
-rules with identifiers, origin in the old system, deviations, acceptance — and it is not complete
-until its rules are tested, its parity checks pass, and its decisions are recorded.</p>
+<p><strong>Increment, spec, code — in that order.</strong> The conversion proceeds in
+increments. Each is one change of reviewable size that ports one named
+behaviour, and it begins with a short written specification of that behaviour:
+scope, rules with identifiers, origin in the old system, deviations, and
+acceptance.</p>
+<p><strong>Definition of done.</strong> An increment is not complete until its rules are
+tested, its parity checks pass, and its decisions are recorded.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>A full rewrite delivered at once cannot be reviewed, and a review that cannot be done becomes a
-signature without understanding (<a href=".././044-every-change-carries-two-human-signatures/">044</a>).
-The old system is large; its behaviour is spread over many classes. Without a stated scope per
-change, reviewers cannot tell an omission from a decision, and the project cannot tell how far it
-has come.</p>
+<ul>
+<li><strong>A big-bang rewrite cannot be reviewed</strong> — and a review that cannot be
+  done becomes a signature without understanding
+  (<a href=".././044-every-change-carries-two-human-signatures/">044</a>).</li>
+<li><strong>The old system is large</strong> and its behaviour is spread over many classes.</li>
+<li><strong>Without a stated scope per change</strong>, reviewers cannot tell an omission
+  from a decision, and the project cannot tell how far it has come.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>R1 — Reviewable size.</strong> A reviewer can understand one change in one sitting.</li>
-<li><strong>R2 — Stated meaning.</strong> What a change is supposed to do is written down before it is judged.</li>
-<li><strong>R3 — Measurable progress.</strong> At any moment it is clear which behaviours are done.</li>
-<li><strong>R4 — Decisions travel with the change.</strong> The reasons for a change are recorded in the same
-  change, not reconstructed later.</li>
-</ul>
+<p>Any acceptable arrangement must deliver:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>Reviewable size.</strong> A reviewer can understand one change in one sitting.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Stated meaning.</strong> What a change is supposed to do is written down before it is judged.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Measurable progress.</strong> At any moment it is clear which behaviours are done.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Decisions travel with the change.</strong> The reasons for a change are recorded in the same change, not reconstructed later.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Big-bang rewrite, reviewed at the end.</strong> Fails R1 and R3.</li>
-<li><strong>Increments without written specifications.</strong> Meets R1 but fails R2: the code becomes its own
-  specification and review checks consistency, not intent.</li>
-<li><strong>Feature tickets in an external tracker.</strong> Partly meets R3 but fails R4: the reasoning lives
-  outside the repository and is lost with the tracker.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Big-bang rewrite, reviewed at the end</td>
+<td>R1 and R3.</td>
+</tr>
+<tr>
+<td>Increments without written specs</td>
+<td>R1; R2: the code becomes its own specification, and review checks consistency, not intent.</td>
+</tr>
+<tr>
+<td>Feature tickets in an external tracker</td>
+<td>Partly meets R3; R4: the reasoning lives outside the repository and is lost with the tracker.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> every change has a stated purpose and an objective definition of done; progress is
-  visible in the repository itself.</li>
-<li><strong>Negative:</strong> writing a specification takes time before any code exists, and splitting large
-  behaviours into increments occasionally needs temporary scaffolding.</li>
-<li><strong>Neutral / follow-ups:</strong> the roadmap, specification template and design log live in
-  <a href="../../conversion/">the conversion ledger</a>; the pull request template asks for the
-  increment and the records it touches.</li>
+<li>Every change has a stated purpose and an objective definition of done;
+  progress is visible in the repository itself.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Writing a specification takes time before any code exists.</li>
+<li>Splitting large behaviours into increments occasionally needs temporary
+  scaffolding.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The roadmap, specification template, and design log live in
+  <a href="../../conversion/">the conversion ledger</a>; the pull request template
+  asks for the increment and the records it touches.</li>
+</ul>
+<details class="question">
+<summary>Why specify before coding, when the spec may be wrong?</summary>
+<p>Because the spec is where a reviewer can object cheaply: written rules
+with identifiers can be argued with, tested, and cited (R2), while a
+merged implementation argues by existing. A spec that turns out wrong is
+amended in the open; an implementation that was silently wrong is found
+in production.</p>
+</details>
 
 
 

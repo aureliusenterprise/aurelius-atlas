@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -4640,6 +4795,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Components & Interfaces
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -4655,6 +4827,37 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Interfaces
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5638,7 +5841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5679,6 +5882,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Interfaces
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -5706,7 +5928,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5811,6 +6033,95 @@
 
 
 <h1 id="components-interfaces">Components &amp; Interfaces<a class="headerlink" href="#components-interfaces" title="Permanent link">&para;</a></h1>
+<p>The parts of the running system (increments 0.2–0.6 today) and the interfaces between them.
+The production shape is this same set — one service, one store, one identity provider, one signal
+path — with the deployment supplying certificates and endpoints. The development arrangement
+mirrors it; where a row describes development, that is labelled.</p>
+<pre class="mermaid"><code>graph LR
+    B[Browser] --&gt;|HTTPS: REST| S[Catalogue service]
+    S --&gt;|TLS + credentials| E[(Search store)]
+    S --&gt;|TLS| O[Signal collector]
+    B --&gt;|OIDC| K[Identity provider]
+    K --&gt;|TLS| P[(Provider database)]
+    O --&gt; G[Signal backends]</code></pre>
+<p>The catalogue serves browsers and the store serves the catalogue; identity and observation sit
+beside the path, not on it.</p>
+<p><strong>Current implementations.</strong> The catalogue service is a FastAPI app
+(<code>aurelius-atlas-server</code>), serving on Atlas's own port; the dashboards are the vendored Atlas
+<code>dashboardv2</code>/<code>dashboardv3</code>, built from 2.4.0 source; the search store is Elasticsearch 9,
+reached through <code>aurelius-atlas-store-es</code>; the identity provider is Keycloak, on its own
+Postgres; the collector and the signal backends are an OpenTelemetry Collector with Prometheus,
+Tempo, Loki, and Grafana (<code>dev/observability</code>).</p>
+<details class="question">
+<summary>Where is the event plane?</summary>
+<p>Atlas integrations hook a Kafka stream: hook messages in, change notifications out. The
+catalogue carries no streaming plane — the template's event slice was removed
+(<a href="../../adr/050-the-system-carries-only-what-the-catalogue-needs/">ADR 050</a>,
+<a href="../../conversion/deviations/">DV-01</a>) — so every integration is a REST call, and the
+catalogue's change events are its own store records (audit events arrive with increment 3.5).</p>
+</details>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Role</th>
+<th>Contract it offers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Catalogue service</td>
+<td>The catalogue's API — Atlas 2.4.0's REST contract; owns the store's lifetime at start-up</td>
+<td>HTTPS; configured only through its environment (<a href="../../adr/018-settings-arrive-at-startup-through-one-channel/">ADR 018</a>)</td>
+</tr>
+<tr>
+<td>Dashboards</td>
+<td>The Atlas UI, served by the catalogue service from the API's origin</td>
+<td>Static files; the API takes precedence (DD-018)</td>
+</tr>
+<tr>
+<td>Search store</td>
+<td>The only store: system of record and search index at once (<a href="../../adr/047-one-search-store-is-the-system-of-record/">ADR 047</a>)</td>
+<td>TLS with certificate verification and credentials</td>
+</tr>
+<tr>
+<td>Identity provider</td>
+<td>The shared sign-in for every authenticated surface (<a href="../../adr/007-one-shared-identity-provider/">ADR 007</a>); the examples use it today, the API from 6.1</td>
+<td>OIDC over verified TLS</td>
+</tr>
+<tr>
+<td>Provider database</td>
+<td>The identity provider's own store, and the template examples' — not the catalogue's (ADR 047)</td>
+<td>TLS with full verification</td>
+</tr>
+<tr>
+<td>Signal collector</td>
+<td>The single collection point for the system's signals (<a href="../../adr/034-signals-meet-at-one-replaceable-collection-point/">ADR 034</a>)</td>
+<td>Signals leave the system only through it; a deployment points the exporter at its own collector</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">No endpoint needs a login yet</p>
+<p>The identity provider signs people in today for the template examples, but the API accepts
+anonymous calls and the session reports no user, groups, or permissions. Authentication
+arrives with increment 6.1; the difference is recorded as
+<a href="../../conversion/deviations/">DV-04</a> until then.</p>
+</div>
+<h2 id="interfaces">Interfaces<a class="headerlink" href="#interfaces" title="Permanent link">&para;</a></h2>
+<p>The REST contract is Atlas 2.4.0's, proven by parity scenarios
+(<a href="../../adr/046-the-catalogue-keeps-its-public-contract/">ADR 046</a>,
+<a href="../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">ADR 052</a>).
+The service–store interface is the store library, https-only. Signals leave only through the
+collector (<a href="../../adr/034-signals-meet-at-one-replaceable-collection-point/">ADR 034</a>). Every
+service-to-service path is TLS with CA verification
+(<a href="../security/data-encryption/">data encryption</a>). The endpoint names, ports, and settings of each
+path belong to the parts themselves: the server's knobs are in
+<a href="../../../api-reference/apps/aurelius-atlas-server/">its design documentation</a>, the store's in
+<a href="../../../api-reference/libs/python/aurelius-atlas-store-es/">its library's</a>.</p>
+<p>TLS material is per project — declared, issued, and cleaned per project, development material
+only (<a href="../../../contributor-guide/tls-certificates/">TLS Certificates</a>). A deployment serves with
+its own certificates.</p>
 
 
 

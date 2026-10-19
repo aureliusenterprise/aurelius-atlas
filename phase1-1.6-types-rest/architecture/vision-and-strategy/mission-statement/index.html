@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5638,7 +5793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5706,7 +5861,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5805,6 +5960,41 @@
 
 
 <h1 id="mission-statement">Mission Statement<a class="headerlink" href="#mission-statement" title="Permanent link">&para;</a></h1>
+<p>Aurelius Atlas exists to make data governance of the data lake work the way its users already know —
+so people can find and trust their data without waiting on IT — on a stack one small team can operate
+and extend.</p>
+<p>The business promise is agility: faster access to information, less dependency on IT, and data assets
+organisations can act on. The catalogue delivers that as a single source of truth on data assets:
+where data lives, who is accountable for it, how it moved and changed, and how sensitive it is.</p>
+<p>The interface stays business-user-friendly and familiar, so nobody has to relearn it; existing clients,
+integrations, and muscle memory keep working while the implementation underneath is replaced
+(<a href="../../adr/046-the-catalogue-keeps-its-public-contract/">ADR 046</a>). Every visible difference is a
+recorded <a href="../../conversion/deviations/">deviation</a>, never a silent one.</p>
+<details class="info">
+<summary>What the fidelity promise does not cover</summary>
+<p>Fidelity is the REST wire format and the dashboard — the paths a client and a user touch.
+The Kafka notification stream and hook messages that surrounded Atlas are out of scope
+(<a href="../../conversion/deviations/">DV-01</a>, <a href="../../adr/050-the-system-carries-only-what-the-catalogue-needs/">ADR 050</a>);
+integrations that watched the feed poll the API instead.</p>
+</details>
+<p>Keeping that promise affordable is the engineering mission. The system of record is one search store —
+Elasticsearch 9 — replacing the JanusGraph, HBase and Solr assembly that made self-hosted Atlas hard
+to run (<a href="../../adr/047-one-search-store-is-the-system-of-record/">ADR 047</a>). The system carries only
+what the catalogue needs: one HTTP service, one dashboard, one store, shared identity, and
+self-observation (<a href="../../adr/050-the-system-carries-only-what-the-catalogue-needs/">ADR 050</a>).</p>
+<details class="question">
+<summary>Why replace the store assembly at all?</summary>
+<p>Because operating it is the job Atlas made the user take on: a graph database, a column
+store, and a search index must each be deployed, versioned, tuned, backed up, and kept
+consistent with the others. Catalogue data answers five verbs — write, read, search,
+traverse, classify — and ADR 047's argument is that one search store serves all five, so
+self-hosting becomes running one service and one store.</p>
+</details>
+<p>The standing promise to its users is fidelity: a ported behaviour is accepted only when parity
+scenarios — expected responses read from the Atlas 2.4.0 source code and its tests
+(<a href="../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">ADR 052</a>) —
+prove the new system behaves like the old one, and the conversion proceeds in specified, reviewed
+increments (<a href="../../adr/051-the-conversion-proceeds-in-specified-increments/">ADR 051</a>).</p>
 
 
 

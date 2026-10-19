@@ -44,6 +44,16 @@ creation_rules:
 
 Next, create a new branch and commit your changes. After pushing the branch to GitHub, create a pull request to merge the changes into the `main` branch. Have a team member review and approve the pull request. Once it is merged, a GitHub action rotates the encryption on all encrypted files in the repository to include your public key and pushes the re-encrypted files to `main`.
 
+```
+graph LR
+    K[Add your public key to .sops.yaml] -->|PR| RV[Team review]
+    RV -->|approve + merge| RT[Rotation workflow]
+    RT -->|re-encrypts all .env.enc| M[main]
+    M --> Y[You can decrypt]
+```
+
+Review is the security gate: rotation runs only on `main`, so a key works only after a human verified it.
+
 > [!IMPORTANT]
 >
 > **Reviewing .sops.yaml changes is the security gate**

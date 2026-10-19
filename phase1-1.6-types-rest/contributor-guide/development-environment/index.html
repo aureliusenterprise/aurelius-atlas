@@ -265,6 +265,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -480,6 +490,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -684,6 +704,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dev-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dev Topology
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Runtime Windows
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#explore-the-workspace" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -791,6 +833,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../secrets-management/" class="md-nav__link">
         
   
@@ -799,6 +949,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5732,7 +5909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5846,6 +6023,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dev-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dev Topology
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Runtime Windows
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#explore-the-workspace" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -5885,7 +6084,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5902,6 +6101,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5953,9 +6162,9 @@
 environment, including the all tools and dependencies required for local development.</p>
 <div class="admonition note">
 <p class="admonition-title">Prerequisites</p>
-<p><a href="https://www.docker.com">Docker</a> and the <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html">NVIDIA Container Toolkit</a> must be installed on your system to use the development container.</p>
+<p><a href="https://www.docker.com">Docker</a> must be installed on your system to use the development container.</p>
 <p>All container images in this repository — application bases as well as the development infrastructure
-(Postgres, Keycloak, Kafka, observability) — are <a href="https://dhi.io">Docker Hardened Images</a> pulled from
+(Elasticsearch, Keycloak, Postgres, observability) — are <a href="https://dhi.io">Docker Hardened Images</a> pulled from
 the <code>dhi.io</code> registry. Pulling them requires a Docker Hub account: run <code>docker login</code> on your host
 before starting the development container or running any <code>serve</code>, <code>test</code>, or <code>e2e</code> target, otherwise
 image pulls fail with an unauthorized error.</p>
@@ -6042,6 +6251,127 @@ with a SOPS/age decryption error — this is expected, not a broken setup.</p>
 Docker Hub credentials. If you have not run <code>docker login</code> with a Docker Hub account, pulls fail with
 an <code>unauthorized</code> (or rate-limit) error — see the Prerequisites note at the top of this guide.</p>
 </details>
+<h2 id="dev-topology">Dev Topology<a class="headerlink" href="#dev-topology" title="Permanent link">&para;</a></h2>
+<p>The development infrastructure is a set of <strong>slices</strong>: each slice under <code>dev/</code> is its own compose
+project with its own network, named <code>aurelius-atlas-dev-&lt;slice&gt;-network</code>. An app's <code>serve</code> target
+starts the slices it needs via <code>dependsOn</code> (ADR 005); a slice's services reach each other by
+service name on a shared network.</p>
+<p>The rule that surprises people: <strong>services are reached by service name, not <code>localhost</code></strong>. The
+store's certificate is issued for <code>elasticsearch</code>, so an IP or <code>localhost</code> fails certificate
+verification, not connectivity. The server's e2e container attaches to the Elasticsearch and
+observability networks and reaches the store as <code>https://elasticsearch:9200</code>. Certificate plumbing
+is in <a href="../tls-certificates/">TLS Certificates</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Host port</th>
+<th>Slice</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Atlas server</td>
+<td>21000</td>
+<td>app</td>
+<td>Atlas's own port</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td><code>${ELASTICSEARCH_PORT}</code> → 9200</td>
+<td><code>elasticsearch</code></td>
+<td>TLS only</td>
+</tr>
+<tr>
+<td>Postgres (examples)</td>
+<td><code>${DATABASE_PORT}</code> → 5432</td>
+<td><code>postgres</code></td>
+<td>Keycloak keeps its own, on its network</td>
+</tr>
+<tr>
+<td>Keycloak</td>
+<td>8080 / 8443</td>
+<td><code>keycloak</code></td>
+<td>8080 dev convenience; 8443 is the verified TLS path</td>
+</tr>
+<tr>
+<td>OTel collector</td>
+<td>4317 / 4318</td>
+<td><code>observability</code></td>
+<td>OTLP gRPC / HTTP, TLS only</td>
+</tr>
+<tr>
+<td>Prometheus / Loki / Tempo</td>
+<td>9090 / 3100 / 3200</td>
+<td><code>observability</code></td>
+<td>Consumed through the collector</td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td>127.0.0.1:3000</td>
+<td><code>observability</code></td>
+<td>Loopback only</td>
+</tr>
+</tbody>
+</table>
+<p>Each slice documents its own services, images, and run commands in its colocated README:
+<code>dev/elasticsearch</code>, <code>dev/keycloak</code>, <code>dev/postgres</code>, <code>dev/observability</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Keycloak's port 8080 is development-only</p>
+<p>The plaintext 8080 listener exists so browser sign-in works in the dev stack; 8443 is the
+verified TLS path that CI and E2E use. The production arrangement has no plaintext listener —
+see <a href="../../architecture/platform/security/data-encryption/#named-relaxation-development-arrangement-only">Data Encryption</a>.</p>
+</div>
+<h2 id="runtime-windows">Runtime Windows<a class="headerlink" href="#runtime-windows" title="Permanent link">&para;</a></h2>
+<p>Per <a href="../../architecture/adr/031-runtime-versions-have-a-declared-support-window/">ADR 031</a>, each
+runtime the system runs on has one declared window. The pins named here are the answer — this page
+names where they live, not their values, so there is one place to update. A major-version bump is a
+reviewed change to every pin at once, approved by the maintainers team.</p>
+<table>
+<thead>
+<tr>
+<th>Runtime</th>
+<th>Supported window</th>
+<th>Pins live in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.14 only</td>
+<td><code>pyproject.toml</code> (<code>requires-python</code>), <code>.devcontainer</code> python feature, server <code>Dockerfile</code> base image, pyright/ruff target</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>24 (LTS jod)</td>
+<td><code>.devcontainer</code> node feature, dashboard <code>build.Dockerfile</code></td>
+</tr>
+<tr>
+<td>Java</td>
+<td>21 (dev tooling for the vendored dashboards' build only)</td>
+<td><code>.devcontainer</code> java feature</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>9.x (dev image 9.5)</td>
+<td><code>dev/elasticsearch/docker-compose.yaml</code> image tag</td>
+</tr>
+<tr>
+<td>Keycloak</td>
+<td>26.x</td>
+<td><code>dev/keycloak/docker-compose.yaml</code> image tag</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>18 (Keycloak's database and the template example only — ADR 047)</td>
+<td><code>dev/postgres</code>, <code>dev/keycloak</code> compose image tags</td>
+</tr>
+</tbody>
+</table>
+<p>Minor and patch releases inside a window follow the dependency rule
+(<a href="../../architecture/adr/020-dependencies-stay-current-by-default/">ADR 020</a>); the floor rises only
+when every pin above moves in one change.</p>
 <h2 id="explore-the-workspace">Explore the Workspace<a class="headerlink" href="#explore-the-workspace" title="Permanent link">&para;</a></h2>
 <p>The workspace is organized as a monorepo, which means that all the projects are stored in a single repository.</p>
 <details class="info">
@@ -6049,13 +6379,12 @@ an <code>unauthorized</code> (or rate-limit) error — see the Prerequisites not
 <p>The workspace is divided into the following main directories:</p>
 <ul>
 <li><code>apps</code>: Contains the main applications and services that make up the workspace.</li>
-<li><code>connectors</code>: Provides Kafka connectors and other integration modules for external systems.</li>
-<li><code>dev</code>: Compose files and configuration for the supporting development infrastructure (Postgres,
-  Keycloak, Kafka, observability stack).</li>
-<li><code>docker</code>: Includes Dockerfiles and resources for building base images used across the workspace.</li>
+<li><code>dev</code>: Compose files and configuration for the supporting development infrastructure (Elasticsearch,
+  Keycloak, Postgres, observability stack).</li>
 <li><code>docs</code>: Central location for all project documentation, guides, and reference materials.</li>
 <li><code>libs</code>: Shared libraries and utilities used by multiple applications within the monorepo.</li>
-<li><code>schemas</code>: Shared Avro event schemas exchanged between producers and consumers.</li>
+<li><code>reports</code>: License and vulnerability report generators.</li>
+<li><code>schemas</code>: Avro event schemas used by the template's example library only.</li>
 <li><code>secrets</code>: Your personal SOPS/age key; this folder is excluded from version control.</li>
 <li><code>tools</code>: Custom automation (Nx plugins) that wires builds, containers, secrets, and docs into <code>Nx</code>.</li>
 </ul>

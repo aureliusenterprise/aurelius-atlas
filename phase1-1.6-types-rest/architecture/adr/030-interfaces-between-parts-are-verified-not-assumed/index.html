@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2769,6 +2924,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6059,137 +6292,164 @@
 
 <h1 id="030-interfaces-between-parts-are-verified-not-assumed">030. Interfaces between parts are verified, not assumed<a class="headerlink" href="#030-interfaces-between-parts-are-verified-not-assumed" title="Permanent link">&para;</a></h1>
 <ul>
-<li><strong>Status:</strong> Proposed</li>
+<li><strong>Status:</strong> Accepted</li>
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Accepted 2026-10-19: for the catalogue's public interface, the checking mechanism is the parity
+harness — the agreement is stated once, in scenarios read from the reference source and cited
+(<a href=".././052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">052</a>), and drift
+fails the change (R1, R4). Internal interfaces are typed imports inside one repository
+(<a href=".././001-single-monorepo/">001</a>), so consumers are not hand-mirrored (R2). Named gap: the template
+example frontend's hand-written TS mirror is unverified — a deviation that ends with the example's
+removal (DD-019); the Atlas dashboard is vendored and out of scope (R3).</p>
+<p>Where a part offers an interface another consumes, the agreement is stated once
+and checked: a change that breaks a consumer fails where it is made, not where
+it is felt. The check remembers what the provider sends, so consumers do not
+have to.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Where one part of the system offers an interface another part consumes, the
-agreement between them is stated once and checked, so a change that breaks a
-consumer is caught where it is made rather than where it is felt. A consumer
-does not rely on remembering what the provider sends; the check remembers for
-it.</p>
+<p><strong>The agreement is stated once, and a check enforces it.</strong> Where one part
+offers an interface another consumes, the agreement between them lives in one
+place and is checked, so a change that breaks a consumer is caught where it is
+made, not where it is felt. A consumer does not rely on remembering what the
+provider sends — <strong>the check remembers for it.</strong></p>
 <p>The domain concepts behind these interfaces already have one canonical
-definition
-(<a href=".././004-one-shared-domain-model/">004</a>); this record covers the interfaces
-themselves — the callable surface a consumer actually depends on — which is
-today restored by hand on each side with nothing comparing them. It is
-Proposed because the checking mechanism does not exist and the direction has
-not been chosen.</p>
+definition (<a href=".././004-one-shared-domain-model/">004</a>); this record covers the
+interfaces themselves — the callable surface a consumer actually depends on.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The system's parts talk to each other over interfaces: the screens people use
-call the services, services call each other, and the shapes that cross those
-boundaries are the business concepts. An interface is a promise in both
-directions — the provider promises what it will return, the consumer promises
-what it will send — and a promise that only one side has written down is a
-promise nobody enforces.</p>
-<p>Right now each side writes its own version of the agreement. The provider
-declares what it serves; the consumer re-declares, by hand, what it believes
-the provider serves. Nothing compares the two. The provider does publish a
-machine-readable description of its interface, and a test confirms that the
-description exists — but nothing downstream reads it, so the description can
-say one thing while the consumer assumes another, and both are green.</p>
-<p>This is the same failure the shared domain model was written to prevent, one
-layer out. That record decided there is one canonical definition of a concept
-and made the copies accountable to it
-(<a href=".././004-one-shared-domain-model/">004</a>), while explicitly leaving open
-whether more representations should be generated rather than hand-kept. The
-interface is the next representation, and it is currently the least checked:
-a concept can be canonical and still be transported wrongly, because the
-transport agreement is folklore on both sides.</p>
-<p>The cost lands predictably. A provider changes a field's name, its type, or
-whether it can be absent; every consumer that assumed the old shape keeps
-compiling and starts failing at runtime, in a screen a person is looking at,
-far from the change that caused it. The larger the number of consumers, the
-more copies drift, and the more each change is a coordination exercise
-instead of a check.</p>
-<p>One fact makes fixing this cheaper here than it would be elsewhere: every
-consumer lives in the same repository as the provider it reads
-(<a href=".././001-single-monorepo/">001</a>), so finding them is a search, not a
-campaign. The arrangement that makes interface verification expensive in a
-distributed estate is absent, which is why this record's requirements are
-worth meeting at the cheapest possible point — before the estate grows.</p>
+<p>The system's parts talk over interfaces: screens call services, services call
+services, and the shapes crossing those boundaries are the business concepts.
+An interface is a promise in both directions — the provider promises what it
+returns, the consumer promises what it sends — and <strong>a promise only one side
+wrote down is a promise nobody enforces.</strong></p>
+<p>Right now each side writes its own version. The provider declares what it
+serves; the consumer re-declares by hand what it believes the provider serves.
+Nothing compares the two. The provider publishes a machine-readable description
+and a test confirms it exists — but nothing downstream reads it, so <strong>the
+description can say one thing while the consumer assumes another, and both are
+green.</strong></p>
+<p>That is the shared-domain-model failure
+(<a href=".././004-one-shared-domain-model/">004</a>) one layer out: a concept can be
+canonical and still be transported wrongly, because the transport agreement is
+folklore on both sides.</p>
+<p>The cost lands predictably: a provider renames a field, changes a type, makes
+it absent — every consumer that assumed the old shape keeps compiling and
+starts failing at runtime, in a screen a person is looking at, far from the
+change. More consumers, more copies, more coordination exercises per change.</p>
+<p><strong>One fact makes fixing this cheap here:</strong> every consumer lives in the same
+repository as the provider it reads (<a href=".././001-single-monorepo/">001</a>), so
+finding them is a search, not a campaign. The arrangement that makes interface
+verification expensive in a distributed estate is absent — which is why these
+requirements are worth meeting at the cheapest point, before the estate grows.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — The agreement is stated once.</strong> One place says what the interface
-  is; provider and consumer both answer to it rather than to each other's
-  guess.</li>
-<li><strong>R2 — Drift fails the change that caused it.</strong> A change that makes an
-  implementation disagree with the stated agreement is stopped by a check at
-  commit or review time, not discovered in use.</li>
-<li><strong>R3 — Consumers are found, not remembered.</strong> When the agreement changes,
-  the parts that depend on it are identifiable mechanically, so "did we get
-  everyone?" has an answer that does not depend on attention.</li>
-<li><strong>R4 — The agreement is readable by whoever integrates.</strong> A person or a
-  machine connecting to an interface can learn what it accepts and returns
-  without reading the provider's source or asking anyone.</li>
-<li><strong>R5 — Compatible change stays cheap.</strong> Adding an optional element to an
-  interface costs the same small step as adding one to a concept, not a
-  regeneration ceremony across every consumer.</li>
-<li><strong>R6 — The check is honest about what it covers.</strong> Where a check cannot
-  compare the two sides, that gap is named, so nobody mistakes an unchecked
-  interface for a checked one.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>The agreement is stated once.</strong> One place says what the interface is; provider and consumer both answer to it.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Drift fails the change that caused it.</strong> A check at commit or review time, not a runtime discovery.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Consumers are found, not remembered.</strong> Dependents identifiable mechanically; "did we get everyone?" has an answer.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The agreement is readable by whoever integrates.</strong> What it accepts and returns, without reading provider source.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Compatible change stays cheap.</strong> An optional element costs a small step, not a regeneration ceremony.</td>
+</tr>
+<tr>
+<td><strong>R6</strong></td>
+<td><strong>The check is honest about what it covers.</strong> An unchecked interface is named as unchecked — no false confidence.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Hand-mirrored interfaces (the status quo).</strong> Each side writes what it
-  believes. It fails R1 by construction and R2 completely — nothing compares
-  the two statements, so drift is invisible until runtime. It also fails R3:
-  finding consumers means searching for copies of a shape and hoping the
-  search was clever enough.</li>
-<li><strong>Generate consumers from the provider's description.</strong> The provider's
-  statement becomes the only statement, and consumers are produced from it.
-  It satisfies R1, R3, R4, and R5 elegantly. It fails R2 on its own —
-  generation proves the consumer matches the description, not that the
-  provider honours it — and it fails R6 unless the description is treated as
-  a contract with teeth rather than documentation with a syntax. It also
-  assumes every consumer can tolerate a generated shape, which a user-facing
-  interface often cannot.</li>
-<li><strong>Contract tests between the two sides.</strong> Each consumer states what it
-  expects; a test runs the expectation against the real provider. It answers
-  R2 and R6 directly and survives a provider that cannot or will not publish
-  a description. It fails R1 as usually practised — expectations live in
-  consumer tests, so the agreement is still written N times — and R4, because
-  a test suite is not a document an integrator can read.</li>
-<li><strong>Coordination by review.</strong> A convention plus a careful reviewer who knows
-  both sides. It fails R2 and R3 exactly as often as reviewers are new,
-  tired, or far from the other stack — which, in a system that deliberately
-  spans several languages on one machine
-  (<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>), is often. It is the
-  current arrangement with a title.</li>
-<li><strong>Do nothing.</strong> Costs nothing and keeps every interface change a runtime
-  discovery; it fails R1 through R4 by leaving the agreement unwritten and
-  unchecked, which is the state described as an option.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hand-mirrored interfaces (status quo)</td>
+<td>R1 by construction, R2 completely: nothing compares the two statements, so drift is invisible until runtime. R3: finding consumers means searching for copies of a shape and hoping the search was clever enough.</td>
+</tr>
+<tr>
+<td>Generate consumers from the provider's description</td>
+<td>R1, R3, R4, R5 elegantly. R2 on its own: generation proves the consumer matches the description, not that the provider honours it. R6 fails unless the description is a contract with teeth, not documentation with a syntax. Assumes every consumer tolerates a generated shape — a user-facing interface often won't.</td>
+</tr>
+<tr>
+<td>Contract tests between the sides</td>
+<td>R2 and R6 directly; survives a provider that won't publish a description. R1 as usually practised: expectations live in consumer tests, so the agreement is written N times. R4: a test suite is not a document an integrator can read.</td>
+</tr>
+<tr>
+<td>Coordination by review</td>
+<td>R2 and R3 exactly as often as reviewers are new, tired, or far from the other stack — which, in a system spanning several languages on one machine (<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>), is often. The current arrangement with a title.</td>
+</tr>
+<tr>
+<td>Do nothing</td>
+<td>Keeps every interface change a runtime discovery. R1–R4 by leaving the agreement unwritten and unchecked — the state described as an option.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> interface breakage moves from user screens to the change that
-  caused it (R2); consumers of a change are enumerable rather than remembered
-  (R3); integrators get a readable statement instead of an archaeology
-  project (R4); the shared-concept decision finally covers how concepts
-  travel, not only what they are.</li>
-<li><strong>Negative:</strong> the agreement becomes an artifact someone must maintain, and
-  a stale agreement is worse than none because it is trusted; generation
-  trades hand-written consumer code for generated code that must be lived
-  with, and user-facing shapes resist being generated; and enforcement
-  requires a checking point that does not exist yet, so until it does the
-  record leans on review — counted here as a gap to close, not a tolerated
-  state.</li>
-<li><strong>Neutral / follow-ups:</strong> the machine-readable description the provider
-  already publishes, and the test that only confirms it exists, are the
-  obvious seed for the check — turning that test into a comparison is the
-  cheapest first act on acceptance; the standing question that the shared
-  model record leaves open, about which representations should be generated
-  rather than hand-kept
-  (<a href=".././004-one-shared-domain-model/">004</a>), is answered by this record for
-  interfaces and only for interfaces; how an interface changes without
-  breaking readers is governed by the compatibility rule
-  (<a href=".././017-shared-concepts-change-only-compatibly/">017</a>) and this record
-  adds no new rule about direction, only about verification; and the streams
-  side of "how concepts travel" — ordering and duplication — is owned by
-  <a href=".././027-every-stream-carries-a-stated-delivery-guarantee/">027</a>.</li>
+<li>Interface breakage moves from user screens to the change that caused it (R2).</li>
+<li>Consumers of a change are enumerable rather than remembered (R3).</li>
+<li>Integrators get a readable statement instead of an archaeology project (R4).</li>
+<li>The shared-concept decision finally covers how concepts travel, not only what
+  they are.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The agreement becomes a maintained artifact — and <strong>a stale agreement is worse
+  than none, because it is trusted.</strong></li>
+<li>Generation trades hand-written consumer code for generated code that must be
+  lived with; user-facing shapes resist being generated.</li>
+<li>Enforcement needs a checking point; the accepted mechanism (the parity
+  harness, R1/R4) covers the public interface, and the remaining gap is named
+  below rather than papered over.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The provider's machine-readable description and the test that only confirms it
+  exists are the seed for a comparison check where the parity harness does not
+  apply (R6).</li>
+<li>Which representations are generated versus hand-kept
+  (<a href=".././004-one-shared-domain-model/">004</a>) is answered here for interfaces
+  only; how an interface changes without breaking readers is governed by
+  <a href=".././017-shared-concepts-change-only-compatibly/">017</a> — this record adds
+  verification, not direction. How the concepts travel over streams —
+  ordering and duplication — is owned by
+  <a href=".././027-every-stream-carries-a-stated-delivery-guarantee/">027</a>; the
+  streaming slice left with the catalogue's scope
+  (<a href=".././050-the-system-carries-only-what-the-catalogue-needs/">050</a>).</li>
+</ul>
+<details class="question">
+<summary>Why is a published OpenAPI description not enough?</summary>
+<p>A description that nothing compares against is a claim, not a check. The
+provider can publish a description that disagrees with its own code, and a
+consumer's hand-written mirror can disagree with both — all green (R2). The
+check must compare provider-against-statement and consumer-against-statement;
+publishing one side's belief is step one, not the mechanism.</p>
+</details>
 
 
 

@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3310,6 +3465,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,43 +6296,98 @@
 <li><strong>Date:</strong> 2026-10-09</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Every template capability the catalogue does not use is removed — streaming,
+serverless, the Java build, and in time the template's examples and relational
+database. This is a named deviation from the template spine: the catalogue's
+own parts become the spine.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>We will remove from this codebase every template capability the catalogue does not use: the event
-streaming slice, the serverless slice, the Java build, and — once their replacements exist — the
-template's example service, example screen, example library and relational database. This is a
-named deviation from the template's spine (<a href=".././002-modules-are-removable-slices/">002</a>): the
-catalogue's own server, dashboard and search store become the spine.</p>
+<p><strong>Remove what is unused.</strong> Every template capability the catalogue does not
+use is removed from this codebase: the event streaming slice, the serverless
+slice, the Java build, and — once their replacements exist — the template's
+example service, example screen, example library, and relational database.</p>
+<p><strong>A named deviation from the spine.</strong> The template's spine rule
+(<a href=".././002-modules-are-removable-slices/">002</a>) names a fixed keep-list; here
+the catalogue's own server, dashboard, and search store become the spine, and
+that swap is declared, not smuggled.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The codebase was created from a template that demonstrates many capabilities at once. Each kept
-capability costs build time, dependency updates, security scanning and reader attention, and
-suggests to newcomers that it is part of the product. The catalogue needs one HTTP service, one
-user interface, one data store (<a href=".././047-one-search-store-is-the-system-of-record/">047</a>), the
-shared identity provider and observability.</p>
+<p>The codebase was created from a template that demonstrates many capabilities
+at once.</p>
+<ul>
+<li><strong>Each kept capability costs.</strong> Build time, dependency updates, security
+  scanning, and reader attention — and it suggests to newcomers that it is
+  part of the product.</li>
+<li><strong>The catalogue's needs are narrow.</strong> One HTTP service, one user interface,
+  one data store (<a href=".././047-one-search-store-is-the-system-of-record/">047</a>),
+  the shared identity provider, and observability.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>R1 — What is here is used.</strong> Every project in the repository serves the catalogue or its
-  delivery workflow.</li>
-<li><strong>R2 — Template updates stay mergeable.</strong> The workflow parts of the template (pipeline, quality
-  gate, documentation, secrets) stay recognisable so updates can be merged.</li>
-<li><strong>R3 — Nothing is removed before it is replaced.</strong> The repository builds and its tests pass
-  after every removal.</li>
-</ul>
+<p>Any acceptable arrangement must deliver:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>What is here is used.</strong> Every project in the repository serves the catalogue or its delivery workflow.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Template updates stay mergeable.</strong> The workflow parts of the template (pipeline, quality gate, documentation, secrets) stay recognisable so updates can be merged.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Nothing is removed before it is replaced.</strong> The repository builds and its tests pass after every removal.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Keep every template slice.</strong> Fails R1: unused code is maintained, scanned and misread.</li>
-<li><strong>Start from an empty repository and copy the workflow.</strong> Fails R2: template improvements can no
-  longer be merged.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keep every template slice</td>
+<td>R1: unused code is maintained, scanned, and misread as product.</td>
+</tr>
+<tr>
+<td>Start from an empty repository, copy the workflow</td>
+<td>R2: template improvements can no longer be merged.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> a smaller, honest codebase; faster pipeline; fewer dependency alerts.</li>
-<li><strong>Negative:</strong> re-adding event streaming later (for example to accept Atlas hook notifications)
-  means restoring the slice from the template.</li>
-<li><strong>Neutral / follow-ups:</strong> increment 0.1 removes the streaming and serverless slices and the Java
-  build; increment 0.5 removes the example service, screen, library and relational database when
-  the Atlas server and dashboard replace them. Until then those examples remain a named deviation
-  under this record.</li>
+<li>A smaller, honest codebase; a faster pipeline; fewer dependency alerts.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Re-adding event streaming later — for example, to accept Atlas hook
+  notifications — means restoring the slice from the template.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Increment 0.1 removes the streaming and serverless slices and the Java
+  build; increment 0.5 removes the example service, screen, library, and
+  relational database when the Atlas server and dashboard replace them.</li>
+<li>Until then, those examples remain a named deviation under this record.</li>
+</ul>
+<details class="question">
+<summary>The examples are harmless — why remove them?</summary>
+<p>Unused code is never harmless: it is built, scanned, updated, and
+defended in review, and a newcomer cannot tell an example from a feature
+(R1). Keeping them only until replacements exist is the disciplined
+version of the same rule — R3 sets the order, so the repository never
+loses a capability before it has its replacement.</p>
+</details>
 
 
 

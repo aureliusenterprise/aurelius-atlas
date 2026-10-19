@@ -4,6 +4,9 @@
         <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/CHANGELOG/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/api-reference/</loc>
       </url>
       <url>
@@ -430,10 +433,25 @@
         <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/documentation/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/operations-ownership/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/releasing/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/secrets-management/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/testing/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/tls-certificates/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/version-control/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/writing-style/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase1-1.6-types-rest/user-guide/</loc>

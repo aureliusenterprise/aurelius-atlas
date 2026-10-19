@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5626,7 +5781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5694,7 +5849,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5799,6 +5954,66 @@
 
 
 <h1 id="platform">Platform<a class="headerlink" href="#platform" title="Permanent link">&para;</a></h1>
+<p>How the Aurelius Atlas system is connected, delivered, observed, kept alive, and secured. Content
+arrives with the increments listed per page; see the tree convention on the <a href="../">Architecture</a>
+page.</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Scope</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="components-and-interfaces/">Components &amp; Interfaces</a></td>
+<td>The running parts by role: service, dashboards, store, identity, signals, with one anchor line</td>
+<td>written (0.2–0.6)</td>
+</tr>
+<tr>
+<td><a href="data-pipelines/">Data Pipelines</a></td>
+<td>The catalogue's flows: request → store, model load at start-up; no streaming plane (ADR 050)</td>
+<td>2.4</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Tree</th>
+<th>Subject</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="connectivity/">Connectivity</a></td>
+<td>REST contract, TLS, service-to-service links</td>
+<td>0.5 → 6.1</td>
+</tr>
+<tr>
+<td><a href="delivery/">Delivery</a></td>
+<td>Configuration, change, testing, release, deployment</td>
+<td>0.3 → 6.4</td>
+</tr>
+<tr>
+<td><a href="observability/">Observability</a></td>
+<td>Metrics, logs, traces, alerts</td>
+<td>6.4 (dev stack exists today)</td>
+</tr>
+<tr>
+<td><a href="resilience/">Resilience</a></td>
+<td>Availability posture, incidents, snapshots, recovery</td>
+<td>6.4</td>
+</tr>
+<tr>
+<td><a href="security/">Security</a></td>
+<td>Identity, access, secrets, encryption</td>
+<td>0.1 → 6.2</td>
+</tr>
+</tbody>
+</table>
 
 
 

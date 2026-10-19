@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3120,6 +3275,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,99 +6296,140 @@
 <li><strong>Date:</strong> 2026-10-08</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Automated review is a welcome first pass on any change. Its findings follow the
+ordinary blocking rule; its approval is never one of the two human signatures,
+and dismissing a machine finding is a human act, recorded as one.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Automated review — an assistant reading the diff and leaving findings — is a
-permitted and welcome first pass on any change, human- or agent-authored. Its
-findings are treated by the same rule as every other finding: those about the
-change itself block when the gate enforces them, and those about the state of
-the world are advisory evidence for the cadence review
-(<a href=".././015-a-change-answers-for-what-it-caused/">015</a>). An automated review
-comment is never an approval: the two human signatures stand
-(<a href=".././044-every-change-carries-two-human-signatures/">044</a>), and dismissing a
-machine finding is a human act, recorded as one.</p>
+<p><strong>The assistant reads first; the humans sign.</strong> Automated review — an assistant
+reading the diff and leaving findings — is a permitted and welcome first pass
+on any change, human- or agent-authored.</p>
+<p>Its findings obey the ordinary rule:
+those about the change itself block when the gate (the shared set of checks
+every change must pass, <a href=".././014-the-gate-is-defined-once-and-runs-everywhere/">014</a>)
+enforces them, and those
+about the state of the world are advisory evidence for the cadence review
+(<a href=".././015-a-change-answers-for-what-it-caused/">015</a>).</p>
+<p><strong>An automated review comment is never an approval:</strong> the two human signatures
+stand (<a href=".././044-every-change-carries-two-human-signatures/">044</a>), and
+dismissing a machine finding is a human act, recorded as one.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Review is the scarcest capacity in a small team, and fast generation multiplies
-the volume of diff arriving at it. The team already uses assistants to read
-diffs — the commit history carries the residue of applied review feedback —
-but the practice has no stated boundary, and an unstated practice drifts in
-the direction of least effort: first toward treating a machine's approval as
-the second signature, then toward dismissing its findings without reading
-them, then toward skipping the human review the machine seemed to make
-unnecessary.</p>
-<p>Each drift has a known failure. A machine cannot be accountable for a merged
-change (<a href=".././044-every-change-carries-two-human-signatures/">044</a>), so an
-approval that is not a human's leaves R1 unanswered. Machine findings include
-plausible mistakes, and a finding dismissed unread is a defect adopted with
-confidence. Conversely, treating every machine finding as blocking would
-import the world's noise into the merge gate — the exact failure the blocking
-rule was written to prevent
-(<a href=".././015-a-change-answers-for-what-it-caused/">015</a>) — and would train the
-team to bypass the review as they bypass a noisy gate.</p>
-<p>The decision to make is what automated review is allowed to count as, and what
-it can never count as.</p>
+<p>A small team has little review time, and fast generation
+multiplies the volume of diff arriving at it.</p>
+<p>The team already uses assistants to read diffs — the commit history carries the
+residue of applied review feedback — <strong>but an unstated practice drifts in the
+direction of least effort:</strong> first toward treating a machine's approval as the
+second signature, then toward dismissing its findings without reading them,
+then toward skipping the human review the machine seemed to make unnecessary.</p>
+<p>Each drift has a known failure:</p>
+<ul>
+<li><strong>A machine cannot be accountable for a merged change</strong>
+  (<a href=".././044-every-change-carries-two-human-signatures/">044</a>), so an approval
+  that is not a human's leaves R1 unanswered.</li>
+<li><strong>Machine findings include plausible mistakes</strong>, and a finding dismissed
+  unread is a defect adopted with confidence.</li>
+<li><strong>Treating every machine finding as blocking</strong> would import the noise of the whole ecosystem
+  into the merge gate — the exact failure the blocking rule exists to prevent
+  (<a href=".././015-a-change-answers-for-what-it-caused/">015</a>) — and would train the
+  team to bypass the review as they bypass a noisy gate.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — The signatures stay human.</strong> Automated review may inform both
-  signatures but cannot satisfy either; no workflow accepts a bot approval as
-  the second pair of eyes.</li>
-<li><strong>R2 — Machine findings follow the blocking rule.</strong> A finding blocks a
-  change only when the defined gate enforces it; the reviewer's judgement of
-  a machine comment never changes what blocks.</li>
-<li><strong>R3 — Dismissal is a human act.</strong> Every rejected machine finding is
-  dismissed by a named person, so a wrong machine verdict cannot silently
-  become a merged defect, and the dismissal is visible in the review.</li>
-<li><strong>R4 — Volume does not lower the bar.</strong> The practice must hold when review
-  volume is high; if it only works when the queue is short, it will be the
-  first thing skipped under pressure.</li>
-<li><strong>R5 — Cheap to keep true.</strong> No new roles, queues, or dashboards; the
-  practice rides on the review surface the team already uses.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>The signatures stay human.</strong> Automated review may inform both signatures, satisfy neither; no workflow accepts a bot approval as the second pair of eyes.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Machine findings follow the blocking rule.</strong> A finding blocks only when the defined gate enforces it; a reviewer's judgement of a machine comment never changes what blocks.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Dismissal is a human act.</strong> Every rejected machine finding is dismissed by a named person, visible in the review — a wrong machine verdict cannot silently become a merged defect.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Volume does not lower the bar.</strong> The practice must hold when review volume is high; a practice that only works with a short queue is the first thing skipped under pressure.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Cheap to keep true.</strong> No new roles, queues, or dashboards; the practice rides the review surface the team already uses.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>No automated review.</strong> Keep review purely human. It passes R1 trivially
-  and fails the reason the practice exists: at generated volume, human review
-  without a machine first pass becomes the bottleneck that squeezes
-  understanding out of the second signature.</li>
-<li><strong>Machine approval counts as the second signature.</strong> It fails R1 outright:
-  a bot cannot explain the change in six months, cannot carry it in an
-  incident, and cannot be the accountable party
-  (<a href=".././042-every-dataset-has-an-owner-who-answers-for-it/">042</a> makes the
-  same point about ownership).</li>
-<li><strong>Machine findings always block.</strong> It fails R2 and R4: machine review
-  produces confident nonsense at a steady rate, and a gate that must be
-  argued with is a gate that gets bypassed — the failure mode named in
-  <a href=".././015-a-change-answers-for-what-it-caused/">015</a>.</li>
-<li><strong>Machine findings are invisible (advisory-only, off the review).</strong> Findings
-  go to a side channel instead of the pull request. It fails R3 and R5:
-  dismissals happen off the record, and a second surface is a second thing to
-  maintain and then ignore.</li>
-<li><strong>Do nothing (status quo, unstated).</strong> The practice continues without a
-  boundary; it fails R1 by drift — each relaxation is individually reasonable
-  and together they replace the second signature.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No automated review</td>
+<td>Passes R1 trivially, but fails the reason the practice exists: at generated volume, human review without a machine first pass becomes the bottleneck that squeezes understanding out of the second signature.</td>
+</tr>
+<tr>
+<td>Machine approval as the second signature</td>
+<td>Fails R1: a bot cannot explain the change in six months, cannot carry it in an incident, cannot be the accountable party — the same point <a href=".././042-every-dataset-has-an-owner-who-answers-for-it/">042</a> makes about ownership.</td>
+</tr>
+<tr>
+<td>Machine findings always block</td>
+<td>R2 and R4: machine review produces confident nonsense at a steady rate, and a gate that must be argued with is a gate that gets bypassed — the failure named in <a href=".././015-a-change-answers-for-what-it-caused/">015</a>.</td>
+</tr>
+<tr>
+<td>Machine findings invisible (off the review)</td>
+<td>Findings go to a side channel. R3: dismissals happen off the record. R5: a second surface is a second thing to maintain, then ignore.</td>
+</tr>
+<tr>
+<td>Do nothing (status quo, unstated)</td>
+<td>The practice continues without a boundary. Fails R1 gradually: each relaxation is individually reasonable, and together they replace the second signature.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> the team keeps the capacity gain of a machine first pass
-  without letting it redefine accountability (R1); machine findings arrive
-  where humans already read, at no new ceremony (R5); and the dismissal rule
-  turns each wrong machine verdict into visible evidence about the tool
-  rather than an invisible defect (R3).</li>
-<li><strong>Negative:</strong> machine review still consumes human attention to triage its
-  findings, and at high false-positive rates that tax can exceed the saving —
-  the response is to tune or drop the reviewer, never to relax R3; and the
-  rule depends on reviewers actually reading machine comments, which is the
-  same review-discipline dependency the instruction layer carries
-  (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>).</li>
-<li><strong>Neutral / follow-ups:</strong> the boundary's R1 rests on the two-signature rule
-  and the merge mechanism that enforces it
-  (<a href=".././044-every-change-carries-two-human-signatures/">044</a>); R3's dismissal
-  habit rests on review discipline, the same dependency the instruction layer
-  carries (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>);
-  whether machine findings should ever be promoted to
-  blocking is a decision under
-  <a href=".././015-a-change-answers-for-what-it-caused/">015</a>, not this record.</li>
+<li>The team keeps the capacity gain of a machine first pass without letting it
+  redefine accountability (R1).</li>
+<li>Machine findings arrive where humans already read, at no new ceremony (R5).</li>
+<li>The dismissal rule turns each wrong machine verdict into visible evidence
+  about the tool, rather than an invisible defect (R3).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Machine review consumes human attention to triage its findings, and at high
+  false-positive rates the tax can exceed the saving — <strong>the response is to
+  tune or drop the reviewer, never to relax R3.</strong></li>
+<li>The rule depends on reviewers actually reading machine comments: the same
+  review-discipline dependency the instruction layer carries
+  (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>).</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>R1's force rests on the merge mechanism that enforces the two signatures
+  (<a href=".././044-every-change-carries-two-human-signatures/">044</a>); R3's dismissal
+  habit on review discipline
+  (<a href=".././022-the-codebase-explains-itself-to-its-agents/">022</a>).</li>
+<li>Whether machine findings should ever be promoted to blocking is a decision
+  under <a href=".././015-a-change-answers-for-what-it-caused/">015</a>, not this record.</li>
+</ul>
+<details class="question">
+<summary>If the bot finds the bug, why can't its approval count?</summary>
+<p>Because an approval is an assumption of accountability, and a bot can't
+carry one: it cannot explain the change in six months, own it in an
+incident, or answer for a dataset it blessed (R1,
+<a href=".././042-every-dataset-has-an-owner-who-answers-for-it/">042</a>). The bot's
+finding is welcome — the human who reads it and signs is the mechanism.</p>
+</details>
 
 
 

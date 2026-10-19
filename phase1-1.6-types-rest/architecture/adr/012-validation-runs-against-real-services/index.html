@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2283,6 +2438,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,93 +6296,126 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>The system's behaviour is validated against the real services it uses, brought
+up for the run and torn down after it. A test passing against a stub is
+evidence about the stub, not the system.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The behaviour of the system is validated against the real services it uses —
-its database, identity provider, event platform — brought up for the run and
-torn down after it. Substitutes — stubbed services, canned responses,
-hand-written fakes — are not the default path for validating how the system
-behaves.</p>
-<p>A test that passes against a substitute is evidence about the substitute.
+<p><strong>Validation exercises the real services</strong> — the database, the identity
+provider, the event platform — brought up by the run and torn down after it.
+Substitutes (stubbed services, canned responses, hand-written fakes) are not
+the default path for validating behaviour.</p>
+<p><strong>A test that passes against a substitute is evidence about the substitute.</strong>
 Only a test that passes against the real thing is evidence about the system,
 and the organisation acts on the second kind.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The system is assembled from parts that talk to services: a service reads and
 writes storage, consumers move records through a stream, a front end calls an
-API that delegates admission to an identity provider. The failures that cost
-the business money live in those conversations — a driver behaves differently
-than the client assumed, a constraint the code never expected, an
-authentication handshake that only the real service enforces.</p>
-<p>Validation can exercise those conversations against the real service or
-against a stand-in. A stand-in is cheaper per run and faster to start, and it
-carries a hidden cost: it is a second implementation of the service's
-behaviour, written by people who only know the behaviour the code already
-assumes. Where the assumption is wrong, the stand-in agrees with it — the
-substitute hides precisely the failures the test exists to catch, and does so
-silently, forever. The stand-in is also code, and a second codebase with its
-own bugs and its own upkeep is exactly the cost a small team cannot fund
-twice.</p>
-<p>The decision to make is what the system's behaviour is validated against, and
-what a passing test is allowed to be evidence of.</p>
+API that delegates admission to an identity provider. <strong>The failures that cost
+the business money live in those conversations</strong> — a driver that behaves
+differently than the client assumed, a constraint the code never expected, a
+handshake only the real service enforces.</p>
+<p>Those conversations can be exercised against the real service or a stand-in.
+A stand-in starts faster and costs less per run, and carries a hidden cost:</p>
+<ul>
+<li><strong>It is a second implementation of the service's behaviour</strong>, written by
+  people who only know the behaviour the code already assumes. Where the
+  assumption is wrong, the stand-in agrees with it — the substitute hides
+  precisely the failures the test exists to catch, silently and forever.</li>
+<li><strong>It is a second codebase</strong>, with its own bugs and its own upkeep — exactly
+  the cost a small team cannot fund twice.</li>
+</ul>
+<p>The decision is what behaviour is validated against, and what a passing test
+is allowed to be evidence of.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — A passing test is evidence about the shipped path.</strong> The services a
-  test exercises are the services production uses, at the same interface, so
-  the test's claim transfers to what ships.</li>
-<li><strong>R2 — Fidelity does not decay in silence.</strong> The arrangement contains no
-  hand-written model of a service's behaviour that can quietly disagree with
-  the service, because nothing checks the model.</li>
-<li><strong>R3 — Runs need no accounts or network.</strong> The services a test uses are
-  brought up by the run itself on the machine doing the validating, so an
-  unattended run and an offline machine reach the same result.</li>
-<li><strong>R4 — The cost stays bounded.</strong> Real services cost real minutes and real
-  money per run; the arrangement keeps that cost small enough that validation
-  still happens on every change rather than being rationed.</li>
-<li><strong>R5 — Cheap to keep true.</strong> Adding a validated part, or changing what it
-  depends on, is a local edit by the person making the change, not work
-  spread across a maintained fake world.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>A passing test is evidence about the shipped path.</strong> The services a test exercises are production's, at the same interface.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Fidelity does not decay in silence.</strong> No hand-written model of a service's behaviour that can quietly disagree with it.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Runs need no accounts or network.</strong> The run brings the services up on the machine validating, so unattended and offline agree.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The cost stays bounded.</strong> Real minutes and real money per run, kept small enough that validation isn't rationed.</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><strong>Cheap to keep true.</strong> Adding a validated part is a local edit, not work spread across a maintained fake world.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Substitutes everywhere: stubs and fakes per service.</strong> Fast, cheap,
-  hermetic. It fails R2 structurally: a substitute is written from the same
-  assumptions as the code it stands in for, so the two agree by construction
-  and disagree with the service in exactly the places nobody noticed. It
-  fails R1 for the same reason — the test's claim ends at the substitute's
-  boundary — and it fails R5, because the substitute world is a second
-  codebase that must track every service it imitates.</li>
-<li><strong>Recorded traffic replayed as the service.</strong> Capture real conversations
-  and replay them in tests. It passes R1 on the day of capture and fails R2
-  afterwards: the recording is a claim about one day, the real service
-  evolves, and the replay agrees with the old behaviour in silence. It also
-  fails R4 in practice — recordings rot and must be re-captured, which is the
-  upkeep of the substitute option with extra steps.</li>
-<li><strong>Real services hosted by the platform.</strong> Use the live services rather than
-  local copies. It passes R1 outright but fails R3: every run needs accounts,
-  network, and a shared mutable service, so unattended runs wait on access
-  someone provisioned and two runs contaminate each other.</li>
-<li><strong>Do nothing (each test picks its own level).</strong> Zero cost today. It fails
-  R1 by default: a green suite becomes a mix of claims about the system and
-  claims about substitutes, and no reader can tell which is which — so the
-  suite's green stops meaning anything in particular.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Substitutes everywhere</td>
+<td>R2 structurally: a substitute is written from the code's own assumptions, so the two agree by construction and disagree with the service where nobody noticed. R1 for the same reason — the claim ends at the substitute's boundary. R5: the fake world must track every service it imitates.</td>
+</tr>
+<tr>
+<td>Recorded traffic replayed</td>
+<td>R1 on the day of capture, R2 afterwards: a recording is a claim about one day, the service evolves, and the replay agrees with old behaviour in silence. R4: recordings rot and must be re-captured — the substitute's upkeep with extra steps.</td>
+</tr>
+<tr>
+<td>Real services hosted by the platform</td>
+<td>R1 outright, R3 not at all: every run needs accounts, network, and a shared mutable service, so unattended runs wait on access someone provisioned and two runs contaminate each other.</td>
+</tr>
+<tr>
+<td>Do nothing (each test picks its level)</td>
+<td>R1 by default: a green suite becomes a mix of claims about the system and about substitutes, and no reader can tell which — so green stops meaning anything in particular.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> a passing test is evidence about the shipped path (R1), so
-  confidence transfers to production without a gap to reason about; there is
-  no fake world to build or maintain, which removes a whole category of
-  silent disagreement (R2, R5); runs are self-contained, so the pipeline and
-  an offline machine see the same result (R3).</li>
-<li><strong>Negative:</strong> every run pays real startup cost and real resource cost, so
-  validation must stay targeted — the parts a change can reach — or the cost
-  will ration the testing; some services have no local equivalent at all, and
-  those runs wait on the exception rather than the rule.</li>
-<li><strong>Neutral / follow-ups:</strong> a dependency that exists only as a hosted service
-  is validated against a local equivalent, and drift between the two is
-  treated as a defect, not environment noise; each such dependency needs a
-  named validation arrangement, and until it has one it is a hole in R1 that
-  the organisation is carrying knowingly.</li>
+<li>A passing test is evidence about the shipped path (R1): confidence transfers
+  to production with no gap to reason about.</li>
+<li>There is no fake world to build or maintain, which removes a whole category of
+  silent disagreement (R2, R5).</li>
+<li>Runs are self-contained, so the pipeline and an offline machine see the same
+  result (R3).</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Every run pays real startup and resource cost, so validation must stay
+  <strong>targeted</strong> — the parts a change can reach — or the cost rations the testing.</li>
+<li>Some services have no local equivalent at all; those runs wait on the exception
+  rather than the rule.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>A dependency that exists only as a hosted service is validated against a local
+  equivalent, and drift between the two is a defect, not environment noise.</li>
+<li>Each such dependency needs a <strong>named validation arrangement</strong>. Until it has
+  one, it is a hole in R1 the organisation carries knowingly.</li>
+</ul>
+<details class="question">
+<summary>Why not stub the expensive services?</summary>
+<p>Because the expensive services are where the assumptions live. A stub
+encodes what the code already believes about the service, so it validates
+the belief instead of testing it — and the day the belief is wrong is the
+day the test goes green.</p>
+</details>
 
 
 

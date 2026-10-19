@@ -265,6 +265,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -480,6 +490,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -758,6 +778,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../secrets-management/" class="md-nav__link">
         
   
@@ -766,6 +894,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5699,7 +5854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5819,7 +5974,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5836,6 +5991,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5882,31 +6047,29 @@
 
 
 <h1 id="ai-assisted-development">AI-Assisted Development<a class="headerlink" href="#ai-assisted-development" title="Permanent link">&para;</a></h1>
-<p>Automated agents write a routine share of the changes in this repository —
-alongside bot-authored dependency updates, which have been routine for years.
-The rule that makes this safe is short: <strong>an assistant is a generator, not a
-signatory.</strong> It cannot approve, own, or operate what it wrote, so the gate and
-the human signatures a change needs are exactly the same as if a person had
-typed every line. This page describes how we work with assistants under that
-rule: what counts as done, who signs off, and where the guardrails live. It is
-written for people reading the system; the machine-facing instructions that
-agents read are a separate layer, and this page deliberately stands without
-them.</p>
+<p>Automated agents write a routine share of the changes in this repository — alongside bot-authored
+dependency updates, which have been routine for years. The rule that makes this safe is short: <strong>an
+assistant is a generator, not a signatory.</strong> It cannot approve, own, or operate what it wrote, so
+the gate (the shared set of checks defined in <a href="../../architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/">ADR 014</a>)
+and the human signatures a change needs are exactly the same as if a person had typed every
+line.</p>
+<p>This page describes how we work with assistants under that rule: what counts as done, who signs off,
+and where the guardrails live. It is written for people reading the system; the machine-facing
+instructions that agents read are a separate layer, and this page deliberately stands without them.</p>
 <h2 id="the-premise-same-discipline-faster-generator">The premise: same discipline, faster generator<a class="headerlink" href="#the-premise-same-discipline-faster-generator" title="Permanent link">&para;</a></h2>
-<p>An assistant changes the speed at which code appears, not the obligations that
-come with it. A change is judged as a change: whoever — or whatever — produced
-a diff, it passes the same gate, the same review, and the same release rules
-as any other. The reasoning behind that rule is recorded in
-<a href="../../architecture/adr/022-the-codebase-explains-itself-to-its-agents/">ADR 022</a>;
-the gate itself is defined once and runs everywhere
-(<a href="../../architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/">ADR 014</a>),
-and a change answers only for what it caused
-(<a href="../../architecture/adr/015-a-change-answers-for-what-it-caused/">ADR 015</a>).</p>
+<p>An assistant changes the speed at which code appears, not the obligations that come with it. A
+change is judged as a change: whoever — or whatever — produced a diff, it passes the same gate, the
+same review, and the same release rules as any other.</p>
+<p>The reasoning behind that rule is recorded in <a href="../../architecture/adr/022-the-codebase-explains-itself-to-its-agents/">ADR
+022</a>; the gate itself is
+defined once and runs everywhere (<a href="../../architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/">ADR
+014</a>), and a change answers
+only for what it caused (<a href="../../architecture/adr/015-a-change-answers-for-what-it-caused/">ADR 015</a>).</p>
 <p>Because the assistant cannot sign, the responsibility for a change rests with
 the person who asked for it. What that person is agreeing to is defined next.</p>
 <h2 id="the-guarantee">The guarantee<a class="headerlink" href="#the-guarantee" title="Permanent link">&para;</a></h2>
 <p>A merged change always gives the same guarantee, whoever produced it: the
-gate runs the full ladder on every pull request — the commit checks
+gate runs the complete set of checks on every pull request — the commit checks
 (formatting, lint, types, secret scanning), the unit tests, and the end-to-end
 tests against real services — and all of it must pass before the change is
 accepted.</p>

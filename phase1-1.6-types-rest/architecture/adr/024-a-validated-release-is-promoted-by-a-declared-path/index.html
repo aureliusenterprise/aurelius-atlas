@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2607,6 +2762,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,135 +6296,131 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>A release is validated once and then moves by promotion: an environment receives the identical
+artifact, never a rebuilt one. The record's sharp edge is its scope. The system names and operates
+two environments, development and test, and hands every further environment a complete artifact
+rather than operating the promotion into it.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The system names the environments it operates: <strong>development</strong>, which is one
-person's machine, and <strong>test</strong>, which is the pipeline. A change becomes a
-release candidate by passing test. What happens to a released version after
-that is the adopting deployment's decision — acceptance and production exist
-only as customer- or project-specific arrangements, and this record says so
-out loud rather than leaving them to oral tradition.</p>
-<p>The system's obligation to those further environments is to hand over an
-artifact complete enough to promote: signed, versioned, and configured only
-by the settings an environment supplies. Where a deployment wants promotion
-to be a declared, repeatable path with a one-move rollback, it writes that
-path against the released artifact; the system neither operates it nor
-invents one on the deployment's behalf.</p>
-<p>The two named environments exist and are exercised today: development is the
-versioned container the whole system runs in, and test is the pipeline that
-validates every change against real services. The decision this record makes
-is the boundary between what the system operates and what it hands over, and
-the mechanisms for the named environments already exist — which is why this
-record is Accepted rather than a proposal.</p>
+<p><strong>The system names the environments it operates:</strong> <strong>development</strong>, one person's machine, and
+<strong>test</strong>, the pipeline. A change becomes a release candidate by passing test. What happens to a
+released version after that is the adopting deployment's decision: acceptance and production exist
+only as customer- or project-specific arrangements, stated here rather than left to oral tradition.</p>
+<p><strong>The obligation to the rest is a complete hand-over:</strong> an artifact ready to promote — signed,
+versioned, and configured only by the settings an environment supplies. Where a deployment wants
+promotion to be a declared, repeatable path with a one-move rollback, it writes that path against
+the released artifact; the system neither operates it nor invents one on the deployment's behalf.</p>
+<p><strong>Both named environments run today.</strong> Development is the versioned container the whole system
+runs in; test is the pipeline that validates every change against real services. The decision is
+the boundary between what the system operates and what it hands over — and the mechanisms for the
+named environments already exist, which is why this record is Accepted rather than Proposed.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The system releases as one versioned whole, and a release produces a complete
-set of deployable artifacts, validated together and signed so their origin is
-provable (<a href=".././029-shipped-artifacts-are-signed-and-their-origin-is-provable/">029</a>).
-Two environments are the system's own: development, where the whole system
-runs on one machine, and test, where the pipeline validates every change
-before it can become a release. Beyond test the picture changes shape —
-acceptance and production are where a customer's or project's requirements
-live, and they are not the same arrangement twice. The one part whose runtime
-is a cloud provider's reaches neither named environment today: it runs only
-in a local emulator, so its first real deployment will be unexercised.</p>
-<p>This is not an accident of laziness; it is the honest shape of a system meant
-to be adopted rather than operated by the people who build it. But the
-boundary still has to be drawn, because a reader who finds no statement will
-assume the missing environments are an oversight and build on them, and a
-reader who finds a promotion path in the documentation will assume the system
-operates one. The cost of the ambiguity is paid at the worst moment: the
-first deployment that matters, by the person with the least room for error.</p>
-<p>The question this record answers is what happens to a released version after
-it is published: which environments exist, what moving a version into one
-means, and who or what performs the move.</p>
+<p>The system releases as one versioned whole, and a release produces a complete set of deployable
+artifacts, validated together and signed so their origin is provable
+(<a href=".././029-shipped-artifacts-are-signed-and-their-origin-is-provable/">029</a>).
+Two environments are the system's own: development, where the whole system runs on one machine, and
+test, where the pipeline validates every change before it can become a release. Beyond test the
+picture changes shape — acceptance and production are where a customer's or project's requirements
+live, and they are not the same arrangement twice. The one part whose runtime is a cloud provider's
+reaches neither named environment today: it runs only in a local emulator, so its first real
+deployment will be unexercised.</p>
+<p>This is not an accident of laziness; it is the honest shape of a system meant to be adopted rather
+than operated by the people who build it.</p>
+<p>The boundary still has to be drawn. A reader who finds no statement will assume the missing
+environments are an oversight and build on them; a reader who finds a promotion path in the
+documentation will assume the system operates one. The cost of the ambiguity is paid at the worst
+moment: the first deployment that matters, by the person with the least room for error.</p>
+<p>The question this record answers is what happens to a released version after it is published:
+which environments exist, what moving a version into one means, and who or what performs the move.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
 <ul>
-<li><strong>R1 — The set of environments is stated.</strong> Where the system runs is
-  written down, including which environments the system operates and which it
-  hands over; "where does version N run?" has an answer that is not a
-  question back.</li>
-<li><strong>R2 — Promotion is repeatable where the system operates.</strong> Moving a
-  version into an environment the system runs is one declared action that
-  produces the same result every time, performable by whoever is allowed to
-  perform it, not only by whoever invented it.</li>
-<li><strong>R3 — The artifact does not change.</strong> What is promoted is the released,
-  signed artifact itself; an environment contributes settings, never a
-  rebuild.</li>
-<li><strong>R4 — Position is knowable.</strong> Any environment can state which version it
-  runs, and the statement is trustworthy because promotion is what updates it.</li>
-<li><strong>R5 — Rollback is one move where the system operates.</strong> Returning an
-  environment the system runs to a previous version is the same kind of
-  action as promotion, not a reconstruction.</li>
-<li><strong>R6 — The operated path is exercised.</strong> Promotion in the environments the
-  system runs happens routinely enough that its first use in anger is not its
-  first use.</li>
-<li><strong>R7 — The hand-over is complete.</strong> What the system gives an environment
-  it does not operate is enough to promote from without the system's help:
-  the artifact, its provenance, and the settings channel — no oral tradition
-  about extra steps only the builders know.</li>
+<li><strong>R1 — The set of environments is stated.</strong> Where the system runs is written down, including
+  which environments the system operates and which it hands over; "where does version N run?" has
+  an answer that is not a question back.</li>
+<li><strong>R2 — Promotion is repeatable where the system operates.</strong> Moving a version into an environment
+  the system runs is one declared action that produces the same result every time, performable by
+  whoever is allowed to perform it, not only by whoever invented it.</li>
+<li><strong>R3 — The artifact does not change.</strong> What is promoted is the released, signed artifact itself;
+  an environment contributes settings, never a rebuild.</li>
+<li><strong>R4 — Position is knowable.</strong> Any environment can state which version it runs, and the
+  statement is trustworthy because promotion is what updates it.</li>
+<li><strong>R5 — Rollback is one move where the system operates.</strong> Returning an environment the system
+  runs to a previous version is the same kind of action as promotion, not a reconstruction.</li>
+<li><strong>R6 — The operated path is exercised.</strong> Promotion in the environments the system runs happens
+  routinely enough that its first use in anger is not its first use.</li>
+<li><strong>R7 — The hand-over is complete.</strong> What the system gives an environment it does not operate is
+  enough to promote from without the system's help: the artifact, its provenance, and the settings
+  channel — no oral tradition about extra steps only the builders know.</li>
 </ul>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Name the operated environments; delegate the rest.</strong> Development and test
-  are named because the system operates them and exercises them daily;
-  acceptance and production are declared the deployment's, because their
-  shape is the engagement's requirement, not the system's. It satisfies every
-  requirement: R2, R5, and R6 speak only of the environments the system runs,
-  and R7 is the contract it keeps toward the ones it does not.</li>
-<li><strong>Hand deployment (the status quo).</strong> Whoever deploys knows how, and does it
-  by hand. It fails R1 — the set of environments is never written down — and
-  R7, because the hand-over is oral tradition: the extra steps live in the
-  heads of whoever built them.</li>
-<li><strong>Per-environment build pipelines.</strong> Each environment builds the code it
-  runs. It fails R3: the artifact in the environment was never the artifact
-  that was validated, which quietly undoes the confidence the release was
-  built to carry. It fails R5 as a side effect, since rollback means waiting
-  on a rebuild.</li>
-<li><strong>Declare every environment out of scope.</strong> Publish artifacts and let each
-  environment write its own path, naming nothing. It fails R1 even for the
-  environments the system does operate: development and test exist and are
-  exercised daily, and leaving them unnamed makes the taught path a secret.
-  The chosen decision takes this alternative's honest half — the further
-  environments are not the spine's to operate — and refuses its dishonest
-  half, which is silence about the two that are.</li>
-<li><strong>Adopt a platform's native deployment model wholesale.</strong> It answers R2 and
-  R4 for one environment shape and fails R3's neutrality by binding promotion
-  to that platform, which narrows where the system may run at all.</li>
-<li><strong>Do nothing.</strong> Costs nothing today and leaves every requirement to oral
-  tradition; it is the current state described as a choice, which is what
-  this record exists to prevent.</li>
-</ul>
+<p>The chosen shape is the Decision: name the operated environments, delegate the rest. It satisfies
+every requirement — R2, R5, and R6 speak only of the environments the system runs, and R7 is the
+contract it keeps toward the ones it does not. The rejected shapes:</p>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hand deployment (the status quo)</td>
+<td>R1: the set of environments is never written down. R7: the hand-over is oral tradition — the extra steps live in the heads of whoever built them.</td>
+</tr>
+<tr>
+<td>Per-environment build pipelines</td>
+<td>R3: the artifact in the environment was never the artifact that was validated, quietly undoing the confidence the release was built to carry. R5 as a side effect: rollback means waiting on a rebuild.</td>
+</tr>
+<tr>
+<td>Declare every environment out of scope</td>
+<td>R1 even for the environments the system does operate: development and test exist and are exercised daily, and leaving them unnamed makes the taught path a secret. The Decision takes this alternative's honest half — the further environments are not the spine's to operate — and refuses its dishonest half, which is silence about the two that are.</td>
+</tr>
+<tr>
+<td>A platform's native deployment model, wholesale</td>
+<td>R2 and R4 for one environment shape; fails R3's neutrality by binding promotion to that platform, which narrows where the system may run at all.</td>
+</tr>
+<tr>
+<td>Do nothing</td>
+<td>The current state described as a choice: every requirement left to oral tradition. This record exists to prevent that.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> the boundary between what the system operates and what it
-  hands over is written down, so neither a reader nor a reviewer has to guess
-  (R1, R4); the two operated environments are exercised daily rather than
-  hoped for (R6); and the hand-over contract is small and checkable — a
-  signed, versioned artifact configured only by settings (R3).</li>
-<li><strong>Negative:</strong> the system cannot promise a deployment how its release will
-  be promoted, and a customer who expects one must be told the answer is
-  theirs to build; naming the operated environments constrains future
-  flexibility, which is the point but will be felt as one; and the delegation
-  is honest only while the handed-over artifact is truly complete, so any
-  property a deployment needs that the artifact lacks silently pulls the
-  environment back into the spine's scope.</li>
-<li><strong>Neutral / follow-ups:</strong> promotion of a <em>released</em> artifact beyond test
-  has no mechanism here by design — a deployment that wants one writes it
-  against the signed artifact, and the first such deployment is this record's
-  first real test; the image the pipeline validates and the image the release
-  publishes are built by different steps, so R3 does not yet hold even for
-  the named environments, and closing that gap is a standing obligation of
-  this record; the
-  cloud-provider runtime reaches neither named environment and runs today
-  only in a local emulator, so its first real deployment will be unexercised;
-  rollback beyond test is the deployment's move, named as a deploy-time act
-  by the release record
-  (<a href=".././019-the-system-releases-as-one-versioned-whole/">019</a>); settings are
-  what an environment contributes to an artifact, and the channel that
-  delivers them is already decided elsewhere
-  (<a href=".././018-settings-arrive-at-startup-through-one-channel/">018</a>); and every
-  environment must be reachable by the same identity rules that govern every
-  other boundary
+<li>The boundary between what the system operates and what it hands over is written down, so neither
+  a reader nor a reviewer has to guess (R1, R4).</li>
+<li>The two operated environments are exercised daily rather than hoped for (R6).</li>
+<li>The hand-over contract is small and checkable: a signed, versioned artifact configured only by
+  settings (R3).</li>
+</ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The system cannot promise a deployment how its release will be promoted; a customer who expects
+  one must be told the answer is theirs to build.</li>
+<li>Naming the operated environments constrains future flexibility — the point, but it will be felt
+  as a cost.</li>
+<li>The delegation is honest only while the handed-over artifact is truly complete: any property a
+  deployment needs that the artifact lacks silently pulls the environment back into the spine
+  (the system's kept core, <a href=".././002-modules-are-removable-slices/">002</a>)'s scope.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Promotion of a <em>released</em> artifact beyond test has no mechanism here by design: a deployment
+  that wants one writes it against the signed artifact, and the first such deployment is this
+  record's first real test.</li>
+<li>The image the pipeline validates and the image the release publishes are built by different
+  steps, so R3 does not yet hold even for the named environments; closing that gap is a standing
+  obligation of this record.</li>
+<li>The cloud-provider runtime reaches neither named environment and runs today only in a local
+  emulator, so its first real deployment will be unexercised.</li>
+<li>Rollback beyond test is the deployment's move, named as a deploy-time act by the release record
+  (<a href=".././019-the-system-releases-as-one-versioned-whole/">019</a>).</li>
+<li>Settings are what an environment contributes to an artifact, and the channel that delivers them
+  is already decided elsewhere
+  (<a href=".././018-settings-arrive-at-startup-through-one-channel/">018</a>).</li>
+<li>Every environment must be reachable by the same identity rules that govern every other boundary
   (<a href=".././013-services-prove-who-they-are-at-every-boundary/">013</a>).</li>
 </ul>
 

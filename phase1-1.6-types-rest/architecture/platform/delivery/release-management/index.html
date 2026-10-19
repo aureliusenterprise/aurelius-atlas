@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5015,6 +5170,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Management
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -5030,6 +5202,48 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The flow
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-that-make-one-version-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Conventions that make one-version work
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5640,7 +5854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5681,6 +5895,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The flow
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-that-make-one-version-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Conventions that make one-version work
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -5708,7 +5952,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5851,6 +6095,48 @@
 
 
 <h1 id="release-management">Release Management<a class="headerlink" href="#release-management" title="Permanent link">&para;</a></h1>
+<p>The system releases as one versioned whole (<a href="../../../adr/019-the-system-releases-as-one-versioned-whole/">ADR 019</a>):
+one version number across the workspace, one changelog, one release event.</p>
+<h2 id="the-flow">The flow<a class="headerlink" href="#the-flow" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph LR
+    C[Commits] --&gt;|version| V[Version + changelog]
+    V --&gt; B[Image + inventory]
+    B --&gt;|scan green| SG[Signed + published]
+    SG --&gt;|promote by declared path| P[Production]</code></pre>
+<p>The unit that passes validation is the unit that ships, and a deployment promotes
+the signed artifact along the declared path
+(<a href="../../../adr/010-the-unit-validated-is-the-unit-that-ships/">ADR 010</a>,
+<a href="../../../adr/024-a-validated-release-is-promoted-by-a-declared-path/">ADR 024</a>).</p>
+<ol>
+<li><strong>Version</strong> — the release tool reads conventional commits and bumps the workspace as one: one
+   version, the project versions, and the changelog. A candidate can be cut locally for testing
+   without publishing anything.</li>
+<li><strong>Build</strong> — every part produces its wheel and its image; the validated unit is the unit that
+   ships (<a href="../../../adr/010-the-unit-validated-is-the-unit-that-ships/">ADR 010</a>).</li>
+<li><strong>Inventory</strong> — images carry a contents inventory
+   (<a href="../../../adr/033-shipped-artifacts-carry-a-contents-inventory/">ADR 033</a>) and a vulnerability
+   scan runs over the affected images in CI.</li>
+<li><strong>Sign and publish</strong> — published artifacts are signed with provable origin
+   (<a href="../../../adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable/">ADR 029</a>); the
+   publish pipeline promotes a validated release along the declared path
+   (<a href="../../../adr/024-a-validated-release-is-promoted-by-a-declared-path/">ADR 024</a>).</li>
+<li><strong>Docs</strong> — the site publishes per release tag
+   (<a href="../../../../contributor-guide/documentation/#publishing-the-documentation">publishing</a>).</li>
+</ol>
+<p>The commands — the candidate cut, the publish, the docs site mechanics — are the contributor
+guide's: <a href="../../../../contributor-guide/releasing/">Releasing</a>.</p>
+<h2 id="conventions-that-make-one-version-work">Conventions that make one-version work<a class="headerlink" href="#conventions-that-make-one-version-work" title="Permanent link">&para;</a></h2>
+<p>Conventional commit titles are required (the changelog is generated from them); template updates
+merge from the <code>template</code> remote without versioning pressure because the repo keeps its history
+(ADR 050's mergeability requirement). The runtime version window is declared, not floating
+(<a href="../../../adr/031-runtime-versions-have-a-declared-support-window/">ADR 031</a>).</p>
+<div class="admonition warning">
+<p class="admonition-title">A non-conventional commit title poisons the changelog</p>
+<p>The changelog is generated, so its entries are only as good as the titles: a commit titled
+"fixes" contributes "fixes". <code>feat:</code>/<code>fix:</code> also drive the version bump — a miscategorised
+title releases a minor where a patch was meant, and the one-version rule makes that number
+every part's number.</p>
+</div>
 
 
 

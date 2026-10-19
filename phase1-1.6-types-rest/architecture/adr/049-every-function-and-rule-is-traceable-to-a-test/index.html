@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3283,6 +3438,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,44 +6296,106 @@
 <li><strong>Date:</strong> 2026-10-09</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Every public function and every specified rule must be named by a test, and
+the pipeline refuses a change that leaves either uncovered. Each change
+publishes one report showing, per rule and per function, which tests cover it
+and whether they passed.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>We will require that every public function of the catalogue code and every rule in an increment's
-specification is named by at least one test, and the pipeline refuses a change that leaves either
-uncovered. Every change produces one published test report that shows, per rule and per function,
-which tests cover it and whether they passed.</p>
+<p><strong>Coverage means named by a test.</strong> Every public function of the catalogue
+code and every rule in an increment's specification is named by at least one
+test; the pipeline refuses a change that leaves either uncovered.</p>
+<p><strong>One published trace per change.</strong> Every change produces one test report
+that shows, per rule and per function, which tests cover it and whether they
+passed.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The conversion produces a large amount of new code in a short time, much of it with machine
-assistance, and every change carries two human signatures
-(<a href=".././044-every-change-carries-two-human-signatures/">044</a>). Reviewers need to see what a change
-proves, not only what it contains. Line coverage alone says that code ran during a test, not that
-any test meant to check it, and it says nothing about whether the specified rules were checked.</p>
+<p>The conversion produces a large amount of new code in a short time, much of it
+with machine assistance, and every change carries two human signatures
+(<a href=".././044-every-change-carries-two-human-signatures/">044</a>).</p>
+<ul>
+<li><strong>Reviewers need to see what a change proves, not only what it contains.</strong>
+  A signature is only as good as the evidence in front of it.</li>
+<li><strong>Line coverage is not this.</strong> It says that code ran during a test, not
+  that any test meant to check it — and it says nothing about whether the
+  specified rules were checked.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>R1 — No untested function.</strong> A public function without a test that names it does not merge.</li>
-<li><strong>R2 — No unchecked rule.</strong> A rule stated in a specification without a test that names it does
-  not merge.</li>
-<li><strong>R3 — One place to look.</strong> A reviewer opens one report per change and sees results, coverage,
-  traceability and parity together.</li>
-<li><strong>R4 — Cheap to comply.</strong> Declaring what a test covers is one line in the test.</li>
-</ul>
+<p>Any acceptable arrangement must deliver:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>No untested function.</strong> A public function without a test that names it does not merge.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>No unchecked rule.</strong> A rule stated in a specification without a test that names it does not merge.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>One place to look.</strong> A reviewer opens one report per change and sees results, coverage, traceability and parity together.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Cheap to comply.</strong> Declaring what a test covers is one line in the test.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Coverage percentage only.</strong> Fails R1 and R2: incidental execution counts as coverage, and
-  rules are invisible.</li>
-<li><strong>Manual traceability matrix in a document.</strong> Fails R1 and R2 in practice: it drifts from the
-  code on the first busy week.</li>
-<li><strong>Naming conventions (test name contains the function name).</strong> Partly meets R1 but is fragile
-  under renames and cannot express rules or several functions per test.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coverage percentage only</td>
+<td>R1 and R2: incidental execution counts as coverage, and rules are invisible.</td>
+</tr>
+<tr>
+<td>Manual traceability matrix</td>
+<td>R1 and R2 in practice: the document drifts from the code on the first busy week.</td>
+</tr>
+<tr>
+<td>Naming conventions (test name contains function name)</td>
+<td>Partly meets R1; fragile under renames, and it cannot express rules or several functions per test.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> reviewers get evidence instead of assurances; gaps are found by the pipeline, not
-  by users; the report doubles as living documentation of what is done.</li>
-<li><strong>Negative:</strong> every test carries a declaration, and trivial functions still need a named test;
-  the check can be satisfied by a weak test, so review of test quality remains a human job.</li>
-<li><strong>Neutral / follow-ups:</strong> current implementation: a pytest marker <code>covers</code>, a checker run in the
-  test pipeline, and an HTML report built from JUnit and coverage results.</li>
+<li>Reviewers get evidence instead of assurances; gaps are found by the
+  pipeline, not by users.</li>
+<li>The report doubles as living documentation of what is done.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Every test carries a declaration, and trivial functions still need a named
+  test.</li>
+<li>The check can be satisfied by a weak test, so review of test quality
+  remains a human job.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Current implementation: a pytest marker <code>covers</code>, a checker run in the test
+  pipeline, and an HTML report built from JUnit and coverage results.</li>
+</ul>
+<details class="question">
+<summary>Doesn't a declaration-only marker invite gaming?</summary>
+<p>It does — the record accepts that openly: the check proves a test <em>names</em>
+the function, not that the test is strong. Test quality stays a review
+judgement (R1, <a href=".././044-every-change-carries-two-human-signatures/">044</a>).
+The marker's job is to make silence impossible: an untested function is
+visible as an absence, which line coverage hides.</p>
+</details>
 
 
 

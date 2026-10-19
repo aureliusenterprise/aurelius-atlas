@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -4768,6 +4923,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Integration Methods
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -4783,6 +4955,48 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#surfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Surfaces
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#by-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        By phase
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5640,7 +5854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5681,6 +5895,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#surfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Surfaces
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#by-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        By phase
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -5708,7 +5952,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5847,6 +6091,37 @@
 
 
 <h1 id="integration-methods">Integration Methods<a class="headerlink" href="#integration-methods" title="Permanent link">&para;</a></h1>
+<p>How clients integrate with Aurelius Atlas: request/response over the Atlas REST API, served to
+browsers and machines alike. The catalogue has <strong>no streaming plane</strong> — the event-streaming slice of
+the template was removed (<a href="../../../adr/050-the-system-carries-only-what-the-catalogue-needs/">ADR 050</a>),
+so every integration is a call, and the catalogue's change events are its own store records (audit
+events arrive with increment 3.5), not a feed.</p>
+<details class="question">
+<summary>Atlas published change events to Kafka — where are they?</summary>
+<p>Nowhere, by decision: the event-streaming slice was removed with
+<a href="../../../adr/050-the-system-carries-only-what-the-catalogue-needs/">ADR 050</a> and the Kafka
+hooks are recorded as <a href="../../../conversion/deviations/">DV-01</a>. Integrations that watched the
+feed poll the REST API instead; the catalogue's own audit records (increment 3.5) are the
+durable event history.</p>
+</details>
+<h2 id="surfaces">Surfaces<a class="headerlink" href="#surfaces" title="Permanent link">&para;</a></h2>
+<p>Three surfaces, one origin: the <strong>REST API</strong> for machines, the <strong>dashboards</strong> for people (the
+Atlas UI, served by the catalogue service from the API's origin — DD-018), and the <strong>admin</strong>
+endpoints for liveness, readiness, and status. Which endpoints answer today, and what each
+returns, is the server's own documentation:
+<a href="../../../../api-reference/apps/aurelius-atlas-server/">aurelius-atlas-server</a> and its project
+<code>README.md</code>.
+Every one is byte-for-byte Atlas's in body and status, proven by parity scenarios
+(<a href="../../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">ADR 052</a>);
+where Aurelius Atlas must answer differently, the difference is a recorded deviation, never a
+silent one.</p>
+<h2 id="by-phase">By phase<a class="headerlink" href="#by-phase" title="Permanent link">&para;</a></h2>
+<p>The <a href="../../../conversion/">roadmap</a> adds the Atlas resource families in order: types (1.6),
+entity read/write and delete (2.3–2.5), relationships and classifications (3.x), search and the
+Atlas DSL (4.x), lineage and glossary (5.x), authentication and authorization (6.1–6.2), import and
+export of Atlas migration archives (6.3). Each arrives with parity scenarios and, where behaviour
+differs, a recorded <a href="../../../conversion/deviations/">deviation</a> — clients integrate against the
+contract described in <a href="../api-management/">API Management</a>, not against this page.</p>
 
 
 

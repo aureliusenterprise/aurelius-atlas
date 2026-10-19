@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -2877,6 +3032,45 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,107 +6296,145 @@
 <li><strong>Date:</strong> 2026-10-07</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>Every part exports its three signals to one collection point over a standard
+protocol. The tools that store and display the picture live behind that seam
+and can be changed without touching a part.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Every part exports the same three signals — traces, metrics, and logs — to
-one collection point that is part of the system, over a standard protocol,
-and never to a storage or visualisation backend directly. The collection
-point is the single seam: the tools that store and display the picture live
-behind it and can be changed without touching the parts.</p>
-<p>This decision was already in force before it was written down: the
-observability stack the development arrangement starts
+<p><strong>One seam, one protocol.</strong> Every part exports the same three signals —
+traces, metrics, and logs — to one collection point that is part of the system,
+over a standard protocol, and <strong>never to a storage or visualisation backend
+directly.</strong> The collection point is the single seam: the tools that store and
+display the picture live behind it and can be changed without touching the
+parts.</p>
+<p>This decision was in force before it was written down: the observability stack
+the development arrangement starts
 (<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>) includes a collection
-point that every instrumented part exports to, and the storage and
-visualisation backends behind it are known to the parts only through it.
-Where the picture is allowed to live — inside the system, never with a
-vendor — is a separate decision
-(<a href=".././016-the-system-observes-itself-internally/">016</a>); this record covers
-the shape of the seam the signals pass through.</p>
+point that every instrumented part exports to, and the backends behind it are
+known to the parts only through it.</p>
+<p>Where the picture is allowed to live — inside the system, never with a vendor —
+is a separate decision (<a href=".././016-the-system-observes-itself-internally/">016</a>);
+<strong>this record covers the shape of the seam the signals pass through.</strong></p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The running picture is assembled from what every part emits, and the
-organisation has to decide how the emissions reach the tools. The two failure
-shapes are known: parts that point directly at their storage backends, so
+organisation has to decide how the emissions reach the tools. <strong>The two failure
+shapes are known:</strong> parts that point directly at their storage backends, so
 changing a backend means touching every part, and parts that each speak a
-different tool's protocol, so the picture cannot be assembled at all. Both
-are the absence of a seam.</p>
-<p><a href=".././016-the-system-observes-itself-internally/">016</a> decides that the
-picture is produced and consumed inside the system. That decision is
-compatible with several internal shapes — every part wired to its own
-storage, one shared collector, a sidecar per part — and the shape is a real
-decision with its own consequences: it determines what it costs to change an
-observation tool, and what it costs to instrument a new part. Separating the
-two records keeps each checkable on its own: a system can keep its data
-inside the boundary and still have no seam, and the gap should be visible as
-exactly that.</p>
-<p>A standard protocol at the seam is what makes the arrangement portable: it is
-also the condition under which a future production arrangement could export
+different tool's protocol, so the picture cannot be assembled at all. Both are
+the absence of a seam.</p>
+<p><a href=".././016-the-system-observes-itself-internally/">016</a> decides the picture is
+produced and consumed inside the system. That is compatible with several
+internal shapes — every part wired to its own storage, one shared collector, a
+sidecar per part — and the shape is a real decision with its own consequences:
+it determines what it costs to change an observation tool, and what it costs to
+instrument a new part.</p>
+<p><strong>Separating the two records keeps each checkable on its own:</strong> a system can
+keep its data inside the boundary and still have no seam, and the gap should be
+visible as exactly that.</p>
+<p><strong>A standard protocol at the seam is what makes the arrangement portable.</strong> It
+is also the condition under which a future production arrangement could export
 elsewhere without re-instrumenting the parts — a step
-<a href=".././016-the-system-observes-itself-internally/">016</a> does not allow without
-a new record, but the seam is what keeps that door from being welded shut.</p>
+<a href=".././016-the-system-observes-itself-internally/">016</a> does not allow without a
+new record, <strong>but the seam is what keeps that door from being welded shut.</strong></p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>Any acceptable arrangement must deliver:</p>
-<ul>
-<li><strong>R1 — One seam.</strong> Parts hand their signals to a single collection point;
-  no part knows the address of a storage or visualisation backend.</li>
-<li><strong>R2 — A standard protocol.</strong> The handover uses a protocol the wider
-  ecosystem speaks, so neither the parts nor the backends behind the seam are
-  tied to this organisation's tooling choices.</li>
-<li><strong>R3 — The observer is replaceable.</strong> Storage and visualisation tools
-  behind the collection point can be changed, upgraded, or swapped without
-  touching any part.</li>
-<li><strong>R4 — Instrumenting a part is cheap.</strong> A new part points at the collection
-  point and exports; it gains the whole picture rather than one backend's
-  slice of it.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>One seam.</strong> Parts hand their signals to a single collection point; no part knows the address of a storage or visualisation backend.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>A standard protocol.</strong> The handover uses a protocol the wider ecosystem speaks — neither parts nor backends tied to this organisation's tooling choices.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>The observer is replaceable.</strong> Storage and visualisation tools behind the collection point can be changed, upgraded, or swapped without touching any part.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Instrumenting a part is cheap.</strong> A new part points at the collection point and exports; it gains the whole picture, not one backend's slice.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Each part exports to whichever backend it needs.</strong> No collection point;
-  parts point at their own storage. It fails R1 — the backends become N
-  dependencies instead of one seam — and R3 with it: changing a backend is a
-  change to every part. It can satisfy
-  <a href=".././016-the-system-observes-itself-internally/">016</a> perfectly — all data
-  stays inside — which is exactly why it needs its own record to rule out.</li>
-<li><strong>A collection point speaking an in-house protocol.</strong> A seam exists, but
-  the protocol is this organisation's own. It fails R2: every backend behind
-  the seam must be written or adapted for it, so the observer is not
-  replaceable in practice (R3), and a new part needs custom wiring (R4).</li>
-<li><strong>A sidecar or agent per part instead of one collection point.</strong> Each part
-  hands its signals to something beside it. It keeps R2 and R4 but strains
-  R1 — the picture is assembled from N agents whose configuration must agree
-  — and adds a per-part mechanism to operate where one shared point suffices.</li>
-<li><strong>Point parts at the backends today, add the seam later.</strong> Cheapest at the
-  start. It fails R3 at the moment of decision — the first backend change
-  touches every part — and defers R1 into a migration whose cost grows with
-  every part added before it.</li>
-<li><strong>Do nothing (leave the seam implicit in the stack).</strong> The state this
-  record corrects. It fails no requirement of the mechanism itself and fails
-  the organisation's: the next person to add a part or a backend would not
-  know the seam exists, and wiring around it would not fail any check.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Each part exports to its own backend</td>
+<td>R1: the backends become N dependencies instead of one seam; R3 with it — changing a backend is a change to every part. It can satisfy <a href=".././016-the-system-observes-itself-internally/">016</a> perfectly, all data inside, which is exactly why it needs its own record to rule out.</td>
+</tr>
+<tr>
+<td>A seam speaking an in-house protocol</td>
+<td>R2: every backend behind the seam must be written or adapted for it, so the observer is not replaceable in practice (R3) and a new part needs custom wiring (R4).</td>
+</tr>
+<tr>
+<td>A sidecar or agent per part</td>
+<td>R2 and R4 kept; R1 strained — the picture is assembled from N agents whose configuration must agree — and a per-part mechanism to operate where one shared point suffices.</td>
+</tr>
+<tr>
+<td>Point at backends today, seam later</td>
+<td>Cheapest at the start; R3 fails at the moment of decision — the first backend change touches every part — and R1 defers into a migration whose cost grows with every part added before it.</td>
+</tr>
+<tr>
+<td>Do nothing (leave the seam implicit)</td>
+<td>The state this record corrects. Fails the organisation's: the next person to add a part or a backend would not know the seam exists, and wiring around it would not fail any check.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> changing an observation tool is a change behind the seam, not
-  a change to the parts (R3); a new part is instrumented once and gains every
-  backend's view (R4); and the standard protocol keeps the door open to a
-  future production arrangement without re-instrumentation, without
-  committing to one.</li>
-<li><strong>Negative:</strong> the collection point is one more running part to start, keep
-  healthy, and reason about when signals go missing — a failure at the seam
-  blinds every backend at once; and the seam's standard protocol is the
-  lowest common denominator, so a backend's richer features are reachable
-  only behind it, never through the parts.</li>
-<li><strong>Neutral / follow-ups:</strong> the browser-rendered part currently sends its
-  signals to an address fixed in its own build rather than to the collection
-  point its deployment names
-  (<a href=".././018-settings-arrive-at-startup-through-one-channel/">018</a>) — a
-  deviation from this record's single seam until the address arrives through
-  that channel, and worth checking per deployment once it does; how the
-  collection point itself is deployed in a customer's environment follows
-  <a href=".././016-the-system-observes-itself-internally/">016</a>'s boundary rule, and
-  a deployment that names no collection point runs blind by choice, which is
-  a gap to name rather than tolerate; and how long the signals the collection
-  point holds are kept is a lifetime question owned by
-  <a href=".././025-data-has-a-stated-lifetime/">025</a>, not by this record.</li>
+<li>Changing an observation tool is a change behind the seam, not a change to the
+  parts (R3).</li>
+<li>A new part is instrumented once and gains every backend's view (R4).</li>
+<li>The standard protocol keeps the door open to a future production arrangement
+  without re-instrumentation — without committing to one.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The collection point is one more running part to start, keep healthy, and
+  reason about when signals go missing: <strong>a failure at the seam blinds every
+  backend at once.</strong></li>
+<li>The seam's standard protocol is the lowest common denominator, so a backend's
+  richer features are reachable only behind it, never through the parts.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The browser-rendered part sending its signals to an address fixed in its own
+  build is a deviation from this record's single seam until the address arrives
+  through the deployment channel
+  (<a href=".././018-settings-arrive-at-startup-through-one-channel/">018</a>). The example
+  app now takes its exporter URL from the fetched runtime config — the
+  deviation is closed there; the vendored dashboard remains out of scope
+  (<a href=".././030-interfaces-between-parts-are-verified-not-assumed/">030</a>).</li>
+<li><strong>A deployment that names no collection point runs blind by choice</strong> — a gap
+  to name rather than tolerate; how the collection point deploys in a customer's
+  environment follows <a href=".././016-the-system-observes-itself-internally/">016</a>'s
+  boundary rule.</li>
+<li>How long the signals the collection point holds are kept is a lifetime
+  question owned by <a href=".././025-data-has-a-stated-lifetime/">025</a>, not this record.</li>
+</ul>
+<details class="question">
+<summary>Why does a standard protocol matter if nothing ever exports?</summary>
+<p>Because the protocol is the cheap insurance. The picture lives inside
+(<a href=".././016-the-system-observes-itself-internally/">016</a>) and no export is
+allowed without a new record — but an in-house seam protocol makes every
+future option a re-instrumentation project (R2, R3). The standard keeps
+the door unlocked at the cost of lowest-common-denominator features.</p>
+</details>
 
 
 

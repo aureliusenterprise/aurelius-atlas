@@ -1,45 +1,79 @@
 # 028\. Operational secret handling has a named owner and a rehearsed path
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-07
 - **Deciders:** Aurelius Enterprise
 
+Accepted 2026-10-19: the owner of secret handling is the maintainers team (the role that signs changes under [044](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/044-every-change-carries-two-human-signatures/index.md>)). The urgent-rotation, key-loss, and break-glass paths are written in [Operations Ownership](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/contributor-guide/operations-ownership/index.md>), with the first rehearsal scheduled there (R3). Membership on the accepted side already works: adding a person is a reviewed change to `.sops.yaml` plus automated re-encryption ([008](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/008-secrets-never-in-plaintext/index.md>)).
+
+The bad cases of secret handling — urgent rotation, key loss, break-glass, removal — have a named owner and written, rehearsed paths. No secret is in a state where nobody knows who could rotate or recover it.
+
 ## Decision
 
-The everyday handling of real secrets — rotating one, replacing a key, recovering a lost one, granting temporary access, removing a person — is owned by a named role and follows a written, rehearsed path. The encryption mechanism already in place decides how secrets are stored; this record decides who operates it, on what rhythm, and what happens in the bad cases. No secret, and no key, is allowed to be in a state where nobody knows who could rotate or recover it.
+**Handling is owned, written, rehearsed.** Rotating a secret, replacing a key, recovering a lost one, granting temporary access, removing a person: each is owned by a named role and follows a written path walked before it is needed.
 
-The storage rule exists and is accepted elsewhere; the handling half is explicitly recorded there as nobody's decision yet. This record is Proposed because that decision — the owner, the cadence, the bad-case paths — has not been made.
+The storage mechanism ([008](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/008-secrets-never-in-plaintext/index.md>)) decides how secrets are stored; this record decides **who operates it, on what rhythm, and what happens in the bad cases.** No secret, and no key, may be in a state where nobody knows who could rotate or recover it.
 
 ## Context
 
-Secrets are encrypted to a named set of people and travel with the code as ciphertext. Membership is already a working process: adding a person is a reviewed change, and the re-encryption that follows is automated. That is the easy direction — planned, reviewed, rehearsed by frequency.
+Secrets are encrypted to a named set of people and travel with the code as ciphertext. Membership is already a working process — adding a person is a reviewed change, the re-encryption that follows is automated. That is the easy direction: planned, reviewed, rehearsed by frequency.
 
-The hard cases have no owner. If a credential must be rotated *today* — a suspected leak, a departing person with possible access, a vendor's forced expiry — who acts, how fast, and how is the new value distributed without a group chat? If a person loses their key, is the data recoverable, by whom, and under whose judgement — or is the honest answer that it is not? If an incident requires someone outside the named set to read one secret right now, is there a path, and does anyone find out afterwards? And do the keys themselves, and the shared secret the automation depends on, ever get replaced, or only added to?
+**The hard cases had no owner:**
 
-None of these are storage problems; the ciphertext is fine. They are organisational problems, and the record that drew the storage line named them as still undecided. The risk of leaving them undecided is specific: when the bad case arrives, the path gets invented under pressure, and an invented path around a security mechanism is how that mechanism gets bypassed for good.
+- A credential must be rotated *today* — suspected leak, departing person, vendor's forced expiry. Who acts, how fast, and how does the new value travel without a group chat?
+- A person loses their key. Is the data recoverable, by whom, under whose judgement — or is the honest answer that it is not?
+- An incident needs an outsider to read one secret right now. Is there a path, and does anyone find out afterwards?
+- Do the keys themselves, and the automation's shared secret, ever get replaced — or only added to?
+
+None of these are storage problems — the ciphertext is fine. They are organisational problems, and the record that drew the storage line named them as undecided. **The risk of leaving them undecided is specific: when the bad case arrives, the path gets invented under pressure, and an invented path around a security mechanism is how that mechanism gets bypassed for good.**
 
 ## Requirements
 
 Any acceptable arrangement must deliver:
 
-- **R1 — An owner exists.** One named role answers for secret handling: rotation, keys, membership, and the bad cases. "Who would do this?" has a written answer.
-- **R2 — Urgent rotation is a rehearsed path.** A credential can be replaced and redistributed quickly, by the owner, without improvisation — and the path has been walked at least once before it was needed.
-- **R3 — Loss has a declared answer.** What happens when a key is lost is written down: recovery with named custodians, or declared unrecoverable with the consequence owned. Silence is not a third option.
-- **R4 — Temporary access is possible and visible.** A break-glass reader can be granted for a stated reason and period, and the grant leaves a trace the owner can review afterwards.
-- **R5 — Removal is effective, not cosmetic.** Removing a person stops their future access to every secret, and the record says what it does *not* fix — what that person could already have copied.
-- **R6 — Keys and automation secrets are themselves rotated.** The people-keys and any shared secret the automation holds have a stated replacement cadence or a stated reason they do not.
-- **R7 — Cheap enough to survive.** Routine handling stays one reviewed change with automated follow-through; if the path is heavier than the mechanism it governs, it will be bypassed, and that outcome counts as this record failing.
+|  | Requirement |
+| --- | --- |
+| **R1** | **An owner exists.** One named role answers for rotation, keys, membership, and the bad cases — a written answer to "who would do this?" |
+| **R2** | **Urgent rotation is a rehearsed path.** Replaced and redistributed quickly, by the owner, walked at least once before it was needed. |
+| **R3** | **Loss has a declared answer.** Recovery with named custodians, or declared unrecoverable with the consequence owned. Silence is not a third option. |
+| **R4** | **Temporary access is possible and visible.** A break-glass grant for a stated reason and period, leaving a trace the owner reviews. |
+| **R5** | **Removal is effective, not cosmetic.** Future access stops; the record says what removal does *not* fix — what that person already copied. |
+| **R6** | **Keys and automation secrets are themselves rotated.** A stated replacement cadence, or a stated reason not. |
+| **R7** | **Cheap enough to survive.** Routine handling stays one reviewed change with automated follow-through; a path heavier than the mechanism it governs will be bypassed — that counts as this record failing. |
 
 ## Alternatives
 
-- **Leave it undecided (the status quo).** The storage rule explicitly stops here. It fails R1 by construction, and every other requirement by postponement: the path will be invented during the incident that needed an owner. This is the current arrangement, and the reason this record exists.
-- **A dedicated secrets platform with built-in rotation.** Rotation, short-lived credentials, access trails, and break-glass are product features. It answers R2, R4, and R6 well. It fails R6's cheapness test for a system of this size today — a second platform to operate, with its own custody question about *its* root — and it does not answer R3 or R5 by itself; custody and offboarding remain organisational decisions wearing new software. A legitimate destination, not an automatic one.
-- **Ad-hoc handling by senior people.** In practice this is what happens today: whoever built the mechanism gets paged. It fails R1 — the role is a person, and people leave — and R2, because an unpractised path is slower and less safe than a written one. It fails R4: temporary access granted informally leaves no trace.
-- **Strictest-possible policy: no break-glass, no escrow, no exceptions.** Maximises the purity of the named-set rule. It fails R4 — an incident that cannot grant access does not stop needing the secret, it stops using the mechanism — and R3, because declaring data unrecoverable is only honest if the business has agreed to lose it.
-- **Do nothing, recorded honestly.** Declaring "we accept that lost keys mean lost data and urgent rotation means whoever is available" is a decision an organisation may legitimately make at this size — but it must be written with R1 through R3 answered in the negative, with the risk named, rather than left as the current silence.
+| Alternative | Why it fails |
+| --- | --- |
+| Leave it undecided (status quo) | R1 by construction; everything else by postponement: the path will be invented during the incident that needed an owner. The current arrangement, and the reason this record exists. |
+| A dedicated secrets platform | Answers R2, R4, R6 well as product features. Fails R7 for a system of this size today — a second platform to operate, with its own custody question about *its* root — and does not answer R3 or R5 by itself: custody and offboarding remain organisational decisions wearing new software. A legitimate destination, not an automatic one. |
+| Ad-hoc handling by senior people | What happens today: whoever built the mechanism gets paged. R1: the role is a person, and people leave. R2: an unpractised path is slower and less safe. R4: informal access leaves no trace. |
+| Strictest-possible policy | No break-glass, no escrow, no exceptions. R4: an incident that cannot grant access does not stop needing the secret — it stops using the mechanism. R3: declaring data unrecoverable is only honest if the business agreed to lose it. |
+| Do nothing, recorded honestly | "Lost keys mean lost data; urgent rotation means whoever is available" is legitimate at this size — written with R1–R3 answered in the negative and the risk named, not left as silence. |
 
 ## Tradeoffs
 
-- **Positive:** the bad cases stop being improvisations — rotation, loss, and break-glass have owners and paths before they are needed (R1–R4); offboarding means something honest, including about what removal cannot undo (R5); the storage rule finally has the operational half it deferred, so the two records together describe a usable mechanism rather than a vault nobody can open in an emergency.
-- **Negative:** naming an owner makes that role a single point unless the path is documented well enough to hand over — the record trades silence for a dependency on a role; rehearsal of urgent rotation is time spent pretending to have an incident; and every added control (trails, cadences, grants) is friction that, per R7, must stay lighter than the risk it manages or it will be routed around.
-- **Neutral / follow-ups:** the storage rule this record completes names this exact gap as its open end ([008](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/008-secrets-never-in-plaintext/index.md>)) — on acceptance, that follow-up is closed by this record rather than left standing; the service-to-service identity rules assume credentials are "issued, stored, and rotated by the arrangements the system runs" ([013](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/013-services-prove-who-they-are-at-every-boundary/index.md>)) — this record is where those arrangements get their owner; the cadence numbers, custodian counts, and grant durations belong to whoever accepts this record and must be named at acceptance; and the automation's own shared secret is currently held as a pipeline secret with no documented custodians — R6 covers it explicitly so it cannot stay in the unexamined category.
+### What it buys
+
+- The bad cases stop being improvisations: rotation, loss, and break-glass have owners and paths before they are needed (R1–R4).
+- Offboarding means something honest, including about what removal cannot undo (R5).
+- The storage rule finally has its operational half: the two records together describe a usable mechanism, not a vault nobody can open in an emergency.
+
+### What it costs
+
+- A named owner is a single point unless the path is documented well enough to hand over: the record trades silence for a dependency on a role.
+- Rehearsing urgent rotation is time spent pretending to have an incident.
+- Every added control — trails, cadences, grants — is friction that, per R7, must stay lighter than the risk it manages, or people route around it.
+
+### Watch
+
+- The storage rule names this exact gap as its open end ([008](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/008-secrets-never-in-plaintext/index.md>)) — acceptance closes it here.
+- Service identity assumes credentials are "issued, stored, and rotated by the arrangements the system runs" ([013](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/013-services-prove-who-they-are-at-every-boundary/index.md>)) — this record is where those arrangements get their owner.
+- The cadence numbers, custodian counts, and grant durations are named in the Operations Ownership guide, not deferred.
+- The automation's own shared secret sits in R6 explicitly so it cannot stay in the unexamined category.
+
+> [!NOTE]
+>
+> **Why rehearse paths for incidents that may never happen?**
+>
+> Because the first real run is the worst day to learn the procedure: a suspected leak is a Tuesday afternoon, not a project. A path walked once in calm conditions is minutes; an invented path under pressure is the mechanism getting bypassed for good (R2, R3).

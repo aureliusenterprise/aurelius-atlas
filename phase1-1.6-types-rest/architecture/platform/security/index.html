@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5628,7 +5783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5696,7 +5851,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5837,6 +5992,40 @@
 
 
 <h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
+<p>How Aurelius Atlas protects identity, access, secrets, and data. The system's security decisions are
+in <a href="../../adr/">ADRs 007–008, 013, 028, 039</a>; the practitioner's guide is in the
+<a href="../../../contributor-guide/secrets-management/">Contributor Guide</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Scope</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="access-management/">Access Management</a></td>
+<td>Authorizer policies on every endpoint, role model</td>
+<td>6.2 (ADR 038)</td>
+</tr>
+<tr>
+<td><a href="identity-management/">Identity Management</a></td>
+<td>Shared identity provider, sessions, the dashboard's identity</td>
+<td>6.1 (ADR 007)</td>
+</tr>
+<tr>
+<td><a href="secrets-management/">Secrets Management</a></td>
+<td>Production: env channel, ownership (ADR 028), boundaries; dev/CI rules after; how-to in the <a href="../../../contributor-guide/secrets-management/">Contributor Guide</a></td>
+<td>written (ADRs 008/028)</td>
+</tr>
+<tr>
+<td><a href="data-encryption/">Data Encryption</a></td>
+<td>TLS in flight (production), at rest; dev certificates and named relaxations after</td>
+<td>written (0.2/0.5)</td>
+</tr>
+</tbody>
+</table>
 
 
 

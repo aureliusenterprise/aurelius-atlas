@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3364,6 +3519,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6064,58 +6297,118 @@
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
 <p>Supersedes <a href=".././048-behaviour-is-proven-against-the-reference-before-it-is-accepted/">048</a>.</p>
+<p>A ported behaviour is accepted only when it passes scenarios whose
+expectations are read from the reference implementation's source and its own
+tests, each scenario citing where it was read. The reference is never built,
+run, or recorded from.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>We will accept a ported behaviour only when it passes scenarios — requests with their expected
-responses — whose expectations are read from the source code and the own tests of the reference
-implementation, each scenario citing where it was read. No instance of the reference implementation is
-built, run or recorded from. Scenarios are stored with the code and reviewed like code; a comparison
-ignores only fields declared volatile, and a deliberate difference is declared with the deviation it
-belongs to.</p>
+<p><strong>Scenarios, cited.</strong> A ported behaviour is accepted only when it passes
+scenarios — requests with their expected responses — whose expectations are
+read from the source code and the own tests of the reference implementation,
+each scenario citing where it was read.</p>
+<p><strong>No running reference.</strong> No instance of the reference implementation is
+built, run, or recorded from.</p>
+<p><strong>Scenarios are code.</strong> They are stored with the code and reviewed like code;
+a comparison ignores only fields declared volatile, and a deliberate
+difference is declared with the deviation it belongs to.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The contract the new system must honour (<a href=".././046-the-catalogue-keeps-its-public-contract/">046</a>) is
-defined by a large existing implementation, not by a complete written specification.
-<a href=".././048-behaviour-is-proven-against-the-reference-before-it-is-accepted/">048</a> proposed recording the
-responses of a running reference implementation. The goal of the conversion is a system that does not
-depend on the old one; operating the old system, even only to record from it, keeps a toolchain and an
-operational skill alive that the organisation wants to retire, and ties the work to building a large
-legacy codebase. The source code of the reference, its own tests and its documentation remain
-available and fixed at one version.</p>
+<p>The contract the new system must honour
+(<a href=".././046-the-catalogue-keeps-its-public-contract/">046</a>) is defined by a
+large existing implementation, not by a complete written specification.
+<a href=".././048-behaviour-is-proven-against-the-reference-before-it-is-accepted/">048</a>
+proposed recording the responses of a running reference implementation.</p>
+<ul>
+<li><strong>The goal is independence.</strong> The conversion aims at a system that does not
+  depend on the old one; operating the old system — even only to record from
+  it — keeps a toolchain and an operational skill alive that the organisation
+  wants to retire, and ties the work to building a large legacy codebase.</li>
+<li><strong>The source is enough.</strong> The reference's source code, its own tests, and
+  its documentation remain available and fixed at one version.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>R1 — Grounded expectations.</strong> Every expected response can be traced to a named place in the
-  reference's source, tests or documentation, so a reviewer can check it against something the
-  implementers did not write.</li>
-<li><strong>R2 — Repeatable without the old system.</strong> No test run, and no step of writing a test, needs the
-  reference implementation built or running.</li>
-<li><strong>R3 — Changes to expectations are visible.</strong> When what counts as correct changes, the change shows
-  up in review.</li>
-<li><strong>R4 — Intended differences are explicit.</strong> A deliberate deviation is declared with its recorded
-  deviation, and the comparison respects it rather than being silenced test by test.</li>
-</ul>
+<p>Any acceptable arrangement must deliver:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>Grounded expectations.</strong> Every expected response can be traced to a named place in the reference's source, tests, or documentation, so a reviewer can check it against something the implementers did not write.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Repeatable without the old system.</strong> No test run, and no step of writing a test, needs the reference implementation built or running.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Changes to expectations are visible.</strong> When what counts as correct changes, the change shows up in review.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Intended differences are explicit.</strong> A deliberate deviation is declared with its recorded deviation, and the comparison respects it rather than being silenced test by test.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Record from a running reference (048).</strong> The strongest oracle for R1, but fails R2: someone must
-  build and run the reference to record each new scenario.</li>
-<li><strong>Hand-written expected results without citations.</strong> Fails R1: the expectations encode the
-  implementer's reading with nothing to check it against.</li>
-<li><strong>Run the reference's own integration tests against the new system.</strong> Meets R1 for what they check,
-  but fails R2 (their harness needs the reference's build) and they check too little of each response
-  to protect the dashboard.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Record from a running reference (048)</td>
+<td>The strongest oracle for R1; R2: someone must build and run the reference to record each new scenario.</td>
+</tr>
+<tr>
+<td>Hand-written expectations, uncited</td>
+<td>R1: the expectations encode the implementer's reading with nothing to check them against.</td>
+</tr>
+<tr>
+<td>Run the reference's own integration tests against the new system</td>
+<td>R1 for what they check; R2: their harness needs the reference's build — and they check too little of each response to protect the dashboard.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> no legacy toolchain in the loop; every expectation carries its evidence; everyday runs
-  are fast and offline.</li>
-<li><strong>Negative:</strong> expectations encode our reading of the source, so behaviour that is hard to see in the
-  code — serialisation details, ordering, error texts produced by frameworks — can be misread. Review
-  must compare a scenario with its citation, and scenarios borrow the reference's own test fixtures
-  verbatim where they exist.</li>
-<li><strong>Neutral / follow-ups:</strong> current reference: the <code>release-2.4.0</code> tag of Apache Atlas
-  (<a href="../../conversion/design-log/#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001</a>).
-  The scenario format, runner and comparison are test tooling; results appear in the published test
-  report (<a href=".././049-every-function-and-rule-is-traceable-to-a-test/">049</a>). Shadowing production traffic
-  of an existing Atlas remains possible later as a release check for a migrating customer.</li>
+<li>No legacy toolchain in the loop; every expectation carries its evidence;
+  everyday runs are fast and offline.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Expectations encode our reading of the source, so behaviour that is hard to
+  see in the code — serialisation details, ordering, error texts produced by
+  frameworks — can be misread. <strong>Review must compare a scenario with its
+  citation</strong>, and scenarios borrow the reference's own test fixtures verbatim
+  where they exist.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Current reference: the <code>release-2.4.0</code> tag of Apache Atlas
+  (<a href="../../conversion/design-log/#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served">DD-001</a>).</li>
+<li>The scenario format, runner, and comparison are test tooling; results appear
+  in the published test report
+  (<a href=".././049-every-function-and-rule-is-traceable-to-a-test/">049</a>).</li>
+<li>Shadowing production traffic of an existing Atlas remains possible later as
+  a release check for a migrating customer.</li>
+</ul>
+<details class="question">
+<summary>If nobody runs the old system, how do you know your reading is right?</summary>
+<p>You don't know it from a machine — you know it from citations a reviewer
+can check: every expectation names the place in Atlas's source, tests, or
+docs it was read from (R1), and the reference's own test fixtures are
+borrowed verbatim where they exist. That is a weaker oracle than a running
+system, accepted deliberately: the running system's cost is the legacy
+toolchain the conversion exists to retire (R2).</p>
+</details>
 
 
 

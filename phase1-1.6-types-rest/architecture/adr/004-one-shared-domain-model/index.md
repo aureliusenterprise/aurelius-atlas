@@ -4,41 +4,66 @@
 - **Date:** 2026-10-06
 - **Deciders:** Aurelius Enterprise
 
+Each shared business concept has exactly one canonical definition, held outside any technology. Copies elsewhere are generated from it where generation is possible and checked against it where it isn't — a copy that is neither is a violation, not a tolerated variant.
+
 ## Decision
 
-Every shared business concept — an order, a customer, an event — has exactly one canonical definition, held outside any single technology. Representations of the concept elsewhere in the system are generated from that definition where generation is possible and checked against it where it is not; a representation that is neither generated nor checked is a violation of this record, not a tolerated variant.
+**One canonical definition per concept**, held outside any single technology. Representations of the concept elsewhere are generated from it where generation is possible and checked against it where it is not.
 
-The same definition serves the concept in motion and at rest: the same statement of what an order *is* governs the records that stream between systems and the rows that persist in storage. Changing the concept is one change to the definition, and its consequences are visible everywhere at once.
+**The same definition serves the concept in motion and at rest:** one statement of what an order *is* governs the records that stream between systems and the rows that persist in storage. Changing the concept is one change, and its consequences are visible everywhere at once.
 
 ## Context
 
-The business system moves the same concepts across several boundaries: a concept is entered on a screen, processed by a service, streamed between services as a stream of events, and persisted in a database. Each of these places speaks its own technology's dialect, and each would, left to itself, keep its own description of the concept.
+The business system moves the same concepts across boundaries — entered on a screen, processed by a service, streamed between services, persisted in a database. Each place speaks its technology's dialect, and left to itself each keeps its own description of the concept.
 
-The cost of that falls due at every boundary. When two places describe the same concept differently, someone must translate between them, and translation code is where meaning is quietly lost: a field dropped on one side, a field whose meaning shifted, a field added in one place and unknown in another. These losses surface as data-integrity incidents and integration work — usually months after the change that caused them, and usually owned by whoever is nearest the symptom rather than whoever caused the drift.
+The cost falls due at every boundary. When two places describe one concept differently, someone translates between them, and translation code is where meaning is quietly lost: a field dropped, a meaning shifted, a field added in one place and unknown in another. These surface as data-integrity incidents and integration work — months after the change that caused them, owned by whoever is nearest the symptom.
 
-The same concept also has to survive transport between systems that were not built together, which means its description must be legible to receivers that do not share the codebase that produced it.
+A concept also has to survive transport between systems not built together, so its description must be legible to receivers that do not share the producing codebase.
 
-The decision to make is where the definition of a shared business concept lives, and how its copies across the system are kept honest.
+The decision is where a shared concept's definition lives, and how its copies are kept honest.
 
 ## Requirements
 
 Any acceptable arrangement must deliver:
 
-- **R1 — One concept, one definition.** There is exactly one authoritative statement of each shared concept, and it is not owned by any one consumer.
-- **R2 — Drift is detected, not discovered.** When a representation no longer matches the definition, a build or test fails — not a customer, later.
-- **R3 — One definition in motion and at rest.** The same statement of the concept serves both streaming between systems and persistence in storage, so a record in motion and a row at rest cannot mean different things.
-- **R4 — Change is one edit.** Evolving a concept is a single change to the definition, whose full impact is visible in one review.
-- **R5 — Portable across boundaries.** The definition can be consumed by systems outside the codebase — partners, tools, other teams' pipelines — without sharing code.
+|  | Requirement |
+| --- | --- |
+| **R1** | **One concept, one definition.** One authoritative statement per concept, owned by no single consumer. |
+| **R2** | **Drift is detected, not discovered.** A mismatch fails a build or test — not a customer, later. |
+| **R3** | **One definition in motion and at rest.** A record in motion and a row at rest cannot mean different things. |
+| **R4** | **Change is one edit.** Evolving a concept is a single change whose full impact is visible in one review. |
+| **R5** | **Portable across boundaries.** Consumable by systems outside the codebase without sharing code. |
 
 ## Alternatives
 
-- **Per-stack models with mapping layers at the boundaries.** The standard enterprise pattern: each stack models the concept in its own terms and explicit translators bridge the gaps. It fails R1 — there are as many definitions as stacks — and fails R2 structurally: a mapping layer does not detect drift, it absorbs it, so divergence between two models becomes a runtime behaviour difference rather than a build failure. R4 then costs one coordinated edit per stack, per change.
-- **The storage schema as the contract.** Let the database define the concept and derive everything else from it. It fails R2 for the parts that matter most: a database schema constrains the rows, not the records in motion, so streaming consumers evolve freely against a contract they do not consult; and it fails R5, binding a business concept to one storage technology.
-- **Per-consumer schemas, negotiated at integration time.** Each pair of systems agrees a format when they integrate, with no global source. It fails R1 immediately — the concept is defined once per integration — and R2, because nothing checks that two negotiated formats still describe the same concept a year later.
-- **Do nothing (each stack keeps its own model, no rule).** Zero cost today. It fails R2 by default: drift is discovered by whoever notices the data disagreeing, and R4 by default, since every concept change is N edits in N reviews by N people.
+| Alternative | Why it fails |
+| --- | --- |
+| Per-stack models with mapping layers | R1: as many definitions as stacks. R2 structurally: a mapping layer absorbs drift rather than detecting it, so divergence becomes a runtime difference. R4: one coordinated edit per stack, per change. |
+| The storage schema as the contract | R2 for what matters most: a schema constrains rows, not records in motion, so streaming consumers evolve against a contract they never consult. R5: binds a business concept to one storage technology. |
+| Per-consumer schemas, negotiated at integration | R1 immediately: the concept is defined once per integration. R2: nothing checks that two negotiated formats still describe one concept a year later. |
+| Do nothing (each stack keeps its own model) | R2 by default: drift is found by whoever notices the data disagreeing. R4 by default: every concept change is N edits in N reviews by N people. |
 
 ## Tradeoffs
 
-- **Positive:** a concept change is one reviewed change with visible blast radius (R4); representations cannot silently disagree, because the ones that can be generated are generated and the rest are checked (R2); the concept travels outside the organisation as a plain artifact, not as a library in a company language (R5).
-- **Negative:** the canonical definition becomes a shared dependency — changing it touches every consumer, so concept changes need care and a stated evolution policy (what may be added, what breaks consumers) that per-stack models never had to write down; some consumers legitimately need only a projection of a concept, and maintaining that projection by hand is exactly the kind of copy this record exists to eliminate.
-- **Neutral / follow-ups:** representations that cannot be generated from the definition today — a hand-written model in a dynamic language, a type in the interface, an inline schema in a flow tool — are kept in step by convention until a check exists; under this record that is a gap to close, not a tolerated state, and the obligation is a check that fails when they drift. Any such representation found out of step is regenerated or generated away rather than reconciled by hand. Whether more representations should be generated is a standing question this record does not settle; for the interfaces between parts, the verification rule ([030](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/030-interfaces-between-parts-are-verified-not-assumed/index.md>)) takes it up — a representation nobody checks against is where drift starts.
+### What it buys
+
+- A concept change is one reviewed change with visible blast radius (R4).
+- Representations cannot silently disagree: the generable ones are generated, the rest are checked (R2).
+- The concept travels outside the organisation as a plain artifact, not a library in a company language (R5).
+
+### What it costs
+
+- The canonical definition becomes a shared dependency: changing it touches every consumer, so concept changes need an evolution policy (what may be added, what breaks consumers) that per-stack models never had to write down.
+- Some consumers need only a projection of a concept, and hand-maintaining that projection is exactly the copy this record exists to eliminate.
+
+### Watch
+
+- Representations that can't be generated today — a hand-written model in a dynamic language, a type in the interface, an inline schema in a flow tool — are kept in step by convention until a check exists. Under this record that is a gap to close, not a tolerated state: a representation found out of step is regenerated, not reconciled by hand.
+
+> [!NOTE]
+>
+> **Convention is a gap, not a state**
+>
+> The sentence above is the record's sharpest edge: a hand-written copy that no check verifies is drift waiting to happen, and the record refuses to accept it as normal. The closing mechanism is interface verification ([030](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/030-interfaces-between-parts-are-verified-not-assumed/index.md>)) — until a check exists, treat every unverified copy as a to-do with a due date.
+
+- For interfaces between parts, the verification rule ([030](<https://aureliusenterprise.github.io/phase1-1.6-types-rest/architecture/adr/030-interfaces-between-parts-are-verified-not-assumed/index.md>)) takes it up — a representation nobody checks against is where drift starts.

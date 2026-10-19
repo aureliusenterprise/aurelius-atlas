@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3229,6 +3384,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,51 +6296,113 @@
 <li><strong>Date:</strong> 2026-10-09</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>All catalogue data lives in a single search store that is both the system of
+record and the search index — no graph database, relational database, or
+second index to keep in step. The store's two gaps (transactions, graph
+traversal) become application concerns, each recorded.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>We will keep all catalogue data — type definitions, entities, relationships, classifications,
-glossaries, audit events — in a single search store, which is both the system of record and the
-search index. There is no separate graph database, relational database or index to keep in step
-with it.</p>
-<p>The sharp edge: the store has no multi-record transactions and no native graph traversal. Where
-the catalogue needs either, the application provides it, and each such place is recorded as a
-design decision.</p>
+<p><strong>One store, two jobs.</strong> All catalogue data — type definitions, entities,
+relationships, classifications, glossaries, audit events — lives in a single
+search store, which is both the system of record and the search index.
+There is no separate graph database, relational database, or index to keep in
+step with it.</p>
+<p><strong>The store has known gaps.</strong> It has no multi-record transactions and no
+native graph traversal. Where the catalogue needs either, the application
+provides it, and each such place is recorded as a design decision.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The current catalogue keeps its data in a graph database, which itself runs on a wide-column
-store, plus a separate full-text index, plus a coordination service. Each is a system to deploy,
-secure, back up, upgrade and understand. Most of the catalogue's daily use is search and
-retrieval of individual records; graph traversal matters for lineage and for propagating
-classifications, but on graphs that are shallow compared with what a graph database is built for.</p>
-<p>The team must be able to run the whole system on one machine for development
-(<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>), and operations must stay affordable
-for small installations.</p>
+<p>The current catalogue keeps its data in a graph database, which itself runs on
+a wide-column store, plus a separate full-text index, plus a coordination
+service.</p>
+<ul>
+<li><strong>Each system is a system.</strong> Deploy, secure, back up, upgrade, and
+  understand — five verbs per store, paid continuously.</li>
+<li><strong>The daily workload is retrieval.</strong> Most of the catalogue's daily use is
+  search and retrieval of individual records; graph traversal matters for
+  lineage and for propagating classifications, but on graphs that are shallow
+  compared with what a graph database is built for.</li>
+<li><strong>One machine is a requirement.</strong> The team must be able to run the whole
+  system on one machine for development
+  (<a href=".././006-the-whole-system-runs-on-one-machine/">006</a>), and operations must
+  stay affordable for small installations.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>R1 — One thing to operate.</strong> A deployment has one stateful data service to run, back up and
-  restore.</li>
-<li><strong>R2 — Search is first-class.</strong> Full-text and attribute search, facets and suggestions perform
-  well without a second copy of the data.</li>
-<li><strong>R3 — No drift between copies.</strong> There is no second store that can disagree with the first.</li>
-<li><strong>R4 — Graph questions remain answerable.</strong> Lineage and classification propagation are
-  computed correctly for the depths the catalogue supports.</li>
-</ul>
+<p>Any acceptable arrangement must deliver:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>One thing to operate.</strong> A deployment has one stateful data service to run, back up and restore.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>Search is first-class.</strong> Full-text and attribute search, facets and suggestions perform well without a second copy of the data.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>No drift between copies.</strong> There is no second store that can disagree with the first.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>Graph questions remain answerable.</strong> Lineage and classification propagation are computed correctly for the depths the catalogue supports.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Keep a graph database plus a search index (the current design).</strong> Meets R4 natively but fails
-  R1 and R3: two or more stores to operate and keep consistent.</li>
-<li><strong>Relational database plus a search index.</strong> Meets R4 with recursive queries but fails R1 and R3
-  in the same way.</li>
-<li><strong>Relational database only.</strong> Meets R1, R3, R4 but weakens R2: full-text relevance, facets and
-  suggestions are the catalogue's most used features.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Graph database plus search index (the current design)</td>
+<td>R4 natively; R1 and R3: two or more stores to operate and keep consistent.</td>
+</tr>
+<tr>
+<td>Relational database plus search index</td>
+<td>R4 with recursive queries; R1 and R3 in the same way.</td>
+</tr>
+<tr>
+<td>Relational database only</td>
+<td>R1, R3, R4; weakens R2: full-text relevance, facets, and suggestions are the catalogue's most used features.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> one store to operate, back up and secure; search is native; no copies to reconcile.</li>
-<li><strong>Negative:</strong> consistency across records and multi-hop traversal become application concerns,
-  with their own tests and failure modes; very deep lineage is slower than in a graph database.</li>
-<li><strong>Neutral / follow-ups:</strong> the storage layout, identifier strategy, consistency model and
-  traversal strategy are design-log entries in <a href="../../conversion/design-log/">the conversion ledger</a>.
-  Current implementation: Elasticsearch 9.</li>
+<li>One store to operate, back up, and secure; search is native; no copies to
+  reconcile.</li>
 </ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Consistency across records and multi-hop traversal become application
+  concerns, with their own tests and failure modes.</li>
+<li>Very deep lineage is slower than in a graph database.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The storage layout, identifier strategy, consistency model, and traversal
+  strategy are design-log entries in
+  <a href="../../conversion/design-log/">the conversion ledger</a>.</li>
+<li>Current implementation: Elasticsearch 9.</li>
+</ul>
+<details class="question">
+<summary>Isn't a catalogue 'obviously' relational data?</summary>
+<p>For the workload that dominates — search, facets, retrieval of individual
+records — the relational answer is the weakest one: it buys R1 and R3 by
+giving up R2, the catalogue's most used features. The relational strengths
+(transactions, joins) are exactly the two gaps the application layer
+covers, once each, visibly.</p>
+</details>
 
 
 

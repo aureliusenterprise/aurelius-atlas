@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -5638,7 +5793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5706,7 +5861,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -5805,6 +5960,62 @@
 
 
 <h1 id="business-objectives">Business Objectives<a class="headerlink" href="#business-objectives" title="Permanent link">&para;</a></h1>
+<p>What the organisation gets from Aurelius Atlas, the commitment behind each benefit, and how it is
+measured.</p>
+<table>
+<thead>
+<tr>
+<th>Objective (what the business gets)</th>
+<th>Commitment</th>
+<th>Measured by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No disruption to the way people work</td>
+<td>The Atlas 2.4.0 REST API and dashboard behave as the reference does (ADR 046)</td>
+<td>Parity scenarios per increment, expectations cited from Atlas source (ADR 052)</td>
+</tr>
+<tr>
+<td>Governance you can afford</td>
+<td>One store, one service, one dashboard (ADR 047, ADR 050); no Kafka/HBase/Solr assembly to run</td>
+<td>Dependency and service count stay at the spine; ADR 050's removal map</td>
+</tr>
+<tr>
+<td>Confidence in every delivery</td>
+<td>Every increment is specified before built, proven before accepted (ADR 051, ADR 052)</td>
+<td>Definition of Done in the <a href="../../conversion/">roadmap</a>; green test report per change</td>
+</tr>
+<tr>
+<td>Quality you can audit</td>
+<td>Every public function and rule named by a test (ADR 049)</td>
+<td>The traceability check in CI; the per-change HTML report</td>
+</tr>
+<tr>
+<td>Fast, dependable development</td>
+<td>The whole system runs locally; defects reproduce (ADR 006)</td>
+<td>One command brings the system and its infrastructure up (ADR 005)</td>
+</tr>
+<tr>
+<td>What ships is what was tested</td>
+<td>E2E tests run the built image against real services (ADR 010, ADR 012)</td>
+<td>The e2e stage: the built image, real services, over TLS</td>
+</tr>
+<tr>
+<td>Trustworthy supply chain</td>
+<td>Signed artifacts, SBOMs, verified origins (ADR 029, ADR 033)</td>
+<td>CI scan and publish pipelines</td>
+</tr>
+</tbody>
+</table>
+<details class="question">
+<summary>Who measures these?</summary>
+<p>The pipeline, mostly: every measurement in the right-hand column is an automated artifact — a
+parity scenario, a trace check, an e2e run, a signed build — produced on the change that
+claims it, not a survey answered after the fact. The reviewer reads the evidence
+(<a href="../../adr/014-the-gate-is-defined-once-and-runs-everywhere/">ADR 014</a>); the organisation
+audits the reports, not the promises.</p>
+</details>
 
 
 

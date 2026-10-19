@@ -545,6 +545,9 @@ Attributes:
 - **`PATCH_HANDLERS`** (`dict[str, PatchHandler]`) –
 
   The patch actions of Atlas 2.4.0 (`applyTypePatches`, MDL-07 to MDL-14).
+- **`RACE_ATTEMPTS`** –
+
+  How often a model file or patch is tried while another process keeps writing first (MDL-15, DD-036).
 - **`REMOVE_LEGACY_REF_ATTRIBUTES`** –
 
   The patch action under which an update may remove attributes and swap a relationship's ends (MDL-11).
@@ -588,6 +591,14 @@ PATCH_HANDLERS: dict[str, PatchHandler] = {
 ```
 
 The patch actions of Atlas 2.4.0 (`applyTypePatches`, MDL-07 to MDL-14).
+
+### RACE\_ATTEMPTS
+
+```
+RACE_ATTEMPTS = 10
+```
+
+How often a model file or patch is tried while another process keeps writing first (MDL-15, DD-036).
 
 ### REMOVE\_LEGACY\_REF\_ATTRIBUTES
 

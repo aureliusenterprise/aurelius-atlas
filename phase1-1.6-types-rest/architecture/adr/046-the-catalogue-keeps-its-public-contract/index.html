@@ -263,6 +263,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -359,7 +369,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../CHANGELOG.md" class="md-tabs__link">
+      <a href="../../../CHANGELOG/" class="md-tabs__link">
         
   
   Changelog
@@ -478,6 +488,16 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -660,6 +680,114 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../contributor-guide/writing-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Writing Style
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/tls-certificates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  TLS Certificates
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Releasing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../contributor-guide/secrets-management/" class="md-nav__link">
         
   
@@ -668,6 +796,33 @@
     
   
   Secrets Management
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributor-guide/operations-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Operations Ownership
 
     
   </span>
@@ -3202,6 +3357,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5730,7 +5924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CHANGELOG.md" class="md-nav__link">
+      <a href="../../../CHANGELOG/" class="md-nav__link">
         
   
   
@@ -5830,6 +6024,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Tradeoffs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it costs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watch
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5861,7 +6094,7 @@
         
   
   <span class="md-ellipsis">
-    Aurelius Project Template
+    Aurelius Atlas
   </span>
 
       </a>
@@ -6063,55 +6296,114 @@
 <li><strong>Date:</strong> 2026-10-09</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
+<p>The metadata catalogue's implementation is being replaced; what users and
+integrations see is not. The same HTTP interface, the same shapes and error
+codes, the same screens — an unnamed difference is a defect, a named one a
+recorded deviation.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>We will replace the implementation of the metadata catalogue without changing what its users
-and integrations see: the same HTTP interface, the same request and response shapes, the same
-error codes, and the same user interface. A difference visible to a client is allowed only as a
-named, recorded deviation; anything not named is a defect.</p>
-<p>The sharp edge: the old behaviour, including its quirks, is the specification. Fixing a quirk is
-a deviation and needs a record, not a quiet improvement.</p>
+<p><strong>The contract is frozen; the implementation moves.</strong> The catalogue's
+implementation is replaced without changing what its users and integrations
+see: the same HTTP interface, the same request and response shapes, the same
+error codes, and the same user interface.</p>
+<p><strong>The old behaviour, including its quirks, is the specification.</strong> A
+difference visible to a client is allowed only as a named, recorded deviation;
+anything not named is a defect. Fixing a quirk is a deviation and needs a
+record, not a quiet improvement.</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The catalogue is used by people through its web interface and by other systems through its HTTP
-interface: ingestion jobs, lineage collectors, scripts written by data teams. Those consumers
-are outside our control and many are not even known to us. The current implementation is costly
-to run and to change: it needs several separate storage and indexing systems, and the team that
-maintains it works mostly in a different language.</p>
-<p>Replacing the implementation is the goal; replacing the consumers is not. Every client that has
-to change multiplies the cost of the migration and delays the day the old system can be switched
-off. At the same time, a replacement that is "mostly compatible" leaves each consumer to discover
-the differences in production.</p>
+<p>The catalogue is used by people through its web interface and by other systems
+through its HTTP interface: ingestion jobs, lineage collectors, scripts
+written by data teams.</p>
+<ul>
+<li><strong>The consumers are outside our control</strong> — and many are not even known to
+  us. Every client that has to change multiplies the cost of the migration and
+  delays the day the old system can be switched off.</li>
+<li><strong>Replacing the implementation is the goal; replacing the consumers is
+  not.</strong> A replacement that is "mostly compatible" leaves each consumer to
+  discover the differences in production.</li>
+<li><strong>The current implementation is costly</strong> to run and to change: it needs
+  several separate storage and indexing systems, and the team that maintains
+  it works mostly in a different language.</li>
+</ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>R1 — Existing clients keep working.</strong> A client that works against the current catalogue works
-  against the new one without being changed.</li>
-<li><strong>R2 — The user interface is reused.</strong> People keep the screens they know; no parallel interface
-  has to be built or learned during the migration.</li>
-<li><strong>R3 — Differences are known before they are met.</strong> Every difference a client could observe is
-  listed, with its reason, before it ships.</li>
-<li><strong>R4 — The migration can stop at any increment.</strong> At every point the new system serves a
-  consistent subset of the contract, so the work can pause without leaving a half-changed interface.</li>
-</ul>
+<p>Any acceptable arrangement must deliver:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>Existing clients keep working.</strong> A client that works against the current catalogue works against the new one without being changed.</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>The user interface is reused.</strong> People keep the screens they know; no parallel interface has to be built or learned during the migration.</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>Differences are known before they are met.</strong> Every difference a client could observe is listed, with its reason, before it ships.</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>The migration can stop at any increment.</strong> At every point the new system serves a consistent subset of the contract, so the work can pause without leaving a half-changed interface.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="alternatives">Alternatives<a class="headerlink" href="#alternatives" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Design a new, cleaner interface.</strong> It fails R1 and R2: every consumer and the interface must be
-  rewritten, and the migration ends only when the last consumer moves.</li>
-<li><strong>Keep the old interface but allow undocumented "obvious" fixes.</strong> It fails R3: each fix is a
-  surprise for a client that depended on the old behaviour.</li>
-<li><strong>Run both implementations behind a router indefinitely.</strong> It meets R1 but doubles operating
-  cost and leaves the old system in place, which is what the migration exists to end.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Alternative</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Design a new, cleaner interface</td>
+<td>R1 and R2: every consumer and the interface must be rewritten, and the migration ends only when the last consumer moves.</td>
+</tr>
+<tr>
+<td>Undocumented "obvious" fixes</td>
+<td>R3: each fix is a surprise for a client that depended on the old behaviour.</td>
+</tr>
+<tr>
+<td>Run both implementations behind a router indefinitely</td>
+<td>R1 holds; doubles operating cost and leaves the old system in place, which is what the migration exists to end.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-buys">What it buys<a class="headerlink" href="#what-it-buys" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Positive:</strong> consumers are untouched; the old system's behaviour is a free, executable
-  specification; the migration can be paused at any increment boundary (R4).</li>
-<li><strong>Negative:</strong> we inherit the old interface's design flaws and quirks, and improving them later
-  is a versioned change, not a refactor.</li>
-<li><strong>Neutral / follow-ups:</strong> the contract is verified by comparing behaviour with the reference
-  implementation (<a href=".././048-behaviour-is-proven-against-the-reference-before-it-is-accepted/">048</a>).
-  Current implementation: the Apache Atlas 2.4.0 REST API (<code>/api/atlas/v2</code>, <code>/api/atlas/admin</code>)
-  and its two user interfaces, <code>dashboardv2</code> and <code>dashboardv3</code>; deviations are listed in
+<li>Consumers are untouched; the old system's behaviour is a free, executable
+  specification.</li>
+<li>The migration can be paused at any increment boundary (R4).</li>
+</ul>
+<h3 id="what-it-costs">What it costs<a class="headerlink" href="#what-it-costs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The old interface's design flaws and quirks are inherited, and improving
+  them later is a versioned change, not a refactor.</li>
+</ul>
+<h3 id="watch">Watch<a class="headerlink" href="#watch" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The contract is verified by comparing behaviour with the reference
+  implementation
+  (<a href=".././048-behaviour-is-proven-against-the-reference-before-it-is-accepted/">048</a>).</li>
+<li>Current implementation: the Apache Atlas 2.4.0 REST API (<code>/api/atlas/v2</code>,
+  <code>/api/atlas/admin</code>) and its two user interfaces, <code>dashboardv2</code> and
+  <code>dashboardv3</code>; deviations are listed in
   <a href="../../conversion/deviations/">Deviations from Apache Atlas</a>.</li>
 </ul>
+<details class="question">
+<summary>The old behaviour has known bugs — why port them?</summary>
+<p>Because a client may depend on the quirk, and a fix that arrives unnamed
+is a breaking change delivered as a bug fix (R3). The quirk is fixed by
+recording a deviation and shipping it visibly — the same rule that makes
+the contract trustworthy also makes each improvement auditable.</p>
+</details>
 
 
 
