@@ -53,5 +53,10 @@
     "version": "docs-editorial-pass",
     "title": "docs-editorial-pass",
     "aliases": []
+  },
+  {
+    "version": "ci-chromatic-affected-gate",
+    "title": "ci-chromatic-affected-gate",
+    "aliases": []
   }
 ]
