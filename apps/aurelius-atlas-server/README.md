@@ -17,6 +17,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | `GET /api/atlas/admin/session`   | The dashboard's settings and the user (no login until 6.1)           |
 | `GET /api/atlas/admin/liveness`  | `Service is live` while the server runs                              |
 | `GET /api/atlas/admin/readiness` | `Service is ready to accept requests` while Elasticsearch is healthy |
+| `/api/atlas/v2/types/...`        | The type definitions: read, search, create, update and delete        |
 
 ## Dashboards
 
@@ -33,7 +34,12 @@ It checks for another process's type change at most every `AURELIUS_ATLAS_SERVER
 (default 5). Then it loads Apache Atlas's built-in models and applies their patches, as Atlas does from
 `$ATLAS_HOME/models`: by default the 2.4.0 models shipped with the server, or the directory
 `AURELIUS_ATLAS_SERVER_MODELS_DIR` names, laid out as Atlas's. Only new types, newer `typeVersion`s and patches
-not applied before change anything, so a restart writes nothing. The `/v2/types` endpoints arrive in 1.6.
+not applied before change anything, so a restart writes nothing.
+
+The 26 endpoints of Atlas's `TypesREST` (`aurelius_atlas_server/routes/types.py`) read and change the
+definitions through that store. `GET typedefs` and `typedefs/headers` take Atlas's filter parameters (`type`,
+`name`, `servicetype`, `supertype`, their `not` forms and `excludeInternalTypesAndReferences`) and list each kind
+sorted by name (DD-034).
 
 ## Running it
 
