@@ -76,7 +76,12 @@ nav:
           - AI-Assisted Development: contributor-guide/ai-assisted-development.md
           - Adopting the Template: contributor-guide/adopting-the-template.md
           - Documentation: contributor-guide/documentation.md
+          - Writing Style: contributor-guide/writing-style.md
+          - Testing: contributor-guide/testing.md
+          - TLS Certificates: contributor-guide/tls-certificates.md
+          - Releasing: contributor-guide/releasing.md
           - Secrets Management: contributor-guide/secrets-management.md
+          - Operations Ownership: contributor-guide/operations-ownership.md
           - Version Control: contributor-guide/version-control.md
     - API Reference:
           - api-reference/index.md

@@ -7,10 +7,10 @@ environment, including the all tools and dependencies required for local develop
 
 !!! NOTE "Prerequisites"
 
-    [Docker](https://www.docker.com) and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) must be installed on your system to use the development container.
+    [Docker](https://www.docker.com) must be installed on your system to use the development container.
 
     All container images in this repository — application bases as well as the development infrastructure
-    (Postgres, Keycloak, Kafka, observability) — are [Docker Hardened Images](https://dhi.io) pulled from
+    (Elasticsearch, Keycloak, Postgres, observability) — are [Docker Hardened Images](https://dhi.io) pulled from
     the `dhi.io` registry. Pulling them requires a Docker Hub account: run `docker login` on your host
     before starting the development container or running any `serve`, `test`, or `e2e` target, otherwise
     image pulls fail with an unauthorized error.
@@ -116,6 +116,58 @@ entirely — see
     Docker Hub credentials. If you have not run `docker login` with a Docker Hub account, pulls fail with
     an `unauthorized` (or rate-limit) error — see the Prerequisites note at the top of this guide.
 
+## Dev Topology
+
+The development infrastructure is a set of **slices**: each slice under `dev/` is its own compose
+project with its own network, named `aurelius-atlas-dev-<slice>-network`. An app's `serve` target
+starts the slices it needs via `dependsOn` (ADR 005); a slice's services reach each other by
+service name on a shared network.
+
+The rule that surprises people: **services are reached by service name, not `localhost`**. The
+store's certificate is issued for `elasticsearch`, so an IP or `localhost` fails certificate
+verification, not connectivity. The server's e2e container attaches to the Elasticsearch and
+observability networks and reaches the store as `https://elasticsearch:9200`. Certificate plumbing
+is in [TLS Certificates](tls-certificates.md).
+
+| Service                   | Host port                      | Slice           | Notes                                               |
+| ------------------------- | ------------------------------ | --------------- | --------------------------------------------------- |
+| Atlas server              | 21000                          | app             | Atlas's own port                                    |
+| Elasticsearch             | `${ELASTICSEARCH_PORT}` → 9200 | `elasticsearch` | TLS only                                            |
+| Postgres (examples)       | `${DATABASE_PORT}` → 5432      | `postgres`      | Keycloak keeps its own, on its network              |
+| Keycloak                  | 8080 / 8443                    | `keycloak`      | 8080 dev convenience; 8443 is the verified TLS path |
+| OTel collector            | 4317 / 4318                    | `observability` | OTLP gRPC / HTTP, TLS only                          |
+| Prometheus / Loki / Tempo | 9090 / 3100 / 3200             | `observability` | Consumed through the collector                      |
+| Grafana                   | 127.0.0.1:3000                 | `observability` | Loopback only                                       |
+
+Each slice documents its own services, images, and run commands in its colocated README:
+`dev/elasticsearch`, `dev/keycloak`, `dev/postgres`, `dev/observability`.
+
+!!! WARNING "Keycloak's port 8080 is development-only"
+
+    The plaintext 8080 listener exists so browser sign-in works in the dev stack; 8443 is the
+    verified TLS path that CI and E2E use. The production arrangement has no plaintext listener —
+    see [Data Encryption](../architecture/platform/security/data-encryption.md#named-relaxation-development-arrangement-only).
+
+## Runtime Windows
+
+Per [ADR 031](../architecture/adr/031-runtime-versions-have-a-declared-support-window.md), each
+runtime the system runs on has one declared window. The pins named here are the answer — this page
+names where they live, not their values, so there is one place to update. A major-version bump is a
+reviewed change to every pin at once, approved by the maintainers team.
+
+| Runtime       | Supported window                                                 | Pins live in                                                                                                              |
+| ------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Python        | 3.14 only                                                        | `pyproject.toml` (`requires-python`), `.devcontainer` python feature, server `Dockerfile` base image, pyright/ruff target |
+| Node.js       | 24 (LTS jod)                                                     | `.devcontainer` node feature, dashboard `build.Dockerfile`                                                                |
+| Java          | 21 (dev tooling for the vendored dashboards' build only)         | `.devcontainer` java feature                                                                                              |
+| Elasticsearch | 9.x (dev image 9.5)                                              | `dev/elasticsearch/docker-compose.yaml` image tag                                                                         |
+| Keycloak      | 26.x                                                             | `dev/keycloak/docker-compose.yaml` image tag                                                                              |
+| PostgreSQL    | 18 (Keycloak's database and the template example only — ADR 047) | `dev/postgres`, `dev/keycloak` compose image tags                                                                         |
+
+Minor and patch releases inside a window follow the dependency rule
+([ADR 020](../architecture/adr/020-dependencies-stay-current-by-default.md)); the floor rises only
+when every pin above moves in one change.
+
 ## Explore the Workspace
 
 The workspace is organized as a monorepo, which means that all the projects are stored in a single repository.
@@ -125,13 +177,12 @@ The workspace is organized as a monorepo, which means that all the projects are 
     The workspace is divided into the following main directories:
 
     - `apps`: Contains the main applications and services that make up the workspace.
-    - `connectors`: Provides Kafka connectors and other integration modules for external systems.
-    - `dev`: Compose files and configuration for the supporting development infrastructure (Postgres,
-      Keycloak, Kafka, observability stack).
-    - `docker`: Includes Dockerfiles and resources for building base images used across the workspace.
+    - `dev`: Compose files and configuration for the supporting development infrastructure (Elasticsearch,
+      Keycloak, Postgres, observability stack).
     - `docs`: Central location for all project documentation, guides, and reference materials.
     - `libs`: Shared libraries and utilities used by multiple applications within the monorepo.
-    - `schemas`: Shared Avro event schemas exchanged between producers and consumers.
+    - `reports`: License and vulnerability report generators.
+    - `schemas`: Avro event schemas used by the template's example library only.
     - `secrets`: Your personal SOPS/age key; this folder is excluded from version control.
     - `tools`: Custom automation (Nx plugins) that wires builds, containers, secrets, and docs into `Nx`.
 

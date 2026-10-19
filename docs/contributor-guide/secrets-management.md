@@ -47,6 +47,16 @@ merge the changes into the `main` branch. Have a team member review and approve 
 merged, a GitHub action rotates the encryption on all encrypted files in the repository to include your public
 key and pushes the re-encrypted files to `main`.
 
+```mermaid
+graph LR
+    K[Add your public key to .sops.yaml] -->|PR| RV[Team review]
+    RV -->|approve + merge| RT[Rotation workflow]
+    RT -->|re-encrypts all .env.enc| M[main]
+    M --> Y[You can decrypt]
+```
+
+Review is the security gate: rotation runs only on `main`, so a key works only after a human verified it.
+
 !!! IMPORTANT "Reviewing .sops.yaml changes is the security gate"
 
     The rotation workflow holds the key that decrypts every `.env.enc` in the repository, so it deliberately runs
