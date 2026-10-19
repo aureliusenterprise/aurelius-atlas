@@ -8,7 +8,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
 import asyncio
 import functools
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -41,6 +41,9 @@ from aurelius_atlas_core.typedef_store import (
 )
 
 LOGGER = logging.getLogger(__name__)
+
+RACE_ATTEMPTS = 10
+"""How often a model file or patch is tried while another process keeps writing first (MDL-15, DD-036)."""
 
 BUILTIN_MODELS_DIR = Path(__file__).parent / "models"
 """``addons/models`` of Apache Atlas 2.4.0, unchanged (DD-032)."""
@@ -410,7 +413,9 @@ class ModelLoader:
             if types_def.is_empty():
                 LOGGER.info("No type in file %s", path)
                 return
-            changed = await self._store.create_update_types_def(types_def, check_type_version=True)
+            changed = await _until_not_raced(
+                lambda: self._store.create_update_types_def(types_def, check_type_version=True)
+            )
         except Exception:
             LOGGER.exception("error while registering types in file %s", path)
             result.failed_files.append(path)
@@ -439,7 +444,9 @@ class ModelLoader:
 
     async def _apply_patch(self, patch: TypedefPatch, handler: PatchHandler, path: Path) -> PatchStatus | None:
         try:
-            status = await self._store.apply_patch(patch.record(), lambda registry: handler(patch, registry))
+            status = await _until_not_raced(
+                lambda: self._store.apply_patch(patch.record(), lambda registry: handler(patch, registry))
+            )
         except AtlasError:
             LOGGER.exception("Failed to apply %s (action: %s) in file: %s. Ignored.", patch.id, patch.action, path)
             return PatchStatus.FAILED
@@ -448,3 +455,18 @@ class ModelLoader:
         else:
             LOGGER.info("%s (status: %s; action: %s) in file: %s", patch.id, status, patch.action, path)
         return status
+
+
+async def _until_not_raced[T](change: Callable[[], Awaitable[T]]) -> T:
+    """Make ``change`` again while the store gives up on it after losing to other processes (MDL-15, DD-036).
+
+    Every lost race is another process's write, so processes starting together each get through.
+    """
+    for attempt in range(1, RACE_ATTEMPTS + 1):
+        try:
+            return await change()
+        except AtlasError as error:
+            if error.code is not AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK or attempt == RACE_ATTEMPTS:
+                raise
+            LOGGER.info("Another process changed the types first (attempt %d); trying again", attempt)
+    raise AssertionError  # pragma: no cover - the loop returns or raises

@@ -2,7 +2,8 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** DD-034, DD-035, DV-09, DV-10; relies on DD-028, DD-029, DD-024, DV-04, DV-06, DV-07
+- **Records:** DD-034, DD-035, DD-036 (a fix to 1.5's MDL-15), DV-09, DV-10; relies on DD-028, DD-029, DD-024,
+  DV-04, DV-06, DV-07
 
 ## Scope
 
