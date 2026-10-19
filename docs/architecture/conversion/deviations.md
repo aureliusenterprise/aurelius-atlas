@@ -4,6 +4,16 @@ Every behaviour of Aurelius Atlas that a client could observe and that differs f
 2.4.0 ([ADR 046](../adr/046-the-catalogue-keeps-its-public-contract.md)). The parity report links
 each tolerated difference to its entry here; a difference without an entry is a defect.
 
+??? INFO "DV-04 is temporary"
+
+    The most visible row in this table — "no endpoint needs a login" — is the current state of a
+    planned sequence, not a security posture: authentication arrives with increment 6.1 and the
+    deviation is removed then. Until 6.1, read every anonymous call in this repository as
+    development-arrangement behaviour, not production design
+    ([ADR 039](../adr/039-data-is-protected-where-it-travels-and-where-it-rests.md) names the
+    boundary; [ADR 046](../adr/046-the-catalogue-keeps-its-public-contract.md) keeps the shape
+    Atlas clients expect when it lands).
+
 | #     | Area           | Apache Atlas behaviour                                                                                                                                                        | Aurelius Atlas behaviour                                                                               | Reason                                                                                   | Increment |
 | ----- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | --------- |
 | DV-01 | Notifications  | Publishes entity changes to Kafka; consumes hook messages                                                                                                                     | Not supported                                                                                          | Out of scope ([ADR 050](../adr/050-the-system-carries-only-what-the-catalogue-needs.md)) | 0.1       |

@@ -242,6 +242,10 @@ jobs:
         runs-on: ubuntu-latest
         needs: test
 
+        env:
+            # Task-based affected selection — see the `test` job.
+            NX_LEGACY_AFFECTED: "false"
+
         permissions:
             contents: read
 
@@ -257,8 +261,25 @@ jobs:
                   sops: "true"
                   node: "true"
 
+            - name: Set SHA for affected commands
+              uses: nrwl/nx-set-shas@v5
+
+            # Chromatic only publishes aurelius-atlas-ui's Storybook, so skip
+            # the publish when the UI (or its dependencies) are not affected.
+            - name: Check if aurelius-atlas-ui is affected
+              id: affected
+              run: |
+                  if npx nx affected -t build-storybook --graph=stdout \
+                    | jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' \
+                    > /dev/null; then
+                    echo "ui-affected=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "ui-affected=false" >> "$GITHUB_OUTPUT"
+                  fi
+
             - name: Run Chromatic
-              uses: chromaui/action@v17
+              if: ${{ steps.affected.outputs.ui-affected == 'true' }}
+              uses: chromaui/action@v18
               with:
                   buildCommand: "npx nx build-storybook aurelius-atlas-ui"
                   outputDir: "dist/storybook/aurelius-atlas-ui"
