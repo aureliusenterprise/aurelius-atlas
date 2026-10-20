@@ -39,6 +39,9 @@ trust the local CA (each project's `certs/`, `nx certgen`); the browser-facing U
 (Grafana, Prometheus) stay plaintext on a developer machine (ADR 039).
 
 Dashboards are file-provisioned from `config/grafana/dashboards/` — one per
-application/dev stack (FastAPI, frontend, Keycloak, Postgres, and
+application/dev stack (FastAPI, frontend, webapp, Keycloak, Postgres, and
 the observability stack itself), all in the **Aurelius** folder. Edit the
 JSON in the repo rather than the UI: provisioning overwrites UI edits.
+When copying a dashboard as a template, give the copy its own `uid`/`title` and
+shift the panel ids (the Grafana API file provider keys objects on the
+dashboard's internal id, and a clone reusing the original's ids fails to save).
