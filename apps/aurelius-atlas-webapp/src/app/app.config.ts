@@ -6,6 +6,7 @@ import {
     provideZonelessChangeDetection,
 } from "@angular/core";
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from "@angular/router";
+import { provideApiBaseUrl } from "aurelius-atlas-data-access";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
@@ -15,6 +16,12 @@ import {
     provideAureliusOpenTelemetry,
     provideAureliusOpenTelemetryMetrics,
 } from "aurelius-atlas-observability";
+import {
+    INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
+    includeBearerTokenInterceptor,
+    provideKeycloak,
+} from "keycloak-angular";
+import type { KeycloakInitOptions } from "keycloak-js";
 
 import { AppConfig, parseAppConfig } from "./config";
 import { routes } from "./routes";
@@ -48,14 +55,38 @@ export function metricsUrl(config: AppConfig): string {
 }
 
 /**
+ * The Keycloak init options: `check-sso` (an existing SSO session signs in without a
+ * click; the root guard in `routes.ts` redirects everyone else) with a silent-SSO
+ * redirect at the origin root, where the `silent-check-sso.html` asset is served
+ * (APC-05).
+ * @returns the init options for {@link provideKeycloak}
+ */
+export function keycloakInitOptions(): KeycloakInitOptions {
+    return {
+        onLoad: "check-sso",
+        silentCheckSsoRedirectUri: globalThis.location.origin + "/silent-check-sso.html",
+    };
+}
+
+/**
+ * The bearer-token interceptor config (APC-06, DD-004): the token rides every
+ * same-origin `/api` call — the Atlas API — and nothing else. The server ignores it
+ * until 6.1; sending it from day one is the stated pre-6.1 condition (DD-052).
+ */
+export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }];
+
+/**
  * Load the application configuration and assemble the providers.
  *
  * Increment 7.1 wires the shell (config + router) and the operational
  * telemetry (SHL-14): traces, metrics with Core Web Vitals, uncaught errors as
  * span events, and `traceparent` propagation on HTTP calls — all through
  * `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
- * clickstream paths (DD-040). The Keycloak and bearer-token providers arrive
- * with 7.3, which owns the auth wiring.
+ * clickstream paths (DD-040). Increment 7.3 adds the auth wiring (DD-044):
+ * Keycloak with check-sso + silent-SSO (APC-05) and the bearer-token
+ * interceptor on `/api` (APC-06, DD-004's in-memory token store), replacing the
+ * Aurelius `libs/authentication` wholesale (DD-052) — the same provider set the
+ * example app proves.
  * @returns The {@link ApplicationConfig} to bootstrap with.
  */
 export async function initialize(): Promise<ApplicationConfig> {
@@ -82,6 +113,23 @@ export async function initialize(): Promise<ApplicationConfig> {
                 name: "aurelius-atlas-webapp",
                 resource: sessionResource,
             }),
+            // The REST client composes every URL from this base — the Aurelius
+            // deployment-proxy coupling is not ported (APC-01, DD-050).
+            provideApiBaseUrl(config.apiBaseUrl),
+            // check-sso + silent-SSO: an existing SSO session signs in without a
+            // click; the root guard (routes.ts) redirects everyone else (APC-05).
+            provideKeycloak({
+                config: config.keycloak,
+                initOptions: keycloakInitOptions(),
+            }),
+            // Bearer token on every /api call (APC-06, DD-004). The server
+            // ignores it until 6.1; sending it from day one is the stated
+            // pre-6.1 condition (DD-052), and refresh is keycloak-angular's —
+            // the legacy updateToken loop is not ported (APC-07).
+            {
+                provide: INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
+                useValue: bearerTokenConfig,
+            },
             provideZonelessChangeDetection(),
             provideRouter(
                 routes,
@@ -90,8 +138,12 @@ export async function initialize(): Promise<ApplicationConfig> {
                 withInMemoryScrolling({ anchorScrolling: "enabled", scrollPositionRestoration: "enabled" }),
             ),
             // The OTLP interceptor adds W3C traceparent to every API call so
-            // browser and server spans join one trace (ADR 016).
-            provideHttpClient(withXhr(), withInterceptors([aureliusOpenTelemetryHttpInterceptor])),
+            // browser and server spans join one trace (ADR 016); the bearer
+            // interceptor adds the Keycloak token to /api (APC-06).
+            provideHttpClient(
+                withXhr(),
+                withInterceptors([aureliusOpenTelemetryHttpInterceptor, includeBearerTokenInterceptor]),
+            ),
             // The validated config is provided so feature slices read it from DI
             // instead of fetching it themselves (SHL-10: one settings channel).
             { provide: APP_CONFIG, useValue: config },

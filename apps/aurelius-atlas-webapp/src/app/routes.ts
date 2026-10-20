@@ -1,4 +1,29 @@
-import { Routes } from "@angular/router";
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes } from "@angular/router";
+import { AuthGuardData, createAuthGuard } from "keycloak-angular";
+
+/**
+ * The app-root guard (APC-05, DD-052): an unauthenticated visit redirects to the
+ * Keycloak sign-in page and returns to the requested route afterwards. The legacy
+ * `Shell.childRoutes(..., requiresAuth)` guarded every feature route from the shell;
+ * `createAuthGuard` on the root route guards them all from where routing is declared,
+ * and no screen can forget it.
+ * @param _route the activated route (unused)
+ * @param state the router state — its url becomes the post-login redirect
+ * @param keycloak the guard's injected Keycloak (APC-05)
+ * @param keycloak.authenticated whether Keycloak's check-sso found a session
+ * @param keycloak.login the Keycloak client
+ * @returns whether the navigation may proceed
+ */
+async function rootAuthGuard(
+    _route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot,
+    { authenticated, keycloak }: AuthGuardData,
+): Promise<boolean> {
+    if (!authenticated) {
+        await keycloak.login({ redirectUri: new URL(state.url.replace(/^\//, ""), document.baseURI).href });
+    }
+    return authenticated;
+}
 
 /**
  * The application routes, ported from the Aurelius `AppRoutingModule`.
@@ -8,18 +33,28 @@ import { Routes } from "@angular/router";
  * are kept (SHL-04, SHL-05). Scroll restoration is configured in
  * `app.config.ts`, where Aurelius had `scrollPositionRestoration: 'enabled'`
  * (SHL-06).
+ *
+ * Everything sits under one guarded empty-path parent (APC-05, DD-052): the
+ * parent matches every navigation, so its guard runs for every screen — the
+ * signal-state replacement of the Aurelius shell's per-route `requiresAuth`.
  */
 export const routes: Routes = [
-    { path: "", redirectTo: "search/browse", pathMatch: "full" },
     {
-        path: "search",
-        loadChildren: () => import("./search/search.routes").then((m) => m.SEARCH_ROUTES),
+        path: "",
+        canActivate: [createAuthGuard(rootAuthGuard)],
+        children: [
+            { path: "", redirectTo: "search/browse", pathMatch: "full" },
+            {
+                path: "search",
+                loadChildren: () => import("./search/search.routes").then((m) => m.SEARCH_ROUTES),
+            },
+            // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
+            // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain
+            // '**' -> '' -> '/search/browse' lands on the default destination.
+            // Angular 22's router stops at '' after a wildcard redirect (the
+            // empty-path redirect is not re-triggered), so the fallback redirects
+            // straight to the destination: same observable end state (SHL-05), DD-043.
+            { path: "**", redirectTo: "search/browse", pathMatch: "full" },
+        ],
     },
-    // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
-    // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain
-    // '**' -> '' -> '/search/browse' lands on the default destination.
-    // Angular 22's router stops at '' after a wildcard redirect (the
-    // empty-path redirect is not re-triggered), so the fallback redirects
-    // straight to the destination: same observable end state (SHL-05), DD-043.
-    { path: "**", redirectTo: "search/browse", pathMatch: "full" },
 ];
