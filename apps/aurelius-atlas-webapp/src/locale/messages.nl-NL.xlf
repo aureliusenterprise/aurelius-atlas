@@ -2522,6 +2522,76 @@ The technical data governance model consists of the following types of entities:
         <target>Typedefinities worden opgehaald</target>
         <note priority="1" from="description">Aurelius dictionary key: search.services.typeDefs.retrieve</note>
       </trans-unit>
+      <trans-unit id="shell.footer.copyright" datatype="html">
+        <source>Copyright</source>
+        <target>Copyright</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.footer.copyright</note>
+      </trans-unit>
+      <trans-unit id="shell.header.documentation" datatype="html">
+        <source>Documentation</source>
+        <target>Documentatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.documentation</note>
+      </trans-unit>
+      <trans-unit id="shell.header.install" datatype="html">
+        <source>Install app</source>
+        <target>App installeren</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.install</note>
+      </trans-unit>
+      <trans-unit id="shell.header.language" datatype="html">
+        <source>Your language is</source>
+        <target>Geselecteerde taal</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.language</note>
+      </trans-unit>
+      <trans-unit id="shell.header.login" datatype="html">
+        <source>Login</source>
+        <target>Inloggen</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.login</note>
+      </trans-unit>
+      <trans-unit id="shell.header.logout" datatype="html">
+        <source>Logout</source>
+        <target>Uitloggen</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.logout</note>
+      </trans-unit>
+      <trans-unit id="shell.header.security" datatype="html">
+        <source>Account security</source>
+        <target>Accountbeveiliging</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.security</note>
+      </trans-unit>
+      <trans-unit id="shell.header.services" datatype="html">
+        <source>Models4Insight services</source>
+        <target>Models4Insight diensten</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.services</note>
+      </trans-unit>
+      <trans-unit id="shell.header.update" datatype="html">
+        <source>Update available</source>
+        <target>Update beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.update</note>
+      </trans-unit>
+      <trans-unit id="shell.header.welcome" datatype="html">
+        <source>Logged in as</source>
+        <target>Ingelogd als</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.welcome</note>
+      </trans-unit>
+      <trans-unit id="shell.pipeline.error" datatype="html">
+        <source>Something went wrong while</source>
+        <target>Er is iets misgegaan tijden</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.pipeline.error</note>
+      </trans-unit>
+      <trans-unit id="shell.pipeline.oops" datatype="html">
+        <source>Oops!</source>
+        <target>Oeps!</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.pipeline.oops</note>
+      </trans-unit>
+      <trans-unit id="shell.pipeline.report" datatype="html">
+        <source>Report this error</source>
+        <target>Meld deze fout</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.pipeline.report</note>
+      </trans-unit>
+      <trans-unit id="shell.pipeline.thanks" datatype="html">
+        <source>Thank you!</source>
+        <target>Bedankt!</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.pipeline.thanks</note>
+      </trans-unit>
       <trans-unit id="sourcetype" datatype="html">
         <source>Source</source>
         <target>Bron</target>
