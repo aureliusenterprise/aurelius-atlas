@@ -899,7 +899,8 @@ entity, header, ext info), which modules make visible.
 seventeen classes. Importing the shared conventions from `typedef`: makes the instance models depend on the
 typedef module for reasons unrelated to type definitions.
 
-**Consequences.** Tests follow the layout, one file per module under `tests/instance/`. Splitting
+**Consequences.** Tests follow the layout, one file per module under `tests/instance/`; the four enums,
+which have no behaviour of their own, share one. Splitting
 `typedef.py` the same way is possible later without changing its imports, through its re-exports.
 
 ### DD-038. Attribute values stay plain JSON values until their types read them
