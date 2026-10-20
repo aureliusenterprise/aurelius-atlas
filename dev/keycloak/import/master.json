@@ -1451,12 +1451,30 @@
             "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
             "protocol": "openid-connect",
             "publicClient": true,
-            "redirectUris": ["http://localhost:4200/*", "http://127.0.0.1:4200/*", "https://localhost:18443/*"],
+            "redirectUris": [
+                "http://localhost:4200/*",
+                "http://127.0.0.1:4200/*",
+                "http://localhost:4300/*",
+                "http://127.0.0.1:4300/*",
+                "http://localhost:4301/*",
+                "http://127.0.0.1:4301/*",
+                "https://localhost:18443/*",
+                "https://localhost:18444/*"
+            ],
             "rootUrl": "",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "surrogateAuthRequired": false,
-            "webOrigins": ["http://localhost:4200", "http://127.0.0.1:4200", "https://localhost:18443"]
+            "webOrigins": [
+                "http://localhost:4200",
+                "http://127.0.0.1:4200",
+                "http://localhost:4300",
+                "http://127.0.0.1:4300",
+                "http://localhost:4301",
+                "http://127.0.0.1:4301",
+                "https://localhost:18443",
+                "https://localhost:18444"
+            ]
         },
         {
             "alwaysDisplayInConsole": false,

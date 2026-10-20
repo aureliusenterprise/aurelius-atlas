@@ -21,22 +21,39 @@ server {
 
     include /etc/nginx/app.d/*.conf;
 
-    # Security headers (M2). The 7.1 shell carries no tokens yet (auth is
-    # 7.3), so this is the strict baseline; frame-src/frame-ancestors widen
-    # with the Keycloak wiring, following the example app's template.
+    # Security headers (M2).
     #   - style-src 'unsafe-inline': @angular/build inlines critical CSS as a
     #     <style> tag in index.html (no hash available at config time).
-    #   - connect-src 'self': the SPA talks only to same-origin /api and /otel
-    #     (AppConfig ships relative URLs, SHL-10). Keycloak origins arrive in 7.3.
-    #   - script-src 'self': the 7.1 build ships no inline scripts (no
+    #   - script-src 'self': the build ships no inline scripts (no
     #     critical-CSS media-flip script — the app CSS is tiny), so no hash
     #     is needed. Recompute one with the example app's recipe if a later
     #     build starts inlining.
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'" always;
+    #   - connect-src/frame-src add the Keycloak origins (7.3, APC-05):
+    #     keycloak-js fetches the realm metadata cross-origin and the
+    #     silent-SSO iframe embeds the Keycloak authorization endpoint.
+    #     Deployments list them via ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}
+    #     (space-separated, e.g. "https://sso.example.com").
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}; frame-src 'self' ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # keycloak-js silent SSO iframe: same-origin only, and its one inline
+    # script is allowed via hash (sha256 of the script element's content —
+    # recompute with:
+    #   python -c "import re,base64,hashlib; h=re.search(r'<script>(.*?)</script>', open('public/silent-check-sso.html').read(), 16).group(1); print('sha256-'+base64.b64encode(hashlib.sha256(h.encode()).digest()).decode())"
+    # ) instead of loosening CSP app-wide. add_header here replaces the
+    # inherited server-level set, so repeat the non-CSP headers.
+    location = /silent-check-sso.html {
+        # The asset is built per locale (browser/<locale>/silent-check-sso.html);
+        # keycloak-js requests it at the origin root, so resolve it explicitly.
+        try_files /en-US/silent-check-sso.html /nl-NL/silent-check-sso.html =404;
+        add_header Content-Security-Policy "default-src 'none'; script-src 'sha256-miQlUSMEyNrSzHUXigoiPbVCIcDQvHCRNPop+QMZUus='; frame-ancestors 'self'" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "no-referrer" always;
+    }
 
     # Browser preferred-language detection via the Accept-Language header.
     # (The http-level `map` directive from the Angular docs doesn't fit here:
@@ -44,15 +61,18 @@ server {
     set $accept_language en-US;
 
     # Same-origin reverse proxies for the backend API and the OTLP collector,
-    # mirroring the dev-server proxy (proxy.conf.json): the /api or /otel
-    # prefix is stripped before forwarding, so the upstream serves its routes
-    # at its own root. The CSP above already promises connect-src 'self' for
-    # /api and /otel — these locations make that real in production.
+    # mirroring the dev-server proxy (proxy.conf.json). The /api prefix is
+    # forwarded INTACT (DD-050): the Atlas server serves its routes under
+    # /api/atlas/..., and the client composes `${apiBaseUrl}/atlas/...` from
+    # config — a rewriting proxy would double-strip the prefix. The /otel
+    # prefix is stripped, as the collector serves /v1/traces at its root.
+    # The CSP above already promises connect-src 'self' for /api and /otel —
+    # these locations make that real in production.
     #
     # The upstream names below are the service names of this repo's stacks
     # (compose project / k8s Service names); the whole block follows the same
-    # "parameterize for your topology" rule as the Keycloak origins the 7.3
-    # slice adds (${AURELIUS_ATLAS_WEBAPP_*} placeholders, resolved by the
+    # "parameterize for your topology" rule as the Keycloak origins above
+    # (${AURELIUS_ATLAS_WEBAPP_*} placeholders, resolved by the
     # deployment when it mounts its copy). The hostname goes through a
     # variable so nginx resolves it via `resolver`
     # *per request* — a missing backend then returns 502 instead of refusing
@@ -62,7 +82,6 @@ server {
 
     location /api/ {
         set $api_upstream ${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM};
-        rewrite ^/api(/.*)$ $1 break;
         proxy_pass $api_upstream;
         proxy_http_version 1.1;
         proxy_set_header Connection "";

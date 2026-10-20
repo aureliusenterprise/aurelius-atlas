@@ -1,11 +1,46 @@
+import re
 from collections.abc import Generator
 from pathlib import Path
 
+import dotenv
 import pytest
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import Page
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from tenacity import RetryCallState, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from testcontainers.compose import DockerCompose
 from testcontainers.core.wait_strategies import HealthcheckWaitStrategy, HttpWaitStrategy
 
 CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
+
+
+class Settings(BaseSettings):
+    """Test configuration."""
+
+    auth_realm_name: str = "master"
+    password: SecretStr
+    username: str
+
+    model_config = SettingsConfigDict(
+        # Namespace this project's e2e config: the Nx-injected .env uses
+        # AURELIUS_ATLAS_WEBAPP_-prefixed names (the sign-in user, APC-10).
+        env_prefix="AURELIUS_ATLAS_WEBAPP_",
+        env_file=dotenv.find_dotenv(),
+        extra="ignore",
+    )
+
+
+@pytest.fixture(scope="session")
+def settings() -> Settings:
+    """Return the test configuration."""
+    return Settings()  # type: ignore[values are loaded from the environment]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _environment() -> None:
+    """Load the environment variables."""
+    dotenv.load_dotenv(dotenv.find_dotenv())
 
 
 @pytest.fixture(scope="session")
@@ -59,17 +94,24 @@ def compose(keycloak: DockerCompose, observability: DockerCompose) -> Generator[
 
     context = Path(__file__).parent.absolute()
 
-    with DockerCompose(context=context) as compose:
+    with DockerCompose(context=context, env_file=dotenv.find_dotenv()) as compose:
         port = compose.get_service_port("aurelius-atlas-webapp", 8080)
 
         if not port:
             message = "aurelius-atlas-webapp service not found in Docker Compose"
             raise ValueError(message)
 
+        # The webapp answers once nginx is up; the Atlas server behind the
+        # /api/ proxy (DD-053) answers through the same nginx on its own
+        # schedule, so wait for the whole chain before the first test runs.
         yield compose.waiting_for(
             {
                 "aurelius-atlas-webapp": HttpWaitStrategy(port=port, path="/en-US/").using_tls().for_status_code(200),
             },
+        )
+        webapp = compose.get_container(service_name="aurelius-atlas-webapp")
+        HttpWaitStrategy(port=port, path="/api/atlas/admin/version").using_tls().for_status_code(200).wait_until_ready(
+            webapp,
         )
 
 
@@ -84,6 +126,43 @@ def root_url(compose: DockerCompose) -> str:
 def base_url(root_url: str) -> str:
     """Return the en-US app URL for the application."""
     return f"{root_url}en-US/"
+
+
+def _clear_cookies(retry_state: RetryCallState) -> None:
+    """Start the next login attempt from a clean cookie jar."""
+    page: Page = retry_state.kwargs.get("page") or retry_state.args[0]
+    page.context.clear_cookies()
+
+
+@pytest.fixture()
+@retry(
+    retry=retry_if_exception_type(PlaywrightError),
+    stop=stop_after_attempt(2),
+    wait=wait_fixed(1),
+    reraise=True,
+    before_sleep=_clear_cookies,
+)
+def authenticated(page: Page, base_url: str, settings: Settings) -> Page:
+    """
+    Sign in through Keycloak and return the page (APC-05 / APC-10).
+
+    Every webapp route sits behind the auth guard (DD-052), so the page tests
+    start from here. A navigation can be aborted mid-login when the e2e stack
+    starts its compose networks while tests run (net::ERR_NETWORK_CHANGED), so
+    each retry starts from a clean cookie jar: Keycloak may already have
+    issued the session on the failed pass.
+    """
+    page.goto(base_url)
+
+    page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
+
+    page.locator("#username").fill(settings.username)
+    page.locator("#password").fill(settings.password.get_secret_value())
+    page.get_by_role("button", name="Sign in").click()
+
+    page.wait_for_url(re.compile(base_url))
+
+    return page
 
 
 @pytest.fixture(scope="session")
