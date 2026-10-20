@@ -54,9 +54,8 @@ class AtlasRelatedObjectId(AtlasObjectId):
 
     def __eq__(self, other: object) -> bool:
         """``AtlasRelatedObjectId.equals``: the object id's equality, then the relationship's fields."""
-        if not super().__eq__(other):
+        if not super().__eq__(other) or not isinstance(other, AtlasRelatedObjectId):
             return False
-        assert isinstance(other, AtlasRelatedObjectId)  # noqa: S101 - same type, checked by the super class
         return (
             self.entity_status == other.entity_status
             and self.display_text == other.display_text

@@ -3,6 +3,8 @@
 Read from ``org.apache.atlas.model.instance.AtlasRelatedObjectId`` of Atlas 2.4.0.
 """
 
+from types import SimpleNamespace
+
 import pytest
 from aurelius_atlas_model.instance import AtlasRelatedObjectId, AtlasStruct, EntityStatus, RelationshipStatus
 
@@ -11,7 +13,7 @@ M = "aurelius_atlas_model.instance.related_object_id.AtlasRelatedObjectId"
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["ENT-12"])
 def test__a_related_object_id_reads_and_writes_its_fields() -> None:
-    """The object id's fields and the relationship's."""
+    """The object id's fields and the relationship's; also from an object's attributes."""
     body = {
         "guid": "g",
         "typeName": "hive_db",
@@ -25,9 +27,12 @@ def test__a_related_object_id_reads_and_writes_its_fields() -> None:
     }
 
     related = AtlasRelatedObjectId.model_validate(body)
+    from_object = AtlasRelatedObjectId.model_validate(
+        SimpleNamespace(guid="g", relationship_type="t"), from_attributes=True
+    )
 
     assert related.to_json() == body
-    assert AtlasRelatedObjectId.model_validate(related) == related
+    assert (from_object.guid, from_object.relationship_type) == ("g", "t")
 
 
 @pytest.mark.covers(rules=["ENT-12"])

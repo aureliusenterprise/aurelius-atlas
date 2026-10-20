@@ -24,6 +24,5 @@ def test__object_ids_are_equal_by_guid_when_either_has_one() -> None:
         type_name="a", unique_attributes=unique
     )
     assert AtlasObjectId(type_name="a") != AtlasObjectId(type_name="b")
-    assert by_guid == by_guid  # noqa: PLR0124 - the identity shortcut
     assert by_guid != AtlasRelatedObjectId(guid="g")
     assert by_guid != "g"

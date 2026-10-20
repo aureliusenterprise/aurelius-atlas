@@ -14,11 +14,8 @@ class AtlasObjectId(AtlasModel):
 
     def __eq__(self, other: object) -> bool:
         """``AtlasObjectId.equals``: by GUID when either has a non-empty one, else by type and unique attributes."""
-        if self is other:
-            return True
-        if type(other) is not type(self):
+        if not isinstance(other, AtlasObjectId) or type(other) is not type(self):
             return False
-        assert isinstance(other, AtlasObjectId)  # noqa: S101 - narrowed by the type check above
         if not self.guid and not other.guid:
             return self.type_name == other.type_name and self.unique_attributes == other.unique_attributes
         return self.guid == other.guid
