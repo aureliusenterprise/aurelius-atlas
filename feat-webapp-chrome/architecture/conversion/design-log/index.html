@@ -4258,6 +4258,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-057-session-chrome-injects-the-keycloak-js-keycloak-instance-not-keycloak-angulars-keycloakservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-057. Session chrome injects the keycloak-js <code>Keycloak</code> instance, not keycloak-angular's <code>KeycloakService</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7385,6 +7396,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-057-session-chrome-injects-the-keycloak-js-keycloak-instance-not-keycloak-angulars-keycloakservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-057. Session chrome injects the keycloak-js <code>Keycloak</code> instance, not keycloak-angular's <code>KeycloakService</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8988,6 +9010,33 @@ outlet" spec (SHL-03, 7.1) is superseded by SHC-01 — the Aurelius root <em>is<
 and the reading that motivated 7.1's placeholder retires. The shell's chrome strings are
 new vendored fixtures (<code>shell.header.*</code>, <code>shell.footer.*</code>), bridged like the components
 dictionary (DD-047), so UIC-04's invented-string gate extends to them.</p>
+<h3 id="dd-057-session-chrome-injects-the-keycloak-js-keycloak-instance-not-keycloak-angulars-keycloakservice">DD-057. Session chrome injects the keycloak-js <code>Keycloak</code> instance, not keycloak-angular's <code>KeycloakService</code><a class="headerlink" href="#dd-057-session-chrome-injects-the-keycloak-js-keycloak-instance-not-keycloak-angulars-keycloakservice" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.11</li>
+<li><strong>Date:</strong> 2026-10-20</li>
+</ul>
+<p><strong>Decision.</strong> <code>Session</code> and <code>ShellHeader</code> inject the <code>Keycloak</code> client
+instance (keycloak-js) — the token <code>provideKeycloak</code> registers — for the
+identity read (<code>tokenParsed</code>) and for <code>logout()</code>. keycloak-angular's
+<code>KeycloakService</code> is not injected anywhere.</p>
+<p><strong>Reason.</strong> <code>KeycloakService</code> is the deprecated pre-v19 class: v21's
+<code>provideKeycloak</code> provides the <code>Keycloak</code> instance and the event signal
+and does <strong>not</strong> register <code>KeycloakService</code> (the library's own services
+and guards inject <code>Keycloak</code>, e.g. <code>includeBearerTokenInterceptor</code>,
+<code>createAuthGuard</code>'s <code>AuthGuardData.keycloak</code>). Injecting the
+not-provided class crashes the production image at boot (NG0201
+NullInjectorError, found by the 7.11 e2e run: every authenticated
+scenario errored in the guard, where the chrome renders). Unit specs
+missed it — they mock the token; the dev server never renders the chrome
+before the guard redirects, so only the built image exercised it.</p>
+<p><strong>Alternatives.</strong> Provide <code>KeycloakService</code> manually (<code>useExisting: Keycloak</code>
+-style): re-provides a deprecated facade for a class slated for removal.
+<code>inject(KEYCLOAK_EVENT_SIGNAL)</code>: a signal wrapper, not the client — no
+<code>logout()</code> on it.</p>
+<p><strong>Consequences.</strong> SHC-05/SHC-08's "Keycloak client" is now precise: the
+keycloak-js instance. Spec test providers use <code>{ provide: Keycloak, … }</code>.
+7.4's session-touching code follows the same token.</p>
 
 
 

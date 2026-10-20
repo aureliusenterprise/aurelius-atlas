@@ -6487,7 +6487,7 @@ title).</p>
 </tr>
 <tr>
 <td>SHC-08</td>
-<td>The chrome is zoneless/Angular-idiom (standalone, OnPush, signals, <code>inject()</code>): the identity is a signal read from <code>KeycloakService</code> at construction (the guard has resolved before any render), session actions call the Keycloak client directly, no store, no <code>BehaviorSubject</code> (DD-046, purity gate)</td>
+<td>The chrome is zoneless/Angular-idiom (standalone, OnPush, signals, <code>inject()</code>): the identity is a signal read from the Keycloak client at construction (the guard has resolved before any render), session actions call the Keycloak client directly, no store, no <code>BehaviorSubject</code> (DD-046, purity gate). The client is the <code>Keycloak</code> (keycloak-js) instance <code>provideKeycloak</code> registers — keycloak-angular v21's <code>KeycloakService</code> is the deprecated pre-v19 class and is not provided by it</td>
 </tr>
 <tr>
 <td>SHC-09</td>
