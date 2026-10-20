@@ -4009,6 +4009,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-037-instance-models-are-one-module-per-java-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-037. Instance models are one module per Java class
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-038. Attribute values stay plain JSON values until their types read them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4088,6 +4110,8 @@
       
         
           
+        
+      
         
       
         
@@ -4508,6 +4532,33 @@
     
   
   1.6 Types REST
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-1-entity-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.1a Entity models
 
     
   </span>
@@ -6742,6 +6793,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-037-instance-models-are-one-module-per-java-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-037. Instance models are one module per Java class
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-038. Attribute values stay plain JSON values until their types read them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7128,6 +7201,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-036-start-up-loading-tries-a-raced-change-again">DD-036</a></td>
 <td>Start-up loading tries a raced change again</td>
 <td>1.6</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-037-instance-models-are-one-module-per-java-class">DD-037</a></td>
+<td>Instance models are one module per Java class</td>
+<td>2.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them">DD-038</a></td>
+<td>Attribute values stay plain JSON values until their types read them</td>
+<td>2.1</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -7792,6 +7877,44 @@ would hang start-up.</p>
 <p><strong>Consequences.</strong> DD-033's "may each retry once per change" becomes "until it wins, up to ten times". A
 process that loses ten times in a row still reports the file or patch as failed, as Atlas does on a lock
 failure.</p>
+<h3 id="dd-037-instance-models-are-one-module-per-java-class">DD-037. Instance models are one module per Java class<a class="headerlink" href="#dd-037-instance-models-are-one-module-per-java-class" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.1</li>
+<li><strong>Date:</strong> 2026-10-20</li>
+</ul>
+<p><strong>Decision.</strong> The entity models live in the package <code>aurelius_atlas_model.instance</code>, one module per Java
+class, nested classes and enums included (<code>entity</code>, <code>entity_status</code>, <code>entity_with_ext_info</code>, …). The package
+re-exports every model. The JSON conventions all models share (<code>AtlasModel</code>, the timestamp, Java boolean, int
+and set types) move from <code>typedef</code> to <code>aurelius_atlas_model.base</code>; <code>typedef</code> imports them from there.</p>
+<p><strong>Reason.</strong> Atlas organises its models as one class per file; a reader who knows a Java class finds its port
+by name, and each module stays small enough to read whole. The typedef models were ported into one module
+(1.1); the instance models are more numerous and depend on each other in one direction only (struct, then
+entity, header, ext info), which modules make visible.</p>
+<p><strong>Alternatives.</strong> One <code>instance.py</code>, as <code>typedef.py</code>: about as long as all of <code>typedef.py</code> again, mixing
+seventeen classes. Importing the shared conventions from <code>typedef</code>: makes the instance models depend on the
+typedef module for reasons unrelated to type definitions.</p>
+<p><strong>Consequences.</strong> Tests follow the layout, one file per module under <code>tests/instance/</code>; the four enums,
+which have no behaviour of their own, share one. Splitting
+<code>typedef.py</code> the same way is possible later without changing its imports, through its re-exports.</p>
+<h3 id="dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them">DD-038. Attribute values stay plain JSON values until their types read them<a class="headerlink" href="#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.1</li>
+<li><strong>Date:</strong> 2026-10-20</li>
+</ul>
+<p><strong>Decision.</strong> The models of 2.1a keep attribute values (<code>attributes</code>, <code>relationshipAttributes</code>,
+<code>uniqueAttributes</code>, business attributes) as the JSON values Python reads: objects, arrays, strings, integers,
+floats, booleans and null. Atlas's REST mapper reads floats as <code>BigDecimal</code> (<code>USE_BIG_DECIMAL_FOR_FLOATS</code>)
+and writes them back with their digits (<code>1.10</code>, <code>1E+3</code>); that is designed with the <code>bigdecimal</code>, <code>float</code> and
+<code>double</code> types in 2.1b.</p>
+<p><strong>Reason.</strong> An untyped value reaches a response only after its attribute's type normalised it (2.1b, then
+the stores), so the digits of a float matter only where a type keeps them. Keeping them in 2.1a would need
+a JSON reader and writer of its own for every model before any type needs it.</p>
+<p><strong>Alternatives.</strong> Read every float as <code>Decimal</code> now: Pydantic writes a <code>Decimal</code> as a JSON string, so every
+writer would need a custom encoder, designed without the type that motivates it.</p>
+<p><strong>Consequences.</strong> 2.1b decides how a <code>bigdecimal</code> value is read from a body and written back exactly, and
+applies it to these models.</p>
 
 
 

@@ -1,6 +1,6 @@
 # aurelius-atlas-core
 
-Atlas stores and services for Aurelius Atlas ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.4](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-4-typedef-store/index.md>): the typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type registry. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): Apache Atlas's built-in models and their typedef patches, loaded at start-up.
+Atlas stores and services for Aurelius Atlas ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.4](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-4-typedef-store/index.md>): the typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type registry. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): Apache Atlas's built-in models and their typedef patches, loaded at start-up. Since [1.6](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-6-types-rest/index.md>): the store's reads and the search of `/v2/types/typedefs`.
 
 ```
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -8,6 +8,8 @@ await store.load()  # every stored definition into the registry
 created = await store.create_types_def(types_def)
 await store.refresh()  # pick up another process's change (at most every 5 s)
 await ModelLoader(store).load(BUILTIN_MODELS_DIR)  # addons/models of Atlas 2.4.0, and their patches
+store.get_by_name("hive_table")  # the registered definition, as resolution completed it
+search_types_def(store.registry, TypeSearchFilter.from_query([("type", "ENTITY")]))  # each kind sorted by name
 ```
 
 ## Installation
@@ -17,6 +19,14 @@ dependencies = ["aurelius-atlas-core"]
 
 [tool.uv.sources.aurelius-atlas-core]
 workspace = true
+```
+
+## Vendored models
+
+`aurelius_atlas_core/models/` is `addons/models` of Apache Atlas `release-2.4.0`, byte for byte ([DD-032](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory>)). To prove it, compare it with the tag:
+
+```
+diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurelius-atlas-core/aurelius_atlas_core/models
 ```
 
 ## Documentation
@@ -465,6 +475,177 @@ types_to_update(types_def: AtlasTypesDef, registry: TypeRegistry, *, check_type_
 The definitions registered as the same kind, when newer (`getTypesToUpdate`, MDL-02).
 
 With `check_type_version`, only those whose `typeVersion` is greater than the registered one. Each keeps the registered attributes, or an enum the registered elements, that it lacks.
+
+## aurelius\_atlas\_core.type\_search
+
+Searching the registered type definitions with a filter of query parameters (TYR-05 to TYR-08).
+
+Ported from `TypesREST.getSearchFilter`, `SearchFilter` and `FilterUtil` of Apache Atlas 2.4.0, and `AtlasTypeDefGraphStore.searchTypesDef`.
+
+Classes:
+
+- **`TypeSearchFilter`** –
+
+  The parameters of a type search, each with its values in order (`SearchFilter`).
+
+Functions:
+
+- **`search_types_def`** –
+
+  The registered definitions the filter keeps, each kind sorted by name (`searchTypesDef`, TYR-05, DD-034).
+- **`type_def_headers`** –
+
+  The header of each definition, enums first (`AtlasTypeUtil.toTypeDefHeader`, TYR-08).
+
+Attributes:
+
+- **`EXCLUDE_INTERNAL`** –
+
+  The parameter that hides `__internal` and its sub types, compared without case (TYR-07).
+- **`PARAM_NAME`** –
+- **`PARAM_NOT_NAME`** –
+
+  The filter's parameter names (`SearchFilter.PARAM_*`), compared with case.
+- **`PARAM_NOT_SERVICETYPE`** –
+- **`PARAM_NOT_SUPERTYPE`** –
+- **`PARAM_SERVICETYPE`** –
+- **`PARAM_SUPERTYPE`** –
+- **`PARAM_TYPE`** –
+- **`TYPE_NAME_INTERNAL`** –
+
+  The super type of Atlas's internal entity types (`Constants.TYPE_NAME_INTERNAL`).
+
+### EXCLUDE\_INTERNAL
+
+```
+EXCLUDE_INTERNAL = 'excludeInternalTypesAndReferences'
+```
+
+The parameter that hides `__internal` and its sub types, compared without case (TYR-07).
+
+### PARAM\_NAME
+
+```
+PARAM_NAME = 'name'
+```
+
+### PARAM\_NOT\_NAME
+
+```
+PARAM_NOT_NAME = 'notname'
+```
+
+The filter's parameter names (`SearchFilter.PARAM_*`), compared with case.
+
+### PARAM\_NOT\_SERVICETYPE
+
+```
+PARAM_NOT_SERVICETYPE = 'notservicetype'
+```
+
+### PARAM\_NOT\_SUPERTYPE
+
+```
+PARAM_NOT_SUPERTYPE = 'notsupertype'
+```
+
+### PARAM\_SERVICETYPE
+
+```
+PARAM_SERVICETYPE = 'servicetype'
+```
+
+### PARAM\_SUPERTYPE
+
+```
+PARAM_SUPERTYPE = 'supertype'
+```
+
+### PARAM\_TYPE
+
+```
+PARAM_TYPE = 'type'
+```
+
+### TYPE\_NAME\_INTERNAL
+
+```
+TYPE_NAME_INTERNAL = '__internal'
+```
+
+The super type of Atlas's internal entity types (`Constants.TYPE_NAME_INTERNAL`).
+
+### TypeSearchFilter
+
+```
+TypeSearchFilter(params: dict[str, list[str]] = dict())
+```
+
+The parameters of a type search, each with its values in order (`SearchFilter`).
+
+Methods:
+
+- **`from_query`** –
+
+  The filter of a request's query parameters (`getSearchFilter`, TYR-06, TYR-07).
+- **`matches`** –
+
+  Whether the filter keeps `type_` (`FilterUtil.getPredicateFromSearchFilter`, TYR-06).
+- **`param`** –
+
+  The first value of parameter `name` (`getParam`).
+
+Attributes:
+
+- **`params`** (`dict[str, list[str]]`) –
+
+#### params
+
+```
+params: dict[str, list[str]] = field(default_factory=dict)
+```
+
+#### from\_query
+
+```
+from_query(items: Iterable[tuple[str, str]]) -> TypeSearchFilter
+```
+
+The filter of a request's query parameters (`getSearchFilter`, TYR-06, TYR-07).
+
+Each parameter counts with its first value, in the order the parameters first appear; `excludeInternalTypesAndReferences=true` adds `notname` and `notsupertype` `__internal`.
+
+#### matches
+
+```
+matches(type_: AtlasType) -> bool
+```
+
+Whether the filter keeps `type_` (`FilterUtil.getPredicateFromSearchFilter`, TYR-06).
+
+#### param
+
+```
+param(name: str) -> str | None
+```
+
+The first value of parameter `name` (`getParam`).
+
+### search\_types\_def
+
+```
+search_types_def(registry: TypeRegistry, search_filter: TypeSearchFilter) -> AtlasTypesDef
+```
+
+The registered definitions the filter keeps, each kind sorted by name (`searchTypesDef`, TYR-05, DD-034).
+
+### type\_def\_headers
+
+```
+type_def_headers(types_def: AtlasTypesDef) -> list[AtlasTypeDefHeader]
+```
+
+The header of each definition, enums first (`AtlasTypeUtil.toTypeDefHeader`, TYR-08).
 
 ## aurelius\_atlas\_core.model\_loader
 

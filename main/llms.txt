@@ -112,6 +112,7 @@
 - [1.4 Typedef store](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-4-typedef-store/index.md>)
 - [1.5 Built-in models and patches](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>)
 - [1.6 Types REST](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-6-types-rest/index.md>)
+- [2.1a Entity models](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-entity-models/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)
 - [Conversion](<https://aureliusenterprise.github.io/main/architecture/conversion/index.md>)

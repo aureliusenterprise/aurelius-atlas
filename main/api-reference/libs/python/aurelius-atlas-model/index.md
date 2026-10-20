@@ -1,12 +1,16 @@
 # aurelius-atlas-model
 
-Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): the patch record `AtlasPatch`.
+Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): the patch record `AtlasPatch`. Since [2.1a](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-entity-models/index.md>): the entity models of `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`, `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON conventions all models share in `aurelius_atlas_model.base`.
 
 ```
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
 types = AtlasTypesDef.model_validate(request_body)  # Atlas's normalisations apply
 response_body = types.to_json()  # Java names, nulls left out, epoch-millisecond dates
+
+from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo
+
+entities = AtlasEntitiesWithExtInfo.model_validate(request_body)  # entities without a GUID get "-<n>"
 ```
 
 ## Installation
@@ -31,21 +35,6 @@ Type Aliases:
 - **`AttributeDefs`** –
 
   `attributeDefs`: never null, one definition per name (TDM-06, TDM-07).
-- **`JavaBool`** –
-
-  A Java `boolean`: an explicit null reads as false (TDM-10).
-- **`JavaInt`** –
-
-  A Java `int`: an explicit null reads as 0 (TDM-10).
-- **`NameSet`** –
-
-  A Java `Set<String>` that is never null (TDM-06, TDM-09).
-- **`OptionalNameSet`** –
-
-  A Java `Set<String>` that may be null (TDM-09).
-- **`Timestamp`** –
-
-  A `java.util.Date`: an aware datetime, written as epoch milliseconds (TDM-05).
 
 Classes:
 
@@ -73,9 +62,6 @@ Classes:
 - **`AtlasEnumElementDef`** –
 
   One value of an enum type.
-- **`AtlasModel`** –
-
-  The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
 - **`AtlasRelationshipAttributeDef`** –
 
   An entity attribute that a relationship type adds; read-only, derived from the relationship types.
@@ -386,46 +372,6 @@ AttributeDefs = list[AtlasAttributeDef]
 ```
 
 `attributeDefs`: never null, one definition per name (TDM-06, TDM-07).
-
-### JavaBool
-
-```
-JavaBool = bool
-```
-
-A Java `boolean`: an explicit null reads as false (TDM-10).
-
-### JavaInt
-
-```
-JavaInt = int
-```
-
-A Java `int`: an explicit null reads as 0 (TDM-10).
-
-### NameSet
-
-```
-NameSet = list[str]
-```
-
-A Java `Set<String>` that is never null (TDM-06, TDM-09).
-
-### OptionalNameSet
-
-```
-OptionalNameSet = list[str] | None
-```
-
-A Java `Set<String>` that may be null (TDM-09).
-
-### Timestamp
-
-```
-Timestamp = datetime
-```
-
-A `java.util.Date`: an aware datetime, written as epoch milliseconds (TDM-05).
 
 ### AtlasAttributeDef
 
@@ -3690,44 +3636,6 @@ ordinal: int | None = None
 
 ```
 value: str | None = None
-```
-
-#### to\_json
-
-```
-to_json() -> dict[str, Any]
-```
-
-The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
-
-### AtlasModel
-
-Bases: `BaseModel`
-
-The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
-
-**Show JSON schema:**
-
-```
-{
-  "description": "The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).",
-  "properties": {},
-  "title": "AtlasModel",
-  "type": "object"
-}
-```
-
-#### model\_config
-
-```
-model_config = ConfigDict(
-    alias_generator=to_camel,
-    validate_by_alias=True,
-    validate_by_name=True,
-    validate_assignment=True,
-    extra="ignore",
-    coerce_numbers_to_str=True,
-)
 ```
 
 #### to\_json
@@ -7815,15 +7723,6 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
 }
 ```
 
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
-
 Fields:
 
 - `id` (`str | None`)
@@ -7946,4 +7845,6405 @@ SKIPPED = 'SKIPPED'
 
 ```
 UNKNOWN = 'UNKNOWN'
+```
+
+## aurelius\_atlas\_model.base
+
+The JSON conventions every Atlas model shares: names, nulls, timestamps and Java scalars (DD-020, DD-037).
+
+Used by the typedef models (`typedef`) and the instance models (`instance`) alike.
+
+Type Aliases:
+
+- **`JavaBool`** –
+
+  A Java `boolean`: an explicit null reads as false (TDM-10).
+- **`JavaInt`** –
+
+  A Java `int`: an explicit null reads as 0 (TDM-10).
+- **`NameSet`** –
+
+  A Java `Set<String>` that is never null (TDM-06, TDM-09).
+- **`OptionalNameSet`** –
+
+  A Java `Set<String>` that may be null (TDM-09).
+- **`Timestamp`** –
+
+  A `java.util.Date`: an aware datetime, written as epoch milliseconds (TDM-05).
+
+Classes:
+
+- **`AtlasModel`** –
+
+  The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
+
+Functions:
+
+- **`empty_when_null`** –
+
+  Read a null list as empty: a field Java never leaves null (TDM-06).
+- **`null_when_empty`** –
+
+  Read an empty list as null: a field Java leaves null when empty (TDM-11).
+
+### JavaBool
+
+```
+JavaBool = bool
+```
+
+A Java `boolean`: an explicit null reads as false (TDM-10).
+
+### JavaInt
+
+```
+JavaInt = int
+```
+
+A Java `int`: an explicit null reads as 0 (TDM-10).
+
+### NameSet
+
+```
+NameSet = list[str]
+```
+
+A Java `Set<String>` that is never null (TDM-06, TDM-09).
+
+### OptionalNameSet
+
+```
+OptionalNameSet = list[str] | None
+```
+
+A Java `Set<String>` that may be null (TDM-09).
+
+### Timestamp
+
+```
+Timestamp = datetime
+```
+
+A `java.util.Date`: an aware datetime, written as epoch milliseconds (TDM-05).
+
+### AtlasModel
+
+Bases: `BaseModel`
+
+The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
+
+**Show JSON schema:**
+
+```
+{
+  "description": "The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).",
+  "properties": {},
+  "title": "AtlasModel",
+  "type": "object"
+}
+```
+
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+### empty\_when\_null
+
+```
+empty_when_null(value: object) -> object
+```
+
+Read a null list as empty: a field Java never leaves null (TDM-06).
+
+### null\_when\_empty
+
+```
+null_when_empty(values: list[T] | None) -> list[T] | None
+```
+
+Read an empty list as null: a field Java leaves null when empty (TDM-11).
+
+## aurelius\_atlas\_model.instance.struct
+
+`AtlasStruct`: a type name and attribute values, the base of entities, classifications and headers.
+
+Classes:
+
+- **`AtlasStruct`** –
+
+  An instance of a struct type: its name and its attribute values (ENT-02, ENT-03).
+
+### AtlasStruct
+
+Bases: `AtlasModel`
+
+An instance of a struct type: its name and its attribute values (ENT-02, ENT-03).
+
+Attribute values are JSON values as read, null included, until their types normalise them (DD-038).
+
+**Show JSON schema:**
+
+```
+{
+  "description": "An instance of a struct type: its name and its attribute values (ENT-02, ENT-03).\n\nAttribute values are JSON values as read, null included, until their types normalise them (DD-038).",
+  "properties": {
+    "typeName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Typename"
+    },
+    "attributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attributes"
+    }
+  },
+  "title": "AtlasStruct",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `type_name` (`str | None`)
+- `attributes` (`dict[str, Any] | None`)
+
+#### attributes
+
+```
+attributes: dict[str, Any] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### type\_name
+
+```
+type_name: str | None = None
+```
+
+#### get\_attribute
+
+```
+get_attribute(name: str) -> Any
+```
+
+The value of attribute `name`, or None.
+
+#### has\_attribute
+
+```
+has_attribute(name: str) -> bool
+```
+
+Whether attribute `name` is present, even with a null value.
+
+#### remove\_attribute
+
+```
+remove_attribute(name: str) -> Any
+```
+
+Remove attribute `name` and return its value, or None.
+
+#### set\_attribute
+
+```
+set_attribute(name: str, value: Any) -> None
+```
+
+Set attribute `name`, creating the attributes when there are none.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.entity
+
+`AtlasEntity`: an instance of an entity type, with its system fields (ENT-04 to ENT-08).
+
+Classes:
+
+- **`AtlasEntity`** –
+
+  An entity: a struct with a GUID, a status, audit fields, relationships, classifications and labels.
+
+Functions:
+
+- **`next_internal_id`** –
+
+  A new temporary GUID: `-` and a number counted up from the clock (`AtlasEntity.nextInternalId`, ENT-04).
+
+### AtlasEntity
+
+Bases: `AtlasStruct`
+
+An entity: a struct with a GUID, a status, audit fields, relationships, classifications and labels.
+
+Read with the defaults of Java's no-argument constructor, whose `init()` assigns a temporary GUID and clears `status` (ENT-04). `isProxy` is read under that name and written as `proxy` (ENT-05).
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    },
+    "Timestamp": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "description": "An entity: a struct with a GUID, a status, audit fields, relationships, classifications and labels.\n\nRead with the defaults of Java's no-argument constructor, whose ``init()`` assigns a temporary GUID and\nclears ``status`` (ENT-04). ``isProxy`` is read under that name and written as ``proxy`` (ENT-05).",
+  "properties": {
+    "typeName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Typename"
+    },
+    "attributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attributes"
+    },
+    "guid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Guid"
+    },
+    "homeId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Homeid"
+    },
+    "isProxy": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": false,
+      "title": "Isproxy"
+    },
+    "isIncomplete": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": false,
+      "title": "Isincomplete"
+    },
+    "provenanceType": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": 0,
+      "title": "Provenancetype"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "createdBy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Createdby"
+    },
+    "updatedBy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Updatedby"
+    },
+    "createTime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "updateTime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "version": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": 0,
+      "title": "Version"
+    },
+    "relationshipAttributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Relationshipattributes"
+    },
+    "classifications": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/AtlasClassification"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Classifications"
+    },
+    "meanings": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/AtlasTermAssignmentHeader"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Meanings"
+    },
+    "customAttributes": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Customattributes"
+    },
+    "businessAttributes": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Businessattributes"
+    },
+    "labels": {
+      "$ref": "#/$defs/OptionalNameSet",
+      "default": null
+    },
+    "pendingTasks": {
+      "$ref": "#/$defs/OptionalNameSet",
+      "default": null
+    }
+  },
+  "title": "AtlasEntity",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `type_name` (`str | None`)
+- `attributes` (`dict[str, Any] | None`)
+- `guid` (`str | None`)
+- `home_id` (`str | None`)
+- `is_proxy` (`bool | None`)
+- `is_incomplete` (`bool | None`)
+- `provenance_type` (`int | None`)
+- `status` (`EntityStatus | None`)
+- `created_by` (`str | None`)
+- `updated_by` (`str | None`)
+- `create_time` (`Timestamp | None`)
+- `update_time` (`Timestamp | None`)
+- `version` (`int | None`)
+- `relationship_attributes` (`dict[str, Any] | None`)
+- `classifications` (`list[AtlasClassification] | None`)
+- `meanings` (`list[AtlasTermAssignmentHeader] | None`)
+- `custom_attributes` (`dict[str, str] | None`)
+- `business_attributes` (`dict[str, dict[str, Any]] | None`)
+- `labels` (`OptionalNameSet`)
+- `pending_tasks` (`OptionalNameSet`)
+
+#### attributes
+
+```
+attributes: dict[str, Any] | None = None
+```
+
+#### business\_attributes
+
+```
+business_attributes: dict[str, dict[str, Any]] | None = None
+```
+
+#### classifications
+
+```
+classifications: list[AtlasClassification] | None = None
+```
+
+#### create\_time
+
+```
+create_time: Timestamp | None = None
+```
+
+#### created\_by
+
+```
+created_by: str | None = None
+```
+
+#### custom\_attributes
+
+```
+custom_attributes: dict[str, str] | None = None
+```
+
+#### guid
+
+```
+guid: str | None
+```
+
+#### home\_id
+
+```
+home_id: str | None = None
+```
+
+#### is\_incomplete
+
+```
+is_incomplete: bool | None = False
+```
+
+#### is\_proxy
+
+```
+is_proxy: bool | None = False
+```
+
+#### labels
+
+```
+labels: OptionalNameSet = None
+```
+
+#### meanings
+
+```
+meanings: list[AtlasTermAssignmentHeader] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### pending\_tasks
+
+```
+pending_tasks: OptionalNameSet = None
+```
+
+#### provenance\_type
+
+```
+provenance_type: int | None = 0
+```
+
+#### relationship\_attributes
+
+```
+relationship_attributes: dict[str, Any] | None = None
+```
+
+#### status
+
+```
+status: EntityStatus | None = None
+```
+
+#### type\_name
+
+```
+type_name: str | None = None
+```
+
+#### update\_time
+
+```
+update_time: Timestamp | None = None
+```
+
+#### updated\_by
+
+```
+updated_by: str | None = None
+```
+
+#### version
+
+```
+version: int | None = 0
+```
+
+#### add\_classifications
+
+```
+add_classifications(classifications: list[AtlasClassification]) -> None
+```
+
+Append classifications, creating the list.
+
+#### add\_meaning
+
+```
+add_meaning(meaning: AtlasTermAssignmentHeader) -> None
+```
+
+Append a meaning, creating the list.
+
+#### get\_attribute
+
+```
+get_attribute(name: str) -> Any
+```
+
+The value of attribute `name`, or None.
+
+#### get\_business\_attribute
+
+```
+get_business_attribute(business_metadata: str, name: str) -> Any
+```
+
+The value of attribute `name` of business metadata `business_metadata`, or None.
+
+#### get\_relationship\_attribute
+
+```
+get_relationship_attribute(name: str) -> Any
+```
+
+The value of relationship attribute `name`, or None.
+
+#### has\_attribute
+
+```
+has_attribute(name: str) -> bool
+```
+
+Whether attribute `name` is present, even with a null value.
+
+#### has\_relationship\_attribute
+
+```
+has_relationship_attribute(name: str) -> bool
+```
+
+Whether relationship attribute `name` is present, even with a null value.
+
+#### remove\_attribute
+
+```
+remove_attribute(name: str) -> Any
+```
+
+Remove attribute `name` and return its value, or None.
+
+#### set\_attribute
+
+```
+set_attribute(name: str, value: Any) -> None
+```
+
+Set attribute `name`, creating the attributes when there are none.
+
+#### set\_business\_attribute
+
+```
+set_business_attribute(business_metadata: str, name: str, value: Any) -> None
+```
+
+Set attribute `name` of business metadata `business_metadata`, creating the maps it needs.
+
+#### set\_relationship\_attribute
+
+```
+set_relationship_attribute(name: str, value: Any) -> None
+```
+
+Set relationship attribute `name`, creating the map when there is none.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+### next\_internal\_id
+
+```
+next_internal_id() -> str
+```
+
+A new temporary GUID: `-` and a number counted up from the clock (`AtlasEntity.nextInternalId`, ENT-04).
+
+A client names entities it has not created yet by such GUIDs; the store replaces them on creation.
+
+## aurelius\_atlas\_model.instance.entity\_status
+
+`AtlasEntity.Status`: the life-cycle state of an entity (ENT-09).
+
+Classes:
+
+- **`EntityStatus`** –
+
+  Whether an entity is active, soft-deleted or purged (`AtlasEntity.Status`).
+
+### EntityStatus
+
+Bases: `StrEnum`
+
+Whether an entity is active, soft-deleted or purged (`AtlasEntity.Status`).
+
+Attributes:
+
+- **`ACTIVE`** –
+- **`DELETED`** –
+- **`PURGED`** –
+
+#### ACTIVE
+
+```
+ACTIVE = 'ACTIVE'
+```
+
+#### DELETED
+
+```
+DELETED = 'DELETED'
+```
+
+#### PURGED
+
+```
+PURGED = 'PURGED'
+```
+
+## aurelius\_atlas\_model.instance.entity\_ext\_info
+
+`AtlasEntity.AtlasEntityExtInfo`: the entities a request or response refers to, by GUID (ENT-10).
+
+Classes:
+
+- **`AtlasEntityExtInfo`** –
+
+  `referredEntities`: the entities that the main entity or entities refer to, by their GUIDs.
+
+### AtlasEntityExtInfo
+
+Bases: `AtlasModel`
+
+`referredEntities`: the entities that the main entity or entities refer to, by their GUIDs.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasEntity": {
+      "description": "An entity: a struct with a GUID, a status, audit fields, relationships, classifications and labels.\n\nRead with the defaults of Java's no-argument constructor, whose ``init()`` assigns a temporary GUID and\nclears ``status`` (ENT-04). ``isProxy`` is read under that name and written as ``proxy`` (ENT-05).",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "guid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guid"
+        },
+        "homeId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Homeid"
+        },
+        "isProxy": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isproxy"
+        },
+        "isIncomplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isincomplete"
+        },
+        "provenanceType": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "title": "Provenancetype"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "updatedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updatedby"
+        },
+        "createTime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "updateTime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "title": "Version"
+        },
+        "relationshipAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationshipattributes"
+        },
+        "classifications": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasClassification"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classifications"
+        },
+        "meanings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasTermAssignmentHeader"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meanings"
+        },
+        "customAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Customattributes"
+        },
+        "businessAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Businessattributes"
+        },
+        "labels": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        },
+        "pendingTasks": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        }
+      },
+      "title": "AtlasEntity",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    },
+    "Timestamp": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "description": "``referredEntities``: the entities that the main entity or entities refer to, by their GUIDs.",
+  "properties": {
+    "referredEntities": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/AtlasEntity"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Referredentities"
+    }
+  },
+  "title": "AtlasEntityExtInfo",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `referred_entities` (`dict[str, AtlasEntity] | None`)
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### referred\_entities
+
+```
+referred_entities: dict[str, AtlasEntity] | None = None
+```
+
+#### add\_referred\_entity
+
+```
+add_referred_entity(entity: AtlasEntity) -> None
+```
+
+Refer to `entity` under its own GUID (`addReferredEntity(AtlasEntity)`).
+
+#### add\_referred\_entity\_as
+
+```
+add_referred_entity_as(guid: str | None, entity: AtlasEntity) -> None
+```
+
+Refer to `entity` under `guid`; without a GUID nothing is added, but the map is still created.
+
+#### compact
+
+```
+compact() -> None
+```
+
+Remove referred entities that are also main entities; there are none here.
+
+#### get\_entity
+
+```
+get_entity(guid: str | None) -> AtlasEntity | None
+```
+
+The entity with `guid` among those this holds; here, the referred ones.
+
+#### get\_referred\_entity
+
+```
+get_referred_entity(guid: str | None) -> AtlasEntity | None
+```
+
+The referred entity with `guid`, or None.
+
+#### has\_entity
+
+```
+has_entity(guid: str | None) -> bool
+```
+
+Whether this holds an entity with `guid`.
+
+#### remove\_entity
+
+```
+remove_entity(guid: str | None) -> AtlasEntity | None
+```
+
+Remove and return the referred entity with `guid`, or None.
+
+#### remove\_referred\_entity
+
+```
+remove_referred_entity(guid: str | None) -> AtlasEntity | None
+```
+
+Remove and return the referred entity with `guid`, or None.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+#### update\_entity\_guid
+
+```
+update_entity_guid(old_guid: str, new_guid: str) -> None
+```
+
+Give the entity with `old_guid` the GUID `new_guid`; a referred one is moved to it in the map.
+
+## aurelius\_atlas\_model.instance.entity\_with\_ext\_info
+
+`AtlasEntity.AtlasEntityWithExtInfo`: one entity and the entities it refers to (ENT-10).
+
+Classes:
+
+- **`AtlasEntityWithExtInfo`** –
+
+  The body of a single-entity read or write: `entity` and `referredEntities`.
+
+### AtlasEntityWithExtInfo
+
+Bases: `AtlasEntityExtInfo`
+
+The body of a single-entity read or write: `entity` and `referredEntities`.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasEntity": {
+      "description": "An entity: a struct with a GUID, a status, audit fields, relationships, classifications and labels.\n\nRead with the defaults of Java's no-argument constructor, whose ``init()`` assigns a temporary GUID and\nclears ``status`` (ENT-04). ``isProxy`` is read under that name and written as ``proxy`` (ENT-05).",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "guid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guid"
+        },
+        "homeId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Homeid"
+        },
+        "isProxy": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isproxy"
+        },
+        "isIncomplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isincomplete"
+        },
+        "provenanceType": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "title": "Provenancetype"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "updatedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updatedby"
+        },
+        "createTime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "updateTime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "title": "Version"
+        },
+        "relationshipAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationshipattributes"
+        },
+        "classifications": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasClassification"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classifications"
+        },
+        "meanings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasTermAssignmentHeader"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meanings"
+        },
+        "customAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Customattributes"
+        },
+        "businessAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Businessattributes"
+        },
+        "labels": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        },
+        "pendingTasks": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        }
+      },
+      "title": "AtlasEntity",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    },
+    "Timestamp": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "description": "The body of a single-entity read or write: ``entity`` and ``referredEntities``.",
+  "properties": {
+    "referredEntities": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/AtlasEntity"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Referredentities"
+    },
+    "entity": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AtlasEntity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "AtlasEntityWithExtInfo",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `referred_entities` (`dict[str, AtlasEntity] | None`)
+- `entity` (`AtlasEntity | None`)
+
+#### entity
+
+```
+entity: AtlasEntity | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### referred\_entities
+
+```
+referred_entities: dict[str, AtlasEntity] | None = None
+```
+
+#### add\_referred\_entity
+
+```
+add_referred_entity(entity: AtlasEntity) -> None
+```
+
+Refer to `entity` under its own GUID (`addReferredEntity(AtlasEntity)`).
+
+#### add\_referred\_entity\_as
+
+```
+add_referred_entity_as(guid: str | None, entity: AtlasEntity) -> None
+```
+
+Refer to `entity` under `guid`; without a GUID nothing is added, but the map is still created.
+
+#### compact
+
+```
+compact() -> None
+```
+
+Remove the main entity from the referred entities.
+
+#### get\_entity
+
+```
+get_entity(guid: str | None) -> AtlasEntity | None
+```
+
+The referred entity with `guid`, else the main entity when it has that GUID.
+
+#### get\_referred\_entity
+
+```
+get_referred_entity(guid: str | None) -> AtlasEntity | None
+```
+
+The referred entity with `guid`, or None.
+
+#### has\_entity
+
+```
+has_entity(guid: str | None) -> bool
+```
+
+Whether this holds an entity with `guid`.
+
+#### remove\_entity
+
+```
+remove_entity(guid: str | None) -> AtlasEntity | None
+```
+
+Remove and return the referred entity with `guid`, or None.
+
+#### remove\_referred\_entity
+
+```
+remove_referred_entity(guid: str | None) -> AtlasEntity | None
+```
+
+Remove and return the referred entity with `guid`, or None.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+#### update\_entity\_guid
+
+```
+update_entity_guid(old_guid: str, new_guid: str) -> None
+```
+
+Give the entity with `old_guid` the GUID `new_guid`; a referred one is moved to it in the map.
+
+## aurelius\_atlas\_model.instance.entities\_with\_ext\_info
+
+`AtlasEntity.AtlasEntitiesWithExtInfo`: several entities and the entities they refer to (ENT-10).
+
+Classes:
+
+- **`AtlasEntitiesWithExtInfo`** –
+
+  The body of a bulk read or write: `entities` and `referredEntities`.
+
+### AtlasEntitiesWithExtInfo
+
+Bases: `AtlasEntityExtInfo`
+
+The body of a bulk read or write: `entities` and `referredEntities`.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasEntity": {
+      "description": "An entity: a struct with a GUID, a status, audit fields, relationships, classifications and labels.\n\nRead with the defaults of Java's no-argument constructor, whose ``init()`` assigns a temporary GUID and\nclears ``status`` (ENT-04). ``isProxy`` is read under that name and written as ``proxy`` (ENT-05).",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "guid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guid"
+        },
+        "homeId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Homeid"
+        },
+        "isProxy": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isproxy"
+        },
+        "isIncomplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isincomplete"
+        },
+        "provenanceType": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "title": "Provenancetype"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "updatedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updatedby"
+        },
+        "createTime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "updateTime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "title": "Version"
+        },
+        "relationshipAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationshipattributes"
+        },
+        "classifications": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasClassification"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classifications"
+        },
+        "meanings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasTermAssignmentHeader"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meanings"
+        },
+        "customAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Customattributes"
+        },
+        "businessAttributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Businessattributes"
+        },
+        "labels": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        },
+        "pendingTasks": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        }
+      },
+      "title": "AtlasEntity",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    },
+    "Timestamp": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "description": "The body of a bulk read or write: ``entities`` and ``referredEntities``.",
+  "properties": {
+    "referredEntities": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/AtlasEntity"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Referredentities"
+    },
+    "entities": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/AtlasEntity"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entities"
+    }
+  },
+  "title": "AtlasEntitiesWithExtInfo",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `referred_entities` (`dict[str, AtlasEntity] | None`)
+- `entities` (`list[AtlasEntity] | None`)
+
+#### entities
+
+```
+entities: list[AtlasEntity] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### referred\_entities
+
+```
+referred_entities: dict[str, AtlasEntity] | None = None
+```
+
+#### add\_entity
+
+```
+add_entity(entity: AtlasEntity) -> None
+```
+
+Append a main entity, creating the list.
+
+#### add\_referred\_entity
+
+```
+add_referred_entity(entity: AtlasEntity) -> None
+```
+
+Refer to `entity` under its own GUID (`addReferredEntity(AtlasEntity)`).
+
+#### add\_referred\_entity\_as
+
+```
+add_referred_entity_as(guid: str | None, entity: AtlasEntity) -> None
+```
+
+Refer to `entity` under `guid`; without a GUID nothing is added, but the map is still created.
+
+#### compact
+
+```
+compact() -> None
+```
+
+Remove the main entities from the referred entities.
+
+#### get\_entity
+
+```
+get_entity(guid: str | None) -> AtlasEntity | None
+```
+
+The referred entity with `guid`, else the first main entity with that GUID.
+
+#### get\_referred\_entity
+
+```
+get_referred_entity(guid: str | None) -> AtlasEntity | None
+```
+
+The referred entity with `guid`, or None.
+
+#### has\_entity
+
+```
+has_entity(guid: str | None) -> bool
+```
+
+Whether this holds an entity with `guid`.
+
+#### remove\_entity
+
+```
+remove_entity(guid: str | None) -> AtlasEntity | None
+```
+
+```
+remove_entity(guid: AtlasEntity) -> None
+```
+
+```
+remove_entity(guid: str | AtlasEntity | None) -> AtlasEntity | None
+```
+
+Remove a referred entity by GUID, or the first main entity equal to an entity (Java's two overloads).
+
+#### remove\_referred\_entity
+
+```
+remove_referred_entity(guid: str | None) -> AtlasEntity | None
+```
+
+Remove and return the referred entity with `guid`, or None.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+#### update\_entity\_guid
+
+```
+update_entity_guid(old_guid: str, new_guid: str) -> None
+```
+
+Give the entity with `old_guid` the GUID `new_guid`; a referred one is moved to it in the map.
+
+## aurelius\_atlas\_model.instance.object\_id
+
+`AtlasObjectId`: a reference to an entity, by GUID or by type and unique attributes (ENT-11).
+
+Classes:
+
+- **`AtlasObjectId`** –
+
+  An entity reference: its GUID, or its type name and the unique attribute values that identify it.
+
+### AtlasObjectId
+
+Bases: `AtlasModel`
+
+An entity reference: its GUID, or its type name and the unique attribute values that identify it.
+
+**Show JSON schema:**
+
+```
+{
+  "description": "An entity reference: its GUID, or its type name and the unique attribute values that identify it.",
+  "properties": {
+    "guid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Guid"
+    },
+    "typeName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Typename"
+    },
+    "uniqueAttributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Uniqueattributes"
+    }
+  },
+  "title": "AtlasObjectId",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `guid` (`str | None`)
+- `type_name` (`str | None`)
+- `unique_attributes` (`dict[str, Any] | None`)
+
+#### \_\_hash\_\_
+
+```
+__hash__ = None
+```
+
+#### guid
+
+```
+guid: str | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### type\_name
+
+```
+type_name: str | None = None
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, Any] | None = None
+```
+
+#### \_\_eq\_\_
+
+```
+__eq__(other: object) -> bool
+```
+
+`AtlasObjectId.equals`: by GUID when either has a non-empty one, else by type and unique attributes.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.related\_object\_id
+
+`AtlasRelatedObjectId`: a related entity as a relationship attribute shows it (ENT-12).
+
+Classes:
+
+- **`AtlasRelatedObjectId`** –
+
+  The other end of a relationship: the entity, its status and display text, and the relationship.
+
+### AtlasRelatedObjectId
+
+Bases: `AtlasObjectId`
+
+The other end of a relationship: the entity, its status and display text, and the relationship.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasStruct": {
+      "description": "An instance of a struct type: its name and its attribute values (ENT-02, ENT-03).\n\nAttribute values are JSON values as read, null included, until their types normalise them (DD-038).",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        }
+      },
+      "title": "AtlasStruct",
+      "type": "object"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "RelationshipStatus": {
+      "description": "Whether a relationship is active or soft-deleted (``AtlasRelationship.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED"
+      ],
+      "title": "RelationshipStatus",
+      "type": "string"
+    }
+  },
+  "description": "The other end of a relationship: the entity, its status and display text, and the relationship.",
+  "properties": {
+    "guid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Guid"
+    },
+    "typeName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Typename"
+    },
+    "uniqueAttributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Uniqueattributes"
+    },
+    "entityStatus": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "displayText": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Displaytext"
+    },
+    "relationshipType": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Relationshiptype"
+    },
+    "relationshipGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Relationshipguid"
+    },
+    "relationshipStatus": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RelationshipStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "relationshipAttributes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AtlasStruct"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "qualifiedName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Qualifiedname"
+    }
+  },
+  "title": "AtlasRelatedObjectId",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `guid` (`str | None`)
+- `type_name` (`str | None`)
+- `unique_attributes` (`dict[str, Any] | None`)
+- `entity_status` (`EntityStatus | None`)
+- `display_text` (`str | None`)
+- `relationship_type` (`str | None`)
+- `relationship_guid` (`str | None`)
+- `relationship_status` (`RelationshipStatus | None`)
+- `relationship_attributes` (`AtlasStruct | None`)
+- `qualified_name` (`str | None`)
+
+Validators:
+
+- `_relationship_type_in_order`
+
+#### \_\_hash\_\_
+
+```
+__hash__ = None
+```
+
+#### display\_text
+
+```
+display_text: str | None = None
+```
+
+#### entity\_status
+
+```
+entity_status: EntityStatus | None = None
+```
+
+#### guid
+
+```
+guid: str | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### qualified\_name
+
+```
+qualified_name: str | None = None
+```
+
+#### relationship\_attributes
+
+```
+relationship_attributes: AtlasStruct | None = None
+```
+
+#### relationship\_guid
+
+```
+relationship_guid: str | None = None
+```
+
+#### relationship\_status
+
+```
+relationship_status: RelationshipStatus | None = None
+```
+
+#### relationship\_type
+
+```
+relationship_type: str | None = None
+```
+
+#### type\_name
+
+```
+type_name: str | None = None
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, Any] | None = None
+```
+
+#### \_\_eq\_\_
+
+```
+__eq__(other: object) -> bool
+```
+
+`AtlasRelatedObjectId.equals`: the object id's equality, then the relationship's fields.
+
+#### set\_relationship\_attributes
+
+```
+set_relationship_attributes(relationship_attributes: AtlasStruct | None) -> None
+```
+
+Set the relationship's attributes; their type name, when set, becomes the relationship type.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.relationship\_status
+
+`AtlasRelationship.Status`: the life-cycle state of a relationship (ENT-09).
+
+Classes:
+
+- **`RelationshipStatus`** –
+
+  Whether a relationship is active or soft-deleted (`AtlasRelationship.Status`).
+
+### RelationshipStatus
+
+Bases: `StrEnum`
+
+Whether a relationship is active or soft-deleted (`AtlasRelationship.Status`).
+
+Attributes:
+
+- **`ACTIVE`** –
+- **`DELETED`** –
+
+#### ACTIVE
+
+```
+ACTIVE = 'ACTIVE'
+```
+
+#### DELETED
+
+```
+DELETED = 'DELETED'
+```
+
+## aurelius\_atlas\_model.instance.classification
+
+`AtlasClassification`: a classification of an entity, with its propagation and validity (ENT-13).
+
+Classes:
+
+- **`AtlasClassification`** –
+
+  An instance of a classification type attached to an entity.
+
+### AtlasClassification
+
+Bases: `AtlasStruct`
+
+An instance of a classification type attached to an entity.
+
+`propagate` is written once: Java's `getPropagate` and `isPropagate` name the same property.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    }
+  },
+  "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+  "properties": {
+    "typeName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Typename"
+    },
+    "attributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attributes"
+    },
+    "entityGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entityguid"
+    },
+    "entityStatus": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "ACTIVE"
+    },
+    "propagate": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Propagate"
+    },
+    "validityPeriods": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/TimeBoundary"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Validityperiods"
+    },
+    "removePropagationsOnEntityDelete": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Removepropagationsonentitydelete"
+    }
+  },
+  "title": "AtlasClassification",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `type_name` (`str | None`)
+- `attributes` (`dict[str, Any] | None`)
+- `entity_guid` (`str | None`)
+- `entity_status` (`EntityStatus | None`)
+- `propagate` (`bool | None`)
+- `validity_periods` (`list[TimeBoundary] | None`)
+- `remove_propagations_on_entity_delete` (`bool | None`)
+
+#### attributes
+
+```
+attributes: dict[str, Any] | None = None
+```
+
+#### entity\_guid
+
+```
+entity_guid: str | None = None
+```
+
+#### entity\_status
+
+```
+entity_status: EntityStatus | None = EntityStatus.ACTIVE
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### propagate
+
+```
+propagate: bool | None = None
+```
+
+#### remove\_propagations\_on\_entity\_delete
+
+```
+remove_propagations_on_entity_delete: bool | None = None
+```
+
+#### type\_name
+
+```
+type_name: str | None = None
+```
+
+#### validity\_periods
+
+```
+validity_periods: list[TimeBoundary] | None = None
+```
+
+#### add\_validity\_period
+
+```
+add_validity_period(validity_period: TimeBoundary) -> None
+```
+
+Append a validity period, creating the list (`addValityPeriod`).
+
+#### get\_attribute
+
+```
+get_attribute(name: str) -> Any
+```
+
+The value of attribute `name`, or None.
+
+#### has\_attribute
+
+```
+has_attribute(name: str) -> bool
+```
+
+Whether attribute `name` is present, even with a null value.
+
+#### remove\_attribute
+
+```
+remove_attribute(name: str) -> Any
+```
+
+Remove attribute `name` and return its value, or None.
+
+#### set\_attribute
+
+```
+set_attribute(name: str, value: Any) -> None
+```
+
+Set attribute `name`, creating the attributes when there are none.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.time\_boundary
+
+`TimeBoundary`: one validity period of a classification (ENT-13).
+
+Classes:
+
+- **`TimeBoundary`** –
+
+  A period in which a classification applies; the times are strings in `TIME_FORMAT`.
+
+Attributes:
+
+- **`TIME_FORMAT`** –
+
+  The Java date format of `startTime` and `endTime` (`TimeBoundary.TIME_FORMAT`); checked in 2.1b.
+
+### TIME\_FORMAT
+
+```
+TIME_FORMAT = 'yyyy/MM/dd HH:mm:ss'
+```
+
+The Java date format of `startTime` and `endTime` (`TimeBoundary.TIME_FORMAT`); checked in 2.1b.
+
+### TimeBoundary
+
+Bases: `AtlasModel`
+
+A period in which a classification applies; the times are strings in `TIME_FORMAT`.
+
+`timeZone` is a Java time zone id, or null for the server's local time.
+
+**Show JSON schema:**
+
+```
+{
+  "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+  "properties": {
+    "startTime": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Starttime"
+    },
+    "endTime": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Endtime"
+    },
+    "timeZone": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Timezone"
+    }
+  },
+  "title": "TimeBoundary",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `start_time` (`str | None`)
+- `end_time` (`str | None`)
+- `time_zone` (`str | None`)
+
+#### end\_time
+
+```
+end_time: str | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### start\_time
+
+```
+start_time: str | None = None
+```
+
+#### time\_zone
+
+```
+time_zone: str | None = None
+```
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.entity\_header
+
+`AtlasEntityHeader`: an entity's identity and summary, as lists and mutation responses show it (ENT-14).
+
+Classes:
+
+- **`AtlasEntityHeader`** –
+
+  An entity's type, GUID, status, display text, classifications, meanings and labels.
+
+### AtlasEntityHeader
+
+Bases: `AtlasStruct`
+
+An entity's type, GUID, status, display text, classifications, meanings and labels.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    }
+  },
+  "description": "An entity's type, GUID, status, display text, classifications, meanings and labels.",
+  "properties": {
+    "typeName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Typename"
+    },
+    "attributes": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attributes"
+    },
+    "guid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Guid"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "ACTIVE"
+    },
+    "displayText": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Displaytext"
+    },
+    "classificationNames": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Classificationnames"
+    },
+    "classifications": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/AtlasClassification"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Classifications"
+    },
+    "meaningNames": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Meaningnames"
+    },
+    "meanings": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/AtlasTermAssignmentHeader"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Meanings"
+    },
+    "isIncomplete": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": false,
+      "title": "Isincomplete"
+    },
+    "labels": {
+      "$ref": "#/$defs/OptionalNameSet",
+      "default": null
+    }
+  },
+  "title": "AtlasEntityHeader",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `type_name` (`str | None`)
+- `attributes` (`dict[str, Any] | None`)
+- `guid` (`str | None`)
+- `status` (`EntityStatus | None`)
+- `display_text` (`str | None`)
+- `classification_names` (`list[str] | None`)
+- `classifications` (`list[AtlasClassification] | None`)
+- `meaning_names` (`list[str] | None`)
+- `meanings` (`list[AtlasTermAssignmentHeader] | None`)
+- `is_incomplete` (`bool | None`)
+- `labels` (`OptionalNameSet`)
+
+#### attributes
+
+```
+attributes: dict[str, Any] | None = None
+```
+
+#### classification\_names
+
+```
+classification_names: list[str] | None = None
+```
+
+#### classifications
+
+```
+classifications: list[AtlasClassification] | None = None
+```
+
+#### display\_text
+
+```
+display_text: str | None = None
+```
+
+#### guid
+
+```
+guid: str | None = None
+```
+
+#### is\_incomplete
+
+```
+is_incomplete: bool | None = False
+```
+
+#### labels
+
+```
+labels: OptionalNameSet = None
+```
+
+#### meaning\_names
+
+```
+meaning_names: list[str] | None = None
+```
+
+#### meanings
+
+```
+meanings: list[AtlasTermAssignmentHeader] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### status
+
+```
+status: EntityStatus | None = EntityStatus.ACTIVE
+```
+
+#### type\_name
+
+```
+type_name: str | None = None
+```
+
+#### get\_attribute
+
+```
+get_attribute(name: str) -> Any
+```
+
+The value of attribute `name`, or None.
+
+#### has\_attribute
+
+```
+has_attribute(name: str) -> bool
+```
+
+Whether attribute `name` is present, even with a null value.
+
+#### of
+
+```
+of(entity: AtlasEntity) -> Self
+```
+
+The header of `entity` (`AtlasEntityHeader(AtlasEntity)`); its meanings are not carried over.
+
+#### remove\_attribute
+
+```
+remove_attribute(name: str) -> Any
+```
+
+Remove attribute `name` and return its value, or None.
+
+#### set\_attribute
+
+```
+set_attribute(name: str, value: Any) -> None
+```
+
+Set attribute `name`, creating the attributes when there are none.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.entity\_headers
+
+`AtlasEntityHeaders`: entity headers by GUID, the body of `/v2/entity/bulk/headers` (ENT-16).
+
+Classes:
+
+- **`AtlasEntityHeaders`** –
+
+  `guidHeaderMap`: the header of each entity, by GUID.
+
+### AtlasEntityHeaders
+
+Bases: `AtlasModel`
+
+`guidHeaderMap`: the header of each entity, by GUID.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasEntityHeader": {
+      "description": "An entity's type, GUID, status, display text, classifications, meanings and labels.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "guid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Guid"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "classificationNames": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classificationnames"
+        },
+        "classifications": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasClassification"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classifications"
+        },
+        "meaningNames": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meaningnames"
+        },
+        "meanings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasTermAssignmentHeader"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meanings"
+        },
+        "isIncomplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isincomplete"
+        },
+        "labels": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        }
+      },
+      "title": "AtlasEntityHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    }
+  },
+  "description": "``guidHeaderMap``: the header of each entity, by GUID.",
+  "properties": {
+    "guidHeaderMap": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/AtlasEntityHeader"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Guidheadermap"
+    }
+  },
+  "title": "AtlasEntityHeaders",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `guid_header_map` (`dict[str, AtlasEntityHeader] | None`)
+
+#### guid\_header\_map
+
+```
+guid_header_map: dict[str, AtlasEntityHeader] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.entity\_operation
+
+`EntityMutations.EntityOperation`: what a write did to an entity (ENT-09).
+
+Classes:
+
+- **`EntityOperation`** –
+
+  The kinds of entity mutation a response reports (`EntityMutations.EntityOperation`).
+
+### EntityOperation
+
+Bases: `StrEnum`
+
+The kinds of entity mutation a response reports (`EntityMutations.EntityOperation`).
+
+Attributes:
+
+- **`CREATE`** –
+- **`DELETE`** –
+- **`PARTIAL_UPDATE`** –
+- **`PURGE`** –
+- **`UPDATE`** –
+
+#### CREATE
+
+```
+CREATE = 'CREATE'
+```
+
+#### DELETE
+
+```
+DELETE = 'DELETE'
+```
+
+#### PARTIAL\_UPDATE
+
+```
+PARTIAL_UPDATE = 'PARTIAL_UPDATE'
+```
+
+#### PURGE
+
+```
+PURGE = 'PURGE'
+```
+
+#### UPDATE
+
+```
+UPDATE = 'UPDATE'
+```
+
+## aurelius\_atlas\_model.instance.entity\_mutation\_response
+
+`EntityMutationResponse`: what an entity write did, by operation (ENT-17).
+
+Classes:
+
+- **`EntityMutationResponse`** –
+
+  The headers of the created, updated, deleted and purged entities, and the GUIDs given to new ones.
+
+### EntityMutationResponse
+
+Bases: `AtlasModel`
+
+The headers of the created, updated, deleted and purged entities, and the GUIDs given to new ones.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "AtlasEntityHeader": {
+      "description": "An entity's type, GUID, status, display text, classifications, meanings and labels.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "guid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Guid"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "classificationNames": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classificationnames"
+        },
+        "classifications": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasClassification"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classifications"
+        },
+        "meaningNames": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meaningnames"
+        },
+        "meanings": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasTermAssignmentHeader"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meanings"
+        },
+        "isIncomplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Isincomplete"
+        },
+        "labels": {
+          "$ref": "#/$defs/OptionalNameSet",
+          "default": null
+        }
+      },
+      "title": "AtlasEntityHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentHeader": {
+      "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+      "properties": {
+        "termGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Termguid"
+        },
+        "relationGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationguid"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "displayText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displaytext"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdby"
+        },
+        "steward": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steward"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "confidence": {
+          "$ref": "#/$defs/JavaInt",
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtlasTermAssignmentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "qualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Qualifiedname"
+        }
+      },
+      "title": "AtlasTermAssignmentHeader",
+      "type": "object"
+    },
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "EntityOperation": {
+      "description": "The kinds of entity mutation a response reports (``EntityMutations.EntityOperation``).",
+      "enum": [
+        "CREATE",
+        "UPDATE",
+        "PARTIAL_UPDATE",
+        "DELETE",
+        "PURGE"
+      ],
+      "title": "EntityOperation",
+      "type": "string"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "OptionalNameSet": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    }
+  },
+  "description": "The headers of the created, updated, deleted and purged entities, and the GUIDs given to new ones.",
+  "properties": {
+    "mutatedEntities": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/AtlasEntityHeader"
+            },
+            "type": "array"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/EntityOperation"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mutatedentities"
+    },
+    "guidAssignments": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Guidassignments"
+    }
+  },
+  "title": "EntityMutationResponse",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `mutated_entities` (`dict[EntityOperation, list[AtlasEntityHeader]] | None`)
+- `guid_assignments` (`dict[str, str] | None`)
+
+#### guid\_assignments
+
+```
+guid_assignments: dict[str, str] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### mutated\_entities
+
+```
+mutated_entities: dict[EntityOperation, list[AtlasEntityHeader]] | None = None
+```
+
+#### partial\_updated\_entities
+
+```
+partial_updated_entities: list[AtlasEntityHeader] | None
+```
+
+The partially updated entities, also written as `partialUpdatedEntities` (ENT-17).
+
+Java's `getPartialUpdatedEntities` lacks the `@JsonIgnore` its other lookups have.
+
+#### add\_entity
+
+```
+add_entity(operation: EntityOperation, header: AtlasEntityHeader) -> None
+```
+
+Record `operation` on an entity, once per GUID; an update of an entity created here counts as created.
+
+#### get\_created\_entities
+
+```
+get_created_entities() -> list[AtlasEntityHeader] | None
+```
+
+The created entities, or None.
+
+#### get\_deleted\_entities
+
+```
+get_deleted_entities() -> list[AtlasEntityHeader] | None
+```
+
+The deleted entities, or None.
+
+#### get\_entities\_by\_operation
+
+```
+get_entities_by_operation(operation: EntityOperation) -> list[AtlasEntityHeader] | None
+```
+
+The headers of the entities `operation` was applied to, or None.
+
+#### get\_entities\_by\_type\_name
+
+```
+get_entities_by_type_name(operation: EntityOperation, type_name: str) -> list[AtlasEntityHeader]
+```
+
+The entities of `type_name` that `operation` was applied to (`getCreatedEntitiesByTypeName`, …).
+
+#### get\_entity\_by\_type\_name\_and\_attribute
+
+```
+get_entity_by_type_name_and_attribute(
+    operation: EntityOperation, type_name: str, name: str, value: str | None
+) -> AtlasEntityHeader | None
+```
+
+The first entity of `type_name` whose attribute `name` is `value`.
+
+`getCreatedEntityByTypeNameAndAttribute` and `getUpdatedEntityByTypeNameAndAttribute`.
+
+#### get\_first\_entity\_by\_operation
+
+```
+get_first_entity_by_operation(operation: EntityOperation) -> AtlasEntityHeader | None
+```
+
+The first entity `operation` was applied to (`getFirstEntityCreated`, …), or None.
+
+#### get\_first\_entity\_by\_type\_name
+
+```
+get_first_entity_by_type_name(operation: EntityOperation, type_name: str) -> AtlasEntityHeader | None
+```
+
+The first entity of `type_name` `operation` was applied to (`getFirstCreatedEntityByTypeName`, …).
+
+#### get\_purged\_entities
+
+```
+get_purged_entities() -> list[AtlasEntityHeader] | None
+```
+
+The purged entities, or None.
+
+#### get\_purged\_entities\_ids
+
+```
+get_purged_entities_ids() -> str | None
+```
+
+The GUIDs of the purged entities joined by commas, or None when there are none.
+
+#### get\_updated\_entities
+
+```
+get_updated_entities() -> list[AtlasEntityHeader] | None
+```
+
+The updated entities, or None.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.term\_assignment\_header
+
+`AtlasTermAssignmentHeader`: a glossary term assigned to an entity, as the entity lists it (ENT-15).
+
+Classes:
+
+- **`AtlasTermAssignmentHeader`** –
+
+  The term, the assignment's relationship and how it was made (`glossary.relations`).
+
+### AtlasTermAssignmentHeader
+
+Bases: `AtlasModel`
+
+The term, the assignment's relationship and how it was made (`glossary.relations`).
+
+Atlas writes it with `@AtlasJSON`, `NON_EMPTY`: null fields and empty strings are left out, but the `int` `confidence` is always written.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasTermAssignmentStatus": {
+      "description": "The status of a term assignment, written by its Java name (``glossary.enums.AtlasTermAssignmentStatus``).",
+      "enum": [
+        "DISCOVERED",
+        "PROPOSED",
+        "IMPORTED",
+        "VALIDATED",
+        "DEPRECATED",
+        "OBSOLETE",
+        "OTHER"
+      ],
+      "title": "AtlasTermAssignmentStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    }
+  },
+  "description": "The term, the assignment's relationship and how it was made (``glossary.relations``).\n\nAtlas writes it with ``@AtlasJSON``, ``NON_EMPTY``: null fields and empty strings are left out, but the\n``int`` ``confidence`` is always written.",
+  "properties": {
+    "termGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Termguid"
+    },
+    "relationGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Relationguid"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "displayText": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Displaytext"
+    },
+    "expression": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expression"
+    },
+    "createdBy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Createdby"
+    },
+    "steward": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Steward"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source"
+    },
+    "confidence": {
+      "$ref": "#/$defs/JavaInt",
+      "default": 0
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AtlasTermAssignmentStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "qualifiedName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Qualifiedname"
+    }
+  },
+  "title": "AtlasTermAssignmentHeader",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `term_guid` (`str | None`)
+- `relation_guid` (`str | None`)
+- `description` (`str | None`)
+- `display_text` (`str | None`)
+- `expression` (`str | None`)
+- `created_by` (`str | None`)
+- `steward` (`str | None`)
+- `source` (`str | None`)
+- `confidence` (`JavaInt`)
+- `status` (`AtlasTermAssignmentStatus | None`)
+- `qualified_name` (`str | None`)
+
+#### confidence
+
+```
+confidence: JavaInt = 0
+```
+
+#### created\_by
+
+```
+created_by: str | None = None
+```
+
+#### description
+
+```
+description: str | None = None
+```
+
+#### display\_text
+
+```
+display_text: str | None = None
+```
+
+#### expression
+
+```
+expression: str | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### qualified\_name
+
+```
+qualified_name: str | None = None
+```
+
+#### relation\_guid
+
+```
+relation_guid: str | None = None
+```
+
+#### source
+
+```
+source: str | None = None
+```
+
+#### status
+
+```
+status: AtlasTermAssignmentStatus | None = None
+```
+
+#### steward
+
+```
+steward: str | None = None
+```
+
+#### term\_guid
+
+```
+term_guid: str | None = None
+```
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+## aurelius\_atlas\_model.instance.term\_assignment\_status
+
+`AtlasTermAssignmentStatus`: how far a glossary term's assignment to an entity got (ENT-09).
+
+Classes:
+
+- **`AtlasTermAssignmentStatus`** –
+
+  The status of a term assignment, written by its Java name (`glossary.enums.AtlasTermAssignmentStatus`).
+
+### AtlasTermAssignmentStatus
+
+Bases: `StrEnum`
+
+The status of a term assignment, written by its Java name (`glossary.enums.AtlasTermAssignmentStatus`).
+
+Attributes:
+
+- **`DEPRECATED`** –
+- **`DISCOVERED`** –
+- **`IMPORTED`** –
+- **`OBSOLETE`** –
+- **`OTHER`** –
+- **`PROPOSED`** –
+- **`VALIDATED`** –
+
+#### DEPRECATED
+
+```
+DEPRECATED = 'DEPRECATED'
+```
+
+#### DISCOVERED
+
+```
+DISCOVERED = 'DISCOVERED'
+```
+
+#### IMPORTED
+
+```
+IMPORTED = 'IMPORTED'
+```
+
+#### OBSOLETE
+
+```
+OBSOLETE = 'OBSOLETE'
+```
+
+#### OTHER
+
+```
+OTHER = 'OTHER'
+```
+
+#### PROPOSED
+
+```
+PROPOSED = 'PROPOSED'
+```
+
+#### VALIDATED
+
+```
+VALIDATED = 'VALIDATED'
 ```
