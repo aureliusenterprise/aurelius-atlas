@@ -1464,3 +1464,48 @@ DD-047 states in its title.
 the bridge catalogue, so `nx build aurelius-atlas-webapp` is warning-clean and can be used
 as the id-parity gate; the 7.2 spec's chrome-string rule (UIC-04) is unchanged, and the
 accordion's toggle-content unit starts translating in nl-NL for the first time.
+
+### DD-056. The Shell chrome is ported search-free; the root composes header and footer
+
+- **Status:** Proposed
+- **Increment:** 7.11
+- **Date:** 2026-10-20
+
+**Decision.** The Aurelius chrome (header, footer) is ported now, on the user's request,
+as its own slice (7.11), composed directly by the root component — `Header` (the 7.2
+ui-lib component) over the router outlet, footer below. What is ported: the brand (app
+name from `/config.json`, linking to the default route), the Documentation link, the
+language dropdown, the account dropdown (identity, Keycloak account console, logout),
+and the copyright footer. What is not: the global search bar and nav buttons (they join
+7.4, unchanged from DD-054's reasoning), the PWA install/update buttons (no service
+worker is ported), the Models4Insight services dropdown (not part of this product), the
+sticky loading/pipeline block (nothing to track yet), and the login button (every route
+is guarded, APC-05 — the logged-out navbar is unreachable). The navbar is not
+`is-fixed-top`. Switching language is a full-page navigation into the locale tree, not
+ngx-translate's runtime swap.
+
+**Reason.** DD-054 deferred the chrome _with the search bar_ because wiring them was one
+decision; the user has since asked for the shell as its own deliverable, so the seam
+moves: the frame is orthogonal to search, and a screen wearing its header/footer is
+strictly closer to the product than a bare outlet. DD-054's search half stands
+unchanged — this entry supersedes only its Shell-chrome sentence. The deferred controls
+each fail a test this workspace already enforces: an install button with no service
+worker is a promise the build does not keep; a services dropdown points at products
+outside this repo; a login button behind a guard is dead markup; a loading bar has no
+long navigation to track while the only screen is static. Aurelius's `Shell` module,
+its service (token refresh on window focus — keycloak-angular owns refresh, DD-052) and
+its reusable-route strategy are Redux-era plumbing the port's idioms replace (DD-046).
+
+**Alternatives.** Port the shell wholesale with the deferred controls hidden behind
+config flags (Aurelius's own `standalone`/`hideDocumentation` knobs): config that only
+one deployment ever flips is dead code (the atlas environments never set them); the
+user asked for the shell, not for a feature-flag audit. Wait for 7.4: the chrome is
+search-independent and the user wants it now.
+
+**Consequences.** The 7.11 navbar is static; 7.4 adds the search bar and nav buttons to
+it, at which point `is-fixed-top` and the content offset return together with the sticky
+loading bar (a pinned header is a layout contract, not a class). The root's "bare
+outlet" spec (SHL-03, 7.1) is superseded by SHC-01 — the Aurelius root _is_ the shell,
+and the reading that motivated 7.1's placeholder retires. The shell's chrome strings are
+new vendored fixtures (`shell.header.*`, `shell.footer.*`), bridged like the components
+dictionary (DD-047), so UIC-04's invented-string gate extends to them.

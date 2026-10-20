@@ -83,12 +83,13 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 7.2  | Shared UI components            | Legacy shared components as dumb `aurelius-atlas-ui` components, each with a story                               | Aurelius `libs/components`                                | in progress |
 | 7.3  | API client and auth wiring      | The Atlas REST client in `aurelius-atlas-data-access`; Keycloak providers and bearer-token interceptor           | Aurelius `libs/atlas/api`, `libs/http`                    | in progress |
 | 7.4  | Search                          | Query and results, the first slice with real data (on hold: gated by server 4.1/2.3, DD-054)                     | Aurelius `apps/atlas/src/app/search`                      | planned     |
-| 7.5  | Landing page (browse)           | Hero, context cards, info modals; search affordances and `Shell` chrome join 7.4 (DD-054)                        | Aurelius `apps/atlas/src/app/search/browse`               | in progress |
+| 7.5  | Landing page (browse)           | Hero, context cards, info modals; search affordances join 7.4 (DD-054); Shell chrome ported by 7.11 (DD-056)     | Aurelius `apps/atlas/src/app/search/browse`               | in progress |
 | 7.6  | Entity details                  | Details header, attributes, relationships, lineage view                                                          | Aurelius `apps/atlas/src/app/search/details`              | planned     |
 | 7.7  | Entity editor                   | Create and edit forms with validation                                                                            | Aurelius `apps/atlas/src/app/search/{create,edit}-entity` | planned     |
 | 7.8  | Governance quality and domains  | Classifications, governance quality, domains                                                                     | Aurelius `apps/atlas/src/app/dashboards`                  | planned     |
 | 7.9  | Delete, audit and detail cards  | Delete flow, audit events, the remaining detail cards                                                            | Aurelius `apps/atlas/src/app/search`                      | planned     |
 | 7.10 | Webapp served                   | The webapp served as the product interface; the example app retires (DV-11)                                      | –                                                         | planned     |
+| 7.11 | Shell chrome                    | Header and footer around every screen: brand, docs, language switch, account menu; search bar joins 7.4 (DD-056) | Aurelius `libs/shell`                                     | in progress |
 
 ## After phase 0
 
