@@ -1,0 +1,84 @@
+@let _loading = loading();
+@let _pageRows = pageRows();
+@let _emptyLabel = emptyLabel();
+
+@if (_loading) {
+    <div class="has-text-centered p-6" role="status">
+        <span class="icon is-medium has-text-info">
+            <fa-icon [animation]="'spin'" [fixedWidth]="true" [icon]="faSpinner"></fa-icon>
+        </span>
+    </div>
+} @else if (_pageRows.length === 0) {
+    <p
+        class="content has-text-centered"
+        i18n="@@components.sortableTableShell.noData|Aurelius table shell empty-state chrome (DD-047)"
+    >
+        <span
+            ><i>{{ _emptyLabel }}</i></span
+        >
+    </p>
+} @else {
+    <!-- The Bulma table-container scrolls wide tables horizontally; it can clip
+         dropdowns (bulma#1655), so the Aurelius `enableTableContainer` opt-out
+         is kept. -->
+    <div [class.table-container]="enableTableContainer()">
+        <table class="table is-striped is-hoverable is-fullwidth">
+            <thead>
+                <tr>
+                    @for (column of headerColumns(); track column.headerTemplate) {
+                        @if (column.sortBy()) {
+                            <th
+                                [attr.aria-sort]="ariaSort(column.sortBy())"
+                                [attr.title]="column.title()"
+                                [class.is-narrow]="column.isNarrow()"
+                                class="has-background-dark has-text-light"
+                            >
+                                <button
+                                    type="button"
+                                    class="table-sort-header"
+                                    (click)="onHeaderClicked(column.sortBy())"
+                                >
+                                    <ng-container *ngTemplateOutlet="column.headerTemplate"></ng-container>
+                                    <span class="icon is-small">
+                                        <fa-icon
+                                            [icon]="sortIcon(column.sortBy())"
+                                            [fixedWidth]="true"
+                                            size="xs"
+                                        ></fa-icon>
+                                    </span>
+                                </button>
+                            </th>
+                        } @else {
+                            <th
+                                [attr.title]="column.title()"
+                                [class.is-narrow]="column.isNarrow()"
+                                class="has-background-dark has-text-light"
+                            >
+                                <ng-container *ngTemplateOutlet="column.headerTemplate"></ng-container>
+                            </th>
+                        }
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (row of _pageRows; track $index) {
+                    <tr [class.is-selected]="row === selectedRow()" (click)="onRowClicked(row)">
+                        <ng-container
+                            *ngTemplateOutlet="rowTemplate(); context: { $implicit: row, index: $index }"
+                        ></ng-container>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (paginatedTotal() > pageSize()) {
+        <div class="field">
+            <aurelius-atlas-ui-pagination
+                [pageIndex]="pageIndex()"
+                [pageSize]="pageSize()"
+                [totalItems]="paginatedTotal()"
+                (pageIndexChange)="onPageChanged($event)"
+            ></aurelius-atlas-ui-pagination>
+        </div>
+    }
+}

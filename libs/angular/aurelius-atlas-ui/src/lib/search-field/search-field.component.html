@@ -1,0 +1,35 @@
+@let _query = query();
+@let _placeholder = placeholder();
+@let _withSubmitButton = withSubmitButton();
+
+<div class="field has-addons">
+    <div class="control has-icons-right is-expanded">
+        <input
+            class="input"
+            type="search"
+            [attr.placeholder]="_placeholder"
+            [ngModel]="_query"
+            (ngModelChange)="onQueryChange($event)"
+            (search)="submitQuery()"
+        />
+        @if (_query) {
+            <span class="icon is-small is-right">
+                <button
+                    type="button"
+                    class="delete is-small"
+                    [attr.aria-label]="clearLabel()"
+                    (click)="clearQuery()"
+                ></button>
+            </span>
+        }
+    </div>
+    @if (_withSubmitButton) {
+        <div class="control">
+            <button type="button" class="button is-success" [attr.aria-label]="submitLabel()" (click)="submitQuery()">
+                <span class="icon is-small">
+                    <fa-icon [icon]="faSearch"></fa-icon>
+                </span>
+            </button>
+        </div>
+    }
+</div>

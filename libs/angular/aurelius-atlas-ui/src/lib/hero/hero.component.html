@@ -1,0 +1,36 @@
+@let _title = title();
+@let _subtitle = subtitle();
+
+<section class="hero is-primary is-bold" [class.is-fullheight-with-navbar]="fullHeight()">
+    <div class="hero-body has-margin-top-md has-margin-bottom-md has-text-light">
+        <div class="container">
+            <div class="columns is-vcentered">
+                <div class="column is-narrow">
+                    <div class="buttons">
+                        <ng-content select="[before-title]"></ng-content>
+                    </div>
+                </div>
+                <div class="column">
+                    @if (_title) {
+                        <h1 class="title is-1 is-spaced has-text-light">{{ _title }}</h1>
+                    }
+                    @if (_subtitle) {
+                        <h2 class="subtitle is-4 is-spaced has-text-light">{{ _subtitle }}</h2>
+                    }
+                </div>
+                <div class="column">
+                    <ng-content select="[after-title]"></ng-content>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-foot">
+        <nav class="tabs is-boxed is-fullwidth navigation">
+            <div class="container">
+                <ul>
+                    <ng-content select="[navigation]"></ng-content>
+                </ul>
+            </div>
+        </nav>
+    </div>
+</section>

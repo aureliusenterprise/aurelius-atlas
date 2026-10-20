@@ -1,0 +1,13 @@
+/* The header's sort control is the whole cell — matSort's affordance — so
+   the button inherits the header's typography and shows no chrome. */
+.table-sort-header {
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    gap: 0.25rem;
+    padding: 0;
+}

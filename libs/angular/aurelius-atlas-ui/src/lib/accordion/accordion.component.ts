@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectionStrategy, Component, model } from "@angular/core";
+import { ChangeDetectionStrategy, Component, input, model } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 
@@ -17,6 +17,14 @@ export class Accordion {
     readonly expanded = model(false);
 
     /**
+     * Accessible name of the toggle button. The legacy Aurelius component
+     * read this from the `components.accordion.toggleContent` dictionary key;
+     * the template's `i18n` unit is the same id (DD-047), and a caller with a
+     * more specific name (a per-screen label) overrides it here.
+     */
+    readonly ariaLabel = input("Toggle content");
+
+    /**
      * The FontAwesome icons used in the accordion.
      */
     protected readonly faChevronDown = faChevronDown;
@@ -26,20 +34,20 @@ export class Accordion {
      * Set the accordion to a collapsed state.
      */
     collapse() {
-        this.expanded.set(true);
+        this.expanded.set(false);
     }
 
     /**
-     * Set the accordion to an expanaded state.
+     * Set the accordion to an expanded state.
      */
     expand() {
-        this.expanded.set(false);
+        this.expanded.set(true);
     }
 
     /**
      * Toggle the accordion state. If it is expanded, it will collapse; if it is collapsed, it will expand.
      */
     toggle() {
-        this.expanded.update((collapsed) => !collapsed);
+        this.expanded.update((expanded) => !expanded);
     }
 }

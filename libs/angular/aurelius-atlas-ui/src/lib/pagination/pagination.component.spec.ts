@@ -179,4 +179,16 @@ describe("Pagination", () => {
 
         expect(component.pageTokens()).toEqual([1, "ellipsis", 9, 10]);
     });
+
+    it("carries the Aurelius chrome strings as localised text (UIC-04)", () => {
+        fixture.componentRef.setInput("totalItems", 30);
+        fixture.componentRef.setInput("pageSize", 10);
+        fixture.detectChanges();
+
+        const previous: HTMLElement = fixture.nativeElement.querySelector(".pagination-previous");
+        const next: HTMLElement = fixture.nativeElement.querySelector(".pagination-next");
+
+        expect(previous.textContent.trim()).toBe("Previous");
+        expect(next.textContent.trim()).toBe("Next page");
+    });
 });
