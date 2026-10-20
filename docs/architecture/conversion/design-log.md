@@ -1237,3 +1237,28 @@ one list of forbidden constructs stays the definition. Any exemption is an allow
 entry in that script, a reviewed change in the open (DD-042's consequence), and 7.2's
 ported components are expected to need none: the six existing library components are
 already clean.
+
+### DD-049. The Storybook preview loads `@angular/localize/init`
+
+- **Status:** Proposed
+- **Increment:** 7.2
+- **Date:** 2026-10-20
+
+**Decision.** `.storybook/preview.ts` imports `@angular/localize/init` as its first
+side-effect, the same polyfill the webapp build loads through its `polyfills` option.
+
+**Reason.** A chrome string in a component template (DD-047) compiles to a `$localize`
+call. Under the app's build that global exists; under Storybook's build it does not, so
+every story whose template carries an `i18n` attribute throws `$localize is not
+defined` at render — the `i18n` bridge silently made every story with chrome text
+unrenderable, and the failure surfaces only in the browser, not in a unit test (Vitest
+never runs the compiled template through localize).
+
+**Alternatives.** A `polyfills` option on the Storybook targets: the executor schema
+does not accept one. A no-op `$localize` in a story helper: works, and re-implements the
+polyfill by hand, so it drifts from the real one.
+
+**Consequences.** Stories render the English source text, which is what a visual
+baseline and the `play()` queries assert on. A story that needs the Dutch text is out
+of scope — translation is a per-app build-time concern; the completeness spec (SHL-08,
+UIC-04) is what proves the catalogues carry both locales.

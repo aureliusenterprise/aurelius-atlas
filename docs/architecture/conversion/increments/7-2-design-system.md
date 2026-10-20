@@ -50,18 +50,18 @@ Not in scope:
 
 ## Semantics
 
-| Id     | Rule                                                                                                                                                                                                             |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UIC-01 | Every component is standalone, `OnPush`, takes state through `input()`/`model()`/`output()`, and injects no service with side effects (WBP-04)                                                                   |
-| UIC-02 | Every component ships a CSF3 story per visual state, and `nx build-storybook aurelius-atlas-ui -c ci` compiles them all                                                                                          |
-| UIC-03 | Styling is Bulma utilities and `@aurelius/atlas-brand` tokens; no literal colours in component styles                                                                                                            |
-| UIC-04 | No `@ngx-translate` pipe: chrome strings carry `i18n` attributes whose ids reuse the legacy `components.*` dictionary keys (DD-047); title/footer text slots accept caller-localised content nodes               |
-| UIC-05 | No `@angular/material` and no `ngx-pagination`: sorting is header clicks over `model()` state, paging is the existing `Pagination` component                                                                     |
-| UIC-06 | The behaviours the legacy Jest specs assert are re-expressed as Vitest specs naming the rule ids in the test names (ADR 053 R5)                                                                                  |
-| UIC-07 | The purity gate (WBP-02) greps `libs/angular` as DD-042 states, runs in CI, and passes (DD-048)                                                                                                                  |
-| UIC-08 | The lib's peer dependencies match the workspace majors (Angular 22, `@fortawesome/angular-fontawesome` 5); lib and example app build green                                                                       |
-| UIC-09 | The public API grows additively — existing component APIs unchanged, `aurelius-atlas-frontend-example` builds and tests green, and the webapp's `extract-i18n` emits the lib's units into its catalogue (DD-047) |
-| UIC-10 | The interactive components (`accordion`, `modal`, `search-field`, `sortable-table`) ship `play()` stories and `nx test-storybook aurelius-atlas-ui` passes                                                       |
+| Id     | Rule                                                                                                                                                                                               |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UIC-01 | Every component is standalone, `OnPush`, takes state through `input()`/`model()`/`output()`, and injects no service with side effects (WBP-04)                                                     |
+| UIC-02 | Every component ships a CSF3 story per visual state, and `nx build-storybook aurelius-atlas-ui -c ci` compiles them all                                                                            |
+| UIC-03 | Styling is Bulma utilities and `@aurelius/atlas-brand` tokens; no literal colours in component styles                                                                                              |
+| UIC-04 | No `@ngx-translate` pipe: chrome strings carry `i18n` attributes whose ids reuse the legacy `components.*` dictionary keys (DD-047); title/footer text slots accept caller-localised content nodes |
+| UIC-05 | No `@angular/material` and no `ngx-pagination`: sorting is header clicks over `model()` state, paging is the existing `Pagination` component                                                       |
+| UIC-06 | The behaviours the legacy Jest specs assert are re-expressed as Vitest specs naming the rule ids in the test names (ADR 053 R5)                                                                    |
+| UIC-07 | The purity gate (WBP-02) greps `libs/angular` as DD-042 states, runs in CI, and passes (DD-048)                                                                                                    |
+| UIC-08 | The lib's peer dependencies match the workspace majors (Angular 22, `@fortawesome/angular-fontawesome` 5); lib and example app build green                                                         |
+| UIC-09 | The public API grows additively — existing component APIs unchanged, `aurelius-atlas-frontend-example` builds and tests green (DD-047)                                                             |
+| UIC-10 | The interactive components (`accordion`, `modal`, `search-field`, `sortable-table`) ship `play()` stories and `nx test-storybook aurelius-atlas-ui` passes                                         |
 
 UIC-04 and UIC-09 together are the localisation rule for shared chrome: the component
 owns its string (it is part of the design), the app owns its translation, and one
@@ -69,7 +69,10 @@ catalogue covers both because the ids are the legacy dictionary paths the XLIFF 
 already keys on.
 
 UIC-09's additive constraint exists because the example app consumes the lib today;
-7.2 must not break the app that is the pattern reference until 7.10 retires it.
+7.2 must not break the app that is the pattern reference until 7.10 retires it. The
+webapp consumes no lib component yet — once a slice wires one in (7.4+), its
+`extract-i18n` run emits the template's `@@components.*` units into the catalogue the
+DD-047 bridge already keys, and the completeness spec keeps proving both locales.
 
 ## Aurelius origin
 
@@ -106,9 +109,10 @@ dictionary paths (DD-047), and the purity gate made executable over `libs/angula
   modal open/close/confirm/cancel/backdrop, search-field query two-way + submit + clear,
   sortable-table sort cycle/paging/selection/empty, hero slots, card/pagination chrome
   strings. UIC-06.
-- `apps/aurelius-atlas-webapp/tests` — the i18n-completeness spec extended to the
+- `src/app/i18n-completeness.spec.ts` — the completeness spec, extended to the
   vendored `components-*.json` fixtures: every legacy `components.*` key and value
-  present in both catalogues (UIC-04).
+  present in both catalogues, and every `@@components.*` id in a library template
+  defined by them (UIC-04).
 - `nx build-storybook aurelius-atlas-ui -c ci` — stories compile (UIC-02);
   `nx test-storybook aurelius-atlas-ui` — the `play()` interactions pass (UIC-10).
 - `apps/aurelius-atlas-webapp/scripts/check-webapp-purity.sh` extended to
@@ -125,7 +129,7 @@ dictionary paths (DD-047), and the purity gate made executable over `libs/angula
 2. The purity gate greps `libs/angular` in CI and passes.
 3. Every story renders in Storybook, light and dark — a reviewer's visual pass.
 4. The example app builds and tests green on the extended lib (UIC-09).
-5. `nx extract-i18n aurelius-atlas-webapp` emits the `components.*` units and the
-   completeness spec proves them in both locales.
+5. The generator emits the `components.*` units and the completeness spec proves
+   them in both locales (UIC-04, DD-047).
 6. `libs/angular/aurelius-atlas-ui/AGENTS.md` and `README.md` describe the new
    components, per [ADR 003](../../adr/003-every-project-documents-itself.md).
