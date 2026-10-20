@@ -6297,9 +6297,9 @@
 
 <h1 id="71-webapp-shell-and-localisation">7.1 Webapp shell and localisation<a class="headerlink" href="#71-webapp-shell-and-localisation" title="Permanent link">&para;</a></h1>
 <ul>
-<li><strong>Status:</strong> planned</li>
-<li><strong>Pull request:</strong> –</li>
-<li><strong>Records:</strong> ADR 053; DD-037, DD-038, DD-039, DD-040; relies on ADR 007, ADR 018, DD-019</li>
+<li><strong>Status:</strong> in progress</li>
+<li><strong>Pull request:</strong> #98</li>
+<li><strong>Records:</strong> ADR 053; DD-037, DD-038, DD-039, DD-040, DD-044; relies on ADR 007, ADR 018, DD-019</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.</p>
@@ -6412,6 +6412,10 @@ and <code>dashboard-routing.module.ts</code>, so it arrives with 7.4 and 7.5.</p
 <td>SHL-13</td>
 <td>Every <code>signal</code>, service, and pure function the slice adds has a Vitest test naming it, and the coverage gate for the app holds</td>
 </tr>
+<tr>
+<td>SHL-14</td>
+<td>The app exports traces and Core Web Vitals metrics to the <code>otelExporterUrl</code> through <code>aurelius-atlas-observability</code>, records uncaught errors as span events, and propagates <code>traceparent</code> on HTTP calls (DD-040)</td>
+</tr>
 </tbody>
 </table>
 <p>SHL-01 and SHL-10 are the point of the slice: they make the project real on this workspace's rules
@@ -6480,8 +6484,8 @@ untouched (WBP-07). Against the Aurelius product, the two intended differences a
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>apps/aurelius-atlas-webapp/tests</code> (co-located <code>.spec.ts</code>, Vitest) — config parsing and the
-  failure modes of SHL-02; the route table of SHL-04, SHL-05, SHL-06; the root component of
-  SHL-03; the locale service of SHL-07. SHL-13.</li>
+  failure modes of SHL-02, the metrics-endpoint derivation of SHL-14; the route table of SHL-04,
+  SHL-05, SHL-06; the root component of SHL-03; the locale service of SHL-07. SHL-13.</li>
 <li><code>apps/aurelius-atlas-webapp/e2e/</code> — pytest + Playwright against the built image: SHL-12, plus
   SHL-11's TLS and proxy paths and the CSP check.</li>
 <li><code>scripts/check-webapp-purity.sh</code> (or an ESLint rule set) — WBP-02, SHL-01, SHL-09, SHL-10:

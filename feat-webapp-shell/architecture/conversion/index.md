@@ -73,9 +73,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |
 | 6.4 | Hardening | Metrics, observability, load test, index tuning | `AdminResource` metrics | planned |
 | 7.0 | Webapp foundation (umbrella) | The rules every 7.x slice obeys: standalone, signals, shared dumb UI, Vitest and Playwright, `@angular/localize` | Aurelius `apps/atlas` | planned |
-| 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp`: bootstrap, router, runtime config, XLIFF locale bridge | Aurelius `apps/atlas/src/app`, `libs/i18n` | planned |
+| 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp`: bootstrap, router, runtime config, XLIFF locale bridge, OTel telemetry | Aurelius `apps/atlas/src/app`, `libs/i18n` | in progress |
 | 7.2 | Shared UI components | Legacy shared components as dumb `aurelius-atlas-ui` components, each with a story | Aurelius `libs/components` | planned |
-| 7.3 | API client and auth wiring | The Atlas REST client in `aurelius-atlas-data-access`; Keycloak and OpenTelemetry providers | Aurelius `libs/atlas/api`, `libs/http` | planned |
+| 7.3 | API client and auth wiring | The Atlas REST client in `aurelius-atlas-data-access`; Keycloak providers and bearer-token interceptor | Aurelius `libs/atlas/api`, `libs/http` | planned |
 | 7.4 | Search | Query and results, the first slice with real data | Aurelius `apps/atlas/src/app/search` | planned |
 | 7.5 | Browse | Domain browse and card grids, the `Shell` chrome | Aurelius `apps/atlas/src/app/search/browse` | planned |
 | 7.6 | Entity details | Details header, attributes, relationships, lineage view | Aurelius `apps/atlas/src/app/search/details` | planned |

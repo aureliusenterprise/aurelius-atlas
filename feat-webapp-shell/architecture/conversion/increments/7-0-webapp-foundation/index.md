@@ -25,9 +25,9 @@ Ordered so that a slice depends only on slices before it. Slices 7.1–7.2 need 
 
 | \# | Slice | Depends on |
 | --- | --- | --- |
-| 7.1 | [Shell and localisation](<https://aureliusenterprise.github.io/feat-webapp-shell/architecture/conversion/increments/7-1-webapp-shell/index.md>): project, bootstrap, router, i18n bridge | – |
+| 7.1 | [Shell and localisation](<https://aureliusenterprise.github.io/feat-webapp-shell/architecture/conversion/increments/7-1-webapp-shell/index.md>): project, bootstrap, router, i18n bridge, OTel telemetry | – |
 | 7.2 | Design system: legacy shared components → `aurelius-atlas-ui` dumb components + stories | 7.1 |
-| 7.3 | API client: `libs/atlas/api` (65 files) → `aurelius-atlas-data-access`, Keycloak + OTel wiring | 7.1 |
+| 7.3 | API client: `libs/atlas/api` (65 files) → `aurelius-atlas-data-access`, Keycloak auth wiring | 7.1 |
 | 7.4 | Search: query and results, the first slice with real data | 7.2, 7.3 |
 | 7.5 | Browse: domain browse, card grids | 7.4 |
 | 7.6 | Entity details: header, attributes, relationships, lineage view | 7.4 |

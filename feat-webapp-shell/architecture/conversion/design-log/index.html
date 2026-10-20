@@ -4115,6 +4115,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-044-operational-telemetry-lands-with-71-the-auth-wiring-stays-with-73" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-044. Operational telemetry lands with 7.1; the auth wiring stays with 7.3
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6983,6 +6994,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-044-operational-telemetry-lands-with-71-the-auth-wiring-stays-with-73" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-044. Operational telemetry lands with 7.1; the auth wiring stays with 7.3
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8203,6 +8225,34 @@ the observable URL (<code>/</code> vs <code>/search/browse</code>), which is the
 it encodes the destination, not the chain. The <code>''</code> route remains the single definition of the
 default destination; the fallback names it, so a later slice that moves the default edits both
 lines, and <code>routes.spec.ts</code> pins both.</p>
+<h3 id="dd-044-operational-telemetry-lands-with-71-the-auth-wiring-stays-with-73">DD-044. Operational telemetry lands with 7.1; the auth wiring stays with 7.3<a class="headerlink" href="#dd-044-operational-telemetry-lands-with-71-the-auth-wiring-stays-with-73" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 7.1</li>
+<li><strong>Date:</strong> 2026-10-20</li>
+</ul>
+<p><strong>Decision.</strong> The webapp's OpenTelemetry wiring — trace and metric exporters, the
+tracing <code>ErrorHandler</code>, and the <code>traceparent</code> HTTP interceptor, all from
+<code>aurelius-atlas-observability</code> — lands with 7.1, not with 7.3. The Keycloak
+providers and the bearer-token interceptor stay in 7.3, which owns the auth wiring.</p>
+<p><strong>Reason.</strong> DD-040 attaches the telemetry replacement to this increment, and the
+shell is where the Aurelius <code>Core.imports</code> (the single wiring point that carried
+both GA/clickstream and the app's providers) dissolves — so the OTel half of that
+dissolution belongs here. The exporter endpoint is already a 7.1 config field
+(SHL-02), the image already proxies <code>/otel/</code> (SHL-11), and the CSP already allows
+it (SHL-11); deferring the wiring to 7.3 left the plumbing with no consumer.
+Telemetry is also the shell's own operational signal — the earlier it covers the
+app, the more of the port it observes.</p>
+<p><strong>Alternatives.</strong> Wire everything in 7.3: keeps one bootstrap commit, but leaves
+DD-040 unsatisfied for a whole increment and pairs telemetry with auth for no
+dependency that exists — the OTel providers need only <code>AppConfig</code>. Wire traces
+only, metrics in a later slice: the metrics provider is the same call with a
+metrics exporter; splitting them adds no review value.</p>
+<p><strong>Consequences.</strong> The e2e <code>/otel/</code> proxy test (SHL-11) gains a producer: the
+served app now exports through it. The interceptor covers the API calls 7.3 adds,
+so trace propagation is in place before the first request exists. The bootstrap
+in <code>app.config.ts</code> matches the example app's provider set minus Keycloak, which
+is the visible difference between the two files.</p>
 
 
 
