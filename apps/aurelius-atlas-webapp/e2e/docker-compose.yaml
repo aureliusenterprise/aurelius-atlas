@@ -38,6 +38,10 @@ services:
                 # proxy_ssl_name; the compose service name stays atlas-server.
                 aliases:
                     - aurelius-atlas-server
+        ports:
+            # Fixed host port, mirroring the webapp's 18444: the conftest's
+            # readiness strategy probes the server's version endpoint directly.
+            - 18445:21000
         environment:
             # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
             # environment; a missing value fails the compose start loudly.

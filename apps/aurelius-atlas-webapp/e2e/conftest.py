@@ -14,6 +14,13 @@ from testcontainers.core.wait_strategies import HealthcheckWaitStrategy, HttpWai
 
 CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 
+# The compose file publishes these fixed host ports; the readiness probes and
+# the URLs below are built from them (the strategy resolves containers as
+# 127.0.0.1 + the given port, so a fixed mapping is what makes a pre-start
+# strategy possible at all).
+WEBAPP_HOST_PORT = 18444
+ATLAS_SERVER_HOST_PORT = 18445
+
 
 class Settings(BaseSettings):
     """Test configuration."""
@@ -94,32 +101,32 @@ def compose(keycloak: DockerCompose, observability: DockerCompose) -> Generator[
 
     context = Path(__file__).parent.absolute()
 
-    with DockerCompose(context=context, env_file=dotenv.find_dotenv()) as compose:
-        port = compose.get_service_port("aurelius-atlas-webapp", 8080)
+    compose = DockerCompose(context=context, env_file=dotenv.find_dotenv())
+    # Both host ports are fixed in the compose file, so the readiness probes
+    # are fully known before the stack starts: nginx serving the shell, and
+    # the Atlas server answering its version endpoint directly (DD-053 — the
+    # /api/ proxy test needs the server itself up, probing through nginx would
+    # race its own boot). Registered pre-start so start() runs them.
+    compose.waiting_for(
+        {
+            "aurelius-atlas-webapp": HttpWaitStrategy(port=WEBAPP_HOST_PORT, path="/en-US/")
+            .using_tls()
+            .for_status_code(200),
+            "atlas-server": HttpWaitStrategy(port=ATLAS_SERVER_HOST_PORT, path="/api/atlas/admin/version")
+            .using_tls()
+            .for_status_code(200),
+        },
+    )
 
-        if not port:
-            message = "aurelius-atlas-webapp service not found in Docker Compose"
-            raise ValueError(message)
-
-        # The webapp answers once nginx is up; the Atlas server behind the
-        # /api/ proxy (DD-053) answers through the same nginx on its own
-        # schedule, so wait for the whole chain before the first test runs.
-        yield compose.waiting_for(
-            {
-                "aurelius-atlas-webapp": HttpWaitStrategy(port=port, path="/en-US/").using_tls().for_status_code(200),
-            },
-        )
-        webapp = compose.get_container(service_name="aurelius-atlas-webapp")
-        HttpWaitStrategy(port=port, path="/api/atlas/admin/version").using_tls().for_status_code(200).wait_until_ready(
-            webapp,
-        )
+    with compose:
+        yield compose
 
 
 @pytest.fixture(scope="session")
 def root_url(compose: DockerCompose) -> str:
     """Return the origin root URL for the application."""
-    port = compose.get_service_port("aurelius-atlas-webapp", 8080)
-    return f"https://localhost:{port}/"
+    _ = compose  # Ensure the stack is up (and ready) before any URL is used.
+    return f"https://localhost:{WEBAPP_HOST_PORT}/"
 
 
 @pytest.fixture(scope="session")
