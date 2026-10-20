@@ -1,8 +1,8 @@
 # 7.2 Design system
 
 - **Status:** in progress
-- **Pull request:** –
-- **Records:** ADR 053; DD-045, DD-046, DD-047, DD-048; relies on ADR 007, DD-042
+- **Pull request:** #99
+- **Records:** ADR 053; DD-045, DD-046, DD-047, DD-048, DD-049; relies on ADR 007, DD-042
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.
