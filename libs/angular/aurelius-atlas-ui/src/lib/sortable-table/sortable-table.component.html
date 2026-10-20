@@ -9,10 +9,9 @@
         </span>
     </div>
 } @else if (_pageRows.length === 0) {
-    <p
-        class="content has-text-centered"
-        i18n="@@components.sortableTableShell.noData|Aurelius table shell empty-state chrome (DD-047)"
-    >
+    <!-- Empty-state label: Aurelius table shell chrome (DD-047). The i18n id is
+         the dictionary path exactly — see the note in the pagination template. -->
+    <p class="content has-text-centered" i18n="@@components.sortableTableShell.noData">
         <span
             ><i>{{ _emptyLabel }}</i></span
         >

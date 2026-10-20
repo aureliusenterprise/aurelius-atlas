@@ -10,7 +10,8 @@ ngx-translate are never ported (enforced by `scripts/check-webapp-purity.sh`).
 The increment ledger for this track is the 7.x series:
 [7-0 foundation](../../docs/architecture/conversion/increments/7-0-webapp-foundation.md),
 [7-1 shell](../../docs/architecture/conversion/increments/7-1-webapp-shell.md),
-[7-3 API client + auth](../../docs/architecture/conversion/increments/7-3-api-client-auth.md).
+[7-3 API client + auth](../../docs/architecture/conversion/increments/7-3-api-client-auth.md),
+[7-5 landing page](../../docs/architecture/conversion/increments/7-5-browse-landing.md).
 
 ## Features (slice 7.1 — shell + localisation)
 
@@ -32,9 +33,9 @@ The increment ledger for this track is the 7.x series:
   `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
   clickstream paths (DD-040)
 
-Not wired yet by design: the shared UI components (7.2), the header/search bar
-and the search client (7.4, DD-051), and server-side token verification
-(6.1 — the bearer token rides from day one and is inert until then, DD-052).
+Not wired yet by design: the header/search bar and the search client (7.4,
+DD-051), and server-side token verification (6.1 — the bearer token rides from
+day one and is inert until then, DD-052).
 
 ## Features (slice 7.3 — API client + auth wiring)
 
@@ -53,6 +54,23 @@ and the search client (7.4, DD-051), and server-side token verification
   and the nginx image forward `/api` untouched (APC-08)
 - Keycloak dev origins for 4300/4301 (serve) and 18444 (e2e) on the shared
   `aurelius` client (APC-09)
+
+## Features (slice 7.5 — landing page / browse)
+
+- `/search/browse` renders the Aurelius landing: the hero (`search.browse.title`
+  plus the description paragraph, keeping the `#browse-placeholder` id) and the
+  three context cards — business, technical, governance — in
+  `src/app/search/browse/` (BRW-01)
+- Every card's info icon opens its info modal — description paragraph plus the
+  legacy static type/role table — composed from the 7.2 `aurelius-atlas-ui`
+  `modal` (card anatomy) and `sortable-table` (BRW-03); open state is a
+  `model()` signal on the card (BRW-05)
+- The page issues zero HTTP requests (BRW-04): all content is static, every
+  string carries its `@@search.browse.*` bridge key, and the strings that must
+  live in TypeScript use `$localize` with the same ids
+- Deferred by design (BRW-06, DD-054): the cards' search fields, explore
+  buttons, and the Shell chrome all arrive with the search slice (7.4), which
+  is gated on the server search API (4.1 + 2.3)
 
 ## Running
 

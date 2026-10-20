@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "outDir": "../../dist/out-tsc",
-        "types": []
+        "types": ["@angular/localize"]
     },
     "exclude": [
         "src/**/*.test.ts",

@@ -1,0 +1,62 @@
+<!--
+    The governance-responsibilities card (BRW-01, BRW-02): title, info icon
+    (the only button on the landing page — BRW-06), and the Aurelius
+    searching / exploring articles. The search field and explore button are
+    deferred to the search slice (DD-054); the copy that explains them stays.
+-->
+<div class="card">
+    <div class="card-content">
+        <div class="media">
+            <div class="media-content">
+                <p class="title is-4" i18n="@@search.browse.governanceContext.title">Data governance organization</p>
+            </div>
+            <button
+                type="button"
+                class="icon has-text-info"
+                [attr.aria-label]="infoTitle"
+                (click)="infoModalActive.set(true)"
+            >
+                <fa-icon [icon]="faInfoCircle" size="lg"></fa-icon>
+            </button>
+        </div>
+
+        <article class="media">
+            <div class="media-left">
+                <span class="icon has-text-primary">
+                    <fa-icon [icon]="faSearch"></fa-icon>
+                </span>
+            </div>
+            <div class="media-content">
+                <div class="content">
+                    <h6 class="title is-6" i18n="@@search.browse.governanceContext.description">
+                        I'm searching for the data governance responsibilities of a specific person
+                    </h6>
+                    <p i18n="@@search.browse.governanceContext.searchInstructions">
+                        Search for the name or email address of the person you are looking for.
+                    </p>
+                </div>
+            </div>
+        </article>
+        <article class="media">
+            <div class="media-left">
+                <span class="icon has-text-primary">
+                    <fa-icon [icon]="faCompass"></fa-icon>
+                </span>
+            </div>
+            <div class="media-content">
+                <div class="content">
+                    <h6 class="title is-6" i18n="@@search.browse.governanceContext.exploringTitle">
+                        I'm exploring who has data governance responsibilities within my organization
+                    </h6>
+                    <p i18n="@@search.browse.governanceContext.exploringDescription">
+                        Click the button below to see a list of all people with data governance responsibilities.
+                    </p>
+                </div>
+            </div>
+        </article>
+    </div>
+</div>
+
+<aurelius-atlas-webapp-governance-responsibilities-info-modal
+    [(active)]="infoModalActive"
+></aurelius-atlas-webapp-governance-responsibilities-info-modal>

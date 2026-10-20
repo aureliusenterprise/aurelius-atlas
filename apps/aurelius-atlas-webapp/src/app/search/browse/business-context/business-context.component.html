@@ -1,0 +1,62 @@
+<!--
+    The business-context card (BRW-01, BRW-02): title, info icon (the only
+    button on the landing page — BRW-06), and the Aurelius searching /
+    exploring articles. The search field and explore button are deferred to
+    the search slice (DD-054); the copy that explains them stays.
+-->
+<div class="card">
+    <div class="card-content">
+        <div class="media">
+            <div class="media-content">
+                <p class="title is-4" i18n="@@search.browse.businessContext.title">Business context</p>
+            </div>
+            <button
+                type="button"
+                class="icon has-text-info"
+                [attr.aria-label]="infoTitle"
+                (click)="infoModalActive.set(true)"
+            >
+                <fa-icon [icon]="faInfoCircle" size="lg"></fa-icon>
+            </button>
+        </div>
+
+        <article class="media">
+            <div class="media-left">
+                <span class="icon has-text-primary">
+                    <fa-icon [icon]="faSearch"></fa-icon>
+                </span>
+            </div>
+            <div class="media-content">
+                <div class="content">
+                    <h6 class="title is-6" i18n="@@search.browse.businessContext.description">
+                        I'm searching for the meaning of data within a specific business context
+                    </h6>
+                    <p i18n="@@search.browse.businessContext.searchInstructions">
+                        Search for keywords related to the data domain or data entity that you are looking for.
+                    </p>
+                </div>
+            </div>
+        </article>
+        <article class="media">
+            <div class="media-left">
+                <span class="icon has-text-primary">
+                    <fa-icon [icon]="faCompass"></fa-icon>
+                </span>
+            </div>
+            <div class="media-content">
+                <div class="content">
+                    <h6 class="title is-6" i18n="@@search.browse.businessContext.exploringTitle">
+                        I'm exploring the meaning of data in a business context
+                    </h6>
+                    <p i18n="@@search.browse.businessContext.exploringDescription">
+                        Click the button below to see a list of all data domains.
+                    </p>
+                </div>
+            </div>
+        </article>
+    </div>
+</div>
+
+<aurelius-atlas-webapp-business-context-info-modal
+    [(active)]="infoModalActive"
+></aurelius-atlas-webapp-business-context-info-modal>
