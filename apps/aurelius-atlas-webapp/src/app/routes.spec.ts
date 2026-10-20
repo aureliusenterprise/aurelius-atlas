@@ -81,6 +81,40 @@ describe("routes", () => {
         expect(login).not.toHaveBeenCalled();
     });
 
+    it("strips the auth-response fragment from the re-login redirect_uri (APC-05)", async () => {
+        // Keycloak answers with the code in the URL fragment; when init cannot
+        // consume it (a tracking-preventing browser blocks keycloak-js's
+        // 3rd-party-cookies check), the guard re-fires — and the exact-registered
+        // redirect_uri must not carry the fragment, which Keycloak answers 400.
+        const guard = routes[0].canActivate?.[0] as GuardFn;
+
+        const login = vi.fn().mockResolvedValue(undefined);
+        const state = { url: "/search/browse#state=abc&session_state=xyz&code=123" } as RouterStateSnapshot;
+
+        const result = await guard({} as ActivatedRouteSnapshot, state, {
+            authenticated: false,
+            keycloak: { login },
+        });
+
+        expect(result).toBe(false);
+        expect(login).toHaveBeenCalledWith({
+            redirectUri: `${globalThis.location.origin}/search/browse`,
+        });
+    });
+
+    it("keeps query parameters on the re-login redirect_uri (APC-05)", async () => {
+        const guard = routes[0].canActivate?.[0] as GuardFn;
+
+        const login = vi.fn().mockResolvedValue(undefined);
+        const state = { url: "/search/browse?q=gene%20expression" } as RouterStateSnapshot;
+
+        await guard({} as ActivatedRouteSnapshot, state, { authenticated: false, keycloak: { login } });
+
+        expect(login).toHaveBeenCalledWith({
+            redirectUri: `${globalThis.location.origin}/search/browse?q=gene%20expression`,
+        });
+    });
+
     it("registers the root guard with createAuthGuard, once (DD-052)", () => {
         expect(createAuthGuardCalls).toHaveLength(1);
         expect(typeof createAuthGuardCalls[0][0]).toBe("function");

@@ -20,7 +20,13 @@ async function rootAuthGuard(
     { authenticated, keycloak }: AuthGuardData,
 ): Promise<boolean> {
     if (!authenticated) {
-        await keycloak.login({ redirectUri: new URL(state.url.replace(/^\//, ""), document.baseURI).href });
+        // The auth code comes back in the URL *fragment* (response_mode=fragment);
+        // when init fails to consume it (a tracking-preventing browser blocks the
+        // 3rd-party-cookies check keycloak-js runs first), the guard re-fires with
+        // that fragment on the url — Keycloak then rejects the exact-registered
+        // redirect_uri with 400. Strip the fragment; keep query params (app state).
+        const path = state.url.split("#")[0];
+        await keycloak.login({ redirectUri: new URL(path.replace(/^\//, ""), document.baseURI).href });
     }
     return authenticated;
 }

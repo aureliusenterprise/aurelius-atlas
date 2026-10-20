@@ -14,7 +14,7 @@
  * the e2e suite's (APC-10). `aurelius-atlas-observability` is mocked so no OTel SDK
  * starts in the unit environment.
  */
-import { HttpClient, HttpHandlerFn, HttpRequest, provideHttpClient } from "@angular/common/http";
+import { HttpClient, HttpHandlerFn, HttpRequest } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ApplicationConfig, Provider } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
@@ -55,7 +55,7 @@ function makeKeycloakStub(): KeycloakStub {
     return {
         authenticated: true,
         token: "test-token",
-        updateToken: vi.fn(async (_minValidity?: number) => true),
+        updateToken: vi.fn(async () => true),
     };
 }
 
