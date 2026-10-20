@@ -72,6 +72,12 @@
             },
             "outputs": ["{options.outputPath}"]
         },
+        "check-purity": {
+            "command": "bash scripts/check-webapp-purity.sh",
+            "options": {
+                "cwd": "{projectRoot}"
+            }
+        },
         "e2e": {
             "dependsOn": [
                 {
@@ -147,6 +153,7 @@
                     "watch": false
                 }
             },
+            "dependsOn": ["check-purity"],
             "executor": "@nx/angular:unit-test"
         }
     }
