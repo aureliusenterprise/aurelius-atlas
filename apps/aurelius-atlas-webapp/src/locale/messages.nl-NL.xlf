@@ -1,0 +1,2527 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en-US" target-language="nl-NL" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="ArchimateReference" datatype="html">
+        <source>ArchiMate Reference</source>
+        <target>ArchiMate Referentie</target>
+        <note priority="1" from="description">Aurelius dictionary key: ArchimateReference</note>
+      </trans-unit>
+      <trans-unit id="BUSINESS_ATTRIBUTE_UPDATE" datatype="html">
+        <source>Business attribute updated</source>
+        <target>Bedrijfsattribuut bijgewerkt</target>
+        <note priority="1" from="description">Aurelius dictionary key: BUSINESS_ATTRIBUTE_UPDATE</note>
+      </trans-unit>
+      <trans-unit id="CLASSIFICATION_ADD" datatype="html">
+        <source>Classification added</source>
+        <target>Classificatie toegevoegd</target>
+        <note priority="1" from="description">Aurelius dictionary key: CLASSIFICATION_ADD</note>
+      </trans-unit>
+      <trans-unit id="CLASSIFICATION_DELETE" datatype="html">
+        <source>Classification deleted</source>
+        <target>Classificatie verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: CLASSIFICATION_DELETE</note>
+      </trans-unit>
+      <trans-unit id="CLASSIFICATION_UDATE" datatype="html">
+        <source>Classification updated</source>
+        <target>Classificatie bijgewerkt</target>
+        <note priority="1" from="description">Aurelius dictionary key: CLASSIFICATION_UDATE</note>
+      </trans-unit>
+      <trans-unit id="CUSTOM_ATTRIBUTE_UPDATE" datatype="html">
+        <source>Custom attribute updated</source>
+        <target>Aangepast attribuut bijgewerkt</target>
+        <note priority="1" from="description">Aurelius dictionary key: CUSTOM_ATTRIBUTE_UPDATE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_CREATE" datatype="html">
+        <source>Entity created</source>
+        <target>Entiteit aangemaakt</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_CREATE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_DELETE" datatype="html">
+        <source>Entity deleted</source>
+        <target>Entiteit verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_DELETE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_IMPORT_CREATE" datatype="html">
+        <source>Entity created by import</source>
+        <target>Entiteit aangemaakt via import</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_IMPORT_CREATE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_IMPORT_DELETE" datatype="html">
+        <source>Entity deleted by import</source>
+        <target>Entiteit verwijderd via import</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_IMPORT_DELETE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_IMPORT_UPDATE" datatype="html">
+        <source>Entity updated by import</source>
+        <target>Entiteit bijgewerkt via import</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_IMPORT_UPDATE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_PURGE" datatype="html">
+        <source>Entity purged</source>
+        <target>Entiteit definitief verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_PURGE</note>
+      </trans-unit>
+      <trans-unit id="ENTITY_UPDATE" datatype="html">
+        <source>Entity updated</source>
+        <target>Entiteit bijgewerkt</target>
+        <note priority="1" from="description">Aurelius dictionary key: ENTITY_UPDATE</note>
+      </trans-unit>
+      <trans-unit id="LABEL_ADD" datatype="html">
+        <source>Label added</source>
+        <target>Label toegevoegd</target>
+        <note priority="1" from="description">Aurelius dictionary key: LABEL_ADD</note>
+      </trans-unit>
+      <trans-unit id="LABEL_DELETE" datatype="html">
+        <source>Label deleted</source>
+        <target>Label verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: LABEL_DELETE</note>
+      </trans-unit>
+      <trans-unit id="PII" datatype="html">
+        <source>Has PII</source>
+        <target>Bevat PII</target>
+        <note priority="1" from="description">Aurelius dictionary key: PII</note>
+      </trans-unit>
+      <trans-unit id="PROPAGATED_CLASSIFICATION_ADD" datatype="html">
+        <source>Propagated classification added</source>
+        <target>Doorgegeven classificatie toegevoegd</target>
+        <note priority="1" from="description">Aurelius dictionary key: PROPAGATED_CLASSIFICATION_ADD</note>
+      </trans-unit>
+      <trans-unit id="PROPAGATED_CLASSIFICATION_DELETE" datatype="html">
+        <source>Propagated classification deleted</source>
+        <target>Doorgegeven classificatie verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: PROPAGATED_CLASSIFICATION_DELETE</note>
+      </trans-unit>
+      <trans-unit id="PROPAGATED_CLASSIFICATION_UPDATE" datatype="html">
+        <source>Propagated classification updated</source>
+        <target>Doorgegeven classificatie bijgewerkt</target>
+        <note priority="1" from="description">Aurelius dictionary key: PROPAGATED_CLASSIFICATION_UPDATE</note>
+      </trans-unit>
+      <trans-unit id="TERM_ADD" datatype="html">
+        <source>Term added</source>
+        <target>Term toegevoegd</target>
+        <note priority="1" from="description">Aurelius dictionary key: TERM_ADD</note>
+      </trans-unit>
+      <trans-unit id="TERM_DELETE" datatype="html">
+        <source>Term deleted</source>
+        <target>Term verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: TERM_DELETE</note>
+      </trans-unit>
+      <trans-unit id="attributeType" datatype="html">
+        <source>Attribute Type</source>
+        <target>Attribuuttype</target>
+        <note priority="1" from="description">Aurelius dictionary key: attributeType</note>
+      </trans-unit>
+      <trans-unit id="attributes" datatype="html">
+        <source>Attributes</source>
+        <target>Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: attributes</note>
+      </trans-unit>
+      <trans-unit id="businessOwnerAttribute" datatype="html">
+        <source>Data owner for Attribute</source>
+        <target>Data eigenaar voor Data Attribuut</target>
+        <note priority="1" from="description">Aurelius dictionary key: businessOwnerAttribute</note>
+      </trans-unit>
+      <trans-unit id="businessOwnerEntity" datatype="html">
+        <source>Data owner for Entity</source>
+        <target>Data eigenaar voor Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: businessOwnerEntity</note>
+      </trans-unit>
+      <trans-unit id="childDataset" datatype="html">
+        <source>Child Dataset</source>
+        <target>Onderliggende Dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: childDataset</note>
+      </trans-unit>
+      <trans-unit id="childEntity" datatype="html">
+        <source> Child Entity</source>
+        <target>Onderliggende Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: childEntity</note>
+      </trans-unit>
+      <trans-unit id="childField" datatype="html">
+        <source>Child Field</source>
+        <target>Onderliggende Dataveld</target>
+        <note priority="1" from="description">Aurelius dictionary key: childField</note>
+      </trans-unit>
+      <trans-unit id="collections" datatype="html">
+        <source>Collections</source>
+        <target>Collecties</target>
+        <note priority="1" from="description">Aurelius dictionary key: collections</note>
+      </trans-unit>
+      <trans-unit id="creator" datatype="html">
+        <source>Creator</source>
+        <target>Maker</target>
+        <note priority="1" from="description">Aurelius dictionary key: creator</note>
+      </trans-unit>
+      <trans-unit id="creatorDashboard" datatype="html">
+        <source>Creator of Dashboard</source>
+        <target>Maker van dashboard</target>
+        <note priority="1" from="description">Aurelius dictionary key: creatorDashboard</note>
+      </trans-unit>
+      <trans-unit id="creatorIndexPattern" datatype="html">
+        <source>Creator of Index pattern</source>
+        <target>Maker van Indexpatroon</target>
+        <note priority="1" from="description">Aurelius dictionary key: creatorIndexPattern</note>
+      </trans-unit>
+      <trans-unit id="creatorVisualization" datatype="html">
+        <source>Creator of Visualization</source>
+        <target>Maker van Visualisatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: creatorVisualization</note>
+      </trans-unit>
+      <trans-unit id="dataAttribute" datatype="html">
+        <source>Data Attribute</source>
+        <target>Data Attribuut</target>
+        <note priority="1" from="description">Aurelius dictionary key: dataAttribute</note>
+      </trans-unit>
+      <trans-unit id="dataDomain" datatype="html">
+        <source>Data Domain</source>
+        <target>Data Domein</target>
+        <note priority="1" from="description">Aurelius dictionary key: dataDomain</note>
+      </trans-unit>
+      <trans-unit id="dataEntity" datatype="html">
+        <source>Data Entity</source>
+        <target>Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: dataEntity</note>
+      </trans-unit>
+      <trans-unit id="dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: dataQuality</note>
+      </trans-unit>
+      <trans-unit id="datadomainname" datatype="html">
+        <source>Data Domain</source>
+        <target>Data Domein</target>
+        <note priority="1" from="description">Aurelius dictionary key: datadomainname</note>
+      </trans-unit>
+      <trans-unit id="dataqualityruledimension" datatype="html">
+        <source>Dimension</source>
+        <target>Dimensie</target>
+        <note priority="1" from="description">Aurelius dictionary key: dataqualityruledimension</note>
+      </trans-unit>
+      <trans-unit id="dataqualitytype" datatype="html">
+        <source>Rule Type</source>
+        <target>Regeltype</target>
+        <note priority="1" from="description">Aurelius dictionary key: dataqualitytype</note>
+      </trans-unit>
+      <trans-unit id="datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: datasets</note>
+      </trans-unit>
+      <trans-unit id="derivedcollection" datatype="html">
+        <source>Collection</source>
+        <target>Collectie</target>
+        <note priority="1" from="description">Aurelius dictionary key: derivedcollection</note>
+      </trans-unit>
+      <trans-unit id="deriveddatadomain" datatype="html">
+        <source>Data Domain</source>
+        <target>Data Domein</target>
+        <note priority="1" from="description">Aurelius dictionary key: deriveddatadomain</note>
+      </trans-unit>
+      <trans-unit id="deriveddataentity" datatype="html">
+        <source>Data Entity</source>
+        <target>Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: deriveddataentity</note>
+      </trans-unit>
+      <trans-unit id="deriveddataset" datatype="html">
+        <source>Dataset</source>
+        <target>Dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: deriveddataset</note>
+      </trans-unit>
+      <trans-unit id="derivedperson" datatype="html">
+        <source>People</source>
+        <target>Personen</target>
+        <note priority="1" from="description">Aurelius dictionary key: derivedperson</note>
+      </trans-unit>
+      <trans-unit id="derivedsystem" datatype="html">
+        <source>System</source>
+        <target>Systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: derivedsystem</note>
+      </trans-unit>
+      <trans-unit id="displayName" datatype="html">
+        <source>Display Name</source>
+        <target>Weergavenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: displayName</note>
+      </trans-unit>
+      <trans-unit id="domainLead" datatype="html">
+        <source>Domain lead</source>
+        <target>Domein Verantwoordelijke</target>
+        <note priority="1" from="description">Aurelius dictionary key: domainLead</note>
+      </trans-unit>
+      <trans-unit id="dqscore" datatype="html">
+        <source>Quality Score</source>
+        <target>Kwaliteitsscore</target>
+        <note priority="1" from="description">Aurelius dictionary key: dqscore</note>
+      </trans-unit>
+      <trans-unit id="dqscore_accuracy" datatype="html">
+        <source>Accuracy</source>
+        <target>Nauwkeurigheid</target>
+        <note priority="1" from="description">Aurelius dictionary key: dqscore_accuracy</note>
+      </trans-unit>
+      <trans-unit id="dqscore_completeness" datatype="html">
+        <source>Completeness</source>
+        <target>Volledigheid</target>
+        <note priority="1" from="description">Aurelius dictionary key: dqscore_completeness</note>
+      </trans-unit>
+      <trans-unit id="dqscore_timeliness" datatype="html">
+        <source>Timeliness</source>
+        <target>Tijdigheid</target>
+        <note priority="1" from="description">Aurelius dictionary key: dqscore_timeliness</note>
+      </trans-unit>
+      <trans-unit id="dqscore_uniqueness" datatype="html">
+        <source>Uniqueness</source>
+        <target>Uniekheid</target>
+        <note priority="1" from="description">Aurelius dictionary key: dqscore_uniqueness</note>
+      </trans-unit>
+      <trans-unit id="dqscore_validity" datatype="html">
+        <source>Validity</source>
+        <target>Validiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: dqscore_validity</note>
+      </trans-unit>
+      <trans-unit id="elasticCluster" datatype="html">
+        <source>Elastic cluster</source>
+        <target>Elastic cluster</target>
+        <note priority="1" from="description">Aurelius dictionary key: elasticCluster</note>
+      </trans-unit>
+      <trans-unit id="email" datatype="html">
+        <source>Email</source>
+        <target>Email</target>
+        <note priority="1" from="description">Aurelius dictionary key: email</note>
+      </trans-unit>
+      <trans-unit id="fieldType" datatype="html">
+        <source>Data Type</source>
+        <target>Datatype</target>
+        <note priority="1" from="description">Aurelius dictionary key: fieldType</note>
+      </trans-unit>
+      <trans-unit id="fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: fields</note>
+      </trans-unit>
+      <trans-unit id="hasContent" datatype="html">
+        <source>Has Content</source>
+        <target>Bevat Inhoud</target>
+        <note priority="1" from="description">Aurelius dictionary key: hasContent</note>
+      </trans-unit>
+      <trans-unit id="hasParent" datatype="html">
+        <source>Has Parent</source>
+        <target>Heeft Bovenliggend Object</target>
+        <note priority="1" from="description">Aurelius dictionary key: hasParent</note>
+      </trans-unit>
+      <trans-unit id="high_risk" datatype="html">
+        <source>High risk</source>
+        <target>Hoog risico</target>
+        <note priority="1" from="description">Aurelius dictionary key: high_risk</note>
+      </trans-unit>
+      <trans-unit id="input" datatype="html">
+        <source>Input</source>
+        <target>Invoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: input</note>
+      </trans-unit>
+      <trans-unit id="inputToProcesses" datatype="html">
+        <source>Input to Processes</source>
+        <target>Invoer voor Processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: inputToProcesses</note>
+      </trans-unit>
+      <trans-unit id="isIncomplete" datatype="html">
+        <source>Is Incomplete</source>
+        <target>Is Onvolledig</target>
+        <note priority="1" from="description">Aurelius dictionary key: isIncomplete</note>
+      </trans-unit>
+      <trans-unit id="isKeyData" datatype="html">
+        <source>Is Keydata</source>
+        <target>Is Sleuteldata</target>
+        <note priority="1" from="description">Aurelius dictionary key: isKeyData</note>
+      </trans-unit>
+      <trans-unit id="key_data" datatype="html">
+        <source>Is key</source>
+        <target>Is Sleutel</target>
+        <note priority="1" from="description">Aurelius dictionary key: key_data</note>
+      </trans-unit>
+      <trans-unit id="kibanaSpace" datatype="html">
+        <source>Kibana space</source>
+        <target>Kibana space</target>
+        <note priority="1" from="description">Aurelius dictionary key: kibanaSpace</note>
+      </trans-unit>
+      <trans-unit id="low_risk" datatype="html">
+        <source>Low risk</source>
+        <target>Laag risico</target>
+        <note priority="1" from="description">Aurelius dictionary key: low_risk</note>
+      </trans-unit>
+      <trans-unit id="m4i_collection" datatype="html">
+        <source>Collection</source>
+        <target>Collectie</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_collection</note>
+      </trans-unit>
+      <trans-unit id="m4i_data_attribute" datatype="html">
+        <source>Data Attribute</source>
+        <target>Data Attribuut</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_data_attribute</note>
+      </trans-unit>
+      <trans-unit id="m4i_data_domain" datatype="html">
+        <source>Data Domain</source>
+        <target>Data Domein</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_data_domain</note>
+      </trans-unit>
+      <trans-unit id="m4i_data_entity" datatype="html">
+        <source>Data Entity</source>
+        <target>Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_data_entity</note>
+      </trans-unit>
+      <trans-unit id="m4i_data_field" datatype="html">
+        <source>Data Field</source>
+        <target>Dataveld</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_data_field</note>
+      </trans-unit>
+      <trans-unit id="m4i_data_quality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_data_quality</note>
+      </trans-unit>
+      <trans-unit id="m4i_dataset" datatype="html">
+        <source>Dataset</source>
+        <target>Dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_dataset</note>
+      </trans-unit>
+      <trans-unit id="m4i_field" datatype="html">
+        <source>Data Field</source>
+        <target>Dataveld</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_field</note>
+      </trans-unit>
+      <trans-unit id="m4i_generic_process" datatype="html">
+        <source>Generic Process</source>
+        <target>Generiek proces</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_generic_process</note>
+      </trans-unit>
+      <trans-unit id="m4i_gov_data_quality" datatype="html">
+        <source>Gov. Quality</source>
+        <target>Gov. Kwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_gov_data_quality</note>
+      </trans-unit>
+      <trans-unit id="m4i_person" datatype="html">
+        <source>Person</source>
+        <target>Persoon</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_person</note>
+      </trans-unit>
+      <trans-unit id="m4i_referenceable" datatype="html">
+        <source>Referenceable</source>
+        <target>Referentieerbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_referenceable</note>
+      </trans-unit>
+      <trans-unit id="m4i_source" datatype="html">
+        <source>Source</source>
+        <target>Bron</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_source</note>
+      </trans-unit>
+      <trans-unit id="m4i_system" datatype="html">
+        <source>System</source>
+        <target>Systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: m4i_system</note>
+      </trans-unit>
+      <trans-unit id="meanings" datatype="html">
+        <source>Meanings</source>
+        <target>Betekenissen</target>
+        <note priority="1" from="description">Aurelius dictionary key: meanings</note>
+      </trans-unit>
+      <trans-unit id="medium_risk" datatype="html">
+        <source>Medium risk</source>
+        <target>Middelgroot risico</target>
+        <note priority="1" from="description">Aurelius dictionary key: medium_risk</note>
+      </trans-unit>
+      <trans-unit id="optionalField" datatype="html">
+        <source>Optional Field</source>
+        <target>Optioneel veld</target>
+        <note priority="1" from="description">Aurelius dictionary key: optionalField</note>
+      </trans-unit>
+      <trans-unit id="output" datatype="html">
+        <source>Output</source>
+        <target>Uitvoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: output</note>
+      </trans-unit>
+      <trans-unit id="outputFromProcesses" datatype="html">
+        <source>Output from Processes</source>
+        <target>Uitvoer van Processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: outputFromProcesses</note>
+      </trans-unit>
+      <trans-unit id="parentDataset" datatype="html">
+        <source>Parent Dataset</source>
+        <target>Bovenliggende Dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: parentDataset</note>
+      </trans-unit>
+      <trans-unit id="parentEntity" datatype="html">
+        <source>Parent Entity</source>
+        <target>Bovenliggende Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: parentEntity</note>
+      </trans-unit>
+      <trans-unit id="parentField" datatype="html">
+        <source>Parent Field</source>
+        <target>Bovenliggende Dataveld</target>
+        <note priority="1" from="description">Aurelius dictionary key: parentField</note>
+      </trans-unit>
+      <trans-unit id="processOwner" datatype="html">
+        <source>Process owner</source>
+        <target>Procesverantwoordelijke</target>
+        <note priority="1" from="description">Aurelius dictionary key: processOwner</note>
+      </trans-unit>
+      <trans-unit id="qualifiedName" datatype="html">
+        <source>Qualified Name</source>
+        <target>Gekwalificeerde Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: qualifiedName</note>
+      </trans-unit>
+      <trans-unit id="replicatedFrom" datatype="html">
+        <source>Replicated from</source>
+        <target>Gerepliceerd van</target>
+        <note priority="1" from="description">Aurelius dictionary key: replicatedFrom</note>
+      </trans-unit>
+      <trans-unit id="replicatedTo" datatype="html">
+        <source>Replicated to</source>
+        <target>Gerepliceerd naar</target>
+        <note priority="1" from="description">Aurelius dictionary key: replicatedTo</note>
+      </trans-unit>
+      <trans-unit id="riskClassification" datatype="html">
+        <source>Risk Classification</source>
+        <target>Risicoclassificatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: riskClassification</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.description" datatype="html">
+        <source>I'm searching for the meaning of data within a specific business context</source>
+        <target>Ik zoek naar de betekenis van data binnen een specifieke business context.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.exploreButton" datatype="html">
+        <source>Start browsing data domains</source>
+        <target>Data domeinen bekijken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.exploreButton</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.exploringDescription" datatype="html">
+        <source>Click the button below to see a list of all data domains.</source>
+        <target>Klik op de knop voor een overzicht van alle data domeinen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.exploringDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.exploringTitle" datatype="html">
+        <source>I'm exploring the meaning of data in a business context</source>
+        <target>Ik verken de betekenis van data binnen de business context</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.exploringTitle</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.dataAttributeDescription" datatype="html">
+        <source>Represents the meaning and ownership of an atomic data point that is part of a specific data entity.</source>
+        <target>Vertegenwoordigt de betekenis en het eigenaarschap van een atomair datapunt dat onderdeel is van een specifieke data entiteit.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.dataAttributeDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.dataDomainDescription" datatype="html">
+        <source>Represents departments, business units and process owners accountable for data due to their accountability in the organization.</source>
+        <target>Vertegenwoordigt afdelingen, businessunits en proceseigenaren die binnen de organisatie verantwoordelijk zijn voor data.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.dataDomainDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.dataEntityDescription" datatype="html">
+        <source>Represents the meaning and ownership of business process data artifacts that are used in a specific data domain.</source>
+        <target>Vertegenwoordigt de betekenis en het eigenaarschap van businessproces data artefacten die binnen een specifiek data domein worden gebruikt.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.dataEntityDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.description" datatype="html">
+        <source>The business part of the data governance model captures data semantics and ownership for the following types of entities:</source>
+        <target>Het business deel van het data governance model legt datasemantiek en eigenaarschap vast voor de volgende typen entiteiten:</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.descriptionDescription" datatype="html">
+        <source>The definition of the entity type</source>
+        <target>De definitie van het entiteitstype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.descriptionDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.descriptionDisplayName" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.descriptionDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.iconDescription" datatype="html">
+        <source>The icon representing the entity type</source>
+        <target>Het icoon dat het entiteitstype weergeeft</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.iconDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.iconDisplayName" datatype="html">
+        <source>Icon</source>
+        <target>Icoon</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.iconDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.title" datatype="html">
+        <source>Business context</source>
+        <target>Business context</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.title</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.typeNameDescription" datatype="html">
+        <source>The name of the entity type</source>
+        <target>De naam van het entiteitstype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.typeNameDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.infoModal.typeNameDisplayName" datatype="html">
+        <source>Type name</source>
+        <target>Typenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.infoModal.typeNameDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.searchInstructions" datatype="html">
+        <source>Search for keywords related to the data domain or data entity that you are looking for.</source>
+        <target>Zoek op trefwoorden die betrekking hebben op het data domein of de data entiteit die u zoekt.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.searchInstructions</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.searchPlaceholder" datatype="html">
+        <source>Search for keywords</source>
+        <target>Zoek op trefwoorden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.searchPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.browse.businessContext.title" datatype="html">
+        <source>Business context</source>
+        <target>Business context</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.businessContext.title</note>
+      </trans-unit>
+      <trans-unit id="search.browse.description" datatype="html">
+        <source>Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below.</source>
+        <target>Welkom bij Aurelius Atlas! We helpen u graag op weg. Kies hieronder uw interessegebied.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.description" datatype="html">
+        <source>I'm searching for the data governance responsibilities of a specific person</source>
+        <target>Ik zoek de data governance verantwoordelijkheden van een specifieke persoon</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.exploreButton" datatype="html">
+        <source>Start browsing people</source>
+        <target>Personen bekijken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.exploreButton</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.exploringDescription" datatype="html">
+        <source>Click the button below to see a list of all people with data governance responsibilities.</source>
+        <target>Klik op de knop voor een overzicht van alle personen met data governance verantwoordelijkheden.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.exploringDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.exploringTitle" datatype="html">
+        <source>I'm exploring who has data governance responsibilities within my organization</source>
+        <target>Ik verken wie binnen mijn organisatie data governance verantwoordelijkheden heeft</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.exploringTitle</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.dataOwnerDescription" datatype="html">
+        <source>Responsible for defining data entities within his or her data domain and the effectiveness of related control measures.</source>
+        <target>Verantwoordelijk voor het definiëren van data entiteiten binnen het data domein en voor de effectiviteit van bijbehorende beheersmaatregelen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.dataOwnerDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.dataOwnerTypeName" datatype="html">
+        <source>Data owner</source>
+        <target>Data eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.dataOwnerTypeName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.dataStewardDescription" datatype="html">
+        <source>Responsible for the implementation of data management controls and related initiatives.</source>
+        <target>Verantwoordelijk voor de uitvoering van beheersmaatregelen voor datamanagementn en bijbehorende initiatieven.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.dataStewardDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.dataStewardTypeName" datatype="html">
+        <source>Data steward</source>
+        <target>Data steward</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.dataStewardTypeName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.description" datatype="html">
+        <source>The data governance model captures various kinds of organizational roles with regards to data governance:</source>
+        <target>Het data‑governancemodel onderscheidt verschillende typen organisatorische rollen met betrekking tot data governance:</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.descriptionDescription" datatype="html">
+        <source>The definition of the role</source>
+        <target>De definitie van de rol</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.descriptionDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.descriptionDisplayName" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.descriptionDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.domainLeadDescription" datatype="html">
+        <source>Accountable for the implementation of data management within a data domain.</source>
+        <target>Verantwoordelijk voor de implementatie van datamanagement binnen een data domein.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.domainLeadDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.domainLeadTypeName" datatype="html">
+        <source>Domain lead</source>
+        <target>Domein verantwoordelijke</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.domainLeadTypeName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.iconDescription" datatype="html">
+        <source>The icon representing the role</source>
+        <target>Het icoon van de rol</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.iconDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.iconDisplayName" datatype="html">
+        <source>Icon</source>
+        <target>Icoon</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.iconDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.title" datatype="html">
+        <source>Data governance organization</source>
+        <target>Data governance organisatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.title</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.typeNameDescription" datatype="html">
+        <source>The name of the role</source>
+        <target>De naam van de rol</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.typeNameDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.infoModal.typeNameDisplayName" datatype="html">
+        <source>Type name</source>
+        <target>Typenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.infoModal.typeNameDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.searchInstructions" datatype="html">
+        <source>Search for the name or email address of the person you are looking for.</source>
+        <target>Zoek op de naam of het e‑mailadres van de persoon die u zoekt.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.searchInstructions</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.searchPlaceholder" datatype="html">
+        <source>Search for keywords</source>
+        <target>Zoek op trefwoorden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.searchPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.browse.governanceContext.title" datatype="html">
+        <source>Data governance organization</source>
+        <target>Data governance organisatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.governanceContext.title</note>
+      </trans-unit>
+      <trans-unit id="search.browse.searchPlaceholder" datatype="html">
+        <source>Type your search</source>
+        <target>Typ uw zoekopdracht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.searchPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.description" datatype="html">
+        <source>I'm searching for which data is stored on a specific technical environment</source>
+        <target>Ik zoek naar data die is opgeslagen binnen een specifieke technische omgeving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.exploreButton" datatype="html">
+        <source>Start browsing systems</source>
+        <target>Systemen bekijken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.exploreButton</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.exploringDescription" datatype="html">
+        <source>Search for keywords related to the system, collection or dataset that you are looking for.</source>
+        <target>Klik op de knop voor een overzicht van alle systemen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.exploringDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.exploringTitle" datatype="html">
+        <source>I'm exploring the technical environments on which data is stored</source>
+        <target>Ik verken de technische omgevingen waarin data is opgeslagen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.exploringTitle</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.collectionDescription" datatype="html">
+        <source>Represents a set of datasets, e.g. a database which usually contains multiple tables.</source>
+        <target>Vertegenwoordigt een verzameling datasets, bijvoorbeeld een database die doorgaans meerdere tabellen bevat.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.collectionDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.datasetDescription" datatype="html">
+        <source>Represents a set of data fields. The most common example of a dataset is a table.</source>
+        <target>Vertegenwoordigt een verzameling datavelden. Het meest voorkomende voorbeeld van een dataset is een tabel.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.datasetDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.description" datatype="html">
+        <source>The technical part of the data governance model captures the technical implementation of data, such as where data is stored and the level of data quality.&#32;
+
+The technical data governance model consists of the following types of entities:</source>
+        <target>Het technische deel van het data‑governancemodel legt de technische implementatie van data vast, zoals waar data is opgeslagen en het niveau van datakwaliteit.&#32;
+ Het technische data‑governancemodel bestaat uit de volgende typen entiteiten:</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.description</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.descriptionDescription" datatype="html">
+        <source>The definition of the entity type</source>
+        <target>De definitie van het entiteitstype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.descriptionDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.descriptionDisplayName" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.descriptionDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.fieldDescription" datatype="html">
+        <source>Represents a single, indivisible unit of data. The most common example of a field is a column in a table.</source>
+        <target>Vertegenwoordigt een enkele, ondeelbare data‑eenheid. Het meest voorkomende voorbeeld van een dataveld is een kolom in een tabel.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.fieldDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.iconDescription" datatype="html">
+        <source>The icon representing the entity type</source>
+        <target>Het icoon dat het entiteitstype weergeeft</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.iconDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.iconDisplayName" datatype="html">
+        <source>Icon</source>
+        <target>Icoon</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.iconDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.systemDescription" datatype="html">
+        <source>Represents the computing environment on which many data collections can be stored and application processes are run.</source>
+        <target>Vertegenwoordigt de technische omgeving waarin meerdere datacollecties kunnen worden opgeslagen en waarin applicatieprocessen worden uitgevoerd.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.systemDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.title" datatype="html">
+        <source>Technical context</source>
+        <target>Technische context</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.title</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.typeNameDescription" datatype="html">
+        <source>The name of the entity type</source>
+        <target>De naam van het entiteitstype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.typeNameDescription</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.infoModal.typeNameDisplayName" datatype="html">
+        <source>Type name</source>
+        <target>Typenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.infoModal.typeNameDisplayName</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.searchInstructions" datatype="html">
+        <source>Search for keywords related to the technical metadata that you are looking for.</source>
+        <target>Zoek op trefwoorden die gerelateerd zijn aan het systeem, de collectie of de dataset die u zoekt.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.searchInstructions</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.searchPlaceholder" datatype="html">
+        <source>Search for keywords</source>
+        <target>Zoek op trefwoorden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.searchPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.browse.technicalContext.title" datatype="html">
+        <source>Technical context</source>
+        <target>Technische context</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.technicalContext.title</note>
+      </trans-unit>
+      <trans-unit id="search.browse.title" datatype="html">
+        <source>Getting started</source>
+        <target>Aan de slag</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.browse.title</note>
+      </trans-unit>
+      <trans-unit id="search.components.classification.isPropagated" datatype="html">
+        <source>Is propagated</source>
+        <target>Wordt doorgegeven</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.classification.isPropagated</note>
+      </trans-unit>
+      <trans-unit id="search.components.classification.originates" datatype="html">
+        <source>originates from the following sources:</source>
+        <target>is afkomstig uit de volgende bronnen:</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.classification.originates</note>
+      </trans-unit>
+      <trans-unit id="search.components.classification.retrieve" datatype="html">
+        <source>Retrieving the classification type definition</source>
+        <target>Classificatie type definitie wordt opgehaald</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.classification.retrieve</note>
+      </trans-unit>
+      <trans-unit id="search.components.classification.source.loading" datatype="html">
+        <source>Loading...</source>
+        <target>Laden...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.classification.source.loading</note>
+      </trans-unit>
+      <trans-unit id="search.components.dataqualitylist.notAvailable" datatype="html">
+        <source>No data quality results available</source>
+        <target>Geen datakwaliteitsresultaten beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.dataqualitylist.notAvailable</note>
+      </trans-unit>
+      <trans-unit id="search.components.description.notAvailable" datatype="html">
+        <source>No description available.</source>
+        <target>Geen beschrijving beschikbaar.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.description.notAvailable</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.classifications" datatype="html">
+        <source>Classifications</source>
+        <target>Classificaties</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.classifications</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.dataentity" datatype="html">
+        <source>Data entity</source>
+        <target>Data Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dataentity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.dataowners" datatype="html">
+        <source>Data owners</source>
+        <target>Data Eigenaren</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dataowners</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.datastewards" datatype="html">
+        <source>Data stewards</source>
+        <target>Data Stewards</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.datastewards</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.fields</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.datasets</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.system" datatype="html">
+        <source>System</source>
+        <target>Systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.system</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.collection.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.collection.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.components.classificationsInput.addPlaceholder" datatype="html">
+        <source>Add a classification...</source>
+        <target>Classificatie toevoegen...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.classificationsInput.addPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.components.classificationsInput.noClassificationsAvailable" datatype="html">
+        <source>No classifications available</source>
+        <target>Geen classificaties beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.classificationsInput.noClassificationsAvailable</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.components.relationshipsInput.addPlaceholder" datatype="html">
+        <source>Add a relationship...</source>
+        <target>Relatie toevoegen...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.relationshipsInput.addPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.components.relationshipsInput.results" datatype="html">
+        <source>results</source>
+        <target>resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.relationshipsInput.results</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.components.relationshipsInput.selectPlaceholder" datatype="html">
+        <source>Select a relationship...</source>
+        <target>Relatie selecteren...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.relationshipsInput.selectPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.childDataset" datatype="html">
+        <source>Child datasets</source>
+        <target>Onderliggende Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.childDataset</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.collection" datatype="html">
+        <source>Collection</source>
+        <target>Collectie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.collection</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.consumers" datatype="html">
+        <source>Consumers</source>
+        <target>Afnemers </target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.consumers</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.datasets</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.fields</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.parentDataset" datatype="html">
+        <source>Parent dataset</source>
+        <target>Bovenliggende Dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.parentDataset</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.producers" datatype="html">
+        <source>Producers</source>
+        <target>Producenten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.producers</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataset.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataset.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.delete" datatype="html">
+        <source>Delete</source>
+        <target>Verwijderen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.delete</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.classifications" datatype="html">
+        <source>Classifications</source>
+        <target>Classificaties</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.classifications</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.dataEntities" datatype="html">
+        <source>Data entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.dataEntities</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.domainLeads" datatype="html">
+        <source>Domain leads</source>
+        <target>Domein Verantwoordelijken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.domainLeads</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.fields</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.domain.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.domain.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.childEntities" datatype="html">
+        <source>Child entities</source>
+        <target>Onderliggende Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.childEntities</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.classifications" datatype="html">
+        <source>Classifications</source>
+        <target>Classificaties</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.classifications</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.dataAttributes" datatype="html">
+        <source>Data attributes</source>
+        <target>Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.dataAttributes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.dataDomain" datatype="html">
+        <source>Data domain</source>
+        <target>Data Domein</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.dataDomain</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.dataOwners" datatype="html">
+        <source>Data owners</source>
+        <target>Data Eigenaren</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.dataOwners</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.dataStewards" datatype="html">
+        <source>Data stewards</source>
+        <target>Data Stewards</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.dataStewards</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.parentEntity" datatype="html">
+        <source>Parent entity</source>
+        <target>Bovenliggende Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.parentEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entity.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entity.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.entityPlaceholder" datatype="html">
+        <source>Entity</source>
+        <target>Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.entityPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.childFields" datatype="html">
+        <source>Child fields</source>
+        <target>Onderliggende Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.childFields</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.dataAttribute" datatype="html">
+        <source>Data attribute</source>
+        <target>Data Attribuut</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.dataAttribute</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.dataset" datatype="html">
+        <source>Dataset</source>
+        <target>Dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.dataset</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.fields</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.parentField" datatype="html">
+        <source>Parent field</source>
+        <target>Bovenliggende Dataveld</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.parentField</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.field.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.field.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.compliantMessage" datatype="html">
+        <source>Compliant message</source>
+        <target>Conformbericht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.compliantMessage</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.compliantMessagePlaceholder" datatype="html">
+        <source>Compliant message</source>
+        <target>Conformbericht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.compliantMessagePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.compliantMessageRequired" datatype="html">
+        <source>Compliant message is required.</source>
+        <target>Conformbericht is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.compliantMessageRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.compliantMessageWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.compliantMessageWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.dimension" datatype="html">
+        <source>Dimension</source>
+        <target>Dimensie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.dimension</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.dimensionPlaceholder" datatype="html">
+        <source>Dimension</source>
+        <target>Dimensie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.dimensionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.expression" datatype="html">
+        <source>Expression*</source>
+        <target>Expressie*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.expression</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.expressionPlaceholder" datatype="html">
+        <source>Expression</source>
+        <target>Expressie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.expressionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.expressionRequired" datatype="html">
+        <source>Expression is required.</source>
+        <target>Expressie is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.expressionRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.nonCompliantMessage" datatype="html">
+        <source>Non-compliant message</source>
+        <target>Niet‑conformbericht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.nonCompliantMessage</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.nonCompliantMessagePlaceholder" datatype="html">
+        <source>Non-compliant message</source>
+        <target>Niet‑conformbericht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.nonCompliantMessagePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.nonCompliantMessageRequired" datatype="html">
+        <source>Non-compliant message is required.</source>
+        <target>Niet‑conformbericht is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.nonCompliantMessageRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.nonCompliantMessageWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.nonCompliantMessageWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.ruleDescription" datatype="html">
+        <source>Rule description</source>
+        <target>Regelbeschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleDescription</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.ruleDescriptionPlaceholder" datatype="html">
+        <source>Rule description</source>
+        <target>Regelbeschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleDescriptionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.ruleDescriptionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleDescriptionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.ruleType" datatype="html">
+        <source>Rule type</source>
+        <target>Regeltype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleType</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.govQuality.ruleTypePlaceholder" datatype="html">
+        <source>Rule type</source>
+        <target>Regeltype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleTypePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.historyPlaceholder" datatype="html">
+        <source>History</source>
+        <target>Geschiedenis</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.historyPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.dataOwnerAttributes" datatype="html">
+        <source>Data owner attributes</source>
+        <target>Data Eigenaar Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.dataOwnerAttributes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.dataOwnerEntities" datatype="html">
+        <source>Data owner entities</source>
+        <target>Data Eigenaar Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.dataOwnerEntities</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.domainLead" datatype="html">
+        <source>Domain lead</source>
+        <target>Domein Verantwoordelijke </target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.domainLead</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.email" datatype="html">
+        <source>Email*</source>
+        <target>Email*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.email</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.emailInvalid" datatype="html">
+        <source>This email address is wrongly formatted.</source>
+        <target>Dit e‑mailadres heeft een onjuiste indeling.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.emailInvalid</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.emailPlaceholder" datatype="html">
+        <source>Email</source>
+        <target>Email</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.emailPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.emailRequired" datatype="html">
+        <source>Email is required.</source>
+        <target>Email is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.emailRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.properties</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.stewardAttribute" datatype="html">
+        <source>Data steward attributes</source>
+        <target>Data Steward Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.stewardAttribute</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.stewardEntity" datatype="html">
+        <source>Data steward entities</source>
+        <target>Data Steward Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.stewardEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.person.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.person.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.inputs" datatype="html">
+        <source>Inputs</source>
+        <target>Invoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.inputs</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.outputs" datatype="html">
+        <source>Outputs</source>
+        <target>Uitvoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.outputs</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.process.system" datatype="html">
+        <source>System</source>
+        <target>Systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.process.system</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.save" datatype="html">
+        <source>Save</source>
+        <target>Opslaan</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.save</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.services.entityValidate.validate" datatype="html">
+        <source>Validating the data governance quality</source>
+        <target>Datagovernance kwaliteit wordt gevalideerd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.services.entityValidate.validate</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.services.submit" datatype="html">
+        <source>Submitting the form</source>
+        <target>Formulier wordt verzonden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.services.submit</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.collections" datatype="html">
+        <source>Collections</source>
+        <target>Collecties</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.collections</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.definition" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.definition</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.definitionPlaceholder" datatype="html">
+        <source>Definition</source>
+        <target>Definitie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.definitionPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.definitionWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.definitionWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.name" datatype="html">
+        <source>Name*</source>
+        <target>Naam*</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.name</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.namePlaceholder" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.namePlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.nameRequired" datatype="html">
+        <source>Name is required.</source>
+        <target>Naam is verplicht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.nameRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.nameWarning" datatype="html">
+        <source>Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues.
+ Please replace it with a standard apostrophe (') before importing your text.</source>
+        <target>Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken.&#32;
+ Vervang het vóór import door een standaardapostrof (').</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.nameWarning</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.notification" datatype="html">
+        <source>This entity can't be saved because one or more required fields are missing.</source>
+        <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.notification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.parentSystem" datatype="html">
+        <source>Parent system</source>
+        <target>Bovenliggende Systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.parentSystem</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.subSystems" datatype="html">
+        <source>Subsystems</source>
+        <target>Subsystemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.subSystems</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.typeAlias" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.typeAlias</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.system.typeAliasPlaceholder" datatype="html">
+        <source>Type alias</source>
+        <target>Type alias</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.system.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.filter.facet.showLess" datatype="html">
+        <source>Show less</source>
+        <target>Minder weergeven</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.facet.showLess</note>
+      </trans-unit>
+      <trans-unit id="search.components.filter.facet.showMore" datatype="html">
+        <source>Show more</source>
+        <target>Meer weergeven</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.facet.showMore</note>
+      </trans-unit>
+      <trans-unit id="search.components.filter.notAvailable" datatype="html">
+        <source>No filters available.</source>
+        <target>Geen filters beschikbaar.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.notAvailable</note>
+      </trans-unit>
+      <trans-unit id="search.components.infiniteScrollContainer.loadNextPage" datatype="html">
+        <source>Load next page...</source>
+        <target>Volgende pagina laden...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.infiniteScrollContainer.loadNextPage</note>
+      </trans-unit>
+      <trans-unit id="search.components.people.dataOwner" datatype="html">
+        <source>Data Owner(s)</source>
+        <target>Data Eigenaar(s)</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.people.dataOwner</note>
+      </trans-unit>
+      <trans-unit id="search.components.people.dataSteward" datatype="html">
+        <source>Data Steward(s)</source>
+        <target>Data Steward(s)</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.people.dataSteward</note>
+      </trans-unit>
+      <trans-unit id="search.components.people.domainLead" datatype="html">
+        <source>Domain Lead(s)</source>
+        <target>Domein Verantwoordelijke(n)</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.people.domainLead</note>
+      </trans-unit>
+      <trans-unit id="search.components.people.empty" datatype="html">
+        <source>No people assigned.</source>
+        <target>Geen personen toegewezen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.people.empty</note>
+      </trans-unit>
+      <trans-unit id="search.components.sorting.relevance" datatype="html">
+        <source>Relevance</source>
+        <target>Relevantie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.sorting.relevance</note>
+      </trans-unit>
+      <trans-unit id="search.components.term.retrieve" datatype="html">
+        <source>Retrieving the term definition</source>
+        <target>Termdefinitie wordt opgehaald</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.term.retrieve</note>
+      </trans-unit>
+      <trans-unit id="search.components.term.term" datatype="html">
+        <source>Term</source>
+        <target>Term</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.term.term</note>
+      </trans-unit>
+      <trans-unit id="search.createEntity.newEntity" datatype="html">
+        <source>Create new entity</source>
+        <target>Nieuwe entiteit aanmaken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.createEntity.newEntity</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.fields</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.fieldsCards.title" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.fieldsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.people" datatype="html">
+        <source>People</source>
+        <target>Personen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.people</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.attribute.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.attribute.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.dataQualityUnavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.dataQualityUnavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.datasets</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.datasetsCards.title" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.datasetsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.fields</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.people" datatype="html">
+        <source>People</source>
+        <target>Personen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.people</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.collection.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.collection.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.detailsCardsList.filter" datatype="html">
+        <source>Filter</source>
+        <target>Filter</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.detailsCardsList.filter</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.detailsCardsList.placeholder" datatype="html">
+        <source>Search for keywords</source>
+        <target>Zoek naar trefwoorden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.detailsCardsList.placeholder</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.detailsCardsList.results" datatype="html">
+        <source>result(s)</source>
+        <target>resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.detailsCardsList.results</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.detailsCardsList.showAllDescendants" datatype="html">
+        <source>Show all descendants</source>
+        <target>Onderliggende objecten tonen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.detailsCardsList.showAllDescendants</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.governanceQualityCards.title" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.governanceQualityCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.lineageModel.loading" datatype="html">
+        <source>Loading the lineage model...</source>
+        <target>Lineage Model laden…</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.lineageModel.loading</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.lineageModel.modelExplorerDataGovernance.noDataGovernanceDetails" datatype="html">
+        <source>No data governance details available</source>
+        <target>Geen data‑governancedetails beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.lineageModel.modelExplorerDataGovernance.noDataGovernanceDetails</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.lineageModel.noLineageModelAvailable" datatype="html">
+        <source>No lineage model available</source>
+        <target>Geen Lineage Model beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.lineageModel.noLineageModelAvailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.lineageModel.retrieve" datatype="html">
+        <source>Retrieving the lineage model</source>
+        <target>Lineage Model ophalen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.lineageModel.retrieve</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.navigation.details" datatype="html">
+        <source>Details</source>
+        <target>Details</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.navigation.details</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.properties.key" datatype="html">
+        <source>Key</source>
+        <target>Sleutel</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.properties.key</note>
+      </trans-unit>
+      <trans-unit id="search.details.components.properties.value" datatype="html">
+        <source>Value</source>
+        <target>Waarde</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.components.properties.value</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.available" datatype="html">
+        <source>Available</source>
+        <target>Beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.available</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.childDatasets" datatype="html">
+        <source>Child Datasets</source>
+        <target>Onderliggende Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.childDatasets</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.consumers" datatype="html">
+        <source>Consumers</source>
+        <target>Afnemers</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.consumers</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.consumersCards.title" datatype="html">
+        <source>Consumers</source>
+        <target>Afnemers</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.consumersCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.dataEntities" datatype="html">
+        <source>Data Entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.dataEntities</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.datasetsCards.title" datatype="html">
+        <source>Child Datasets</source>
+        <target>Onderliggende Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.datasetsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.entityCards.title" datatype="html">
+        <source>Data Entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.entityCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.fields" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.fields</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.fieldsCards.title" datatype="html">
+        <source>Fields</source>
+        <target>Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.fieldsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.lineageModel" datatype="html">
+        <source>Lineage Model</source>
+        <target>Lineage Model</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.lineageModel</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.producers" datatype="html">
+        <source>Producers</source>
+        <target>Producenten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.producers</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.producersCards.title" datatype="html">
+        <source>Producers</source>
+        <target>Producenten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.producersCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.dataset.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.dataset.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.default.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.default.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.default.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.default.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.dataEntities" datatype="html">
+        <source>Data Entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.dataEntities</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.entityCards.title" datatype="html">
+        <source>Data Entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.entityCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.people" datatype="html">
+        <source>People</source>
+        <target>Personen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.people</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.domain.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.domain.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.attributesCards.title" datatype="html">
+        <source>Data Attributes</source>
+        <target>Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.attributesCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.childEntities" datatype="html">
+        <source>Child Entities</source>
+        <target>Onderliggende Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.childEntities</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.dataAttributes" datatype="html">
+        <source>Data Attributes</source>
+        <target>Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.dataAttributes</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.dataEntities" datatype="html">
+        <source>Data Entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.dataEntities</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.datasets</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.datasetsCards.title" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.datasetsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.entitiesCards.title" datatype="html">
+        <source>Child Entities</source>
+        <target>Onderliggende Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.entitiesCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.people" datatype="html">
+        <source>People</source>
+        <target>Personen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.people</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.entity.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.entity.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.attributesCards.title" datatype="html">
+        <source>Data Attributes</source>
+        <target>Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.attributesCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.childFields" datatype="html">
+        <source>Child Fields</source>
+        <target>Onderliggende Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.childFields</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.dataAttributes" datatype="html">
+        <source>Data Attributes</source>
+        <target>Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.dataAttributes</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.dataQualityCards.title" datatype="html">
+        <source>Data Quality Rules</source>
+        <target>Datakwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.dataQualityCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.dataQualityRules" datatype="html">
+        <source>Data Quality Rules</source>
+        <target>Datakwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.dataQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.fieldsCards.title" datatype="html">
+        <source>Child Fields</source>
+        <target>Onderliggende Datavelden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.fieldsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.field.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.field.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.complianceChart" datatype="html">
+        <source>Compliance Chart</source>
+        <target>Compliance overzicht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.complianceChart</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.compliant" datatype="html">
+        <source>Compliant</source>
+        <target>Conform</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.compliant</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.compliantCards.title" datatype="html">
+        <source>Compliant</source>
+        <target>Conform</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.compliantCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.nonCompliant" datatype="html">
+        <source>Non-compliant</source>
+        <target>Niet conform</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.nonCompliant</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.nonCompliantCards.title" datatype="html">
+        <source>Non-compliant</source>
+        <target>Niet conform</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.nonCompliantCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.govQuality.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.govQuality.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.loading" datatype="html">
+        <source>Loading <x id="name" equiv-text="{{name}}"/>...</source>
+        <target>Bezig met laden van <x id="name"/>...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.loading</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.dataAttributes" datatype="html">
+        <source>Data Attributes</source>
+        <target>Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.dataAttributes</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.dataDomains" datatype="html">
+        <source>Data Domains</source>
+        <target>Data Domeinen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.dataDomains</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.dataEntities" datatype="html">
+        <source>Data Entities</source>
+        <target>Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.dataEntities</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.dataOwner" datatype="html">
+        <source>Data Owner</source>
+        <target>Data Eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.dataOwner</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.dataSteward" datatype="html">
+        <source>Data Steward</source>
+        <target>Data Steward</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.dataSteward</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.domainLead" datatype="html">
+        <source>Domain Lead</source>
+        <target>Domein Verantwoordelijke</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.domainLead</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.governanceResponsibilities" datatype="html">
+        <source>Governance Responsibilities</source>
+        <target>Governance Verantwoordelijkheden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.governanceResponsibilities</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.governanceRolesCards.title" datatype="html">
+        <source>Governance Responsibilities</source>
+        <target>Governance Verantwoordelijkheden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.governanceRolesCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.other" datatype="html">
+        <source>Other</source>
+        <target>Ander</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.other</note>
+      </trans-unit>
+      <trans-unit id="search.details.person.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.person.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.available" datatype="html">
+        <source>Available</source>
+        <target>Beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.available</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.datasets</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.inputCards.title" datatype="html">
+        <source>Inputs</source>
+        <target>Invoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.inputCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.inputs" datatype="html">
+        <source>Inputs</source>
+        <target>Invoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.inputs</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.lineageModel" datatype="html">
+        <source>Lineage Model</source>
+        <target>Lineage Model</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.lineageModel</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.outputCards.title" datatype="html">
+        <source>Outputs</source>
+        <target>Uitvoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.outputCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.outputs" datatype="html">
+        <source>Outputs</source>
+        <target>Uitvoer</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.outputs</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.systems" datatype="html">
+        <source>Systems</source>
+        <target>Systemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.systems</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.systemsCards.title" datatype="html">
+        <source>Systems</source>
+        <target>Systemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.systemsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.process.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.process.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.collections" datatype="html">
+        <source>Collections</source>
+        <target>Collecties</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.collections</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.collectionsCards.title" datatype="html">
+        <source>Collections</source>
+        <target>Collecties</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.collectionsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.dataQuality</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.dataQualityRules" datatype="html">
+        <source>Data Quality Rules</source>
+        <target>Datakwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.dataQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.governanceQualityRules" datatype="html">
+        <source>Governance Quality Rules</source>
+        <target>Governance Kwaliteitsregels</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.governanceQualityRules</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.lineageModel" datatype="html">
+        <source>Lineage Model</source>
+        <target>Lineage Model</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.lineageModel</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.processes" datatype="html">
+        <source>Processes</source>
+        <target>Processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.processes</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.processesCards.title" datatype="html">
+        <source>Processes</source>
+        <target>Processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.processesCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.properties</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.subSystems" datatype="html">
+        <source>Subsystems</source>
+        <target>Subsystemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.subSystems</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.systemsCards.title" datatype="html">
+        <source>Subsystems</source>
+        <target>Subsystemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.systemsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.system.unavailable" datatype="html">
+        <source>Unavailable</source>
+        <target>Niet van toepassing</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.system.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.cancel" datatype="html">
+        <source>Close</source>
+        <target>Sluiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.cancel</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.description.description" datatype="html">
+        <source>The meaning of the entity type</source>
+        <target>De betekenis van het entiteittype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.description.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.description.displayName" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.description.displayName</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.label" datatype="html">
+        <source>Entity type</source>
+        <target>Entiteit type</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.label</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.noDataMessage" datatype="html">
+        <source>No types available</source>
+        <target>Geen types beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.noDataMessage</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.nullInputMessage" datatype="html">
+        <source>Please select a type</source>
+        <target>Selecteer een type</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.nullInputMessage</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.requiredErrorMessage" datatype="html">
+        <source>An entity must have a type</source>
+        <target>Een entiteit moet een type hebben</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.requiredErrorMessage</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.title" datatype="html">
+        <source>Entity types</source>
+        <target>Entiteitstypen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.translatedName.description" datatype="html">
+        <source>The name of the entity type</source>
+        <target>De naam van het entiteittype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.translatedName.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.typeSelect.translatedName.displayName" datatype="html">
+        <source>Type name</source>
+        <target>Typenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.typeSelect.translatedName.displayName</note>
+      </trans-unit>
+      <trans-unit id="search.editEntity.editEntity" datatype="html">
+        <source>Edit entity</source>
+        <target>Entiteit bewerken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.editEntity.editEntity</note>
+      </trans-unit>
+      <trans-unit id="search.results.anotherQuery" datatype="html">
+        <source>Please, try to make another query.</source>
+        <target>Probeer een andere zoekopdracht.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.results.anotherQuery</note>
+      </trans-unit>
+      <trans-unit id="search.results.noResults" datatype="html">
+        <source>No results found</source>
+        <target>Geen resultaten gevonden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.results.noResults</note>
+      </trans-unit>
+      <trans-unit id="search.results.results" datatype="html">
+        <source>results</source>
+        <target>resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.results.results</note>
+      </trans-unit>
+      <trans-unit id="search.services.appSearchResults.loading" datatype="html">
+        <source>Loading a page of search results</source>
+        <target>Zoekresultaten pagina wordt geladen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.appSearchResults.loading</note>
+      </trans-unit>
+      <trans-unit id="search.services.entityAudit.retrieve" datatype="html">
+        <source>Retrieving the audit log</source>
+        <target>Auditlog wordt opgehaald</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.entityAudit.retrieve</note>
+      </trans-unit>
+      <trans-unit id="search.services.entityDelete.delete" datatype="html">
+        <source>Deleting the entity</source>
+        <target>Entiteit wordt verwijderd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.entityDelete.delete</note>
+      </trans-unit>
+      <trans-unit id="search.services.entityDetails.retrieve" datatype="html">
+        <source>Retrieving the entity details</source>
+        <target>Details van entiteit worden opgehaald</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.entityDetails.retrieve</note>
+      </trans-unit>
+      <trans-unit id="search.services.entityUpdate.save" datatype="html">
+        <source>Saving the entity</source>
+        <target>Entiteit wordt opgeslagen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.entityUpdate.save</note>
+      </trans-unit>
+      <trans-unit id="search.services.searchResult.retrieve" datatype="html">
+        <source>Retrieving the search result</source>
+        <target>Zoekresultaat wordt opgehaald</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.searchResult.retrieve</note>
+      </trans-unit>
+      <trans-unit id="search.services.typeDefs.retrieve" datatype="html">
+        <source>Retrieving the type definitions</source>
+        <target>Typedefinities worden opgehaald</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.services.typeDefs.retrieve</note>
+      </trans-unit>
+      <trans-unit id="sourcetype" datatype="html">
+        <source>Source</source>
+        <target>Bron</target>
+        <note priority="1" from="description">Aurelius dictionary key: sourcetype</note>
+      </trans-unit>
+      <trans-unit id="stewardAttribute" datatype="html">
+        <source>Data Steward for Attribute</source>
+        <target>Data Steward voor Data Attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: stewardAttribute</note>
+      </trans-unit>
+      <trans-unit id="stewardEntity" datatype="html">
+        <source>Data Steward for Entities</source>
+        <target>Data Steward voor Data Entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: stewardEntity</note>
+      </trans-unit>
+      <trans-unit id="supertypenames" datatype="html">
+        <source>Type Name</source>
+        <target>Typenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: supertypenames</note>
+      </trans-unit>
+      <trans-unit id="systems" datatype="html">
+        <source>Systems</source>
+        <target>Systemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: systems</note>
+      </trans-unit>
+      <trans-unit id="typename" datatype="html">
+        <source>Type Name</source>
+        <target>Typenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: typename</note>
+      </trans-unit>
+      <trans-unit id="updatedAt" datatype="html">
+        <source>Updated at</source>
+        <target>Bijgewerkt op</target>
+        <note priority="1" from="description">Aurelius dictionary key: updatedAt</note>
+      </trans-unit>
+      <trans-unit id="version" datatype="html">
+        <source>Version</source>
+        <target>Versie</target>
+        <note priority="1" from="description">Aurelius dictionary key: version</note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

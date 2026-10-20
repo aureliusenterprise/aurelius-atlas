@@ -13,6 +13,13 @@ uv.lock
 /libs/python/aurelius-atlas-typesystem/tests/fixtures/*.json
 /libs/python/aurelius-atlas-core/tests/fixtures/*.json
 
+# Aurelius dictionaries vendored as test fixtures, kept byte-identical to the
+# reference checkout (DD-039) — and the XLIFF catalogues generated from them
+# (tools/generate-legacy-catalogue.mjs). Prettier trims trailing spaces, which
+# would silently change translated strings: "quality. \n\n" != "quality.\n\n".
+/apps/aurelius-atlas-webapp/tests/fixtures/*.json
+/apps/aurelius-atlas-webapp/src/locale/*.xlf
+
 **/.gitignore
 **/.dockerignore
 **/.prettierignore

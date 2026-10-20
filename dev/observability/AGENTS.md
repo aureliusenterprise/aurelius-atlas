@@ -30,8 +30,8 @@ rules live in the root `AGENTS.md`.
   instead of `rate()` to avoid NaN between ticks.
 - `config/grafana/` — file-provisioned datasources and the **dashboards**
   folder: one dashboard per app/dev stack (`aurelius-atlas-fastapi`,
-  `aurelius-atlas-frontend`, `aurelius-atlas-keycloak`, `aurelius-atlas-postgres`,
-  `aurelius-atlas-elasticsearch`,
+  `aurelius-atlas-frontend`, `aurelius-atlas-webapp`, `aurelius-atlas-keycloak`,
+  `aurelius-atlas-postgres`, `aurelius-atlas-elasticsearch`,
   `aurelius-atlas-observability-stack`), all in the
   "Aurelius" folder. They are plain JSON edited in the repo (Grafana's UI
   edits are lost on recreate), keyed by the telemetry identities the slices

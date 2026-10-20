@@ -1,0 +1,16 @@
+{
+    "/api": {
+        "pathRewrite": {
+            "^/api": ""
+        },
+        "secure": true,
+        "target": "https://127.0.0.1:8000"
+    },
+    "/otel": {
+        "pathRewrite": {
+            "^/otel": ""
+        },
+        "secure": true,
+        "target": "https://localhost:4318"
+    }
+}

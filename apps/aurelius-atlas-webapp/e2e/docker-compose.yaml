@@ -1,0 +1,26 @@
+name: aurelius-atlas-webapp-e2e
+
+services:
+    aurelius-atlas-webapp:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
+        configs:
+            - source: webapp_config
+              target: /usr/share/nginx/html/config.json
+            - source: webapp_nginx_config
+              target: /etc/nginx/conf.d/default.conf
+        volumes:
+            - ../certs:/certs:ro
+        extra_hosts:
+            # The resolved e2e nginx config proxies /api/ to Keycloak and
+            # /otel/ to the collector (SHL-11); both are reached on the host.
+            - keycloak.localhost:host-gateway
+            - otel-collector:host-gateway
+        ports:
+            # Fixed host port, mirroring the example app's e2e stack.
+            - 18444:8080
+
+configs:
+    webapp_config:
+        file: ./config/config.json
+    webapp_nginx_config:
+        file: ./config/nginx.conf
