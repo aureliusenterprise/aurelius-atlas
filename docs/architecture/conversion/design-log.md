@@ -1424,3 +1424,43 @@ neither the legacy screen nor a clean seam.
 re-adds the affordances as part of the search slice, at which point the Shell row of the
 7.x ledger is taken with it. The 7.5 roadmap row is retitled to the landing page; browse
 domain grids, if kept from the legacy design, follow with the search slice.
+
+### DD-055. i18n ids carry no description suffix; the bridge key must equal the extracted id
+
+- **Status:** Proposed
+- **Increment:** 7.5
+- **Date:** 2026-10-20
+
+**Decision.** An `i18n` attribute in the webapp or `aurelius-atlas-ui` is written
+`i18n="@@<dictionary.path>"` only — never `@@<id>|<description>`. Where a unit wants a
+translator note, the note lives in an adjacent comment. `aurelius-atlas-ui`'s four chrome
+units (`components.sortableTableShell.previous|next|noData`, `components.accordion.toggleContent`)
+drop their `| … (DD-047)` suffixes, and the `SortableTable` component drops
+`TableColumn`/`TableRow` from its `imports` (caller-projected directives, NG8113).
+
+**Reason.** Angular joins the `|description` half into the extracted trans-unit id, so the
+key-keyed bridge (DD-039, DD-047) can never match such a unit: `extract-i18n` emits
+`components.sortableTableShell.next|Aurelius table shell …` where the catalogue carries
+plain `components.sortableTableShell.next`. The nl-NL build then answers "No translation
+found" for the unit — the chrome string ships untranslated in the one language the bridge
+exists for. The defect was latent in 7.2 (the ui-lib has no app build of its own to
+surface it; the accordion unit never matched, unnoticed) and surfaced in 7.5 when the
+landing's info-modals pulled the sortable table and its pagination into the app's
+translation graph. The completeness spec cannot catch it: it compares the committed
+catalogues to the fixtures, and extracts ids only as a set-diff (`UIC-04` scans template
+`@@components.*` literals, which include the suffix). The production build is the gate
+that sees it. NG8113 has the same root as the import fix: the table's own template never
+applies the column/row directives — callers do — so listing them is a lie the compiler now
+flags once the table is app-compiled.
+
+**Alternatives.** Keep the descriptions and teach the bridge to split on `|`: one more
+key-mangling rule in the generator for a note the XLIFF `<note>` element (which
+`extract-i18n` emits from the marker's description) already carries — the catalogue
+already proves round-tripping works without it. Register the chrome strings in the
+catalogues _with_ the suffix: breaks the "id equals the legacy dictionary path" invariant
+DD-047 states in its title.
+
+**Consequences.** `nx extract-i18n aurelius-atlas-webapp` output is now a strict subset of
+the bridge catalogue, so `nx build aurelius-atlas-webapp` is warning-clean and can be used
+as the id-parity gate; the 7.2 spec's chrome-string rule (UIC-04) is unchanged, and the
+accordion's toggle-content unit starts translating in nl-NL for the first time.

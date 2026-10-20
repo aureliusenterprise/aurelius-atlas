@@ -19,7 +19,12 @@ import { SortDirection, TableColumn, TableRow } from "./table-column";
  */
 @Component({
     selector: "aurelius-atlas-ui-sortable-table",
-    imports: [CommonModule, FontAwesomeModule, Pagination, TableColumn, TableRow],
+    // TableColumn/TableRow are applied by the *caller's* template — the
+    // column/row ng-templates are projected content, queried by token below —
+    // so they are not imports here (NG8113 flags directives a component's own
+    // template never applies; the webapp build surfaces this once the table
+    // is first compiled by an app, in the 7.5 landing slice).
+    imports: [CommonModule, FontAwesomeModule, Pagination],
     templateUrl: "./sortable-table.component.html",
     styleUrl: "./sortable-table.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,
