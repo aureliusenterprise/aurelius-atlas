@@ -44,7 +44,7 @@ Not in scope:
 | SHL-02 | Bootstrap reads `/config.json` and validates it into the typed `AppConfig`; a missing, unreachable, or malformed file throws at bootstrap                                   |
 | SHL-03 | The root component renders a router outlet and nothing else, as the Aurelius root does                                                                                      |
 | SHL-04 | `GET /search/browse` renders the browse placeholder, the Aurelius default destination                                                                                       |
-| SHL-05 | An unknown path redirects to the default destination, matching the Aurelius `**` fallback                                                                                   |
+| SHL-05 | An unknown path redirects to the default destination, matching the Aurelius `**` fallback (one hop, DD-043)                                                                 |
 | SHL-06 | Scroll position is restored on browser back and forward, as `scrollPositionRestoration: 'enabled'` does in Aurelius                                                         |
 | SHL-07 | The app is served in `en-US` and `nl-NL`; a build localises both, and `nx extract-i18n` regenerates the template catalogue                                                  |
 | SHL-08 | Every one of the 105 Aurelius dictionary keys is present in the `en-US` catalogue with its Aurelius English text, and in the `nl-NL` catalogue with its Aurelius Dutch text |

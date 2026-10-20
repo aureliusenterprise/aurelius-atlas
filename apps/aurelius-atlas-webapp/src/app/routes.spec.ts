@@ -16,8 +16,8 @@ describe("routes", () => {
         await expect(loadChildren()).resolves.toBe(SEARCH_ROUTES);
     });
 
-    it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05)", () => {
-        expect(routes.at(-1)).toMatchObject({ path: "**", redirectTo: "", pathMatch: "full" });
+    it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-043)", () => {
+        expect(routes.at(-1)).toMatchObject({ path: "**", redirectTo: "search/browse", pathMatch: "full" });
     });
 });
 

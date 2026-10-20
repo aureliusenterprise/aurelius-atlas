@@ -1049,3 +1049,28 @@ the compiler: it catches `@ngx-translate` when the package is absent, and catche
 the definition of good Angular — idioms it cannot see (`input()` versus `@Input`, control flow,
 `OnPush`) stay with review. Its allow-list is where an exemption is argued in the open, so an
 escape hatch is a reviewed change rather than a quiet one.
+
+### DD-043. The wildcard fallback redirects to the destination, not through the root
+
+- **Status:** Proposed
+- **Increment:** 7.1
+- **Date:** 2026-10-20
+
+**Decision.** The Aurelius fallback `{ path: '**', redirectTo: '' }` is ported as
+`{ path: '**', redirectTo: 'search/browse', pathMatch: 'full' }`. The chain
+`'**' -> '' -> '/search/browse'` that the Aurelius router resolves in two hops is one hop here.
+
+**Reason.** Angular 22.2's router no longer re-triggers the empty-path redirect after a wildcard
+redirect lands on `''` (angular/angular router fix `e9bf52aa03`, "require outlets to match a route
+before processing child segments"), so the literal port lands on `/` and renders a blank router
+outlet — verified in a browser, not theorised. SHL-05 promises the observable Aurelius behaviour:
+an unknown path ends on the default destination.
+
+**Alternatives.** Keep `redirectTo: ''` and add a redirect-triggering route: a workaround whose
+shape exists only to dodge a router fix. Land on `/` and let the root redirect handle it: changes
+the observable URL (`/` vs `/search/browse`), which is the parity SHL-05 is written against.
+
+**Consequences.** If a future Angular restores chained redirects, the one-hop form keeps working —
+it encodes the destination, not the chain. The `''` route remains the single definition of the
+default destination; the fallback names it, so a later slice that moves the default edits both
+lines, and `routes.spec.ts` pins both.
