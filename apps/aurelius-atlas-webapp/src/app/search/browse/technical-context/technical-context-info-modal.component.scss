@@ -1,0 +1,10 @@
+/* The Aurelius blue icon tint of the technical entity-type icons, and the
+ * pre-line rendering of the description paragraph — the Aurelius string
+ * carries a literal blank line between its two sentences. */
+.technical {
+    color: blue;
+}
+
+.content {
+    white-space: pre-line;
+}
