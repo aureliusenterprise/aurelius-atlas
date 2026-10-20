@@ -1,7 +1,7 @@
 # 7.3 API client and auth wiring
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** #100
 - **Records:** ADR 053; DD-050, DD-051, DD-052, DD-053; relies on ADR 007, ADR 018, ADR 038, DD-004, DD-041, DD-044
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
