@@ -1391,3 +1391,36 @@ the dev Elasticsearch `up`; the suite's boot chain lengthens by one container (E
 already up for the server's own e2e, so cache-hit order matters little). The dev-pair
 `nx serve aurelius-atlas-server` + `nx serve aurelius-atlas-webapp` becomes the documented
 development loop.
+
+### DD-054. The landing page is ported statically; search affordances and Shell chrome join the search slice
+
+- **Status:** Proposed
+- **Increment:** 7.5
+- **Date:** 2026-10-20
+
+**Decision.** 7.5 ports the Aurelius landing page (`browse`) as the static screen it is:
+hero, the three context cards, and the info modals with their hardcoded type tables. The
+cards' `simple-search-input` fields and `directTo*` "explore" buttons — every affordance
+that sets `SearchService.query/filters` and routes to `/search/results` — are not ported
+in this slice, and the Shell chrome (header/footer, whose centrepiece is the global search
+bar) is deferred with them. Both join the search slice (7.4), which the user has placed on
+hold until the server search API exists (4.1 basic search, 2.3 entity read).
+
+**Reason.** The landing page's content — cards, info modals, type tables — is entirely
+static and fully keyed in the XLIFF bridge, so the screen can be ported and proven today;
+its search affordances are navigation into a screen that has no API, and shipping a search
+box whose results page 404s is the speculative build DD-051 refuses, one level up. The
+Shell is deferred for the same reason in chrome form: Aurelius's header carries the global
+search bar and session UI, so wiring the chrome is one decision taken together with the
+search entry point, not two. The user's 2026-10-20 direction ("port the landing page;
+hold off on any search until the API is ready") fixes exactly this seam.
+
+**Alternatives.** Port the cards with their search fields wired to a stub: the affordance
+works in dev and dies in the e2e stack's real server — a UI promise the increment cannot
+keep. Ship the Shell now and hide its search bar: chrome with its main control removed is
+neither the legacy screen nor a clean seam.
+
+**Consequences.** The 7.5 page has no route out except the info modals (BRW-06); 7.4
+re-adds the affordances as part of the search slice, at which point the Shell row of the
+7.x ledger is taken with it. The 7.5 roadmap row is retitled to the landing page; browse
+domain grids, if kept from the legacy design, follow with the search slice.
