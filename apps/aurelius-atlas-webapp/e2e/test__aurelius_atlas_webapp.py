@@ -152,3 +152,52 @@ def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
     csp = response.headers["content-security-policy"]
     assert "connect-src 'self'" in csp
     assert "frame-ancestors 'none'" in csp
+
+
+def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page) -> None:
+    """The landing renders the hero and the three context cards, issuing no /api requests (BRW-01, BRW-04, BRW-07).
+
+    The screen exists before its API does: the requests recorded across a
+    reload of the landing must contain no /api call — the search affordances
+    that would need one are deferred (DD-054).
+    """
+    api_requests: list[str] = []
+    authenticated.on("request", lambda request: api_requests.append(request.url))
+
+    authenticated.reload()
+    expect(authenticated.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
+
+    hero = authenticated.locator(".box h2.title")
+    expect(hero).to_have_text("Getting started")
+
+    card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
+    expect(card_titles).to_have_text(["Business context", "Technical context", "Data governance organization"])
+
+    assert [url for url in api_requests if "/api/" in url] == []
+
+
+def test__info_modal_opens_and_closes(authenticated: Page) -> None:
+    """A card's info icon opens its modal with the legacy rows; closing returns to the landing (BRW-03, BRW-07).
+
+    The info button's accessible name is the modal title, so it is addressable
+    by role; the modal's Bulma content mounts under ``.modal`` and the close
+    button is the card anatomy's delete control.
+    """
+    modal = authenticated.locator(".modal")
+    expect(modal).to_be_hidden()
+
+    authenticated.get_by_role("button", name="Business context", exact=True).click()
+    expect(modal).to_be_visible()
+    expect(modal.locator(".modal-card-title")).to_have_text("Business context")
+    expect(modal.locator("tbody th")).to_have_text(["Data Domain", "Data Entity", "Data Attribute"])
+
+    modal.locator(".modal-card-head button.delete").click()
+    expect(modal).to_be_hidden()
+
+
+def test__landing_renders_dutch_card_titles(authenticated: Page, root_url: str) -> None:
+    """The nl-NL locale renders the Dutch landing strings through the bridge (BRW-02, BRW-07)."""
+    authenticated.goto(urljoin(root_url, "/nl-NL/search/browse"))
+
+    card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
+    expect(card_titles).to_have_text(["Business context", "Technische context", "Data governance organisatie"])

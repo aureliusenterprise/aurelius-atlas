@@ -2,8 +2,8 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** ADR 053; DD-054; relies on ADR 007, DD-037, DD-039, DD-045, DD-046,
-  DD-047, DD-051, DD-052, UIC rules (7.2)
+- **Records:** ADR 053; DD-054, DD-055; relies on ADR 007, DD-037, DD-039, DD-045,
+  DD-046, DD-047, DD-051, DD-052, UIC rules (7.2)
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.
