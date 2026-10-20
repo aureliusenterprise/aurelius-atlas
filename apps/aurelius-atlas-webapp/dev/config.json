@@ -1,0 +1,5 @@
+{
+    "apiBaseUrl": "/api",
+    "keycloak": { "clientId": "aurelius", "realm": "master", "url": "http://keycloak.localhost:8080/" },
+    "otelExporterUrl": "/otel/v1/traces"
+}
