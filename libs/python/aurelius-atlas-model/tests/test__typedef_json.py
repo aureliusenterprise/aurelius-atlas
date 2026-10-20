@@ -45,7 +45,7 @@ ATTRIBUTE_DEFAULTS = {
 """What ``new AtlasAttributeDef()`` writes: its primitives always, its objects only when set."""
 
 
-@pytest.mark.covers("aurelius_atlas_model.typedef.AtlasModel.to_json", rules=["TDM-01", "TDM-02"])
+@pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["TDM-01", "TDM-02"])
 def test__an_attribute_definition_is_written_under_the_java_getter_names() -> None:
     """Every field of ``AtlasAttributeDef`` is written as its getter names it; null ones are left out."""
     attribute = AtlasAttributeDef(
@@ -84,7 +84,7 @@ def test__an_attribute_definition_is_written_under_the_java_getter_names() -> No
     }
 
 
-@pytest.mark.covers("aurelius_atlas_model.typedef.AtlasModel.to_json", rules=["TDM-01", "TDM-02"])
+@pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["TDM-01", "TDM-02"])
 def test__a_relationship_definition_is_written_under_the_java_getter_names() -> None:
     """``endDef1``, ``endDef2``, ``isContainer`` and ``isLegacyAttribute`` keep their Java spelling."""
     relationship = AtlasRelationshipDef(
@@ -120,7 +120,7 @@ def test__a_relationship_definition_is_written_under_the_java_getter_names() -> 
     }
 
 
-@pytest.mark.covers("aurelius_atlas_model.typedef.AtlasModel.to_json", rules=["TDM-01", "TDM-02"])
+@pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["TDM-01", "TDM-02"])
 def test__an_entity_definition_writes_its_derived_fields_when_they_are_set() -> None:
     """``subTypes``, ``relationshipAttributeDefs`` and ``businessAttributeDefs`` appear only when set."""
     entity = AtlasEntityDef.model_validate(
@@ -150,7 +150,7 @@ def test__an_entity_definition_writes_its_derived_fields_when_they_are_set() -> 
     }
 
 
-@pytest.mark.covers("aurelius_atlas_model.typedef.AtlasModel.to_json", rules=["TDM-02"])
+@pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["TDM-02"])
 def test__null_values_inside_a_map_are_written() -> None:
     """``NON_NULL`` applies to properties, not to map contents: a constraint parameter may be null."""
     constraint = AtlasConstraintDef(type="inverseRef", params={"attribute": None})
