@@ -1,7 +1,7 @@
 # 7.11 Shell chrome
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#102](<https://github.com/aureliusenterprise/aurelius-atlas/pull/102>)
 - **Records:** ADR 053; DD-056 (supersedes the Shell half of DD-054); relies on ADR 007, ADR 018, DD-039, DD-041, DD-046, DD-047, DD-052, SHL rules (7.1), UIC rules (7.2)
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-chrome/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
