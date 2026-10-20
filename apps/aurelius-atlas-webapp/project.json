@@ -90,7 +90,15 @@
                     "target": "docker-build"
                 },
                 {
-                    "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
+                    "projects": ["aurelius-atlas-server"],
+                    "target": "docker-build"
+                },
+                {
+                    "projects": [
+                        "aurelius-atlas-dev-keycloak",
+                        "aurelius-atlas-dev-observability",
+                        "aurelius-atlas-dev-elasticsearch"
+                    ],
                     "target": "up"
                 }
             ],
@@ -136,6 +144,10 @@
                 },
                 {
                     "target": "certgen"
+                },
+                {
+                    "projects": ["aurelius-atlas-server", "aurelius-atlas-dev-keycloak"],
+                    "target": "serve"
                 }
             ],
             "executor": "@angular/build:dev-server",

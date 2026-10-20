@@ -67,49 +67,66 @@ def test__config_json_is_served_at_the_origin_root(page: Page, root_url: str) ->
     assert body["apiBaseUrl"] == "/api"
 
 
-def test__browse_placeholder_renders_in_every_browser(page: Page, base_url: str) -> None:
-    """The app boots zoneless at /search/browse and renders the Aurelius placeholder (SHL-12).
+def test__browse_placeholder_renders_in_every_browser(authenticated: Page) -> None:
+    """The signed-in app boots zoneless at /search/browse and renders the Aurelius placeholder (SHL-12, APC-10).
 
     pytest-playwright runs this test in each of chromium, firefox and webkit
     (the e2e target passes all three), so the scenario proves cross-browser
-    boot of the shell. Reaching the placeholder also proves SHL-02 — a missing
-    or malformed /config.json aborts bootstrap and nothing renders.
+    boot of the shell behind the auth guard — reaching the placeholder means
+    Keycloak issued the session and the guard let the route through. It also
+    proves SHL-02: a missing or malformed /config.json aborts bootstrap and
+    nothing renders.
     """
-    page.goto(urljoin(base_url, "search/browse"))
-
-    expect(page.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
+    expect(authenticated.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
 
 
-def test__locale_switch_shows_localized_shell(page: Page, root_url: str) -> None:
+def test__locale_switch_shows_localized_shell(authenticated: Page, root_url: str) -> None:
     """Switching to the nl-NL locale serves the localised shell (SHL-12).
 
     7.1 has no in-app language switcher (the header arrives with a later
     slice); the locale switch at the deployment layer is the locale-prefixed
-    URL, so the scenario switches that way.
+    URL, so the scenario switches that way — the Keycloak session cookie makes
+    the guard pass on the new locale without a second sign-in.
     """
-    page.goto(urljoin(root_url, "/nl-NL/search/browse"))
+    authenticated.goto(urljoin(root_url, "/nl-NL/search/browse"))
 
-    expect(page.locator("#browse-placeholder")).to_have_text(NL_PLACEHOLDER)
-    assert page.url.rstrip("/").endswith("/nl-NL/search/browse")
+    expect(authenticated.locator("#browse-placeholder")).to_have_text(NL_PLACEHOLDER)
+    assert authenticated.url.rstrip("/").endswith("/nl-NL/search/browse")
 
 
-def test__unknown_path_falls_back_to_the_app(page: Page, base_url: str) -> None:
+def test__unknown_path_falls_back_to_the_app(authenticated: Page, base_url: str) -> None:
     """An unknown client-side path serves the app, whose router redirects to browse (SHL-05)."""
-    page.goto(urljoin(base_url, "topic-does-not-exist"))
+    authenticated.goto(urljoin(base_url, "topic-does-not-exist"))
 
-    expect(page.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
+    expect(authenticated.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
 
 
-def test__api_proxy_forwards_to_the_upstream(page: Page, root_url: str) -> None:
-    """The nginx /api/ proxy strips the prefix and reaches the backend (SHL-11).
+def test__api_proxy_forwards_to_the_atlas_server(page: Page, root_url: str) -> None:
+    """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-050).
 
-    Keycloak's public realm metadata is the dev stack's standing backend for
-    the proxy path; the Atlas API server takes it over in 7.3.
+    The real Aurelius server (DD-053) answers the admin version endpoint
+    through nginx -> TLS -> server -> Elasticsearch, so the response proves
+    the whole data path and that no proxy rewrites the /api prefix the client
+    composes into its URLs.
     """
-    response = page.request.get(urljoin(root_url, "/api/realms/master"))
+    response = page.request.get(urljoin(root_url, "/api/atlas/admin/version"))
 
     assert response.status == 200
-    assert response.json()["realm"] == "master"
+    assert response.json()["Name"] == "aurelius-atlas"
+
+
+def test__unauthenticated_visit_redirects_to_keycloak(page: Page, base_url: str) -> None:
+    """An anonymous visit to a guarded route lands on the Keycloak sign-in page (APC-05, APC-10).
+
+    The guard's check-sso finds no SSO session, so it calls login() with the
+    current URL as the redirect_uri — the sign-in page's URL carries it, which
+    is what returns the user to the app after signing in.
+    """
+    page.goto(base_url)
+
+    page.wait_for_url("**/realms/master/protocol/openid-connect/auth**")
+    assert "client_id=aurelius" in page.url
+    expect(page.locator("#username")).to_be_visible()
 
 
 def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str) -> None:

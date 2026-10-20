@@ -11,13 +11,60 @@ services:
         volumes:
             - ../certs:/certs:ro
         extra_hosts:
-            # The resolved e2e nginx config proxies /api/ to Keycloak and
-            # /otel/ to the collector (SHL-11); both are reached on the host.
+            # The resolved e2e nginx config proxies /api/ to the Atlas server
+            # (this compose) and /otel/ to the collector (SHL-11); Keycloak and
+            # the collector are reached on the host.
             - keycloak.localhost:host-gateway
             - otel-collector:host-gateway
         ports:
             # Fixed host port, mirroring the example app's e2e stack.
             - 18444:8080
+        networks:
+            - default
+            - atlas
+
+    # The real Atlas server behind the nginx /api/ proxy (DD-053): the chain
+    # nginx -> TLS -> server -> Elasticsearch answers /api/atlas/admin/version,
+    # so the proxy test proves the whole data path, not just nginx config.
+    # Mirrors apps/aurelius-atlas-server/e2e/docker-compose.yaml; the certs are
+    # the server project's (its certificate carries the aurelius-atlas-server
+    # SAN nginx verifies against), and the store is reached on the dev
+    # Elasticsearch network.
+    atlas-server:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        networks:
+            atlas:
+                # The alias is the name in the server certificate and the nginx
+                # proxy_ssl_name; the compose service name stays atlas-server.
+                aliases:
+                    - aurelius-atlas-server
+        ports:
+            # Fixed host port, mirroring the webapp's 18444: the conftest's
+            # readiness strategy probes the server's version endpoint directly.
+            - 18445:21000
+        environment:
+            # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
+            # environment; a missing value fails the compose start loudly.
+            AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+        extra_hosts:
+            - otel-collector:host-gateway
+        volumes:
+            - ../../aurelius-atlas-server/certs:/certs:ro
+
+networks:
+    # The dev Elasticsearch stack (started by the e2e target); the server
+    # reaches the store as `elasticsearch` on this network.
+    atlas:
+        name: aurelius-atlas-dev-elasticsearch-network
+        external: true
 
 configs:
     webapp_config:

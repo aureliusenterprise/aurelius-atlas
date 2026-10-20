@@ -52,8 +52,10 @@ project; workspace-wide rules live in the root `AGENTS.md`.
       stack) and re-import — re-imports don't overwrite, and placeholder values
       never re-resolve for existing users.
 - The `aurelius` client (frontend SPA, public) has explicit loopback redirect
-  URIs and web origins: `http(s)://localhost|127.0.0.1:4200` (`nx serve`) and
-  `https://localhost:18443` (frontend e2e's fixed host port). Keep them in
+  URIs and web origins: `http(s)://localhost|127.0.0.1:4200` (example
+  `nx serve`), `http(s)://localhost|127.0.0.1:4300|4301` (webapp `nx serve`,
+  en-US/nl-NL), `https://localhost:18443` (example e2e) and
+  `https://localhost:18444` (webapp e2e's fixed host ports). Keep them in
   sync when ports change. Two Keycloak gotchas learned the hard way:
   redirect URIs support port wildcards (`http://localhost:*` works), but
   CORS **web origins do not** — `originEquals` compares the port suffix
