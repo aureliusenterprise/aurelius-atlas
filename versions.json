@@ -55,6 +55,11 @@
     "aliases": []
   },
   {
+    "version": "feat-webapp-api-auth",
+    "title": "feat-webapp-api-auth",
+    "aliases": []
+  },
+  {
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
