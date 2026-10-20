@@ -60,6 +60,11 @@
     "aliases": []
   },
   {
+    "version": "feat-webapp-chrome",
+    "title": "feat-webapp-chrome",
+    "aliases": []
+  },
+  {
     "version": "feat-webapp-api-auth",
     "title": "feat-webapp-api-auth",
     "aliases": []
