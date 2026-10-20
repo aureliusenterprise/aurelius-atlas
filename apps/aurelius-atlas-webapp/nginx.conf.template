@@ -1,0 +1,126 @@
+# Multi-locale serving for the Aurelius Atlas webapp (SHL-11).
+# Each locale is built into its own subdirectory (browser/en-US, browser/nl-NL)
+# with <base href="/<locale>/">. See https://angular.dev/guide/i18n/deploy
+# Baked at image build to /etc/nginx/conf.d/default.conf. This file is a
+# *template*: the ${AURELIUS_ATLAS_WEBAPP_*} placeholders (API/OTLP upstream
+# origins + TLS names, trust anchor path, DNS resolver) are resolved by the
+# deployment, which mounts its filled-in copy over that path — see
+# e2e/config/nginx.conf for a static resolved variant. The hardened runtime
+# image has no shell tooling to render at start, on purpose; an unresolved
+# container fails at config parse instead of serving with template defaults.
+# NOTE: the hardened image includes this file at *server* level, so only
+# server-scoped directives are allowed here (no http-level `map`).
+server {
+    listen 8080;
+
+    # Version-disclosure hardening: keep the nginx version out of the
+    # Server header and error pages.
+    server_tokens off;
+
+    root /usr/share/nginx/html;
+
+    include /etc/nginx/app.d/*.conf;
+
+    # Security headers (M2). The 7.1 shell carries no tokens yet (auth is
+    # 7.3), so this is the strict baseline; frame-src/frame-ancestors widen
+    # with the Keycloak wiring, following the example app's template.
+    #   - style-src 'unsafe-inline': @angular/build inlines critical CSS as a
+    #     <style> tag in index.html (no hash available at config time).
+    #   - connect-src 'self': the SPA talks only to same-origin /api and /otel
+    #     (AppConfig ships relative URLs, SHL-10). Keycloak origins arrive in 7.3.
+    #   - script-src 'self': the 7.1 build ships no inline scripts (no
+    #     critical-CSS media-flip script — the app CSS is tiny), so no hash
+    #     is needed. Recompute one with the example app's recipe if a later
+    #     build starts inlining.
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # Browser preferred-language detection via the Accept-Language header.
+    # (The http-level `map` directive from the Angular docs doesn't fit here:
+    # the hardened image only includes conf.d inside the server scope.)
+    set $accept_language en-US;
+
+    # Same-origin reverse proxies for the backend API and the OTLP collector,
+    # mirroring the dev-server proxy (proxy.conf.json): the /api or /otel
+    # prefix is stripped before forwarding, so the upstream serves its routes
+    # at its own root. The CSP above already promises connect-src 'self' for
+    # /api and /otel — these locations make that real in production.
+    #
+    # The upstream names below are the service names of this repo's stacks
+    # (compose project / k8s Service names); the whole block follows the same
+    # "parameterize for your topology" rule as the Keycloak origins the 7.3
+    # slice adds (${AURELIUS_ATLAS_WEBAPP_*} placeholders, resolved by the
+    # deployment when it mounts its copy). The hostname goes through a
+    # variable so nginx resolves it via `resolver`
+    # *per request* — a missing backend then returns 502 instead of refusing
+    # to boot the SPA. 127.0.0.11 is Docker's built-in DNS; change it for
+    # other environments (e.g. kube-dns at 10.96.0.10).
+    resolver ${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER} valid=10s ipv6=off;
+
+    location /api/ {
+        set $api_upstream ${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM};
+        rewrite ^/api(/.*)$ $1 break;
+        proxy_pass $api_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Upstream is TLS with the stack's own certificate. This upstream
+        # carries user bearer tokens from 7.3 on, so its certificate MUST be
+        # verified: unverified, a network-path attacker between nginx and the
+        # API can impersonate the backend and harvest every token. The trust
+        # anchor is deployment-specific: AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE
+        # (default /certs/ca.pem; dev/e2e stacks bind-mount the project CA
+        # there, deployments mount their own). nginx refuses to start when the
+        # file is missing — failing loudly beats silently unverified.
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # OTLP push (traces and metrics) for the browser SDK; same-origin keeps
+    # the CSP at 'self' (the wiring arrives with 7.3's observability slice).
+    location /otel/ {
+        set $otel_upstream ${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM};
+        rewrite ^/otel(/.*)$ $1 break;
+        proxy_pass $otel_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # Redirect "/" to the preferred locale, defaulting to en-US.
+    location = / {
+        if ($http_accept_language ~* "^nl") {
+            set $accept_language nl-NL;
+        }
+        return 302 /$accept_language/$is_args$args;
+    }
+
+    # Serve each locale's app; unknown paths under a locale prefix fall back
+    # to that locale's index.html so client-side routing keeps working.
+    location /en-US/ {
+        try_files $uri $uri/ /en-US/index.html;
+    }
+
+    location /nl-NL/ {
+        try_files $uri $uri/ /nl-NL/index.html;
+    }
+
+    # Unknown paths fall back to the default locale's app (SPA routing).
+    location / {
+        try_files $uri /en-US/index.html;
+    }
+}
