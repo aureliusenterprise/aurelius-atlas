@@ -1074,3 +1074,35 @@ the observable URL (`/` vs `/search/browse`), which is the parity SHL-05 is writ
 it encodes the destination, not the chain. The `''` route remains the single definition of the
 default destination; the fallback names it, so a later slice that moves the default edits both
 lines, and `routes.spec.ts` pins both.
+
+### DD-044. Operational telemetry lands with 7.1; the auth wiring stays with 7.3
+
+- **Status:** Proposed
+- **Increment:** 7.1
+- **Date:** 2026-10-20
+
+**Decision.** The webapp's OpenTelemetry wiring — trace and metric exporters, the
+tracing `ErrorHandler`, and the `traceparent` HTTP interceptor, all from
+`aurelius-atlas-observability` — lands with 7.1, not with 7.3. The Keycloak
+providers and the bearer-token interceptor stay in 7.3, which owns the auth wiring.
+
+**Reason.** DD-040 attaches the telemetry replacement to this increment, and the
+shell is where the Aurelius `Core.imports` (the single wiring point that carried
+both GA/clickstream and the app's providers) dissolves — so the OTel half of that
+dissolution belongs here. The exporter endpoint is already a 7.1 config field
+(SHL-02), the image already proxies `/otel/` (SHL-11), and the CSP already allows
+it (SHL-11); deferring the wiring to 7.3 left the plumbing with no consumer.
+Telemetry is also the shell's own operational signal — the earlier it covers the
+app, the more of the port it observes.
+
+**Alternatives.** Wire everything in 7.3: keeps one bootstrap commit, but leaves
+DD-040 unsatisfied for a whole increment and pairs telemetry with auth for no
+dependency that exists — the OTel providers need only `AppConfig`. Wire traces
+only, metrics in a later slice: the metrics provider is the same call with a
+metrics exporter; splitting them adds no review value.
+
+**Consequences.** The e2e `/otel/` proxy test (SHL-11) gains a producer: the
+served app now exports through it. The interceptor covers the API calls 7.3 adds,
+so trace propagation is in place before the first request exists. The bootstrap
+in `app.config.ts` matches the example app's provider set minus Keycloak, which
+is the visible difference between the two files.

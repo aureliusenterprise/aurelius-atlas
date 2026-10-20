@@ -1,8 +1,8 @@
 # 7.1 Webapp shell and localisation
 
-- **Status:** planned
-- **Pull request:** –
-- **Records:** ADR 053; DD-037, DD-038, DD-039, DD-040; relies on ADR 007, ADR 018, DD-019
+- **Status:** in progress
+- **Pull request:** #98
+- **Records:** ADR 053; DD-037, DD-038, DD-039, DD-040, DD-044; relies on ADR 007, ADR 018, DD-019
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.
@@ -38,21 +38,22 @@ Not in scope:
 
 ## Semantics
 
-| Id     | Rule                                                                                                                                                                        |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SHL-01 | The application bootstraps with `bootstrapApplication` and `provideZonelessChangeDetection`, and declares no `NgModule`                                                     |
-| SHL-02 | Bootstrap reads `/config.json` and validates it into the typed `AppConfig`; a missing, unreachable, or malformed file throws at bootstrap                                   |
-| SHL-03 | The root component renders a router outlet and nothing else, as the Aurelius root does                                                                                      |
-| SHL-04 | `GET /search/browse` renders the browse placeholder, the Aurelius default destination                                                                                       |
-| SHL-05 | An unknown path redirects to the default destination, matching the Aurelius `**` fallback (one hop, DD-043)                                                                 |
-| SHL-06 | Scroll position is restored on browser back and forward, as `scrollPositionRestoration: 'enabled'` does in Aurelius                                                         |
-| SHL-07 | The app is served in `en-US` and `nl-NL`; a build localises both, and `nx extract-i18n` regenerates the template catalogue                                                  |
-| SHL-08 | Every one of the 105 Aurelius dictionary keys is present in the `en-US` catalogue with its Aurelius English text, and in the `nl-NL` catalogue with its Aurelius Dutch text |
-| SHL-09 | No component in the webapp imports `@ngx-translate/*`, and no template uses the `translate` pipe                                                                            |
-| SHL-10 | No setting is read from a build-time `environment` file: base URLs, client ids, and export endpoints come from `AppConfig`                                                  |
-| SHL-11 | The built image serves the app over TLS on 8080, proxies `/api/` and `/otel/` as the example app's nginx config does, and its CSP keeps `connect-src 'self'`                |
-| SHL-12 | A Playwright scenario loads the app in each of chromium, firefox, and webkit, reaches the browse placeholder, and switches locale                                           |
-| SHL-13 | Every `signal`, service, and pure function the slice adds has a Vitest test naming it, and the coverage gate for the app holds                                              |
+| Id     | Rule                                                                                                                                                                                                            |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SHL-01 | The application bootstraps with `bootstrapApplication` and `provideZonelessChangeDetection`, and declares no `NgModule`                                                                                         |
+| SHL-02 | Bootstrap reads `/config.json` and validates it into the typed `AppConfig`; a missing, unreachable, or malformed file throws at bootstrap                                                                       |
+| SHL-03 | The root component renders a router outlet and nothing else, as the Aurelius root does                                                                                                                          |
+| SHL-04 | `GET /search/browse` renders the browse placeholder, the Aurelius default destination                                                                                                                           |
+| SHL-05 | An unknown path redirects to the default destination, matching the Aurelius `**` fallback (one hop, DD-043)                                                                                                     |
+| SHL-06 | Scroll position is restored on browser back and forward, as `scrollPositionRestoration: 'enabled'` does in Aurelius                                                                                             |
+| SHL-07 | The app is served in `en-US` and `nl-NL`; a build localises both, and `nx extract-i18n` regenerates the template catalogue                                                                                      |
+| SHL-08 | Every one of the 105 Aurelius dictionary keys is present in the `en-US` catalogue with its Aurelius English text, and in the `nl-NL` catalogue with its Aurelius Dutch text                                     |
+| SHL-09 | No component in the webapp imports `@ngx-translate/*`, and no template uses the `translate` pipe                                                                                                                |
+| SHL-10 | No setting is read from a build-time `environment` file: base URLs, client ids, and export endpoints come from `AppConfig`                                                                                      |
+| SHL-11 | The built image serves the app over TLS on 8080, proxies `/api/` and `/otel/` as the example app's nginx config does, and its CSP keeps `connect-src 'self'`                                                    |
+| SHL-12 | A Playwright scenario loads the app in each of chromium, firefox, and webkit, reaches the browse placeholder, and switches locale                                                                               |
+| SHL-13 | Every `signal`, service, and pure function the slice adds has a Vitest test naming it, and the coverage gate for the app holds                                                                                  |
+| SHL-14 | The app exports traces and Core Web Vitals metrics to the `otelExporterUrl` through `aurelius-atlas-observability`, records uncaught errors as span events, and propagates `traceparent` on HTTP calls (DD-040) |
 
 SHL-01 and SHL-10 are the point of the slice: they make the project real on this workspace's rules
 before any feature code arrives, so no later slice inherits a legacy scaffold.
@@ -93,8 +94,8 @@ untouched (WBP-07). Against the Aurelius product, the two intended differences a
 ## Acceptance
 
 - `apps/aurelius-atlas-webapp/tests` (co-located `.spec.ts`, Vitest) — config parsing and the
-  failure modes of SHL-02; the route table of SHL-04, SHL-05, SHL-06; the root component of
-  SHL-03; the locale service of SHL-07. SHL-13.
+  failure modes of SHL-02, the metrics-endpoint derivation of SHL-14; the route table of SHL-04,
+  SHL-05, SHL-06; the root component of SHL-03; the locale service of SHL-07. SHL-13.
 - `apps/aurelius-atlas-webapp/e2e/` — pytest + Playwright against the built image: SHL-12, plus
   SHL-11's TLS and proxy paths and the CSP check.
 - `scripts/check-webapp-purity.sh` (or an ESLint rule set) — WBP-02, SHL-01, SHL-09, SHL-10:

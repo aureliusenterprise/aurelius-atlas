@@ -1,4 +1,5 @@
 import { AppConfig, parseAppConfig } from "./config";
+import { metricsUrl } from "./app.config";
 
 const valid = {
     keycloak: { clientId: "aurelius", realm: "master", url: "http://keycloak.localhost:8080" },
@@ -38,5 +39,16 @@ describe("parseAppConfig", () => {
 
     it("throws when otelMetricsExporterUrl is present but empty", () => {
         expect(() => parseAppConfig({ ...valid, otelMetricsExporterUrl: "" })).toThrow(/"otelMetricsExporterUrl"/);
+    });
+});
+
+describe("metricsUrl", () => {
+    it("prefers the explicit metrics endpoint", () => {
+        const config = { ...valid, otelMetricsExporterUrl: "/collect/metrics" } as AppConfig;
+        expect(metricsUrl(config)).toBe("/collect/metrics");
+    });
+
+    it("derives it from the traces endpoint when unset", () => {
+        expect(metricsUrl(valid as AppConfig)).toBe("/otel/v1/metrics");
     });
 });

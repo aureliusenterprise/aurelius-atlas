@@ -25,8 +25,13 @@ The increment ledger for this track is the 7.x series:
   (`@@search.browse.description`), verified by `i18n-completeness.spec.ts`
 - Static nginx image (`dhi.io/nginx`, TLS 8080) serving the locale tree with
   same-origin `/api/` and `/otel/` proxies, CSP `connect-src 'self'`
+- OpenTelemetry: traces and Core Web Vitals metrics exported via
+  `otelExporterUrl` (`/otel/v1/traces`), uncaught errors recorded as span
+  events, and `traceparent` propagated on HTTP calls — all through
+  `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
+  clickstream paths (DD-040)
 
-Not wired yet by design: Keycloak auth and OpenTelemetry (7.3), the REST
+Not wired yet by design: Keycloak auth (7.3), the REST
 client (7.3), shared UI components (7.2), the header/search bar (7.4).
 
 ## Running

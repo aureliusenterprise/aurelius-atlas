@@ -37,18 +37,18 @@ increment's Acceptance:
 Ordered so that a slice depends only on slices before it. Slices 7.1–7.2 need no catalogue API,
 which is what makes 7.1 the safe place to stand up the project.
 
-| #    | Slice                                                                                          | Depends on |
-| ---- | ---------------------------------------------------------------------------------------------- | ---------- |
-| 7.1  | [Shell and localisation](./7-1-webapp-shell.md): project, bootstrap, router, i18n bridge       | –          |
-| 7.2  | Design system: legacy shared components → `aurelius-atlas-ui` dumb components + stories        | 7.1        |
-| 7.3  | API client: `libs/atlas/api` (65 files) → `aurelius-atlas-data-access`, Keycloak + OTel wiring | 7.1        |
-| 7.4  | Search: query and results, the first slice with real data                                      | 7.2, 7.3   |
-| 7.5  | Browse: domain browse, card grids                                                              | 7.4        |
-| 7.6  | Entity details: header, attributes, relationships, lineage view                                | 7.4        |
-| 7.7  | Create and edit entity: forms, validation                                                      | 7.4, 7.6   |
-| 7.8  | Governance quality, classifications, domains                                                   | 7.6        |
-| 7.9  | Delete, audit, and the remaining detail cards                                                  | 7.6        |
-| 7.10 | Serving, and retirement of the example app                                                     | 7.1 – 7.9  |
+| #    | Slice                                                                                                    | Depends on |
+| ---- | -------------------------------------------------------------------------------------------------------- | ---------- |
+| 7.1  | [Shell and localisation](./7-1-webapp-shell.md): project, bootstrap, router, i18n bridge, OTel telemetry | –          |
+| 7.2  | Design system: legacy shared components → `aurelius-atlas-ui` dumb components + stories                  | 7.1        |
+| 7.3  | API client: `libs/atlas/api` (65 files) → `aurelius-atlas-data-access`, Keycloak auth wiring             | 7.1        |
+| 7.4  | Search: query and results, the first slice with real data                                                | 7.2, 7.3   |
+| 7.5  | Browse: domain browse, card grids                                                                        | 7.4        |
+| 7.6  | Entity details: header, attributes, relationships, lineage view                                          | 7.4        |
+| 7.7  | Create and edit entity: forms, validation                                                                | 7.4, 7.6   |
+| 7.8  | Governance quality, classifications, domains                                                             | 7.6        |
+| 7.9  | Delete, audit, and the remaining detail cards                                                            | 7.6        |
+| 7.10 | Serving, and retirement of the example app                                                               | 7.1 – 7.9  |
 
 ### Not in scope
 

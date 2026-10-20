@@ -7,7 +7,8 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 
 ## Layout
 
-- `src/app/` — standalone, zoneless components; `app.config.ts` wires providers,
+- `src/app/` — standalone, zoneless components; `app.config.ts` wires providers
+  (config, router, OpenTelemetry via `aurelius-atlas-observability`),
   `routes.ts` the shell routes; `config.ts` is the typed `/config.json` shape
 - `src/locale/` — **generated** XLIFF catalogues (the Aurelius dictionary bridge,
   DD-039); regenerate with `node tools/generate-legacy-catalogue.mjs`, never hand-edit
