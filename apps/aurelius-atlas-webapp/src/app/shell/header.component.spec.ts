@@ -1,6 +1,6 @@
 import { TestBed } from "@angular/core/testing";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { KeycloakService } from "keycloak-angular";
+import Keycloak from "keycloak-js";
 
 import { AppConfig } from "../config";
 import { APP_CONFIG } from "../tokens";
@@ -25,7 +25,7 @@ function setup(identity = "aurelius-writer") {
         imports: [FontAwesomeModule, ShellHeader],
         providers: [
             { provide: APP_CONFIG, useValue: config },
-            { provide: KeycloakService, useValue: { logout } },
+            { provide: Keycloak, useValue: { logout } },
             { provide: Session, useValue: { identity: () => identity } },
         ],
     });

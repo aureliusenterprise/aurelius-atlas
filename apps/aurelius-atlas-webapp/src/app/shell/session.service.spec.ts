@@ -1,17 +1,17 @@
 import { TestBed } from "@angular/core/testing";
-import { KeycloakService } from "keycloak-angular";
+import Keycloak from "keycloak-js";
 
 import { Session } from "./session.service";
 
 /**
- * A KeycloakService stand-in exposing only what {@link Session} reads: the
+ * A Keycloak client stand-in exposing only what {@link Session} reads: the
  * parsed token. The guard (APC-05) has resolved before any component renders,
  * so the token is present when the service is constructed.
  */
 function provideKeycloak(tokenParsed: Record<string, unknown> | undefined) {
-    const keycloak = { getKeycloakInstance: () => ({ tokenParsed }) };
+    const keycloak = { tokenParsed };
 
-    TestBed.configureTestingModule({ providers: [{ provide: KeycloakService, useValue: keycloak }] });
+    TestBed.configureTestingModule({ providers: [{ provide: Keycloak, useValue: keycloak }] });
 }
 
 describe("Session", () => {

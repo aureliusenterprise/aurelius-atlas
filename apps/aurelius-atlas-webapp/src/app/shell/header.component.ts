@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faBook } from "@fortawesome/free-solid-svg-icons";
 import { Header } from "aurelius-atlas-ui";
-import { KeycloakService } from "keycloak-angular";
+import Keycloak from "keycloak-js";
 
 import { APP_CONFIG } from "../tokens";
 import { Session } from "./session.service";
@@ -44,7 +44,7 @@ export class ShellHeader {
 
     protected readonly documentationUrl = DOCUMENTATION_URL;
 
-    private readonly keycloak = inject(KeycloakService);
+    private readonly keycloak = inject(Keycloak);
 
     /**
      * The full-page URL of a locale's copy of the current page: the active

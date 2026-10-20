@@ -1,6 +1,6 @@
 import { TestBed } from "@angular/core/testing";
 import { provideRouter, Routes } from "@angular/router";
-import { KeycloakService } from "keycloak-angular";
+import Keycloak from "keycloak-js";
 
 import { AppConfig } from "./config";
 import { APP_CONFIG } from "./tokens";
@@ -24,7 +24,7 @@ describe("App", () => {
                 { provide: APP_CONFIG, useValue: config },
                 // The header's session identity reads the Keycloak token; the
                 // root spec keeps the chrome's plumbing out of scope.
-                { provide: KeycloakService, useValue: { getKeycloakInstance: () => ({ tokenParsed: {} }) } },
+                { provide: Keycloak, useValue: { tokenParsed: {} } },
             ],
         }).compileComponents();
     });
