@@ -198,18 +198,19 @@ defer — is what acceptance adds.
 
 ??? INFO "Which records are Proposed"
 
-    Eight: [023](./023-storage-schema-changes-by-recorded-migration.md),
+    Nine: [023](./023-storage-schema-changes-by-recorded-migration.md),
     [025](./025-data-has-a-stated-lifetime.md),
     [026](./026-the-system-can-be-brought-back-from-a-named-snapshot.md),
     [027](./027-every-stream-carries-a-stated-delivery-guarantee.md) (its slice
     removed by [050](./050-the-system-carries-only-what-the-catalogue-needs.md)),
     [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md),
     [040](./040-the-system-raises-its-hand-when-it-is-broken.md),
-    [042](./042-every-dataset-has-an-owner-who-answers-for-it.md), and
-    [052](./052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md)
+    [042](./042-every-dataset-has-an-owner-who-answers-for-it.md),
+    [052](./052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md),
+    and [053](./053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice.md)
     — the governance mechanisms that need an enforcement point before they are
-    decisions the system keeps; 052's harness arrives with increment 0.4. Each
-    is listed in the log above as Proposed.
+    decisions the system keeps; 052's harness arrives with increment 0.4, and 053's
+    first slice with increment 7.1. Each is listed in the log above as Proposed.
 
 The gaps also sequence the work: taking on real stored data needs the
 migration path ([023](./023-storage-schema-changes-by-recorded-migration.md))
