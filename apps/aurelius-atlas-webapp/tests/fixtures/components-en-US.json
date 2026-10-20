@@ -1,0 +1,22 @@
+{
+    "components": {
+        "accordion": {
+            "toggleContent": "Toggle content"
+        },
+        "fuzzySearchInput": {
+            "searchPlaceholder": "Search..."
+        },
+        "modal": {
+            "close": "Close"
+        },
+        "quickview": {
+            "pinTooltip": "Pin to side",
+            "unpinTooltip": "Unpin from side"
+        },
+        "sortableTableShell": {
+            "next": "Next page",
+            "noData": "No data available",
+            "previous": "Previous"
+        }
+    }
+}

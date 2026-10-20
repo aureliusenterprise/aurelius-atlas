@@ -2,11 +2,15 @@
  * SHL-08: every Aurelius dictionary leaf must be present in both catalogues
  * with its Aurelius text, so a screen ported by a later slice can reference
  * any key and find it translated (DD-039). The vendored dictionaries under
- * tests/fixtures/ are the reference, checked offline.
+ * tests/fixtures/ are the reference, checked offline. The components
+ * dictionaries are the chrome strings of the shared-components library,
+ * carried by the `aurelius-atlas-ui` components (DD-047, UIC-04).
  */
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
+import componentsEnUs from "../../tests/fixtures/components-en-US.json";
+import componentsNlNl from "../../tests/fixtures/components-nl-NL.json";
 import enUs from "../../tests/fixtures/en-US.json";
 import nlNl from "../../tests/fixtures/nl-NL.json";
 
@@ -90,8 +94,14 @@ function flatten(obj: Record<string, unknown>, prefix: string, out: Record<strin
 }
 
 describe("Aurelius dictionary bridge", () => {
-    const enLeaves = flatten(enUs as Record<string, unknown>, "", {});
-    const nlLeaves = flatten(nlNl as Record<string, unknown>, "", {});
+    const enLeaves = {
+        ...flatten(enUs as Record<string, unknown>, "", {}),
+        ...flatten(componentsEnUs as Record<string, unknown>, "", {}),
+    };
+    const nlLeaves = {
+        ...flatten(nlNl as Record<string, unknown>, "", {}),
+        ...flatten(componentsNlNl as Record<string, unknown>, "", {}),
+    };
     const template = parseXlf("messages.xlf", "source");
     const translated = parseXlf("messages.nl-NL.xlf", "target");
 
@@ -126,5 +136,25 @@ describe("Aurelius dictionary bridge", () => {
         expect(enLeaves[key]).toContain(" \n\nThe technical data governance model");
         expect(template.get(key)).toBe(enLeaves[key]);
         expect(translated.get(key)).toBe(nlLeaves[key]);
+    });
+
+    it("uses only chrome strings the components dictionaries define (UIC-04, DD-047)", () => {
+        // Every `@@components.*` id carried by an aurelius-atlas-ui template
+        // must be a vendored chrome string — a component may not invent a
+        // unit the translations do not have.
+        const uiSrc = resolve("libs/angular/aurelius-atlas-ui/src");
+        const invented: string[] = [];
+
+        for (const file of readdirSync(uiSrc, { recursive: true })) {
+            const name = String(file);
+            if (!name.endsWith(".html")) continue;
+            const html = readFileSync(join(uiSrc, name), "utf8");
+            for (const match of html.matchAll(/@@components\.[\w.]+/g)) {
+                const id = match[0].slice(2);
+                if (!(id in enLeaves) || !(id in nlLeaves)) invented.push(`${name}: ${id}`);
+            }
+        }
+
+        expect(invented).toEqual([]);
     });
 });
