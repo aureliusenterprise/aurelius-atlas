@@ -4522,6 +4522,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-082-the-active-locale-is-filled-with-the-aurelius-blue" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-082. The active locale is filled with the Aurelius blue
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8000,6 +8011,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-082-the-active-locale-is-filled-with-the-aurelius-blue" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-082. The active locale is filled with the Aurelius blue
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10421,6 +10443,37 @@ just standardised on, and the checkbox label had no text to wrap).</p>
 singleton route, so collision is impossible. The checkbox loses
 Bulma's <code>.checkbox</code> hover affordance (the label click replaces it). The
 panel spec asserts each pair.</p>
+<h3 id="dd-082-the-active-locale-is-filled-with-the-aurelius-blue">DD-082. The active locale is filled with the Aurelius blue<a class="headerlink" href="#dd-082-the-active-locale-is-filled-with-the-aurelius-blue" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.14</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The active locale link in the settings drawer's Language
+section is a solid Aurelius-blue plate (<code>#0073dd</code>, white ink): the
+panel scss fills the <code>is-selected</code> button the template already marks
+(SPL-06). The pair is pinned, not scheme-following — the same
+<code>#0073dd</code>/white the footer's brand block pins (SHM-07).</p>
+<p><strong>Reason.</strong> The user's review: "For the locales can we ensure the
+current locale is highlighted?" The SHC-04 port carries the
+<code>is-selected</code>/<code>aria-current</code> marking (7.12), and the template binds
+it — but Bulma 1 styles a selected button with nothing (verified:
+<code>.button.is-selected</code> has no rule, and the rendered active and
+inactive links measure identical ink and plate). The marker is
+semantic, invisible; the highlight the user asked for is the missing
+visual half of it.</p>
+<p><strong>Alternatives.</strong> <code>is-active</code> (Bulma composes an <code>l-delta</code> from it —
+a shadow on the plate, not a fill; the same non-result). A check-mark
+icon on the active link (a decoration needing a string and an id on
+both locales, for what a fill says for free). <code>var(--bulma-link)</code>
+(the scheme-following accent — rejected: DD-068 lightens it to 73%
+in dark, and white ink on a 73% light-blue fails; the pinned pair
+holds 4.6:1 in either scheme).</p>
+<p><strong>Consequences.</strong> <code>.buttons.has-addons</code> keeps the links joined, and
+the fill joins them visually as a segmented control: the active plate
+is blue, its neighbours stay plain. The panel spec asserts the
+<code>is-selected</code> class on the active link (the scss fill itself is a
+style, not a testable DOM fact).</p>
 
 
 

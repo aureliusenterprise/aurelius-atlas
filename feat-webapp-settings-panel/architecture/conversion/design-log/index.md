@@ -1168,3 +1168,17 @@ The brand theme (DD-059/062) pins the light ink chain in `:root` — body `#4a4a
 **Alternatives.** `aria-labelledby` everywhere (works, and the `label[for]` is the HTML-native form the guide shows; the group and the Select use it where no single labelable control exists). Keeping the wrapping `.checkbox` label (an accessible name, and the Bulma checkbox idiom — rejected: the guide's stacked label/field shape is what DD-079 just standardised on, and the checkbox label had no text to wrap).
 
 **Consequences.** Fixed ids (`settings-timezone`, …): the panel is a singleton route, so collision is impossible. The checkbox loses Bulma's `.checkbox` hover affordance (the label click replaces it). The panel spec asserts each pair.
+
+### DD-082. The active locale is filled with the Aurelius blue
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The active locale link in the settings drawer's Language section is a solid Aurelius-blue plate (`#0073dd`, white ink): the panel scss fills the `is-selected` button the template already marks (SPL-06). The pair is pinned, not scheme-following — the same `#0073dd`/white the footer's brand block pins (SHM-07).
+
+**Reason.** The user's review: "For the locales can we ensure the current locale is highlighted?" The SHC-04 port carries the `is-selected`/`aria-current` marking (7.12), and the template binds it — but Bulma 1 styles a selected button with nothing (verified: `.button.is-selected` has no rule, and the rendered active and inactive links measure identical ink and plate). The marker is semantic, invisible; the highlight the user asked for is the missing visual half of it.
+
+**Alternatives.** `is-active` (Bulma composes an `l-delta` from it — a shadow on the plate, not a fill; the same non-result). A check-mark icon on the active link (a decoration needing a string and an id on both locales, for what a fill says for free). `var(--bulma-link)` (the scheme-following accent — rejected: DD-068 lightens it to 73% in dark, and white ink on a 73% light-blue fails; the pinned pair holds 4.6:1 in either scheme).
+
+**Consequences.** `.buttons.has-addons` keeps the links joined, and the fill joins them visually as a segmented control: the active plate is blue, its neighbours stay plain. The panel spec asserts the `is-selected` class on the active link (the scss fill itself is a style, not a testable DOM fact).

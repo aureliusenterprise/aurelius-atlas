@@ -6489,7 +6489,8 @@
   DD-076 (the Appearance select), DD-077 (About's one version), DD-078 (the routed
   drawer outlet), DD-079 (the review polish: lit gear, scheme band, Browser-default
   picker, <code>.label</code> headings), DD-080 (the dark navbar, the slate
-  band), DD-081 (labels wired to controls); relies on ADR 053, DD-039, DD-046, DD-047, DD-068</li>
+  band), DD-081 (labels wired to controls), DD-082 (the active locale, filled blue);
+  relies on ADR 053, DD-039, DD-046, DD-047, DD-068</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07
 this slice inherits. It is a <strong>new feature</strong>, not a port: neither the Apache Atlas
@@ -6588,7 +6589,7 @@ APIs, the facade and the panel do not change when it lands.</p>
 </tr>
 <tr>
 <td>SPL-06</td>
-<td>The Language section keeps SHC-04's semantics inside the panel: the active locale (from the document's <code>lang</code>) is marked, <code>en-US</code> and <code>nl-NL</code> are listed, choosing one is a full-page navigation to <code>/&lt;locale&gt;/&lt;current path with any locale prefix stripped&gt;</code> (DD-039). The active locale is the build that is served; the panel stores no language preference.</td>
+<td>The Language section keeps SHC-04's semantics inside the panel: the active locale (from the document's <code>lang</code>) is marked, <code>en-US</code> and <code>nl-NL</code> are listed, choosing one is a full-page navigation to <code>/&lt;locale&gt;/&lt;current path with any locale prefix stripped&gt;</code> (DD-039). The active locale is the build that is served; the panel stores no language preference. The marking is visible, not only semantic: the active link is a filled Aurelius-blue plate, the pair the footer pins (DD-082).</td>
 </tr>
 <tr>
 <td>SPL-07</td>
@@ -6677,7 +6678,8 @@ APIs, the facade and the panel do not change when it lands.</p>
   (SPL-14), the five sections render with <code>.label</code> headings (SPL-13, DD-079),
   every heading is its control's accessible name (SPL-13, DD-081),
   the Appearance select drives the theme (SPL-03, DD-076), the language links
-  compute locale hrefs (SPL-06), the zone picker shows "Browser default"
+  compute locale hrefs, the active locale is highlighted (SPL-06, DD-082),
+  the zone picker shows "Browser default"
   while unset (SPL-07, DD-079), About
   shows the build's one version (SPL-12, DD-077), dismissal navigates the
   <code>drawer</code> outlet away (SPL-14, DD-078)</li>
