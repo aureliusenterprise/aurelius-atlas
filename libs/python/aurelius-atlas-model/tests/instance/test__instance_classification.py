@@ -42,4 +42,15 @@ def test__validity_periods_are_appended() -> None:
     classification.add_validity_period(TimeBoundary(start_time="a"))
     classification.add_validity_period(TimeBoundary(end_time="b"))
 
-    assert [(p.start_time, p.end_time) for p in classification.validity_periods or []] == [("a", None), (None, "b")]
+    assert [(p.start_time, p.end_time) for p in classification.validity_periods or [] if p is not None] == [
+        ("a", None),
+        (None, "b"),
+    ]
+
+
+@pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["ENT-13"])
+def test__a_null_validity_period_is_kept() -> None:
+    """Jackson reads ``[null]`` as a list holding null; Atlas's validation skips it (EVL-07)."""
+    body = {"typeName": "PII", "entityStatus": "ACTIVE", "validityPeriods": [None, {"startTime": "x"}]}
+
+    assert AtlasClassification.model_validate(body).to_json() == body
