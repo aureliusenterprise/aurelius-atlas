@@ -2354,3 +2354,77 @@ promise. (4) Keep `.menu-label` — the inconsistency the user flagged.
 `string | null` — the same value the facade stores, making the panel a
 pure pass-through. The `.label` heads are normal-case and stronger
 ink; the panel scss comment follows. No string ids change.
+
+### DD-080. The navbar follows the scheme: the dark slate band
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** In dark mode the navbar leaves the pinned light band
+(SHM-01's "the brand colours do not follow the scheme", for the navbar
+only) for a neutral slate, #72757d — hsl(224, 4%, 47%), the faint cool
+cast of $blue. The bar's chrome composes on the slate: ink #000 (5.6:1),
+hover/active the light plate (Bulma's +8%/+12% deltas, DD-063's deltas
+inverted for a dark band), the gear's `is-active` the white plate
+(DD-063's selected pair), the `is-dark` Documentation button's
+ink/border black (its pinned #363636 rides at 2.5:1 on the slate). The
+account dropdown keeps Bulma's scheme composition. The footer stays
+pinned (SHM-07 — blue/white reads the same in either scheme). The logo
+keeps its brand size in both schemes.
+
+**Reason.** The user's review: dark mode kept a light navbar. The
+binding constraint is the logo, measured from the PNG: its wordmark is
+navy `#151487` at ~11% lightness, so every dark surface (the scheme's
+`#1f2229`, the brand blue `#0073dd`) collides with it (1.0–1.3:1) and the
+wordmark's WCAG-3:1 floor (graphics) sets the bar's ceiling at ~47%
+lightness. The slate is the darkest background that keeps the mark
+legible (3.1:1); the user chose it over the brand blue, then over the
+first bluer/lighter cut — 4% saturation, one step under the floor.
+
+**Alternatives.** Brand blue #0073dd (the footer's blue — wordmark
+3.5:1, the user declined: reads as a blue bar). A true dark band
+(#131a26) with a light logo variant — the proper dark-mode look, needs
+a design asset; the seam is this mixin's token block. Keeping the navbar
+pinned light (the status quo the user rejected). Darkening the slate
+below 47% (the wordmark falls under 3:1).
+
+**Consequences.** The navbar tokens are a brand-theme block on both of
+Bulma's dark hosts (0,2,0, out-cascading the light `.navbar` pins). The
+logo's navy/cyan palette is now load-bearing across schemes: a future
+rebrand or light-variant asset replaces this decision (supersede, don't
+edit). The light band is untouched (SHM-05 stays the light-mode chrome).
+
+### DD-081. Settings headings are the controls' accessible names
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** Every settings control's `.label` heading is its
+accessible name (the Bulma form guide's labelled control, the guide
+DD-079 adopted): Time zone and Page size are `label[for]`/`id` pairs on
+the native selects, Telemetry on the checkbox (the label moves from the
+old wrapping `.checkbox` — the checkbox is a plain control on the
+section grid), Appearance rides the ui-lib Select's own
+`label[for]`/`aria-labelledby`, and the language links — not a form
+control — are a `role="group"` labelled by their heading. About is a
+section title, not a field, and is not associated.
+
+**Reason.** The user's review of the DD-079 layout: the headings looked
+right and were wired to nothing — clicking a label did nothing, and a
+screen reader announced bare "combobox"/"checkbox". The Bulma form
+guide the headings already follow prescribes the association; DD-079
+adopted the shape and left out the link.
+
+**Alternatives.** `aria-labelledby` everywhere (works, and the
+`label[for]` is the HTML-native form the guide shows; the group and the
+Select use it where no single labelable control exists). Keeping the
+wrapping `.checkbox` label (an accessible name, and the Bulma checkbox
+idiom — rejected: the guide's stacked label/field shape is what DD-079
+just standardised on, and the checkbox label had no text to wrap).
+
+**Consequences.** Fixed ids (`settings-timezone`, …): the panel is a
+singleton route, so collision is impossible. The checkbox loses
+Bulma's `.checkbox` hover affordance (the label click replaces it). The
+panel spec asserts each pair.

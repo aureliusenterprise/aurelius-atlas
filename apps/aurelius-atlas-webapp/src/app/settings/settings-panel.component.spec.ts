@@ -122,6 +122,37 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(compiled.querySelector(".menu-label")).toBeNull();
     });
 
+    it("every control's label is associated with it (SPL-13, DD-081)", async () => {
+        // The Bulma form guide's labelled control: the heading is the
+        // control's accessible name, not a sibling paragraph. The selects
+        // and the checkbox are `label[for]`/`id` pairs; the language links
+        // are a group labelled by its heading; Appearance rides the
+        // Select's own label[for]. About is a section title, not a field.
+        const { compiled } = await renderOpen();
+        const forText = (id: string) =>
+            compiled.querySelector<HTMLLabelElement>(`label[for="${id}"]`)?.textContent?.replace(/\s+/g, " ").trim();
+
+        expect(forText("settings-timezone")).toBe("Time zone");
+        expect(compiled.querySelector("#settings-timezone")?.tagName).toBe("SELECT");
+        expect(forText("settings-page-size")).toBe("Default table page size");
+        expect(compiled.querySelector("#settings-page-size")?.tagName).toBe("SELECT");
+        expect(forText("settings-telemetry")).toBe("Usage telemetry");
+        expect(compiled.querySelector<HTMLInputElement>("#settings-telemetry")?.type).toBe("checkbox");
+
+        const group = compiled.querySelector('[role="group"]');
+        const headingId = group?.getAttribute("aria-labelledby");
+
+        expect(headingId).toBeTruthy();
+        expect(compiled.querySelector(`#${headingId}`)?.textContent?.trim()).toBe("Language");
+
+        // Appearance: the ui-lib Select's own label points at its select.
+        const appearance = compiled.querySelector<HTMLLabelElement>("label.label[for]");
+        const appearanceFor = appearance?.getAttribute("for");
+
+        expect(appearance?.textContent?.trim()).toBe("Appearance");
+        expect(compiled.querySelector(`select#${appearanceFor}`)).toBeTruthy();
+    });
+
     it("dismissal flips the drawer and navigates the outlet away (SPL-14, DD-078)", async () => {
         const { fixture, compiled } = await renderOpen();
         const router = TestBed.inject(Router);

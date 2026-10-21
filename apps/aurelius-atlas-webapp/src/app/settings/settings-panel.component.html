@@ -24,12 +24,14 @@
     </div>
 
     <div class="settings-section">
-        <!-- Language: full-page navigation, not a stored setting (SPL-06, SHC-04). -->
-        <p class="label">
+        <!-- Language: full-page navigation, not a stored setting (SPL-06, SHC-04). The
+             links are not a form control, so the group carries the heading
+             through aria-labelledby (DD-081). -->
+        <p class="label" id="settings-language-heading">
             <!-- Language. -->
             <span i18n="@@shell.settings.language">Language</span>
         </p>
-        <div class="buttons has-addons">
+        <div class="buttons has-addons" role="group" aria-labelledby="settings-language-heading">
             @for (locale of settings.locale.locales; track locale) {
                 <a
                     class="button is-small"
@@ -49,12 +51,12 @@
 
     <div class="settings-section">
         <!-- Time zone: DATE_PIPE_DEFAULT_TIMEZONE on reload, ADM-05 list (SPL-07). -->
-        <p class="label">
+        <label class="label" for="settings-timezone">
             <!-- Time zone. -->
             <span i18n="@@shell.settings.timezone">Time zone</span>
-        </p>
+        </label>
         <div class="select is-fullwidth">
-            <select [ngModel]="timezoneValue" (ngModelChange)="setTimezone($event)">
+            <select id="settings-timezone" [ngModel]="timezoneValue" (ngModelChange)="setTimezone($event)">
                 <!-- Browser default: the null choice (SPL-07). -->
                 <option [ngValue]="null" i18n="@@shell.settings.timezoneBrowser">Browser default</option>
                 @for (zone of timezones(); track zone) {
@@ -66,12 +68,16 @@
 
     <div class="settings-section">
         <!-- Default table page size (SPL-08). -->
-        <p class="label">
+        <label class="label" for="settings-page-size">
             <!-- Default table page size. -->
             <span i18n="@@shell.settings.pageSize">Default table page size</span>
-        </p>
+        </label>
         <div class="select is-fullwidth">
-            <select [ngModel]="settings.pageSize()" (ngModelChange)="settings.setPageSize($event)">
+            <select
+                id="settings-page-size"
+                [ngModel]="settings.pageSize()"
+                (ngModelChange)="settings.setPageSize($event)"
+            >
                 @for (size of pageSizes; track size) {
                     <option [ngValue]="size">{{ size }}</option>
                 }
@@ -80,14 +86,18 @@
     </div>
 
     <div class="settings-section">
-        <!-- Telemetry toggle (SPL-11, DD-070). -->
-        <p class="label">
+        <!-- Telemetry toggle (SPL-11, DD-070). The checkbox is a plain control on
+             the section grid: the label above is its accessible name (DD-081). -->
+        <label class="label" for="settings-telemetry">
             <!-- Usage telemetry. -->
             <span i18n="@@shell.settings.telemetry">Usage telemetry</span>
-        </p>
-        <label class="checkbox settings-switch">
-            <input type="checkbox" [ngModel]="settings.telemetry()" (ngModelChange)="settings.setTelemetry($event)" />
         </label>
+        <input
+            id="settings-telemetry"
+            type="checkbox"
+            [ngModel]="settings.telemetry()"
+            (ngModelChange)="settings.setTelemetry($event)"
+        />
         <p class="help">
             <!-- Turns collection of usage and performance data on or off. Turning it on takes effect after a reload. -->
             <span i18n="@@shell.settings.telemetryHint">

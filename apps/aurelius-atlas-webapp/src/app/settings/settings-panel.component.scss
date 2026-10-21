@@ -2,18 +2,21 @@
  * The settings panel's sections (SPL-03..SPL-12): the drawer body stacks
  * them; each section's heading is a Bulma `.label`, the form-controls
  * guide's field label (DD-079) — the same shape the ui-lib Select renders
- * for Appearance, so all six headings match. The panel ships no layout of
- * its own beyond this rhythm — the drawer (DD-069) carries the panel
- * chrome, Bulma carries the controls.
+ * for Appearance, so all six headings match, and every heading is the
+ * accessible name of its control (DD-081): `label[for]` on the selects
+ * and the checkbox, `aria-labelledby` on the language group; Appearance
+ * rides the Select's own `label[for]`. The checkbox is a plain control
+ * on the section grid (Bulma's guide has the label above the control).
+ * The panel ships no layout of its own beyond this rhythm — the drawer
+ * (DD-069) carries the panel chrome, Bulma carries the controls.
  */
 .settings-section + .settings-section {
     margin-top: 1.5rem;
 }
 
-.settings-switch {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+.settings-section input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
 }
 
 .settings-section .help {
