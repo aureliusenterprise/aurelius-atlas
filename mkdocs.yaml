@@ -189,6 +189,7 @@ nav:
                       - 1.6 Types REST: architecture/conversion/increments/1-6-types-rest.md
                       - 7.0 Webapp foundation (umbrella): architecture/conversion/increments/7-0-webapp-foundation.md
                       - 7.1 Webapp shell and localisation: architecture/conversion/increments/7-1-webapp-shell.md
+                      - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

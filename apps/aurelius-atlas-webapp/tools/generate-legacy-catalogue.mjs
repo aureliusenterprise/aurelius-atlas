@@ -29,6 +29,13 @@ const localeDir = join(appRoot, "src", "locale");
 const en = JSON.parse(readFileSync(join(fixtures, "en-US.json"), "utf8"));
 const nl = JSON.parse(readFileSync(join(fixtures, "nl-NL.json"), "utf8"));
 
+// The Aurelius shared-components library shipped its own dictionary (the
+// chrome strings of accordion, table shell, etc.). The `aurelius-atlas-ui`
+// components carry those strings as `i18n="@@components.*"` units (DD-047),
+// so the same keys must exist in the catalogues.
+const enComponents = JSON.parse(readFileSync(join(fixtures, "components-en-US.json"), "utf8"));
+const nlComponents = JSON.parse(readFileSync(join(fixtures, "components-nl-NL.json"), "utf8"));
+
 /**
  * Flatten a nested dictionary into `{ "a.b.c": "value" }`.
  * @param {Record<string, unknown>} obj The (sub)object to flatten.
@@ -91,9 +98,14 @@ function encodeLineEndSpaces(text) {
         .join("\n");
 }
 
-const enFlat = flatten(en, "", {});
-const nlFlat = flatten(nl, "", {});
+const enFlat = { ...flatten(en, "", {}), ...flatten(enComponents, "", {}) };
+const nlFlat = { ...flatten(nl, "", {}), ...flatten(nlComponents, "", {}) };
 const keys = Object.keys(enFlat).sort();
+const missingInNl = Object.keys(nlFlat).filter((k) => !(k in enFlat));
+if (missingInNl.length > 0) {
+    console.error(`ERROR: ${missingInNl.length} keys exist only in nl-NL:`, missingInNl.slice(0, 10));
+    process.exit(1);
+}
 
 /**
  * Build a full XLIFF document for the given locale.

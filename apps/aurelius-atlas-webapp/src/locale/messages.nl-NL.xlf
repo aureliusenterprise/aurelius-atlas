@@ -147,6 +147,46 @@
         <target>Collecties</target>
         <note priority="1" from="description">Aurelius dictionary key: collections</note>
       </trans-unit>
+      <trans-unit id="components.accordion.toggleContent" datatype="html">
+        <source>Toggle content</source>
+        <target>Inhoud weergeven</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.accordion.toggleContent</note>
+      </trans-unit>
+      <trans-unit id="components.fuzzySearchInput.searchPlaceholder" datatype="html">
+        <source>Search...</source>
+        <target>Zoeken...</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.fuzzySearchInput.searchPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="components.modal.close" datatype="html">
+        <source>Close</source>
+        <target>Sluiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.modal.close</note>
+      </trans-unit>
+      <trans-unit id="components.quickview.pinTooltip" datatype="html">
+        <source>Pin to side</source>
+        <target>Vastmaken aan zijkant</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.quickview.pinTooltip</note>
+      </trans-unit>
+      <trans-unit id="components.quickview.unpinTooltip" datatype="html">
+        <source>Unpin from side</source>
+        <target>Losmaken van zijkant</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.quickview.unpinTooltip</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTableShell.next" datatype="html">
+        <source>Next page</source>
+        <target>Volgende pagina</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTableShell.next</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTableShell.noData" datatype="html">
+        <source>No data available</source>
+        <target>Geen gegevens beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTableShell.noData</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTableShell.previous" datatype="html">
+        <source>Previous</source>
+        <target>Vorige</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTableShell.previous</note>
+      </trans-unit>
       <trans-unit id="creator" datatype="html">
         <source>Creator</source>
         <target>Maker</target>

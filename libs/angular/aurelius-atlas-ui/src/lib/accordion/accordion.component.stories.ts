@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/angular";
+import { expect, userEvent, within } from "storybook/test";
 import { Accordion } from "./accordion.component";
 
 const meta: Meta<Accordion> = {
@@ -28,6 +29,11 @@ export const Primary: Story = {
         props: args,
         template: primaryTemplate,
     }),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await userEvent.click(canvas.getByRole("button", { name: "Toggle content" }));
+        await expect(canvas.queryByText("Accordion Content")).toBeNull();
+    },
 };
 
 export const Collapsed: Story = {
@@ -38,6 +44,12 @@ export const Collapsed: Story = {
         props: args,
         template: primaryTemplate,
     }),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.queryByText("Accordion Content")).toBeNull();
+        await userEvent.click(canvas.getByRole("button", { name: "Toggle content" }));
+        await expect(canvas.getByText("Accordion Content")).toBeInTheDocument();
+    },
 };
 
 export const Empty: Story = {
