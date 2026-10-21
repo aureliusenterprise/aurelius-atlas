@@ -974,9 +974,10 @@ apart; Java `Float` and `Double` arise from Atlas's own code and from Atlas's te
 **Alternatives.** Wrapper classes for every Java number type: every value would need wrapping on reading
 and unwrapping on writing, for distinctions JSON cannot express.
 
-**Consequences.** A `float` value written and read back is the same 32-bit value. Where a Java class cannot
-be told apart in Python (an `Integer` and a `Long` of equal value), the types give the same result, because
-Java's range checks give the same result for both.
+**Consequences.** A `float` value written and read back is the same 32-bit value. An `Integer` and a `Long`
+of equal value cannot be told apart, and give the same result in every type. A `BigInteger` within 64 bits
+cannot be told apart from a `Long` either; `bigdecimal` treats them differently (`1` against `1.0`), but JSON
+never yields one, because Jackson reads such integers as `Integer` or `Long`.
 
 ### DD-041. The type system is one module per Java type class too
 

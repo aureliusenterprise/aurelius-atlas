@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** DD-039, DD-040, DD-041, DV-11; relies on DD-024, DD-025, DD-037, DD-038
+- **Records:** DD-039, DD-040, DD-041, DV-11, DV-12; relies on DD-024, DD-025, DD-037, DD-038
 
 Increment 2.1 is split in three, each within the size limit of ADR 051: 2.1a ported the entity models,
 2.1b, this specification, ports the value side of the built-in, enum, array and map types, and 2.1c
@@ -20,6 +20,7 @@ In `aurelius-atlas-typesystem`, one module per Java type class (DD-041):
 | `builtin/object_id_type`               | `AtlasBuiltInTypes.AtlasObjectIdType`                                                                     |
 | `enum_type`, `array_type`, `map_type`  | `AtlasEnumType`, `AtlasArrayType`, `AtlasMapType`                                                         |
 | `java`                                 | the Java number and text conversions the types rely on                                                    |
+| `values`                               | parsing a JSON string, and Java's `equals` of the values arrays and maps hold                             |
 
 `AtlasType`, `ObjectIdType`, `EnumType`, `ArrayType` and `MapType` move out of `types.py`, which re-exports
 them. In `aurelius-atlas-model`: the Atlas JSON codec (`codec`, DD-039), Java's map constructors of
@@ -80,6 +81,9 @@ Apache Atlas `release-2.4.0`:
 DV-11: a `float` attribute given a decimal or integer beyond the `double` range makes Atlas fail with
 `NumberFormatException` (`new BigDecimal(Infinity)` in `AtlasFloatType.isValidRange`), an internal error;
 Aurelius Atlas treats the value as invalid.
+
+DV-12: a `date` value before year 1 or after year 9999 is a valid Java `Date`; Python's `datetime` cannot hold
+it, so Aurelius Atlas treats it as invalid.
 
 ## Acceptance
 
