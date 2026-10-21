@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, userEvent } from "storybook/test";
-import { faProjectDiagram } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
+import { faProjectDiagram, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
 
+import { Breadcrumb, Breadcrumbs } from "../breadcrumbs/breadcrumbs.component";
 import { EntityCard } from "./entity-card.component";
 
 const meta: Meta<EntityCard> = {
@@ -98,4 +100,82 @@ export const Loading: Story = {
         await expect(canvas.getByText("Loading Sales Domain...")).toBeVisible();
     },
     render: host,
+};
+
+/**
+ * The 7.6 composition: a search-result card whose body is a breadcrumb
+ * trail, a description, and the owner/steward row — the anatomy of the
+ * legacy `entity-details-card` (each search result renders this card),
+ * assembled from the lib's dumb pieces. The icon classes come from the
+ * caller's `iconsByType` (app meta).
+ */
+export const SearchResult: Story = {
+    args: {
+        guid: "g2",
+        name: "hourly data",
+        typeName: "m4i_dataset",
+        typeAlias: "Data Entity",
+        typeIcon: faTable,
+        typeIconClass: "business",
+        showQuality: false,
+    },
+    play: async ({ canvas, canvasElement }) => {
+        clicked.length = 0;
+        await expect(canvas.getByRole("navigation", { name: "breadcrumbs" })).toBeVisible();
+        await expect(canvas.getByText("This data entity yields the hourly statistics.")).toBeVisible();
+        await expect(canvas.getByText("Jane Martens")).toBeVisible();
+
+        // The title and the trail's last crumb share the name (as in the
+        // demo), so pick the card's own anchor out of the two.
+        const titleLink = canvasElement.querySelector<HTMLElement>(".title.is-4 a");
+        if (!titleLink) throw new Error("the card title link is missing");
+        await userEvent.click(titleLink);
+        await expect(clicked).toEqual(["g2"]);
+    },
+    render: (args) => ({
+        moduleMetadata: { imports: [Breadcrumbs, FontAwesomeModule] },
+        props: {
+            ...args,
+            faUser,
+            trail: [
+                {
+                    guid: "g1",
+                    name: "plant data",
+                    typeName: "Data Domain",
+                    icon: faProjectDiagram,
+                    iconClass: "business",
+                },
+                { guid: "g2", name: "hourly data", typeName: "Data Entity", icon: faTable, iconClass: "business" },
+            ] as Breadcrumb[],
+            onClick: (guid: string) => clicked.push(guid),
+            onCrumb: (guid: string) => clicked.push(guid),
+        },
+        template: `
+<aurelius-atlas-ui-entity-card
+    [guid]="guid"
+    [name]="name"
+    [typeName]="typeName"
+    [typeAlias]="typeAlias"
+    [typeIcon]="typeIcon"
+    [typeIconClass]="typeIconClass"
+    [showQuality]="showQuality"
+    (entityClicked)="onClick($event)"
+>
+    <div card-content>
+        <div class="block">
+            <aurelius-atlas-ui-breadcrumbs
+                [items]="trail"
+                [activeGuid]="guid"
+                (itemClicked)="onCrumb($event)"
+            ></aurelius-atlas-ui-breadcrumbs>
+        </div>
+        <p class="block">This data entity yields the hourly statistics.</p>
+        <div class="block">
+            <p><span class="icon has-text-warning"><fa-icon [icon]="faUser"></fa-icon></span> Data Owner(s) : <a>Jane Martens</a></p>
+            <p><span class="icon has-text-warning"><fa-icon [icon]="faUser"></fa-icon></span> Data Steward(s) : <a>Iris Jacobs</a></p>
+        </div>
+    </div>
+</aurelius-atlas-ui-entity-card>
+`,
+    }),
 };
