@@ -46,6 +46,17 @@ describe("routes", () => {
         await expect(loadComponent()).resolves.toBe(SettingsPanel);
     });
 
+    it("routes the alerts panel into the drawer aux outlet (ALR-01)", async () => {
+        // The one named outlet carries both drawers (ALR-01): the bell
+        // navigates to `(drawer:alerts)`, and the outlet swaps the panels.
+        const alerts = routes[0].children?.find((route) => route.path === "alerts");
+        expect(alerts?.outlet).toBe("drawer");
+
+        const loadComponent = alerts?.loadComponent as unknown as () => Promise<unknown>;
+        const { AlertsPanel } = await import("./alerts/alerts-panel.component");
+        await expect(loadComponent()).resolves.toBe(AlertsPanel);
+    });
+
     it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-043)", () => {
         expect(routes[0].children?.at(-1)).toMatchObject({
             path: "**",

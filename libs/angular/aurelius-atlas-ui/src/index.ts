@@ -1,4 +1,7 @@
 export * from "./lib/accordion/accordion.component";
+export * from "./lib/alert-list/alert-group";
+export * from "./lib/alert-list/alert-list.component";
+export * from "./lib/badge/badge.component";
 export * from "./lib/breadcrumbs/breadcrumbs.component";
 export * from "./lib/card/card.component";
 export * from "./lib/dark-mode/dark-mode.component";

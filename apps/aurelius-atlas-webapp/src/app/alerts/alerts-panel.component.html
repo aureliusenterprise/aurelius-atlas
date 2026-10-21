@@ -1,0 +1,22 @@
+<!--
+  The alerts panel body (ALR-01, ALR-06, ALR-07), carried by the ui-lib
+  drawer. The feed is the ui-lib AlertList, wired to the store: the rows
+  come from the service, dismissal writes through it. The panel stores
+  nothing (the settings panel's shape, SPL-14).
+
+  i18n ids are the shell.alerts.* dictionary paths (DD-039 bridge,
+  SHC-07 pattern). Strings bound into component inputs live in TypeScript
+  as $localize (BRW-02), so no markers are needed here.
+-->
+<aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel" (cancelRequested)="close()">
+    <aurelius-atlas-ui-alert-list
+        [alerts]="alerts.alerts()"
+        [ariaLabel]="feedLabel"
+        [emptyLabel]="emptyLabel"
+        [dismissLabel]="dismissLabel"
+        [clearLabel]="clearLabel"
+        [timesPrefix]="timesPrefix"
+        (dismiss)="alerts.dismiss($event)"
+        (clearAll)="alerts.clearAll()"
+    ></aurelius-atlas-ui-alert-list>
+</aurelius-atlas-ui-drawer>

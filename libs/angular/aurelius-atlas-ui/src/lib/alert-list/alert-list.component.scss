@@ -1,0 +1,23 @@
+/*
+ * The alert feed (ALR-07): the rows are Bulma notifications, so the
+ * colour, padding, and the delete button come from Bulma — this sheet
+ * carries only the rhythm between the rows and the meta line. Bulma's
+ * notifications stack with a 1.25rem margin-bottom each; the clear
+ * button sits under them with the same rhythm.
+ */
+.aurelius-alert-message {
+    // Notifications default their body to the inherited text; the
+    // message is the row's body — no override beyond wrapping.
+    overflow-wrap: anywhere;
+}
+
+.aurelius-alert-meta {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.aurelius-alert-clear {
+    margin-top: 0.25rem;
+}

@@ -1,0 +1,9 @@
+/*
+ * The bell's ring (ALR-02a): the swing's pivot. The animation is a Web
+ * Animations keyframe list on the icon (header.component.ts); the pivot
+ * is the icon's top centre, so the bell hangs from its handle and swings
+ * like one.
+ */
+.aurelius-bell-icon {
+    transform-origin: top center;
+}
