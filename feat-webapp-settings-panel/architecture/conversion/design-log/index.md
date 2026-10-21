@@ -1070,3 +1070,59 @@ The brand theme (DD-059/062) pins the light ink chain in `:root` — body `#4a4a
 **Alternatives.** `@angular/animations`: a new dependency for the lib's peer set and a second styling system, for two translate keyframes. Enter only (keep `@if (active())`): simplest, and the snap-out reads as a bug next to the slide-in. Hiding with `visibility` after a timer: timers instead of the animation's own event, to race on every speed. Transition on a class toggle: keyframes were needed because the enter plays on element creation, where a transition has no start state.
 
 **Consequences.** Focus restoration fires when `active` flips, so it lands before the slide-out finishes — the panel animates out behind the focus move; acceptable, named. The drawer spec drives `animationend` manually (jsdom runs no CSS animations, and ships no `AnimationEvent` constructor). Storybook's polling `expect` absorbs the 200ms close in the `play()` functions. Keyframe names are prefixed `aurelius-drawer-`; the exit's `animationend` is matched by containment, because Angular's emulated encapsulation decorates keyframe names (computed `_ngcontent-ng-…_aurelius-drawer-out`), not by prefix.
+
+### DD-075. The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The drawer's head/body padding, scrim colour and z-band keep the Bulma token names for the override seam, and add explicit fallbacks: `var(--bulma-modal-card-head-padding, 2rem)`, a scrim spelled from the root-scoped scheme ramp at Bulma's 0.86 alpha, and the existing z fallback. The drawer ships no padding of its own beyond this.
+
+**Reason.** The user asked for edge padding; measuring the live drawer showed the real bug: Bulma 1 emits `--bulma-modal-*` on the `.modal`/`.modal-card-*` selectors, not on `:root` — verified in `node_modules/bulma/css/bulma.css` — so outside a modal the tokens are undefined: bare `var(...)` collapsed the head/body padding to 0 and painted the scrim transparent. A plain literal padding would fix the symptom; the `var(name, literal)` form keeps the brand's override seam (open the drawer's tokens to the brand ramp later) and documents the scope trap.
+
+**Alternatives.** Import Bulma's modal layer in the brand (it drags the whole component's CSS for three tokens). Define the tokens on `:root` in the brand (duplicates Bulma's values, and a brand-wide change to fix one component). Plain literals (loses the seam).
+
+**Consequences.** The drawer's computed padding is 2rem; the scrim is Bulma's modal-background recipe, dark-ramp aware (DD-068). The fallbacks drift if a future Bulma changes the modal defaults — named, low-risk, the component owns its layer (DD-069).
+
+### DD-076. The Appearance picker is the ui-lib Select; the Select gains `searchVisible`
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The settings panel's Appearance section is the ui-lib `Select` with `searchVisible` off — the section heading is the control's own label, the rows are the three modes (Auto first, selected). The Select gains the `searchVisible` input (default on: the Aurelius modal opener stays for repository pickers); off, the addons layout collapses with the button and the field is a plain labelled dropdown.
+
+**Reason.** The user asked for the component library's select. The Select is the lib's only select, ported from Aurelius with a search button welded in; an input is the minimal honest generalisation — the button is the legacy `activateSearchModal` affordance, not part of "pick one of three themes".
+
+**Alternatives.** Keep the radios (rejected by the user). Native Bulma select markup, as the Time zone section uses (duplicates the lib's control, and loses the UIC-14 label pairing). Fork a plain select component (a second select in the lib, no).
+
+**Consequences.** The panel's `.select select` list gains a first element (specs index it). The Select gains a `NoSearch` story. A selected row can never be cleared — the placeholder is `hidden` and `setTheme` ignores null; the panel always has a theme.
+
+### DD-077. About shows one version; the server is not fetched
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The About section shows the app name and the app version from the runtime config, and nothing else. The `getVersion` fetch and the server line are removed, with them the `shell.settings.server` and `shell.settings.serverUnavailable` strings (catalogues: 533 units).
+
+**Reason.** The user set the rule: app and server always carry the same number — one Nx release cuts the workspace, and the image labels derive from it — so the server line can only echo the app version, and a version the panel has to fetch can only be *shown* to differ while the fetch is in flight. Removing the row removes the question.
+
+**Alternatives.** Show the fetched server version (states a known-true equality, and adds an ADM-01 call per open). Show "app (server: same)" (noise). Keep the fetch, show it on mismatch only (two code paths for a state the release strategy rules out).
+
+**Consequences.** The panel's construction fetch is `getSession` only (SPL-07 keeps its degradation test). ADM-01's endpoint stands on the server; the panel is no longer its consumer, and DV-03's parity scope does not change.
+
+### DD-078. The settings panel is a routed overlay in the `drawer` aux outlet
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The `drawer` named outlet at the app root carries routed overlays (SPL-14). The settings panel is a route (`(drawer:settings)`): the header gear is a `routerLink` to it — with the panel open the link targets the URL it is on, and the router cancels that duplicate navigation, so the gear is a no-op; dismissal (backdrop, close, Escape) navigates the segment away. The component opens at construction (`active` starts true) and loads its chrome data then. Future drawers — an alerts drawer is named — get their own outlet segments and compose in the URL: `(settings:…)(alerts:…)`.
+
+**Reason.** Switching language is a full-page navigation into the locale tree (DD-039), and the user wants the reload to land on the same page with the settings open. The URL is the only state that survives a full reload, and named outlets are Angular's mechanism for putting an overlay in the URL — the segment rides `localeHref()` untouched, so the requirement falls out. (The term: auxiliary routes.)
+
+**Alternatives.** A query param (`?settings=1`) — works, and invents a parallel navigation system outside the router; the outlet form is the router-native one, composable, and the Angular idiom. localStorage "open" flag — reloads open, survives everything, unbookmarkable and sticky. A service + effect — doesn't survive the reload, which is the requirement.
+
+**Consequences.** Closing destroys the panel, so the drawer's exit animation (DD-074) is not awaited there — accepted, named; the DD-074 lifecycle remains for the drawer's own API (`close()` on a non-routed drawer), and the enter animation plays on open, including after the locale reload. Dismissal is destructive (no panel state to keep — the facade owns it, DD-072). Deep links work: visiting `/search/browse(drawer:settings)` opens the panel on that page. The `serverUnavailable` fallback and the `open()` API are gone; the panel spec drives the component directly (as the routed-component test pattern prescribes).

@@ -4445,6 +4445,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-075-the-drawer-styles-itself-with-fallbacks-bulmas-modal-tokens-are-modal-scoped" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-075. The drawer styles itself with fallbacks; Bulma's modal tokens are <code>.modal</code>-scoped
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-076-the-appearance-picker-is-the-ui-lib-select-the-select-gains-searchvisible" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-076. The Appearance picker is the ui-lib Select; the Select gains <code>searchVisible</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-077-about-shows-one-version-the-server-is-not-fetched" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-077. About shows one version; the server is not fetched
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-078-the-settings-panel-is-a-routed-overlay-in-the-drawer-aux-outlet" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-078. The settings panel is a routed overlay in the <code>drawer</code> aux outlet
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7846,6 +7890,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-075-the-drawer-styles-itself-with-fallbacks-bulmas-modal-tokens-are-modal-scoped" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-075. The drawer styles itself with fallbacks; Bulma's modal tokens are <code>.modal</code>-scoped
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-076-the-appearance-picker-is-the-ui-lib-select-the-select-gains-searchvisible" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-076. The Appearance picker is the ui-lib Select; the Select gains <code>searchVisible</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-077-about-shows-one-version-the-server-is-not-fetched" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-077. About shows one version; the server is not fetched
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-078-the-settings-panel-is-a-routed-overlay-in-the-drawer-aux-outlet" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-078. The settings panel is a routed overlay in the <code>drawer</code> aux outlet
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10046,6 +10134,119 @@ functions. Keyframe names are prefixed <code>aurelius-drawer-</code>; the exit's
 <code>animationend</code> is matched by containment, because Angular's emulated
 encapsulation decorates keyframe names (computed
 <code>_ngcontent-ng-…_aurelius-drawer-out</code>), not by prefix.</p>
+<h3 id="dd-075-the-drawer-styles-itself-with-fallbacks-bulmas-modal-tokens-are-modal-scoped">DD-075. The drawer styles itself with fallbacks; Bulma's modal tokens are <code>.modal</code>-scoped<a class="headerlink" href="#dd-075-the-drawer-styles-itself-with-fallbacks-bulmas-modal-tokens-are-modal-scoped" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.14</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The drawer's head/body padding, scrim colour and z-band keep
+the Bulma token names for the override seam, and add explicit fallbacks:
+<code>var(--bulma-modal-card-head-padding, 2rem)</code>, a scrim spelled from the
+root-scoped scheme ramp at Bulma's 0.86 alpha, and the existing z fallback.
+The drawer ships no padding of its own beyond this.</p>
+<p><strong>Reason.</strong> The user asked for edge padding; measuring the live drawer
+showed the real bug: Bulma 1 emits <code>--bulma-modal-*</code> on the
+<code>.modal</code>/<code>.modal-card-*</code> selectors, not on <code>:root</code> — verified in
+<code>node_modules/bulma/css/bulma.css</code> — so outside a modal the tokens are
+undefined: bare <code>var(...)</code> collapsed the head/body padding to 0 and
+painted the scrim transparent. A plain literal padding would fix the
+symptom; the <code>var(name, literal)</code> form keeps the brand's override seam
+(open the drawer's tokens to the brand ramp later) and documents the
+scope trap.</p>
+<p><strong>Alternatives.</strong> Import Bulma's modal layer in the brand (it drags the
+whole component's CSS for three tokens). Define the tokens on <code>:root</code>
+in the brand (duplicates Bulma's values, and a brand-wide change to fix
+one component). Plain literals (loses the seam).</p>
+<p><strong>Consequences.</strong> The drawer's computed padding is 2rem; the scrim is
+Bulma's modal-background recipe, dark-ramp aware (DD-068). The fallbacks
+drift if a future Bulma changes the modal defaults — named, low-risk,
+the component owns its layer (DD-069).</p>
+<h3 id="dd-076-the-appearance-picker-is-the-ui-lib-select-the-select-gains-searchvisible">DD-076. The Appearance picker is the ui-lib Select; the Select gains <code>searchVisible</code><a class="headerlink" href="#dd-076-the-appearance-picker-is-the-ui-lib-select-the-select-gains-searchvisible" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.14</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The settings panel's Appearance section is the ui-lib
+<code>Select</code> with <code>searchVisible</code> off — the section heading is the control's
+own label, the rows are the three modes (Auto first, selected). The
+Select gains the <code>searchVisible</code> input (default on: the Aurelius modal
+opener stays for repository pickers); off, the addons layout collapses
+with the button and the field is a plain labelled dropdown.</p>
+<p><strong>Reason.</strong> The user asked for the component library's select. The
+Select is the lib's only select, ported from Aurelius with a search
+button welded in; an input is the minimal honest generalisation — the
+button is the legacy <code>activateSearchModal</code> affordance, not part of
+"pick one of three themes".</p>
+<p><strong>Alternatives.</strong> Keep the radios (rejected by the user). Native Bulma
+select markup, as the Time zone section uses (duplicates the lib's
+control, and loses the UIC-14 label pairing). Fork a plain select
+component (a second select in the lib, no).</p>
+<p><strong>Consequences.</strong> The panel's <code>.select select</code> list gains a first
+element (specs index it). The Select gains a <code>NoSearch</code> story. A
+selected row can never be cleared — the placeholder is <code>hidden</code> and
+<code>setTheme</code> ignores null; the panel always has a theme.</p>
+<h3 id="dd-077-about-shows-one-version-the-server-is-not-fetched">DD-077. About shows one version; the server is not fetched<a class="headerlink" href="#dd-077-about-shows-one-version-the-server-is-not-fetched" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.14</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The About section shows the app name and the app version
+from the runtime config, and nothing else. The <code>getVersion</code> fetch and the
+server line are removed, with them the <code>shell.settings.server</code> and
+<code>shell.settings.serverUnavailable</code> strings (catalogues: 533 units).</p>
+<p><strong>Reason.</strong> The user set the rule: app and server always carry the same
+number — one Nx release cuts the workspace, and the image labels derive
+from it — so the server line can only echo the app version, and a
+version the panel has to fetch can only be <em>shown</em> to differ while the
+fetch is in flight. Removing the row removes the question.</p>
+<p><strong>Alternatives.</strong> Show the fetched server version (states a known-true
+equality, and adds an ADM-01 call per open). Show "app (server: same)"
+(noise). Keep the fetch, show it on mismatch only (two code paths for a
+state the release strategy rules out).</p>
+<p><strong>Consequences.</strong> The panel's construction fetch is <code>getSession</code> only
+(SPL-07 keeps its degradation test). ADM-01's endpoint stands on the
+server; the panel is no longer its consumer, and DV-03's parity scope
+does not change.</p>
+<h3 id="dd-078-the-settings-panel-is-a-routed-overlay-in-the-drawer-aux-outlet">DD-078. The settings panel is a routed overlay in the <code>drawer</code> aux outlet<a class="headerlink" href="#dd-078-the-settings-panel-is-a-routed-overlay-in-the-drawer-aux-outlet" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.14</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The <code>drawer</code> named outlet at the app root carries routed
+overlays (SPL-14). The settings panel is a route (<code>(drawer:settings)</code>):
+the header gear is a <code>routerLink</code> to it — with the panel open the link
+targets the URL it is on, and the router cancels that duplicate
+navigation, so the gear is a no-op; dismissal (backdrop, close, Escape)
+navigates the segment away. The component opens at construction
+(<code>active</code> starts true) and loads its chrome data then. Future drawers —
+an alerts drawer is named — get their own outlet segments and compose in
+the URL: <code>(settings:…)(alerts:…)</code>.</p>
+<p><strong>Reason.</strong> Switching language is a full-page navigation into the locale
+tree (DD-039), and the user wants the reload to land on the same page
+with the settings open. The URL is the only state that survives a full
+reload, and named outlets are Angular's mechanism for putting an
+overlay in the URL — the segment rides <code>localeHref()</code> untouched, so the
+requirement falls out. (The term: auxiliary routes.)</p>
+<p><strong>Alternatives.</strong> A query param (<code>?settings=1</code>) — works, and invents a
+parallel navigation system outside the router; the outlet form is the
+router-native one, composable, and the Angular idiom. localStorage
+"open" flag — reloads open, survives everything, unbookmarkable and
+sticky. A service + effect — doesn't survive the reload, which is the
+requirement.</p>
+<p><strong>Consequences.</strong> Closing destroys the panel, so the drawer's exit
+animation (DD-074) is not awaited there — accepted, named; the DD-074
+lifecycle remains for the drawer's own API (<code>close()</code> on a non-routed
+drawer), and the enter animation plays on open, including after the
+locale reload. Dismissal is destructive (no panel state to keep — the
+facade owns it, DD-072). Deep links work: visiting
+<code>/search/browse(drawer:settings)</code> opens the panel on that page. The
+<code>serverUnavailable</code> fallback and the <code>open()</code> API are gone; the panel
+spec drives the component directly (as the routed-component test
+pattern prescribes).</p>
 
 
 
