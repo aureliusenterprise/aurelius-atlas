@@ -1846,3 +1846,51 @@ mismatch the review flagged.
 as the demo. The media block is the brand's first responsive emission;
 the chevron rule documents the upstream regression it mirrors. Pinned by
 `test__burger_menu_matches_the_legacy_mobile_chrome`.
+
+### DD-066. The entity card emits `entityClicked`; the caller navigates
+
+The ported `entity-card` (7.13) emits `entityClicked(guid)` on a title click and
+does not navigate. The legacy `DetailsCardComponent` injected `Router` and, on a
+title click with no parent listener attached, navigated to
+`search/details/{guid}` itself — its template probed `entityClicked.observers`
+to choose emit-or-navigate.
+
+**Reason.** The ui lib is dumb by workspace rule (ADR 053, user rule: components
+are dumb and live in `aurelius-atlas-ui`); an injected `Router` inside a lib
+component re-creates the coupling the port exists to remove, and the
+`observers.length` probe is a side-channel, not an API. Emitting always and
+letting the app route is the DD-046 pattern (`SearchField` emits, the caller
+filters).
+
+**Alternatives.** Port the probe (emit-if-observed, else navigate): keeps the
+legacy one-liner call sites, at the cost of a Router in the lib and behaviour
+that changes with the parent's subscription list. A `routerLink` on the title
+anchor: the details route belongs to 7.6, the lib must not know its path.
+
+**Consequences.** 7.6 wires `entityClicked` to the router. The card is
+testable and storyable with zero app services.
+
+### DD-067. The select is one field with a `searchRequested` output
+
+The ported `select` (7.13) is the Bulma select field plus a search button that
+emits `searchRequested`. The legacy `SelectComponent` embedded a
+`SearchModalComponent` (a repository-fed `sortable-table-shell` inside a modal,
+selected row confirmed into the field) and sat on the reactive-form
+`AbstractControlShell` base.
+
+**Reason.** The modal's data comes from `@models4insight/repository` — exactly
+the API coupling 7.2 set aside for the app slices (7.7 owns the editor
+anatomy). The presentation half (field, options, null/no-data messages,
+timestamp display, required help) is pure, so it ports now; the modal half
+arrives as app wiring listening to `searchRequested`. The reactive form
+dissolves into `value = model()` exactly as DD-046 did for `SearchField`, and
+the `compareWith` default becomes strict equality — the lodash `isEqual` deep
+compare was a legacy default the Aurelius callers never relied on.
+
+**Alternatives.** Port the whole component including the modal: drags the
+repository and `task-manager` into the lib. Defer the select entirely to 7.7,
+per 7.2's table: the details screens want a pure select today, and the
+presentation/data split lets 7.7 wire only the modal.
+
+**Consequences.** 7.7 composes select + modal; the lib stays pure. Option
+identity is strict reference equality — callers pass stable objects.
