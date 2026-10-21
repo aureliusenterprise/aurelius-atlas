@@ -26,3 +26,16 @@ def test__object_ids_are_equal_by_guid_when_either_has_one() -> None:
     assert AtlasObjectId(type_name="a") != AtlasObjectId(type_name="b")
     assert by_guid != AtlasRelatedObjectId(guid="g")
     assert by_guid != "g"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_model.instance.object_id.AtlasObjectId.from_map",
+    "aurelius_atlas_model.instance.object_id.AtlasObjectId.read_map",
+    rules=["VAL-14"],
+)
+def test__an_object_id_made_from_a_map_reads_three_keys() -> None:
+    """``AtlasObjectId(Map)``: ``guid`` and ``typeName`` as text, ``uniqueAttributes`` only when it is a map."""
+    read = AtlasObjectId.from_map({"guid": 5, "typeName": "t", "uniqueAttributes": {"q": "n"}, "other": 1})
+
+    assert (read.guid, read.type_name, read.unique_attributes) == ("5", "t", {"q": "n"})
+    assert AtlasObjectId.from_map({"uniqueAttributes": ["q"]}).to_json() == {}

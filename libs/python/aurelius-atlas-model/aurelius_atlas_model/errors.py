@@ -4,8 +4,11 @@ Every layer raises ``AtlasError``; the server answers it with Atlas's error body
 ``org.apache.atlas.AtlasErrorCode`` of Apache Atlas 2.4.0 as an increment first raises them.
 """
 
+import math
 import re
 from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
+from decimal import Decimal
 from enum import Enum
 
 _PLACEHOLDER = re.compile(r"\{(\d+)\}")
@@ -208,8 +211,54 @@ class AtlasErrorCode(Enum):
         return message_format(self.template, *params)
 
 
+def java_double_string(value: float) -> str:
+    """``Double.toString``: plain from 10^-3 to 10^7, else ``d.dddE<n>``; ``NaN`` and ``Infinity`` (VAL-09).
+
+    The digits are Python's shortest ones, which are Java's for all but a few subnormal values.
+    """
+    if math.isnan(value):
+        return "NaN"
+    if math.isinf(value):
+        return "Infinity" if value > 0 else "-Infinity"
+    if value == 0:
+        return "-0.0" if math.copysign(1.0, value) < 0 else "0.0"
+    if _PLAIN_DOUBLE_MIN <= abs(value) < _PLAIN_DOUBLE_MAX:
+        text = repr(value)
+        return text if "." in text else f"{text}.0"
+    _, digits, exponent = Decimal(repr(abs(value))).normalize().as_tuple()
+    text = "".join(map(str, digits))
+    power = len(text) - 1 + int(exponent)
+    sign = "-" if value < 0 else ""
+    return f"{sign}{text[0]}.{text[1:] or '0'}E{power}"
+
+
+_PLAIN_DOUBLE_MIN = 1e-3
+_PLAIN_DOUBLE_MAX = 1e7
+
+
+def java_date_string(value: datetime) -> str:
+    """``Date.toString`` in UTC: ``Thu Jan 01 00:00:00 UTC 1970`` (VAL-09)."""
+    return value.astimezone(UTC).strftime("%a %b %d %H:%M:%S UTC %Y")
+
+
 def java_string(value: object) -> str:
-    """``String.valueOf``: ``null``, ``true``, ``[a, b]`` for collections and ``{k=v}`` for maps (THY-13)."""
+    """``String.valueOf``: ``null``, ``true``, ``[a, b]`` for collections and ``{k=v}`` for maps (THY-13).
+
+    A double is written as ``Double.toString``, a decimal as ``BigDecimal.toString`` and a date as
+    ``Date.toString`` (VAL-09).
+    """
+    scalar = _java_scalar(value)
+    if scalar is not None:
+        return scalar
+    if isinstance(value, Mapping):
+        return "{" + ", ".join(f"{java_string(key)}={java_string(item)}" for key, item in value.items()) + "}"
+    if isinstance(value, Iterable):
+        return "[" + ", ".join(java_string(item) for item in value) + "]"
+    return str(value)
+
+
+def _java_scalar(value: object) -> str | None:
+    """Java's text of a null, boolean, string, double or date; None for anything else."""
     match value:
         case None:
             return "null"
@@ -217,12 +266,12 @@ def java_string(value: object) -> str:
             return "true" if value else "false"
         case str():
             return value
-        case Mapping():
-            return "{" + ", ".join(f"{java_string(key)}={java_string(item)}" for key, item in value.items()) + "}"
-        case Iterable():
-            return "[" + ", ".join(java_string(item) for item in value) + "]"
+        case float():
+            return java_double_string(value)
+        case datetime():
+            return java_date_string(value)
         case _:
-            return str(value)
+            return None
 
 
 def message_format(template: str, *params: object) -> str:

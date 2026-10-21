@@ -1,9 +1,11 @@
 """``AtlasRelatedObjectId``: a related entity as a relationship attribute shows it (ENT-12)."""
 
+from collections.abc import Mapping
 from typing import Any
 
 from pydantic import model_validator
 
+from aurelius_atlas_model.errors import java_string
 from aurelius_atlas_model.instance.entity_status import EntityStatus
 from aurelius_atlas_model.instance.object_id import AtlasObjectId
 from aurelius_atlas_model.instance.relationship_status import RelationshipStatus
@@ -45,6 +47,28 @@ class AtlasRelatedObjectId(AtlasObjectId):
             return data
         kept = {key: value for key, value in data.items() if key not in _RELATIONSHIP_TYPE}
         return kept | {"relationship_type": relationship_type}  # by name: assignment validates by name too
+
+    def read_map(self, values: Mapping[str, Any]) -> None:
+        """``AtlasRelatedObjectId(Map)``: the object id's fields, then the relationship's (VAL-14).
+
+        In Java's order: the GUID, the attributes as a struct (which set the type), the type and the status.
+
+        Raises:
+            ValueError: ``relationshipStatus`` is not a relationship status, as Java's ``valueOf`` fails.
+        """
+        super().read_map(values)
+        guid, attributes = values.get("relationshipGuid"), values.get("relationshipAttributes")
+        type_, status = values.get("relationshipType"), values.get("relationshipStatus")
+        if guid is not None:
+            self.relationship_guid = java_string(guid)
+        if isinstance(attributes, Mapping):
+            self.set_relationship_attributes(AtlasStruct.from_map(attributes))
+        elif isinstance(attributes, AtlasStruct):
+            self.set_relationship_attributes(attributes.model_copy(deep=True))
+        if type_ is not None:
+            self.relationship_type = java_string(type_)
+        if status is not None:
+            self.relationship_status = RelationshipStatus(java_string(status))
 
     def set_relationship_attributes(self, relationship_attributes: AtlasStruct | None) -> None:
         """Set the relationship's attributes; their type name, when set, becomes the relationship type."""

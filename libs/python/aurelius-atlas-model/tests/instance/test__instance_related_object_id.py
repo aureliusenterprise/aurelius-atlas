@@ -80,3 +80,20 @@ def test__related_object_ids_compare_the_relationship_too() -> None:
     assert one == same
     assert one != AtlasRelatedObjectId(guid="g", relationship_status=RelationshipStatus.DELETED)
     assert one != AtlasRelatedObjectId(guid="other", entity_status=EntityStatus.ACTIVE)
+
+
+@pytest.mark.covers(f"{M}.read_map", rules=["VAL-14"])
+def test__a_related_object_id_made_from_a_map_reads_the_relationship_in_java_s_order() -> None:
+    """``AtlasRelatedObjectId(Map)``: attributes as a struct set the type, then a ``relationshipType`` wins."""
+    from_struct = AtlasRelatedObjectId(guid=None)
+    from_struct.read_map({"guid": "g", "relationshipGuid": 7, "relationshipAttributes": {"typeName": "s", "a": 1}})
+    both = AtlasRelatedObjectId(guid=None)
+    both.read_map(
+        {"relationshipType": "t", "relationshipAttributes": AtlasStruct(type_name="s"), "relationshipStatus": "DELETED"}
+    )
+
+    assert (from_struct.relationship_guid, from_struct.relationship_type) == ("7", "s")
+    assert from_struct.relationship_attributes == AtlasStruct(type_name="s", attributes={"typeName": "s", "a": 1})
+    assert (both.relationship_type, both.relationship_status) == ("t", RelationshipStatus.DELETED)
+    with pytest.raises(ValueError, match="'GONE' is not a valid RelationshipStatus"):
+        AtlasRelatedObjectId(guid=None).read_map({"relationshipStatus": "GONE"})
