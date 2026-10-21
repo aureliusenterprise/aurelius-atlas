@@ -4291,6 +4291,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-060-critical-css-inlining-is-off-the-zoneless-csr-app-never-swaps-the-print-sheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-060. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7480,6 +7491,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-060-critical-css-inlining-is-off-the-zoneless-csr-app-never-swaps-the-print-sheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-060. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9188,6 +9210,39 @@ e2e. Applying the change to a running stack requires recreating the
 users — a boot re-import skips an existing realm wholesale — the recipe
 is in <code>dev/keycloak/AGENTS.md</code>. New realm-default-role needs (e.g.
 <code>offline_access</code> for refresh tokens) arrive here, not per client.</p>
+<h3 id="dd-060-critical-css-inlining-is-off-the-zoneless-csr-app-never-swaps-the-print-sheet">DD-060. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet<a class="headerlink" href="#dd-060-critical-css-inlining-is-off-the-zoneless-csr-app-never-swaps-the-print-sheet" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.12</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The webapp's production build sets
+<code>optimization.styles.inlineCritical: false</code>. The stylesheet loads as a
+normal render-blocking <code>&lt;link&gt;</code>; nothing is inlined into <code>index.html</code>
+and no <code>media="print"</code> swap is involved.</p>
+<p><strong>Reason.</strong> Angular's critical-CSS inliner (beasties) rewrites the
+stylesheet to <code>media="print"</code> and ships a script that swaps it back at
+load. In this zoneless CSR app the swap never runs (e2e measurement:
+every browser, the sheet stayed on <code>print</code>, 3,024 rules inert), so the
+app rendered from the ~115 rules the inliner had copied into the HTML —
+Bulma base styles applied, brand overrides on <code>.navbar</code>/<code>.footer</code> and
+utilities like <code>has-background-light</code> did not (transparent bands, no
+blue footer). The inliner has no element to inline <em>for</em> in a CSR shell
+— <code>index.html</code>'s body is the app root and the router content appears
+after boot, so "critical" is meaningless here. Dev mode (<code>optimization:
+false</code>) never showed this, which is what made the demo-match in dev
+coexist with broken e2e.</p>
+<p><strong>Alternatives.</strong> Keep inlining and fix the swap script (it is Angular
+generated — no supported knob). Load the sheet with a forced
+<code>media="all"</code> (build emits the print attribute as part of the inliner's
+output — off is the supported switch). Serve with SSR/prerender so the
+inliner has real content (7.x is a client-rendered SPA; the dashboard
+is a separate app).</p>
+<p><strong>Consequences.</strong> First paint ships the full stylesheet (~770 kB
+minified, gzip ~90 kB) — the same payload the legacy demo ships. The
+e2e suite now measures the CSS the browser actually applies. If LCP
+ever matters, re-measure with the inliner enabled in a browser that
+executes the swap script before re-enabling.</p>
 
 
 

@@ -894,3 +894,17 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** Grant the roles per user through the admin console by hand: invisible to new clones, lost on stack recreate. Add the account client roles directly to the users: duplicates what `default-roles-master` already composites and drifts when Keycloak version changes reshape that role. A `defaultRoles` realm attribute (makes the role default for users created after import): does not reach the users the import itself creates.
 
 **Consequences.** The Account Console works for both dev users, dev and e2e. Applying the change to a running stack requires recreating the users — a boot re-import skips an existing realm wholesale — the recipe is in `dev/keycloak/AGENTS.md`. New realm-default-role needs (e.g. `offline_access` for refresh tokens) arrive here, not per client.
+
+### DD-060. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet
+
+- **Status:** Accepted
+- **Increment:** 7.12
+- **Date:** 2026-10-21
+
+**Decision.** The webapp's production build sets `optimization.styles.inlineCritical: false`. The stylesheet loads as a normal render-blocking `<link>`; nothing is inlined into `index.html` and no `media="print"` swap is involved.
+
+**Reason.** Angular's critical-CSS inliner (beasties) rewrites the stylesheet to `media="print"` and ships a script that swaps it back at load. In this zoneless CSR app the swap never runs (e2e measurement: every browser, the sheet stayed on `print`, 3,024 rules inert), so the app rendered from the \~115 rules the inliner had copied into the HTML — Bulma base styles applied, brand overrides on `.navbar`/`.footer` and utilities like `has-background-light` did not (transparent bands, no blue footer). The inliner has no element to inline *for* in a CSR shell — `index.html`'s body is the app root and the router content appears after boot, so "critical" is meaningless here. Dev mode (`optimization: false`) never showed this, which is what made the demo-match in dev coexist with broken e2e.
+
+**Alternatives.** Keep inlining and fix the swap script (it is Angular generated — no supported knob). Load the sheet with a forced `media="all"` (build emits the print attribute as part of the inliner's output — off is the supported switch). Serve with SSR/prerender so the inliner has real content (7.x is a client-rendered SPA; the dashboard is a separate app).
+
+**Consequences.** First paint ships the full stylesheet (\~770 kB minified, gzip \~90 kB) — the same payload the legacy demo ships. The e2e suite now measures the CSS the browser actually applies. If LCP ever matters, re-measure with the inliner enabled in a browser that executes the swap script before re-enabling.

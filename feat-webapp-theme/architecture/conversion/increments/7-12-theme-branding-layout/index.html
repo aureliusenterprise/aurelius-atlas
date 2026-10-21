@@ -6420,7 +6420,8 @@
 <ul>
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> #103</li>
-<li><strong>Records:</strong> ADR 053; DD-059 (the brand theme on Bulma 1); relies on ADR 018,
+<li><strong>Records:</strong> ADR 053; DD-059 (the brand theme on Bulma 1), DD-060
+  (critical-CSS inlining off); relies on ADR 018,
   DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07 this
@@ -6512,6 +6513,10 @@ is the reference: every measured value in Acceptance reads from it.</p>
   (the legacy achieves the same through <code>.is-tall-container</code>'s
   <code>min-height: 100vh</code>); the brand greys are Bulma 0.9.4's <code>#f5f5f5</code>/<code>#363636</code>
   pair, not Bootstrap's <code>#f8f9fa</code>;</li>
+<li>DD-060: the prod build disables critical-CSS inlining — the zoneless CSR
+  app never swaps beasties' <code>media="print"</code> sheet back, so the brand rules
+  on <code>.navbar</code>/<code>.footer</code> (and Bulma utilities) applied in dev but not in the
+  Docker/e2e build; the full stylesheet ships render-blocking instead;</li>
 <li>the theme switch is not ported — light is forced via <code>data-theme="light"</code>
   (SHM-01), the switch is a later slice;</li>
 <li>the legacy navbar's <code>is-size-4</code> name next to the logo is not ported: the

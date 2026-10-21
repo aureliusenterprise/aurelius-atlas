@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** \#103
-- **Records:** ADR 053; DD-059 (the brand theme on Bulma 1); relies on ADR 018, DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)
+- **Records:** ADR 053; DD-059 (the brand theme on Bulma 1), DD-060 (critical-CSS inlining off); relies on ADR 018, DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-theme/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
 
@@ -49,6 +49,7 @@ Against Apache Atlas: none — this is an Aurelius product frame, Atlas has no U
 Against the Aurelius product, recorded in [design-log](<https://aureliusenterprise.github.io/feat-webapp-theme/architecture/conversion/design-log/index.md>):
 
 - DD-059: the palette lands on Bulma **1** tokens (the legacy shipped Bulma 0.9.4 with SASS variables; Bulma 1 reads CSS custom properties, some scoped on `.navbar`/`.footer`); the sticky footer uses the modern flex-column body (the legacy achieves the same through `.is-tall-container`'s `min-height: 100vh`); the brand greys are Bulma 0.9.4's `#f5f5f5`/`#363636` pair, not Bootstrap's `#f8f9fa`;
+- DD-060: the prod build disables critical-CSS inlining — the zoneless CSR app never swaps beasties' `media="print"` sheet back, so the brand rules on `.navbar`/`.footer` (and Bulma utilities) applied in dev but not in the Docker/e2e build; the full stylesheet ships render-blocking instead;
 - the theme switch is not ported — light is forced via `data-theme="light"` (SHM-01), the switch is a later slice;
 - the legacy navbar's `is-size-4` name next to the logo is not ported: the logo's alt carries the app name (SHM-02).
 
