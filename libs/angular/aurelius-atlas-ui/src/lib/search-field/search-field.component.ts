@@ -71,7 +71,7 @@ export class SearchField {
      * @param value The raw input value.
      */
     protected onQueryChange(value: string): void {
-        this.query.set(value ? value : null);
+        this.query.set(value || null); // NOSONAR S4276: the empty string is the value to coalesce — Aurelius normalised it to null.
     }
 
     /**

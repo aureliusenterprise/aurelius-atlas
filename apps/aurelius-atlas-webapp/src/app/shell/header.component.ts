@@ -76,7 +76,9 @@ export class ShellHeader {
 
     /** End the Keycloak session (SHC-05), returning to the sign-in page. */
     protected logout(): void {
-        this.keycloak.logout();
+        // The navigation starts immediately; the promise resolves on the
+        // sign-in page, where this context is gone — nothing left to await.
+        void this.keycloak.logout();
     }
 
     /** The active locale, as the served document declares it. */

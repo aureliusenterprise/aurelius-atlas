@@ -109,7 +109,7 @@ export function parseAppConfig(value: unknown): AppConfig {
 
     const requireYear = (name: string, field: unknown): number => {
         if (typeof field !== "number" || !Number.isInteger(field)) {
-            throw new Error(`Invalid app config: "${name}" must be an integer year.`);
+            throw new TypeError(`Invalid app config: "${name}" must be an integer year.`);
         }
         return field;
     };

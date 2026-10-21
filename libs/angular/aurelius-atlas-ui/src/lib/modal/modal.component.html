@@ -6,15 +6,23 @@
     <div class="modal is-active">
         <!--
             Backdrop dismissal is a pointer affordance; the keyboard path is
-            the close/cancel buttons. A11y rules want a focusable keyboard
-            element here, and Bulma's modal has none.
+            the Escape handler on the dialog and the close/cancel buttons.
+            A11y rules want a focusable keyboard element on the backdrop
+            itself, and Bulma's modal has none — Escape is the dialog's.
         -->
-        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- NOSONAR S1077: the backdrop is the pointer path by design; Escape on the dialog is the keyboard path. -->
         <div class="modal-background" (click)="onBackdropClick()"></div>
+        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- The Escape handler catches keydowns bubbling from the dialog's
+             focused descendants; the container itself needs no focus, and a
+             tabindex here would add a tab stop the modal does not want. -->
+        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
         <div
             [class]="_isCard ? 'modal-card' : 'modal-content'"
             [attr.role]="_isCard ? 'dialog' : null"
             [attr.aria-label]="_title"
+            (keydown.escape)="onEscape()"
         >
             @if (_isCard) {
                 <header class="modal-card-head">
