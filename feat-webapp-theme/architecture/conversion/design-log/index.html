@@ -4313,6 +4313,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-062-the-brand-re-emits-bulma-094s-text-ramp-not-just-the-body-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-062. The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7524,6 +7535,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-062-the-brand-re-emits-bulma-094s-text-ramp-not-just-the-body-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-062. The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9302,6 +9324,47 @@ The <code>section &gt; container</code> wrapper is the pattern for 7.4+ routed p
 (details, search results) — they inherit the grid from their first
 element. <code>min-height: 100vh</code> on the band means short pages scroll the
 footer into view; that is the legacy behaviour the demo shows.</p>
+<h3 id="dd-062-the-brand-re-emits-bulma-094s-text-ramp-not-just-the-body-metrics">DD-062. The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics<a class="headerlink" href="#dd-062-the-brand-re-emits-bulma-094s-text-ramp-not-just-the-body-metrics" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.12</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> SHM-03 covers the whole type ramp, not only the body. The
+brand library emits Bulma 0.9.4's neutral greys on Bulma 1's <strong>channels</strong>
+(<code>--bulma-text-h/s/l</code>, <code>--bulma-text-strong-*</code>, <code>--bulma-text-weak-*</code>), so
+every derived token — <code>text</code>, <code>text-strong</code>, <code>text-weak</code>, the navbar and
+dropdown ink chain — resolves to the legacy ramp: <code>#4a4a4a</code> body/box/
+content ink, <code>#363636</code> headings, <code>#7a7a7a</code> weak. The weights Bulma 1 moved
+are pinned back on the selectors that scope them (<code>.title</code>/<code>.subtitle</code>
+600, <code>.button</code> 400) plus <code>--bulma-strong-weight: 700</code> and
+<code>--bulma-navbar-item-color: #4a4a4a</code> (the demo's navbar ink is the body
+ink, links and <code>strong</code> alike). <code>.content</code> is <code>#4a4a4a</code> with <code>#363636</code>
+600 headings. SHM-03.</p>
+<p><strong>Reason.</strong> Reviewing the font story against the live demo: DD-059 pinned
+the body (stack, 16px/1.5, <code>#4a4a4a</code>) and the chrome bands, and every
+body-level value matched — but Bulma 1 re-tinted its whole grey ramp 221
+degrees (<code>text</code> <code>#4a5568</code>, <code>text-strong</code> <code>#2e333d</code>) and re-weighted the
+ramp (title 600→800, strong 700→600, button 400→500). The app rendered
+with a blue-grey cast: titles <code>rgb(46,51,61)</code> at 800, box ink
+<code>rgb(64,70,84)</code>, navbar links <code>#535353</code>, dropdown ink <code>#404654</code> — none of
+them the demo's values. The size scale (<code>is-2</code> 40px/45, <code>is-6</code> 16/18,
+dropdown 14px, the 4.25rem bar) was already identical; only the ramp
+diverged. Pinning the channels (not the derived tokens) fixes the entire
+chain at once, including selectors the brand file does not enumerate.</p>
+<p><strong>Alternatives.</strong> Override each derived token at every use site
+(<code>.title { color }</code>, <code>.box { color }</code>, …): whack-a-mole across Bulma's
+long hsl-composed chains (the navbar dropdown composes <code>h</code>/<code>s</code> from the
+scheme with the <code>text</code> lightness — enumerating all compositions misses
+them, as the first cut did). Pin only the body (DD-059 as landed): the
+user-visible difference is exactly what the review found — a blue-grey
+app where the demo is neutral grey.</p>
+<p><strong>Consequences.</strong> Every landing text/weight pair is demo-parity, pinned
+by <code>test__type_ramp_matches_the_legacy_page</code>. The emission is
+scheme-independent (channels live outside Bulma's <code>data-theme</code> blocks),
+so a future dark scheme inherits Aurelius' neutral ramp machinery
+unchanged. <code>--bulma-text-rgb</code>-style companions are emitted for
+<code>text</code>/<code>text-strong</code>/<code>text-weak</code> (consumers read them raw).</p>
 
 
 

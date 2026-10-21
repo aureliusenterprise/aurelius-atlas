@@ -922,3 +922,17 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** Keep flex-grow-only (footer flush at the fold): it diverges from the demo on the one axis the user measured — "the footer should always be below the fold". Hand-rolled page padding (`.is-tall-container { padding: … }`): invents a grid Bulma already owns; the `container` is responsive (fixed widths per breakpoint, 32px margins below desktop), a hand-rolled inset is not. `section.hero` instead of `section.section` (the demo's landing hero is a hero): the teal hero is the 7.4 search slice, out of scope here.
 
 **Consequences.** The landing matches the demo's measured insets (box x≈56 at 1280) and the footer is below the fold at any viewport. The `section > container` wrapper is the pattern for 7.4+ routed pages (details, search results) — they inherit the grid from their first element. `min-height: 100vh` on the band means short pages scroll the footer into view; that is the legacy behaviour the demo shows.
+
+### DD-062. The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics
+
+- **Status:** Accepted
+- **Increment:** 7.12
+- **Date:** 2026-10-21
+
+**Decision.** SHM-03 covers the whole type ramp, not only the body. The brand library emits Bulma 0.9.4's neutral greys on Bulma 1's **channels** (`--bulma-text-h/s/l`, `--bulma-text-strong-*`, `--bulma-text-weak-*`), so every derived token — `text`, `text-strong`, `text-weak`, the navbar and dropdown ink chain — resolves to the legacy ramp: `#4a4a4a` body/box/ content ink, `#363636` headings, `#7a7a7a` weak. The weights Bulma 1 moved are pinned back on the selectors that scope them (`.title`/`.subtitle` 600, `.button` 400) plus `--bulma-strong-weight: 700` and `--bulma-navbar-item-color: #4a4a4a` (the demo's navbar ink is the body ink, links and `strong` alike). `.content` is `#4a4a4a` with `#363636` 600 headings. SHM-03.
+
+**Reason.** Reviewing the font story against the live demo: DD-059 pinned the body (stack, 16px/1.5, `#4a4a4a`) and the chrome bands, and every body-level value matched — but Bulma 1 re-tinted its whole grey ramp 221 degrees (`text` `#4a5568`, `text-strong` `#2e333d`) and re-weighted the ramp (title 600→800, strong 700→600, button 400→500). The app rendered with a blue-grey cast: titles `rgb(46,51,61)` at 800, box ink `rgb(64,70,84)`, navbar links `#535353`, dropdown ink `#404654` — none of them the demo's values. The size scale (`is-2` 40px/45, `is-6` 16/18, dropdown 14px, the 4.25rem bar) was already identical; only the ramp diverged. Pinning the channels (not the derived tokens) fixes the entire chain at once, including selectors the brand file does not enumerate.
+
+**Alternatives.** Override each derived token at every use site (`.title { color }`, `.box { color }`, …): whack-a-mole across Bulma's long hsl-composed chains (the navbar dropdown composes `h`/`s` from the scheme with the `text` lightness — enumerating all compositions misses them, as the first cut did). Pin only the body (DD-059 as landed): the user-visible difference is exactly what the review found — a blue-grey app where the demo is neutral grey.
+
+**Consequences.** Every landing text/weight pair is demo-parity, pinned by `test__type_ramp_matches_the_legacy_page`. The emission is scheme-independent (channels live outside Bulma's `data-theme` blocks), so a future dark scheme inherits Aurelius' neutral ramp machinery unchanged. `--bulma-text-rgb`-style companions are emitted for `text`/`text-strong`/`text-weak` (consumers read them raw).

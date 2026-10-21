@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** \#103
-- **Records:** ADR 053; DD-059 (the brand theme on Bulma 1), DD-060 (critical-CSS inlining off); relies on ADR 018, DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)
+- **Records:** ADR 053; DD-059 (the brand theme on Bulma 1), DD-060 (critical-CSS inlining off), DD-062 (the legacy text ramp on Bulma 1's channels); relies on ADR 018, DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-theme/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
 
@@ -11,7 +11,7 @@ Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-the
 Make the 7.11 chrome **look like the legacy Aurelius Atlas** — the live demo at `google.aurelius-atlas.com/demo/atlas` is the reference — without porting the legacy `@models4insight/styles` package (DD-037 stands):
 
 - the Aurelius palette on Bulma 1's tokens: the Aurelius blue as primary/link, the blue footer band, the grey chrome bands (SHM-04)
-- the legacy body type: Bulma 0.9.4's system font stack, 16px, line-height 1.5, `#4a4a4a` ink — Bulma 1 ships Inter/1rem and renders the app in the wrong type (SHM-03)
+- the legacy body type: Bulma 0.9.4's system font stack, 16px, line-height 1.5, `#4a4a4a` ink — Bulma 1 ships Inter/1rem and renders the app in the wrong type — and the ramp below it: the neutral greys and the weights Bulma 1 re-tinted and re-weighted (SHM-03, DD-062)
 - the Aurelius Atlas logo as the navbar brand, sized by the legacy `.logo` rule (max-width 150px, max-height 50px) (SHM-02)
 - the legacy navbar anatomy: pinned to the top (`is-fixed-top` + body padding, the 4.25rem bar), content in a `container` (SHM-05)
 - the sticky footer: the content band grows to the fold, so the footer sits at the bottom of the viewport on short pages and at the bottom of the document on tall ones (SHM-05)
@@ -25,7 +25,7 @@ This slice does **not** deliver: the theme switch itself (a later slice flips th
 | --- | --- |
 | SHM-01 | The document root carries `data-theme="light"`: the app renders the light scheme under any OS preference. The Aurelius brand colours are emitted outside Bulma's scheme machinery, so they survive a future dark scheme. |
 | SHM-02 | The navbar brand is the Aurelius Atlas logo (`assets/aurelius-atlas-logo.png`, from the legacy `libs/assets`), linking `/`, with the app name as its alt text; the ui-lib `Header` sizes it through its `.logo` rule (max-width 150px, max-height 50px) applied via the `logoCssClass` input (default `logo`). |
-| SHM-03 | The body type is the legacy Bulma 0.9.4 set: the BlinkMacSystemFont-first system stack, 16px, line-height 1.5, weight 400, ink `#4a4a4a` on white — the values the live demo renders, pinned on Bulma 1's body tokens. |
+| SHM-03 | The type is the legacy Bulma 0.9.4 ramp: the BlinkMacSystemFont-first system stack, 16px, line-height 1.5, weight 400, ink `#4a4a4a` on white — and below the body, the neutral greys and weights Bulma 1 replaced (title 600/`#363636`, strong 700, button 400, navbar ink `#4a4a4a`, `.content` `#4a4a4a` with `#363636` 600 headings). The greys land on Bulma 1's **channels** (`--bulma-text-h/s/l` &amp;c.) so every derived token follows; the weights land on the selectors Bulma scopes them on (DD-062). All values the live demo renders. |
 | SHM-04 | The Aurelius palette lands on Bulma 1's tokens in the brand library: primary/link `#0073dd`; `light`/navbar band `#f5f5f5` with `#363636` invert; footer `#0073dd` with white text (the legacy footer's `has-text-white`). Bulma scopes the navbar/footer tokens on its components, so the overrides are emitted on `.navbar`/`.footer` too. |
 | SHM-05 | The chrome's navbar is pinned (`is-fixed-top`, the body padded by the 4.25rem bar via `has-navbar-fixed-top`), its content sits in a Bulma `container` (the legacy navbar anatomy), and the outlet band is the legacy `.is-tall-container` verbatim: body is a 100vh flex column, the band grows (`flex: 1 1 auto`) to a full viewport (`min-height: 100vh`), so the footer begins at the fold — never stranded mid-page on a short screen. |
 | SHM-06 | The webapp's dev/e2e pages keep passing every 7.11 chrome scenario (SHC-02..09): the logo brand supersedes SHC-02's name-only brand (the name stays as the logo's alt); the pinned navbar does not cover the landing's top content; the footer keeps its three config values. |
@@ -52,6 +52,7 @@ Against the Aurelius product, recorded in [design-log](<https://aureliusenterpri
 - DD-059: the palette lands on Bulma **1** tokens (the legacy shipped Bulma 0.9.4 with SASS variables; Bulma 1 reads CSS custom properties, some scoped on `.navbar`/`.footer`); the sticky footer uses the modern flex-column body (the legacy achieves the same through `.is-tall-container`'s `min-height: 100vh`); the brand greys are Bulma 0.9.4's `#f5f5f5`/`#363636` pair, not Bootstrap's `#f8f9fa`;
 - DD-060: the prod build disables critical-CSS inlining — the zoneless CSR app never swaps beasties' `media="print"` sheet back, so the brand rules on `.navbar`/`.footer` (and Bulma utilities) applied in dev but not in the Docker/e2e build; the full stylesheet ships render-blocking instead;
 - DD-061: the first cut ported `.is-tall-container` as flex-grow only (footer flush with the fold) and left the landing edge-to-edge; the demo shows the legacy rule is `flex: 1 1 auto` **plus** `min-height: 100vh` (footer starts below the fold) and the legacy pages wrap in `section > container` (content inset on the navbar's grid). SHM-05/SHM-07 pin the measured legacy rendering;
+- DD-062: SHM-03's first cut pinned the body metrics only; Bulma 1 re-tinted the whole grey ramp 221 degrees and re-weighted title/strong/button, so the app rendered with a blue-grey cast. SHM-03 now covers the ramp, and the brand re-emits Bulma 0.9.4's neutral channels on Bulma 1's `text*` channel tokens;
 - the theme switch is not ported — light is forced via `data-theme="light"` (SHM-01), the switch is a later slice;
 - the legacy navbar's `is-size-4` name next to the logo is not ported: the logo's alt carries the app name (SHM-02).
 
@@ -66,6 +67,7 @@ Against the Aurelius product, recorded in [design-log](<https://aureliusenterpri
 
   - `test__navbar_carries_the_aurelius_logo` — the brand image, 150px cap, links home (SHM-02)
   - `test__body_uses_the_legacy_type_and_ink` — stack, 16px, 24px line, `#4a4a4a` (SHM-03)
+  - `test__type_ramp_matches_the_legacy_page` — title 40px/45 600 `#363636`, box/content `#4a4a4a`, navbar links `#4a4a4a` with 700 strong, button 400, 14px dropdown (SHM-03, DD-062)
   - `test__chrome_bands_carry_the_aurelius_palette` — navbar `#f5f5f5`, footer `#0073dd` white text, pinned 68px bar (SHM-04, SHM-05)
   - `test__footer_sits_below_the_fold` — band ≥ viewport, footer top ≥ viewport (legacy `.is-tall-container`, SHM-05, SHM-07)
   - `test__landing_content_sits_in_a_container` — hero box inset on the navbar container's column, band full-bleed (SHM-07)

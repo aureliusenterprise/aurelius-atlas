@@ -6421,7 +6421,8 @@
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> #103</li>
 <li><strong>Records:</strong> ADR 053; DD-059 (the brand theme on Bulma 1), DD-060
-  (critical-CSS inlining off); relies on ADR 018,
+  (critical-CSS inlining off), DD-062 (the legacy text ramp on Bulma 1's
+  channels); relies on ADR 018,
   DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07 this
@@ -6435,7 +6436,8 @@ legacy <code>@models4insight/styles</code> package (DD-037 stands):</p>
   the blue footer band, the grey chrome bands (SHM-04)</li>
 <li>the legacy body type: Bulma 0.9.4's system font stack, 16px, line-height 1.5,
   <code>#4a4a4a</code> ink — Bulma 1 ships Inter/1rem and renders the app in the wrong
-  type (SHM-03)</li>
+  type — and the ramp below it: the neutral greys and the weights Bulma 1
+  re-tinted and re-weighted (SHM-03, DD-062)</li>
 <li>the Aurelius Atlas logo as the navbar brand, sized by the legacy <code>.logo</code>
   rule (max-width 150px, max-height 50px) (SHM-02)</li>
 <li>the legacy navbar anatomy: pinned to the top (<code>is-fixed-top</code> + body padding,
@@ -6470,7 +6472,7 @@ the landing slice 7.5 owns.</p>
 </tr>
 <tr>
 <td>SHM-03</td>
-<td>The body type is the legacy Bulma 0.9.4 set: the BlinkMacSystemFont-first system stack, 16px, line-height 1.5, weight 400, ink <code>#4a4a4a</code> on white — the values the live demo renders, pinned on Bulma 1's body tokens.</td>
+<td>The type is the legacy Bulma 0.9.4 ramp: the BlinkMacSystemFont-first system stack, 16px, line-height 1.5, weight 400, ink <code>#4a4a4a</code> on white — and below the body, the neutral greys and weights Bulma 1 replaced (title 600/<code>#363636</code>, strong 700, button 400, navbar ink <code>#4a4a4a</code>, <code>.content</code> <code>#4a4a4a</code> with <code>#363636</code> 600 headings). The greys land on Bulma 1's <strong>channels</strong> (<code>--bulma-text-h/s/l</code> &amp;c.) so every derived token follows; the weights land on the selectors Bulma scopes them on (DD-062). All values the live demo renders.</td>
 </tr>
 <tr>
 <td>SHM-04</td>
@@ -6527,6 +6529,11 @@ is the reference: every measured value in Acceptance reads from it.</p>
   starts below the fold) and the legacy pages wrap in <code>section &gt; container</code>
   (content inset on the navbar's grid). SHM-05/SHM-07 pin the measured
   legacy rendering;</li>
+<li>DD-062: SHM-03's first cut pinned the body metrics only; Bulma 1 re-tinted
+  the whole grey ramp 221 degrees and re-weighted title/strong/button, so
+  the app rendered with a blue-grey cast. SHM-03 now covers the ramp, and
+  the brand re-emits Bulma 0.9.4's neutral channels on Bulma 1's <code>text*</code>
+  channel tokens;</li>
 <li>the theme switch is not ported — light is forced via <code>data-theme="light"</code>
   (SHM-01), the switch is a later slice;</li>
 <li>the legacy navbar's <code>is-size-4</code> name next to the logo is not ported: the
@@ -6549,6 +6556,9 @@ is the reference: every measured value in Acceptance reads from it.</p>
   links home (SHM-02)</li>
 <li><code>test__body_uses_the_legacy_type_and_ink</code> — stack, 16px, 24px line,
   <code>#4a4a4a</code> (SHM-03)</li>
+<li><code>test__type_ramp_matches_the_legacy_page</code> — title 40px/45 600
+  <code>#363636</code>, box/content <code>#4a4a4a</code>, navbar links <code>#4a4a4a</code> with 700
+  strong, button 400, 14px dropdown (SHM-03, DD-062)</li>
 <li><code>test__chrome_bands_carry_the_aurelius_palette</code> — navbar <code>#f5f5f5</code>,
   footer <code>#0073dd</code> white text, pinned 68px bar (SHM-04, SHM-05)</li>
 <li><code>test__footer_sits_below_the_fold</code> — band ≥ viewport, footer top ≥
