@@ -4181,6 +4181,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-065-the-modal-confirm-emits-and-stays-open-closing-is-the-callers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-065. The modal confirm emits and stays open; closing is the caller's
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7144,6 +7155,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-065-the-modal-confirm-emits-and-stays-open-closing-is-the-callers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-065. The modal confirm emits and stays open; closing is the caller's
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8528,6 +8550,31 @@ polyfill by hand, so it drifts from the real one.</p>
 baseline and the <code>play()</code> queries assert on. A story that needs the Dutch text is out
 of scope — translation is a per-app build-time concern; the completeness spec (SHL-08,
 UIC-04) is what proves the catalogues carry both locales.</p>
+<h3 id="dd-065-the-modal-confirm-emits-and-stays-open-closing-is-the-callers">DD-065. The modal confirm emits and stays open; closing is the caller's<a class="headerlink" href="#dd-065-the-modal-confirm-emits-and-stays-open-closing-is-the-callers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 7.2</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The ported <code>Modal</code>'s confirm button emits <code>confirmRequested</code> and
+leaves the modal open. The legacy <code>ModalComponent.confirm()</code> closed the modal when
+the context's <code>closeOnConfirm</code> was true — its default, and the flag the one Atlas
+search-surface caller sets (<code>type-select.component.ts</code>). The port has no such flag:
+<code>active</code> is a <code>model()</code>, so the caller that wants the legacy one-liner closes it in
+its own handler.</p>
+<p><strong>Reason.</strong> <code>closeOnConfirm</code> exists for actions that finish synchronously; the
+port's confirm is built for the async ones — <code>confirmPending</code> shows the caller's
+in-flight action, and an auto-close on press destroys the dialog before the action
+has succeeded, so a failed save has to be re-opened with its form state restored
+by hand. Keeping the close in the caller is DD-046's rule one level up: the
+component owns view state the user can see, not the outcome of the caller's work.</p>
+<p><strong>Alternatives.</strong> Port <code>closeOnConfirm</code> with its legacy default: faithful, and it
+makes the default the non-obvious behaviour — a flag whose name explains a
+consequence it should not have. Emit and close, no flag: simple, and it forecloses
+the async confirm the loading state is there to support.</p>
+<p><strong>Consequences.</strong> Every confirm-closing caller writes the close; the contract is
+the spec's test name ("emits confirm from the confirm button and stays open
+(UIC-01)") and the card-anatomy story's Cancel path shows the closing half.</p>
 
 
 

@@ -6330,7 +6330,7 @@
 <ul>
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> #99</li>
-<li><strong>Records:</strong> ADR 053; DD-045, DD-046, DD-047, DD-048, DD-049; relies on ADR 007, DD-042</li>
+<li><strong>Records:</strong> ADR 053; DD-045, DD-046, DD-047, DD-048, DD-049, DD-065; relies on ADR 007, DD-042</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.</p>
@@ -6515,8 +6515,9 @@ dashboards are untouched (WBP-07). Against the Aurelius product, the intended
 differences are recorded in <a href="../../design-log/">design-log</a>: the scope split of the
 component library (DD-045), the dissolution of component services into signal state
 (DD-046), chrome strings moving to the built-in localisation keyed by the legacy
-dictionary paths (DD-047), and the purity gate made executable over <code>libs/angular</code>
-(DD-048). No new <code>DV</code> entry: the UI swap itself is DV-11.</p>
+dictionary paths (DD-047), the purity gate made executable over <code>libs/angular</code>
+(DD-048), and the modal confirm emitting without closing, where legacy
+<code>closeOnConfirm</code> closed (DD-065). No new <code>DV</code> entry: the UI swap itself is DV-11.</p>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>libs/angular/aurelius-atlas-ui/src/lib/**/*.spec.ts</code> (Vitest) — one spec per

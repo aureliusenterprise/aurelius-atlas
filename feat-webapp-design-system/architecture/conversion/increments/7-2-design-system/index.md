@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** \#99
-- **Records:** ADR 053; DD-045, DD-046, DD-047, DD-048, DD-049; relies on ADR 007, DD-042
+- **Records:** ADR 053; DD-045, DD-046, DD-047, DD-048, DD-049, DD-065; relies on ADR 007, DD-042
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-design-system/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
 
@@ -70,7 +70,7 @@ Cited by path in `aureliusenterprise/aurelius` at the cloned commit, so a review
 
 ## Deviations
 
-None against Apache Atlas: the Aurelius interface is Aurelius's own, and the Atlas dashboards are untouched (WBP-07). Against the Aurelius product, the intended differences are recorded in [design-log](<https://aureliusenterprise.github.io/feat-webapp-design-system/architecture/conversion/design-log/index.md>): the scope split of the component library (DD-045), the dissolution of component services into signal state (DD-046), chrome strings moving to the built-in localisation keyed by the legacy dictionary paths (DD-047), and the purity gate made executable over `libs/angular` (DD-048). No new `DV` entry: the UI swap itself is DV-11.
+None against Apache Atlas: the Aurelius interface is Aurelius's own, and the Atlas dashboards are untouched (WBP-07). Against the Aurelius product, the intended differences are recorded in [design-log](<https://aureliusenterprise.github.io/feat-webapp-design-system/architecture/conversion/design-log/index.md>): the scope split of the component library (DD-045), the dissolution of component services into signal state (DD-046), chrome strings moving to the built-in localisation keyed by the legacy dictionary paths (DD-047), the purity gate made executable over `libs/angular` (DD-048), and the modal confirm emitting without closing, where legacy `closeOnConfirm` closed (DD-065). No new `DV` entry: the UI swap itself is DV-11.
 
 ## Acceptance
 

@@ -754,3 +754,17 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** A `polyfills` option on the Storybook targets: the executor schema does not accept one. A no-op `$localize` in a story helper: works, and re-implements the polyfill by hand, so it drifts from the real one.
 
 **Consequences.** Stories render the English source text, which is what a visual baseline and the `play()` queries assert on. A story that needs the Dutch text is out of scope — translation is a per-app build-time concern; the completeness spec (SHL-08, UIC-04) is what proves the catalogues carry both locales.
+
+### DD-065. The modal confirm emits and stays open; closing is the caller's
+
+- **Status:** Proposed
+- **Increment:** 7.2
+- **Date:** 2026-10-21
+
+**Decision.** The ported `Modal`'s confirm button emits `confirmRequested` and leaves the modal open. The legacy `ModalComponent.confirm()` closed the modal when the context's `closeOnConfirm` was true — its default, and the flag the one Atlas search-surface caller sets (`type-select.component.ts`). The port has no such flag: `active` is a `model()`, so the caller that wants the legacy one-liner closes it in its own handler.
+
+**Reason.** `closeOnConfirm` exists for actions that finish synchronously; the port's confirm is built for the async ones — `confirmPending` shows the caller's in-flight action, and an auto-close on press destroys the dialog before the action has succeeded, so a failed save has to be re-opened with its form state restored by hand. Keeping the close in the caller is DD-046's rule one level up: the component owns view state the user can see, not the outcome of the caller's work.
+
+**Alternatives.** Port `closeOnConfirm` with its legacy default: faithful, and it makes the default the non-obvious behaviour — a flag whose name explains a consequence it should not have. Emit and close, no flag: simple, and it forecloses the async confirm the loading state is there to support.
+
+**Consequences.** Every confirm-closing caller writes the close; the contract is the spec's test name ("emits confirm from the confirm button and stays open (UIC-01)") and the card-anatomy story's Cancel path shows the closing half.
