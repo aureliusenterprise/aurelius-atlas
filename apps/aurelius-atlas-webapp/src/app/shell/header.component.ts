@@ -36,6 +36,9 @@ export class ShellHeader {
 
     protected readonly appName = this.config.appName;
 
+    /** The Aurelius Atlas brand mark (SHM-02): the legacy navbar logo, served from public/. */
+    protected readonly appLogo = "assets/aurelius-atlas-logo.png";
+
     protected readonly session = inject(Session);
 
     protected readonly locales: readonly string[] = LOCALES;

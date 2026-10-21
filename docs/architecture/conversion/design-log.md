@@ -1541,6 +1541,55 @@ before the guard redirects, so only the built image exercised it.
 keycloak-js instance. Spec test providers use `{ provide: Keycloak, … }`.
 7.4's session-touching code follows the same token.
 
+### DD-059. The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned
+
+- **Status:** Accepted
+- **Increment:** 7.12
+- **Date:** 2026-10-21
+
+**Decision.** The Aurelius palette and the legacy chrome metrics ship as
+Bulma 1 CSS custom properties in `@aurelius/atlas-brand` (SHM-01..04): the
+Aurelius blue as `primary`/`link`, Bulma 0.9.4's greys (`#f5f5f5` light/navbar
+bands, `#363636` invert), the blue footer band, BlinkMacSystemFont-first stack,
+16px, 1.5 line-height, `#4a4a4a` ink, 4.25rem navbar. They are emitted after
+Bulma's own `:root`, on `:root` for the global tokens and on `.navbar`/
+`.footer` for the ones Bulma scopes on its components. Light is forced with
+`data-theme="light"` on the document root; the brand tokens live outside the
+`:root:not([data-theme])` scheme machinery so a future dark scheme keeps them.
+The sticky footer is a flex-column body + `.is-tall-container` band
+(`flex: 1 1 auto`), the pinned navbar is `is-fixed-top` +
+`has-navbar-fixed-top`, navbar content sits in a Bulma `container` (SHM-05).
+
+**Reason.** The legacy (Bulma 0.9.4) baked its look through SASS variables;
+the workspace is on Bulma 1, which reads CSS custom properties and defaults to
+a different design (Inter, 1rem, turquoise primary, white footer, 3.25rem
+navbar) — without the overrides the app renders the wrong brand entirely. Two
+Bulma 1 traps found by measurement against the live demo: component-scoped
+tokens (`.navbar`/`.footer` re-declare their own background, shadowing
+`:root`), and `hsl(var(--h), …)` requiring degree-unit hues (a percentage hue
+silently drops every `has-background-*` rule — the demo's `#f5f5f5` band came
+out transparent). Light-forcing is Bulma 1's scheme machinery, one attribute;
+the brand colours stay scheme-independent so the switch has nothing to
+re-brand. The flex-column footer replaces the legacy's
+`.is-tall-container{min-height:100vh}`-inside-fixed-padding trick with the
+modern equivalent (DD-056's static-navbar reading is superseded — the pinned
+navbar is what the demo ships).
+
+**Alternatives.** Stay on the Bulma-1 defaults and re-skin component by
+component (the 7.2 status quo): every new surface drifts from the legacy
+brand. Port `@models4insight/styles` (DD-037 reversal): a Bulma 0.9.4 theme
+package, the dependency the workspace adopted away from. Pin the legacy
+`has-background-*` classes only (no tokens): the demo's own utility CSS, and
+the token overrides are the one lever — the utilities read the same HSL
+triplets.
+
+**Consequences.** The chrome matches the reference demo on every measured
+value (SHM-06's e2e scenarios pin them). The theme switch is a later slice:
+one attribute (`data-theme`), no re-brand. Bulma utilities read the brand
+colours (`has-background-light` = `#f5f5f5`), so 7.4+ surfaces inherit the
+look. The greys are Bulma 0.9.4's pair, not Bootstrap's — the brand library's
+`$gray-*` stays for the `is-dark` pair (`#363636`).
+
 ### DD-058. Dev Keycloak users carry `default-roles-master` explicitly
 
 - **Status:** Accepted
@@ -1577,3 +1626,81 @@ e2e. Applying the change to a running stack requires recreating the
 users — a boot re-import skips an existing realm wholesale — the recipe
 is in `dev/keycloak/AGENTS.md`. New realm-default-role needs (e.g.
 `offline_access` for refresh tokens) arrive here, not per client.
+
+### DD-060. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet
+
+- **Status:** Accepted
+- **Increment:** 7.12
+- **Date:** 2026-10-21
+
+**Decision.** The webapp's production build sets
+`optimization.styles.inlineCritical: false`. The stylesheet loads as a
+normal render-blocking `<link>`; nothing is inlined into `index.html`
+and no `media="print"` swap is involved.
+
+**Reason.** Angular's critical-CSS inliner (beasties) rewrites the
+stylesheet to `media="print"` and ships a script that swaps it back at
+load. In this zoneless CSR app the swap never runs (e2e measurement:
+every browser, the sheet stayed on `print`, 3,024 rules inert), so the
+app rendered from the ~115 rules the inliner had copied into the HTML —
+Bulma base styles applied, brand overrides on `.navbar`/`.footer` and
+utilities like `has-background-light` did not (transparent bands, no
+blue footer). The inliner has no element to inline _for_ in a CSR shell
+— `index.html`'s body is the app root and the router content appears
+after boot, so "critical" is meaningless here. Dev mode (`optimization:
+false`) never showed this, which is what made the demo-match in dev
+coexist with broken e2e.
+
+**Alternatives.** Keep inlining and fix the swap script (it is Angular
+generated — no supported knob). Load the sheet with a forced
+`media="all"` (build emits the print attribute as part of the inliner's
+output — off is the supported switch). Serve with SSR/prerender so the
+inliner has real content (7.x is a client-rendered SPA; the dashboard
+is a separate app).
+
+**Consequences.** First paint ships the full stylesheet (~770 kB
+minified, gzip ~90 kB) — the same payload the legacy demo ships. The
+e2e suite now measures the CSS the browser actually applies. If LCP
+ever matters, re-measure with the inliner enabled in a browser that
+executes the swap script before re-enabling.
+
+### DD-061. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid
+
+- **Status:** Accepted
+- **Increment:** 7.12
+- **Date:** 2026-10-21
+
+**Decision.** `.is-tall-container` is ported verbatim — `flex: 1 1 auto`
+**and** `min-height: 100vh` (the legacy `shell.component.scss`) — so the
+outlet band is a full viewport and the footer begins at the fold, off the
+first screen. Page content is inset by Bulma's grid, not hand-rolled
+margins: the landing wraps in `section.section > div.container` (the
+anatomy every legacy routed page uses — `details`, `domains`,
+`create-entity` all start with `div.container`), the footer keeps its
+`container` (the legacy footer's own anatomy), and the `#f5f5f5` band
+behind the content stays full-bleed. SHM-05/SHM-07.
+
+**Reason.** Measured against the live demo: its footer starts at y=1346
+in a 900px viewport (band `min-height: 900px` — the footer is never on
+the first screen), while the first-cut port (flex-grow only) filled the
+band to exactly the fold, pulling the footer into it. And the demo's
+landing content is inset on Bulma's responsive grid (box x=56 at 1280,
+the navbar brand's column), while the port rendered edge-to-edge. Both
+are the legacy's own rules — the port had read `.is-tall-container`
+selectively and had not ported the page wrapper at all.
+
+**Alternatives.** Keep flex-grow-only (footer flush at the fold): it
+diverges from the demo on the one axis the user measured — "the footer
+should always be below the fold". Hand-rolled page padding
+(`.is-tall-container { padding: … }`): invents a grid Bulma already
+owns; the `container` is responsive (fixed widths per breakpoint, 32px
+margins below desktop), a hand-rolled inset is not. `section.hero`
+instead of `section.section` (the demo's landing hero is a hero): the
+teal hero is the 7.4 search slice, out of scope here.
+
+**Consequences.** The landing matches the demo's measured insets
+(box x≈56 at 1280) and the footer is below the fold at any viewport.
+The `section > container` wrapper is the pattern for 7.4+ routed pages
+(details, search results) — they inherit the grid from their first
+element. `min-height: 100vh` on the band means short pages scroll the
+footer into view; that is the legacy behaviour the demo shows.

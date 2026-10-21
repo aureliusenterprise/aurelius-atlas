@@ -12,7 +12,8 @@ The increment ledger for this track is the 7.x series:
 [7-1 shell](../../docs/architecture/conversion/increments/7-1-webapp-shell.md),
 [7-3 API client + auth](../../docs/architecture/conversion/increments/7-3-api-client-auth.md),
 [7-5 landing page](../../docs/architecture/conversion/increments/7-5-browse-landing.md),
-[7-11 shell chrome](../../docs/architecture/conversion/increments/7-11-shell-chrome.md).
+[7-11 shell chrome](../../docs/architecture/conversion/increments/7-11-shell-chrome.md),
+[7-12 theme, branding and layout](../../docs/architecture/conversion/increments/7-12-theme-branding-layout.md).
 
 ## Features (slice 7.1 — shell + localisation)
 
@@ -132,6 +133,28 @@ stack. Every page test signs in through the `authenticated` fixture
 `aurelius-writer` dev user); changing `dev/keycloak/import/master.json` needs a
 full keycloak recreation (`docker compose -f dev/keycloak/docker-compose.yaml
 down -v && up -d`) — Keycloak imports do not overwrite an existing realm.
+
+## Features (slice 7.12 — theme, branding and layout)
+
+The chrome looks like the legacy demo (SHM-01..06, DD-059). The Aurelius
+brand library emits its palette and the legacy type metrics as Bulma 1
+custom properties (`--bulma-primary: #0073dd`, BlinkMacSystemFont-first
+stack, 16px/1.5, `#4a4a4a` ink, 4.25rem navbar), with the tokens Bulma scopes
+on components (`.navbar`, `.footer`) re-emitted there. Light mode is forced
+via `data-theme="light"` on the document root — no OS dark until a switch
+exists; the brand tokens sit outside the scheme machinery so a switch re-skins
+without re-branding. The navbar is pinned (`is-fixed-top`, body
+`has-navbar-fixed-top`) with its content in a Bulma `container`, branded
+with `assets/aurelius-atlas-logo.png` (the ui-lib Header takes
+`logo`/`logoCssClass`/`fixed`). The body is a flex column so the blue
+`#0073dd` footer sits below the fold (the band is a full viewport, the
+legacy `.is-tall-container` verbatim — DD-061), and page content is inset
+on Bulma's grid: the landing wraps in `section.section > div.container`
+(the legacy page anatomy, DD-061), the footer keeps its `container`, and
+the content band between the bars is the demo's full-bleed `#f5f5f5`. The prod build sets
+`optimization.styles.inlineCritical: false` (DD-060): Angular's critical-CSS
+inliner loads the sheet `media="print"` for a swap script this zoneless CSR
+app never runs, so the brand rules on `.navbar`/`.footer` applied in dev only.
 
 ## Deployment
 

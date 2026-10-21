@@ -4,8 +4,8 @@ import ssl
 from urllib.parse import urljoin, urlsplit
 
 import pytest
-from conftest import CA_FILE
-from playwright.sync_api import Page, expect
+from conftest import CA_FILE, Settings
+from playwright.sync_api import Browser, Page, expect
 
 EN_PLACEHOLDER = (
     "Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below."
@@ -52,11 +52,14 @@ def test__root_redirects_to_preferred_locale(page: Page, root_url: str) -> None:
 def test__locale_routes_fall_back_to_localized_app(page: Page, root_url: str, locale: str) -> None:
     """Client-side routes serve the index belonging to their locale."""
     response = page.request.get(urljoin(root_url, f"/{locale}/search/browse"))
+    body = response.text()
 
     assert response.status == 200
     assert "text/html" in response.headers["content-type"]
-    assert f'<base href="/{locale}/">' in response.text()
-    assert f'lang="{locale}"' in response.text()
+    # The base tag's void-element serialisation is `>` (beasties) or `/>`
+    # (Angular raw, DD-060) — accept both.
+    assert re.search(rf'<base href="/{locale}/"\s*/?>', body)
+    assert f'lang="{locale}"' in body
 
 
 def test__config_json_is_served_at_the_origin_root(page: Page, root_url: str) -> None:
@@ -249,3 +252,147 @@ def test__documentation_link_points_at_the_aurelius_docs(authenticated: Page) ->
     expect(link).to_have_attribute("href", "https://aureliusenterprise.github.io/aurelius-atlas-documentation/")
     expect(link).to_have_attribute("rel", "noopener noreferrer")
     expect(link).to_have_text("Documentation")
+
+
+def test__navbar_carries_the_aurelius_logo(authenticated: Page) -> None:
+    """The navbar brand is the Aurelius Atlas logo, sized like the legacy (SHM-02, SHM-06).
+
+    The live demo's brand: the mark at its 150px cap, linking home, the app
+    name as the accessible alt.
+    """
+    brand = authenticated.locator(".navbar-brand a.navbar-item")
+    img = brand.locator("img")
+
+    expect(brand).to_have_attribute("routerlink", "/", timeout=0)
+    expect(img).to_have_attribute("src", "assets/aurelius-atlas-logo.png")
+    expect(img).to_have_attribute("alt", "Aurelius Atlas Data Governance")
+
+    box = img.bounding_box()
+
+    assert box is not None
+    assert box["width"] == pytest.approx(150, abs=2)  # the .logo cap, demo-measured
+    assert box["height"] <= 50
+
+
+def test__body_uses_the_legacy_type_and_ink(authenticated: Page) -> None:
+    """The body renders the legacy Bulma 0.9.4 type: stack, 16px, #4a4a4a (SHM-03).
+
+    Every value measured from the live demo's body.
+    """
+    body = authenticated.locator("body")
+
+    font_family = body.evaluate("el => getComputedStyle(el).fontFamily")
+
+    assert font_family.startswith("BlinkMacSystemFont")
+    assert body.evaluate("el => getComputedStyle(el).fontSize") == "16px"
+    assert body.evaluate("el => getComputedStyle(el).lineHeight") == "24px"
+    assert body.evaluate("el => getComputedStyle(el).color") == "rgb(74, 74, 74)"
+
+
+def test__chrome_bands_carry_the_aurelius_palette(authenticated: Page) -> None:
+    """The navbar band is grey, the footer band the Aurelius blue (SHM-04, SHM-05).
+
+    The demo's chrome: #f5f5f5 navbar, #0073dd footer with white text, and
+    the bar pinned (fixed) at its legacy 4.25rem height — 68px.
+    """
+    navbar = authenticated.locator("nav.navbar")
+    footer = authenticated.locator("footer.footer")
+
+    nav_bg = navbar.evaluate("el => getComputedStyle(el).backgroundColor")
+    nav_tokens = navbar.evaluate(
+        "el => { const cs = getComputedStyle(el);"
+        "return ['--bulma-navbar-background-color', '--bulma-scheme-main', '--bulma-scheme-bis']"
+        ".map(t => t + '=' + cs.getPropertyValue(t)).join(' | '); }"
+    )
+
+    assert nav_bg == "rgb(245, 245, 245)", f"navbar bg {nav_bg}; tokens: {nav_tokens}"
+    assert navbar.evaluate("el => getComputedStyle(el).position") == "fixed"
+    nav_box = navbar.bounding_box()
+
+    assert nav_box is not None
+    assert nav_box["height"] == pytest.approx(68, abs=2)
+    assert footer.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(0, 115, 221)"
+    assert footer.locator(".level-item").first.evaluate("el => getComputedStyle(el).color") == "rgb(255, 255, 255)"
+
+
+def test__footer_sits_below_the_fold(authenticated: Page) -> None:
+    """The footer starts below the first screen, never mid-fold (SHM-05, SHM-07).
+
+    The legacy `.is-tall-container` is `flex: 1 1 auto` **and** `min-height:
+    100vh` (shell.component.scss): the content band is a full viewport, so
+    the footer begins at the fold and is off the first screen — the demo
+    measures footer top 1346px at a 900px viewport.
+    """
+    authenticated.set_viewport_size({"width": 1280, "height": 900})
+    authenticated.wait_for_timeout(200)
+
+    box = authenticated.locator("footer.footer").bounding_box()
+
+    assert box is not None
+    viewport = authenticated.evaluate("() => window.innerHeight")
+
+    # The band is a full viewport: the footer top sits at/below the fold.
+    assert box["y"] >= viewport - 2
+    band_box = authenticated.locator(".is-tall-container").bounding_box()
+
+    assert band_box is not None
+    assert band_box["height"] >= viewport - 2
+
+
+def test__landing_content_sits_in_a_container(authenticated: Page) -> None:
+    """The landing content is inset like the legacy grid, not edge-to-edge (SHM-07).
+
+    The legacy wraps pages in `section > container` (the demo measures the
+    hero box at x=56 in a 1280 viewport, the navbar brand's column). The
+    landing's box shares the navbar container's inset; the band behind it
+    stays full-bleed (#f5f5f5 to the viewport edges, as on the demo).
+    """
+    authenticated.set_viewport_size({"width": 1280, "height": 900})
+
+    box_left = authenticated.locator(".box").evaluate("el => el.getBoundingClientRect().left")
+    nav_left = authenticated.locator(".navbar .container").evaluate("el => el.getBoundingClientRect().left")
+    band = authenticated.locator(".is-tall-container")
+
+    assert box_left == pytest.approx(nav_left, abs=2)
+    assert box_left > 30  # inset, not edge-to-edge
+    band_box = band.bounding_box()
+    # The band is full-bleed: viewport-wide minus the scrollbar.
+    client_w = authenticated.evaluate("() => document.documentElement.clientWidth")
+
+    assert band_box is not None
+    assert band_box["x"] == pytest.approx(0, abs=2)
+    assert band_box["width"] == pytest.approx(client_w, abs=2)
+
+
+def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Browser, settings: Settings) -> None:
+    """data-theme=light keeps the app light when the OS prefers dark (SHM-01).
+
+    Bulma 1 follows ``prefers-color-scheme``; the legacy (Bulma 0.9.4) was
+    light-only, so the document root pins the light scheme (DD-059).
+    """
+    context = browser.new_context(color_scheme="dark", ignore_https_errors=True)
+    page = context.new_page()
+    try:
+        page.goto(base_url)
+        page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
+        page.locator("#username").fill(settings.username)
+        page.locator("#password").fill(settings.password.get_secret_value())
+        page.get_by_role("button", name="Sign in").click()
+        page.wait_for_url(re.compile(base_url))
+
+        assert page.evaluate("() => matchMedia('(prefers-color-scheme: dark)').matches") is True
+
+        band = page.locator(".is-tall-container")
+        footer = page.locator("footer.footer")
+
+        band_bg = band.evaluate("el => getComputedStyle(el).backgroundColor")
+        band_tokens = band.evaluate(
+            "el => { const cs = getComputedStyle(el);"
+            "return ['--bulma-light-h', '--bulma-light-s', '--bulma-light-l', '--bulma-scheme-main']"
+            ".map(t => t + '=' + cs.getPropertyValue(t)).join(' | '); }"
+        )
+
+        assert band_bg == "rgb(245, 245, 245)", f"band bg {band_bg}; tokens: {band_tokens}"
+        assert footer.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(0, 115, 221)"
+    finally:
+        context.close()

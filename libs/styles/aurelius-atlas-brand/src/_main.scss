@@ -1,4 +1,6 @@
 // Theme variables, must be included before the libraries to allow overriding defaults
+@use "sass:color";
+@use "sass:math";
 @use "variables";
 
 // Theme customization
@@ -6,3 +8,69 @@
 
 // Bulma
 @use "bulma/bulma";
+
+/*
+ * The Aurelius brand on Bulma 1 (SHM-01/03/04/06, DD-059) — emitted after
+ * Bulma so it wins the cascade against Bulma's :root, and outside the
+ * `:root:not([data-theme])` scheme machinery: light and dark follow the OS
+ * (SHM-01), the brand colours do not.
+ */
+:root {
+    @each $token, $value in variables.$bulma-token-overrides {
+        --bulma-#{$token}: #{$value};
+        --bulma-#{$token}-base: #{$value};
+        --bulma-#{$token}-rgb:
+            #{color.channel($value, "red", $space: rgb)}, #{color.channel($value, "green", $space: rgb)},
+            #{color.channel($value, "blue", $space: rgb)};
+        --bulma-#{$token}-h: #{color.channel($value, "hue", $space: hsl)};
+        --bulma-#{$token}-s: #{color.channel($value, "saturation", $space: hsl)};
+        --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
+    }
+
+    /*
+     * The legacy (Bulma 0.9.4) body metrics (SHM-03, DD-059): the system
+     * stack, 16px, line-height 1.5, weight 400, #4a4a4a ink on a white
+     * page — what the legacy app ships, and the reference the webapp is
+     * measured against. Bulma 1's defaults (Inter, 1rem, the scheme ink)
+     * render the app in the wrong type.
+     */
+    --bulma-family-primary:
+        BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --bulma-family-secondary: var(--bulma-family-primary);
+    --bulma-size-normal: 16px;
+    --bulma-body-line-height: 1.5;
+    --bulma-body-weight: 400;
+    --bulma-body-color: #4a4a4a;
+    --bulma-body-background-color: #fff;
+
+    // The navbar bar height: the legacy chrome ships 4.25rem (Bulma defaults
+    // to 3.25rem — the Aurelius navbar overrides it; the demo's bar is 68px).
+    // Bulma 1 reads the bar's min-height from --bulma-navbar-height, one
+    // knob for the bar and the `.has-navbar-fixed-top` body padding.
+    --bulma-navbar-height: 4.25rem;
+}
+
+/*
+ * The chrome tokens Bulma 1 scopes on its components (SHM-04): `.navbar`
+ * and `.footer` redefine their own background/ink tokens, so the Aurelius
+ * values land on the same selectors.
+ */
+.navbar {
+    // Bulma 0.9.4's navbar-item-color is rgba($black, 0.7) — the ink the
+    // legacy chrome's text renders in (the demo: rgb(74, 74, 74)).
+    --bulma-navbar-item-color: rgba(10, 10, 10, 0.7);
+
+    @each $token, $value in variables.$bulma-navbar-overrides {
+        --bulma-#{$token}: #{$value};
+        --bulma-#{$token}-h: #{color.channel($value, "hue", $space: hsl)};
+        --bulma-#{$token}-s: #{color.channel($value, "saturation", $space: hsl)};
+        --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
+    }
+}
+
+.footer {
+    @each $token, $value in variables.$bulma-footer-overrides {
+        --bulma-#{$token}: #{$value};
+    }
+}

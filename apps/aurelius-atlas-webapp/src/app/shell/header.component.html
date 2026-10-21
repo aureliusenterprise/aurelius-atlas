@@ -9,7 +9,9 @@
   never `id|description` suffixes — the suffix joins the extracted id and the
   key-keyed bridge can never match it (DD-055).
 -->
-<aurelius-atlas-ui-header [name]="appName">
+<!-- The legacy navbar is pinned (SHM-05, `navbar is-fixed-top`); the body
+     carries the matching has-navbar-fixed-top padding (index.html). -->
+<aurelius-atlas-ui-header fixed [name]="appName" [logo]="appLogo" logoCssClass="logo">
     <ng-container navbar-end>
         <!-- Documentation (SHC-03) -->
         <div class="navbar-item">

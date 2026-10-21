@@ -1,1 +1,20 @@
-/* The Aurelius app.component.scss is empty; the root is a bare outlet. */
+/*
+ * The shell frame (SHC-01, SHM-05, SHM-07, DD-061): the root is the flex
+ * column between body and chrome (body is the viewport-height column,
+ * styles.scss); the outlet band is the legacy `.is-tall-container` verbatim —
+ * the Aurelius `shell.component.scss` rule (`flex: 1 1 auto` AND
+ * `min-height: 100vh`) — so the band is a full viewport and the footer
+ * starts below the fold, as on the demo (the footer is never on the first
+ * screen). The `has-background-light` band (#f5f5f5, the Aurelius light) is
+ * the legacy shell's content background.
+ */
+:host {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+.is-tall-container {
+    flex: 1 1 auto;
+    min-height: 100vh;
+}

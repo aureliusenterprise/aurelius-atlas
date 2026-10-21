@@ -52,6 +52,21 @@ describe("Browse", () => {
         expect(cardTitles).toEqual(["Business context", "Technical context", "Data governance organization"]);
     });
 
+    it("insets the page content in the legacy section > container grid (SHM-07, DD-061)", () => {
+        const fixture = TestBed.createComponent(Browse);
+        fixture.detectChanges();
+
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        // The legacy pages wrap their root in `section.section > div.container`
+        // (the demo's insets come from exactly this, not hand-rolled margins).
+        const section = compiled.querySelector("section.section > .container");
+
+        expect(section).toBeTruthy();
+        expect(section?.querySelector(".box #browse-placeholder")).toBeTruthy();
+        expect(section?.querySelectorAll(".columns > .column")).toHaveLength(3);
+    });
+
     it("issues no HTTP requests: the landing exists before its API (BRW-04)", () => {
         const fixture = TestBed.createComponent(Browse);
         fixture.detectChanges();
