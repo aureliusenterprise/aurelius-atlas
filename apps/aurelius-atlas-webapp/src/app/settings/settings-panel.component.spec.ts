@@ -203,9 +203,13 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
 
         expect(links.map((l) => l.getAttribute("hreflang"))).toEqual(["en-US", "nl-NL"]);
         expect(links.map((l) => l.getAttribute("href"))).toEqual(["/en-US/", "/nl-NL/"]);
-        // The active locale is marked from the document's lang (SPL-06).
+        // The active locale is marked from the document's lang (SPL-06),
+        // and the mark is what the panel styles into a highlight
+        // (DD-082): `is-selected` + `aria-current` on the active link.
         expect(links[0].getAttribute("aria-current")).toBe("true");
         expect(links[1].getAttribute("aria-current")).toBeNull();
+        expect(links[0].classList.contains("is-selected")).toBe(true);
+        expect(links[1].classList.contains("is-selected")).toBe(false);
     });
 
     it("the time zone select offers Browser default and the server's zones (SPL-07)", async () => {
