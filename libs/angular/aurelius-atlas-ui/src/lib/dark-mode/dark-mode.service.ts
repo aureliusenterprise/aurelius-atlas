@@ -7,8 +7,10 @@ const MODES = ["dark", "light", null] as const;
 
 /**
  * The type representing the modes available in the dark mode service.
+ * Exported for the settings facade (SPL-03): the panel's theme radio
+ * chooses one and hands it to {@link DarkModeService.setMode}.
  */
-type Mode = (typeof MODES)[number];
+export type Mode = (typeof MODES)[number];
 
 @Injectable({
     providedIn: "root",

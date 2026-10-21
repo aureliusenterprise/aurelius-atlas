@@ -1,5 +1,7 @@
 import { TestBed } from "@angular/core/testing";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
+import { AdminService } from "aurelius-atlas-data-access";
+import { NEVER } from "rxjs";
 import Keycloak from "keycloak-js";
 
 import { AppConfig } from "../config";
@@ -27,6 +29,9 @@ function setup(identity = "aurelius-writer") {
             { provide: APP_CONFIG, useValue: config },
             { provide: Keycloak, useValue: { logout } },
             { provide: Session, useValue: { identity: () => identity } },
+            // The settings panel the header carries loads timezones/version
+            // lazily on open — no open happens in these tests, the stub stays silent.
+            { provide: AdminService, useValue: { getSession: () => NEVER, getVersion: () => NEVER } },
         ],
     });
 
@@ -74,41 +79,32 @@ describe("ShellHeader", () => {
         expect(normalize(link?.textContent)).toBe("Documentation");
     });
 
-    it("lists both locales with hreflang on each dropdown item (SHC-04)", () => {
-        const items = [...render().querySelectorAll<HTMLAnchorElement>(".navbar-dropdown a[hreflang]")];
+    it("opens the settings panel from the gear (SPL-01)", () => {
+        // The gear replaces the language dropdown in navbar-end; the panel
+        // is the header's own element, closed until the gear opens it.
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const gear = compiled.querySelector<HTMLButtonElement>('button.navbar-item[aria-label="Settings"]');
+        const panel = compiled.querySelector("aurelius-atlas-webapp-settings-panel");
 
-        expect(items.map((item) => normalize(item.textContent))).toEqual(["en-US", "nl-NL"]);
-        expect(items.map((item) => item.getAttribute("hreflang"))).toEqual(["en-US", "nl-NL"]);
+        expect(gear).toBeTruthy();
+        expect(panel).toBeTruthy();
+        expect(compiled.querySelector(".aurelius-drawer")).toBeNull();
+
+        gear?.click();
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-drawer")).toBeTruthy();
     });
 
-    it("computes locale hrefs by swapping the locale prefix (SHC-04)", () => {
-        setup();
-        const header = TestBed.createComponent(ShellHeader).componentInstance as unknown as {
-            localeHref(locale: string, currentPath: string): string;
-        };
+    it("no longer carries the language dropdown (SPL-01, SPL-06)", () => {
+        // The language control moved into the panel; the navbar-end set is
+        // Documentation, the gear, and the account dropdown.
+        const compiled = render();
 
-        expect(header.localeHref("nl-NL", "/en-US/search/browse")).toBe("/nl-NL/search/browse");
-        expect(header.localeHref("nl-NL", "/search/browse")).toBe("/nl-NL/search/browse");
-        expect(header.localeHref("en-US", "/nl-NL/")).toBe("/en-US/");
-        expect(header.localeHref("en-US", "/")).toBe("/en-US/");
-    });
-
-    it("marks the active locale in the dropdown (SHC-04)", () => {
-        document.documentElement.lang = "nl-NL";
-        try {
-            const compiled = render();
-            const active = compiled.querySelector<HTMLAnchorElement>('.navbar-dropdown a[aria-current="true"]');
-
-            expect(normalize(active?.textContent)).toBe("nl-NL");
-            expect(active?.getAttribute("href")).toBe("/nl-NL/");
-
-            // The dropdown's trigger shows the label with the active locale,
-            // as the legacy header does ("Your language is nl-NL").
-            const label = compiled.querySelectorAll<HTMLElement>("a.navbar-link")[0];
-            expect(normalize(label?.textContent)).toBe("Your language is nl-NL");
-        } finally {
-            document.documentElement.lang = "en-US";
-        }
+        expect(compiled.querySelector("[hreflang]")).toBeNull();
+        expect(normalize(compiled.textContent)).not.toContain("Your language is");
     });
 
     it("greets the signed-in identity in the account dropdown (SHC-05)", () => {

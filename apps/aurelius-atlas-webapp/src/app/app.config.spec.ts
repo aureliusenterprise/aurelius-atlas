@@ -11,20 +11,27 @@
  * `updateToken` / `getToken`). The real `keycloak-js` client is constructed by
  * `provideKeycloak` (its constructor validates the config — the APC-05 plumbing), and
  * its `init` is never called here: jsdom cannot run the SSO round-trip; that flow is
- * the e2e suite's (APC-10). `aurelius-atlas-observability` is mocked so no OTel SDK
- * starts in the unit environment.
+ * the e2e suite's (APC-10). `aurelius-atlas-observability` is NOT mocked: a
+ * `vi.mock` of the alias path intercepts only this spec's import —
+ * `app.config` assembles the real module's providers, so mock tokens never
+ * match them (the 7.14 gate tests below). The real SDK is safe in the unit
+ * environment: its provider functions are lazy — the OTel SDK starts in an
+ * app initializer, which TestBed never runs here.
  */
-import { HttpClient, HttpHandlerFn, HttpRequest } from "@angular/common/http";
+import { HttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { DATE_PIPE_DEFAULT_TIMEZONE } from "@angular/common";
 import { ApplicationConfig, Provider } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { API_BASE_URL } from "aurelius-atlas-data-access";
+import { AURELIUS_METER_PROVIDER, AURELIUS_WEB_TRACER_PROVIDER } from "aurelius-atlas-observability";
 import Keycloak from "keycloak-js";
 import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { bearerTokenConfig, initialize, keycloakInitOptions } from "./app.config";
+import { TELEMETRY_KEY, TIMEZONE_KEY } from "./settings/user-preference";
 
 const configPayload = {
     keycloak: { clientId: "aurelius", realm: "master", url: "https://keycloak.localhost:8443" },
@@ -34,14 +41,6 @@ const configPayload = {
     appCopyright: 2022,
     appVersion: "0.0.0",
 };
-
-vi.mock("aurelius-atlas-observability", () => ({
-    AureliusTraceErrorHandler: class {},
-    aureliusOpenTelemetryHttpInterceptor: (req: HttpRequest<unknown>, next: HttpHandlerFn) => next(req),
-    createAureliusSessionResource: () => ({}),
-    provideAureliusOpenTelemetry: () => [],
-    provideAureliusOpenTelemetryMetrics: () => [],
-}));
 
 /**
  * The Keycloak seams `includeBearerTokenInterceptor` reads: `updateToken()` before
@@ -84,6 +83,24 @@ async function bootstrap(keycloak: KeycloakStub): Promise<Provider[]> {
     return appConfig.providers as Provider[];
 }
 
+/**
+ * Whether the provider set — entries nest: an EnvironmentProviders object
+ * carries its list under `ɵproviders` — registers a token.
+ * @param providers the assembled (nested) provider list
+ * @param token the token to look for
+ * @returns true when some entry provides the token
+ */
+function providesToken(providers: readonly Provider[], token: unknown): boolean {
+    return providers.some((p) => {
+        if (Array.isArray(p)) return providesToken(p as Provider[], token);
+        if (typeof p !== "object" || p === null) return false;
+        if ("provide" in p && p.provide === token) return true;
+        const nested = (p as { ɵproviders?: Provider[] }).ɵproviders;
+
+        return Array.isArray(nested) && providesToken(nested, token);
+    });
+}
+
 describe("app providers (7.3)", () => {
     afterEach(() => TestBed.resetTestingModule());
 
@@ -119,6 +136,48 @@ describe("app providers (7.3)", () => {
     it("provides the API base URL from the runtime config (APC-01)", async () => {
         await bootstrap(makeKeycloakStub());
         expect(TestBed.inject(API_BASE_URL)).toBe("/api");
+    });
+
+    it("assembles the SDK providers when telemetry is on, the default (SPL-11)", async () => {
+        // The gate reads the stored switch at bootstrap; the default is on,
+        // so the SDK's provider set joins the app's (SHL-14, unchanged).
+        const providers = await bootstrap(makeKeycloakStub());
+
+        expect(providesToken(providers, AURELIUS_WEB_TRACER_PROVIDER)).toBe(true);
+        expect(providesToken(providers, AURELIUS_METER_PROVIDER)).toBe(true);
+    });
+
+    it("assembles no SDK providers when the stored switch is off (SPL-11, DD-070)", async () => {
+        // Off at bootstrap = the SDK is never assembled (the gate skips
+        // both provide calls). The token probe, not an HTTP call: with the
+        // SDK absent, the OTLP interceptor's tracer injection is the
+        // gate-off runtime question the interceptor's own spec pins.
+        localStorage.setItem(TELEMETRY_KEY, JSON.stringify(false));
+        try {
+            const providers = await bootstrap(makeKeycloakStub());
+
+            expect(providesToken(providers, AURELIUS_WEB_TRACER_PROVIDER)).toBe(false);
+            expect(providesToken(providers, AURELIUS_METER_PROVIDER)).toBe(false);
+        } finally {
+            localStorage.removeItem(TELEMETRY_KEY);
+        }
+    });
+
+    it("provides the date-pipe time zone from the store (SPL-07)", async () => {
+        await bootstrap(makeKeycloakStub());
+        // Nothing stored: null, which makes DatePipe use the system zone —
+        // the app's behaviour before the setting existed.
+        expect(TestBed.inject(DATE_PIPE_DEFAULT_TIMEZONE)).toBeNull();
+
+        localStorage.setItem(TIMEZONE_KEY, JSON.stringify("Europe/Amsterdam"));
+        try {
+            TestBed.resetTestingModule();
+            await bootstrap(makeKeycloakStub());
+
+            expect(TestBed.inject(DATE_PIPE_DEFAULT_TIMEZONE)).toBe("Europe/Amsterdam");
+        } finally {
+            localStorage.removeItem(TIMEZONE_KEY);
+        }
     });
 
     it("the bearer interceptor signs /api calls (APC-06)", async () => {

@@ -1,0 +1,126 @@
+<!--
+  The settings panel body (SPL-03..SPL-12), carried by the ui-lib drawer.
+  Every control writes through the SettingsService facade (SPL-10); the
+  panel stores nothing itself.
+
+  i18n ids are the shell.settings.* dictionary paths (DD-039 bridge,
+  SHC-07 pattern). Strings bound into component inputs live in TypeScript
+  as $localize (BRW-02), so only plain text carries markers here —
+  descriptions are comments, never `id|description` suffixes (DD-055).
+-->
+<aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel">
+    <div class="settings-section">
+        <!-- Appearance: the theme radio (SPL-03). -->
+        <p class="menu-label">
+            <!-- Appearance. -->
+            <span i18n="@@shell.settings.appearance">Appearance</span>
+        </p>
+        <div class="field">
+            <div class="control">
+                @for (theme of themes; track theme.mode) {
+                    <label class="radio settings-radio">
+                        <input
+                            type="radio"
+                            name="settings-theme"
+                            [checked]="settings.theme() === theme.mode"
+                            (change)="settings.setTheme(theme.mode)"
+                        />
+                        {{ theme.label }}
+                    </label>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <!-- Language: full-page navigation, not a stored setting (SPL-06, SHC-04). -->
+        <p class="menu-label">
+            <!-- Language. -->
+            <span i18n="@@shell.settings.language">Language</span>
+        </p>
+        <div class="buttons has-addons">
+            @for (locale of settings.locale.locales; track locale) {
+                <a
+                    class="button is-small"
+                    [class.is-selected]="locale === settings.locale.activeLocale"
+                    [attr.aria-current]="locale === settings.locale.activeLocale ? 'true' : null"
+                    [attr.href]="settings.locale.localeHref(locale)"
+                    [attr.hreflang]="locale"
+                    >{{ locale }}</a
+                >
+            }
+        </div>
+        <p class="help">
+            <!-- Switching language reloads the page in that language. -->
+            <span i18n="@@shell.settings.languageHint">Switching language reloads the page in that language.</span>
+        </p>
+    </div>
+
+    <div class="settings-section">
+        <!-- Time zone: DATE_PIPE_DEFAULT_TIMEZONE on reload, ADM-05 list (SPL-07). -->
+        <p class="menu-label">
+            <!-- Time zone. -->
+            <span i18n="@@shell.settings.timezone">Time zone</span>
+        </p>
+        <div class="select is-fullwidth">
+            <select [ngModel]="timezoneValue" (ngModelChange)="setTimezone($event)">
+                <!-- Browser default: the null choice (SPL-07). -->
+                <option [ngValue]="null" i18n="@@shell.settings.timezoneBrowser">Browser default</option>
+                @for (zone of timezones(); track zone) {
+                    <option [ngValue]="zone">{{ zone }}</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <!-- Default table page size (SPL-08). -->
+        <p class="menu-label">
+            <!-- Default table page size. -->
+            <span i18n="@@shell.settings.pageSize">Default table page size</span>
+        </p>
+        <div class="select is-fullwidth">
+            <select [ngModel]="settings.pageSize()" (ngModelChange)="settings.setPageSize($event)">
+                @for (size of pageSizes; track size) {
+                    <option [ngValue]="size">{{ size }}</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <!-- Telemetry toggle (SPL-11, DD-070). -->
+        <p class="menu-label">
+            <!-- Usage telemetry. -->
+            <span i18n="@@shell.settings.telemetry">Usage telemetry</span>
+        </p>
+        <label class="checkbox settings-switch">
+            <input type="checkbox" [ngModel]="settings.telemetry()" (ngModelChange)="settings.setTelemetry($event)" />
+        </label>
+        <p class="help">
+            <!-- Turns collection of usage and performance data on or off. Turning it on takes effect after a reload. -->
+            <span i18n="@@shell.settings.telemetryHint">
+                Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.
+            </span>
+        </p>
+    </div>
+
+    <div class="settings-section">
+        <!-- About: the build and the server (SPL-12, ADM-01). -->
+        <p class="menu-label">
+            <!-- About. -->
+            <span i18n="@@shell.settings.about">About</span>
+        </p>
+        <p>
+            {{ config.appName }}
+            <!-- Version. -->
+            <span class="has-text-grey-light" i18n="@@shell.settings.version">Version</span>
+            {{ config.appVersion }}
+        </p>
+        <p>
+            <!-- Server. -->
+            <span class="has-text-grey-light" i18n="@@shell.settings.server">Server</span>
+            {{ serverVersion() ?? serverUnavailable }}
+        </p>
+    </div>
+</aurelius-atlas-ui-drawer>

@@ -1,0 +1,23 @@
+/*
+ * The settings panel's sections (SPL-03..SPL-12): the drawer body stacks
+ * them; Bulma's menu-label styles each section's heading. The panel ships
+ * no layout of its own beyond this rhythm — the drawer (DD-069) carries
+ * the panel chrome, Bulma carries the controls.
+ */
+.settings-section + .settings-section {
+    margin-top: 1.5rem;
+}
+
+.settings-radio {
+    margin-right: 1rem;
+}
+
+.settings-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-section .help {
+    margin-top: 0.5rem;
+}

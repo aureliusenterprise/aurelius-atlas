@@ -1,17 +1,30 @@
 <!doctype html>
-<!-- NOSONAR S125: a decision note, not commented-out code.
-  The document root declares the light colour scheme (SHM-01). Bulma 1 follows
-  the operating system otherwise, the Aurelius legacy (Bulma 0.9.4) was
-  light-only, and the app has no theme switch yet; the attribute on the root
-  element is the switch's future knob (DD-059).
--->
-<html lang="en" data-theme="light">
+<html lang="en">
     <head>
         <meta charset="utf-8" />
         <title>Aurelius Atlas</title>
         <base href="/" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
+        <!-- NOSONAR S125: a decision note, not commented-out code.
+          The theme pre-render (DD-071, superseding SHM-01's html pin): the
+          stored choice is applied before the first paint, so a returning
+          user never flashes the other scheme (SPL-04), and with nothing
+          stored the root is light under any OS preference (SPL-05). The
+          static data-theme="light" pin is gone: it read as an explicit
+          choice and outranked a stored Dark/Auto selection. Auto removes
+          the attribute so Bulma's :root:not([data-theme]) OS path applies;
+          the script's sha256 rides script-src in nginx.conf.template.
+        -->
+        <script>
+            (function () {
+                var t = null;
+                try {
+                    t = localStorage.getItem("data-theme");
+                } catch (e) {}
+                document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
+            })();
+        </script>
     </head>
     <!-- has-navbar-fixed-top: the chrome's navbar is pinned (SHM-05); Bulma pads
          the body by the navbar height so content starts below the bar. -->

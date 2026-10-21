@@ -24,16 +24,16 @@ server {
     # Security headers (M2).
     #   - style-src 'unsafe-inline': @angular/build inlines critical CSS as a
     #     <style> tag in index.html (no hash available at config time).
-    #   - script-src 'self': the build ships no inline scripts (no
-    #     critical-CSS media-flip script — the app CSS is tiny), so no hash
-    #     is needed. Recompute one with the example app's recipe if a later
-    #     build starts inlining.
+    #   - script-src 'self' + the theme pre-render hash: the build ships one
+    #     inline script — the data-theme bootstrap (DD-071) — whose sha256
+    #     rides here (the silent-check-sso hash precedent). Recompute with
+    #     the example app's recipe if the script's bytes change.
     #   - connect-src/frame-src add the Keycloak origins (7.3, APC-05):
     #     keycloak-js fetches the realm metadata cross-origin and the
     #     silent-SSO iframe embeds the Keycloak authorization endpoint.
     #     Deployments list them via ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}
     #     (space-separated, e.g. "https://sso.example.com").
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}; frame-src 'self' ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'sha256-bLKOgCGxZwqOQyQKetdKOchl5wDQhHnVVp+X0UOvsBw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}; frame-src 'self' ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;

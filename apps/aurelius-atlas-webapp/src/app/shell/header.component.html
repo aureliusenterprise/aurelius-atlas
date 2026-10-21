@@ -32,30 +32,20 @@
             </div>
         </div>
 
-        <!-- Language switch (SHC-04): full-page navigation, locale prefix swap. -->
-        <div class="navbar-item has-dropdown is-hoverable">
-            <a class="navbar-link">
-                <span>
-                    <!-- Your language is. -->
-                    <span i18n="@@shell.header.language">Your language is</span>
-                    <span>&nbsp;</span>
-                    <strong>{{ activeLocale }}</strong>
-                </span>
-            </a>
-            <div class="navbar-dropdown is-right">
-                @for (locale of locales; track locale) {
-                    <a
-                        class="navbar-item"
-                        [attr.aria-current]="locale === activeLocale ? 'true' : null"
-                        [attr.href]="localeHref(locale)"
-                        [attr.hreflang]="locale"
-                        [class.is-active]="locale === activeLocale"
-                    >
-                        {{ locale }}
-                    </a>
-                }
-            </div>
-        </div>
+        <!-- Settings gear (SPL-01): replaces the language dropdown, whose
+             control moved into the panel (SPL-06). The gear opens the panel;
+             it is a native button, so Enter/Space are free. -->
+        <button
+            type="button"
+            class="navbar-item"
+            i18n-aria-label="@@shell.header.settings"
+            aria-label="Settings"
+            (click)="settingsPanel.open()"
+        >
+            <span class="icon">
+                <fa-icon aria-hidden="true" [icon]="faGear"></fa-icon>
+            </span>
+        </button>
 
         <!-- Account dropdown (SHC-05): welcome / Account-security / Logout. -->
         <div class="navbar-item has-dropdown is-hoverable">
@@ -88,3 +78,7 @@
         </div>
     </ng-container>
 </aurelius-atlas-ui-header>
+
+<!-- The settings panel (SPL-01): the gear opens it. The drawer's layer is
+     fixed-position, so it sits outside the navbar's stacking context. -->
+<aurelius-atlas-webapp-settings-panel #settingsPanel />

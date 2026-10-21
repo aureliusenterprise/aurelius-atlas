@@ -1,4 +1,5 @@
 import { provideHttpClient, withInterceptors, withXhr } from "@angular/common/http";
+import { DATE_PIPE_DEFAULT_TIMEZONE } from "@angular/common";
 import {
     ApplicationConfig,
     ErrorHandler,
@@ -25,6 +26,8 @@ import type { KeycloakInitOptions } from "keycloak-js";
 
 import { AppConfig, parseAppConfig } from "./config";
 import { routes } from "./routes";
+import { TelemetryService } from "./settings/telemetry.service";
+import { TimezoneService } from "./settings/timezone.service";
 import { APP_CONFIG } from "./tokens";
 
 /**
@@ -99,20 +102,34 @@ export async function initialize(): Promise<ApplicationConfig> {
             // Uncaught errors (window.onerror + unhandledrejection) become
             // exception events on the active span, or a standalone error span.
             { provide: ErrorHandler, useClass: AureliusTraceErrorHandler },
-            provideAureliusOpenTelemetry({
-                exporter: new OTLPTraceExporter({
-                    url: config.otelExporterUrl,
-                }),
-                name: "aurelius-atlas-webapp",
-                resource: sessionResource,
-            }),
-            provideAureliusOpenTelemetryMetrics({
-                exporter: new OTLPMetricExporter({
-                    url: metricsUrl(config),
-                }),
-                name: "aurelius-atlas-webapp",
-                resource: sessionResource,
-            }),
+            // The telemetry gate (SPL-11, DD-070): the stored switch decides
+            // at bootstrap. Off = no providers at all — the interceptor falls
+            // back to the no-op global tracer; TelemetryService's optional
+            // token injections return null exactly then. On = the SDK is
+            // assembled as before (SHL-14).
+            ...(TelemetryService.storedEnabled()
+                ? [
+                      provideAureliusOpenTelemetry({
+                          exporter: new OTLPTraceExporter({
+                              url: config.otelExporterUrl,
+                          }),
+                          name: "aurelius-atlas-webapp",
+                          resource: sessionResource,
+                      }),
+                      provideAureliusOpenTelemetryMetrics({
+                          exporter: new OTLPMetricExporter({
+                              url: metricsUrl(config),
+                          }),
+                          name: "aurelius-atlas-webapp",
+                          resource: sessionResource,
+                      }),
+                  ]
+                : []),
+            // The display time zone (SPL-07): the stored choice, null = the
+            // system default. DatePipe formats against it (the token replaces
+            // the legacy DATE_TIME_ZONE, removed in Angular 22); changing it
+            // takes effect on reload, which the settings panel states.
+            { provide: DATE_PIPE_DEFAULT_TIMEZONE, useFactory: () => TimezoneService.storedTimezone() },
             // The REST client composes every URL from this base — the Aurelius
             // deployment-proxy coupling is not ported (APC-01, DD-050).
             provideApiBaseUrl(config.apiBaseUrl),

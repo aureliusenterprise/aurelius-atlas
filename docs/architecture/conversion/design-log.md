@@ -2077,7 +2077,7 @@ to the other categories. It generalises what the lib already does:
 exception to the dumb-component rule, and it owns its key (`data-theme`).
 One owner per key keeps a single writer per storage slot; the panel consumes
 only the facade (one injectable, one test double); the bootstrap providers
-(`DATE_TIME_ZONE`, the telemetry gate) read the owners directly, which is
+(`DATE_PIPE_DEFAULT_TIMEZONE`, the telemetry gate) read the owners directly, which is
 legal because `UserPreference` reads storage synchronously at construction.
 The seam for the promised server-side persistence is the helper's internals
 (GET/PUT behind the same signal API) — owners, facade, and panel do not
