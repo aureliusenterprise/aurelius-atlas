@@ -2324,6 +2324,7 @@
             "enabled": true,
             "firstName": "Aurelius",
             "lastName": "Writer",
+            "realmRoles": ["default-roles-master"],
             "username": "aurelius-writer"
         },
         {
@@ -2338,6 +2339,7 @@
             "enabled": true,
             "firstName": "Aurelius",
             "lastName": "Reader",
+            "realmRoles": ["default-roles-master"],
             "username": "aurelius-reader"
         }
     ],
