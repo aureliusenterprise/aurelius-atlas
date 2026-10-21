@@ -143,13 +143,49 @@
     --bulma-navbar-item-active-background-l-delta: -4%;
     --bulma-navbar-item-selected-h: 0deg;
     --bulma-navbar-item-selected-s: 0%;
-    --bulma-navbar-item-selected-background-l: 96%;
+    --bulma-navbar-item-selected-background-l: 100%;
     --bulma-navbar-item-selected-color-l: 0%;
+
+    // The burger ink (SHM-04, DD-064): Bulma 1 derives it from link (the
+    // Aurelius blue) — 0.9.4 defaults it to the navbar ink, the demo's
+    // grey. The hover/active plate composes the burger channels at 10 % /
+    // 20 % alpha (0.9.4's rgba($navbar-burger-color, .1) — black over the
+    // band), so the channels go black and the ink rides on the colour.
+    --bulma-navbar-burger-color: #4a4a4a;
+    --bulma-burger-h: 0deg;
+    --bulma-burger-s: 0%;
+    --bulma-burger-l: 0%;
+
+    // The dropdown chevron (SHM-04, DD-064): the legacy theme pins
+    // $navbar-dropdown-arrow to black — Bulma 1 derives it from link (the
+    // Aurelius blue).
+    --bulma-navbar-dropdown-arrow: #000;
 
     // The dropdown ink composes h/s from the (tinted) scheme with the text
     // lightness; neutralized, it resolves to #4a4a4a like the demo (DD-062).
     --bulma-navbar-dropdown-item-h: 0deg;
     --bulma-navbar-dropdown-item-s: 0%;
+}
+
+// The mobile navbar (SHM-04, DD-064): 0.9.4 blends the burger menu's
+// dropdowns into the menu band (`.navbar-dropdown` transparent, items
+// transparent, no top padding — Bulma 1's dropdown-item plate rule is not
+// media-scoped, so its items render as white tiles on the grey band).
+@media screen and (max-width: 1023px) {
+    .navbar .navbar-dropdown {
+        padding-top: 0;
+    }
+
+    .navbar .navbar-dropdown .navbar-item {
+        background-color: transparent;
+    }
+
+    // Bulma 1 regression (jgthms/bulma#4173): the %arrow placeholder sets
+    // display at :not(.is-arrowless) specificity, beating the mobile hide
+    // rule — 0.9.4 hides the burger menu's chevrons, mirrored here.
+    .navbar .navbar-link:not(.is-arrowless)::after {
+        display: none;
+    }
 }
 
 // The hover ink (SHM-04, DD-063): Bulma 1 dropped 0.9.4's

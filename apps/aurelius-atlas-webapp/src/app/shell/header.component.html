@@ -68,10 +68,11 @@
                 <!-- Account-security: the Keycloak account console. -->
                 <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
                 <hr class="navbar-divider" />
-                <!-- Logout. -->
-                <button class="navbar-item has-text-danger" (click)="logout()" i18n="@@shell.header.logout">
-                    Logout
-                </button>
+                <!-- Logout: the legacy `a role="button" .navbar-item` — the
+                     dropdown's ink chain styles anchors, a <button> keeps the
+                     UA's centered text and gets the dropdown item's white
+                     plate on mobile (DD-064). -->
+                <a class="navbar-item" role="button" (click)="logout()" i18n="@@shell.header.logout">Logout</a>
             </div>
         </div>
     </ng-container>

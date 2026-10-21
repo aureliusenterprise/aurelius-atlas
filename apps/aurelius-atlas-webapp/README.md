@@ -144,7 +144,12 @@ on components (`.navbar`, `.footer`) re-emitted there. The accent ramp is the
 legacy theme's Bootstrap map — link `#0073dd`, info `#17a2b8`, success
 `#28a745`, warning `#ffc107`, danger `#dc3545` — while `primary` stays
 Bulma's own teal `#00d1b2` (the demo's landing icons) with white solid-fill
-ink (DD-063). Bulma 1 re-tinted the
+ink (DD-063). The mobile burger chrome follows the legacy: the burger
+renders in navbar grey with the black hover plate (Bulma 1 tints it from
+link), the burger menu's dropdowns blend into the band with no chevron
+(Bulma 1 leaves white plates and shows the arrow — 0.9.4's mobile
+rendering), and Logout is the legacy `a.navbar-item[role=button]` in
+navbar ink, not a red button (DD-064). Bulma 1 re-tinted the
 whole grey ramp (221 degrees) and re-weighted title/strong/button, so the
 library re-emits Bulma 0.9.4's neutral channels — the `text`/`text-strong`
 hue-saturation-lightness triplets and the `.title`/`.button` weights — to

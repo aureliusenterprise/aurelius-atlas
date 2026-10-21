@@ -133,11 +133,14 @@ describe("ShellHeader", () => {
     it("ends the Keycloak session on Logout (SHC-05)", () => {
         const { logout } = setup();
         const compiled = render();
-        const button = [...compiled.querySelectorAll<HTMLButtonElement>("button.navbar-item")].find((item) =>
+        // The legacy Logout is `a role="button" .navbar-item` (DD-064).
+        const anchor = [...compiled.querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
             item.textContent?.includes("Logout"),
         );
 
-        button?.click();
+        expect(anchor?.getAttribute("role")).toBe("button");
+
+        anchor?.click();
 
         expect(logout).toHaveBeenCalledOnce();
     });

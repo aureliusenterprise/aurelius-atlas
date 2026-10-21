@@ -1801,3 +1801,48 @@ navbar hover/active emission joins the navbar block (DD-059's "scope on
 `.navbar`" pattern), with the one ink rule outside the token machinery —
 the first brand rule that must set a state colour Bulma 1 never tokenised.
 Pinned by `test__accent_ramp_matches_the_demo`.
+
+### DD-064. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor
+
+**Decision.** The brand carries the legacy theme's mobile navbar on Bulma
+1: `--bulma-navbar-burger-color: #4a4a4a` with the burger **channels** set
+black (the hover/active plate composes them at 10 %/20 % alpha — 0.9.4's
+plate is `rgba($black, .1)` over the band, Bulma 1 tints it from link),
+and `--bulma-navbar-dropdown-arrow: #000` (the legacy pins
+`$navbar-dropdown-arrow: $black`; Bulma 1 derives it from link). The
+selected plate (`.is-active`, the locale's current item) lands on
+white/`#000` (the demo's measured pair — 0.9.4's, Bulma 1's default is the
+link-blue plate). Under `max-width: 1023px` the burger menu's
+`.navbar-dropdown` blends into the band (0.9.4 zeroes its
+background/colour/padding — Bulma 1's dropdown-item plate rule is **not**
+media-scoped, so its items render as white tiles on the grey band) and the
+dropdown chevron is hidden (Bulma 1 regression jgthms/bulma#4173: the
+`%arrow` placeholder's `:not(.is-arrowless)` display beats the media
+rule's plain `.navbar-link::after`). The Logout item is the legacy
+`a.navbar-item[role=button]` — navbar ink, no `has-text-danger` (the
+legacy shell has none; the dropdown ink chain styles anchors, a
+`<button>` keeps the UA's centred text and the dropdown plate's white
+tile). SHM-04/SHC-05.
+
+**Reason.** Reviewing the mobile chrome: the burger and its hover plate
+rendered Aurelius blue, the logout item sat centred on a white tile
+inside the grey menu, and the menu's dropdowns showed as white panels
+with blue chevrons. The legacy theme (`.scratch/aurelius`
+`libs/styles/src/styles/_theme.scss`) sets exactly four navbar rules —
+height, background, dropdown-arrow black, hover `#f5f5f5`/`#000` (DD-063)
+— and inherits 0.9.4's defaults for the rest; every mobile deviation is
+Bulma 1 changing those defaults (burger/arrow from link, unscoped
+dropdown plates, the chevron regression) or the port deviating from the
+legacy markup (Logout as a red `<button>`).
+
+**Alternatives.** Restyle the red logout `button` (padding/background
+overrides): the legacy ink is navbar grey, not red — the red was never in
+the product; the anchor is the legacy element and rides the dropdown's
+own ink chain for free. Ship the blue burger (Bulma 1's default): the
+demo's chrome is the greys, and the blue plate on the grey band is the
+mismatch the review flagged.
+
+**Consequences.** The mobile menu reads as one grey band with grey ink,
+as the demo. The media block is the brand's first responsive emission;
+the chevron rule documents the upstream regression it mirrors. Pinned by
+`test__burger_menu_matches_the_legacy_mobile_chrome`.

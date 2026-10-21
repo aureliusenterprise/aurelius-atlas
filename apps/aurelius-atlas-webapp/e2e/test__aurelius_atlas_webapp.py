@@ -389,6 +389,33 @@ def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
     expect(link).to_have_css("color", "rgb(0, 0, 0)")
 
 
+def test__burger_menu_matches_the_legacy_mobile_chrome(authenticated: Page) -> None:
+    """The mobile burger menu renders the legacy chrome (SHM-04, DD-064).
+
+    Bulma 1 tints the burger from link (the Aurelius blue), leaves the
+    burger menu's dropdowns as white plates on the grey band (its
+    dropdown-item rule is not media-scoped, 0.9.4's is), and — a known
+    regression — keeps the dropdown chevron visible on mobile, where
+    0.9.4 hides it. The legacy logout is an `a role="button" .navbar-item`
+    in navbar ink, not a red button: the UA centres a <button>'s text and
+    Bulma's plate rule inks it on a white tile.
+    """
+    authenticated.set_viewport_size({"width": 375, "height": 667})
+    burger = authenticated.locator(".navbar-burger")
+    expect(burger).to_have_css("color", "rgb(74, 74, 74)")
+    burger.click()
+
+    logout = authenticated.locator(".navbar-dropdown a.navbar-item", has_text="Logout")
+    expect(logout).to_be_visible()
+    expect(logout).to_have_css("text-align", "start")
+    expect(logout).to_have_css("background-color", "rgba(0, 0, 0, 0)")
+    expect(logout).to_have_css("color", "rgb(74, 74, 74)")
+
+    # 0.9.4 hides the burger menu's chevrons (Bulma 1 ships them, blue).
+    chevron = authenticated.locator(".navbar-end .navbar-link").first
+    assert chevron.evaluate("el => getComputedStyle(el, '::after').display") == "none"
+
+
 def test__footer_sits_below_the_fold(authenticated: Page) -> None:
     """The footer starts below the first screen, never mid-fold (SHM-05, SHM-07).
 
