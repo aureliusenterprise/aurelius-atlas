@@ -4324,6 +4324,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-063-the-accent-ramp-primary-stays-bulma-teal-the-accents-take-the-bootstrap-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-063. The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7546,6 +7557,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-063-the-accent-ramp-primary-stays-bulma-teal-the-accents-take-the-bootstrap-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-063. The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9365,6 +9387,53 @@ scheme-independent (channels live outside Bulma's <code>data-theme</code> blocks
 so a future dark scheme inherits Aurelius' neutral ramp machinery
 unchanged. <code>--bulma-text-rgb</code>-style companions are emitted for
 <code>text</code>/<code>text-strong</code>/<code>text-weak</code> (consumers read them raw).</p>
+<h3 id="dd-063-the-accent-ramp-primary-stays-bulma-teal-the-accents-take-the-bootstrap-map">DD-063. The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map<a class="headerlink" href="#dd-063-the-accent-ramp-primary-stays-bulma-teal-the-accents-take-the-bootstrap-map" title="Permanent link">&para;</a></h3>
+<p><strong>Decision.</strong> The brand library overrides the <strong>accent</strong> colours, not
+primary. <code>--bulma-primary</code> keeps Bulma's own teal <code>#00d1b2</code> (identical
+in 0.9.4 and 1.x — the demo's landing icons, hero buttons and <code>.is-primary</code>
+fills are teal, measured <code>rgb(0,209,178)</code>, hover <code>rgb(0,196,167)</code>), with
+only <code>--bulma-primary-invert-l: 100%</code> pinned: Bulma 1 derives solid-fill
+ink from <code>primary-05-l</code> (6 % — near-black) where 0.9.4 and the demo use
+white. The Bootstrap map the legacy theme applied to its accents is
+re-emitted from <code>$bulma-accent-overrides</code>: <code>link</code> <code>#0073dd</code>, <code>info</code>
+<code>#17a2b8</code>, <code>success</code> <code>#28a745</code>, <code>warning</code> <code>#ffc107</code>, <code>danger</code> <code>#dc3545</code>,
+each with its value, <code>-base</code>/<code>-rgb</code> and <code>h</code>/<code>s</code>/<code>l</code> channels, and its
+solid-fill ink pinned white — except <code>warning</code>, which keeps Bulma's dark
+ink (the demo's <code>btn-warning</code> text is <code>rgba(0,0,0,.7)</code>). The navbar's
+hover/active band renders <code>#f5f5f5</code> with <code>#000</code> ink (the demo's
+<code>.navbar-link:hover</code>); Bulma 1 derives it from the hero chain and renders
+a blue-tinted plate. The plate composes <code>hsl(navbar-h/s,
+navbar-item-background-l + hover-delta, a)</code>, so the brand neutralises
+the <code>navbar</code> hue/saturation channels (the DD-062 pattern) and sets the
+hover/active deltas to the band grey's 96 % lightness; Bulma 1 has <strong>no</strong>
+hover-ink token at all (0.9.4's <code>navbar-item-hover-color</code> is gone), so
+the black ink rides on a scoped hover rule mirroring Bulma's plate
+triggers. SHM-04.</p>
+<p><strong>Reason.</strong> The 7.12 first cut mapped <code>"primary": $blue</code> onto
+<code>--bulma-primary</code> as a placeholder (the shell chrome is blue-banded, so
+primary <em>looked</em> like <code>#0073dd</code>). Measuring the demo's landing page
+shows the icons the user flagged — the business/technical/governance
+card glyphs, <code>has-text-primary</code> — are Bulma teal <code>rgb(0,209,178)</code>, not
+blue: <code>#0073dd</code> in the legacy theme is <code>$link</code> (anchors) and the footer
+band, never <code>$primary</code>. Bulma 1's defaults for the untouched accents
+(its own cyan/green/yellow/red) are likewise not the demo's — the demo
+carries the Bootstrap palette, which the legacy <code>@models4insight/styles</code>
+theme mapped onto Bulma's accents (the same map SHM-04 already uses for
+<code>link</code>/footer). Fixing primary and leaving the accents on Bulma's
+defaults keeps half the deviation.</p>
+<p><strong>Alternatives.</strong> Keep primary <code>#0073dd</code> (as landed): every
+<code>has-text-primary</code>/<code>is-primary</code> surface — the landing icons the user
+compared side by side — stays blue where the demo is teal. Port all of
+Bulma 0.9.4's derived accent tokens (each family emits ~30 variables):
+unnecessary, the channel triple plus <code>-base</code>/<code>-rgb</code>/<code>-invert-l</code> covers
+what Bulma 1 composes at runtime.</p>
+<p><strong>Consequences.</strong> The landing page's icon highlights match the demo.
+<code>$bulma-token-overrides</code> shrinks to the four chrome greys; accents have
+their own <code>$bulma-accent-overrides</code> map (value + ink lightness). The
+navbar hover/active emission joins the navbar block (DD-059's "scope on
+<code>.navbar</code>" pattern), with the one ink rule outside the token machinery —
+the first brand rule that must set a state colour Bulma 1 never tokenised.
+Pinned by <code>test__accent_ramp_matches_the_demo</code>.</p>
 
 
 

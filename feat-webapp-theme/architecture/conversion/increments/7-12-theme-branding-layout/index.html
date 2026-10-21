@@ -6422,7 +6422,8 @@
 <li><strong>Pull request:</strong> #103</li>
 <li><strong>Records:</strong> ADR 053; DD-059 (the brand theme on Bulma 1), DD-060
   (critical-CSS inlining off), DD-062 (the legacy text ramp on Bulma 1's
-  channels); relies on ADR 018,
+  channels), DD-063 (the accent ramp: teal primary, Bootstrap accents);
+  relies on ADR 018,
   DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07 this
@@ -6432,8 +6433,10 @@ slice inherits and its Acceptance repeats.</p>
 <code>google.aurelius-atlas.com/demo/atlas</code> is the reference — without porting the
 legacy <code>@models4insight/styles</code> package (DD-037 stands):</p>
 <ul>
-<li>the Aurelius palette on Bulma 1's tokens: the Aurelius blue as primary/link,
-  the blue footer band, the grey chrome bands (SHM-04)</li>
+<li>the Aurelius palette on Bulma 1's tokens: the Bootstrap accent map the
+  legacy theme carried (link <code>#0073dd</code>, info/success/warning/danger), the
+  blue footer band, the grey chrome bands, Bulma's own teal kept as primary
+  (SHM-04, DD-063)</li>
 <li>the legacy body type: Bulma 0.9.4's system font stack, 16px, line-height 1.5,
   <code>#4a4a4a</code> ink — Bulma 1 ships Inter/1rem and renders the app in the wrong
   type — and the ramp below it: the neutral greys and the weights Bulma 1
@@ -6476,7 +6479,7 @@ the landing slice 7.5 owns.</p>
 </tr>
 <tr>
 <td>SHM-04</td>
-<td>The Aurelius palette lands on Bulma 1's tokens in the brand library: primary/link <code>#0073dd</code>; <code>light</code>/navbar band <code>#f5f5f5</code> with <code>#363636</code> invert; footer <code>#0073dd</code> with white text (the legacy footer's <code>has-text-white</code>). Bulma scopes the navbar/footer tokens on its components, so the overrides are emitted on <code>.navbar</code>/<code>.footer</code> too.</td>
+<td>The Aurelius palette lands on Bulma 1's tokens in the brand library: the accent map <code>link</code> <code>#0073dd</code>, <code>info</code> <code>#17a2b8</code>, <code>success</code> <code>#28a745</code>, <code>warning</code> <code>#ffc107</code>, <code>danger</code> <code>#dc3545</code> (the Bootstrap colours the legacy theme carried), each with white solid-fill ink except <code>warning</code>, which keeps Bulma's dark one (DD-063); <code>primary</code> stays Bulma's teal <code>#00d1b2</code> — the demo's landing icons — with its solid-fill ink pinned white; <code>light</code>/navbar band <code>#f5f5f5</code> with <code>#363636</code> invert, navbar hover/active <code>#f5f5f5</code>/<code>#000</code>; footer <code>#0073dd</code> with white text (the legacy footer's <code>has-text-white</code>). Bulma scopes the navbar/footer tokens on its components, so those overrides are emitted on <code>.navbar</code>/<code>.footer</code> too.</td>
 </tr>
 <tr>
 <td>SHM-05</td>
@@ -6505,7 +6508,8 @@ the landing slice 7.5 owns.</p>
 <li><code>libs/assets/src/assets/aurelius-atlas-logo.png</code> — the brand mark</li>
 <li><code>@models4insight/styles</code> (Bulma 0.9.4 theme) — not ported as a package
   (DD-037); the metrics it ships (system stack, 16px/1.5, 4.25rem navbar,
-  <code>#f5f5f5</code> bands, <code>#0073dd</code> primary) are the reference values SHM-03/04 pin</li>
+  <code>#f5f5f5</code> bands, <code>#0073dd</code> link/footer, the Bootstrap accent map) are the
+  reference values SHM-03/04 pin</li>
 </ul>
 <p>The live demo (<code>google.aurelius-atlas.com/demo/atlas</code>, version <code>0.0.0#aad352f</code>)
 is the reference: every measured value in Acceptance reads from it.</p>
@@ -6534,6 +6538,12 @@ is the reference: every measured value in Acceptance reads from it.</p>
   the app rendered with a blue-grey cast. SHM-03 now covers the ramp, and
   the brand re-emits Bulma 0.9.4's neutral channels on Bulma 1's <code>text*</code>
   channel tokens;</li>
+<li>DD-063: SHM-04's first cut mapped <code>#0073dd</code> onto primary as a placeholder;
+  the demo's primary is Bulma's own teal (the landing icons are
+  <code>rgb(0,209,178)</code>), and <code>#0073dd</code> is its link/footer colour. SHM-04 now
+  carries the legacy theme's Bootstrap accent map, keeps Bulma's teal as
+  primary with white solid-fill ink, and pins the navbar hover/active band
+  the demo renders (<code>#f5f5f5</code>/<code>#000</code>);</li>
 <li>the theme switch is not ported — light is forced via <code>data-theme="light"</code>
   (SHM-01), the switch is a later slice;</li>
 <li>the legacy navbar's <code>is-size-4</code> name next to the logo is not ported: the
@@ -6561,6 +6571,10 @@ is the reference: every measured value in Acceptance reads from it.</p>
   strong, button 400, 14px dropdown (SHM-03, DD-062)</li>
 <li><code>test__chrome_bands_carry_the_aurelius_palette</code> — navbar <code>#f5f5f5</code>,
   footer <code>#0073dd</code> white text, pinned 68px bar (SHM-04, SHM-05)</li>
+<li><code>test__accent_ramp_matches_the_demo</code> — primary teal <code>#00d1b2</code> with
+  white solid ink, link/info/success/warning/danger on the Bootstrap
+  map, landing icons <code>rgb(0,209,178)</code>/<code>rgb(23,162,184)</code>, navbar-link
+  hover <code>#f5f5f5</code>/<code>#000</code> (SHM-04, DD-063)</li>
 <li><code>test__footer_sits_below_the_fold</code> — band ≥ viewport, footer top ≥
   viewport (legacy <code>.is-tall-container</code>, SHM-05, SHM-07)</li>
 <li><code>test__landing_content_sits_in_a_container</code> — hero box inset on the
