@@ -27,8 +27,9 @@ This slice does **not** deliver: the theme switch itself (a later slice flips th
 | SHM-02 | The navbar brand is the Aurelius Atlas logo (`assets/aurelius-atlas-logo.png`, from the legacy `libs/assets`), linking `/`, with the app name as its alt text; the ui-lib `Header` sizes it through its `.logo` rule (max-width 150px, max-height 50px) applied via the `logoCssClass` input (default `logo`). |
 | SHM-03 | The body type is the legacy Bulma 0.9.4 set: the BlinkMacSystemFont-first system stack, 16px, line-height 1.5, weight 400, ink `#4a4a4a` on white — the values the live demo renders, pinned on Bulma 1's body tokens. |
 | SHM-04 | The Aurelius palette lands on Bulma 1's tokens in the brand library: primary/link `#0073dd`; `light`/navbar band `#f5f5f5` with `#363636` invert; footer `#0073dd` with white text (the legacy footer's `has-text-white`). Bulma scopes the navbar/footer tokens on its components, so the overrides are emitted on `.navbar`/`.footer` too. |
-| SHM-05 | The chrome's navbar is pinned (`is-fixed-top`, the body padded by the 4.25rem bar via `has-navbar-fixed-top`), its content sits in a Bulma `container` (the legacy navbar anatomy), and the outlet band is the legacy `.is-tall-container`: body is a 100vh flex column, the band grows (`flex: 1 1 auto`), the footer renders at the bottom of the viewport on short pages. |
+| SHM-05 | The chrome's navbar is pinned (`is-fixed-top`, the body padded by the 4.25rem bar via `has-navbar-fixed-top`), its content sits in a Bulma `container` (the legacy navbar anatomy), and the outlet band is the legacy `.is-tall-container` verbatim: body is a 100vh flex column, the band grows (`flex: 1 1 auto`) to a full viewport (`min-height: 100vh`), so the footer begins at the fold — never stranded mid-page on a short screen. |
 | SHM-06 | The webapp's dev/e2e pages keep passing every 7.11 chrome scenario (SHC-02..09): the logo brand supersedes SHC-02's name-only brand (the name stays as the logo's alt); the pinned navbar does not cover the landing's top content; the footer keeps its three config values. |
+| SHM-07 | Page content is inset by Bulma's grid, not hand-rolled margins: the landing wraps in `section.section > div.container` (the legacy page anatomy — the demo's hero box sits at x=56 in a 1280 viewport, the navbar brand's column) and the footer keeps its `container` (the legacy footer anatomy). The `#f5f5f5` band behind the content stays full-bleed. |
 
 ## Aurelius origin
 
@@ -50,6 +51,7 @@ Against the Aurelius product, recorded in [design-log](<https://aureliusenterpri
 
 - DD-059: the palette lands on Bulma **1** tokens (the legacy shipped Bulma 0.9.4 with SASS variables; Bulma 1 reads CSS custom properties, some scoped on `.navbar`/`.footer`); the sticky footer uses the modern flex-column body (the legacy achieves the same through `.is-tall-container`'s `min-height: 100vh`); the brand greys are Bulma 0.9.4's `#f5f5f5`/`#363636` pair, not Bootstrap's `#f8f9fa`;
 - DD-060: the prod build disables critical-CSS inlining — the zoneless CSR app never swaps beasties' `media="print"` sheet back, so the brand rules on `.navbar`/`.footer` (and Bulma utilities) applied in dev but not in the Docker/e2e build; the full stylesheet ships render-blocking instead;
+- DD-061: the first cut ported `.is-tall-container` as flex-grow only (footer flush with the fold) and left the landing edge-to-edge; the demo shows the legacy rule is `flex: 1 1 auto` **plus** `min-height: 100vh` (footer starts below the fold) and the legacy pages wrap in `section > container` (content inset on the navbar's grid). SHM-05/SHM-07 pin the measured legacy rendering;
 - the theme switch is not ported — light is forced via `data-theme="light"` (SHM-01), the switch is a later slice;
 - the legacy navbar's `is-size-4` name next to the logo is not ported: the logo's alt carries the app name (SHM-02).
 
@@ -65,7 +67,8 @@ Against the Aurelius product, recorded in [design-log](<https://aureliusenterpri
   - `test__navbar_carries_the_aurelius_logo` — the brand image, 150px cap, links home (SHM-02)
   - `test__body_uses_the_legacy_type_and_ink` — stack, 16px, 24px line, `#4a4a4a` (SHM-03)
   - `test__chrome_bands_carry_the_aurelius_palette` — navbar `#f5f5f5`, footer `#0073dd` white text, pinned 68px bar (SHM-04, SHM-05)
-  - `test__footer_sits_at_the_bottom_of_the_fold` — footer bottom ≥ viewport height on the short landing page (SHM-05)
+  - `test__footer_sits_below_the_fold` — band ≥ viewport, footer top ≥ viewport (legacy `.is-tall-container`, SHM-05, SHM-07)
+  - `test__landing_content_sits_in_a_container` — hero box inset on the navbar container's column, band full-bleed (SHM-07)
   - `test__app_stays_light_under_a_dark_os_preference` — an emulated `prefers-color-scheme: dark` context renders the light bands (SHM-01)
   - the SHC-02..09 scenarios stay green (SHM-06)
 - The dev build renders the reference: logo, 68px pinned grey bar, `#f5f5f5` content band, blue footer at the fold, system-stack 16px text (verified on `nx serve` at :4300 against the demo).

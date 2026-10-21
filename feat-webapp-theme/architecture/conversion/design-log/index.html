@@ -4302,6 +4302,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-061-the-sticky-footer-is-the-legacy-rule-verbatim-page-content-sits-on-bulmas-grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-061. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7502,6 +7513,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-061-the-sticky-footer-is-the-legacy-rule-verbatim-page-content-sits-on-bulmas-grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-061. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9243,6 +9265,43 @@ minified, gzip ~90 kB) — the same payload the legacy demo ships. The
 e2e suite now measures the CSS the browser actually applies. If LCP
 ever matters, re-measure with the inliner enabled in a browser that
 executes the swap script before re-enabling.</p>
+<h3 id="dd-061-the-sticky-footer-is-the-legacy-rule-verbatim-page-content-sits-on-bulmas-grid">DD-061. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid<a class="headerlink" href="#dd-061-the-sticky-footer-is-the-legacy-rule-verbatim-page-content-sits-on-bulmas-grid" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.12</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> <code>.is-tall-container</code> is ported verbatim — <code>flex: 1 1 auto</code>
+<strong>and</strong> <code>min-height: 100vh</code> (the legacy <code>shell.component.scss</code>) — so the
+outlet band is a full viewport and the footer begins at the fold, off the
+first screen. Page content is inset by Bulma's grid, not hand-rolled
+margins: the landing wraps in <code>section.section &gt; div.container</code> (the
+anatomy every legacy routed page uses — <code>details</code>, <code>domains</code>,
+<code>create-entity</code> all start with <code>div.container</code>), the footer keeps its
+<code>container</code> (the legacy footer's own anatomy), and the <code>#f5f5f5</code> band
+behind the content stays full-bleed. SHM-05/SHM-07.</p>
+<p><strong>Reason.</strong> Measured against the live demo: its footer starts at y=1346
+in a 900px viewport (band <code>min-height: 900px</code> — the footer is never on
+the first screen), while the first-cut port (flex-grow only) filled the
+band to exactly the fold, pulling the footer into it. And the demo's
+landing content is inset on Bulma's responsive grid (box x=56 at 1280,
+the navbar brand's column), while the port rendered edge-to-edge. Both
+are the legacy's own rules — the port had read <code>.is-tall-container</code>
+selectively and had not ported the page wrapper at all.</p>
+<p><strong>Alternatives.</strong> Keep flex-grow-only (footer flush at the fold): it
+diverges from the demo on the one axis the user measured — "the footer
+should always be below the fold". Hand-rolled page padding
+(<code>.is-tall-container { padding: … }</code>): invents a grid Bulma already
+owns; the <code>container</code> is responsive (fixed widths per breakpoint, 32px
+margins below desktop), a hand-rolled inset is not. <code>section.hero</code>
+instead of <code>section.section</code> (the demo's landing hero is a hero): the
+teal hero is the 7.4 search slice, out of scope here.</p>
+<p><strong>Consequences.</strong> The landing matches the demo's measured insets
+(box x≈56 at 1280) and the footer is below the fold at any viewport.
+The <code>section &gt; container</code> wrapper is the pattern for 7.4+ routed pages
+(details, search results) — they inherit the grid from their first
+element. <code>min-height: 100vh</code> on the band means short pages scroll the
+footer into view; that is the legacy behaviour the demo shows.</p>
 
 
 

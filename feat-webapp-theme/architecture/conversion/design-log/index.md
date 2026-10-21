@@ -908,3 +908,17 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** Keep inlining and fix the swap script (it is Angular generated — no supported knob). Load the sheet with a forced `media="all"` (build emits the print attribute as part of the inliner's output — off is the supported switch). Serve with SSR/prerender so the inliner has real content (7.x is a client-rendered SPA; the dashboard is a separate app).
 
 **Consequences.** First paint ships the full stylesheet (\~770 kB minified, gzip \~90 kB) — the same payload the legacy demo ships. The e2e suite now measures the CSS the browser actually applies. If LCP ever matters, re-measure with the inliner enabled in a browser that executes the swap script before re-enabling.
+
+### DD-061. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid
+
+- **Status:** Accepted
+- **Increment:** 7.12
+- **Date:** 2026-10-21
+
+**Decision.** `.is-tall-container` is ported verbatim — `flex: 1 1 auto` **and** `min-height: 100vh` (the legacy `shell.component.scss`) — so the outlet band is a full viewport and the footer begins at the fold, off the first screen. Page content is inset by Bulma's grid, not hand-rolled margins: the landing wraps in `section.section > div.container` (the anatomy every legacy routed page uses — `details`, `domains`, `create-entity` all start with `div.container`), the footer keeps its `container` (the legacy footer's own anatomy), and the `#f5f5f5` band behind the content stays full-bleed. SHM-05/SHM-07.
+
+**Reason.** Measured against the live demo: its footer starts at y=1346 in a 900px viewport (band `min-height: 900px` — the footer is never on the first screen), while the first-cut port (flex-grow only) filled the band to exactly the fold, pulling the footer into it. And the demo's landing content is inset on Bulma's responsive grid (box x=56 at 1280, the navbar brand's column), while the port rendered edge-to-edge. Both are the legacy's own rules — the port had read `.is-tall-container` selectively and had not ported the page wrapper at all.
+
+**Alternatives.** Keep flex-grow-only (footer flush at the fold): it diverges from the demo on the one axis the user measured — "the footer should always be below the fold". Hand-rolled page padding (`.is-tall-container { padding: … }`): invents a grid Bulma already owns; the `container` is responsive (fixed widths per breakpoint, 32px margins below desktop), a hand-rolled inset is not. `section.hero` instead of `section.section` (the demo's landing hero is a hero): the teal hero is the 7.4 search slice, out of scope here.
+
+**Consequences.** The landing matches the demo's measured insets (box x≈56 at 1280) and the footer is below the fold at any viewport. The `section > container` wrapper is the pattern for 7.4+ routed pages (details, search results) — they inherit the grid from their first element. `min-height: 100vh` on the band means short pages scroll the footer into view; that is the legacy behaviour the demo shows.
