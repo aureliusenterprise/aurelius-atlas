@@ -11,8 +11,10 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   `integral_type` and `floating_type` for what the number types share
 - `aurelius_atlas_typesystem/enum_type.py`, `array_type.py`, `map_type.py` — `AtlasEnumType`, `AtlasArrayType`,
   `AtlasMapType`, definition and value side
-- `aurelius_atlas_typesystem/types.py` — the struct, classification, entity, relationship and business metadata
-  types, definition side only until 2.1c (DD-025, DD-041)
+- `aurelius_atlas_typesystem/struct_type.py`, `classification_type.py`, `entity_type.py`, `relationship_type.py`,
+  `business_metadata_type.py` — one module per type class (DD-041), with `attribute.py` (`AtlasAttribute`),
+  `edge_direction.py`, `hierarchy_type.py` (what classification and entity types share) and `type_names.py`
+- `aurelius_atlas_typesystem/types.py` — re-exports every type, and `type_of`
 - `aurelius_atlas_typesystem/java.py` — Java's number conversions on Java values held as Python values
   (DD-040); `values.py` — JSON strings and Java `equals` for arrays and maps
 - `aurelius_atlas_typesystem/registry.py` — `TypeRegistry` and `TransientTypeRegistry`

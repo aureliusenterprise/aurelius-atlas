@@ -41,6 +41,18 @@ workspace = true
 
 ::: aurelius_atlas_typesystem.atlas_type
 
+::: aurelius_atlas_typesystem.struct_type
+
+::: aurelius_atlas_typesystem.classification_type
+
+::: aurelius_atlas_typesystem.entity_type
+
+::: aurelius_atlas_typesystem.relationship_type
+
+::: aurelius_atlas_typesystem.business_metadata_type
+
+::: aurelius_atlas_typesystem.attribute
+
 ::: aurelius_atlas_typesystem.enum_type
 
 ::: aurelius_atlas_typesystem.array_type
