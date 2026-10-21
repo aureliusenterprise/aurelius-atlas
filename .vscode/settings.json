@@ -30,5 +30,6 @@
         "node_modules/": true,
         "site/": true,
         "tmp/": true
-    }
+    },
+    "sonarlint.analysisExcludesStandalone": "**/apps/aurelius-atlas-webapp/src/app/shell/header.component.html,**/libs/angular/aurelius-atlas-ui/src/lib/modal/modal.component.html"
 }
