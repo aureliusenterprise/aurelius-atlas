@@ -1,7 +1,7 @@
 # 7.15 Alerts drawer
 
 - **Status:** in progress
-- **Pull request:** \#106
+- **Pull request:** [\#107](<https://github.com/aureliusenterprise/aurelius-atlas/pull/107>)
 - **Records:** DD-083 (the alerts store: windowed grouping, cap), DD-084 (the ErrorHandler chain: alert then trace), DD-085 (the HTTP error reporter), DD-086 (the bell: severity badge, ring animation), DD-087 (the ui-lib split: AlertList and Badge are presentational); relies on ADR 053, DD-063, DD-069, DD-070, DD-078, DD-079
 
 ## Scope
