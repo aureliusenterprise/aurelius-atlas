@@ -6487,7 +6487,9 @@
   facade and per-category owners), DD-073 (browser-scoped localStorage), DD-074
   (the drawer's enter/exit animation), DD-075 (the drawer's token fallbacks),
   DD-076 (the Appearance select), DD-077 (About's one version), DD-078 (the routed
-  drawer outlet); relies on ADR 053, DD-039, DD-046, DD-047, DD-068</li>
+  drawer outlet), DD-079 (the review polish: lit gear, scheme band, Browser-default
+  picker, <code>.label</code> headings), DD-080 (the dark navbar, the slate
+  band), DD-081 (labels wired to controls); relies on ADR 053, DD-039, DD-046, DD-047, DD-068</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07
 this slice inherits. It is a <strong>new feature</strong>, not a port: neither the Apache Atlas
@@ -6566,7 +6568,7 @@ APIs, the facade and the panel do not change when it lands.</p>
 <tbody>
 <tr>
 <td>SPL-01</td>
-<td>The header's right side carries a gear button (<code>navbar-item</code>, a <code>faGear</code> icon, an accessible label <code>shell.header.settings</code>) that opens the settings panel; the language dropdown (SHC-04) leaves the navbar and its control lives in the panel. Documentation (SHC-03) and account (SHC-05) are unchanged.</td>
+<td>The header's right side carries a gear button (<code>navbar-item</code>, a <code>faGear</code> icon, an accessible label <code>shell.header.settings</code>) that opens the settings panel and carries <code>is-active</code> (via <code>routerLinkActive</code>) exactly while the panel route is open (DD-079); the language dropdown (SHC-04) leaves the navbar and its control lives in the panel. Documentation (SHC-03) and account (SHC-05) are unchanged.</td>
 </tr>
 <tr>
 <td>SPL-02</td>
@@ -6582,7 +6584,7 @@ APIs, the facade and the panel do not change when it lands.</p>
 </tr>
 <tr>
 <td>SPL-05</td>
-<td>With no stored choice, the app renders the <strong>light</strong> scheme under any OS preference — SHM-01's user-visible promise, kept after its mechanism is superseded (DD-071): the light default is the <code>DarkModeService</code> mode default, not the html pin.</td>
+<td>With no stored choice, the app renders the <strong>light</strong> scheme under any OS preference — SHM-01's user-visible promise, kept after its mechanism is superseded (DD-071): the light default is the <code>DarkModeService</code> mode default, not the html pin. A stored scheme repaints the whole page, the outlet band included — the band is Bulma's scheme-following <code>.has-background</code>, not the fixed light (DD-079). The navbar follows the scheme too, carrying the dark slate band that keeps the logo's navy wordmark legible (DD-080).</td>
 </tr>
 <tr>
 <td>SPL-06</td>
@@ -6590,7 +6592,7 @@ APIs, the facade and the panel do not change when it lands.</p>
 </tr>
 <tr>
 <td>SPL-07</td>
-<td>The Time zone section stores the chosen IANA id (<code>aurelius-atlas.settings.timezone</code>), offers the ids the server's session publishes (ADM-05) with a "Browser default" first option, and applies it through the <code>DATE_PIPE_DEFAULT_TIMEZONE</code> provider read at bootstrap: a change takes effect on reload (DD-073). The store is browser-scoped and carries no user identity (DD-073).</td>
+<td>The Time zone section stores the chosen IANA id (<code>aurelius-atlas.settings.timezone</code>), offers the ids the server's session publishes (ADM-05) with a "Browser default" first option, and applies it through the <code>DATE_PIPE_DEFAULT_TIMEZONE</code> provider read at bootstrap: a change takes effect on reload (DD-073). The store is browser-scoped and carries no user identity (DD-073). An unset zone shows "Browser default" in the picker — the stored value, not the browser's resolved zone (DD-079).</td>
 </tr>
 <tr>
 <td>SPL-08</td>
@@ -6614,7 +6616,7 @@ APIs, the facade and the panel do not change when it lands.</p>
 </tr>
 <tr>
 <td>SPL-13</td>
-<td>Every chrome string is a <code>@@shell.settings.*</code>/<code>@@shell.header.settings</code> id with entries in both fixture locales, so the completeness gate (SHL-08) and the purity gate (DD-042/DD-048) stay green; <code>Drawer</code> ships a spec and stories (UIC-15's bar), the theme switch is verified against DD-068's dark ramp.</td>
+<td>Every chrome string is a <code>@@shell.settings.*</code>/<code>@@shell.header.settings</code> id with entries in both fixture locales, so the completeness gate (SHL-08) and the purity gate (DD-042/DD-048) stay green; <code>Drawer</code> ships a spec and stories (UIC-15's bar), the theme switch is verified against DD-068's dark ramp. Every section heading is a Bulma <code>.label</code> — the form-controls guide's field label, one shape for all six (DD-079), and every heading is its control's accessible name — <code>label[for]</code>, the language group via <code>aria-labelledby</code> (DD-081).</td>
 </tr>
 <tr>
 <td>SPL-14</td>
@@ -6668,11 +6670,15 @@ APIs, the facade and the panel do not change when it lands.</p>
   reload (SPL-11); <code>TimezoneService</code> id list and browser-default first (SPL-07);
   <code>PageSizeService</code> positive-integer guard (SPL-08)</li>
 <li><code>shell/header.component.spec.ts</code> — the gear is the <code>(drawer:settings)</code>
-  routerLink (SPL-01, SPL-14), the language dropdown is gone from the navbar,
+  routerLink (SPL-01, SPL-14) and lights <code>is-active</code> while the drawer route
+  is open (SPL-01, DD-079), the language dropdown is gone from the navbar,
   Documentation and account unchanged (SPL-01)</li>
 <li><code>settings/settings-panel.component.spec.ts</code> — the routed panel renders open
-  (SPL-14), the five sections render, the Appearance select drives the theme
-  (SPL-03, DD-076), the language links compute locale hrefs (SPL-06), About
+  (SPL-14), the five sections render with <code>.label</code> headings (SPL-13, DD-079),
+  every heading is its control's accessible name (SPL-13, DD-081),
+  the Appearance select drives the theme (SPL-03, DD-076), the language links
+  compute locale hrefs (SPL-06), the zone picker shows "Browser default"
+  while unset (SPL-07, DD-079), About
   shows the build's one version (SPL-12, DD-077), dismissal navigates the
   <code>drawer</code> outlet away (SPL-14, DD-078)</li>
 <li><code>routes.spec.ts</code> — the <code>settings</code> route sits in the <code>drawer</code> outlet and

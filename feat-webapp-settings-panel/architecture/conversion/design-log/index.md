@@ -1126,3 +1126,45 @@ The brand theme (DD-059/062) pins the light ink chain in `:root` — body `#4a4a
 **Alternatives.** A query param (`?settings=1`) — works, and invents a parallel navigation system outside the router; the outlet form is the router-native one, composable, and the Angular idiom. localStorage "open" flag — reloads open, survives everything, unbookmarkable and sticky. A service + effect — doesn't survive the reload, which is the requirement.
 
 **Consequences.** Closing destroys the panel, so the drawer's exit animation (DD-074) is not awaited there — accepted, named; the DD-074 lifecycle remains for the drawer's own API (`close()` on a non-routed drawer), and the enter animation plays on open, including after the locale reload. Dismissal is destructive (no panel state to keep — the facade owns it, DD-072). Deep links work: visiting `/search/browse(drawer:settings)` opens the panel on that page. The `serverUnavailable` fallback and the `open()` API are gone; the panel spec drives the component directly (as the routed-component test pattern prescribes).
+
+### DD-079. Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** Four fixes from the user's review of the open drawer. (1) The gear carries `routerLinkActive="is-active"`: Bulma styles `a.navbar-item.is-active`, and the active state keys off the `drawer` outlet segment — the gear is lit exactly while the panel route is open (SPL-01). (2) The outlet band drops `has-background-light` for Bulma's bare `.has-background` (`var(--bulma-background)`): the legacy light in light mode, the dark scheme's surface in dark (SPL-05's theme switch now repaints the page, not just the drawer). SHM-05's pinned chrome bands are unchanged. (3) The time-zone picker binds the stored zone directly — `null` when unset selects the "Browser default" option (SPL-07); the browser's resolved zone is no longer injected into the select, where it rendered blank whenever it was not one of the server's ADM-05 ids. (4) Every settings section heading is a Bulma `.label` — the form-controls guide's field label (the guide the user linked) — replacing `.menu-label`; the Appearance heading already renders as `.label` through the Select, so all six now match.
+
+**Reason.** The gear gives no affordance that it owns the open panel. `has-background-light` is Bulma's fixed light colour family, not a scheme role, so a dark page kept a light band. A select whose value matches no option renders empty — the "Browser default" option is the honest display of an unset zone, since its effective value *is* the browser's, applied at the date pipe. `.menu-label` is the sidebar-menu heading (uppercase, small, weak); inside a form column it reads as a different component than the `.label` the Select shows.
+
+**Alternatives.** (1) A signal shared header→panel — state the URL already carries. (2) `has-background-scheme-main` — the body colour, leaving no surface distinction from the footer band; `--bulma-background` is Bulma's surface role and matches what cards/tables sit on. (3) Add the resolved zone as an extra option — the list is the server's (ADM-05), and a local zone the server may not accept is a false promise. (4) Keep `.menu-label` — the inconsistency the user flagged.
+
+**Consequences.** The band's computed background follows the scheme (verified live in both modes). `timezoneValue` narrows to `string | null` — the same value the facade stores, making the panel a pure pass-through. The `.label` heads are normal-case and stronger ink; the panel scss comment follows. No string ids change.
+
+### DD-080. The navbar follows the scheme: the dark slate band
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** In dark mode the navbar leaves the pinned light band (SHM-01's "the brand colours do not follow the scheme", for the navbar only) for a neutral slate, \#72757d — hsl(224, 4%, 47%), the faint cool cast of $blue. The bar's chrome composes on the slate: ink \#000 (5.6:1), hover/active the light plate (Bulma's +8%/+12% deltas, DD-063's deltas inverted for a dark band), the gear's `is-active` the white plate (DD-063's selected pair), the `is-dark` Documentation button's ink/border black (its pinned \#363636 rides at 2.5:1 on the slate). The account dropdown keeps Bulma's scheme composition. The footer stays pinned (SHM-07 — blue/white reads the same in either scheme). The logo keeps its brand size in both schemes.
+
+**Reason.** The user's review: dark mode kept a light navbar. The binding constraint is the logo, measured from the PNG: its wordmark is navy `#151487` at \~11% lightness, so every dark surface (the scheme's `#1f2229`, the brand blue `#0073dd`) collides with it (1.0–1.3:1) and the wordmark's WCAG-3:1 floor (graphics) sets the bar's ceiling at \~47% lightness. The slate is the darkest background that keeps the mark legible (3.1:1); the user chose it over the brand blue, then over the first bluer/lighter cut — 4% saturation, one step under the floor.
+
+**Alternatives.** Brand blue \#0073dd (the footer's blue — wordmark 3.5:1, the user declined: reads as a blue bar). A true dark band (\#131a26) with a light logo variant — the proper dark-mode look, needs a design asset; the seam is this mixin's token block. Keeping the navbar pinned light (the status quo the user rejected). Darkening the slate below 47% (the wordmark falls under 3:1).
+
+**Consequences.** The navbar tokens are a brand-theme block on both of Bulma's dark hosts (0,2,0, out-cascading the light `.navbar` pins). The logo's navy/cyan palette is now load-bearing across schemes: a future rebrand or light-variant asset replaces this decision (supersede, don't edit). The light band is untouched (SHM-05 stays the light-mode chrome).
+
+### DD-081. Settings headings are the controls' accessible names
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** Every settings control's `.label` heading is its accessible name (the Bulma form guide's labelled control, the guide DD-079 adopted): Time zone and Page size are `label[for]`/`id` pairs on the native selects, Telemetry on the checkbox (the label moves from the old wrapping `.checkbox` — the checkbox is a plain control on the section grid), Appearance rides the ui-lib Select's own `label[for]`/`aria-labelledby`, and the language links — not a form control — are a `role="group"` labelled by their heading. About is a section title, not a field, and is not associated.
+
+**Reason.** The user's review of the DD-079 layout: the headings looked right and were wired to nothing — clicking a label did nothing, and a screen reader announced bare "combobox"/"checkbox". The Bulma form guide the headings already follow prescribes the association; DD-079 adopted the shape and left out the link.
+
+**Alternatives.** `aria-labelledby` everywhere (works, and the `label[for]` is the HTML-native form the guide shows; the group and the Select use it where no single labelable control exists). Keeping the wrapping `.checkbox` label (an accessible name, and the Bulma checkbox idiom — rejected: the guide's stacked label/field shape is what DD-079 just standardised on, and the checkbox label had no text to wrap).
+
+**Consequences.** Fixed ids (`settings-timezone`, …): the panel is a singleton route, so collision is impossible. The checkbox loses Bulma's `.checkbox` hover affordance (the label click replaces it). The panel spec asserts each pair.
