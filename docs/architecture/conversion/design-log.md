@@ -2708,3 +2708,91 @@ of surfaces that read the same in both schemes. The Drawer's head
 anatomy (DD-069's, shared with settings) gains an optional slot: the
 settings panel projects nothing and is unchanged. The alerts drawer's
 tab order is close, then Clear all (both in the head), then the rows.
+
+### DD-090 — The inbox bar: severity chips, read tracking, Clear all in the bar
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The drawer head's Clear all grows into a full-width inbox
+bar (ALR-11): a new ui-lib `AlertInbox`, a Bulma `buttons has-addons`
+group of one chip per severity (`is-expanded`, feed order, an empty
+severity's chip included), each chip a filter toggle showing that
+severity's **total** group count, a dot riding the DD-063 ramp while any
+of its groups is unread, and the caller's Clear all projected into the
+bar's end. The Drawer grows a second projection slot, `drawer-subhead`,
+a strip between the head and the body; the bar rides it. Read tracking
+lands with it (ALR-12): every `AlertGroup` carries `read`; an arrival —
+or a merge bumping a read burst — marks unread, and the panel's effect
+marks every group read while the drawer is open (visible-is-read). The
+bell badge answers unread presence in the highest **unread** severity's
+colour, superseding ALR-02's store-top reading.
+
+**Reason.** The user's ask: a bar showing the count per severity, each
+severity a show/hide button, Clear all kept, "keep track of whether
+notifications have been read", and the question of totals vs unread on
+the chips. Totals won: the chips are filters, and a filter's number is
+what it covers — unread counts on filter chips make the bar flicker
+under reading (the chips zero out as the drawer reads the feed, the
+turn the user is mid-reading through vanishes). Unread stays where the
+attention question is asked: the bell dot, the row, the chip's dot.
+Visible-is-read won over a per-row read toggle: the drawer is 28rem of
+rows the user came to read; a list that requires marking each row read
+is a queue, not a feed, and the merge-re-unreads rule means a returning
+burst re-asks for attention on its own. Filter state is the panel's,
+not the store's: the store's counts and the bell must answer with the
+whole store, and a view filter is not data.
+
+**Alternatives.** Chips showing unread counts (rejected above — the
+number changes under the user's eyes as the drawer reads). Filter state
+in the store (rejected: the bell's badge and the chips' totals must see
+everything, and persistence of a view toggle is scope the in-memory
+store does not have). A per-group read button (a queue; rejected).
+`markAllRead` on close (rejected: the badge would stay lit while the
+user is reading, and the ring/dot answers "has this been seen" — seen
+means seen). Clear all staying in the head beside the bar (two fixed
+strips stacked, the head's action orphaned from the bar it serves; the
+bar is the feed's command strip — the hatch belongs at its end).
+
+**Consequences.** The Drawer has two content slots, actions (head) and
+subhead (the strip); the settings panel uses neither. The alerts
+drawer's tab order is close, the three chips, Clear all, then the
+rows. `AlertGroup.read` joins the lib's model — the third field the
+store owns and the list renders (ALR-10's vocabulary grows). The bell
+badge goes quiet on open, which is the point: it asked for attention
+and got it. DD-088's Clear all in the head is superseded in placement
+(its "above the notifications" requirement keeps holding — the bar
+never scrolls, DD-091); DD-088's chip-pair pinning stands.
+
+### DD-091 — The drawer's body is the scroll container
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The Drawer's panel clips (`overflow: hidden`) and its
+body scrolls (`min-height: 0`, `overflow-y: auto`): the head and the
+`drawer-subhead` strip are fixed, the content scrolls under them
+(DD-090's inbox bar, ALR-06/ALR-11's escape hatch).
+
+**Reason.** Found while answering the user's question about a long
+feed: the panel carried `overflow-y: auto`, so the whole drawer
+scrolled — the head, title, close button, and DD-088's Clear all slid
+away with the feed, and the "head does not scroll" clause ALR-06 cited
+was not true. A drawer whose chrome scrolls away is a page, not a
+drawer: the close control and the command strip must be reachable at
+any scroll depth, and the inbox bar (DD-090) only pays off fixed.
+
+**Alternatives.** A sticky head inside the scrolling panel (`position:
+sticky`: works, but the scrim/panel geometry makes it fragile with the
+slide animation, and the head's border composes over scrolled content
+under the rounded corners). Two scroll containers (rejected: nested
+scrolling on a 28rem panel is a trap).
+
+**Consequences.** The settings panel's long body (six sections) now
+scrolls under a fixed head — the intended drawer reading, and the
+settings drawer's head carries its accessible name, so the panel
+reading it never loses it. jsdom runs no layout, so the scroll split is
+pinned by the spec's slot-placement test (DD-090) and the dev-server
+check, not by a unit assertion.

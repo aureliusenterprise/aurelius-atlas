@@ -27,3 +27,23 @@
     background-color: #f5f5f5; // $light, pinned in both schemes
     color: #363636; // its legacy invert (SHM-04's pair, SHM-07's idiom)
 }
+
+/*
+ * Unread rows (ALR-12): the message goes bold and the meta line carries a
+ * ring dot. The dot rides in the row's own ink (currentColor) so it is
+ * visible on every severity plate — a severity-coloured dot would vanish
+ * on its own colour — with a hairline ring in the plate lifting it off
+ * the background (the badge's idiom, DD-080).
+ */
+.aurelius-alert-unread .aurelius-alert-message {
+    font-weight: 700;
+}
+
+.aurelius-alert-unread-dot {
+    background-color: currentColor;
+    border: 1.5px solid var(--bulma-notification-background-color, transparent);
+    border-radius: 50%;
+    flex-shrink: 0;
+    height: 0.6rem;
+    width: 0.6rem;
+}

@@ -67,20 +67,75 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         expect(alerts.alerts()).toHaveLength(before - 1);
     });
 
-    it("clears the store from the clear-all button in the drawer head (ALR-06, DD-088)", async () => {
+    it("clears the store from the clear-all button in the inbox bar (ALR-06, DD-090)", async () => {
         const alerts = setup();
         const { fixture, compiled } = await renderOpen(alerts);
 
-        // The escape hatch rides the sticky head (DD-088), not the
-        // scrolling feed, and only shows while the store has alerts.
-        const clear = compiled.querySelector<HTMLButtonElement>(".aurelius-drawer-head .aurelius-alert-clear");
+        // The escape hatch rides the fixed strip under the head (DD-090),
+        // not the scrolling feed, and only shows while the store has alerts.
+        const clear = compiled.querySelector<HTMLButtonElement>(".aurelius-alert-inbox .aurelius-alert-clear");
         expect(clear).toBeTruthy();
         clear?.click();
 
         expect(alerts.alerts()).toHaveLength(0);
-        // With the store empty, the head's action goes too (ALR-06).
+        // With the store empty, the bar goes too (ALR-06, ALR-11).
         fixture.detectChanges();
-        expect(compiled.querySelector(".aurelius-alert-clear")).toBeNull();
+        expect(compiled.querySelector(".aurelius-alert-inbox")).toBeNull();
+    });
+
+    it("marks the feed read while the drawer is open (ALR-12, DD-090)", async () => {
+        const alerts = setup();
+        alerts.add({ severity: "error", message: "GET /api/x 500", source: "http" });
+        expect(alerts.hasUnread()).toBe(true); // the row arrives unread…
+
+        const fixture = TestBed.createComponent(AlertsPanel);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        TestBed.flushEffects();
+
+        // …and opening the drawer is reading it (ALR-12).
+        expect(alerts.hasUnread()).toBe(false);
+    });
+
+    it("filters the feed by severity chip (ALR-11)", async () => {
+        const alerts = setup();
+        const { fixture, compiled } = await renderOpen(alerts); // one error, one info
+
+        const chips = [...(compiled.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLButtonElement>)];
+        expect(chips).toHaveLength(3); // one per severity, always (ALR-11)
+
+        chips[0].click(); // hide errors
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".notification")).toHaveLength(1);
+        expect(compiled.querySelector(".notification")?.textContent).toContain("Saved");
+
+        chips[0].click(); // show them again — the chip toggles
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".notification")).toHaveLength(2);
+    });
+
+    it("keeps the chips' counts on the whole store while filtered (ALR-11)", async () => {
+        const alerts = setup();
+        const { fixture, compiled } = await renderOpen(alerts);
+
+        // Hide the severities with rows: the chips still show the store's
+        // totals — a filter with no results is still a filter, and the
+        // bell's dot answers with the store, not the view.
+        const chips = [...(compiled.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLButtonElement>)];
+        chips[0].click(); // errors off
+        chips[2].click(); // info off
+        fixture.detectChanges();
+
+        const counts = [...(compiled.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>)];
+        expect(counts.map((c) => c.textContent.trim())).toEqual(["1", "0", "1"]);
+        expect(compiled.querySelector(".aurelius-alert-empty")).toBeTruthy(); // the feed is empty
+
+        // Every chip off: the show-all control appears (ALR-11).
+        const showAll = compiled.querySelector<HTMLButtonElement>(".aurelius-alert-inbox-show-all");
+        expect(showAll).toBeTruthy();
+        showAll?.click();
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".notification")).toHaveLength(2);
     });
 
     it("navigates the drawer outlet away on dismissal (ALR-01, DD-078)", async () => {

@@ -1,5 +1,5 @@
 import { computed, inject, InjectionToken, Injectable, Signal, signal } from "@angular/core";
-import { AlertGroup, AlertSeverity, maxSeverity } from "aurelius-atlas-ui";
+import { AlertGroup, AlertSeverity, AlertSeverityCount, countSeverities, maxSeverity } from "aurelius-atlas-ui";
 
 /** How long a repeat may wait to merge into a burst (ALR-03). */
 export const GROUP_WINDOW_MS = 60_000;
@@ -61,6 +61,31 @@ export class AlertsService {
     readonly hasAlerts: Signal<boolean> = computed(() => this.stored().length > 0);
 
     /**
+     * Whether any group is unread — the bell badge's visibility (ALR-12):
+     * opening the drawer marks the feed read, and the dot goes away with
+     * the attention it was asking for.
+     */
+    readonly hasUnread: Signal<boolean> = computed(() => this.stored().some((group) => !group.read));
+
+    /**
+     * The highest severity among the unread groups, the badge's colour
+     * (ALR-02, ALR-12): the dot answers what needs attention, not what
+     * happens to be on file — a read error no longer out-colours a new
+     * warning. Only meaningful while {@link hasUnread}.
+     */
+    readonly topUnreadSeverity: Signal<AlertSeverity> = computed(() =>
+        this.stored()
+            .filter((group) => !group.read)
+            .reduce<AlertSeverity>((top, group) => maxSeverity(top, group.severity), "info"),
+    );
+
+    /**
+     * The feed counted by severity — the inbox bar's chips (ALR-11):
+     * totals per severity, each with how many are unread (ALR-12).
+     */
+    readonly severityCounts: Signal<readonly AlertSeverityCount[]> = computed(() => countSeverities(this.stored()));
+
+    /**
      * The highest severity present, the badge's colour (ALR-02):
      * `error` > `warning` > `info`. Only meaningful while
      * {@link hasAlerts} — the badge hides on an empty store.
@@ -88,7 +113,9 @@ export class AlertsService {
             newest.message === alert.message &&
             now - newest.lastSeen <= GROUP_WINDOW_MS
         ) {
-            this.stored.set([{ ...newest, count: newest.count + 1, lastSeen: now }, ...groups.slice(1)]);
+            // A merge is fresh news too: the burst grew, so the group is
+            // unread again even if the drawer read it before (ALR-12).
+            this.stored.set([{ ...newest, count: newest.count + 1, lastSeen: now, read: false }, ...groups.slice(1)]);
             return;
         }
 
@@ -98,6 +125,7 @@ export class AlertsService {
             message: alert.message,
             count: 1,
             lastSeen: now,
+            read: false,
             source: alert.source,
         };
         this.stored.set([group, ...groups].slice(0, MAX_GROUPS));
@@ -115,5 +143,17 @@ export class AlertsService {
     /** Empty the store (ALR-06). */
     clearAll(): void {
         this.stored.set([]);
+    }
+
+    /**
+     * Mark every group read (ALR-12): the drawer calls it while open,
+     * so opening the feed is reading it — visible-is-read. New arrivals
+     * after that are unread again, and a live feed in an open drawer
+     * marks them read as they land.
+     */
+    markAllRead(): void {
+        this.stored.update((groups) =>
+            groups.some((group) => !group.read) ? groups.map((group) => ({ ...group, read: true })) : groups,
+        );
     }
 }

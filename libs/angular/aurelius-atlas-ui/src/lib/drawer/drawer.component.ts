@@ -48,7 +48,10 @@ export class Drawer {
      * Content carrying the `drawer-actions` attribute projects into the
      * head between the title and the close button (DD-088), so a
      * drawer's content actions (Clear all on the alerts feed) sit in the
-     * sticky head and never scroll away with a long body.
+     * sticky head and never scroll away with a long body. Content
+     * carrying `drawer-subhead` projects into a full-width strip below
+     * the head (DD-090, the alerts inbox bar) — also outside the
+     * scrolling body.
      */
     readonly ariaLabel = input("Close");
 

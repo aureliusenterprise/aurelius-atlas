@@ -2025,6 +2025,26 @@ The technical data governance model consists of the following types of entities:
         <source>Alerts</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.alerts.feed</note>
       </trans-unit>
+      <trans-unit id="shell.alerts.inbox" datatype="html">
+        <source>Alert filters</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.inbox</note>
+      </trans-unit>
+      <trans-unit id="shell.alerts.severity.error" datatype="html">
+        <source>Errors</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.severity.error</note>
+      </trans-unit>
+      <trans-unit id="shell.alerts.severity.info" datatype="html">
+        <source>Info</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.severity.info</note>
+      </trans-unit>
+      <trans-unit id="shell.alerts.severity.warning" datatype="html">
+        <source>Warnings</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.severity.warning</note>
+      </trans-unit>
+      <trans-unit id="shell.alerts.showAll" datatype="html">
+        <source>Show all</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.showAll</note>
+      </trans-unit>
       <trans-unit id="shell.alerts.times" datatype="html">
         <source>×</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.alerts.times</note>
@@ -2032,6 +2052,10 @@ The technical data governance model consists of the following types of entities:
       <trans-unit id="shell.alerts.title" datatype="html">
         <source>Alerts</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.alerts.title</note>
+      </trans-unit>
+      <trans-unit id="shell.alerts.unread" datatype="html">
+        <source>Unread</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.unread</note>
       </trans-unit>
       <trans-unit id="shell.footer.copyright" datatype="html">
         <source>Copyright</source>

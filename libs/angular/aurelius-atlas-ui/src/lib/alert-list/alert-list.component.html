@@ -8,7 +8,13 @@
                 ramp entries (DD-063). The binding replaces the class
                 attribute, so `notification` rides in it.
             -->
-            <div [class]="'notification is-' + (group.severity === 'error' ? 'danger' : group.severity)">
+            <div
+                [class]="
+                    'notification is-' +
+                    (group.severity === 'error' ? 'danger' : group.severity) +
+                    (group.read ? '' : ' aurelius-alert-unread')
+                "
+            >
                 <button
                     type="button"
                     class="delete"
@@ -18,6 +24,15 @@
                 <p class="aurelius-alert-message">{{ group.message }}</p>
                 <p class="aurelius-alert-meta">
                     <time [attr.datetime]="group.lastSeen">{{ group.lastSeen | date: "medium" }}</time>
+                    @if (!group.read) {
+                        <!--
+                            The unread marker (ALR-12): a ring dot, the
+                            badge's idiom, with the label for screen
+                            readers — the dot itself is decorative.
+                        -->
+                        <span class="aurelius-alert-unread-dot" aria-hidden="true"></span>
+                        <span class="is-sr-only">{{ unreadLabel() }}</span>
+                    }
                     @if (group.count > 1) {
                         <!--
                             The chip's pair is pinned in the scss, not

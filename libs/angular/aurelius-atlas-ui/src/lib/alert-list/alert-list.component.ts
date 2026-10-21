@@ -18,6 +18,11 @@ import type { AlertGroup } from "./alert-group";
  * places a clear-all action in the {@link Drawer}'s head slot, where a
  * long feed cannot bury it. The list stays the rows.
  *
+ * An unread group (ALR-12) reads as a row: its message is bolder and its
+ * meta line carries a ring dot with the caller's `unreadLabel` for
+ * screen readers. Read groups show neither — the list only renders the
+ * flag its store set on each row.
+ *
  * Labels are caller inputs with English defaults (the {@link Drawer}'s
  * `ariaLabel` pattern), so the lib keeps no translation dependency —
  * the app passes localised strings and the XLIFF gate stays app-side
@@ -60,6 +65,12 @@ export class AlertList {
      * single localised word per locale.
      */
     readonly timesPrefix = input("\u00d7");
+
+    /**
+     * The label announced on an unread row's dot (ALR-12). The caller
+     * localises it.
+     */
+    readonly unreadLabel = input("Unread");
 
     /** Emits the id of a row's dismiss button (ALR-06). */
     readonly dismiss = output<string>();

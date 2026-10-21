@@ -9,6 +9,7 @@ const group = (over: Partial<AlertGroup> = {}): AlertGroup => ({
     message: "Request failed: GET /api/entity 500",
     count: 1,
     lastSeen: Date.UTC(2026, 9, 21, 10, 30),
+    read: true,
     ...over,
 });
 
@@ -110,6 +111,28 @@ describe("AlertList (ALR-07, ALR-09, ALR-10)", () => {
         // `is-light` is a scheme trap: the brand pins the light plate,
         // Bulma re-pins its ink — white-on-white in dark mode.
         expect(chip.classList.contains("is-light")).toBe(false);
+    });
+
+    it("marks an unread row, read rows carry no marker (ALR-12)", () => {
+        fixture.componentRef.setInput("alerts", [group({ id: "u1", read: false }), group({ id: "r1", read: true })]);
+        fixture.detectChanges();
+
+        const rows = [...(fixture.nativeElement.querySelectorAll(".notification") as NodeListOf<HTMLElement>)];
+        expect(rows[0].classList.contains("aurelius-alert-unread")).toBe(true);
+        expect(rows[1].classList.contains("aurelius-alert-unread")).toBe(false);
+        expect(rows[0].querySelector(".aurelius-alert-unread-dot")).toBeTruthy();
+        expect(rows[1].querySelector(".aurelius-alert-unread-dot")).toBeNull();
+        // The dot is decorative; the sr-only label carries the meaning.
+        expect(rows[0].querySelector(".aurelius-alert-unread-dot")?.getAttribute("aria-hidden")).toBe("true");
+        expect(rows[0].textContent).toContain("Unread");
+    });
+
+    it("names the unread marker with the caller's label (ALR-08, ALR-12)", () => {
+        fixture.componentRef.setInput("alerts", [group({ read: false })]);
+        fixture.componentRef.setInput("unreadLabel", "Ongelezen");
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.textContent).toContain("Ongelezen");
     });
 
     it("names the dismiss control with the caller's label (ALR-08)", () => {

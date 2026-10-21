@@ -153,16 +153,32 @@ describe("ShellHeader", () => {
         expect(bell?.classList.contains("is-active")).toBe(true);
     });
 
-    it("carries the severity badge while alerts exist (ALR-02)", () => {
+    it("carries the unread severity badge (ALR-02, ALR-12)", () => {
         setup();
         const fixture = TestBed.createComponent(ShellHeader);
         fixture.detectChanges();
         const compiled = fixture.nativeElement as HTMLElement;
+        const alerts = TestBed.inject(AlertsService);
 
         // Presence, not a count: no dot on an empty store.
         expect(compiled.querySelector(".aurelius-badge-dot")).toBeNull();
 
-        TestBed.inject(AlertsService).add({ severity: "warning", message: "slow", source: "app" });
+        alerts.add({ severity: "warning", message: "slow", source: "app" });
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-badge-dot")?.classList.contains("is-warning")).toBe(true);
+
+        // The dot answers what has not been seen (ALR-12): opening the
+        // drawer reads the feed, the dot goes with it.
+        alerts.markAllRead();
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-badge-dot")).toBeNull();
+
+        // The colour rides the highest UNREAD severity, not the store's
+        // top: a read error no longer out-colours a new warning.
+        alerts.add({ severity: "error", message: "boom", source: "app" });
+        alerts.markAllRead();
+        alerts.add({ severity: "warning", message: "slow again", source: "app" });
         fixture.detectChanges();
 
         expect(compiled.querySelector(".aurelius-badge-dot")?.classList.contains("is-warning")).toBe(true);

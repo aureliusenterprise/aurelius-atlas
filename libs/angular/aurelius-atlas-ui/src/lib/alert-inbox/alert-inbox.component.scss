@@ -1,0 +1,65 @@
+/*
+ * The inbox bar (ALR-11): the chips ride Bulma's `buttons has-addons`
+ * group — the joined shape comes from Bulma, this sheet carries the
+ * full-width row, the selected fill, the count tag, and the unread dot.
+ *
+ * Bulma 1 gives a selected button no fill (DD-082's finding, measured on
+ * the locale switcher), so `is-selected` is the pinned Aurelius blue
+ * with white ink — the settings panel's idiom, the footer's pair
+ * (SHM-07): 4.9:1, the same in either scheme. An "off" chip is a plain
+ * Bulma button, a "visible" severity a blue one.
+ *
+ * The count tag is the chip's pinned pair (DD-088): Bulma's `is-light`
+ * is a scheme trap here — the brand pins the light plate outside Bulma's
+ * scheme machinery (SHM-04) while Bulma's dark theme re-pins the ink,
+ * white-on-white in dark mode.
+ */
+.aurelius-alert-inbox {
+    border-bottom: 1px solid var(--bulma-scheme-main-bis);
+    padding: 0.75rem 2rem;
+}
+
+.aurelius-alert-inbox-group {
+    display: flex;
+    flex-wrap: nowrap;
+    margin-bottom: 0;
+}
+
+.aurelius-alert-inbox-chip.is-selected {
+    background-color: #0073dd; // the footer's pinned pair (SHM-07, DD-082)
+    border-color: #0073dd;
+    color: var(--bulma-white);
+}
+
+.aurelius-alert-inbox-count {
+    background-color: #f5f5f5; // $light, pinned in both schemes (DD-088)
+    color: #363636; // its legacy invert (SHM-04's pair)
+    margin-inline-start: 0.375rem;
+}
+
+/*
+ * The unread dot (ALR-12): DD-063's pinned ramp, the badge's colours —
+ * a severity marker reads the same in both schemes. The hairline ring
+ * is the badge's idiom so the dot keeps an edge on the blue fill of a
+ * selected chip (info's teal on Aurelius blue needs it).
+ */
+.aurelius-alert-inbox-unread {
+    border: 1.5px solid var(--bulma-scheme-main-bis);
+    border-radius: var(--bulma-radius-rounded);
+    flex-shrink: 0;
+    height: 0.5rem;
+    margin-inline-start: 0.25rem;
+    width: 0.5rem;
+}
+
+.aurelius-alert-inbox-unread.is-error {
+    background-color: #dc3545; // $danger (DD-063)
+}
+
+.aurelius-alert-inbox-unread.is-warning {
+    background-color: #ffc107; // $warning (DD-063)
+}
+
+.aurelius-alert-inbox-unread.is-info {
+    background-color: #17a2b8; // $info (DD-063)
+}

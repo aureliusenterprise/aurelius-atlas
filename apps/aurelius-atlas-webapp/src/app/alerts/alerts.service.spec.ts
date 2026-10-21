@@ -157,4 +157,76 @@ describe("AlertsService (ALR-02, ALR-03, ALR-06)", () => {
         service.clearAll();
         expect(service.hasAlerts()).toBe(false);
     });
+
+    it("arrives unread and reads all on markAllRead (ALR-12)", () => {
+        const { service } = setupService();
+
+        service.add(error);
+        expect(service.alerts()[0].read).toBe(false);
+        expect(service.hasUnread()).toBe(true);
+
+        service.markAllRead();
+        expect(service.alerts()[0].read).toBe(true);
+        expect(service.hasUnread()).toBe(false);
+    });
+
+    it("a merge re-unreads a read burst (ALR-12)", () => {
+        const { service, at } = setupService(10_000);
+
+        service.add(error);
+        service.markAllRead();
+        expect(service.hasUnread()).toBe(false);
+
+        at(10_500);
+        service.add(error); // merged — the burst grew, fresh news again
+
+        expect(service.alerts()[0].count).toBe(2);
+        expect(service.hasUnread()).toBe(true);
+    });
+
+    it("marks a live feed read as it lands (ALR-12)", () => {
+        const { service } = setupService();
+
+        service.markAllRead(); // the open drawer's effect runs on an empty store too
+        expect(service.hasUnread()).toBe(false);
+
+        service.add(error); // arrives while the drawer is open…
+        service.markAllRead(); // …and the effect reads it on landing
+        expect(service.hasUnread()).toBe(false);
+    });
+
+    it("colours the dot by the highest unread severity (ALR-02, ALR-12)", () => {
+        const { service, at } = setupService();
+
+        service.add(error);
+        service.markAllRead();
+        expect(service.topUnreadSeverity()).toBe("info"); // vacuous — nothing unread
+
+        at(2 * GROUP_WINDOW_MS);
+        service.add({ severity: "warning", message: "w", source: "app" });
+        // The read error no longer out-colours the new warning.
+        expect(service.topSeverity()).toBe("error");
+        expect(service.topUnreadSeverity()).toBe("warning");
+    });
+
+    it("counts the feed per severity, totals and unread (ALR-11, ALR-12)", () => {
+        const { service } = setupService();
+
+        service.add(error);
+        service.add({ severity: "error", message: "GET /api/y 502", source: "http" });
+        service.add({ severity: "info", message: "saved", source: "app" });
+
+        expect(service.severityCounts().map((c) => `${c.severity}:${c.total}:${c.unread}`)).toEqual([
+            "error:2:2",
+            "warning:0:0",
+            "info:1:1",
+        ]);
+
+        service.markAllRead();
+        expect(service.severityCounts().map((c) => `${c.severity}:${c.total}:${c.unread}`)).toEqual([
+            "error:2:0",
+            "warning:0:0",
+            "info:1:0",
+        ]);
+    });
 });

@@ -71,7 +71,10 @@ $aurelius-drawer-motion-duration: 200ms;
     flex-direction: column;
     height: 100%;
     max-width: min(28rem, 100vw);
-    overflow-y: auto;
+    // The panel clips (DD-091): the body is the scroll container, so a
+    // long feed scrolls under the head and subhead — the drawer's chrome
+    // (title, actions, inbox bar) never slides away.
+    overflow: hidden;
     position: absolute;
     inset-block: 0;
     inset-inline-end: 0;
@@ -106,6 +109,11 @@ $aurelius-drawer-motion-duration: 200ms;
 
 .aurelius-drawer-body {
     flex-grow: 1;
+    // The scroll container (DD-091): `min-height: 0` lets the flex item
+    // shrink below its content, `overflow-y: auto` scrolls there — the
+    // head and the `drawer-subhead` slot stay fixed above it.
+    min-height: 0;
+    overflow-y: auto;
     // The same 2rem inset below the head's border (DD-075).
     padding: var(--bulma-modal-card-head-padding, 2rem);
 }

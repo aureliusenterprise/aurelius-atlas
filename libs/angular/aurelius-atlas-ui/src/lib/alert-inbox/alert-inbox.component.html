@@ -1,0 +1,41 @@
+<!--
+    The inbox bar (ALR-11): a full-width Bulma button group —
+    `buttons has-addons` joins the chips, `is-expanded` stretches them
+    to fill the row. The caller's clear-all action projects in at the
+    end of the strip (the panel passes it, DD-090).
+
+    A chip is a toggle button (ALR-11): `aria-pressed` carries the
+    visible state — pressed while the severity shows — and the pinned
+    `is-selected` fill (the scss; Bulma 1 gives a selected button no
+    fill, DD-082's finding) makes it readable. The count tag is the
+    severity's total; the dot rides in the severity's ramp colour while
+    any of its groups is unread (ALR-12), with an sr-only label so the
+    information is not colour-only.
+-->
+<div class="aurelius-alert-inbox" role="group" [attr.aria-label]="ariaLabel()">
+    <div class="buttons has-addons aurelius-alert-inbox-group">
+        @for (count of counts(); track count.severity) {
+            <button
+                type="button"
+                class="button is-small is-expanded aurelius-alert-inbox-chip"
+                [class.is-selected]="!hidden().includes(count.severity)"
+                [attr.aria-pressed]="!hidden().includes(count.severity)"
+                (click)="toggleSeverity.emit(count.severity)"
+            >
+                <span>{{ severityLabels()[count.severity] }}</span>
+                <span class="tag aurelius-alert-inbox-count">{{ count.total }}</span>
+                @if (count.unread > 0) {
+                    <span [class]="'aurelius-alert-inbox-unread is-' + count.severity" aria-hidden="true"></span>
+                    <span class="is-sr-only">{{ unreadLabel() }}</span>
+                }
+            </button>
+        }
+        @if (allHidden()) {
+            <!-- Every filter is off: the escape hatch back (ALR-11). -->
+            <button type="button" class="button is-small aurelius-alert-inbox-show-all" (click)="showAll.emit()">
+                {{ showAllLabel() }}
+            </button>
+        }
+        <ng-content></ng-content>
+    </div>
+</div>

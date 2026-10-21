@@ -50,12 +50,14 @@
             </span>
         </a>
 
-        <!-- Alerts bell (ALR-01, ALR-02, ALR-02a): the gear's pattern — the
+        <!-- Alerts bell (ALR-01, ALR-02, ALR-02a, ALR-12): the gear's pattern — the
              bell opens the alerts drawer through the one `drawer` outlet,
              and opening it swaps the settings panel away. The ui-lib Badge
-             carries the presence dot, coloured by the highest severity
-             present; the icon carries the ring's transform origin (the
-             pendulum hangs from its handle). -->
+             carries the presence dot — unread presence, not the whole
+             store: opening the drawer reads the feed and the dot goes;
+             its colour is the highest unread severity (the icon carries
+             the ring's transform origin, the pendulum hangs from its
+             handle). -->
         <a
             class="navbar-item"
             i18n-aria-label="@@shell.header.alerts"
@@ -63,7 +65,7 @@
             [routerLink]="[{ outlets: { drawer: ['alerts'] } }]"
             routerLinkActive="is-active"
         >
-            <aurelius-atlas-ui-badge [visible]="alerts.hasAlerts()" [severity]="alerts.topSeverity()">
+            <aurelius-atlas-ui-badge [visible]="alerts.hasUnread()" [severity]="alerts.topUnreadSeverity()">
                 <span class="icon aurelius-bell-icon" #bellIcon>
                     <fa-icon aria-hidden="true" [icon]="faBell"></fa-icon>
                 </span>

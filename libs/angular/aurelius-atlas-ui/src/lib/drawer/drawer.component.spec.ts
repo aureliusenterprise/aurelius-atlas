@@ -136,6 +136,25 @@ describe("Drawer", () => {
         expect(head.querySelector(".delete")).toBeTruthy();
     });
 
+    it("projects drawer-subhead content between the head and the body (DD-090)", () => {
+        const hosted = TestBed.createComponent(SubheadHostComponent);
+        hosted.detectChanges();
+        hosted.componentInstance.drawer.open();
+        hosted.detectChanges();
+
+        const panel = hosted.nativeElement.querySelector(".aurelius-drawer-panel");
+        const subhead = panel.querySelector(".aurelius-alert-inbox");
+        // The inbox bar rides a strip below the head, above the body —
+        // outside the scrolling body, so a long feed never pushes it away.
+        expect(subhead?.textContent.trim()).toBe("inbox");
+        expect(subhead?.parentElement).toBe(panel);
+        expect(hosted.nativeElement.querySelector(".aurelius-drawer-body .aurelius-alert-inbox")).toBeNull();
+        // Order: head, then subhead, then body.
+        const children = [...(panel.children as NodeListOf<HTMLElement>)].map((c) => c.className.split(" ")[0]);
+        expect(children.indexOf("aurelius-drawer-head")).toBeLessThan(children.indexOf("aurelius-alert-inbox"));
+        expect(children.indexOf("aurelius-alert-inbox")).toBeLessThan(children.indexOf("aurelius-drawer-body"));
+    });
+
     it.each([
         ["a scrim click", ".aurelius-drawer-scrim"],
         ["the close button", ".aurelius-drawer-head .delete"],
@@ -207,5 +226,18 @@ class HostComponent {
     `,
 })
 class HeadActionHostComponent {
+    @ViewChild("drawer") drawer!: Drawer;
+}
+
+@Component({
+    imports: [Drawer],
+    template: `
+        <aurelius-atlas-ui-drawer #drawer title="Alerts">
+            <div drawer-subhead class="aurelius-alert-inbox">inbox</div>
+            <p>the feed</p>
+        </aurelius-atlas-ui-drawer>
+    `,
+})
+class SubheadHostComponent {
     @ViewChild("drawer") drawer!: Drawer;
 }

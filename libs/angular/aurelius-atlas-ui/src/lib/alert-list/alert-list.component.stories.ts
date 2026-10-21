@@ -25,6 +25,7 @@ const alerts: AlertGroup[] = [
         message: "Draft saved.",
         count: 1,
         lastSeen: Date.UTC(2026, 9, 21, 10, 32),
+        read: false,
     },
     {
         id: "g2",
@@ -32,6 +33,7 @@ const alerts: AlertGroup[] = [
         message: "Search is slow: the query took 8.2s.",
         count: 2,
         lastSeen: Date.UTC(2026, 9, 21, 10, 31),
+        read: false,
     },
     {
         id: "g1",
@@ -39,13 +41,16 @@ const alerts: AlertGroup[] = [
         message: "Request failed: GET /api/v2/entity/guid/7 500",
         count: 7,
         lastSeen: Date.UTC(2026, 9, 21, 10, 30),
+        read: false,
     },
 ];
 
 /**
  * The full feed: three rows, the severity colours (danger/warning/info,
- * DD-063), burst chips on the merged rows, the time line, and per-row
- * dismissal — the play() dismisses the error row and sees the output.
+ * DD-063), burst chips on the merged rows, the unread markers on the two
+ * unread rows (ALR-12: bold message, ring dot), the time line, and
+ * per-row dismissal — the play() dismisses the error row and sees the
+ * output.
  */
 export const Primary: Story = {
     args: {
@@ -61,6 +66,10 @@ export const Primary: Story = {
         expect(rows[2].classList.contains("is-danger")).toBe(true);
         // The burst chip marks merged repeats (ALR-03, ALR-07).
         await expect(canvas.findByText("×7")).resolves.toBeInTheDocument();
+        // The unread markers (ALR-12): the two unread rows, not the read one.
+        const unread = [...(canvasElement.querySelectorAll(".aurelius-alert-unread") as NodeListOf<HTMLElement>)];
+        expect(unread).toHaveLength(2);
+        expect(unread[0].querySelector(".aurelius-alert-unread-dot")).toBeTruthy();
 
         const dismissed: string[] = [];
         componentInstance.dismiss.subscribe((id: string) => dismissed.push(id));
