@@ -40,6 +40,11 @@
     "aliases": []
   },
   {
+    "version": "feat-webapp-theme",
+    "title": "feat-webapp-theme",
+    "aliases": []
+  },
+  {
     "version": "feat-webapp-shell",
     "title": "feat-webapp-shell",
     "aliases": []
