@@ -71,6 +71,8 @@ describe("Browse", () => {
         const fixture = TestBed.createComponent(Browse);
         fixture.detectChanges();
 
-        httpMock.verify();
+        // Consumes every request the component issued — the landing exists
+        // before its API, so the set must be empty (asserted, not just verified).
+        expect(httpMock.match(() => true)).toHaveLength(0);
     });
 });
