@@ -3,6 +3,11 @@ import { expect, userEvent, within } from "storybook/test";
 import { SortableTable } from "./sortable-table.component";
 import { TableColumn, TableRow } from "./table-column";
 
+/**
+ * A table with sortable column headers: the caller declares columns and
+ * row cells with templates, the component wires the sort, the empty
+ * placeholder, the loading state and the pagination.
+ */
 const meta: Meta<SortableTable<Record<string, unknown>>> = {
     component: SortableTable,
     title: "Sortable Table",
@@ -42,6 +47,11 @@ const tableTemplate = (rows: string, pageSize: string, loading: string) => `
 </aurelius-atlas-ui-sortable-table>
 `;
 
+/**
+ * Three rows, unsorted. Clicking a column header sorts by it — the first
+ * click ascending, the arrow in the header shows the direction, and a second
+ * click reverses it.
+ */
 export const Primary: Story = {
     args: {
         rows: ROWS,
@@ -64,6 +74,10 @@ export const Primary: Story = {
     },
 };
 
+/**
+ * Sorted by the Type column: the sort keys on the column's `sortBy`, so the
+ * order follows the underlying field, not the text shown in the cell.
+ */
 export const Sorted: Story = {
     args: {
         rows: ROWS,
@@ -82,6 +96,10 @@ export const Sorted: Story = {
     },
 };
 
+/**
+ * No rows: the headers stay and a "No data available" placeholder fills the
+ * body, so the table keeps its shape while a search comes back empty.
+ */
 export const Empty: Story = {
     args: {
         rows: [] as Row[],
@@ -99,6 +117,10 @@ export const Empty: Story = {
     },
 };
 
+/**
+ * While rows are being fetched: a spinner replaces the body and the sort
+ * buttons are inert, so a click cannot reorder data that has not arrived.
+ */
 export const Loading: Story = {
     args: {
         rows: ROWS,
@@ -116,6 +138,10 @@ export const Loading: Story = {
     },
 };
 
+/**
+ * Five rows, two to a page: the pager below the table moves through them and
+ * the sort applies across every page, not just the one on screen.
+ */
 export const Paginated: Story = {
     args: {
         rows: FIVE,

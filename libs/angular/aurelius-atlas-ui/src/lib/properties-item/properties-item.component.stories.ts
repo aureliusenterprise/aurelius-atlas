@@ -5,6 +5,11 @@ import { PropertiesItemLink } from "./properties-item.component";
 
 import { PropertiesItem } from "./properties-item.component";
 
+/**
+ * One entity property value: text is title-cased, a list of linked values
+ * renders as clickable anchors (emitting each guid), and an empty list
+ * shows "N/A".
+ */
 const meta: Meta<PropertiesItem> = {
     component: PropertiesItem,
     title: "Properties Item",
@@ -25,6 +30,7 @@ const host = (args: Record<string, unknown>) => ({
     template,
 });
 
+/** A plain text value: "sales domain" renders title-cased. */
 export const Text: Story = {
     args: {
         value: "sales domain",
@@ -40,6 +46,9 @@ const links: PropertiesItemLink[] = [
     { guid: "g2", displayText: "Bob" },
 ];
 
+/**
+ * Two linked people: anchors that emit the clicked guid (Enter works).
+ */
 export const Links: Story = {
     args: {
         value: links,
@@ -56,6 +65,7 @@ export const Links: Story = {
     render: host,
 };
 
+/** An empty value list renders the "N/A" placeholder. */
 export const Empty: Story = {
     args: {
         value: [],

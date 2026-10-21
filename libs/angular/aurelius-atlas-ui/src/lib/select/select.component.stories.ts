@@ -3,6 +3,11 @@ import { expect, userEvent } from "storybook/test";
 
 import { Select } from "./select.component";
 
+/**
+ * A labelled dropdown over a list of rows, with a search button beside
+ * it: selecting writes to the value, the button emits `searchRequested`.
+ * Placeholder, no-data and required-help texts are all caller inputs.
+ */
 const meta: Meta<Select> = {
     component: Select,
     title: "Select",
@@ -39,6 +44,10 @@ const host = (args: Record<string, unknown>) => ({
     template,
 });
 
+/**
+ * Three options: the play() picks one and presses Search, checking the
+ * value lands and the event fires.
+ */
 export const Primary: Story = {
     args: {
         options: rows,
@@ -60,6 +69,7 @@ export const Primary: Story = {
     render: host,
 };
 
+/** No options: the select shows the no-data message. */
 export const NoData: Story = {
     args: {
         options: [],
@@ -74,6 +84,7 @@ export const NoData: Story = {
     render: host,
 };
 
+/** Marked invalid: the control is red and the required-help shows. */
 export const Invalid: Story = {
     args: {
         options: rows,
@@ -87,6 +98,7 @@ export const Invalid: Story = {
     render: host,
 };
 
+/** Both the control and the search button disabled. */
 export const Disabled: Story = {
     args: {
         options: rows,
@@ -106,6 +118,7 @@ export const Disabled: Story = {
     render: host,
 };
 
+/** A search in flight: the button spins and ignores clicks. */
 export const SearchLoading: Story = {
     args: {
         options: rows,

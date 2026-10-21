@@ -4,6 +4,11 @@ import { faProjectDiagram, faTable } from "@fortawesome/free-solid-svg-icons";
 
 import { Breadcrumb, Breadcrumbs } from "./breadcrumbs.component";
 
+/**
+ * A trail of links from a root entity down to the current one: each crumb
+ * carries its type icon and colour, the active crumb is marked, long names
+ * truncate, and clicking a crumb emits `itemClicked` with its guid.
+ */
 const meta: Meta<Breadcrumbs> = {
     component: Breadcrumbs,
     title: "Breadcrumbs",
@@ -35,6 +40,10 @@ const host = (args: Record<string, unknown>) => ({
     template,
 });
 
+/**
+ * A domain and a dataset, the second the active crumb. Its icon is coloured
+ * by its type class; Enter on a crumb emits the click.
+ */
 export const Primary: Story = {
     args: {
         items,
@@ -57,6 +66,9 @@ export const Primary: Story = {
     render: host,
 };
 
+/**
+ * The trail has a gap and cannot be resolved: a warning chip precedes it.
+ */
 export const Warning: Story = {
     args: {
         items,
@@ -68,6 +80,7 @@ export const Warning: Story = {
     render: host,
 };
 
+/** No items: the component renders nothing at all. */
 export const Empty: Story = {
     args: {
         items: [],
@@ -79,16 +92,16 @@ export const Empty: Story = {
 };
 
 /**
- * The dark scheme (DD-068): the trail on the dark surface. The legacy
- * pure-blue technical ink lifts to Bulma's dark-adapted lightness; the
- * business orange is dark-safe and stays.
+ * The trail on the dark theme: the crumb links brighten and the technical
+ * blue lifts for the dark surface. It opens dark — the toolbar Theme switch
+ * (top bar) flips it to light or Auto at any time.
  */
 export const OnDark: Story = {
     args: {
         items,
         activeGuid: "g2",
     },
-    globals: { theme: "dark" },
+    parameters: { theme: "dark" },
     play: async ({ canvasElement }) => {
         const iconColor = (selector: string) => {
             const el = canvasElement.querySelector<HTMLElement>(selector);
@@ -96,9 +109,12 @@ export const OnDark: Story = {
             return getComputedStyle(el).color;
         };
         // The icon classes ride the fa-icon (the component's template),
-        // coloured by the SCSS .business/.technical rules.
+        // coloured by the SCSS .business/.technical rules. The toolbar
+        // Theme switch can move this story to either scheme, so assert the
+        // blue of whichever one is active — the business orange is shared.
+        const dark = document.documentElement.dataset["theme"] !== "light";
         await expect(iconColor(".icon .business")).toBe("rgb(255, 165, 0)");
-        await expect(iconColor(".icon .technical")).toBe("rgb(128, 128, 255)");
+        await expect(iconColor(".icon .technical")).toBe(dark ? "rgb(128, 128, 255)" : "rgb(0, 0, 255)");
     },
     render: host,
 };

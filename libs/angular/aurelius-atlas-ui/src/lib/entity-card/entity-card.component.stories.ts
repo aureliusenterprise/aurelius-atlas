@@ -6,6 +6,11 @@ import { faProjectDiagram, faTable, faUser } from "@fortawesome/free-solid-svg-i
 import { Breadcrumb, Breadcrumbs } from "../breadcrumbs/breadcrumbs.component";
 import { EntityCard } from "./entity-card.component";
 
+/**
+ * The entity card: a clickable title link, a type-name badge, and content
+ * and quality slots the caller projects. Clicking the title emits
+ * `entityClicked` with the guid — navigating is the caller's job.
+ */
 const meta: Meta<EntityCard> = {
     component: EntityCard,
     title: "Entity Card",
@@ -47,6 +52,10 @@ const host = (args: Record<string, unknown>) => ({
     template,
 });
 
+/**
+ * The card with a title, a type badge, a projected content list and a
+ * quality column. Pressing Enter on the focused title emits the click.
+ */
 export const Primary: Story = {
     args: {
         guid: "g1",
@@ -71,6 +80,10 @@ export const Primary: Story = {
     render: host,
 };
 
+/**
+ * The badge shows the type's friendly alias — "Domain" — with the raw type
+ * name next to it, `(m4i_data_domain)`.
+ */
 export const Aliased: Story = {
     args: {
         guid: "g1",
@@ -90,6 +103,10 @@ export const Aliased: Story = {
     render: host,
 };
 
+/**
+ * While the entity is being fetched, the card body is replaced by a
+ * "Loading …" row and a spinner.
+ */
 export const Loading: Story = {
     args: {
         guid: "g1",
@@ -103,11 +120,13 @@ export const Loading: Story = {
 };
 
 /**
- * The 7.6 composition: a search-result card whose body is a breadcrumb
- * trail, a description, and the owner/steward row — the anatomy of the
- * legacy `entity-details-card` (each search result renders this card),
- * assembled from the lib's dumb pieces. The icon classes come from the
- * caller's `iconsByType` (app meta).
+ * A dataset as it appears in the search results: the title links to the
+ * entity, the badge names its type, and the body stacks the trail from the
+ * domain down to this entity, a one-line description, and the data owner
+ * and steward rows with their person icons.
+ *
+ * The trail ends with the entity itself — the last crumb repeats the card
+ * title, and clicking the title (not the crumb) opens the entity.
  */
 export const SearchResult: Story = {
     args: {
@@ -181,10 +200,9 @@ export const SearchResult: Story = {
 };
 
 /**
- * The same composition on the dark scheme (DD-068): the brand's dark ink
- * ramp re-pins the text chain to Bulma's dark lightnesses and lifts the
- * legacy pure-blue technical ink, so the card stays legible on the dark
- * surface.
+ * The card on the dark theme: the ink flips to light greys and the
+ * technical blue lifts for the dark surface. It opens dark — the toolbar
+ * Theme switch (top bar) flips it to light or Auto at any time.
  */
 export const OnDark: Story = {
     args: {
@@ -196,21 +214,36 @@ export const OnDark: Story = {
         typeIconClass: "technical",
         showQuality: false,
     },
-    globals: { theme: "dark" },
+    parameters: { theme: "dark" },
     play: async ({ canvasElement }) => {
         const color = (selector: string) => {
             const el = canvasElement.querySelector<HTMLElement>(selector);
             if (!el) throw new Error(`${selector} is missing`);
             return getComputedStyle(el).color;
         };
-        // Bulma's dark surface, the DD-068 ink: title #ededed, body #b5b5b5.
-        await expect(canvasElement.querySelector(".card")).toHaveStyle({
-            "background-color": "rgb(20, 22, 26)",
-        });
-        await expect(color(".title.is-4 a")).toBe("rgb(237, 237, 237)");
-        await expect(color("[card-content] p")).toBe("rgb(181, 181, 181)");
-        // The legacy pure blue lifts to Bulma's dark-adapted lightness.
-        await expect(color(".media-right .icon.technical")).toBe("rgb(128, 128, 255)");
+        // The toolbar Theme switch can move this story to either scheme, so
+        // the play() asserts the ink of whichever one is active.
+        const dark = document.documentElement.dataset["theme"] !== "light";
+        if (dark) {
+            // Bulma's dark surface, the DD-068 ink: title #ededed, body #b5b5b5.
+            await expect(canvasElement.querySelector(".card")).toHaveStyle({
+                "background-color": "rgb(20, 22, 26)",
+            });
+            await expect(color(".title.is-4 a")).toBe("rgb(237, 237, 237)");
+            await expect(color("[card-content] p")).toBe("rgb(181, 181, 181)");
+            // The legacy pure blue lifts to Bulma's dark-adapted lightness.
+            await expect(color(".media-right .icon.technical")).toBe("rgb(128, 128, 255)");
+        } else {
+            // Light: Bulma's scheme-main card with the legacy ink the brand
+            // sheet keeps (title #363636, body #4a4a4a — SHM-01).
+            await expect(canvasElement.querySelector(".card")).toHaveStyle({
+                "background-color": "rgb(255, 255, 255)",
+            });
+            await expect(color(".title.is-4 a")).toBe("rgb(54, 54, 54)");
+            await expect(color("[card-content] p")).toBe("rgb(74, 74, 74)");
+            // Light scheme keeps the legacy pure blue.
+            await expect(color(".media-right .icon.technical")).toBe("rgb(0, 0, 255)");
+        }
     },
     render: (args) => ({
         moduleMetadata: { imports: [FontAwesomeModule] },

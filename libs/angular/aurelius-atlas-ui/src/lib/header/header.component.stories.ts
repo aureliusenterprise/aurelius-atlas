@@ -2,6 +2,11 @@ import type { Meta, StoryObj } from "@storybook/angular";
 import { expect } from "storybook/test";
 import { Header } from "./header.component";
 
+/**
+ * The app navbar: a logo brand linking home, projected navigation links on
+ * the left, actions on the right, and a burger that opens the menu on
+ * narrow screens.
+ */
 const meta: Meta<Header> = {
     component: Header,
     title: "Header",
@@ -26,6 +31,10 @@ const template = `
 </aurelius-atlas-ui-header>
 `;
 
+/**
+ * Desktop: brand, links and the Log in button all in the bar, the burger
+ * hidden.
+ */
 export const Primary: Story = {
     args: {
         expanded: false,
@@ -43,6 +52,7 @@ export const Primary: Story = {
     }),
 };
 
+/** The burger menu opened: the links and actions drop below the bar. */
 export const Expanded: Story = {
     args: {
         expanded: true,
@@ -60,6 +70,7 @@ export const Expanded: Story = {
     }),
 };
 
+/** Nothing projected: the bar with only the brand. */
 export const Empty: Story = {
     args: {
         expanded: false,

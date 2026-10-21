@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/angular";
 import { Card } from "./card.component";
 
+/**
+ * A Bulma card shell: an image slot, a content slot, and a footer of
+ * action buttons. The card is a frame — every region is projected by the
+ * caller.
+ */
 const meta: Meta<Card> = {
     component: Card,
     title: "Card",
@@ -37,6 +42,10 @@ const template = `
 </aurelius-atlas-ui-card>
 `;
 
+/**
+ * All slots filled: a square image, title and subtitle, a paragraph of
+ * content, and two footer actions.
+ */
 export const Primary: Story = {
     args: {
         image: "/assets/logo.jpg",
@@ -52,4 +61,5 @@ export const Primary: Story = {
     }),
 };
 
+/** Nothing projected: the bare card frame. */
 export const Empty: Story = {};

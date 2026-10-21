@@ -2,6 +2,10 @@ import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, userEvent, within } from "storybook/test";
 import { SearchField } from "./search-field.component";
 
+/**
+ * A search input with a clear button, optionally a submit button — the
+ * query is two-way bound, and submitting emits it.
+ */
 const meta: Meta<SearchField> = {
     component: SearchField,
     title: "Search Field",
@@ -10,6 +14,10 @@ export default meta;
 
 type Story = StoryObj<SearchField>;
 
+/**
+ * Empty field with a submit button: the play() types a query, then
+ * clears it.
+ */
 export const Primary: Story = {
     args: {
         placeholder: "Search...",
@@ -27,6 +35,7 @@ export const Primary: Story = {
     },
 };
 
+/** The field pre-filled with a query, the clear button ready. */
 export const WithQuery: Story = {
     args: {
         placeholder: "Search...",
@@ -35,6 +44,7 @@ export const WithQuery: Story = {
     },
 };
 
+/** Enter submits; the play() checks no submit button is rendered. */
 export const WithoutSubmitButton: Story = {
     args: {
         placeholder: "Search...",

@@ -9,9 +9,14 @@ import type { Decorator, Preview } from "@storybook/angular";
  * The toolbar theme switch. Bulma 1's scheme machinery reacts to `data-theme`
  * on `<html>` — the same attribute the app's `DarkModeService` toggles — and
  * `:root:not([data-theme])` follows the OS, so "auto" is "no attribute".
+ *
+ * A story can default the canvas to a scheme with `parameters.theme`; the
+ * toolbar always wins over the default, so every story — including the dark
+ * ones — stays switchable (a story-level `globals` would lock the toolbar).
  */
-const withTheme: Decorator = (storyFn, { globals }) => {
-    const theme = globals["theme"];
+const withTheme: Decorator = (storyFn, { globals, parameters }) => {
+    const selected = globals["theme"];
+    const theme = selected === "auto" ? parameters["theme"] : selected;
     const { dataset } = document.documentElement;
     if (theme === "dark" || theme === "light") {
         dataset["theme"] = theme;
