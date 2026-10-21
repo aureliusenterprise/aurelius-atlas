@@ -4588,6 +4588,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-088-the-chips-pinned-pair-clear-all-in-the-drawer-head" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-088. The chip's pinned pair; Clear all in the drawer head
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-090-the-inbox-bar-severity-chips-read-tracking-clear-all-in-the-bar" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-090 — The inbox bar: severity chips, read tracking, Clear all in the bar
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-091-the-drawers-body-is-the-scroll-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-091 — The drawer's body is the scroll container
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8132,6 +8165,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-088-the-chips-pinned-pair-clear-all-in-the-drawer-head" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-088. The chip's pinned pair; Clear all in the drawer head
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-090-the-inbox-bar-severity-chips-read-tracking-clear-all-in-the-bar" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-090 — The inbox bar: severity chips, read tracking, Clear all in the bar
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-091-the-drawers-body-is-the-scroll-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-091 — The drawer's body is the scroll container
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10728,7 +10794,7 @@ lib has no Bulma DOM assumptions). A future read-model (server events,
 6.x) adds a source to the store, not a new door.</p>
 <h3 id="dd-087-alertlist-and-badge-are-ui-lib-presentational-components">DD-087. AlertList and Badge are ui-lib presentational components<a class="headerlink" href="#dd-087-alertlist-and-badge-are-ui-lib-presentational-components" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Status:</strong> Accepted</li>
+<li><strong>Status:</strong> Accepted (the <code>clearAll()</code> half of the contract superseded by DD-088)</li>
 <li><strong>Increment:</strong> 7.15</li>
 <li><strong>Date:</strong> 2026-10-21</li>
 </ul>
@@ -10761,6 +10827,130 @@ an event, not a two-way value).</p>
 covers the feed and the dot). The badge's ring is Bulma-token ink
 (<code>--bulma-navbar-item-color</code>, currentColor fallback) — a future non-
 navbar host keeps a visible edge without a new input.</p>
+<h3 id="dd-088-the-chips-pinned-pair-clear-all-in-the-drawer-head">DD-088. The chip's pinned pair; Clear all in the drawer head<a class="headerlink" href="#dd-088-the-chips-pinned-pair-clear-all-in-the-drawer-head" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.15</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> Two live-review fixes to the alert feed (ALR-06, ALR-07):
+the burst chip's pair is pinned — <code>#f5f5f5</code> plate, <code>#363636</code> ink — not
+Bulma's <code>tag is-light</code>; and the "Clear all" button is a content action
+in the drawer's head, not part of the feed. The Drawer grows a
+<code>drawer-actions</code> projection slot between the title and the close button
+and AlertList loses its <code>clearLabel</code>/<code>clearAll</code> — clearing a store the
+list does not own was the list's borrowed business (DD-087's
+presentational rule).</p>
+<p><strong>Reason.</strong> The user's review of the live drawer: "the counter text is
+not visible on the white background" and the "clear all" button
+"will become buried" on a long feed — "let's keep it above the
+notifications". The chip's invisibility is a scheme trap, measured: the
+brand pins the <code>light</code> colour pair at <code>:root</code>, outside Bulma's scheme
+machinery (SHM-04, so the chrome colours survive), while Bulma 1's dark
+theme re-pins <code>light</code>'s invert to a scheme-following ink — the
+<code>is-light</code> tag composed the brand's white plate under dark-mode white
+ink (white-on-white). The pinned <code>#f5f5f5</code>/<code>#363636</code> pair is the
+footer's idiom (SHM-07): the same marker in either scheme, 9.3:1. The
+first fix placed Clear all above the rows inside the scrolling body
+(DD-088's first pass, unit-tested); on review the head is the stronger
+answer — the body scrolls, so the hatch must ride the sticky head.</p>
+<p><strong>Alternatives.</strong> Pin <code>light-invert</code> in the brand's <code>dark-ink</code> ramp
+(fixes the tag and every <code>is-light</code> surface app-wide — rejected as
+wider than the bug: DD-068's ramp re-pins the ink chain Bulma itself
+adapts; <code>light</code> is a colour pair SHM-04 pins deliberately, and
+dark-adapting it reopens SHM-01's promise). A severity-coloured chip
+(the row is already severity-coloured; the chip is metadata, not a
+second signal). Clear all above the rows inside the body (the first
+pass: on a long feed the drawer body scrolls, taking the hatch away —
+rejected on review). A <code>clearLabel</code>/<code>clearAll</code> on AlertList kept "for
+reusability": a feed that owns a store-clearing button presumes the
+store's shape — the head slot keeps the list the rows.</p>
+<p><strong>Consequences.</strong> The chip is the third pinned pair in the product
+(footer SHM-07, active locale DD-082, chip DD-088) — the growing list
+of surfaces that read the same in both schemes. The Drawer's head
+anatomy (DD-069's, shared with settings) gains an optional slot: the
+settings panel projects nothing and is unchanged. The alerts drawer's
+tab order is close, then Clear all (both in the head), then the rows.</p>
+<h3 id="dd-090-the-inbox-bar-severity-chips-read-tracking-clear-all-in-the-bar">DD-090 — The inbox bar: severity chips, read tracking, Clear all in the bar<a class="headerlink" href="#dd-090-the-inbox-bar-severity-chips-read-tracking-clear-all-in-the-bar" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.15</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The drawer head's Clear all grows into a full-width inbox
+bar (ALR-11): a new ui-lib <code>AlertInbox</code>, a Bulma <code>buttons has-addons</code>
+group of one chip per severity (<code>is-expanded</code>, feed order, an empty
+severity's chip included), each chip a filter toggle showing that
+severity's <strong>total</strong> group count, a dot riding the DD-063 ramp while any
+of its groups is unread, and the caller's Clear all projected into the
+bar's end. The Drawer grows a second projection slot, <code>drawer-subhead</code>,
+a strip between the head and the body; the bar rides it. Read tracking
+lands with it (ALR-12): every <code>AlertGroup</code> carries <code>read</code>; an arrival —
+or a merge bumping a read burst — marks unread, and the panel's effect
+marks every group read while the drawer is open (visible-is-read). The
+bell badge answers unread presence in the highest <strong>unread</strong> severity's
+colour, superseding ALR-02's store-top reading.</p>
+<p><strong>Reason.</strong> The user's ask: a bar showing the count per severity, each
+severity a show/hide button, Clear all kept, "keep track of whether
+notifications have been read", and the question of totals vs unread on
+the chips. Totals won: the chips are filters, and a filter's number is
+what it covers — unread counts on filter chips make the bar flicker
+under reading (the chips zero out as the drawer reads the feed, the
+turn the user is mid-reading through vanishes). Unread stays where the
+attention question is asked: the bell dot, the row, the chip's dot.
+Visible-is-read won over a per-row read toggle: the drawer is 28rem of
+rows the user came to read; a list that requires marking each row read
+is a queue, not a feed, and the merge-re-unreads rule means a returning
+burst re-asks for attention on its own. Filter state is the panel's,
+not the store's: the store's counts and the bell must answer with the
+whole store, and a view filter is not data.</p>
+<p><strong>Alternatives.</strong> Chips showing unread counts (rejected above — the
+number changes under the user's eyes as the drawer reads). Filter state
+in the store (rejected: the bell's badge and the chips' totals must see
+everything, and persistence of a view toggle is scope the in-memory
+store does not have). A per-group read button (a queue; rejected).
+<code>markAllRead</code> on close (rejected: the badge would stay lit while the
+user is reading, and the ring/dot answers "has this been seen" — seen
+means seen). Clear all staying in the head beside the bar (two fixed
+strips stacked, the head's action orphaned from the bar it serves; the
+bar is the feed's command strip — the hatch belongs at its end).</p>
+<p><strong>Consequences.</strong> The Drawer has two content slots, actions (head) and
+subhead (the strip); the settings panel uses neither. The alerts
+drawer's tab order is close, the three chips, Clear all, then the
+rows. <code>AlertGroup.read</code> joins the lib's model — the third field the
+store owns and the list renders (ALR-10's vocabulary grows). The bell
+badge goes quiet on open, which is the point: it asked for attention
+and got it. DD-088's Clear all in the head is superseded in placement
+(its "above the notifications" requirement keeps holding — the bar
+never scrolls, DD-091); DD-088's chip-pair pinning stands.</p>
+<h3 id="dd-091-the-drawers-body-is-the-scroll-container">DD-091 — The drawer's body is the scroll container<a class="headerlink" href="#dd-091-the-drawers-body-is-the-scroll-container" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.15</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The Drawer's panel clips (<code>overflow: hidden</code>) and its
+body scrolls (<code>min-height: 0</code>, <code>overflow-y: auto</code>): the head and the
+<code>drawer-subhead</code> strip are fixed, the content scrolls under them
+(DD-090's inbox bar, ALR-06/ALR-11's escape hatch).</p>
+<p><strong>Reason.</strong> Found while answering the user's question about a long
+feed: the panel carried <code>overflow-y: auto</code>, so the whole drawer
+scrolled — the head, title, close button, and DD-088's Clear all slid
+away with the feed, and the "head does not scroll" clause ALR-06 cited
+was not true. A drawer whose chrome scrolls away is a page, not a
+drawer: the close control and the command strip must be reachable at
+any scroll depth, and the inbox bar (DD-090) only pays off fixed.</p>
+<p><strong>Alternatives.</strong> A sticky head inside the scrolling panel (<code>position:
+sticky</code>: works, but the scrim/panel geometry makes it fragile with the
+slide animation, and the head's border composes over scrolled content
+under the rounded corners). Two scroll containers (rejected: nested
+scrolling on a 28rem panel is a trap).</p>
+<p><strong>Consequences.</strong> The settings panel's long body (six sections) now
+scrolls under a fixed head — the intended drawer reading, and the
+settings drawer's head carries its accessible name, so the panel
+reading it never loses it. jsdom runs no layout, so the scroll split is
+pinned by the spec's slot-placement test (DD-090) and the dev-server
+check, not by a unit assertion.</p>
 
 
 

@@ -6177,8 +6177,11 @@
 <li><strong>Records:</strong> DD-083 (the alerts store: windowed grouping, cap), DD-084 (the
   ErrorHandler chain: alert then trace), DD-085 (the HTTP error reporter),
   DD-086 (the bell: severity badge, ring animation), DD-087 (the ui-lib split:
-  AlertList and Badge are presentational); relies on ADR 053, DD-063, DD-069,
-  DD-070, DD-078, DD-079</li>
+  AlertList and Badge are presentational), DD-088 (the live-review fix: the
+  chip's pinned pair, Clear all in the drawer head), DD-090 (the inbox bar:
+  severity chips, read tracking, Clear all in the bar), DD-091 (the drawer's
+  body-scroll: the head and subhead stay fixed); relies on ADR 053, DD-063,
+  DD-069, DD-070, DD-078, DD-079</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>A drawer that collects the app's alerts for the user — the errors the app hits
@@ -6189,11 +6192,14 @@ from a bell in the header, beside the settings gear. It delivers:</p>
   every alert walks through, ALR-03).</li>
 <li><code>AlertsPanel</code>: the routed drawer (<code>(drawer:alerts)</code>) rendering the feed, with
   per-alert dismissal and clear-all (ALR-01, ALR-06, ALR-07).</li>
-<li><code>AlertList</code> and <code>Badge</code> in <code>aurelius-atlas-ui</code>: the reusable feed and the
-  severity dot, presentational, spec + stories (ALR-10, UIC-15's bar).</li>
-<li>The header bell: routerLink + <code>is-active</code> (the gear's pattern, DD-079), a
-  severity badge, and a ring animation when a new alert group arrives
-  (ALR-02, ALR-02a).</li>
+<li><code>AlertList</code>, <code>Badge</code> and <code>AlertInbox</code> in <code>aurelius-atlas-ui</code>: the reusable
+  feed, the severity dot, and the inbox bar — presentational, spec + stories
+  (ALR-10, ALR-11, UIC-15's bar).</li>
+<li>The header bell: routerLink + <code>is-active</code> (the gear's pattern, DD-079), an
+  unread badge, and a ring animation when a new alert group arrives
+  (ALR-02, ALR-02a, ALR-12).</li>
+<li>Read tracking: arrivals are unread, opening the drawer reads the feed, the
+  bell dot and the inbox chips answer what has not been seen (ALR-12, DD-090).</li>
 <li>Error capture: an <code>ErrorHandler</code> chain that records uncaught runtime errors
   as alerts and still delegates to the trace handler (ALR-04, SHL-14 kept),
   and an HTTP interceptor that reports failed <code>/api</code> calls (ALR-05).</li>
@@ -6201,8 +6207,9 @@ from a bell in the header, beside the settings gear. It delivers:</p>
 <p>It explicitly does not deliver: server-persisted alerts (the store is
 in-memory; a future slice has the server's own events to deliver), notification
 sources beyond runtime/HTTP errors (7.6+ feature slices push through
-<code>AlertsService.add</code>), auto-dismissal (everything lives until dismissed), an
-unread counter (the badge is presence, ALR-02), or served-app e2e scenarios
+<code>AlertsService.add</code>), auto-dismissal (everything lives until dismissed),
+per-group read toggling (read is per group, marked by arrival and by opening
+the drawer — ALR-12; no read-later list), or served-app e2e scenarios
 (the 7.10 set).</p>
 <h2 id="semantics">Semantics<a class="headerlink" href="#semantics" title="Permanent link">&para;</a></h2>
 <table>
@@ -6219,7 +6226,7 @@ unread counter (the badge is presence, ALR-02), or served-app e2e scenarios
 </tr>
 <tr>
 <td>ALR-02</td>
-<td>The bell carries a badge — a small dot — while the store holds at least one alert, coloured by the highest severity present (<code>error</code> &gt; <code>warning</code> &gt; <code>info</code>, DD-063's ramp: danger, warning, info). It is presence, not a count: no read-state is tracked. The dot carries a ring in the navbar's ink so it clears 3:1 on both navbar bands (the slate, DD-080; the light band, SHM-04).</td>
+<td>The bell carries a badge — a small dot — while the store holds at least one <strong>unread</strong> alert, coloured by the highest unread severity (<code>error</code> &gt; <code>warning</code> &gt; <code>info</code>, DD-063's ramp: danger, warning, info). It is presence, not a count (ALR-12): opening the drawer reads the feed and the dot goes. The dot carries a ring in the navbar's ink so it clears 3:1 on both navbar bands (the slate, DD-080; the light band, SHM-04).</td>
 </tr>
 <tr>
 <td>ALR-02a</td>
@@ -6239,11 +6246,11 @@ unread counter (the badge is presence, ALR-02), or served-app e2e scenarios
 </tr>
 <tr>
 <td>ALR-06</td>
-<td>Each row dismisses its own group (the whole burst goes); "Clear all" empties the store. Dismissal is immediate; there is no undo. The badge follows the store: the last group's dismissal removes it.</td>
+<td>Each row dismisses its own group (the whole burst goes); "Clear all" empties the store and rides the inbox bar (ALR-11) — a long feed must not bury the escape hatch, and the bar does not scroll (DD-088's fix, placed in the bar by DD-090). Shown only while the store has alerts. Dismissal is immediate; there is no undo. The badge follows the store: the last group's dismissal removes it.</td>
 </tr>
 <tr>
 <td>ALR-07</td>
-<td>Rows are Bulma notifications on the brand ramp (<code>is-danger</code>/<code>is-warning</code>/<code>is-info</code>, DD-063): severity colours the row, the message is body text, the time renders <code>lastSeen</code> through <code>DatePipe</code> under the settings' zone (SPL-07's token), and a count chip (<code>×N</code>, translated, <code>count &gt; 1</code> only) marks a burst.</td>
+<td>Rows are Bulma notifications on the brand ramp (<code>is-danger</code>/<code>is-warning</code>/<code>is-info</code>, DD-063): severity colours the row, the message is body text, the time renders <code>lastSeen</code> through <code>DatePipe</code> under the settings' zone (SPL-07's token), and a count chip (<code>×N</code>, translated, <code>count &gt; 1</code> only) marks a burst; the chip's pair is pinned white/dark ink — Bulma's <code>is-light</code> is a scheme trap (the brand's pinned plate under Bulma's scheme-following ink, DD-088).</td>
 </tr>
 <tr>
 <td>ALR-08</td>
@@ -6255,7 +6262,15 @@ unread counter (the badge is presence, ALR-02), or served-app e2e scenarios
 </tr>
 <tr>
 <td>ALR-10</td>
-<td><code>AlertList</code> and <code>Badge</code> are ui-lib components: <code>input()</code>/<code>output()</code> only, no services, no app imports, spec + stories each (UIC-15's bar). <code>AlertList</code> renders a caller-supplied <code>AlertGroup[]</code> and emits <code>dismiss(id)</code>/<code>clearAll()</code>; <code>Badge</code> wraps content and shows a severity-coloured dot on <code>visible</code>. The <code>AlertGroup</code> model is exported from the lib — it is presentation vocabulary.</td>
+<td><code>AlertList</code>, <code>Badge</code> and <code>AlertInbox</code> are ui-lib components: <code>input()</code>/<code>output()</code> only, no services, no app imports, spec + stories each (UIC-15's bar). <code>AlertList</code> renders a caller-supplied <code>AlertGroup[]</code> and emits <code>dismiss(id)</code>; clearing the feed is the caller's action, projected into the inbox bar (DD-090) — the list is the rows, not the store's escape hatch. <code>Badge</code> wraps content and shows a severity-coloured dot on <code>visible</code>. The <code>AlertGroup</code> model is exported from the lib — it is presentation vocabulary.</td>
+</tr>
+<tr>
+<td>ALR-11</td>
+<td>Above the feed rides the inbox bar (the ui-lib <code>AlertInbox</code>, DD-090): a full-width Bulma button group (<code>buttons has-addons</code>, the chips <code>is-expanded</code>) with one chip per severity, in feed order (<code>error</code>, <code>warning</code>, <code>info</code>) — a chip appears even for an empty severity, a filter with no results is still a filter. Each chip shows that severity's <strong>total</strong> group count (the chips are filters; the number is coverage, not news) and carries a dot while any of its groups is unread (ALR-12). A chip toggles its severity's rows in the feed (pressed = shown; the pinned <code>is-selected</code> fill, DD-082's finding — Bulma gives a selected button no fill); which severities are hidden is the panel's view state, the store's counts and the bell ignore it. With every group's severity hidden the bar shows a show-all control. Clear all projects into the bar's end (ALR-06). The bar rides the drawer's <code>drawer-subhead</code> slot — a strip below the head, outside the scrolling body (DD-090, DD-091).</td>
+</tr>
+<tr>
+<td>ALR-12</td>
+<td>Read state is per group. An arriving alert marks its group unread — a merge re-unreads a read burst, fresh news is news. Opening the drawer is reading it: the panel marks every group read while it lives, so a live feed in an open drawer marks arrivals read as they land (visible-is-read). An unread row is bold with a ring dot in the meta line (label announced, not colour-only); an unread severity rides a dot on its inbox chip, and the bell badge answers unread presence in the highest unread severity's colour (ALR-02). <code>markAllRead</code> is a no-op once every row is read, so the panel's effect settles.</td>
 </tr>
 </tbody>
 </table>
@@ -6293,22 +6308,35 @@ per feature, uncollected. The drawer is Aurelius's own interface (ADR 053).</p>
   three severities to the ramp, hides at false; <code>role="status"</code> naming
   (ALR-02, ALR-10)</li>
 <li><code>alert-list/alert-list.component.spec.ts</code> — rows per group with severity
-  classes, count chip at <code>count &gt; 1</code> only, empty state, <code>dismiss</code>/<code>clearAll</code>
-  outputs, <code>role="log"</code>/<code>aria-live</code> (ALR-07, ALR-09, ALR-10)</li>
+  classes, count chip at <code>count &gt; 1</code> only, empty state, the <code>dismiss</code>
+  output, <code>role="log"</code>/<code>aria-live</code>, no clear control in the feed (DD-088),
+  the unread row marker and its label (ALR-12)
+  (ALR-07, ALR-09, ALR-10, ALR-12)</li>
+<li><code>alert-inbox/alert-inbox.component.spec.ts</code> — one chip per severity in
+  feed order, totals not unread counts, the unread dot and its label,
+  pressed/hidden chips, the toggle output, show-all only fully filtered,
+  caller labels, the projected action (ALR-11, ALR-12)</li>
+<li><code>drawer/drawer.component.spec.ts</code> — the <code>drawer-subhead</code> slot projects
+  between head and body, outside the scrolling body (DD-090)</li>
 <li><code>alerts/alerts.service.spec.ts</code> — add appends newest-first, the 60 s
   window merges by key (count, <code>lastSeen</code>) and a gap starts a new group,
   the 30-group cap evicts oldest, dismiss/clearAll, the badge severity is
-  the highest present (ALR-02, ALR-03, ALR-06)</li>
+  the highest present (ALR-02, ALR-03, ALR-06); arrivals/merges unread,
+  <code>markAllRead</code>, the unread top severity, the per-severity counts
+  (ALR-11, ALR-12)</li>
 <li><code>alerts/alerts-error-handler.spec.ts</code> — records an error alert and
   delegates to the inner handler (ALR-04)</li>
 <li><code>alerts/alerts-http.interceptor.spec.ts</code> — 5xx and network failure report, 4xx stays
   silent, the message names method/path/status (ALR-05)</li>
 <li><code>alerts/alerts-panel.component.spec.ts</code> — renders open in the drawer
-  outlet, rows from the store, dismiss removes the group, clear-all empties
-  (ALR-01, ALR-06, ALR-07)</li>
+  outlet, rows from the store, dismiss removes the group, clear-all (in
+  the inbox bar, DD-090) empties, the chips filter the feed and keep the
+  store's totals while filtered, opening marks the feed read
+  (ALR-01, ALR-06, ALR-07, ALR-11, ALR-12)</li>
 <li><code>shell/header.component.spec.ts</code> — the bell is the <code>(drawer:alerts)</code>
   routerLink, lights <code>is-active</code> while open (ALR-01), the badge shows the
-  top severity and hides on an empty store (ALR-02), the ring animation
+  top unread severity and hides on an empty or read store (ALR-02,
+  ALR-12), the ring animation
   fires on a new group and is skipped under reduced motion (ALR-02a)</li>
 <li><code>routes.spec.ts</code> — the <code>alerts</code> route sits in the <code>drawer</code> outlet (ALR-01)</li>
 <li><code>i18n-completeness.spec.ts</code> — every new id exists in both locales (ALR-08)</li>
