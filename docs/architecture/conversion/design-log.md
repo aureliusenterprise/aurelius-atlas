@@ -2308,3 +2308,49 @@ facade owns it, DD-072). Deep links work: visiting
 `serverUnavailable` fallback and the `open()` API are gone; the panel
 spec drives the component directly (as the routed-component test
 pattern prescribes).
+
+### DD-079. Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** Four fixes from the user's review of the open drawer.
+(1) The gear carries `routerLinkActive="is-active"`: Bulma styles
+`a.navbar-item.is-active`, and the active state keys off the `drawer`
+outlet segment — the gear is lit exactly while the panel route is open
+(SPL-01). (2) The outlet band drops `has-background-light` for Bulma's
+bare `.has-background` (`var(--bulma-background)`): the legacy light in
+light mode, the dark scheme's surface in dark (SPL-05's theme switch
+now repaints the page, not just the drawer). SHM-05's pinned chrome
+bands are unchanged. (3) The time-zone picker binds the stored zone
+directly — `null` when unset selects the "Browser default" option
+(SPL-07); the browser's resolved zone is no longer injected into the
+select, where it rendered blank whenever it was not one of the server's
+ADM-05 ids. (4) Every settings section heading is a Bulma `.label` —
+the form-controls guide's field label (the guide the user linked) —
+replacing `.menu-label`; the Appearance heading already renders as
+`.label` through the Select, so all six now match.
+
+**Reason.** The gear gives no affordance that it owns the open panel.
+`has-background-light` is Bulma's fixed light colour family, not a
+scheme role, so a dark page kept a light band. A select whose value
+matches no option renders empty — the "Browser default" option is the
+honest display of an unset zone, since its effective value _is_ the
+browser's, applied at the date pipe. `.menu-label` is the sidebar-menu
+heading (uppercase, small, weak); inside a form column it reads as a
+different component than the `.label` the Select shows.
+
+**Alternatives.** (1) A signal shared header→panel — state the URL
+already carries. (2) `has-background-scheme-main` — the body colour,
+leaving no surface distinction from the footer band; `--bulma-background`
+is Bulma's surface role and matches what cards/tables sit on. (3) Add
+the resolved zone as an extra option — the list is the server's
+(ADM-05), and a local zone the server may not accept is a false
+promise. (4) Keep `.menu-label` — the inconsistency the user flagged.
+
+**Consequences.** The band's computed background follows the scheme
+(verified live in both modes). `timezoneValue` narrows to
+`string | null` — the same value the facade stores, making the panel a
+pure pass-through. The `.label` heads are normal-case and stronger
+ink; the panel scss comment follows. No string ids change.

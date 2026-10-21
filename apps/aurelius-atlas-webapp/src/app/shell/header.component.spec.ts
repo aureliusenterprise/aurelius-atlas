@@ -1,5 +1,6 @@
+import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { provideRouter } from "@angular/router";
+import { provideRouter, Router, type Routes } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import Keycloak from "keycloak-js";
 
@@ -19,13 +20,19 @@ const config: AppConfig = {
 
 const DOC_HREF = "https://aureliusenterprise.github.io/aurelius-atlas-documentation/";
 
-function setup(identity = "aurelius-writer") {
+// The drawer route's placeholder (SPL-14's shape): the router rejects a
+// componentless named-outlet route, and the header's template has no
+// drawer outlet, so this component is never rendered.
+@Component({ selector: "aurelius-atlas-webapp-lib-drawer-panel", template: "" })
+class DrawerPanelPlaceholder {}
+
+function setup(identity = "aurelius-writer", routes: Routes = []) {
     const logout = vi.fn();
 
     TestBed.configureTestingModule({
         imports: [FontAwesomeModule, ShellHeader],
         providers: [
-            provideRouter([]),
+            provideRouter(routes),
             { provide: APP_CONFIG, useValue: config },
             { provide: Keycloak, useValue: { logout } },
             { provide: Session, useValue: { identity: () => identity } },
@@ -87,6 +94,27 @@ describe("ShellHeader", () => {
         // RouterLink serialises the aux-outlet target into the href.
         expect(gear?.getAttribute("href")).toBe("/(drawer:settings)");
         expect(compiled.querySelector("aurelius-atlas-webapp-settings-panel")).toBeNull();
+        // On the plain URL the gear is not lit.
+        expect(gear?.classList.contains("is-active")).toBe(false);
+    });
+
+    it("lights the gear while the drawer route is open (SPL-01, DD-079)", async () => {
+        // RouterLinkActive keys `is-active` off the drawer segment: with
+        // the settings outlet in the URL, the gear carries Bulma's
+        // active-navbar-item styling. The drawer route is the app's real
+        // shape; the header's template has no drawer outlet, so the
+        // component is never rendered. Navigating after the fixture
+        // exists is what the directive listens for (NavigationEnd).
+        setup("aurelius-writer", [{ path: "settings", outlet: "drawer", component: DrawerPanelPlaceholder }]);
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        await TestBed.inject(Router).navigate([{ outlets: { drawer: ["settings"] } }]);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const gear = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Settings"]');
+
+        expect(gear?.getAttribute("routerlinkactive")).toBe("is-active");
+        expect(gear?.classList.contains("is-active")).toBe(true);
     });
 
     it("no longer carries the language dropdown (SPL-01, SPL-06)", () => {

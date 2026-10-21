@@ -104,6 +104,22 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         ]) {
             expect(text).toContain(label);
         }
+        // Every heading is a Bulma `.label` — the form-controls guide's
+        // field label, one shape for all six (SPL-13, DD-079). Appearance
+        // carries it through the Select's own label.
+        const headings = [...compiled.querySelectorAll(".label")].map((el) =>
+            (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+        );
+
+        expect(headings).toEqual([
+            "Appearance",
+            "Language",
+            "Time zone",
+            "Default table page size",
+            "Usage telemetry",
+            "About",
+        ]);
+        expect(compiled.querySelector(".menu-label")).toBeNull();
     });
 
     it("dismissal flips the drawer and navigates the outlet away (SPL-14, DD-078)", async () => {
@@ -177,6 +193,25 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         fixture.detectChanges();
 
         expect(TestBed.inject(SettingsService).timezone()).toBe("Europe/Amsterdam");
+    });
+
+    it("the time zone select shows Browser default while nothing is stored (SPL-07, DD-079)", async () => {
+        // An unset zone binds null — the "Browser default" option — not
+        // the browser's resolved zone, which is not always one of the
+        // server's ids and left the select blank (DD-079).
+        const { fixture, compiled } = await renderOpen();
+        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
+
+        expect(select.options[select.selectedIndex].textContent?.trim()).toBe("Browser default");
+
+        pickOption(compiled, 1, "UTC");
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // The picker now shows the stored zone (the "Browser default"
+        // option is no longer selected).
+        const picked = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
+        expect(picked.options[picked.selectedIndex].textContent?.trim()).toBe("UTC");
     });
 
     it("the page-size select writes the owner (SPL-08)", async () => {

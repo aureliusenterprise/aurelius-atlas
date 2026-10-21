@@ -32,16 +32,18 @@
             </div>
         </div>
 
-        <!-- Settings gear (SPL-01, SPL-14, DD-078): opens the panel by
-             navigating the `drawer` aux outlet — the open state rides the
-             URL, so the locale switch's reload keeps it. While the panel
-             is open the link targets the URL it is on: the router
-             cancels that same-URL navigation, so the gear is a no-op. -->
+        <!-- Settings gear (SPL-01, SPL-14, DD-078, DD-079): opens the panel
+             by navigating the `drawer` aux outlet — the open state rides the
+             URL, so the locale switch's reload keeps it. RouterLinkActive
+             keys `is-active` off the drawer segment, so the gear is lit
+             while the panel is open; the link then targets the URL it is
+             on, and the router cancels that same-URL navigation — a no-op. -->
         <a
             class="navbar-item"
             i18n-aria-label="@@shell.header.settings"
             aria-label="Settings"
             [routerLink]="[{ outlets: { drawer: ['settings'] } }]"
+            routerLinkActive="is-active"
         >
             <span class="icon">
                 <fa-icon aria-hidden="true" [icon]="faGear"></fa-icon>

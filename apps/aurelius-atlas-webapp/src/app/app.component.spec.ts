@@ -54,7 +54,7 @@ describe("App", () => {
 
         const band = compiled.querySelector(":scope > div");
 
-        expect(band?.className).toBe("is-tall-container has-background-light");
+        expect(band?.className).toBe("is-tall-container has-background");
         expect(band?.querySelector("router-outlet")).toBeTruthy();
         expect(compiled.querySelector(":scope > router-outlet")?.getAttribute("name")).toBe("drawer");
     });

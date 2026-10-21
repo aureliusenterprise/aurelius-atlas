@@ -1,8 +1,10 @@
 /*
  * The settings panel's sections (SPL-03..SPL-12): the drawer body stacks
- * them; Bulma's menu-label styles each section's heading. The panel ships
- * no layout of its own beyond this rhythm — the drawer (DD-069) carries
- * the panel chrome, Bulma carries the controls.
+ * them; each section's heading is a Bulma `.label`, the form-controls
+ * guide's field label (DD-079) — the same shape the ui-lib Select renders
+ * for Appearance, so all six headings match. The panel ships no layout of
+ * its own beyond this rhythm — the drawer (DD-069) carries the panel
+ * chrome, Bulma carries the controls.
  */
 .settings-section + .settings-section {
     margin-top: 1.5rem;

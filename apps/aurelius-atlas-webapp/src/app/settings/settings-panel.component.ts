@@ -110,12 +110,16 @@ export class SettingsPanel {
     }
 
     /**
-     * The zone the picker shows: the stored choice, falling back to the
-     * browser's — the value a "Browser default" selection means.
-     * @returns the zone id for the select
+     * The zone the picker shows: the stored choice, or `null` when
+     * nothing is stored — which selects the "Browser default" option
+     * (SPL-07, DD-079). Resolving the browser's own zone here instead
+     * would leave the select blank whenever that zone is not among the
+     * server's ids; the effective zone of a "Browser default" selection
+     * is the browser's, applied at the date pipe (ADM-05).
+     * @returns the zone id for the select, or null
      */
-    protected get timezoneValue(): string {
-        return this.settings.timezone() ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+    protected get timezoneValue(): string | null {
+        return this.settings.timezone();
     }
 
     /**

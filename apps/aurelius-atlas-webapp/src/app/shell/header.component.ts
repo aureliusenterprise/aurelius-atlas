@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faBook, faGear } from "@fortawesome/free-solid-svg-icons";
-import { RouterLink } from "@angular/router";
+import { RouterLink, RouterLinkActive } from "@angular/router";
 import { Header } from "aurelius-atlas-ui";
 import Keycloak from "keycloak-js";
 
@@ -28,7 +28,7 @@ const DOCUMENTATION_URL = "https://aureliusenterprise.github.io/aurelius-atlas-d
  * switch's full-page reload keeps the panel open on the same page.
  */
 @Component({
-    imports: [FontAwesomeModule, Header, RouterLink],
+    imports: [FontAwesomeModule, Header, RouterLink, RouterLinkActive],
     selector: "aurelius-atlas-webapp-header",
     templateUrl: "./header.component.html",
     changeDetection: ChangeDetectionStrategy.OnPush,
