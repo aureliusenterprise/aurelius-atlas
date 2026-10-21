@@ -289,6 +289,39 @@ def test__body_uses_the_legacy_type_and_ink(authenticated: Page) -> None:
     assert body.evaluate("el => getComputedStyle(el).color") == "rgb(74, 74, 74)"
 
 
+def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
+    """Every ink and weight the landing renders, measured against the demo (SHM-03, DD-062).
+
+    Bulma 1 re-tinted its greys and moved the weights (title 800, strong
+    600, button 500); pinning the body alone left the ramp off the legacy
+    page. The brand library re-emits Bulma 0.9.4's neutral ramp, so these
+    demo-measured values must hold: the title is 600/#363636, the body/box
+    ink #4a4a4a, buttons 400, the navbar links #4a4a4a with 700 strong,
+    dropdown items 14px.
+    """
+    css = (
+        "el => { const c = getComputedStyle(el); return [c.fontSize, c.lineHeight, c.fontWeight, c.color].join(' '); }"
+    )
+
+    # The hero box: 40px/45px 600 #363636 title over 16px/24px #4a4a4a ink.
+    assert authenticated.locator(".box .title").first.evaluate(css) == "40px 45px 600 rgb(54, 54, 54)"
+    assert authenticated.locator(".box p").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
+
+    # The context cards: 24px title is-4 section labels, 16px title is-6 tips.
+    assert authenticated.locator("p.title.is-4").first.evaluate(css) == "24px 27px 600 rgb(54, 54, 54)"
+    assert authenticated.locator("h6.title.is-6").first.evaluate(css) == "16px 18px 600 rgb(54, 54, 54)"
+
+    # The navbar chrome: links in the body ink, the locale <strong> bold in
+    # the same ink, dropdown items at Bulma's 14px, buttons at weight 400.
+    assert authenticated.locator(".navbar-link").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
+    strong = authenticated.locator(".navbar strong").first
+
+    assert strong.evaluate("el => getComputedStyle(el).fontWeight") == "700"
+    assert strong.evaluate("el => getComputedStyle(el).color") == "rgb(74, 74, 74)"
+    assert authenticated.locator(".navbar-end .button").first.evaluate(css) == "16px 24px 400 rgb(54, 54, 54)"
+    assert authenticated.locator(".navbar-dropdown .navbar-item").first.evaluate(css).startswith("14px ")
+
+
 def test__chrome_bands_carry_the_aurelius_palette(authenticated: Page) -> None:
     """The navbar band is grey, the footer band the Aurelius blue (SHM-04, SHM-05).
 

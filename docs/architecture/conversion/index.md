@@ -90,6 +90,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 7.9  | Delete, audit and detail cards  | Delete flow, audit events, the remaining detail cards                                                            | Aurelius `apps/atlas/src/app/search`                      | planned     |
 | 7.10 | Webapp served                   | The webapp served as the product interface; the example app retires (DV-11)                                      | –                                                         | planned     |
 | 7.11 | Shell chrome                    | Header and footer around every screen: brand, docs, language switch, account menu; search bar joins 7.4 (DD-056) | Aurelius `libs/shell`                                     | in progress |
+| 7.12 | Theme, branding and layout      | Aurelius palette, legacy type ramp, forced light mode, logo, pinned navbar, footer below the fold (SHM-01..07)   | Aurelius `@models4insight/styles`, `libs/shell`           | in progress |
 
 ## After phase 0
 

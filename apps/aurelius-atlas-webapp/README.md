@@ -140,7 +140,12 @@ The chrome looks like the legacy demo (SHM-01..06, DD-059). The Aurelius
 brand library emits its palette and the legacy type metrics as Bulma 1
 custom properties (`--bulma-primary: #0073dd`, BlinkMacSystemFont-first
 stack, 16px/1.5, `#4a4a4a` ink, 4.25rem navbar), with the tokens Bulma scopes
-on components (`.navbar`, `.footer`) re-emitted there. Light mode is forced
+on components (`.navbar`, `.footer`) re-emitted there. Bulma 1 re-tinted the
+whole grey ramp (221 degrees) and re-weighted title/strong/button, so the
+library re-emits Bulma 0.9.4's neutral channels — the `text`/`text-strong`
+hue-saturation-lightness triplets and the `.title`/`.button` weights — to
+keep headings, boxes and the navbar ink at the demo's `#4a4a4a`/`#363636`
+(DD-062). Light mode is forced
 via `data-theme="light"` on the document root — no OS dark until a switch
 exists; the brand tokens sit outside the scheme machinery so a switch re-skins
 without re-branding. The navbar is pinned (`is-fixed-top`, body

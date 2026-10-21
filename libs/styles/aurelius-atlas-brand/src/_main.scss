@@ -49,6 +49,34 @@
     // Bulma 1 reads the bar's min-height from --bulma-navbar-height, one
     // knob for the bar and the `.has-navbar-fixed-top` body padding.
     --bulma-navbar-height: 4.25rem;
+
+    /*
+     * The legacy (Bulma 0.9.4) text ramp (SHM-03, DD-062): Bulma 1 re-tinted
+     * its greys 221 degrees (text #4a5568, text-strong #2e333d) and moved the
+     * weights (title 800, strong 600, button 500), so pinning the body alone
+     * left every heading, box, content and navbar-adjacent ink off the legacy
+     * page. The channels are emitted neutral at the demo's measured values —
+     * #4a4a4a body/box/content ink, #363636 headings, #7a7a7a weak — and
+     * every token derived from the channels (text, text-strong, text-weak,
+     * the navbar/dropdown ink chain) resolves to the 0.9.4 ramp.
+     */
+    --bulma-text-h: 0deg;
+    --bulma-text-s: 0%;
+    --bulma-text-l: 29%; // hsl(0, 0%, 29%) = #4a4a4a — the demo's body/box ink
+    --bulma-text-base: #4a4a4a;
+    --bulma-text-rgb: 74, 74, 74;
+    --bulma-text-strong-h: 0deg;
+    --bulma-text-strong-s: 0%;
+    --bulma-text-strong-l: 21.18%; // = #363636 — the demo's title ink
+    --bulma-text-strong-base: #363636;
+    --bulma-text-weak-h: 0deg;
+    --bulma-text-weak-s: 0%;
+    --bulma-text-weak-l: 47.84%; // = #7a7a7a — Bulma 0.9.4's $grey
+    --bulma-text-weak-base: #7a7a7a;
+
+    // The legacy strong is 0.9.4's bold 700 — the demo's navbar locale
+    // <strong> measures 700; Bulma 1 dropped it to semibold (SHM-03, DD-062).
+    --bulma-strong-weight: 700;
 }
 
 /*
@@ -57,9 +85,13 @@
  * values land on the same selectors.
  */
 .navbar {
-    // Bulma 0.9.4's navbar-item-color is rgba($black, 0.7) — the ink the
-    // legacy chrome's text renders in (the demo: rgb(74, 74, 74)).
-    --bulma-navbar-item-color: rgba(10, 10, 10, 0.7);
+    // The legacy navbar ink is the body ink — the demo measures rgb(74,
+    // 74, 74) on the navbar links, not Bulma 1's tinted chain and not the
+    // 0.9.4 default rgba($black, 0.7) (SHM-03/04, DD-062). The navbar's
+    // <strong> (the locale badge) renders in the same ink — the demo
+    // measures #4a4a4a bold, not the 0.9.4 text-strong default.
+    --bulma-navbar-item-color: #4a4a4a;
+    --bulma-strong-color: #4a4a4a;
 
     @each $token, $value in variables.$bulma-navbar-overrides {
         --bulma-#{$token}: #{$value};
@@ -67,6 +99,34 @@
         --bulma-#{$token}-s: #{color.channel($value, "saturation", $space: hsl)};
         --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
     }
+
+    // The dropdown ink composes h/s from the (tinted) scheme with the text
+    // lightness; neutralized, it resolves to #4a4a4a like the demo (DD-062).
+    --bulma-navbar-dropdown-item-h: 0deg;
+    --bulma-navbar-dropdown-item-s: 0%;
+}
+
+/*
+ * The legacy type ramp beyond the body (SHM-03, DD-062). Bulma 1 scopes
+ * these tokens on the components, so the 0.9.4 values land there: the demo
+ * measures the title at 600/#363636 (Bulma 1 ships 800), buttons at weight
+ * 400 (Bulma 1 ships 500), and `.content` at the body ink #4a4a4a with
+ * 600/#363636 headings (Bulma 1 inks it text-strong).
+ */
+.title,
+.subtitle {
+    --bulma-title-weight: 600;
+}
+
+.button {
+    --bulma-button-weight: 400;
+}
+
+.content {
+    color: #4a4a4a;
+
+    --bulma-content-heading-color: #363636;
+    --bulma-content-heading-weight: 600;
 }
 
 .footer {
