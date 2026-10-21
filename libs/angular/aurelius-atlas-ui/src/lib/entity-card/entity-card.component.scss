@@ -1,0 +1,72 @@
+/* The legacy details-card layout: the card stretches its column, the
+   content grows, and the quality column sits bottom-right. */
+:host {
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    min-height: 100%;
+}
+
+.card {
+    min-height: 100%;
+
+    .media:not(:last-child) {
+        margin-bottom: 0.75rem;
+    }
+
+    .card-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: stretch;
+        align-items: stretch;
+        min-height: 100%;
+    }
+
+    .content {
+        margin-bottom: 0px;
+    }
+}
+
+.media-content {
+    overflow: hidden;
+}
+
+.title a {
+    color: inherit;
+}
+
+.columns {
+    flex-grow: 1;
+}
+
+.quality {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+/* The legacy type-name colours (iconsByType classes). */
+.business {
+    color: #ffa500;
+}
+
+.technical {
+    color: #0000ff;
+}
+
+.technical-process {
+    color: #00d1b2;
+}
+
+.meta {
+    color: #b5b5b5;
+}
+
+/* The dark scheme (DD-068): the legacy pure-blue technical ink lands at
+   ~2:1 on the dark surface, so the dark ramp lifts it to Bulma's own
+   dark-adapted lightness (75%, same hue) — the other three read 8:1+. */
+:host-context([data-theme="dark"]) .technical {
+    color: hsl(240, 100%, 75%);
+}

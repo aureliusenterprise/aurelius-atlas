@@ -2,6 +2,11 @@ import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, userEvent, within } from "storybook/test";
 import { Modal } from "./modal.component";
 
+/**
+ * A dialog overlay with a content slot, opened and closed through its
+ * exposed open()/close() methods — with a close button, a title and
+ * confirm/cancel actions the caller supplies.
+ */
 const meta: Meta<Modal> = {
     component: Modal,
     title: "Modal",
@@ -45,6 +50,10 @@ const cardTemplate = `
 <button class="button is-primary" (click)="modal.open()">Open Modal</button>
 `;
 
+/**
+ * An image modal: the button opens it, the corner close button dismisses
+ * it (the play() drives both).
+ */
 export const Primary: Story = {
     args: {
         active: false,
@@ -63,6 +72,10 @@ export const Primary: Story = {
     },
 };
 
+/**
+ * A confirm dialog: "Delete branch" with Delete and Cancel actions and no
+ * corner close button.
+ */
 export const CardAnatomy: Story = {
     args: {
         active: false,
@@ -83,6 +96,7 @@ export const CardAnatomy: Story = {
     },
 };
 
+/** The modal with no content projected: an empty sheet. */
 export const Empty: Story = {
     args: {
         active: false,

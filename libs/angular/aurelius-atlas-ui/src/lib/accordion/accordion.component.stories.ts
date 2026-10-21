@@ -2,6 +2,10 @@ import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, userEvent, within } from "storybook/test";
 import { Accordion } from "./accordion.component";
 
+/**
+ * A collapsible panel: a header bar with a toggle, and a content area the
+ * caller projects. Starts open; the toggle collapses it.
+ */
 const meta: Meta<Accordion> = {
     component: Accordion,
     title: "Accordion",
@@ -21,6 +25,7 @@ const primaryTemplate = `
 </aurelius-atlas-ui-accordion>
 `;
 
+/** Open: the content shows, and the play() collapses it with a click. */
 export const Primary: Story = {
     args: {
         expanded: true,
@@ -36,6 +41,7 @@ export const Primary: Story = {
     },
 };
 
+/** Collapsed: only the header shows, and the play() opens the content. */
 export const Collapsed: Story = {
     args: {
         expanded: false,
@@ -52,6 +58,7 @@ export const Collapsed: Story = {
     },
 };
 
+/** No header or content projected: the empty shell. */
 export const Empty: Story = {
     args: {
         expanded: false,

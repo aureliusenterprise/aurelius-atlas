@@ -194,6 +194,7 @@ nav:
                       - 7.5 Landing page (browse): architecture/conversion/increments/7-5-browse-landing.md
                       - 7.11 Shell chrome: architecture/conversion/increments/7-11-shell-chrome.md
                       - 7.12 Theme, branding and layout: architecture/conversion/increments/7-12-theme-branding-layout.md
+                      - 7.13 UI components (details set): architecture/conversion/increments/7-13-ui-components-details.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
