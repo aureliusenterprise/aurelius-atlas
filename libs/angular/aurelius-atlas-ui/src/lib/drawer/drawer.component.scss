@@ -1,0 +1,60 @@
+/*
+ * The drawer's own layer (DD-069): Bulma 1 ships no drawer, so the anatomy
+ * lives here, styled on Bulma's tokens — scheme-main surface, the text
+ * chain, the border ramp, the modal's scrim recipe and z-band — so the
+ * brand's dark ink ramp (DD-068) themes it with no extra work.
+ */
+.aurelius-drawer {
+    inset: 0;
+    position: fixed;
+    z-index: var(--bulma-modal-z, 40);
+}
+
+.aurelius-drawer-scrim {
+    background-color: var(--bulma-modal-background-background-color);
+    inset: 0;
+    position: absolute;
+}
+
+.aurelius-drawer-panel {
+    background-color: var(--bulma-scheme-main);
+    box-shadow: var(--bulma-shadow);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: min(28rem, 100vw);
+    overflow-y: auto;
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 28rem;
+
+    // Focus goes to the panel itself (the dialog); its outline would ring
+    // the whole panel — the focusable controls inside carry their own.
+    &:focus-visible {
+        outline: none;
+    }
+}
+
+.aurelius-drawer-head {
+    align-items: center;
+    border-bottom: 1px solid var(--bulma-scheme-main-bis);
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--bulma-block-spacing);
+    justify-content: space-between;
+    padding: var(--bulma-modal-card-head-padding);
+}
+
+.aurelius-drawer-title {
+    color: var(--bulma-text-strong);
+    flex-grow: 1;
+    font-size: var(--bulma-size-4);
+    font-weight: var(--bulma-weight-semibold);
+    line-height: var(--bulma-title-line-height);
+}
+
+.aurelius-drawer-body {
+    flex-grow: 1;
+    padding: var(--bulma-modal-card-head-padding);
+}

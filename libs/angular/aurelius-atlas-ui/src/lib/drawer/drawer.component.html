@@ -1,0 +1,31 @@
+@if (active()) {
+    <div class="aurelius-drawer">
+        <!--
+            Scrim dismissal is a pointer affordance; the keyboard path is
+            the Escape handler on the dialog (the Modal's S1077 precedent —
+            Bulma's overlay layers have no focusable scrim element).
+        -->
+        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
+        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()"></div>
+        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <div
+            #panel
+            class="aurelius-drawer-panel"
+            role="dialog"
+            aria-modal="true"
+            [attr.aria-label]="label()"
+            tabindex="-1"
+            (keydown.escape)="onEscape()"
+        >
+            <header class="aurelius-drawer-head">
+                <p class="aurelius-drawer-title">{{ title() }}</p>
+                <button type="button" class="delete" [attr.aria-label]="ariaLabel()" (click)="dismiss()"></button>
+            </header>
+            <div class="aurelius-drawer-body">
+                <ng-content select="[drawer-content]"></ng-content>
+                <ng-content></ng-content>
+            </div>
+        </div>
+    </div>
+}

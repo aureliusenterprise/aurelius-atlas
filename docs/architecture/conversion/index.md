@@ -92,6 +92,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 7.11 | Shell chrome                    | Header and footer around every screen: brand, docs, language switch, account menu; search bar joins 7.4 (DD-056) | Aurelius `libs/shell`                                                                     | in progress |
 | 7.12 | Theme, branding and layout      | Aurelius palette, legacy type ramp, forced light mode, logo, pinned navbar, footer below the fold (SHM-01..07)   | Aurelius `@models4insight/styles`, `libs/shell`                                           | in progress |
 | 7.13 | UI components: details set      | Breadcrumbs, entity-card, properties-item, select as dumb components (UIC-11..15, DD-066/067)                    | Aurelius `search/components/{bread-crumbs,cards}`, `properties-item`, `components/select` | in progress |
+| 7.14 | Settings panel                  | Drawer with theme, language, time zone, page size, telemetry; header gear (SPL-01..13, DD-069..073)              | – (new feature, DV-12)                                                                    | in progress |
 
 ## After phase 0
 

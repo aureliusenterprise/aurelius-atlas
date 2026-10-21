@@ -1941,3 +1941,192 @@ pinning `data-theme="light"` (SHM-01 untouched) — the dark ramp reaches
 the app only through an explicit switch. Play tests cover the ramp on
 the entity-card/breadcrumbs dark composition stories; the light ramp is
 unchanged (SHM-03's measurements stand).
+
+### DD-069. The drawer is a new ui-lib component, not a Modal or a dropdown
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The settings panel opens in a new `Drawer` component in
+`aurelius-atlas-ui`: a fixed right-side panel with a scrim, styled with custom
+SCSS on Bulma tokens, carrying the `Modal`'s dismissal set (`active` as
+`model()`, backdrop click, close button, Escape → `dismiss()`).
+
+**Reason.** The user chose a side drawer for the settings panel, and Bulma
+1.0.4 ships no drawer — `sass/elements/` has no such layer; the overlay
+primitives are modal and navbar-dropdown. A drawer keeps the page content
+visible beside the settings (the point of a side panel), which the centred
+modal does not. Building it on Bulma tokens (`--bulma-scheme-main`, the text
+chain, the border ramp) makes DD-068's dark ink ramp apply to it for free.
+The dismissal semantics copy the `Modal` because that component proved the
+a11y pattern this repo accepts: the backdrop is the pointer path, Escape on
+the dialog is the keyboard path (the S1077 precedent in `modal.component.html`).
+
+**Alternatives.** Reuse `Modal`: centred, occludes the page — the user's
+choice ruled it out, and a right-docked modal fights Bulma's centred
+`.modal-content`. A Bulma `has-dropdown` under the gear (the navbar idiom
+today): cramped for radios, selects and toggles, hover-open (unusable on
+touch), and it dismisses on every outside click the panel needs to survive
+while a control is used. `@angular/cdk`'s drawer/overlay: a new
+third-party dependency the purity gate and the ui-lib's zero-overlay-dependency
+standing do not justify for one panel.
+
+**Consequences.** The drawer owns its focus choreography (focus moves to the
+panel on open, Escape returns it to the opener) — the `Modal` defers this to
+its buttons, the drawer has a focusable form. The component is generic
+(`title`, projected content), so the 7.6 filters/detail side panels can reuse
+it. Stories carry an OnDark variant like every overlay the lib ships.
+
+### DD-070. The telemetry switch stops exports immediately and starts them on reload
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The telemetry setting is honoured asymmetrically: switching it
+**off** calls the OpenTelemetry providers' shutdown (`trace.disable()` + the
+meter provider's shutdown) so exports stop within the session; switching it
+**on** stores the preference and takes effect on the next reload, and the
+panel says so.
+
+**Reason.** The SDK is assembled at bootstrap in `app.config.ts`: the
+`NodeTracerProvider`/`MeterProvider` are built in `createAureliusOpenTelemetry`
+provider factories and the propagation interceptor is registered with
+`withInterceptors` — both are startup-time DI, not swappable at runtime.
+Stopping is the one direction the SDK API supports cleanly (`shutdown()`
+flushes and closes the exporter); starting needs a provider re-assembly DI
+will not do mid-session. An honest one-way switch (off now, on after reload,
+stated in the panel) beats a switch that silently does nothing until restart
+in both directions.
+
+**Alternatives.** Auto-reload the page on toggle: jars the user out of their
+session (lost form state) to start telemetry — the least urgent reason to
+reload. A runtime gate via a no-op proxy exporter/provider registered at
+bootstrap: the real machinery the SDK hides (span processors, batch
+exporters, the interceptor's active-span context) then runs with the toggle
+off, which is exactly what "telemetry off" promises not to do. No toggle at
+all: the user asked for one, and an off switch for browser telemetry is a
+reasonable privacy affordance.
+
+**Consequences.** The stored preference is read by `app.config.ts` before the
+providers are built (off at bootstrap = providers are never created — not
+even the no-op path). The panel's reload hint is a rule with a test (SPL-11).
+A served-app scenario (no OTLP requests after off) lands with the 7.10 e2e
+set that serves the app.
+
+### DD-071. The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The `data-theme="light"` pin on `index.html`'s root is removed.
+A two-line inline script in the head applies the stored theme before the
+first paint: the stored value (`light`/`dark`) is written, `auto` (or no
+stored key with no value) **removes** the attribute and — because the app's
+default must stay light (SHM-01's promise) — the script writes
+`data-theme="light"` when nothing is stored. `DarkModeService.initialize()`
+reads the same attribute, so the service and the page agree from the first
+frame.
+
+**Reason.** `DarkModeService.initialize()` treats the root attribute as the
+highest-priority explicit choice; the 7.12 pin therefore outvoted a stored
+`dark`/`auto` on every load — the switch could not survive it. The pin can
+also not just move to runtime service code: Angular bootstraps after CSS,
+so a service effect paints one frame in the wrong scheme (the classic
+dark-mode flash). The inline script is the standard pre-render pattern and
+keeps SHM-01's user-visible promise exactly — no stored choice ⇒ light under
+any OS preference — with the default in the script + the service, not in
+static html. 7.12's scope note anticipated the switch ("a later slice flips
+the `data-theme` attribute"); this is that slice superseding the mechanism,
+not the promise.
+
+**Alternatives.** Keep the pin and let the service overwrite it after
+bootstrap: not a flash problem only — `initialize()` returns the pin as the
+user's explicit choice, so stored Dark is ignored outright. Drop the light
+default and let no-stored-key follow the OS (Bulma's native behaviour):
+breaks SHM-01 — the legacy app is light-only and the demo renders light
+under a dark OS; the pin's promise was measured, and 7.12's specs assert it.
+
+**Consequences.** SHM-01's row in 7.12 gains a supersede note (the promise
+stands, the mechanism moves). The service's `updateDataThemeAttribute` must
+**remove** the attribute for `auto` rather than write `data-theme=""` — the
+empty attribute does not match Bulma's `:root:not([data-theme])` OS path, so
+Auto would never follow the OS. The 7.12 spec's html-attribute assertions
+keep passing because the script writes `light` when nothing is stored.
+
+### DD-072. Settings are a facade over one owner service per category
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** `SettingsService` (webapp) is a thin facade: it exposes each
+setting's signal and setter and delegates to exactly one **owner** service
+per category — theme → `DarkModeService` (the ui-lib's existing owner),
+language → `LocaleNavigationService`, time zone → `TimezoneService`, page
+size → `PageSizeService`, telemetry → `TelemetryService`. Each persistence-
+backed owner stores through a shared `UserPreference` helper (signal +
+synchronous `localStorage` read at construction + write-through), which is
+the only code touching `localStorage`.
+
+**Reason.** The user asked for the `DarkModeService` facade pattern to extend
+to the other categories. It generalises what the lib already does:
+`DarkModeService` is the sanctioned persistence owner and the AGENTS.md
+exception to the dumb-component rule, and it owns its key (`data-theme`).
+One owner per key keeps a single writer per storage slot; the panel consumes
+only the facade (one injectable, one test double); the bootstrap providers
+(`DATE_TIME_ZONE`, the telemetry gate) read the owners directly, which is
+legal because `UserPreference` reads storage synchronously at construction.
+The seam for the promised server-side persistence is the helper's internals
+(GET/PUT behind the same signal API) — owners, facade, and panel do not
+change then.
+
+**Alternatives.** One monolithic `SettingsService` owning every key:
+it would write `data-theme`, a key `DarkModeService` already owns — two
+writers, and the webapp would fork the theme mechanism the lib ships. Panel
+injecting the owners directly: no facade to double in tests, and every
+setting change touches the panel's imports. A global signal store/ngrx: the
+webapp has no global-store convention (AGENTS.md: feature state lives in
+signal stores under the feature folder).
+
+**Consequences.** The `SPL-10` rule is testable per owner: each owner is the
+sole writer of its key. Adding a setting = one owner + one facade member;
+the 7.6/7.7 screens consume owners directly (a table reads
+`PageSizeService`, not the facade) — the facade serves the panel, owners
+serve consumers. Server-side sync, when it lands, adds the PUT path in
+`UserPreference` and a hydrate step at bootstrap (DD-073).
+
+### DD-073. Settings are browser-scoped localStorage; server-side persistence is the follow-up slice
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The v1 settings store in `localStorage` under `data-theme`
+(the theme's existing key) and `aurelius-atlas.settings.{timezone,pageSize,telemetry}`.
+They are user-experience conveniences, scoped to the browser: nothing that
+identifies a user, grants a permission, or belongs to the catalogue is kept
+there. Server-side per-user persistence (Keycloak profile attributes, or the
+Atlas session settings ADM-05 exposes) is a deliberate later slice behind the
+`UserPreference` seam (DD-072).
+
+**Reason.** The user chose localStorage for now and named Keycloak's user
+profile as the server-side direction. The two server channels are not ready:
+`GET /atlas/admin/session` (ADM-05) publishes settings but Atlas 2.4.0 has
+no settings-write endpoint, and Keycloak profile writes need admin
+token-roles — both are increments of their own. The privacy line matters for
+DD-070's off switch: a browser-scoped store keeps the promise simple (off
+means this browser sends nothing; nothing was sent about a user).
+
+**Alternatives.** Cookies: sent to the server on every request for data the
+server never reads. IndexedDB: asynchronous for values this small — the
+synchronous bootstrap read SPL-07/SPL-11 need becomes an ordering problem.
+Server-first now: blocks the panel on the 6.1 identity + a new endpoint,
+putting a UI feature behind API work the user scoped later.
+
+**Consequences.** DV-12 records the panel as a deliberate addition (Atlas has
+none). A shared browser shares its settings — acceptable for v1, named for
+the server-side slice to fix. Key names are documented in this entry so the
+server-side slice can migrate them.

@@ -3,6 +3,7 @@ export * from "./lib/breadcrumbs/breadcrumbs.component";
 export * from "./lib/card/card.component";
 export * from "./lib/dark-mode/dark-mode.component";
 export * from "./lib/dark-mode/dark-mode.service";
+export * from "./lib/drawer/drawer.component";
 export * from "./lib/entity-card/entity-card.component";
 export * from "./lib/header/header.component";
 export * from "./lib/hero/hero.component";
