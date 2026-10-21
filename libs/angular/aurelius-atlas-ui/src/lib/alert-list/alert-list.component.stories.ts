@@ -5,9 +5,10 @@ import { AlertList } from "./alert-list.component";
 
 /**
  * The alert feed (ALR-07, ALR-09, ALR-10): severity-coloured Bulma
- * notifications, newest first, a burst chip on merged repeats, per-row
- * dismissal, and a clear-all button. The component is presentational —
- * stories supply the groups the app's store would produce.
+ * notifications, newest first, a burst chip on merged repeats, and
+ * per-row dismissal. The component is presentational — stories supply
+ * the groups the app's store would produce. Clearing the feed is the
+ * caller's action, placed in the drawer's head (DD-088).
  */
 const meta: Meta<AlertList> = {
     component: AlertList,
@@ -52,7 +53,6 @@ export const Primary: Story = {
         ariaLabel: "Alerts",
         emptyLabel: "No alerts",
         dismissLabel: "Dismiss",
-        clearLabel: "Clear all",
     },
     play: async ({ canvas, canvasElement, componentInstance }) => {
         const rows = [...canvasElement.querySelectorAll(".notification")] as HTMLElement[];
@@ -70,23 +70,8 @@ export const Primary: Story = {
 };
 
 /**
- * Clear all empties the feed: the play() presses the button and sees the
- * output fire (ALR-06).
- */
-export const ClearAll: Story = {
-    args: {
-        ...Primary.args,
-    },
-    play: async ({ canvas, componentInstance }) => {
-        const cleared: boolean[] = [];
-        componentInstance.clearAll.subscribe(() => cleared.push(true));
-        await userEvent.click(canvas.getByRole("button", { name: "Clear all" }));
-        expect(cleared).toEqual([true]);
-    },
-};
-
-/**
- * The empty state: a centered line, no rows, no clear button (ALR-07).
+ * The empty state: a centered line and no rows (ALR-07). The list never
+ * carries a clear control — that action rides the drawer head (DD-088).
  */
 export const Empty: Story = {
     args: {
@@ -96,7 +81,7 @@ export const Empty: Story = {
     },
     play: async ({ canvas, canvasElement }) => {
         expect(canvasElement.querySelectorAll(".notification")).toHaveLength(0);
-        expect(canvas.queryByRole("button", { name: "Clear all" })).toBeNull();
+        expect(canvas.queryByRole("log")).toBeNull();
         expect(canvas.getByText("No alerts")).toBeInTheDocument();
     },
 };

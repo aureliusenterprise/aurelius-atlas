@@ -44,6 +44,11 @@ export class Drawer {
      * Accessible name of the close control, localised by the caller (the
      * {@link Modal}'s `ariaLabel` pattern — a translated static attribute
      * would be overwritten by the binding).
+     *
+     * Content carrying the `drawer-actions` attribute projects into the
+     * head between the title and the close button (DD-088), so a
+     * drawer's content actions (Clear all on the alerts feed) sit in the
+     * sticky head and never scroll away with a long body.
      */
     readonly ariaLabel = input("Close");
 

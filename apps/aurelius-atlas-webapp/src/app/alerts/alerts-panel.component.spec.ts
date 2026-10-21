@@ -67,13 +67,20 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         expect(alerts.alerts()).toHaveLength(before - 1);
     });
 
-    it("clears the store from the clear-all button (ALR-06)", async () => {
+    it("clears the store from the clear-all button in the drawer head (ALR-06, DD-088)", async () => {
         const alerts = setup();
-        const { compiled } = await renderOpen(alerts);
+        const { fixture, compiled } = await renderOpen(alerts);
 
-        compiled.querySelector<HTMLButtonElement>(".aurelius-alert-clear")?.click();
+        // The escape hatch rides the sticky head (DD-088), not the
+        // scrolling feed, and only shows while the store has alerts.
+        const clear = compiled.querySelector<HTMLButtonElement>(".aurelius-drawer-head .aurelius-alert-clear");
+        expect(clear).toBeTruthy();
+        clear?.click();
 
         expect(alerts.alerts()).toHaveLength(0);
+        // With the store empty, the head's action goes too (ALR-06).
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-alert-clear")).toBeNull();
     });
 
     it("navigates the drawer outlet away on dismissal (ALR-01, DD-078)", async () => {

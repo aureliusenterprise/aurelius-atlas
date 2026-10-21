@@ -2624,7 +2624,7 @@ lib has no Bulma DOM assumptions). A future read-model (server events,
 
 ### DD-087. AlertList and Badge are ui-lib presentational components
 
-- **Status:** Accepted
+- **Status:** Accepted (the `clearAll()` half of the contract superseded by DD-088)
 - **Increment:** 7.15
 - **Date:** 2026-10-21
 
@@ -2660,3 +2660,51 @@ an event, not a two-way value).
 covers the feed and the dot). The badge's ring is Bulma-token ink
 (`--bulma-navbar-item-color`, currentColor fallback) — a future non-
 navbar host keeps a visible edge without a new input.
+
+### DD-088. The chip's pinned pair; Clear all in the drawer head
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** Two live-review fixes to the alert feed (ALR-06, ALR-07):
+the burst chip's pair is pinned — `#f5f5f5` plate, `#363636` ink — not
+Bulma's `tag is-light`; and the "Clear all" button is a content action
+in the drawer's head, not part of the feed. The Drawer grows a
+`drawer-actions` projection slot between the title and the close button
+and AlertList loses its `clearLabel`/`clearAll` — clearing a store the
+list does not own was the list's borrowed business (DD-087's
+presentational rule).
+
+**Reason.** The user's review of the live drawer: "the counter text is
+not visible on the white background" and the "clear all" button
+"will become buried" on a long feed — "let's keep it above the
+notifications". The chip's invisibility is a scheme trap, measured: the
+brand pins the `light` colour pair at `:root`, outside Bulma's scheme
+machinery (SHM-04, so the chrome colours survive), while Bulma 1's dark
+theme re-pins `light`'s invert to a scheme-following ink — the
+`is-light` tag composed the brand's white plate under dark-mode white
+ink (white-on-white). The pinned `#f5f5f5`/`#363636` pair is the
+footer's idiom (SHM-07): the same marker in either scheme, 9.3:1. The
+first fix placed Clear all above the rows inside the scrolling body
+(DD-088's first pass, unit-tested); on review the head is the stronger
+answer — the body scrolls, so the hatch must ride the sticky head.
+
+**Alternatives.** Pin `light-invert` in the brand's `dark-ink` ramp
+(fixes the tag and every `is-light` surface app-wide — rejected as
+wider than the bug: DD-068's ramp re-pins the ink chain Bulma itself
+adapts; `light` is a colour pair SHM-04 pins deliberately, and
+dark-adapting it reopens SHM-01's promise). A severity-coloured chip
+(the row is already severity-coloured; the chip is metadata, not a
+second signal). Clear all above the rows inside the body (the first
+pass: on a long feed the drawer body scrolls, taking the hatch away —
+rejected on review). A `clearLabel`/`clearAll` on AlertList kept "for
+reusability": a feed that owns a store-clearing button presumes the
+store's shape — the head slot keeps the list the rows.
+
+**Consequences.** The chip is the third pinned pair in the product
+(footer SHM-07, active locale DD-082, chip DD-088) — the growing list
+of surfaces that read the same in both schemes. The Drawer's head
+anatomy (DD-069's, shared with settings) gains an optional slot: the
+settings panel projects nothing and is unchanged. The alerts drawer's
+tab order is close, then Clear all (both in the head), then the rows.

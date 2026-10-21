@@ -112,3 +112,37 @@ export const OnDark: Story = {
     },
     render: host,
 };
+
+const actionsTemplate = `
+<aurelius-atlas-ui-drawer #drawer [active]="active" title="Alerts" ariaLabel="Close">
+    <button type="button" drawer-actions class="button is-small is-text">Clear all</button>
+    <div class="notification is-danger">
+        <p>Request failed: GET /api/atlas/admin/session 502</p>
+    </div>
+    <div class="notification is-warning">
+        <p>Search is slow: the query took 8.2s.</p>
+    </div>
+</aurelius-atlas-ui-drawer>
+`;
+
+/**
+ * The head's action slot (DD-088): content carrying `drawer-actions`
+ * projects between the title and the close button, so the escape hatch
+ * (Clear all on an alerts feed) rides the sticky head and a long body
+ * never buries it. The play() checks the slot's order in the head.
+ */
+export const HeadActions: Story = {
+    args: { active: true },
+    play: async ({ canvas }) => {
+        const dialog = canvas.getByRole("dialog", { name: "Alerts" });
+        const head = dialog.querySelector(".aurelius-drawer-head");
+        const clear = canvas.getByRole("button", { name: "Clear all" });
+        // In the head, before the close control — not in the scrolling body.
+        expect(head?.contains(clear)).toBe(true);
+        expect(dialog.querySelector(".aurelius-drawer-body button")).toBeNull();
+    },
+    render: () => ({
+        template: actionsTemplate,
+        props: { active: true as boolean },
+    }),
+};

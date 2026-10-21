@@ -120,6 +120,22 @@ describe("Drawer", () => {
         expect(hosted.nativeElement.querySelector(".aurelius-drawer-body p").textContent).toBe("hello");
     });
 
+    it("projects drawer-actions content into the head, before the close button (DD-088)", () => {
+        const hosted = TestBed.createComponent(HeadActionHostComponent);
+        hosted.detectChanges();
+        hosted.componentInstance.drawer.open();
+        hosted.detectChanges();
+
+        const head = hosted.nativeElement.querySelector(".aurelius-drawer-head");
+        const action = head.querySelector(".aurelius-alert-clear");
+        // The action rides the sticky head, not the scrolling body: a
+        // long feed cannot bury it (DD-088).
+        expect(action?.textContent.trim()).toBe("Clear all");
+        expect(hosted.nativeElement.querySelector(".aurelius-drawer-body .aurelius-alert-clear")).toBeNull();
+        // ...and it sits beside the close control, in the flex row.
+        expect(head.querySelector(".delete")).toBeTruthy();
+    });
+
     it.each([
         ["a scrim click", ".aurelius-drawer-scrim"],
         ["the close button", ".aurelius-drawer-head .delete"],
@@ -178,5 +194,18 @@ describe("Drawer", () => {
     `,
 })
 class HostComponent {
+    @ViewChild("drawer") drawer!: Drawer;
+}
+
+@Component({
+    imports: [Drawer],
+    template: `
+        <aurelius-atlas-ui-drawer #drawer title="Alerts">
+            <button type="button" drawer-actions class="button is-small is-text aurelius-alert-clear">Clear all</button>
+            <p>the feed</p>
+        </aurelius-atlas-ui-drawer>
+    `,
+})
+class HeadActionHostComponent {
     @ViewChild("drawer") drawer!: Drawer;
 }

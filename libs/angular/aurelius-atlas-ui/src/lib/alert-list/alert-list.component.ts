@@ -8,11 +8,15 @@ import type { AlertGroup } from "./alert-group";
  * group, severity-coloured, newest first as the caller ordered them. The
  * component is presentational — it stores nothing and owns no clock: the
  * caller's store groups the alerts (ALR-03) and passes the rows; the list
- * renders them and emits `dismiss`/`clearAll`.
+ * renders them and emits `dismiss`.
  *
  * The feed is a live region (`role="log"`, `aria-live="polite"`): an
  * alert arriving while the drawer is open is announced without
  * interrupting. The list labels itself with the caller's `ariaLabel`.
+ *
+ * Clearing the whole feed lives outside the list (DD-088): the caller
+ * places a clear-all action in the {@link Drawer}'s head slot, where a
+ * long feed cannot bury it. The list stays the rows.
  *
  * Labels are caller inputs with English defaults (the {@link Drawer}'s
  * `ariaLabel` pattern), so the lib keeps no translation dependency —
@@ -51,12 +55,6 @@ export class AlertList {
     readonly dismissLabel = input("Dismiss");
 
     /**
-     * The label of the clear-all button, shown only while alerts exist.
-     * The caller localises it.
-     */
-    readonly clearLabel = input("Clear all");
-
-    /**
      * The prefix of the burst-count chip, joined to the count (ALR-07).
      * A prefix rather than a full plural string, so the chip stays a
      * single localised word per locale.
@@ -65,7 +63,4 @@ export class AlertList {
 
     /** Emits the id of a row's dismiss button (ALR-06). */
     readonly dismiss = output<string>();
-
-    /** Emits when the clear-all button is pressed (ALR-06). */
-    readonly clearAll = output<void>();
 }

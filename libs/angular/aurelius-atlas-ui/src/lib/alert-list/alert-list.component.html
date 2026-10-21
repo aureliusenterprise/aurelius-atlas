@@ -19,14 +19,16 @@
                 <p class="aurelius-alert-meta">
                     <time [attr.datetime]="group.lastSeen">{{ group.lastSeen | date: "medium" }}</time>
                     @if (group.count > 1) {
-                        <span class="tag is-light aurelius-alert-count">{{ timesPrefix() }}{{ group.count }}</span>
+                        <!--
+                            The chip's pair is pinned in the scss, not
+                            Bulma's `is-light` — a scheme trap here
+                            (ALR-07, DD-088).
+                        -->
+                        <span class="tag aurelius-alert-count">{{ timesPrefix() }}{{ group.count }}</span>
                     }
                 </p>
             </div>
         }
-        <button type="button" class="button is-small is-text aurelius-alert-clear" (click)="clearAll.emit()">
-            {{ clearLabel() }}
-        </button>
     </div>
 } @else {
     <p class="has-text-centered has-text-grey aurelius-alert-empty">{{ emptyLabel() }}</p>

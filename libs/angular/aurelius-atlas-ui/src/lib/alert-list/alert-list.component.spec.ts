@@ -91,19 +91,25 @@ describe("AlertList (ALR-07, ALR-09, ALR-10)", () => {
         expect(ids).toEqual(["g7"]);
     });
 
-    it("emits clearAll from the clear button (ALR-06, ALR-10)", () => {
+    it("carries no clear-all button (ALR-06, DD-088)", () => {
         fixture.componentRef.setInput("alerts", [group()]);
         fixture.detectChanges();
-        const clear = vi.fn();
-        fixture.componentInstance.clearAll.subscribe(clear);
 
-        fixture.nativeElement.querySelector(".aurelius-alert-clear").click();
-
-        expect(clear).toHaveBeenCalled();
+        // Clearing the feed is the caller's action, placed in the
+        // drawer's head slot (DD-088) — the list is only the rows, so
+        // it has no clear control to bury in a long feed.
+        expect(fixture.nativeElement.querySelector(".aurelius-alert-clear")).toBeNull();
+        expect(fixture.nativeElement.querySelector("button:not(.delete)")).toBeNull();
     });
 
-    it("has no clear button in the empty state (ALR-06)", () => {
-        expect(fixture.nativeElement.querySelector(".aurelius-alert-clear")).toBeNull();
+    it("pins the count chip's pair, not Bulma's scheme-following is-light (ALR-07, DD-088)", () => {
+        fixture.componentRef.setInput("alerts", [group({ id: "burst", count: 3 })]);
+        fixture.detectChanges();
+
+        const chip = fixture.nativeElement.querySelector(".aurelius-alert-count");
+        // `is-light` is a scheme trap: the brand pins the light plate,
+        // Bulma re-pins its ink — white-on-white in dark mode.
+        expect(chip.classList.contains("is-light")).toBe(false);
     });
 
     it("names the dismiss control with the caller's label (ALR-08)", () => {
