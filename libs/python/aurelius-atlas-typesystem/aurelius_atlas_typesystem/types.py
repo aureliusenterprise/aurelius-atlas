@@ -1,8 +1,10 @@
 """Atlas types: what a type definition becomes once its references are resolved (DD-025).
 
-Ported from ``org.apache.atlas.type`` of Apache Atlas 2.4.0, the definition side only: the value side
-(validation, normalisation, defaults) arrives with entities in 2.1. A type resolves against a registry in
-three phases, as Java's ``resolveReferences``, ``resolveReferencesPhase2`` and ``resolveReferencesPhase3``.
+Ported from ``org.apache.atlas.type`` of Apache Atlas 2.4.0: the struct, classification, entity, relationship
+and business metadata types, the definition side only; their value side and their own modules arrive in 2.1c
+(DD-041). ``AtlasType`` and the built-in, enum, array and map types have their own modules. A type resolves
+against a registry in three phases, as Java's ``resolveReferences``, ``resolveReferencesPhase2`` and
+``resolveReferencesPhase3``.
 """
 
 import json
@@ -11,10 +13,8 @@ from typing import TYPE_CHECKING
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
 from aurelius_atlas_model.typedef import (
-    ATLAS_TYPE_ASSET,
     ATLAS_TYPE_DATE,
     ATLAS_TYPE_INT,
-    ATLAS_TYPE_OBJECT_ID,
     ATLAS_TYPE_STRING,
     ATTR_MAX_STRING_LENGTH,
     ATTR_OPTION_APPLICABLE_ENTITY_TYPES,
@@ -23,9 +23,7 @@ from aurelius_atlas_model.typedef import (
     CONSTRAINT_PARAM_ATTRIBUTE,
     CONSTRAINT_TYPE_INVERSE_REF,
     CONSTRAINT_TYPE_OWNED_REF,
-    COUNT_NOT_SET,
     OPTION_DISPLAY_TEXT_ATTRIBUTE,
-    SERVICE_TYPE_ATLAS_CORE,
     AtlasAttributeDef,
     AtlasBaseTypeDef,
     AtlasBusinessMetadataDef,
@@ -33,7 +31,6 @@ from aurelius_atlas_model.typedef import (
     AtlasConstraintDef,
     AtlasEntityDef,
     AtlasEnumDef,
-    AtlasEnumElementDef,
     AtlasRelationshipAttributeDef,
     AtlasRelationshipDef,
     AtlasRelationshipEndDef,
@@ -43,145 +40,16 @@ from aurelius_atlas_model.typedef import (
     RelationshipCategory,
     TypeCategory,
     array_type_name,
-    map_type_name,
 )
+
+from aurelius_atlas_typesystem.array_type import ArrayType
+from aurelius_atlas_typesystem.atlas_type import AtlasType, resolved
+from aurelius_atlas_typesystem.builtin import BuiltInType, ObjectIdType
+from aurelius_atlas_typesystem.enum_type import EnumType
+from aurelius_atlas_typesystem.map_type import MapType
 
 if TYPE_CHECKING:
     from aurelius_atlas_typesystem.registry import TypeRegistry
-
-
-class AtlasType:
-    """A type: its name, category and service type (``AtlasType``)."""
-
-    def __init__(self, type_name: str | None, category: TypeCategory, service_type: str | None) -> None:
-        self.type_name = type_name
-        self.category = category
-        self.service_type = service_type
-
-    def type_for_attribute(self) -> AtlasType:
-        """The type an attribute of this type holds; an entity type is held as an ``objectid`` (TRG-11)."""
-        return self
-
-    def _resolve_references(self, registry: TypeRegistry) -> None:
-        """Phase 1: resolve the names this type refers to."""
-
-    def _resolve_references_phase2(self, registry: TypeRegistry) -> None:
-        """Phase 2: link what needs every type's phase 1 done."""
-
-    def _resolve_references_phase3(self, registry: TypeRegistry) -> None:
-        """Phase 3: link what needs every type's phase 2 done."""
-
-
-class BuiltInType(AtlasType):
-    """A primitive type such as ``string`` or ``int`` (``AtlasBuiltInTypes``, TRG-01)."""
-
-    def __init__(self, type_name: str) -> None:
-        super().__init__(type_name, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE)
-
-
-class ObjectIdType(AtlasType):
-    """``objectid``: a reference to an entity of ``object_type`` (``AtlasObjectIdType``)."""
-
-    def __init__(self, object_type: str | None = ATLAS_TYPE_ASSET) -> None:
-        super().__init__(ATLAS_TYPE_OBJECT_ID, TypeCategory.OBJECT_ID_TYPE, SERVICE_TYPE_ATLAS_CORE)
-        self.object_type = object_type
-
-
-class ArrayType(AtlasType):
-    """``array<T>`` with its cardinality and value counts (``AtlasArrayType``, TRG-02)."""
-
-    def __init__(
-        self,
-        element_type_name: str,
-        *,
-        element_type: AtlasType | None = None,
-        min_count: int = COUNT_NOT_SET,
-        max_count: int = COUNT_NOT_SET,
-        cardinality: Cardinality = Cardinality.LIST,
-    ) -> None:
-        super().__init__(array_type_name(element_type_name), TypeCategory.ARRAY, SERVICE_TYPE_ATLAS_CORE)
-        self.element_type_name = element_type_name
-        self.element_type = element_type
-        self.min_count = min_count
-        self.max_count = max_count
-        self.cardinality = cardinality
-
-    def type_for_attribute(self) -> AtlasType:
-        """This array, or a new one over the element's attribute type when that differs (TRG-11)."""
-        element = _resolved(self.element_type).type_for_attribute()
-        if element is self.element_type:
-            return self
-        return ArrayType(
-            _name(element),
-            element_type=element,
-            min_count=self.min_count,
-            max_count=self.max_count,
-            cardinality=self.cardinality,
-        )
-
-    def _resolve_references(self, registry: TypeRegistry) -> None:
-        self.element_type = registry.get_type(self.element_type_name)
-
-
-class MapType(AtlasType):
-    """``map<K,V>`` (``AtlasMapType``, TRG-02)."""
-
-    def __init__(
-        self,
-        key_type_name: str,
-        value_type_name: str,
-        *,
-        key_type: AtlasType | None = None,
-        value_type: AtlasType | None = None,
-    ) -> None:
-        super().__init__(map_type_name(key_type_name, value_type_name), TypeCategory.MAP, SERVICE_TYPE_ATLAS_CORE)
-        self.key_type_name = key_type_name
-        self.value_type_name = value_type_name
-        self.key_type = key_type
-        self.value_type = value_type
-
-    def type_for_attribute(self) -> AtlasType:
-        """This map, or a new one over the key's and value's attribute types when they differ (TRG-11)."""
-        key = _resolved(self.key_type).type_for_attribute()
-        value = _resolved(self.value_type).type_for_attribute()
-        if key is self.key_type and value is self.value_type:
-            return self
-        return MapType(_name(key), _name(value), key_type=key, value_type=value)
-
-    def _resolve_references(self, registry: TypeRegistry) -> None:
-        self.key_type = registry.get_type(self.key_type_name)
-        self.value_type = registry.get_type(self.value_type_name)
-
-
-def _resolved(type_: AtlasType | None) -> AtlasType:
-    if type_ is None:  # pragma: no cover - a type is resolved before its attribute type is asked for
-        raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, "unresolved type")
-    return type_
-
-
-def _name(type_: AtlasType) -> str:
-    return str(type_.type_name)
-
-
-class EnumType(AtlasType):
-    """An enum type: its elements by value and ordinal, and its default (``AtlasEnumType``, TRG-14)."""
-
-    def __init__(self, enum_def: AtlasEnumDef) -> None:
-        super().__init__(enum_def.name, enum_def.category, enum_def.service_type)
-        self.enum_def = enum_def
-        self._elements = {str(element.value).lower(): element for element in enum_def.element_defs}
-        first = enum_def.element_defs[0].value if enum_def.element_defs else None
-        self.default_value = enum_def.default_value if enum_def.default_value is not None else first
-
-    def element(self, value: str | None) -> AtlasEnumElementDef | None:
-        """The element with ``value``, compared without case, or None (TRG-14)."""
-        return None if value is None else self._elements.get(value.lower())
-
-    def element_by_ordinal(self, ordinal: int | None) -> AtlasEnumElementDef | None:
-        """The element with ``ordinal``, or None (TRG-14)."""
-        if ordinal is None:
-            return None
-        return next((element for element in self._elements.values() if element.ordinal == ordinal), None)
 
 
 class EdgeDirection(StrEnum):
@@ -261,27 +129,27 @@ def qualified_attribute_name(struct_def: AtlasStructDef, attribute_name: str) ->
 
 def _holds_object_ids(type_: AtlasType) -> bool:
     if isinstance(type_, ArrayType):
-        type_ = _resolved(type_.element_type)
+        type_ = resolved(type_.element_type)
     elif isinstance(type_, MapType):
-        type_ = _resolved(type_.value_type)
+        type_ = resolved(type_.value_type)
     return type_.category is TypeCategory.OBJECT_ID_TYPE
 
 
 def _contained(type_: AtlasType) -> AtlasType:
     """The element of an array or the value of a map; the type itself otherwise."""
     if isinstance(type_, ArrayType):
-        return _resolved(type_.element_type)
+        return resolved(type_.element_type)
     if isinstance(type_, MapType):
-        return _resolved(type_.value_type)
+        return resolved(type_.value_type)
     return type_
 
 
 def referenced_entity_type(type_: AtlasType) -> EntityType | None:
     """The entity type a type, an array of it or a map to it refers to, or None (TRG-12)."""
     if isinstance(type_, ArrayType):
-        type_ = _resolved(type_.element_type)
+        type_ = resolved(type_.element_type)
     if isinstance(type_, MapType):
-        type_ = _resolved(type_.value_type)
+        type_ = resolved(type_.value_type)
     return type_ if isinstance(type_, EntityType) else None
 
 

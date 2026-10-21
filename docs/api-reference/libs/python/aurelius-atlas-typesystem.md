@@ -7,7 +7,9 @@ The Atlas type system for Aurelius Atlas, without I/O
 the type registry and the types that type definitions resolve to. Since increment
 [1.2](../../../architecture/conversion/increments/1-2-type-registry.md): the built-in, array, map, enum
 and struct types, attribute types and constraints. Since [1.3](../../../architecture/conversion/increments/1-3-type-hierarchies.md):
-entity and classification hierarchies, relationship and business metadata types.
+entity and classification hierarchies, relationship and business metadata types. Since
+[2.1b](../../../architecture/conversion/increments/2-1-value-types.md): the value side of the built-in,
+enum, array and map types, as Atlas checks, normalises and compares attribute values.
 
 ```python
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -16,6 +18,10 @@ registry = TypeRegistry()
 with registry.update() as transient:  # committed when the block ends, discarded when it raises
     transient.add_types(types_def)  # resolves every type; raises AtlasError on a bad reference
 registry.entity_type("hive_table")
+
+int_type = registry.get_type("int")
+int_type.get_normalized_value("42")  # 42; Java's Integer.valueOf rules, None when invalid
+registry.get_type("array<int>").validate_value(["x"], "a", messages := [])  # messages: a[0]=x: invalid value…
 ```
 
 ## Installation
@@ -32,3 +38,15 @@ workspace = true
 ::: aurelius_atlas_typesystem.registry
 
 ::: aurelius_atlas_typesystem.types
+
+::: aurelius_atlas_typesystem.atlas_type
+
+::: aurelius_atlas_typesystem.enum_type
+
+::: aurelius_atlas_typesystem.array_type
+
+::: aurelius_atlas_typesystem.map_type
+
+::: aurelius_atlas_typesystem.builtin
+
+::: aurelius_atlas_typesystem.java

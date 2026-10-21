@@ -6,11 +6,20 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 
 ## Layout
 
-- `aurelius_atlas_typesystem/types.py` — `AtlasType` and its subclasses (`org.apache.atlas.type`), the
-  definition side only (DD-025)
+- `aurelius_atlas_typesystem/atlas_type.py` — `AtlasType`: name, category and the value contract (VAL-02)
+- `aurelius_atlas_typesystem/builtin/` — one module per nested class of `AtlasBuiltInTypes` (DD-041), with
+  `integral_type` and `floating_type` for what the number types share
+- `aurelius_atlas_typesystem/enum_type.py`, `array_type.py`, `map_type.py` — `AtlasEnumType`, `AtlasArrayType`,
+  `AtlasMapType`, definition and value side
+- `aurelius_atlas_typesystem/types.py` — the struct, classification, entity, relationship and business metadata
+  types, definition side only until 2.1c (DD-025, DD-041)
+- `aurelius_atlas_typesystem/java.py` — Java's number conversions on Java values held as Python values
+  (DD-040); `values.py` — JSON strings and Java `equals` for arrays and maps
 - `aurelius_atlas_typesystem/registry.py` — `TypeRegistry` and `TransientTypeRegistry`
-- `tests/` — TRG-01 to TRG-16 (1.2) and THY-01 to THY-12 (1.3); `tests/fixtures/` holds Atlas's
-  `0010-base_model.json` and `0011-glossary_model.json`, unchanged and skipped by the hooks
+- `tests/` — TRG-01 to TRG-16 (1.2) and THY-01 to THY-12 (1.3); `tests/values/` — VAL-02 to VAL-15 (2.1b),
+  one `test__values_<module>.py` per module, Atlas's `TestAtlas*Type` values translated by DD-040;
+  `tests/fixtures/` holds Atlas's `0010-base_model.json` and `0011-glossary_model.json`, unchanged and skipped
+  by the hooks
 
 ## Conventions
 
@@ -20,7 +29,10 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   committed registry's types (TRG-05).
 - Raise `AtlasError` with codes from `aurelius_atlas_model.errors`, copied from `AtlasErrorCode` with
   their parameters in Java's order (DD-023).
-- The value side (`isValidValue`, `getNormalizedValue`, …) is 2.1's; JanusGraph names are not ported.
+- Value methods keep Java's names in snake_case (`is_valid_value`, `get_normalized_value`, …) and take Java
+  values as DD-040 holds them: `int`, `Decimal`, `float`, `bool`, `str`, `datetime`, lists and maps. Use the
+  conversions in `java.py`, never Python's own (`int("1 2")`, `float("inf")`), which accept what Java rejects.
+- A new type class gets its own module (DD-041). JanusGraph names are not ported.
 
 ## Wiring Checklist
 
