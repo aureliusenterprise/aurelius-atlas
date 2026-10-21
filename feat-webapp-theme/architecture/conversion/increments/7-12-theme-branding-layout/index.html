@@ -6422,7 +6422,8 @@
 <li><strong>Pull request:</strong> #103</li>
 <li><strong>Records:</strong> ADR 053; DD-059 (the brand theme on Bulma 1), DD-060
   (critical-CSS inlining off), DD-062 (the legacy text ramp on Bulma 1's
-  channels), DD-063 (the accent ramp: teal primary, Bootstrap accents);
+  channels), DD-063 (the accent ramp: teal primary, Bootstrap accents),
+  DD-064 (the mobile burger chrome);
   relies on ADR 018,
   DD-037, DD-042, DD-056, SHC rules (7.11), UIC rules (7.2)</li>
 </ul>
@@ -6436,7 +6437,9 @@ legacy <code>@models4insight/styles</code> package (DD-037 stands):</p>
 <li>the Aurelius palette on Bulma 1's tokens: the Bootstrap accent map the
   legacy theme carried (link <code>#0073dd</code>, info/success/warning/danger), the
   blue footer band, the grey chrome bands, Bulma's own teal kept as primary
-  (SHM-04, DD-063)</li>
+  (SHM-04, DD-063), and the legacy mobile burger chrome: grey burger,
+  dropdowns blended into the band, the legacy logout anchor
+  (SHM-04, DD-064)</li>
 <li>the legacy body type: Bulma 0.9.4's system font stack, 16px, line-height 1.5,
   <code>#4a4a4a</code> ink — Bulma 1 ships Inter/1rem and renders the app in the wrong
   type — and the ramp below it: the neutral greys and the weights Bulma 1
@@ -6479,7 +6482,7 @@ the landing slice 7.5 owns.</p>
 </tr>
 <tr>
 <td>SHM-04</td>
-<td>The Aurelius palette lands on Bulma 1's tokens in the brand library: the accent map <code>link</code> <code>#0073dd</code>, <code>info</code> <code>#17a2b8</code>, <code>success</code> <code>#28a745</code>, <code>warning</code> <code>#ffc107</code>, <code>danger</code> <code>#dc3545</code> (the Bootstrap colours the legacy theme carried), each with white solid-fill ink except <code>warning</code>, which keeps Bulma's dark one (DD-063); <code>primary</code> stays Bulma's teal <code>#00d1b2</code> — the demo's landing icons — with its solid-fill ink pinned white; <code>light</code>/navbar band <code>#f5f5f5</code> with <code>#363636</code> invert, navbar hover/active <code>#f5f5f5</code>/<code>#000</code>; footer <code>#0073dd</code> with white text (the legacy footer's <code>has-text-white</code>). Bulma scopes the navbar/footer tokens on its components, so those overrides are emitted on <code>.navbar</code>/<code>.footer</code> too.</td>
+<td>The Aurelius palette lands on Bulma 1's tokens in the brand library: the accent map <code>link</code> <code>#0073dd</code>, <code>info</code> <code>#17a2b8</code>, <code>success</code> <code>#28a745</code>, <code>warning</code> <code>#ffc107</code>, <code>danger</code> <code>#dc3545</code> (the Bootstrap colours the legacy theme carried), each with white solid-fill ink except <code>warning</code>, which keeps Bulma's dark one (DD-063); <code>primary</code> stays Bulma's teal <code>#00d1b2</code> — the demo's landing icons — with its solid-fill ink pinned white; <code>light</code>/navbar band <code>#f5f5f5</code> with <code>#363636</code> invert, navbar hover/active <code>#f5f5f5</code>/<code>#000</code>; footer <code>#0073dd</code> with white text (the legacy footer's <code>has-text-white</code>). The mobile chrome (DD-064): burger ink <code>#4a4a4a</code> with a black hover plate, dropdown arrow <code>#000</code>, selected plate white/<code>#000</code>, and under the burger breakpoint the dropdowns blend into the band with no chevron (0.9.4's mobile rendering). Bulma scopes the navbar/footer tokens on its components, so those overrides are emitted on <code>.navbar</code>/<code>.footer</code> too.</td>
 </tr>
 <tr>
 <td>SHM-05</td>
@@ -6499,7 +6502,9 @@ the landing slice 7.5 owns.</p>
 <p>The legacy sources whose rendering this ports (<code>.scratch/aurelius</code>):</p>
 <ul>
 <li><code>libs/shell/src/lib/header/header.component.{html,scss}</code> — the pinned
-  <code>navbar is-fixed-top</code> inside a <code>container</code>, the <code>.logo</code> brand sizing</li>
+  <code>navbar is-fixed-top</code> inside a <code>container</code>, the <code>.logo</code> brand sizing,
+  and the Logout as <code>a.navbar-item[role=button]</code> in navbar ink (no danger
+  red, DD-064)</li>
 <li><code>libs/shell/src/lib/footer/footer.component.html</code> — the <code>has-text-white</code>
   level items on the blue footer band</li>
 <li><code>libs/shell/src/lib/shell.component.{html,scss}</code> — <code>.is-tall-container</code>
@@ -6544,6 +6549,12 @@ is the reference: every measured value in Acceptance reads from it.</p>
   carries the legacy theme's Bootstrap accent map, keeps Bulma's teal as
   primary with white solid-fill ink, and pins the navbar hover/active band
   the demo renders (<code>#f5f5f5</code>/<code>#000</code>);</li>
+<li>DD-064: the mobile burger chrome — Bulma 1 tints the burger/chevron from
+  link and leaves the burger menu's dropdowns as white plates (0.9.4
+  blends them into the band, and hides the chevron — a Bulma 1 regression
+  the brand mirrors), and the first cut's Logout was a red <code>&lt;button&gt;</code>
+  where the legacy is a plain navbar-ink anchor (<code>a[role=button]</code>);
+  SHM-04/SHC-05 carry the legacy rendering;</li>
 <li>the theme switch is not ported — light is forced via <code>data-theme="light"</code>
   (SHM-01), the switch is a later slice;</li>
 <li>the legacy navbar's <code>is-size-4</code> name next to the logo is not ported: the
@@ -6575,6 +6586,9 @@ is the reference: every measured value in Acceptance reads from it.</p>
   white solid ink, link/info/success/warning/danger on the Bootstrap
   map, landing icons <code>rgb(0,209,178)</code>/<code>rgb(23,162,184)</code>, navbar-link
   hover <code>#f5f5f5</code>/<code>#000</code> (SHM-04, DD-063)</li>
+<li><code>test__burger_menu_matches_the_legacy_mobile_chrome</code> — at a phone
+  viewport: burger <code>#4a4a4a</code>, the Logout anchor navbar-ink/transparent
+  /start-aligned, no dropdown chevron (SHM-04, DD-064)</li>
 <li><code>test__footer_sits_below_the_fold</code> — band ≥ viewport, footer top ≥
   viewport (legacy <code>.is-tall-container</code>, SHM-05, SHM-07)</li>
 <li><code>test__landing_content_sits_in_a_container</code> — hero box inset on the

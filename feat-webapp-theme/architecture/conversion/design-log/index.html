@@ -4335,6 +4335,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-064-the-mobile-burger-chrome-grey-burger-blended-dropdowns-legacy-logout-anchor" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-064. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7568,6 +7579,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-064-the-mobile-burger-chrome-grey-burger-blended-dropdowns-legacy-logout-anchor" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-064. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9434,6 +9456,46 @@ navbar hover/active emission joins the navbar block (DD-059's "scope on
 <code>.navbar</code>" pattern), with the one ink rule outside the token machinery —
 the first brand rule that must set a state colour Bulma 1 never tokenised.
 Pinned by <code>test__accent_ramp_matches_the_demo</code>.</p>
+<h3 id="dd-064-the-mobile-burger-chrome-grey-burger-blended-dropdowns-legacy-logout-anchor">DD-064. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor<a class="headerlink" href="#dd-064-the-mobile-burger-chrome-grey-burger-blended-dropdowns-legacy-logout-anchor" title="Permanent link">&para;</a></h3>
+<p><strong>Decision.</strong> The brand carries the legacy theme's mobile navbar on Bulma
+1: <code>--bulma-navbar-burger-color: #4a4a4a</code> with the burger <strong>channels</strong> set
+black (the hover/active plate composes them at 10 %/20 % alpha — 0.9.4's
+plate is <code>rgba($black, .1)</code> over the band, Bulma 1 tints it from link),
+and <code>--bulma-navbar-dropdown-arrow: #000</code> (the legacy pins
+<code>$navbar-dropdown-arrow: $black</code>; Bulma 1 derives it from link). The
+selected plate (<code>.is-active</code>, the locale's current item) lands on
+white/<code>#000</code> (the demo's measured pair — 0.9.4's, Bulma 1's default is the
+link-blue plate). Under <code>max-width: 1023px</code> the burger menu's
+<code>.navbar-dropdown</code> blends into the band (0.9.4 zeroes its
+background/colour/padding — Bulma 1's dropdown-item plate rule is <strong>not</strong>
+media-scoped, so its items render as white tiles on the grey band) and the
+dropdown chevron is hidden (Bulma 1 regression jgthms/bulma#4173: the
+<code>%arrow</code> placeholder's <code>:not(.is-arrowless)</code> display beats the media
+rule's plain <code>.navbar-link::after</code>). The Logout item is the legacy
+<code>a.navbar-item[role=button]</code> — navbar ink, no <code>has-text-danger</code> (the
+legacy shell has none; the dropdown ink chain styles anchors, a
+<code>&lt;button&gt;</code> keeps the UA's centred text and the dropdown plate's white
+tile). SHM-04/SHC-05.</p>
+<p><strong>Reason.</strong> Reviewing the mobile chrome: the burger and its hover plate
+rendered Aurelius blue, the logout item sat centred on a white tile
+inside the grey menu, and the menu's dropdowns showed as white panels
+with blue chevrons. The legacy theme (<code>.scratch/aurelius</code>
+<code>libs/styles/src/styles/_theme.scss</code>) sets exactly four navbar rules —
+height, background, dropdown-arrow black, hover <code>#f5f5f5</code>/<code>#000</code> (DD-063)
+— and inherits 0.9.4's defaults for the rest; every mobile deviation is
+Bulma 1 changing those defaults (burger/arrow from link, unscoped
+dropdown plates, the chevron regression) or the port deviating from the
+legacy markup (Logout as a red <code>&lt;button&gt;</code>).</p>
+<p><strong>Alternatives.</strong> Restyle the red logout <code>button</code> (padding/background
+overrides): the legacy ink is navbar grey, not red — the red was never in
+the product; the anchor is the legacy element and rides the dropdown's
+own ink chain for free. Ship the blue burger (Bulma 1's default): the
+demo's chrome is the greys, and the blue plate on the grey band is the
+mismatch the review flagged.</p>
+<p><strong>Consequences.</strong> The mobile menu reads as one grey band with grey ink,
+as the demo. The media block is the brand's first responsive emission;
+the chevron rule documents the upstream regression it mirrors. Pinned by
+<code>test__burger_menu_matches_the_legacy_mobile_chrome</code>.</p>
 
 
 
