@@ -1,7 +1,7 @@
 # 7.13 UI components: details set
 
 - **Status:** in progress
-- **Pull request:** —
+- **Pull request:** [#104](https://github.com/aureliusenterprise/aurelius-atlas/pull/104)
 - **Records:** DD-066, DD-067; relies on ADR 053, DD-046, DD-047, DD-053
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
