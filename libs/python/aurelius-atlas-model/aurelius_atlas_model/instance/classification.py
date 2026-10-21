@@ -14,7 +14,7 @@ class AtlasClassification(AtlasStruct):
     entity_guid: str | None = None
     entity_status: EntityStatus | None = EntityStatus.ACTIVE
     propagate: bool | None = None
-    validity_periods: list[TimeBoundary] | None = None
+    validity_periods: list[TimeBoundary | None] | None = None
     remove_propagations_on_entity_delete: bool | None = None
 
     def add_validity_period(self, validity_period: TimeBoundary) -> None:

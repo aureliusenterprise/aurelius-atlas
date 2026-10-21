@@ -3,10 +3,18 @@
 Read from ``AtlasType.fromJson`` and Java's ``equals`` of the values a body holds (DD-040).
 """
 
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
-from aurelius_atlas_typesystem.values import java_distinct, java_equals, parse_json
+from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelatedObjectId
+from aurelius_atlas_typesystem.values import (
+    java_class_name,
+    java_distinct,
+    java_equals,
+    parse_json,
+    relationship_type_of,
+)
 
 M = "aurelius_atlas_typesystem.values"
 
@@ -49,3 +57,42 @@ def test__a_hash_set_keeps_each_value_once() -> None:
         Decimal("1.0"),
         Decimal("1.00"),
     ]
+
+
+@pytest.mark.covers(f"{M}.relationship_type_of", rules=["EVL-08"])
+def test__a_value_s_relationship_type_is_found_where_atlas_looks() -> None:
+    """``AtlasEntityUtil.getRelationshipType``: a related object id, a map's key, else the first one found inside."""
+    related = AtlasRelatedObjectId(guid="g", relationship_type="r1")
+
+    assert relationship_type_of(related) == "r1"
+    assert relationship_type_of({"relationshipType": 5, "x": related}) == "5"
+    assert relationship_type_of({"relationshipType": None, "x": related}) is None
+    assert relationship_type_of({"a": {"guid": "g"}, "b": related}) == "r1"
+    assert relationship_type_of([{"guid": "g"}, {"relationshipType": "r2"}, related]) == "r2"
+    assert relationship_type_of(AtlasObjectId(guid="g")) is None
+    assert relationship_type_of("r") is None
+
+
+@pytest.mark.covers(f"{M}.java_class_name", rules=["EVL-08"])
+@pytest.mark.parametrize(
+    ("value", "name"),
+    [
+        (True, "java.lang.Boolean"),
+        (1, "java.lang.Integer"),
+        (2**40, "java.lang.Long"),
+        (2**70, "java.math.BigInteger"),
+        (Decimal("1.5"), "java.math.BigDecimal"),
+        (1.5, "java.lang.Double"),
+        ("x", "java.lang.String"),
+        ([1], "java.util.ArrayList"),
+        ({"a": 1}, "java.util.LinkedHashMap"),
+        (set(), "java.util.HashSet"),
+        ((), "[Ljava.lang.Object;"),
+        (datetime(1970, 1, 1, tzinfo=UTC), "java.util.Date"),
+        (AtlasObjectId(), "org.apache.atlas.model.instance.AtlasObjectId"),
+        (object(), "object"),
+    ],
+)
+def test__a_value_s_java_class_is_what_jackson_would_have_made(value: object, name: str) -> None:
+    """``obj.getClass().getName()`` of a body's values (DD-040)."""
+    assert java_class_name(value) == name

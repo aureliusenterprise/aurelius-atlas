@@ -77,6 +77,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-039](#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits) | One Atlas JSON codec reads floats as decimals and writes them with their digits | 2.1       | Proposed |
 | [DD-040](#dd-040-java-values-are-held-as-the-python-values-closest-to-them)                       | Java values are held as the Python values closest to them                       | 2.1       | Proposed |
 | [DD-041](#dd-041-the-type-system-is-one-module-per-java-type-class-too)                           | The type system is one module per Java type class too                           | 2.1       | Proposed |
+| [DD-042](#dd-042-a-validity-period-without-a-time-zone-is-in-utc)                                 | A validity period without a time zone is in UTC                                 | 2.1       | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -997,3 +998,24 @@ thousand lines. A reader who knows Atlas's `AtlasArrayType` finds `array_type`.
 
 **Consequences.** `from aurelius_atlas_typesystem.types import ArrayType` keeps working; new code imports
 from the class's own module.
+
+### DD-042. A validity period without a time zone is in UTC
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-22
+
+**Decision.** A classification's validity period without a `timeZone` is read in UTC, where Atlas reads it in
+its JVM's default time zone (`TimeZone.getDefault()`). Java's time zone ids are matched with Python's tz
+database (`zoneinfo`), Java's legacy three-letter ids (`ZoneId.SHORT_IDS`, such as `PST` and `IST`) and its
+custom `GMT±h[h][[:]mm]` offsets.
+
+**Reason.** Atlas's default zone is whatever its host is set to; the server image runs in UTC, so UTC is the
+same answer for a container deployment, and it does not change with where the code happens to run. The tz
+database holds every zone Java's `TimeZone` resolves except the legacy short ids, which Java maps to tz ids.
+
+**Alternatives.** The local zone of the Python process: makes validation depend on the developer's machine.
+A setting for the default zone: nothing asks for one yet.
+
+**Consequences.** A validity period of `2026/01/01 00:00:00` without a zone means midnight UTC. The time zone
+list must stay in step with Java's; the tz database of the image (the `tzdata` package) supplies it.

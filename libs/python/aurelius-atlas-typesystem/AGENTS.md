@@ -11,12 +11,17 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   `integral_type` and `floating_type` for what the number types share
 - `aurelius_atlas_typesystem/enum_type.py`, `array_type.py`, `map_type.py` — `AtlasEnumType`, `AtlasArrayType`,
   `AtlasMapType`, definition and value side
-- `aurelius_atlas_typesystem/types.py` — the struct, classification, entity, relationship and business metadata
-  types, definition side only until 2.1c (DD-025, DD-041)
+- `aurelius_atlas_typesystem/struct_type.py`, `classification_type.py`, `entity_type.py`, `relationship_type.py`,
+  `business_metadata_type.py` — one module per type class (DD-041), with `attribute.py` (`AtlasAttribute`),
+  `edge_direction.py`, `hierarchy_type.py` (what classification and entity types share) and `type_names.py`
+- `aurelius_atlas_typesystem/types.py` — re-exports every type, and `type_of`
+- `aurelius_atlas_typesystem/testing/model_test_util.py` — a port of Atlas's `ModelTestUtil` (its random attribute
+  types fixed), for tests here and elsewhere; outside the traceability check (DD-010)
 - `aurelius_atlas_typesystem/java.py` — Java's number conversions on Java values held as Python values
   (DD-040); `values.py` — JSON strings and Java `equals` for arrays and maps
 - `aurelius_atlas_typesystem/registry.py` — `TypeRegistry` and `TransientTypeRegistry`
-- `tests/` — TRG-01 to TRG-16 (1.2) and THY-01 to THY-12 (1.3); `tests/values/` — VAL-02 to VAL-15 (2.1b),
+- `tests/` — TRG-01 to TRG-16 (1.2) and THY-01 to THY-12 (1.3); `tests/values/` — VAL-02 to VAL-15 (2.1b) and
+  EVL-01 to EVL-11 (2.1c),
   one `test__values_<module>.py` per module, Atlas's `TestAtlas*Type` values translated by DD-040;
   `tests/fixtures/` holds Atlas's `0010-base_model.json` and `0011-glossary_model.json`, unchanged and skipped
   by the hooks

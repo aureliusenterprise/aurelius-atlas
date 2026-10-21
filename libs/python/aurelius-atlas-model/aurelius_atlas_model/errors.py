@@ -154,6 +154,14 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-081",
         "{0}.{1}: invalid attribute type. Attribute cannot be of type classification",
     )
+    INVALID_TIMEBOUNDRY_TIMEZONE = (400, "ATLAS-400-00-085", "Invalid timezone {0}")
+    INVALID_TIMEBOUNDRY_START_TIME = (400, "ATLAS-400-00-086", "Invalid startTime {0}")
+    INVALID_TIMEBOUNDRY_END_TIME = (400, "ATLAS-400-00-087", "Invalid endTime {0}")
+    INVALID_TIMEBOUNDRY_DATERANGE = (
+        400,
+        "ATLAS-400-00-088",
+        "Invalid dateRange: startTime {0} must be before endTime {1}",
+    )
     PATCH_MISSING_RELATIONSHIP_LABEL = (
         400,
         "ATLAS-400-00-08B",

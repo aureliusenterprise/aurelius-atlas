@@ -139,8 +139,8 @@ def test__a_circular_hierarchy_fails(typedefs: tuple[AtlasBaseTypeDef, ...], mes
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types._HierarchyType.is_super_type_of",
-    "aurelius_atlas_typesystem.types._HierarchyType.is_sub_type_of",
+    "aurelius_atlas_typesystem.hierarchy_type.HierarchyType.is_super_type_of",
+    "aurelius_atlas_typesystem.hierarchy_type.HierarchyType.is_sub_type_of",
     rules=["THY-03", "THY-04"],
 )
 def test__an_entity_hierarchy_is_resolved() -> None:
@@ -272,8 +272,8 @@ def test__internal_types_and_owned_references() -> None:
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types.ClassificationType.can_apply_to_entity_type",
-    "aurelius_atlas_typesystem.types.entity_types_and_all_sub_types",
+    "aurelius_atlas_typesystem.classification_type.ClassificationType.can_apply_to_entity_type",
+    "aurelius_atlas_typesystem.entity_type.entity_types_and_all_sub_types",
     rules=["THY-07"],
 )
 def test__a_classification_applies_to_its_entity_types_and_their_sub_types() -> None:
@@ -374,7 +374,7 @@ def test__relationship_ends_need_an_entity_type_and_a_name(
     assert (error.code, error.message) == (code, message)
 
 
-@pytest.mark.covers("aurelius_atlas_typesystem.types.validate_relationship_def", rules=["THY-08"])
+@pytest.mark.covers("aurelius_atlas_typesystem.relationship_type.validate_relationship_def", rules=["THY-08"])
 @pytest.mark.parametrize(
     ("category", "end1", "end2", "code"),
     [
@@ -428,7 +428,9 @@ def test__relationship_ends_must_fit_the_category(
     assert failure(entity("t"), typedef).code is code
 
 
-@pytest.mark.covers("aurelius_atlas_typesystem.types.EntityType.relationship_attribute", rules=["THY-09", "THY-10"])
+@pytest.mark.covers(
+    "aurelius_atlas_typesystem.entity_type.EntityType.relationship_attribute", rules=["THY-09", "THY-10"]
+)
 def test__a_relationship_adds_attributes_to_its_ends() -> None:
     """New attributes hold the other end's type; a composition's container owns, its child must refer back."""
     registry = resolve(
@@ -581,10 +583,10 @@ def test__tag_propagation_edges_follow_propagate_tags(
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types.EntityType.business_attribute",
-    "aurelius_atlas_typesystem.types.AtlasAttribute.option_set",
-    "aurelius_atlas_typesystem.types.AtlasAttribute.option_int",
-    "aurelius_atlas_typesystem.types.AtlasAttribute.option_string",
+    "aurelius_atlas_typesystem.entity_type.EntityType.business_attribute",
+    "aurelius_atlas_typesystem.attribute.AtlasAttribute.option_set",
+    "aurelius_atlas_typesystem.attribute.AtlasAttribute.option_int",
+    "aurelius_atlas_typesystem.attribute.AtlasAttribute.option_string",
     rules=["THY-12"],
 )
 def test__business_attributes_apply_to_their_entity_types_and_sub_types() -> None:

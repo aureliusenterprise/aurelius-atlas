@@ -1,7 +1,9 @@
 """Java's number conversions on Java values held as DD-040 says (VAL-04 to VAL-08)."""
 
 import math
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
 from aurelius_atlas_typesystem import java
@@ -126,3 +128,32 @@ def test__big_decimals_keep_their_digits() -> None:
         "1.0E+7",
         "-1.0",
     ]
+
+
+@pytest.mark.covers(f"{M}.is_valid_time_zone", rules=["EVL-07"])
+@pytest.mark.parametrize(
+    ("zone_id", "valid"),
+    [
+        *((zone, True) for zone in ("IST", "JST", "UTC", "GMT", "GMT+0", "GMT-0", "GMT+9:00", "GMT+10:30")),
+        *((zone, True) for zone in ("GMT-0400", "GMT+8", "GMT-13", "GMT+13:59", "America/Los_Angeles", "Japan")),
+        *((zone, True) for zone in ("Europe/Berlin", "Europe/Moscow", "Asia/Singapore", "PST", "EST")),
+        *((zone, False) for zone in ("IND", "USD", "UTC+8", "UTC+09:00", "+09:00", "-08:00", "-1", "GMT+10:-30")),
+        *((zone, False) for zone in ("GMT+24:00", "GMT+13:60", "", "america/los_angeles")),
+    ],
+)
+def test__time_zones_are_those_java_knows(zone_id: str, *, valid: bool) -> None:
+    """``TestAtlasClassificationType.testClassificationTimebounderTimeZone``, and ids are case-sensitive."""
+    assert java.is_valid_time_zone(zone_id) is valid
+
+
+@pytest.mark.covers(f"{M}.time_zone", rules=["EVL-07"])
+def test__a_zone_id_resolves_as_java_s_time_zone_does() -> None:
+    """Tz database ids, legacy short ids mapped as Java maps them, and custom offsets; ``GMT`` itself is not custom."""
+    july = datetime(2018, 7, 7, tzinfo=UTC)
+
+    assert java.time_zone("PST") == ZoneInfo("America/Los_Angeles")
+    assert java.time_zone("Japan") == ZoneInfo("Japan")
+    assert july.astimezone(java.time_zone("GMT-0400")).utcoffset() == timedelta(hours=-4)
+    assert july.astimezone(java.time_zone("GMT+130")).utcoffset() == timedelta(hours=1, minutes=30)
+    assert july.astimezone(java.time_zone("GMT+9")).utcoffset() == timedelta(hours=9)
+    assert java.time_zone("abcd") is None
