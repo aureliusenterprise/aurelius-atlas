@@ -43,22 +43,24 @@
             <p class="help is-danger">{{ requiredErrorMessage() }}</p>
         }
     </div>
-    <div class="control">
-        <button
-            type="button"
-            class="button is-info"
-            [class.is-loading]="searchLoading()"
-            [class.is-static]="disabled()"
-            [attr.disabled]="disabled() ? '' : null"
-            [attr.aria-busy]="searchLoading()"
-            [attr.aria-label]="searchLabel()"
-            (click)="activateSearch()"
-        >
-            <span class="icon is-small">
-                <fa-icon [icon]="faSearch"></fa-icon>
-            </span>
-        </button>
-    </div>
+    @if (searchVisible()) {
+        <div class="control">
+            <button
+                type="button"
+                class="button is-info"
+                [class.is-loading]="searchLoading()"
+                [class.is-static]="disabled()"
+                [attr.disabled]="disabled() ? '' : null"
+                [attr.aria-busy]="searchLoading()"
+                [attr.aria-label]="searchLabel()"
+                (click)="activateSearch()"
+            >
+                <span class="icon is-small">
+                    <fa-icon [icon]="faSearch"></fa-icon>
+                </span>
+            </button>
+        </div>
+    }
     <!-- Slot for caller buttons right of the field, as the shell's addons-right did. -->
     <ng-content select="[buttons-right]"></ng-content>
 </div>

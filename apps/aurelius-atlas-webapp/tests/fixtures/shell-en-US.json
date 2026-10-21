@@ -38,9 +38,7 @@
       "telemetry": "Usage telemetry",
       "telemetryHint": "Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.",
       "about": "About",
-      "version": "Version",
-      "server": "Server",
-      "serverUnavailable": "Server version unavailable"
+      "version": "Version"
     }
   }
 }

@@ -4,6 +4,13 @@
  * chain, the border ramp, the modal's scrim recipe and z-band — so the
  * brand's dark ink ramp (DD-068) themes it with no extra work.
  *
+ * The modal tokens carry explicit fallbacks (DD-075): Bulma 1 emits
+ * `--bulma-modal-*` on the `.modal`/`.modal-card-*` selectors, not on
+ * `:root`, so outside a modal they are undefined — bare `var(...)` use
+ * collapsed the head/body padding to 0 and painted the scrim transparent
+ * in the app. The fallbacks are Bulma's own defaults, spelled from the
+ * root-scoped scheme ramp so dark mode keeps them (DD-068).
+ *
  * Motion (DD-074): the panel slides in from the right edge over a fading
  * scrim and plays the reverse on close; the component keeps the layer
  * rendered until the exit animation ends. Reduced motion shortens the
@@ -45,7 +52,13 @@ $aurelius-drawer-motion-duration: 200ms;
 
 .aurelius-drawer-scrim {
     animation: aurelius-drawer-fade-in $aurelius-drawer-motion-duration ease-out;
-    background-color: var(--bulma-modal-background-background-color);
+    // Bulma's modal-background recipe (modal.scss), spelled from the root
+    // scheme ramp — the token itself is .modal-scoped and undefined here
+    // (DD-075).
+    background-color: var(
+        --bulma-modal-background-background-color,
+        hsla(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-invert-l), 0.86)
+    );
     inset: 0;
     position: absolute;
 }
@@ -78,7 +91,9 @@ $aurelius-drawer-motion-duration: 200ms;
     flex-shrink: 0;
     gap: var(--bulma-block-spacing);
     justify-content: space-between;
-    padding: var(--bulma-modal-card-head-padding);
+    // 2rem is Bulma's $modal-card-head-padding — the token is .modal-scoped
+    // (DD-075).
+    padding: var(--bulma-modal-card-head-padding, 2rem);
 }
 
 .aurelius-drawer-title {
@@ -91,7 +106,8 @@ $aurelius-drawer-motion-duration: 200ms;
 
 .aurelius-drawer-body {
     flex-grow: 1;
-    padding: var(--bulma-modal-card-head-padding);
+    // The same 2rem inset below the head's border (DD-075).
+    padding: var(--bulma-modal-card-head-padding, 2rem);
 }
 
 // The exit pass (DD-074): `closing()` adds the class, the panel's

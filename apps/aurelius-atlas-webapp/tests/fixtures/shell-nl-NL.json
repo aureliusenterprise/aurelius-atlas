@@ -38,9 +38,7 @@
       "telemetry": "Gebruikstelemetrie",
       "telemetryHint": "Zet het verzamelen van gebruiks- en prestatiegegevens aan of uit. Als u het aanzet, wordt het na een herladen van de pagina actief.",
       "about": "Over",
-      "version": "Versie",
-      "server": "Server",
-      "serverUnavailable": "Serverversie niet beschikbaar"
+      "version": "Versie"
     }
   }
 }

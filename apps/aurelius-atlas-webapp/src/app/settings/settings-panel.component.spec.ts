@@ -1,15 +1,17 @@
 /**
- * The settings panel (SPL-03, SPL-06..SPL-12): the drawer the header gear
- * opens, carrying the five sections and About. The rules under test are
- * the panel's own — the sections render, the radio drives the theme
- * through the facade, the language section computes locale hrefs, the
- * selects write their owners, About shows the config and server version.
- * The owners' storage behaviour is specced at the owner (their specs
- * above); the panel only drives the facade.
+ * The settings panel (SPL-03, SPL-06..SPL-14): the routed drawer the
+ * header gear opens, carrying the five sections and About. The rules under
+ * test are the panel's own — the sections render, the Appearance select
+ * drives the theme through the facade, the language section computes locale
+ * hrefs, the selects write their owners, About shows the build (SPL-12's
+ * app==server version, DD-077), dismissal navigates the outlet away
+ * (SPL-14, DD-078). The owners' storage behaviour is specced at the owner
+ * (their specs above); the panel only drives the facade.
  */
 import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { AdminService, AtlasSession, AtlasVersion } from "aurelius-atlas-data-access";
+import { Router, provideRouter } from "@angular/router";
+import { AdminService, AtlasSession } from "aurelius-atlas-data-access";
 import { of, throwError } from "rxjs";
 
 import { AppConfig } from "../config";
@@ -33,13 +35,6 @@ const session = {
     _csrfToken: "",
 } as AtlasSession;
 
-const version: AtlasVersion = {
-    Name: "aurelius-atlas",
-    Version: "4.2.0",
-    Revision: "r-deadbeef",
-    Description: "Aurelius Atlas",
-};
-
 function setup() {
     localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
@@ -49,20 +44,16 @@ function setup() {
         imports: [SettingsPanel],
         providers: [
             provideHttpClient(),
+            provideRouter([]),
             { provide: APP_CONFIG, useValue: config },
-            {
-                provide: AdminService,
-                useValue: { getSession: () => of(session), getVersion: () => of(version) },
-            },
+            { provide: AdminService, useValue: { getSession: () => of(session) } },
         ],
     });
 }
 
-/** The rendered, open panel: open + change detection + NgModel settle, DOM returned. */
+/** The rendered, open panel: the routed component opens at construction (SPL-14). */
 async function renderOpen() {
     const fixture = TestBed.createComponent(SettingsPanel);
-    fixture.detectChanges();
-    fixture.componentInstance.open();
     fixture.detectChanges();
     // NgModel writes its model value into the control on a resolved
     // promise (the ExpressionChangedAfterItHasBeenChecked guard), so the
@@ -82,7 +73,7 @@ function pickOption(compiled: HTMLElement, selectIndex: number, optionText: stri
     select.dispatchEvent(new Event("change"));
 }
 
-describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
+describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
     beforeEach(setup);
 
     afterEach(() => {
@@ -90,14 +81,14 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
         document.documentElement.removeAttribute("data-theme");
     });
 
-    it("is closed until the gear opens it (SPL-01)", async () => {
-        const fixture = TestBed.createComponent(SettingsPanel);
-        fixture.detectChanges();
+    it("renders open: the routed panel exists only while open (SPL-14, DD-078)", async () => {
+        const { fixture, compiled } = await renderOpen();
 
-        expect((fixture.nativeElement as HTMLElement).querySelector(".aurelius-drawer")).toBeNull();
+        expect(compiled.querySelector(".aurelius-drawer")).toBeTruthy();
+        expect(fixture.componentInstance.active()).toBe(true);
     });
 
-    it("open() renders the drawer with its five sections and About (SPL-02, SPL-13)", async () => {
+    it("renders the drawer with its five sections and About (SPL-02, SPL-13)", async () => {
         const { compiled } = await renderOpen();
         const text = compiled.textContent ?? "";
 
@@ -115,20 +106,45 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
         }
     });
 
-    it("the Appearance radio drives the theme through the owner (SPL-03, SPL-10)", async () => {
+    it("dismissal flips the drawer and navigates the outlet away (SPL-14, DD-078)", async () => {
         const { fixture, compiled } = await renderOpen();
-        const radios = [...compiled.querySelectorAll<HTMLInputElement>('input[type="radio"][name="settings-theme"]')];
+        const router = TestBed.inject(Router);
+        const navigate = vi.spyOn(router, "navigate").mockResolvedValue(true);
 
-        expect(radios.map((r) => r.checked)).toEqual([true, false, false]); // Auto first (SPL-03)
-
-        radios[2].click(); // Dark
+        compiled.querySelector<HTMLButtonElement>(".aurelius-drawer-head .delete")?.click();
         fixture.detectChanges();
+
+        expect(fixture.componentInstance.active()).toBe(false);
+        // The dismissal clears the `drawer` outlet segment (DD-078).
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
+    });
+
+    it("the Appearance select drives the theme through the owner (SPL-03, SPL-10, DD-076)", async () => {
+        const { fixture, compiled } = await renderOpen();
+        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[0];
+
+        // The ui-lib Select, no search button (searchVisible off); the
+        // rows are the modes, Auto first and selected by default (SPL-03).
+        // The placeholder's &nbsp; normalizes like the ui-lib spec's.
+        expect(compiled.querySelector("aurelius-atlas-ui-select button.button")).toBeNull();
+        expect([...select.options].map((o) => (o.textContent?.trim() ?? "").replace(/\u00a0/g, " "))).toEqual([
+            "-- Please select a value --",
+            "Auto",
+            "Light",
+            "Dark",
+        ]);
+        expect(select.options[select.selectedIndex].textContent?.trim()).toBe("Auto");
+
+        pickOption(compiled, 0, "Dark");
+        fixture.detectChanges();
+        await fixture.whenStable();
 
         expect(TestBed.inject(SettingsService).theme()).toBe("dark");
         expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
 
-        radios[0].click(); // Auto — the attribute goes, not empties (SPL-03)
+        pickOption(compiled, 0, "Auto"); // Auto — the attribute goes, not empties (SPL-03)
         fixture.detectChanges();
+        await fixture.whenStable();
 
         expect(TestBed.inject(SettingsService).theme()).toBeNull();
         expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
@@ -147,7 +163,8 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
 
     it("the time zone select offers Browser default and the server's zones (SPL-07)", async () => {
         const { fixture, compiled } = await renderOpen();
-        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[0];
+        // Index 1: the Appearance select (DD-076) comes first.
+        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
 
         expect([...select.options].map((o) => o.textContent?.trim())).toEqual([
             "Browser default",
@@ -156,7 +173,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
             "Asia/Tokyo",
         ]);
 
-        pickOption(compiled, 0, "Europe/Amsterdam");
+        pickOption(compiled, 1, "Europe/Amsterdam");
         fixture.detectChanges();
 
         expect(TestBed.inject(SettingsService).timezone()).toBe("Europe/Amsterdam");
@@ -164,11 +181,11 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
 
     it("the page-size select writes the owner (SPL-08)", async () => {
         const { fixture, compiled } = await renderOpen();
-        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
+        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[2];
 
         expect([...select.options].map((o) => o.textContent?.trim())).toEqual(["5", "10", "20", "50"]);
 
-        pickOption(compiled, 1, "20");
+        pickOption(compiled, 2, "20");
         fixture.detectChanges();
 
         expect(TestBed.inject(SettingsService).pageSize()).toBe(20);
@@ -187,41 +204,37 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-12)", () => {
         expect(TestBed.inject(SettingsService).telemetry()).toBe(false);
     });
 
-    it("About shows the app and the server version (SPL-12)", async () => {
+    it("About shows the build's one version (SPL-12, DD-077)", async () => {
         const { compiled } = await renderOpen();
         const about = [...compiled.querySelectorAll<HTMLElement>(".settings-section")].at(-1);
         const text = about?.textContent?.replace(/\s+/g, " ").trim();
 
         expect(text).toContain(config.appName);
         expect(text).toContain(config.appVersion);
-        // ADM-01/DV-03: the server's name is "aurelius-atlas".
-        expect(text).toContain("aurelius-atlas 4.2.0");
+        // One release, one number: app and server share it (DD-077) — the
+        // server is not fetched and not listed.
+        expect(text).not.toContain("Server");
     });
 
-    it("About degrades quietly when the server never answers (SPL-12)", async () => {
+    it("the panel survives a session that never answers (SPL-07)", async () => {
         TestBed.resetTestingModule();
         localStorage.clear();
         TestBed.configureTestingModule({
             imports: [SettingsPanel],
             providers: [
                 provideHttpClient(),
+                provideRouter([]),
                 { provide: APP_CONFIG, useValue: config },
-                {
-                    provide: AdminService,
-                    useValue: {
-                        getSession: () => throwError(() => new Error("no session")),
-                        getVersion: () => throwError(() => new Error("no version")),
-                    },
-                },
+                { provide: AdminService, useValue: { getSession: () => throwError(() => new Error("no session")) } },
             ],
         });
 
         const fixture = TestBed.createComponent(SettingsPanel);
-        fixture.detectChanges();
-        expect(() => fixture.componentInstance.open()).not.toThrow();
-        fixture.detectChanges();
+        expect(() => fixture.detectChanges()).not.toThrow();
 
-        const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
-        expect(text).toContain("Server version unavailable");
+        // The zone list stays empty; the select keeps its Browser default.
+        const compiled = fixture.nativeElement as HTMLElement;
+        const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
+        expect([...select.options].map((o) => o.textContent?.trim())).toEqual(["Browser default"]);
     });
 });

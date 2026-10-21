@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faBook, faGear } from "@fortawesome/free-solid-svg-icons";
+import { RouterLink } from "@angular/router";
 import { Header } from "aurelius-atlas-ui";
 import Keycloak from "keycloak-js";
 
-import { SettingsPanel } from "../settings/settings-panel.component";
 import { APP_CONFIG } from "../tokens";
 import { Session } from "./session.service";
 
@@ -12,7 +12,7 @@ import { Session } from "./session.service";
 const DOCUMENTATION_URL = "https://aureliusenterprise.github.io/aurelius-atlas-documentation/";
 
 /**
- * The Aurelius shell header (SHC-02, SHC-03, SHC-05, SPL-01): the 7.2
+ * The Aurelius Atlas navbar chrome (SHC-02, SHC-03, SHC-05, SPL-01): the 7.2
  * ui-lib header with the app name brand, and on the right the Documentation
  * link, the settings gear, and the account dropdown.
  *
@@ -22,9 +22,13 @@ const DOCUMENTATION_URL = "https://aureliusenterprise.github.io/aurelius-atlas-d
  * (SHC-05). The language dropdown (SHC-04) moved into the settings panel
  * (SPL-01, SPL-06): switching language stays a full-page navigation into the
  * locale tree, since the locale builds are separate bundles (DD-039).
+ *
+ * The gear opens the settings panel by navigating the `drawer` aux outlet
+ * (SPL-01, SPL-14, DD-078) — the open state lives in the URL, so a locale
+ * switch's full-page reload keeps the panel open on the same page.
  */
 @Component({
-    imports: [FontAwesomeModule, Header, SettingsPanel],
+    imports: [FontAwesomeModule, Header, RouterLink],
     selector: "aurelius-atlas-webapp-header",
     templateUrl: "./header.component.html",
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -2089,14 +2089,6 @@ The technical data governance model consists of the following types of entities:
         <source>Default table page size</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.settings.pageSize</note>
       </trans-unit>
-      <trans-unit id="shell.settings.server" datatype="html">
-        <source>Server</source>
-        <note priority="1" from="description">Aurelius dictionary key: shell.settings.server</note>
-      </trans-unit>
-      <trans-unit id="shell.settings.serverUnavailable" datatype="html">
-        <source>Server version unavailable</source>
-        <note priority="1" from="description">Aurelius dictionary key: shell.settings.serverUnavailable</note>
-      </trans-unit>
       <trans-unit id="shell.settings.telemetry" datatype="html">
         <source>Usage telemetry</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.settings.telemetry</note>

@@ -8,28 +8,19 @@
   as $localize (BRW-02), so only plain text carries markers here —
   descriptions are comments, never `id|description` suffixes (DD-055).
 -->
-<aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel">
+<aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel" (cancelRequested)="close()">
     <div class="settings-section">
-        <!-- Appearance: the theme radio (SPL-03). -->
-        <p class="menu-label">
-            <!-- Appearance. -->
-            <span i18n="@@shell.settings.appearance">Appearance</span>
-        </p>
-        <div class="field">
-            <div class="control">
-                @for (theme of themes; track theme.mode) {
-                    <label class="radio settings-radio">
-                        <input
-                            type="radio"
-                            name="settings-theme"
-                            [checked]="settings.theme() === theme.mode"
-                            (change)="settings.setTheme(theme.mode)"
-                        />
-                        {{ theme.label }}
-                    </label>
-                }
-            </div>
-        </div>
+        <!-- Appearance: the theme select (SPL-03, DD-076) — the ui-lib
+             Select as a plain dropdown (searchVisible off); its label is
+             the section heading. -->
+        <aurelius-atlas-ui-select
+            [options]="themes"
+            displayField="label"
+            [label]="appearanceLabel"
+            [value]="themeRow"
+            [searchVisible]="false"
+            (valueChange)="setTheme($event)"
+        ></aurelius-atlas-ui-select>
     </div>
 
     <div class="settings-section">
@@ -106,7 +97,9 @@
     </div>
 
     <div class="settings-section">
-        <!-- About: the build and the server (SPL-12, ADM-01). -->
+        <!-- About: the build (SPL-12, DD-077). App and server share one
+             version under the Nx release strategy — one release, one
+             number — so the section shows the app version alone. -->
         <p class="menu-label">
             <!-- About. -->
             <span i18n="@@shell.settings.about">About</span>
@@ -116,11 +109,6 @@
             <!-- Version. -->
             <span class="has-text-grey-light" i18n="@@shell.settings.version">Version</span>
             {{ config.appVersion }}
-        </p>
-        <p>
-            <!-- Server. -->
-            <span class="has-text-grey-light" i18n="@@shell.settings.server">Server</span>
-            {{ serverVersion() ?? serverUnavailable }}
         </p>
     </div>
 </aurelius-atlas-ui-drawer>

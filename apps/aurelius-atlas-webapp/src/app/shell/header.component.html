@@ -32,20 +32,21 @@
             </div>
         </div>
 
-        <!-- Settings gear (SPL-01): replaces the language dropdown, whose
-             control moved into the panel (SPL-06). The gear opens the panel;
-             it is a native button, so Enter/Space are free. -->
-        <button
-            type="button"
+        <!-- Settings gear (SPL-01, SPL-14, DD-078): opens the panel by
+             navigating the `drawer` aux outlet — the open state rides the
+             URL, so the locale switch's reload keeps it. While the panel
+             is open the link targets the URL it is on: the router
+             cancels that same-URL navigation, so the gear is a no-op. -->
+        <a
             class="navbar-item"
             i18n-aria-label="@@shell.header.settings"
             aria-label="Settings"
-            (click)="settingsPanel.open()"
+            [routerLink]="[{ outlets: { drawer: ['settings'] } }]"
         >
             <span class="icon">
                 <fa-icon aria-hidden="true" [icon]="faGear"></fa-icon>
             </span>
-        </button>
+        </a>
 
         <!-- Account dropdown (SHC-05): welcome / Account-security / Logout. -->
         <div class="navbar-item has-dropdown is-hoverable">
@@ -78,7 +79,3 @@
         </div>
     </ng-container>
 </aurelius-atlas-ui-header>
-
-<!-- The settings panel (SPL-01): the gear opens it. The drawer's layer is
-     fixed-position, so it sits outside the navbar's stacking context. -->
-<aurelius-atlas-webapp-settings-panel #settingsPanel />

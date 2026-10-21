@@ -1,7 +1,6 @@
 import { TestBed } from "@angular/core/testing";
+import { provideRouter } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { AdminService } from "aurelius-atlas-data-access";
-import { NEVER } from "rxjs";
 import Keycloak from "keycloak-js";
 
 import { AppConfig } from "../config";
@@ -26,12 +25,10 @@ function setup(identity = "aurelius-writer") {
     TestBed.configureTestingModule({
         imports: [FontAwesomeModule, ShellHeader],
         providers: [
+            provideRouter([]),
             { provide: APP_CONFIG, useValue: config },
             { provide: Keycloak, useValue: { logout } },
             { provide: Session, useValue: { identity: () => identity } },
-            // The settings panel the header carries loads timezones/version
-            // lazily on open — no open happens in these tests, the stub stays silent.
-            { provide: AdminService, useValue: { getSession: () => NEVER, getVersion: () => NEVER } },
         ],
     });
 
@@ -79,23 +76,17 @@ describe("ShellHeader", () => {
         expect(normalize(link?.textContent)).toBe("Documentation");
     });
 
-    it("opens the settings panel from the gear (SPL-01)", () => {
-        // The gear replaces the language dropdown in navbar-end; the panel
-        // is the header's own element, closed until the gear opens it.
-        const fixture = TestBed.createComponent(ShellHeader);
-        fixture.detectChanges();
-        const compiled = fixture.nativeElement as HTMLElement;
-        const gear = compiled.querySelector<HTMLButtonElement>('button.navbar-item[aria-label="Settings"]');
-        const panel = compiled.querySelector("aurelius-atlas-webapp-settings-panel");
+    it("opens the settings panel from the gear (SPL-01, SPL-14, DD-078)", () => {
+        // The gear replaces the language dropdown in navbar-end and opens
+        // the panel by navigating the `drawer` aux outlet — the panel is a
+        // routed component, no longer the header's child (SPL-14).
+        const compiled = render();
+        const gear = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Settings"]');
 
         expect(gear).toBeTruthy();
-        expect(panel).toBeTruthy();
-        expect(compiled.querySelector(".aurelius-drawer")).toBeNull();
-
-        gear?.click();
-        fixture.detectChanges();
-
-        expect(compiled.querySelector(".aurelius-drawer")).toBeTruthy();
+        // RouterLink serialises the aux-outlet target into the href.
+        expect(gear?.getAttribute("href")).toBe("/(drawer:settings)");
+        expect(compiled.querySelector("aurelius-atlas-webapp-settings-panel")).toBeNull();
     });
 
     it("no longer carries the language dropdown (SPL-01, SPL-06)", () => {

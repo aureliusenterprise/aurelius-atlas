@@ -11,6 +11,11 @@ import { Select } from "./select.component";
 const meta: Meta<Select> = {
     component: Select,
     title: "Select",
+    // The shared template binds searchVisible; on by default, as the
+    // component's input and the legacy modal opener are (DD-076).
+    args: {
+        searchVisible: true,
+    },
 };
 export default meta;
 
@@ -32,6 +37,7 @@ const template = `
     [invalid]="invalid"
     [disabled]="disabled"
     [searchLoading]="searchLoading"
+    [searchVisible]="searchVisible"
     (searchRequested)="onSearch()"
 ></aurelius-atlas-ui-select>
 `;
@@ -132,6 +138,28 @@ export const SearchLoading: Story = {
         await expect(search).toHaveAttribute("aria-busy", "true");
         await userEvent.click(search).catch(() => undefined);
         await expect(searches).toBe(0);
+    },
+    render: host,
+};
+
+/**
+ * The plain dropdown (`searchVisible` off, DD-076): the settings panel's
+ * theme picker form — a labelled select with no search button beside it.
+ */
+export const NoSearch: Story = {
+    args: {
+        options: rows,
+        displayField: "name",
+        label: "Entity type",
+        searchVisible: false,
+    },
+    play: async ({ canvas }) => {
+        const control = canvas.getByLabelText("Entity type");
+        await expect(control).toBeVisible();
+        await expect(canvas.queryByRole("button", { name: "Search" })).toBeNull();
+
+        await userEvent.selectOptions(control, "Domain");
+        await expect(control).toHaveDisplayValue("Domain");
     },
     render: host,
 };
