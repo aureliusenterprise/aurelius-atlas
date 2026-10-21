@@ -63,3 +63,10 @@
 .meta {
     color: #b5b5b5;
 }
+
+/* The dark scheme (DD-068): the legacy pure-blue technical ink lands at
+   ~2:1 on the dark surface, so the dark ramp lifts it to Bulma's own
+   dark-adapted lightness (75%, same hue) — the other three read 8:1+. */
+:host-context([data-theme="dark"]) .technical {
+    color: hsl(240, 100%, 75%);
+}

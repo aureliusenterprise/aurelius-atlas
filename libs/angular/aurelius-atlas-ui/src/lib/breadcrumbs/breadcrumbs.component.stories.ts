@@ -77,3 +77,28 @@ export const Empty: Story = {
     },
     render: host,
 };
+
+/**
+ * The dark scheme (DD-068): the trail on the dark surface. The legacy
+ * pure-blue technical ink lifts to Bulma's dark-adapted lightness; the
+ * business orange is dark-safe and stays.
+ */
+export const OnDark: Story = {
+    args: {
+        items,
+        activeGuid: "g2",
+    },
+    globals: { theme: "dark" },
+    play: async ({ canvasElement }) => {
+        const iconColor = (selector: string) => {
+            const el = canvasElement.querySelector<HTMLElement>(selector);
+            if (!el) throw new Error(`${selector} is missing`);
+            return getComputedStyle(el).color;
+        };
+        // The icon classes ride the fa-icon (the component's template),
+        // coloured by the SCSS .business/.technical rules.
+        await expect(iconColor(".icon .business")).toBe("rgb(255, 165, 0)");
+        await expect(iconColor(".icon .technical")).toBe("rgb(128, 128, 255)");
+    },
+    render: host,
+};

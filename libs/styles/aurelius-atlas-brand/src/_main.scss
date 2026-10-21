@@ -109,6 +109,69 @@
 }
 
 /*
+ * The dark ink ramp (DD-068). The :root block above out-cascades Bulma's
+ * own dark scheme blocks (equal specificity, later source), so dark mode
+ * inherited the light ink — grey text on dark surfaces. Emitted after
+ * :root, this ramp re-pins the ink chain to Bulma's dark-scheme
+ * lightnesses (text 71%, strong 93%, weak 53%) over the DD-062 neutral
+ * hue — #b5b5b5 / #ededed / #878787, ~9:1 on the 9% surface — and hands
+ * the body ink/background back to the scheme tokens. Emitted on both of
+ * Bulma's dark hosts (its themes/_index.scss pattern): the explicit
+ * `[data-theme=dark]` and the OS-dark `:root:not([data-theme])`.
+ *
+ * The chrome bands stay pinned (SHM-01: "the brand colours do not follow
+ * the scheme"): the navbar's #f5f5f5/#4a4a4a and the footer's blue/white
+ * read the same in either scheme, and the light navbar over a dark page is
+ * Bulma's own `.navbar.is-light` idiom. The accent values stay pinned too
+ * (SHM-04); only the text-role link follows Bulma's dark adaptation.
+ */
+@mixin dark-ink {
+    --bulma-text-l: 71%;
+    --bulma-text-base: #b5b5b5;
+    --bulma-text-rgb: 181, 181, 181;
+    --bulma-text-strong-l: 93%;
+    --bulma-text-strong-base: #ededed;
+    --bulma-text-weak-l: 53%;
+    --bulma-text-weak-base: #878787;
+    --bulma-body-color: var(--bulma-text);
+    --bulma-body-background-color: var(--bulma-scheme-main);
+
+    // The link lightness: #0073dd inks ~3.9:1 on the 9% surface; Bulma's
+    // own dark adaptation (link-on-scheme-l, 73%) lands ~7:1 on the same
+    // hue (DD-068).
+    --bulma-link-l: 73%;
+}
+
+// The `.content` ink the brand hard-pins for the legacy ramp (DD-062)
+// follows the scheme the same way (DD-068).
+@mixin dark-content-ink {
+    color: var(--bulma-text);
+
+    --bulma-content-heading-color: var(--bulma-text-strong);
+}
+
+[data-theme="dark"] {
+    @include dark-ink;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        @include dark-ink;
+    }
+}
+
+// The 0,2,0 selectors beat the plain `.content` rule above.
+[data-theme="dark"] .content {
+    @include dark-content-ink;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .content {
+        @include dark-content-ink;
+    }
+}
+
+/*
  * The chrome tokens Bulma 1 scopes on its components (SHM-04): `.navbar`
  * and `.footer` redefine their own background/ink tokens, so the Aurelius
  * values land on the same selectors.

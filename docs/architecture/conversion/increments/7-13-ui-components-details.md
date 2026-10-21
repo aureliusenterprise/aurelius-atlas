@@ -2,7 +2,8 @@
 
 - **Status:** in progress
 - **Pull request:** [#104](https://github.com/aureliusenterprise/aurelius-atlas/pull/104)
-- **Records:** DD-066, DD-067; relies on ADR 053, DD-046, DD-047, DD-053
+- **Records:** DD-066, DD-067, DD-068 (the dark ink ramp); relies on ADR 053,
+  DD-046, DD-047, DD-053
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
 slice inherits, and of the design-system track opened by [7.2](./7-2-design-system.md),

@@ -179,3 +179,57 @@ export const SearchResult: Story = {
 `,
     }),
 };
+
+/**
+ * The same composition on the dark scheme (DD-068): the brand's dark ink
+ * ramp re-pins the text chain to Bulma's dark lightnesses and lifts the
+ * legacy pure-blue technical ink, so the card stays legible on the dark
+ * surface.
+ */
+export const OnDark: Story = {
+    args: {
+        guid: "g2",
+        name: "hourly data",
+        typeName: "m4i_dataset",
+        typeAlias: "Data Entity",
+        typeIcon: faTable,
+        typeIconClass: "technical",
+        showQuality: false,
+    },
+    globals: { theme: "dark" },
+    play: async ({ canvasElement }) => {
+        const color = (selector: string) => {
+            const el = canvasElement.querySelector<HTMLElement>(selector);
+            if (!el) throw new Error(`${selector} is missing`);
+            return getComputedStyle(el).color;
+        };
+        // Bulma's dark surface, the DD-068 ink: title #ededed, body #b5b5b5.
+        await expect(canvasElement.querySelector(".card")).toHaveStyle({
+            "background-color": "rgb(20, 22, 26)",
+        });
+        await expect(color(".title.is-4 a")).toBe("rgb(237, 237, 237)");
+        await expect(color("[card-content] p")).toBe("rgb(181, 181, 181)");
+        // The legacy pure blue lifts to Bulma's dark-adapted lightness.
+        await expect(color(".media-right .icon.technical")).toBe("rgb(128, 128, 255)");
+    },
+    render: (args) => ({
+        moduleMetadata: { imports: [FontAwesomeModule] },
+        props: { ...args, onClick: (guid: string) => clicked.push(guid) },
+        template: `
+<aurelius-atlas-ui-entity-card
+    [guid]="guid"
+    [name]="name"
+    [typeName]="typeName"
+    [typeAlias]="typeAlias"
+    [typeIcon]="typeIcon"
+    [typeIconClass]="typeIconClass"
+    [showQuality]="showQuality"
+    (entityClicked)="onClick($event)"
+>
+    <div card-content>
+        <p class="block">This data entity yields the hourly statistics.</p>
+    </div>
+</aurelius-atlas-ui-entity-card>
+`,
+    }),
+};
