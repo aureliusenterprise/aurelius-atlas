@@ -3648,6 +3648,8 @@
       
         
       
+        
+      
     
     
     
@@ -4094,6 +4096,33 @@
     
   
   2.1b Value types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-1-entity-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.1c Entity validation
 
     
   </span>
@@ -6138,6 +6167,14 @@ Atlas clients expect when it lands).</p>
 <td>The value is invalid for <code>date</code></td>
 <td>Python's <code>datetime</code> holds years 1 to 9999; such dates do not occur in metadata</td>
 <td>2.1b</td>
+</tr>
+<tr>
+<td>DV-13</td>
+<td>Types</td>
+<td>An entity type given a map without relationship attributes fails with <code>NullPointerException</code>, an internal error</td>
+<td>The map is checked as one without relationship attribute values</td>
+<td>The failure is an unchecked exception in <code>AtlasEntityType.validateRelationshipAttributes</code>, not a decision</td>
+<td>2.1c</td>
 </tr>
 </tbody>
 </table>

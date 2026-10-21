@@ -8303,7 +8303,14 @@ Read with the defaults of Java's no-argument constructor, whose `init()` assigns
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -9193,7 +9200,14 @@ Bases: `AtlasModel`
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -9896,7 +9910,14 @@ The body of a single-entity read or write: `entity` and `referredEntities`.
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -10617,7 +10638,14 @@ The body of a bulk read or write: `entities` and `referredEntities`.
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -11933,7 +11961,14 @@ An instance of a classification type attached to an entity.
       "anyOf": [
         {
           "items": {
-            "$ref": "#/$defs/TimeBoundary"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TimeBoundary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "type": "array"
         },
@@ -11969,7 +12004,7 @@ Fields:
 - `entity_guid` (`str | None`)
 - `entity_status` (`EntityStatus | None`)
 - `propagate` (`bool | None`)
-- `validity_periods` (`list[TimeBoundary] | None`)
+- `validity_periods` (`list[TimeBoundary | None] | None`)
 - `remove_propagations_on_entity_delete` (`bool | None`)
 
 #### attributes
@@ -12024,7 +12059,7 @@ type_name: str | None = None
 #### validity\_periods
 
 ```
-validity_periods: list[TimeBoundary] | None = None
+validity_periods: list[TimeBoundary | None] | None = None
 ```
 
 #### add\_validity\_period
@@ -12302,7 +12337,14 @@ An entity's type, GUID, status, display text, classifications, meanings and labe
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -12928,7 +12970,14 @@ Bases: `AtlasModel`
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -13510,7 +13559,14 @@ The headers of the created, updated, deleted and purged entities, and the GUIDs 
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/TimeBoundary"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },

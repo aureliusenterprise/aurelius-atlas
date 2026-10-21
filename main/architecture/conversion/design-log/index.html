@@ -4064,6 +4064,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-042-a-validity-period-without-a-time-zone-is-in-utc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-042. A validity period without a time zone is in UTC
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4143,6 +4154,8 @@
       
         
           
+        
+      
         
       
         
@@ -4621,6 +4634,33 @@
     
   
   2.1b Value types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-1-entity-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.1c Entity validation
 
     
   </span>
@@ -6910,6 +6950,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-042-a-validity-period-without-a-time-zone-is-in-utc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-042. A validity period without a time zone is in UTC
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7325,6 +7376,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-041-the-type-system-is-one-module-per-java-type-class-too">DD-041</a></td>
 <td>The type system is one module per Java type class too</td>
+<td>2.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-042-a-validity-period-without-a-time-zone-is-in-utc">DD-042</a></td>
+<td>A validity period without a time zone is in UTC</td>
 <td>2.1</td>
 <td>Proposed</td>
 </tr>
@@ -8086,6 +8143,23 @@ thousand lines. A reader who knows Atlas's <code>AtlasArrayType</code> finds <co
 <p><strong>Alternatives.</strong> Adding the value side to <code>types.py</code>: one module far beyond what anyone reads whole.</p>
 <p><strong>Consequences.</strong> <code>from aurelius_atlas_typesystem.types import ArrayType</code> keeps working; new code imports
 from the class's own module.</p>
+<h3 id="dd-042-a-validity-period-without-a-time-zone-is-in-utc">DD-042. A validity period without a time zone is in UTC<a class="headerlink" href="#dd-042-a-validity-period-without-a-time-zone-is-in-utc" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.1</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> A classification's validity period without a <code>timeZone</code> is read in UTC, where Atlas reads it in
+its JVM's default time zone (<code>TimeZone.getDefault()</code>). Java's time zone ids are matched with Python's tz
+database (<code>zoneinfo</code>), Java's legacy three-letter ids (<code>ZoneId.SHORT_IDS</code>, such as <code>PST</code> and <code>IST</code>) and its
+custom <code>GMT±h[h][[:]mm]</code> offsets.</p>
+<p><strong>Reason.</strong> Atlas's default zone is whatever its host is set to; the server image runs in UTC, so UTC is the
+same answer for a container deployment, and it does not change with where the code happens to run. The tz
+database holds every zone Java's <code>TimeZone</code> resolves except the legacy short ids, which Java maps to tz ids.</p>
+<p><strong>Alternatives.</strong> The local zone of the Python process: makes validation depend on the developer's machine.
+A setting for the default zone: nothing asks for one yet.</p>
+<p><strong>Consequences.</strong> A validity period of <code>2026/01/01 00:00:00</code> without a zone means midnight UTC. The time zone
+list must stay in step with Java's; the tz database of the image (the <code>tzdata</code> package) supplies it.</p>
 
 
 

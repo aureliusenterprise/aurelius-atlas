@@ -1,6 +1,6 @@
 # aurelius-atlas-typesystem
 
-The Atlas type system for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)): the type registry and the types that type definitions resolve to. Since increment [1.2](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-2-type-registry/index.md>): the built-in, array, map, enum and struct types, attribute types and constraints. Since [1.3](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-3-type-hierarchies/index.md>): entity and classification hierarchies, relationship and business metadata types. Since [2.1b](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-value-types/index.md>): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values.
+The Atlas type system for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)): the type registry and the types that type definitions resolve to. Since increment [1.2](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-2-type-registry/index.md>): the built-in, array, map, enum and struct types, attribute types and constraints. Since [1.3](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-3-type-hierarchies/index.md>): entity and classification hierarchies, relationship and business metadata types. Since [2.1b](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-value-types/index.md>): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values. Since [2.1c](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-entity-validation/index.md>): the same for structs, classifications (with their validity periods) and entities (with their relationship attributes).
 
 ```
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -13,6 +13,7 @@ registry.entity_type("hive_table")
 int_type = registry.get_type("int")
 int_type.get_normalized_value("42")  # 42; Java's Integer.valueOf rules, None when invalid
 registry.get_type("array<int>").validate_value(["x"], "a", messages := [])  # messages: a[0]=x: invalid value…
+registry.entity_type("hive_table").validate_value(entity, "entity", messages)  # e.g. mandatory attribute missing
 ```
 
 ## Installation
@@ -723,15 +724,24 @@ Change the registry: commit when the block ends normally, discard when it raises
 
 ## aurelius\_atlas\_typesystem.types
 
-Atlas types: what a type definition becomes once its references are resolved (DD-025).
+Atlas types: the classes a type definition resolves to, one module per Java class (DD-025, DD-041).
 
-Ported from `org.apache.atlas.type` of Apache Atlas 2.4.0: the struct, classification, entity, relationship and business metadata types, the definition side only; their value side and their own modules arrive in 2.1c (DD-041). `AtlasType` and the built-in, enum, array and map types have their own modules. A type resolves against a registry in three phases, as Java's `resolveReferences`, `resolveReferencesPhase2` and `resolveReferencesPhase3`.
+This module re-exports them and makes the unresolved type of a definition (`type_of`).
 
 Classes:
 
+- **`ArrayType`** –
+
+  `array<T>` with its cardinality and value counts (`AtlasArrayType`, TRG-02).
 - **`AtlasAttribute`** –
 
   A resolved attribute of a struct-like type (`AtlasStructType.AtlasAttribute`).
+- **`AtlasType`** –
+
+  A type: its name, category and service type, and how it checks, normalises and compares values.
+- **`BuiltInType`** –
+
+  A primitive type such as `string` or `int`, of the `atlas_core` service type (TRG-01).
 - **`BusinessAttribute`** –
 
   A business metadata attribute and the entity types it applies to (`AtlasBusinessAttribute`, THY-12).
@@ -747,6 +757,15 @@ Classes:
 - **`EntityType`** –
 
   An entity type: its hierarchy, relationship and business attributes (THY-01 to THY-06, THY-10 to THY-12).
+- **`EnumType`** –
+
+  An enum type: its elements by value and ordinal, and its default (`AtlasEnumType`, TRG-14).
+- **`MapType`** –
+
+  `map<K,V>` (`AtlasMapType`, TRG-02).
+- **`ObjectIdType`** –
+
+  `objectid`: a reference to an entity of `object_type`, by GUID or by unique attributes.
 - **`RelationshipType`** –
 
   A relationship type: its ends, label and the attributes it adds to them (THY-08 to THY-10).
@@ -838,6 +857,240 @@ OPTION_APPEND_RELATIONSHIPS_ON_PARTIAL_UPDATE = 'appendRelationshipsOnPartialUpd
 ```
 OPTION_SCHEMA_ATTRIBUTES = 'schemaAttributes'
 ```
+
+### \_\_all\_\_
+
+```
+__all__ = [
+    "CLASSIFICATION_ROOT",
+    "CLASSIFICATION_ROOT_NAME",
+    "ENTITY_HEADER_ATTRIBUTES",
+    "ENTITY_ROOT",
+    "ENTITY_ROOT_NAME",
+    "INTERNAL_TYPE_NAME",
+    "OPTION_APPEND_RELATIONSHIPS_ON_PARTIAL_UPDATE",
+    "OPTION_SCHEMA_ATTRIBUTES",
+    "ArrayType",
+    "AtlasAttribute",
+    "AtlasType",
+    "BuiltInType",
+    "BusinessAttribute",
+    "BusinessMetadataType",
+    "ClassificationType",
+    "EdgeDirection",
+    "EntityType",
+    "EnumType",
+    "MapType",
+    "ObjectIdType",
+    "RelationshipType",
+    "StructType",
+    "entity_types_and_all_sub_types",
+    "qualified_attribute_name",
+    "referenced_entity_type",
+    "type_of",
+    "validate_relationship_def",
+]
+```
+
+### ArrayType
+
+```
+ArrayType(
+    element_type_name: str,
+    *,
+    element_type: AtlasType | None = None,
+    min_count: int = COUNT_NOT_SET,
+    max_count: int = COUNT_NOT_SET,
+    cardinality: Cardinality = LIST,
+)
+```
+
+Bases: `AtlasType`
+
+`array<T>` with its cardinality and value counts (`AtlasArrayType`, TRG-02).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  A `SET` as sets, anything else as lists, each element compared by the element type (VAL-12).
+- **`create_default_value`** –
+
+  The element's default, `minCount` times when that is set, else once (VAL-12).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  A string parsed as JSON, then each element normalised, nulls kept; None for a wrong count or element.
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, with the elements' `getNormalizedValueForUpdate`.
+- **`is_valid_value`** –
+
+  Null, or a list with a valid count of valid elements; a string is not (VAL-12).
+- **`is_valid_value_for_update`** –
+
+  As `is_valid_value`, with the elements' `isValidValueForUpdate`.
+- **`type_for_attribute`** –
+
+  This array, or a new one over the element's attribute type when that differs (TRG-11).
+- **`validate_value`** –
+
+  Report a wrong count, then validate each element as `<name>[<i>]` (VAL-12).
+- **`validate_value_for_update`** –
+
+  As `validate_value`, with the elements' `validateValueForUpdate`.
+
+Attributes:
+
+- **`cardinality`** –
+- **`category`** –
+- **`element_type`** –
+- **`element_type_name`** –
+- **`max_count`** –
+- **`min_count`** –
+- **`service_type`** –
+- **`type_name`** –
+
+#### cardinality
+
+```
+cardinality = cardinality
+```
+
+#### category
+
+```
+category = category
+```
+
+#### element\_type
+
+```
+element_type = element_type
+```
+
+#### element\_type\_name
+
+```
+element_type_name = element_type_name
+```
+
+#### max\_count
+
+```
+max_count = max_count
+```
+
+#### min\_count
+
+```
+min_count = min_count
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+A `SET` as sets, anything else as lists, each element compared by the element type (VAL-12).
+
+#### create\_default\_value
+
+```
+create_default_value() -> list[Any]
+```
+
+The element's default, `minCount` times when that is set, else once (VAL-12).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> list[Any] | None
+```
+
+A string parsed as JSON, then each element normalised, nulls kept; None for a wrong count or element.
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> list[Any] | None
+```
+
+As `get_normalized_value`, with the elements' `getNormalizedValueForUpdate`.
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Null, or a list with a valid count of valid elements; a string is not (VAL-12).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+As `is_valid_value`, with the elements' `isValidValueForUpdate`.
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+This array, or a new one over the element's attribute type when that differs (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Report a wrong count, then validate each element as `<name>[<i>]` (VAL-12).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+As `validate_value`, with the elements' `validateValueForUpdate`.
 
 ### AtlasAttribute
 
@@ -990,6 +1243,322 @@ option_string(name: str) -> str | None
 ```
 
 Option `name`, or None when blank (`getOptionString`).
+
+### AtlasType
+
+```
+AtlasType(type_name: str | None, category: TypeCategory, service_type: str | None)
+```
+
+A type: its name, category and service type, and how it checks, normalises and compares values.
+
+The value methods are Java's, in snake\_case: `create_default_value` is `createDefaultValue`, `is_valid_value` is `isValidValue` and so on. A value is a Java value as DD-040 holds it.
+
+Methods:
+
+- **`are_equal_values`** –
+
+  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+- **`create_default_value`** –
+
+  The value an attribute of this type gets by default (`createDefaultValue()`).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+- **`get_normalized_value_for_update`** –
+
+  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+- **`is_valid_value`** –
+
+  Whether `value` is a value of this type (`isValidValue`).
+- **`is_valid_value_for_update`** –
+
+  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+- **`validate_value_for_update`** –
+
+  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+
+Attributes:
+
+- **`category`** –
+- **`service_type`** –
+- **`type_name`** –
+
+#### category
+
+```
+category = category
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+
+#### create\_default\_value
+
+```
+create_default_value() -> Any
+```
+
+The value an attribute of this type gets by default (`createDefaultValue()`).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> Any
+```
+
+`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Whether `value` is a value of this type (`isValidValue`).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+
+### BuiltInType
+
+```
+BuiltInType(type_name: str)
+```
+
+Bases: `AtlasType`
+
+A primitive type such as `string` or `int`, of the `atlas_core` service type (TRG-01).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+- **`create_default_value`** –
+
+  The value an attribute of this type gets by default (`createDefaultValue()`).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+- **`get_normalized_value_for_update`** –
+
+  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+- **`is_valid_value`** –
+
+  Whether `value` is a value of this type (`isValidValue`).
+- **`is_valid_value_for_update`** –
+
+  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+- **`validate_value_for_update`** –
+
+  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+
+Attributes:
+
+- **`category`** –
+- **`service_type`** –
+- **`type_name`** –
+
+#### category
+
+```
+category = category
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+
+#### create\_default\_value
+
+```
+create_default_value() -> Any
+```
+
+The value an attribute of this type gets by default (`createDefaultValue()`).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> Any
+```
+
+`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Whether `value` is a value of this type (`isValidValue`).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
 
 ### BusinessAttribute
 
@@ -1179,7 +1748,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+  Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -1188,34 +1757,43 @@ Methods:
   The type of the attribute named `name`, or None (TRG-13).
 - **`create_default_value`** –
 
-  The value an attribute of this type gets by default (`createDefaultValue()`).
+  Null: business metadata has no instance (EVL-10).
 - **`create_default_value_of`** –
 
-  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 - **`create_optional_default_value`** –
 
   The default of an optional attribute; the default, unless a type says otherwise.
 - **`get_normalized_value`** –
 
-  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+  Null: business metadata has no instance (EVL-10).
 - **`get_normalized_value_for_update`** –
 
-  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_valid_value`** –
 
-  Whether `value` is a value of this type (`isValidValue`).
+  Always: business metadata has no instance to check (EVL-10).
 - **`is_valid_value_for_update`** –
 
-  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+  Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+- **`normalize_attribute_values`** –
+
+  Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+- **`populate_default_values`** –
+
+  Set every mandatory own attribute to its default, replacing its value (EVL-05).
 - **`type_for_attribute`** –
 
   The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
 - **`validate_value`** –
 
-  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+  Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
 - **`validate_value_for_update`** –
 
-  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+  Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
 
 Attributes:
 
@@ -1275,7 +1853,13 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
+
+Raises:
+
+- `TypeError` –
+
+  A string, on which Java's `getStructFromValue` fails with a `ClassCastException`.
 
 #### attribute
 
@@ -1296,10 +1880,10 @@ The type of the attribute named `name`, or None (TRG-13).
 #### create\_default\_value
 
 ```
-create_default_value() -> Any
+create_default_value() -> None
 ```
 
-The value an attribute of this type gets by default (`createDefaultValue()`).
+Null: business metadata has no instance (EVL-10).
 
 #### create\_default\_value\_of
 
@@ -1307,7 +1891,7 @@ The value an attribute of this type gets by default (`createDefaultValue()`).
 create_default_value_of(value: object) -> Any
 ```
 
-`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 
 #### create\_optional\_default\_value
 
@@ -1320,10 +1904,10 @@ The default of an optional attribute; the default, unless a type says otherwise.
 #### get\_normalized\_value
 
 ```
-get_normalized_value(value: object) -> Any
+get_normalized_value(value: object) -> None
 ```
 
-`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+Null: business metadata has no instance (EVL-10).
 
 #### get\_normalized\_value\_for\_update
 
@@ -1331,7 +1915,7 @@ get_normalized_value(value: object) -> Any
 get_normalized_value_for_update(value: object) -> Any
 ```
 
-`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+As `get_normalized_value`, checked and normalised for update (EVL-03).
 
 #### is\_valid\_value
 
@@ -1339,7 +1923,7 @@ get_normalized_value_for_update(value: object) -> Any
 is_valid_value(value: object) -> bool
 ```
 
-Whether `value` is a value of this type (`isValidValue`).
+Always: business metadata has no instance to check (EVL-10).
 
 #### is\_valid\_value\_for\_update
 
@@ -1347,7 +1931,33 @@ Whether `value` is a value of this type (`isValidValue`).
 is_valid_value_for_update(value: object) -> bool
 ```
 
-`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+
+A map is normalised at its top level, as Java's `normalizeAttributeValues(Map)` does.
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Set every mandatory own attribute to its default, replacing its value (EVL-05).
 
 #### type\_for\_attribute
 
@@ -1363,7 +1973,7 @@ The type an attribute of this type holds; an entity type is held as an `objectid
 validate_value(value: object, name: str, messages: list[str]) -> bool
 ```
 
-Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
 
 #### validate\_value\_for\_update
 
@@ -1371,7 +1981,7 @@ Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <t
 validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
 ```
 
-`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
 
 ### ClassificationType
 
@@ -1379,7 +1989,7 @@ validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
 ClassificationType(classification_def: AtlasClassificationDef)
 ```
 
-Bases: `_HierarchyType`
+Bases: `HierarchyType`
 
 A classification type: its hierarchy and the entity types it applies to (THY-01 to THY-05, THY-07).
 
@@ -1387,7 +1997,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+  Equal for each super type and for this type (EVL-06).
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -1399,19 +2009,19 @@ Methods:
   Whether the classification may be applied to `entity_type` (THY-07).
 - **`create_default_value`** –
 
-  The value an attribute of this type gets by default (`createDefaultValue()`).
+  A classification of this type with the defaults of its own and inherited mandatory attributes.
 - **`create_default_value_of`** –
 
-  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 - **`create_optional_default_value`** –
 
   The default of an optional attribute; the default, unless a type says otherwise.
 - **`get_normalized_value`** –
 
-  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 - **`get_normalized_value_for_update`** –
 
-  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_sub_type_of`** –
 
   Whether `other` is among this type's super types, at any depth (THY-04).
@@ -1420,19 +2030,28 @@ Methods:
   Whether `other` is among this type's sub types, at any depth (THY-04).
 - **`is_valid_value`** –
 
-  Whether `value` is a value of this type (`isValidValue`).
+  Valid for each super type, with valid validity periods, then for its own attributes (EVL-07).
 - **`is_valid_value_for_update`** –
 
-  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+  As `is_valid_value`, for update (EVL-03, EVL-07).
+- **`normalize_attribute_values`** –
+
+  Normalise for each super type, then this type's own attributes (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  As `normalize_attribute_values`, for update (EVL-03).
+- **`populate_default_values`** –
+
+  Defaults for each super type's mandatory attributes, then this type's (EVL-05).
 - **`type_for_attribute`** –
 
   The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
 - **`validate_value`** –
 
-  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+  Validate for each super type, the validity periods, then the own attributes (EVL-07).
 - **`validate_value_for_update`** –
 
-  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+  As `validate_value`, for update (EVL-03, EVL-07).
 
 Attributes:
 
@@ -1445,7 +2064,7 @@ Attributes:
 - **`service_type`** –
 - **`struct_def`** –
 - **`sub_types`** (`list[str]`) –
-- **`super_types`** (`list[_HierarchyType]`) –
+- **`super_types`** (`list[HierarchyType]`) –
 - **`type_and_all_sub_types`** (`list[str]`) –
 - **`type_and_all_super_types`** (`list[str]`) –
 - **`type_name`** –
@@ -1508,7 +2127,7 @@ sub_types: list[str] = []
 #### super\_types
 
 ```
-super_types: list[_HierarchyType] = []
+super_types: list[HierarchyType] = []
 ```
 
 #### type\_and\_all\_sub\_types
@@ -1541,7 +2160,7 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+Equal for each super type and for this type (EVL-06).
 
 #### attribute
 
@@ -1570,10 +2189,10 @@ Whether the classification may be applied to `entity_type` (THY-07).
 #### create\_default\_value
 
 ```
-create_default_value() -> Any
+create_default_value() -> AtlasClassification
 ```
 
-The value an attribute of this type gets by default (`createDefaultValue()`).
+A classification of this type with the defaults of its own and inherited mandatory attributes.
 
 #### create\_default\_value\_of
 
@@ -1581,7 +2200,7 @@ The value an attribute of this type gets by default (`createDefaultValue()`).
 create_default_value_of(value: object) -> Any
 ```
 
-`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 
 #### create\_optional\_default\_value
 
@@ -1597,7 +2216,7 @@ The default of an optional attribute; the default, unless a type says otherwise.
 get_normalized_value(value: object) -> Any
 ```
 
-`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 
 #### get\_normalized\_value\_for\_update
 
@@ -1605,7 +2224,7 @@ get_normalized_value(value: object) -> Any
 get_normalized_value_for_update(value: object) -> Any
 ```
 
-`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+As `get_normalized_value`, checked and normalised for update (EVL-03).
 
 #### is\_sub\_type\_of
 
@@ -1629,7 +2248,7 @@ Whether `other` is among this type's sub types, at any depth (THY-04).
 is_valid_value(value: object) -> bool
 ```
 
-Whether `value` is a value of this type (`isValidValue`).
+Valid for each super type, with valid validity periods, then for its own attributes (EVL-07).
 
 #### is\_valid\_value\_for\_update
 
@@ -1637,7 +2256,31 @@ Whether `value` is a value of this type (`isValidValue`).
 is_valid_value_for_update(value: object) -> bool
 ```
 
-`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+As `is_valid_value`, for update (EVL-03, EVL-07).
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise for each super type, then this type's own attributes (EVL-04).
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+As `normalize_attribute_values`, for update (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Defaults for each super type's mandatory attributes, then this type's (EVL-05).
 
 #### type\_for\_attribute
 
@@ -1653,7 +2296,7 @@ The type an attribute of this type holds; an entity type is held as an `objectid
 validate_value(value: object, name: str, messages: list[str]) -> bool
 ```
 
-Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+Validate for each super type, the validity periods, then the own attributes (EVL-07).
 
 #### validate\_value\_for\_update
 
@@ -1661,7 +2304,7 @@ Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <t
 validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
 ```
 
-`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+As `validate_value`, for update (EVL-03, EVL-07).
 
 ### EdgeDirection
 
@@ -1699,7 +2342,7 @@ OUT = 'OUT'
 EntityType(entity_def: AtlasEntityDef)
 ```
 
-Bases: `_HierarchyType`
+Bases: `HierarchyType`
 
 An entity type: its hierarchy, relationship and business attributes (THY-01 to THY-06, THY-10 to THY-12).
 
@@ -1707,7 +2350,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+  Equal for each super type and for this type (EVL-06).
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -1719,19 +2362,19 @@ Methods:
   The attribute `attribute_name` of business metadata `metadata_name` on this type (THY-12).
 - **`create_default_value`** –
 
-  The value an attribute of this type gets by default (`createDefaultValue()`).
+  An entity of this type, with a temporary GUID and its mandatory attributes' defaults (EVL-05).
 - **`create_default_value_of`** –
 
-  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 - **`create_optional_default_value`** –
 
   The default of an optional attribute; the default, unless a type says otherwise.
 - **`get_normalized_value`** –
 
-  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 - **`get_normalized_value_for_update`** –
 
-  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_sub_type_of`** –
 
   Whether `other` is among this type's super types, at any depth (THY-04).
@@ -1740,10 +2383,22 @@ Methods:
   Whether `other` is among this type's sub types, at any depth (THY-04).
 - **`is_valid_value`** –
 
-  Whether `value` is a value of this type (`isValidValue`).
+  Valid for each super type, for its own attributes and its relationship attributes (EVL-08).
 - **`is_valid_value_for_update`** –
 
-  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+  Valid for update for each super type and its own attributes; relationship attributes are not checked.
+- **`normalize_attribute_values`** –
+
+  Normalise for each super type, the own attributes, then the relationship attributes (EVL-09).
+- **`normalize_attribute_values_for_update`** –
+
+  As `normalize_attribute_values`, for update (EVL-03, EVL-09).
+- **`normalize_relationship_attribute_values`** –
+
+  Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+- **`populate_default_values`** –
+
+  Defaults for each super type's mandatory attributes, then this type's (EVL-05).
 - **`relationship_attribute`** –
 
   The relationship attribute `name` of `relationship_type`, else of the first relationship (THY-10).
@@ -1752,10 +2407,10 @@ Methods:
   An attribute holds an entity as `objectid` of this entity type (TRG-11).
 - **`validate_value`** –
 
-  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+  Validate for each super type, the own attributes, then the relationship attributes (EVL-08).
 - **`validate_value_for_update`** –
 
-  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+  Validate for update for each super type and the own attributes (EVL-03, EVL-08).
 
 Attributes:
 
@@ -1774,7 +2429,7 @@ Attributes:
 - **`service_type`** –
 - **`struct_def`** –
 - **`sub_types`** (`list[str]`) –
-- **`super_types`** (`list[_HierarchyType]`) –
+- **`super_types`** (`list[HierarchyType]`) –
 - **`tag_propagation_edges`** (`list[str | None]`) –
 - **`type_and_all_sub_types`** (`list[str]`) –
 - **`type_and_all_super_types`** (`list[str]`) –
@@ -1874,7 +2529,7 @@ sub_types: list[str] = []
 #### super\_types
 
 ```
-super_types: list[_HierarchyType] = []
+super_types: list[HierarchyType] = []
 ```
 
 #### tag\_propagation\_edges
@@ -1913,7 +2568,7 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+Equal for each super type and for this type (EVL-06).
 
 #### attribute
 
@@ -1942,10 +2597,10 @@ The attribute `attribute_name` of business metadata `metadata_name` on this type
 #### create\_default\_value
 
 ```
-create_default_value() -> Any
+create_default_value() -> AtlasEntity
 ```
 
-The value an attribute of this type gets by default (`createDefaultValue()`).
+An entity of this type, with a temporary GUID and its mandatory attributes' defaults (EVL-05).
 
 #### create\_default\_value\_of
 
@@ -1953,7 +2608,7 @@ The value an attribute of this type gets by default (`createDefaultValue()`).
 create_default_value_of(value: object) -> Any
 ```
 
-`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 
 #### create\_optional\_default\_value
 
@@ -1969,7 +2624,7 @@ The default of an optional attribute; the default, unless a type says otherwise.
 get_normalized_value(value: object) -> Any
 ```
 
-`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 
 #### get\_normalized\_value\_for\_update
 
@@ -1977,7 +2632,7 @@ get_normalized_value(value: object) -> Any
 get_normalized_value_for_update(value: object) -> Any
 ```
 
-`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+As `get_normalized_value`, checked and normalised for update (EVL-03).
 
 #### is\_sub\_type\_of
 
@@ -2001,7 +2656,7 @@ Whether `other` is among this type's sub types, at any depth (THY-04).
 is_valid_value(value: object) -> bool
 ```
 
-Whether `value` is a value of this type (`isValidValue`).
+Valid for each super type, for its own attributes and its relationship attributes (EVL-08).
 
 #### is\_valid\_value\_for\_update
 
@@ -2009,7 +2664,41 @@ Whether `value` is a value of this type (`isValidValue`).
 is_valid_value_for_update(value: object) -> bool
 ```
 
-`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+Valid for update for each super type and its own attributes; relationship attributes are not checked.
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise for each super type, the own attributes, then the relationship attributes (EVL-09).
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+As `normalize_attribute_values`, for update (EVL-03, EVL-09).
+
+#### normalize\_relationship\_attribute\_values
+
+```
+normalize_relationship_attribute_values(value: StructValue, *, for_update: bool) -> None
+```
+
+Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+
+An entity's `relationshipAttributes`; a map at its top level, as Java's map overload does.
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Defaults for each super type's mandatory attributes, then this type's (EVL-05).
 
 #### relationship\_attribute
 
@@ -2026,6 +2715,557 @@ type_for_attribute() -> AtlasType
 ```
 
 An attribute holds an entity as `objectid` of this entity type (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate for each super type, the own attributes, then the relationship attributes (EVL-08).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate for update for each super type and the own attributes (EVL-03, EVL-08).
+
+### EnumType
+
+```
+EnumType(enum_def: AtlasEnumDef)
+```
+
+Bases: `AtlasType`
+
+An enum type: its elements by value and ordinal, and its default (`AtlasEnumType`, TRG-14).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+- **`create_default_value`** –
+
+  The enum's default value: its `defaultValue`, else its first element's (TRG-14).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`element`** –
+
+  The element with `value`, compared without case, or None (TRG-14).
+- **`element_by_ordinal`** –
+
+  The element with `ordinal`, or None (TRG-14).
+- **`get_normalized_value`** –
+
+  The value of the element whose value is the Java text of `value`, ignoring case; else None.
+- **`get_normalized_value_for_update`** –
+
+  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+- **`is_valid_value`** –
+
+  Null, or a value whose Java text is an element's value, ignoring case (VAL-11).
+- **`is_valid_value_for_update`** –
+
+  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+- **`validate_value_for_update`** –
+
+  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+
+Attributes:
+
+- **`category`** –
+- **`default_value`** –
+- **`enum_def`** –
+- **`service_type`** –
+- **`type_name`** –
+
+#### category
+
+```
+category = category
+```
+
+#### default\_value
+
+```
+default_value = enum_def.default_value if enum_def.default_value is not None else first
+```
+
+#### enum\_def
+
+```
+enum_def = enum_def
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+
+#### create\_default\_value
+
+```
+create_default_value() -> str | None
+```
+
+The enum's default value: its `defaultValue`, else its first element's (TRG-14).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### element
+
+```
+element(value: str | None) -> AtlasEnumElementDef | None
+```
+
+The element with `value`, compared without case, or None (TRG-14).
+
+#### element\_by\_ordinal
+
+```
+element_by_ordinal(ordinal: int | None) -> AtlasEnumElementDef | None
+```
+
+The element with `ordinal`, or None (TRG-14).
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> str | None
+```
+
+The value of the element whose value is the Java text of `value`, ignoring case; else None.
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Null, or a value whose Java text is an element's value, ignoring case (VAL-11).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+
+### MapType
+
+```
+MapType(
+    key_type_name: str, value_type_name: str, *, key_type: AtlasType | None = None, value_type: AtlasType | None = None
+)
+```
+
+Bases: `AtlasType`
+
+`map<K,V>` (`AtlasMapType`, TRG-02).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Null equals an empty map; otherwise the same size and equal values by key (VAL-13).
+- **`create_default_value`** –
+
+  The key's default mapped to the value's, or an empty map when the key has no default (VAL-13).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  A string parsed as JSON, then keys and values normalised, null values kept; None for a bad one.
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, with the values' `getNormalizedValueForUpdate`.
+- **`is_valid_value`** –
+
+  Null, or a map of valid keys and values; a string is not (VAL-13).
+- **`is_valid_value_for_update`** –
+
+  As `is_valid_value`, with the values' `isValidValueForUpdate`.
+- **`type_for_attribute`** –
+
+  This map, or a new one over the key's and value's attribute types when they differ (TRG-11).
+- **`validate_value`** –
+
+  Report each invalid key, and validate each value as `<name>.<key>` (VAL-13).
+- **`validate_value_for_update`** –
+
+  As `validate_value`, with the values' `validateValueForUpdate`.
+
+Attributes:
+
+- **`category`** –
+- **`key_type`** –
+- **`key_type_name`** –
+- **`service_type`** –
+- **`type_name`** –
+- **`value_type`** –
+- **`value_type_name`** –
+
+#### category
+
+```
+category = category
+```
+
+#### key\_type
+
+```
+key_type = key_type
+```
+
+#### key\_type\_name
+
+```
+key_type_name = key_type_name
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### value\_type
+
+```
+value_type = value_type
+```
+
+#### value\_type\_name
+
+```
+value_type_name = value_type_name
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Null equals an empty map; otherwise the same size and equal values by key (VAL-13).
+
+#### create\_default\_value
+
+```
+create_default_value() -> dict[Any, Any]
+```
+
+The key's default mapped to the value's, or an empty map when the key has no default (VAL-13).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> dict[Any, Any] | None
+```
+
+A string parsed as JSON, then keys and values normalised, null values kept; None for a bad one.
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> dict[Any, Any] | None
+```
+
+As `get_normalized_value`, with the values' `getNormalizedValueForUpdate`.
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Null, or a map of valid keys and values; a string is not (VAL-13).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+As `is_valid_value`, with the values' `isValidValueForUpdate`.
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+This map, or a new one over the key's and value's attribute types when they differ (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Report each invalid key, and validate each value as `<name>.<key>` (VAL-13).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+As `validate_value`, with the values' `validateValueForUpdate`.
+
+### ObjectIdType
+
+```
+ObjectIdType(object_type: str | None = ATLAS_TYPE_ASSET)
+```
+
+Bases: `AtlasType`
+
+`objectid`: a reference to an entity of `object_type`, by GUID or by unique attributes.
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Equal by GUID, mapped through the assignments, when both or neither is assigned (VAL-10).
+- **`create_default_value`** –
+
+  An object id with the unassigned GUID `-1` and the object type.
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  An object id as it is; a map that identifies an entity, read by Java's map constructor; else None.
+- **`get_normalized_value_for_update`** –
+
+  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+- **`is_valid_value`** –
+
+  Null, an object id, or a map that identifies an entity.
+- **`is_valid_value_for_update`** –
+
+  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+- **`validate_value_for_update`** –
+
+  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+
+Attributes:
+
+- **`category`** –
+- **`object_type`** –
+- **`service_type`** –
+- **`type_name`** –
+
+#### category
+
+```
+category = category
+```
+
+#### object\_type
+
+```
+object_type = object_type
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Equal by GUID, mapped through the assignments, when both or neither is assigned (VAL-10).
+
+When only one GUID is assigned, the type names and unique attributes decide.
+
+#### create\_default\_value
+
+```
+create_default_value() -> AtlasObjectId
+```
+
+An object id with the unassigned GUID `-1` and the object type.
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> AtlasObjectId | None
+```
+
+An object id as it is; a map that identifies an entity, read by Java's map constructor; else None.
+
+A map with a `relationshipType` key becomes a related object id.
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Null, an object id, or a map that identifies an entity.
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
 
 #### validate\_value
 
@@ -2057,7 +3297,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -2066,34 +3306,43 @@ Methods:
   The type of the attribute named `name`, or None (TRG-13).
 - **`create_default_value`** –
 
-  The value an attribute of this type gets by default (`createDefaultValue()`).
+  A struct of this type with the defaults of its mandatory attributes (EVL-05).
 - **`create_default_value_of`** –
 
-  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 - **`create_optional_default_value`** –
 
   The default of an optional attribute; the default, unless a type says otherwise.
 - **`get_normalized_value`** –
 
-  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 - **`get_normalized_value_for_update`** –
 
-  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_valid_value`** –
 
-  Whether `value` is a value of this type (`isValidValue`).
+  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
 - **`is_valid_value_for_update`** –
 
-  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+- **`normalize_attribute_values`** –
+
+  Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+- **`populate_default_values`** –
+
+  Set every mandatory own attribute to its default, replacing its value (EVL-05).
 - **`type_for_attribute`** –
 
   The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
 - **`validate_value`** –
 
-  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+  Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
 - **`validate_value_for_update`** –
 
-  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+  Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
 
 Attributes:
 
@@ -2181,7 +3430,7 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
 
 #### attribute
 
@@ -2202,10 +3451,10 @@ The type of the attribute named `name`, or None (TRG-13).
 #### create\_default\_value
 
 ```
-create_default_value() -> Any
+create_default_value() -> AtlasStruct
 ```
 
-The value an attribute of this type gets by default (`createDefaultValue()`).
+A struct of this type with the defaults of its mandatory attributes (EVL-05).
 
 #### create\_default\_value\_of
 
@@ -2213,7 +3462,7 @@ The value an attribute of this type gets by default (`createDefaultValue()`).
 create_default_value_of(value: object) -> Any
 ```
 
-`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 
 #### create\_optional\_default\_value
 
@@ -2229,7 +3478,7 @@ The default of an optional attribute; the default, unless a type says otherwise.
 get_normalized_value(value: object) -> Any
 ```
 
-`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 
 #### get\_normalized\_value\_for\_update
 
@@ -2237,7 +3486,7 @@ get_normalized_value(value: object) -> Any
 get_normalized_value_for_update(value: object) -> Any
 ```
 
-`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+As `get_normalized_value`, checked and normalised for update (EVL-03).
 
 #### is\_valid\_value
 
@@ -2245,7 +3494,7 @@ get_normalized_value_for_update(value: object) -> Any
 is_valid_value(value: object) -> bool
 ```
 
-Whether `value` is a value of this type (`isValidValue`).
+Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
 
 #### is\_valid\_value\_for\_update
 
@@ -2253,7 +3502,33 @@ Whether `value` is a value of this type (`isValidValue`).
 is_valid_value_for_update(value: object) -> bool
 ```
 
-`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+
+A map is normalised at its top level, as Java's `normalizeAttributeValues(Map)` does.
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Set every mandatory own attribute to its default, replacing its value (EVL-05).
 
 #### type\_for\_attribute
 
@@ -2269,7 +3544,7 @@ The type an attribute of this type holds; an entity type is held as an `objectid
 validate_value(value: object, name: str, messages: list[str]) -> bool
 ```
 
-Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
 
 #### validate\_value\_for\_update
 
@@ -2277,7 +3552,7 @@ Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <t
 validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
 ```
 
-`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
 
 ### StructType
 
@@ -2293,7 +3568,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  `areEqualValues`: both null, or both normalise to equal values (VAL-02).
+  Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -2302,34 +3577,43 @@ Methods:
   The type of the attribute named `name`, or None (TRG-13).
 - **`create_default_value`** –
 
-  The value an attribute of this type gets by default (`createDefaultValue()`).
+  A struct of this type with the defaults of its mandatory attributes (EVL-05).
 - **`create_default_value_of`** –
 
-  `createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 - **`create_optional_default_value`** –
 
   The default of an optional attribute; the default, unless a type says otherwise.
 - **`get_normalized_value`** –
 
-  `value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 - **`get_normalized_value_for_update`** –
 
-  `getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_valid_value`** –
 
-  Whether `value` is a value of this type (`isValidValue`).
+  Null, or a struct or map whose own attributes are each valid or optionally absent (EVL-01).
 - **`is_valid_value_for_update`** –
 
-  `isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+  Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+- **`normalize_attribute_values`** –
+
+  Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+- **`populate_default_values`** –
+
+  Set every mandatory own attribute to its default, replacing its value (EVL-05).
 - **`type_for_attribute`** –
 
   The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
 - **`validate_value`** –
 
-  Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+  Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
 - **`validate_value_for_update`** –
 
-  `validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+  Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
 
 Attributes:
 
@@ -2382,7 +3666,13 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-`areEqualValues`: both null, or both normalise to equal values (VAL-02).
+Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
+
+Raises:
+
+- `TypeError` –
+
+  A string, on which Java's `getStructFromValue` fails with a `ClassCastException`.
 
 #### attribute
 
@@ -2403,10 +3693,10 @@ The type of the attribute named `name`, or None (TRG-13).
 #### create\_default\_value
 
 ```
-create_default_value() -> Any
+create_default_value() -> AtlasStruct
 ```
 
-The value an attribute of this type gets by default (`createDefaultValue()`).
+A struct of this type with the defaults of its mandatory attributes (EVL-05).
 
 #### create\_default\_value\_of
 
@@ -2414,7 +3704,7 @@ The value an attribute of this type gets by default (`createDefaultValue()`).
 create_default_value_of(value: object) -> Any
 ```
 
-`createDefaultValue(Object)`: the default for null, else the normalised value (VAL-02).
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
 
 #### create\_optional\_default\_value
 
@@ -2430,7 +3720,7 @@ The default of an optional attribute; the default, unless a type says otherwise.
 get_normalized_value(value: object) -> Any
 ```
 
-`value` as this type holds it, or None when it is not a value of this type (`getNormalizedValue`).
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
 
 #### get\_normalized\_value\_for\_update
 
@@ -2438,7 +3728,7 @@ get_normalized_value(value: object) -> Any
 get_normalized_value_for_update(value: object) -> Any
 ```
 
-`getNormalizedValueForUpdate`: as `get_normalized_value`, unless a type says otherwise.
+As `get_normalized_value`, checked and normalised for update (EVL-03).
 
 #### is\_valid\_value
 
@@ -2446,7 +3736,7 @@ get_normalized_value_for_update(value: object) -> Any
 is_valid_value(value: object) -> bool
 ```
 
-Whether `value` is a value of this type (`isValidValue`).
+Null, or a struct or map whose own attributes are each valid or optionally absent (EVL-01).
 
 #### is\_valid\_value\_for\_update
 
@@ -2454,7 +3744,33 @@ Whether `value` is a value of this type (`isValidValue`).
 is_valid_value_for_update(value: object) -> bool
 ```
 
-`isValidValueForUpdate`: as `is_valid_value`, unless a type says otherwise.
+Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+
+A map is normalised at its top level, as Java's `normalizeAttributeValues(Map)` does.
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Set every mandatory own attribute to its default, replacing its value (EVL-05).
 
 #### type\_for\_attribute
 
@@ -2470,7 +3786,7 @@ The type an attribute of this type holds; an entity type is held as an `objectid
 validate_value(value: object, name: str, messages: list[str]) -> bool
 ```
 
-Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <type>` (VAL-02).
+Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
 
 #### validate\_value\_for\_update
 
@@ -2478,7 +3794,7 @@ Whether `value` is valid; if not, add `<name>=<value>: invalid value for type <t
 validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
 ```
 
-`validateValueForUpdate`: as `validate_value`, unless a type says otherwise.
+Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
 
 ### entity\_types\_and\_all\_sub\_types
 
@@ -2740,6 +4056,2068 @@ type_name_of(type_: AtlasType) -> str
 ```
 
 The name of `type_`, which every resolved type has.
+
+## aurelius\_atlas\_typesystem.struct\_type
+
+`AtlasStructType`: a struct's attributes, as its definition resolves them (TRG-11, TRG-12, DD-041).
+
+Type Aliases:
+
+- **`StructValue`** –
+
+  A struct value: an `AtlasStruct` (or subclass) or a map, as Java's struct types take.
+
+Classes:
+
+- **`StructType`** –
+
+  A struct type, and the base of every type with attributes (`AtlasStructType`, TRG-10 to TRG-13).
+
+Functions:
+
+- **`contained_type`** –
+
+  The element of an array or the value of a map; the type itself otherwise.
+- **`referenced_entity_type`** –
+
+  The entity type a type, an array of it or a map to it refers to, or None (TRG-12).
+- **`relationship_attributes_of`** –
+
+  `AtlasTypeUtil.toRelationshipAttributes`: a map's `relationshipAttributes` when it has a `typeName`.
+- **`struct_attributes`** –
+
+  `AtlasTypeUtil.toStructAttributes`: a map's `attributes` when it has a `typeName`, else the map.
+
+Attributes:
+
+- **`STRUCT_STRING_ERROR`** –
+
+### STRUCT\_STRING\_ERROR
+
+```
+STRUCT_STRING_ERROR = "a string is no struct value: Java's getStructFromValue fails on it"
+```
+
+### StructValue
+
+```
+StructValue = AtlasStruct | dict[str, Any]
+```
+
+A struct value: an `AtlasStruct` (or subclass) or a map, as Java's struct types take.
+
+### StructType
+
+```
+StructType(struct_def: AtlasStructDef)
+```
+
+Bases: `AtlasType`
+
+A struct type, and the base of every type with attributes (`AtlasStructType`, TRG-10 to TRG-13).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
+- **`attribute`** –
+
+  The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+- **`attribute_type`** –
+
+  The type of the attribute named `name`, or None (TRG-13).
+- **`create_default_value`** –
+
+  A struct of this type with the defaults of its mandatory attributes (EVL-05).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
+- **`is_valid_value`** –
+
+  Null, or a struct or map whose own attributes are each valid or optionally absent (EVL-01).
+- **`is_valid_value_for_update`** –
+
+  Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+- **`normalize_attribute_values`** –
+
+  Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+- **`populate_default_values`** –
+
+  Set every mandatory own attribute to its default, replacing its value (EVL-05).
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
+- **`validate_value_for_update`** –
+
+  Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
+
+Attributes:
+
+- **`all_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`category`** –
+- **`service_type`** –
+- **`struct_def`** –
+- **`type_name`** –
+- **`unique_attributes`** (`dict[str, AtlasAttribute]`) –
+
+#### all\_attributes
+
+```
+all_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### category
+
+```
+category = category
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### struct\_def
+
+```
+struct_def = struct_def
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
+
+Raises:
+
+- `TypeError` –
+
+  A string, on which Java's `getStructFromValue` fails with a `ClassCastException`.
+
+#### attribute
+
+```
+attribute(name: str | None) -> AtlasAttribute | None
+```
+
+The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+
+#### attribute\_type
+
+```
+attribute_type(name: str | None) -> AtlasType | None
+```
+
+The type of the attribute named `name`, or None (TRG-13).
+
+#### create\_default\_value
+
+```
+create_default_value() -> AtlasStruct
+```
+
+A struct of this type with the defaults of its mandatory attributes (EVL-05).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> Any
+```
+
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+As `get_normalized_value`, checked and normalised for update (EVL-03).
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Null, or a struct or map whose own attributes are each valid or optionally absent (EVL-01).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+
+A map is normalised at its top level, as Java's `normalizeAttributeValues(Map)` does.
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Set every mandatory own attribute to its default, replacing its value (EVL-05).
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
+
+### contained\_type
+
+```
+contained_type(type_: AtlasType) -> AtlasType
+```
+
+The element of an array or the value of a map; the type itself otherwise.
+
+### referenced\_entity\_type
+
+```
+referenced_entity_type(type_: AtlasType) -> EntityType | None
+```
+
+The entity type a type, an array of it or a map to it refers to, or None (TRG-12).
+
+### relationship\_attributes\_of
+
+```
+relationship_attributes_of(value: Mapping[str, Any]) -> Mapping[str, Any] | None
+```
+
+`AtlasTypeUtil.toRelationshipAttributes`: a map's `relationshipAttributes` when it has a `typeName`.
+
+### struct\_attributes
+
+```
+struct_attributes(value: Mapping[str, Any]) -> Mapping[str, Any]
+```
+
+`AtlasTypeUtil.toStructAttributes`: a map's `attributes` when it has a `typeName`, else the map.
+
+## aurelius\_atlas\_typesystem.classification\_type
+
+`AtlasClassificationType`: a classification, its hierarchy and its entity types (THY-06 to THY-08).
+
+Classes:
+
+- **`ClassificationType`** –
+
+  A classification type: its hierarchy and the entity types it applies to (THY-01 to THY-05, THY-07).
+
+Functions:
+
+- **`parse_time_boundary`** –
+
+  `DateValidator.validate(text, "yyyy/MM/dd HH:mm:ss", zone)`: strict, the whole text, else None.
+- **`validate_time_boundaries`** –
+
+  `validateTimeBoundaries`: each validity period of a classification is valid (EVL-07).
+
+Attributes:
+
+- **`CLASSIFICATION_ROOT`** –
+
+  `__CLASSIFICATION_ROOT`; not registered, resolved by every registry (THY-05).
+
+### CLASSIFICATION\_ROOT
+
+```
+CLASSIFICATION_ROOT = ClassificationType(_root_classification_def())
+```
+
+`__CLASSIFICATION_ROOT`; not registered, resolved by every registry (THY-05).
+
+### ClassificationType
+
+```
+ClassificationType(classification_def: AtlasClassificationDef)
+```
+
+Bases: `HierarchyType`
+
+A classification type: its hierarchy and the entity types it applies to (THY-01 to THY-05, THY-07).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Equal for each super type and for this type (EVL-06).
+- **`attribute`** –
+
+  The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+- **`attribute_type`** –
+
+  The type of the attribute named `name`, or None (TRG-13).
+- **`can_apply_to_entity_type`** –
+
+  Whether the classification may be applied to `entity_type` (THY-07).
+- **`create_default_value`** –
+
+  A classification of this type with the defaults of its own and inherited mandatory attributes.
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
+- **`is_sub_type_of`** –
+
+  Whether `other` is among this type's super types, at any depth (THY-04).
+- **`is_super_type_of`** –
+
+  Whether `other` is among this type's sub types, at any depth (THY-04).
+- **`is_valid_value`** –
+
+  Valid for each super type, with valid validity periods, then for its own attributes (EVL-07).
+- **`is_valid_value_for_update`** –
+
+  As `is_valid_value`, for update (EVL-03, EVL-07).
+- **`normalize_attribute_values`** –
+
+  Normalise for each super type, then this type's own attributes (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  As `normalize_attribute_values`, for update (EVL-03).
+- **`populate_default_values`** –
+
+  Defaults for each super type's mandatory attributes, then this type's (EVL-05).
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Validate for each super type, the validity periods, then the own attributes (EVL-07).
+- **`validate_value_for_update`** –
+
+  As `validate_value`, for update (EVL-03, EVL-07).
+
+Attributes:
+
+- **`all_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`all_sub_types`** (`list[str]`) –
+- **`all_super_types`** (`list[str]`) –
+- **`category`** –
+- **`classification_def`** –
+- **`entity_types`** (`list[str]`) –
+- **`service_type`** –
+- **`struct_def`** –
+- **`sub_types`** (`list[str]`) –
+- **`super_types`** (`list[HierarchyType]`) –
+- **`type_and_all_sub_types`** (`list[str]`) –
+- **`type_and_all_super_types`** (`list[str]`) –
+- **`type_name`** –
+- **`unique_attributes`** (`dict[str, AtlasAttribute]`) –
+
+#### all\_attributes
+
+```
+all_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### all\_sub\_types
+
+```
+all_sub_types: list[str] = []
+```
+
+#### all\_super\_types
+
+```
+all_super_types: list[str] = []
+```
+
+#### category
+
+```
+category = category
+```
+
+#### classification\_def
+
+```
+classification_def = classification_def
+```
+
+#### entity\_types
+
+```
+entity_types: list[str] = []
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### struct\_def
+
+```
+struct_def = struct_def
+```
+
+#### sub\_types
+
+```
+sub_types: list[str] = []
+```
+
+#### super\_types
+
+```
+super_types: list[HierarchyType] = []
+```
+
+#### type\_and\_all\_sub\_types
+
+```
+type_and_all_sub_types: list[str] = []
+```
+
+#### type\_and\_all\_super\_types
+
+```
+type_and_all_super_types: list[str] = []
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Equal for each super type and for this type (EVL-06).
+
+#### attribute
+
+```
+attribute(name: str | None) -> AtlasAttribute | None
+```
+
+The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+
+#### attribute\_type
+
+```
+attribute_type(name: str | None) -> AtlasType | None
+```
+
+The type of the attribute named `name`, or None (TRG-13).
+
+#### can\_apply\_to\_entity\_type
+
+```
+can_apply_to_entity_type(entity_type: EntityType) -> bool
+```
+
+Whether the classification may be applied to `entity_type` (THY-07).
+
+#### create\_default\_value
+
+```
+create_default_value() -> AtlasClassification
+```
+
+A classification of this type with the defaults of its own and inherited mandatory attributes.
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> Any
+```
+
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+As `get_normalized_value`, checked and normalised for update (EVL-03).
+
+#### is\_sub\_type\_of
+
+```
+is_sub_type_of(other: StructType | str | None) -> bool
+```
+
+Whether `other` is among this type's super types, at any depth (THY-04).
+
+#### is\_super\_type\_of
+
+```
+is_super_type_of(other: StructType | str | None) -> bool
+```
+
+Whether `other` is among this type's sub types, at any depth (THY-04).
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Valid for each super type, with valid validity periods, then for its own attributes (EVL-07).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+As `is_valid_value`, for update (EVL-03, EVL-07).
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise for each super type, then this type's own attributes (EVL-04).
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+As `normalize_attribute_values`, for update (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Defaults for each super type's mandatory attributes, then this type's (EVL-05).
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate for each super type, the validity periods, then the own attributes (EVL-07).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+As `validate_value`, for update (EVL-03, EVL-07).
+
+### parse\_time\_boundary
+
+```
+parse_time_boundary(text: str, zone: tzinfo) -> datetime | None
+```
+
+`DateValidator.validate(text, "yyyy/MM/dd HH:mm:ss", zone)`: strict, the whole text, else None.
+
+Each number may be preceded by whitespace, as `SimpleDateFormat` skips it before a field.
+
+### validate\_time\_boundaries
+
+```
+validate_time_boundaries(value: object, messages: list[str] | None) -> bool
+```
+
+`validateTimeBoundaries`: each validity period of a classification is valid (EVL-07).
+
+A map has none: Java reads it with `AtlasClassification(Map)`, which takes no validity periods. Each message is added once.
+
+## aurelius\_atlas\_typesystem.entity\_type
+
+`AtlasEntityType`: an entity, its hierarchy, relationship and business attributes (THY-09 to THY-12).
+
+Classes:
+
+- **`EntityType`** –
+
+  An entity type: its hierarchy, relationship and business attributes (THY-01 to THY-06, THY-10 to THY-12).
+
+Functions:
+
+- **`entity_types_and_all_sub_types`** –
+
+  The entity types named and all their sub types (`getEntityTypesAndAllSubTypes`, THY-07).
+
+Attributes:
+
+- **`ENTITY_ROOT`** –
+
+  `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
+
+### ENTITY\_ROOT
+
+```
+ENTITY_ROOT = EntityType(_root_entity_def())
+```
+
+`__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
+
+### EntityType
+
+```
+EntityType(entity_def: AtlasEntityDef)
+```
+
+Bases: `HierarchyType`
+
+An entity type: its hierarchy, relationship and business attributes (THY-01 to THY-06, THY-10 to THY-12).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Equal for each super type and for this type (EVL-06).
+- **`attribute`** –
+
+  The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+- **`attribute_type`** –
+
+  The type of the attribute named `name`, or None (TRG-13).
+- **`business_attribute`** –
+
+  The attribute `attribute_name` of business metadata `metadata_name` on this type (THY-12).
+- **`create_default_value`** –
+
+  An entity of this type, with a temporary GUID and its mandatory attributes' defaults (EVL-05).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
+- **`is_sub_type_of`** –
+
+  Whether `other` is among this type's super types, at any depth (THY-04).
+- **`is_super_type_of`** –
+
+  Whether `other` is among this type's sub types, at any depth (THY-04).
+- **`is_valid_value`** –
+
+  Valid for each super type, for its own attributes and its relationship attributes (EVL-08).
+- **`is_valid_value_for_update`** –
+
+  Valid for update for each super type and its own attributes; relationship attributes are not checked.
+- **`normalize_attribute_values`** –
+
+  Normalise for each super type, the own attributes, then the relationship attributes (EVL-09).
+- **`normalize_attribute_values_for_update`** –
+
+  As `normalize_attribute_values`, for update (EVL-03, EVL-09).
+- **`normalize_relationship_attribute_values`** –
+
+  Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+- **`populate_default_values`** –
+
+  Defaults for each super type's mandatory attributes, then this type's (EVL-05).
+- **`relationship_attribute`** –
+
+  The relationship attribute `name` of `relationship_type`, else of the first relationship (THY-10).
+- **`type_for_attribute`** –
+
+  An attribute holds an entity as `objectid` of this entity type (TRG-11).
+- **`validate_value`** –
+
+  Validate for each super type, the own attributes, then the relationship attributes (EVL-08).
+- **`validate_value_for_update`** –
+
+  Validate for update for each super type and the own attributes (EVL-03, EVL-08).
+
+Attributes:
+
+- **`all_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`all_sub_types`** (`list[str]`) –
+- **`all_super_types`** (`list[str]`) –
+- **`business_attributes`** (`dict[str, dict[str, BusinessAttribute]]`) –
+- **`category`** –
+- **`display_text_attribute`** –
+- **`entity_def`** –
+- **`header_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`is_internal`** –
+- **`min_info_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`owned_ref_attributes`** (`list[AtlasAttribute]`) –
+- **`relationship_attributes`** (`dict[str, dict[str, AtlasAttribute]]`) –
+- **`service_type`** –
+- **`struct_def`** –
+- **`sub_types`** (`list[str]`) –
+- **`super_types`** (`list[HierarchyType]`) –
+- **`tag_propagation_edges`** (`list[str | None]`) –
+- **`type_and_all_sub_types`** (`list[str]`) –
+- **`type_and_all_super_types`** (`list[str]`) –
+- **`type_name`** –
+- **`unique_attributes`** (`dict[str, AtlasAttribute]`) –
+
+#### all\_attributes
+
+```
+all_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### all\_sub\_types
+
+```
+all_sub_types: list[str] = []
+```
+
+#### all\_super\_types
+
+```
+all_super_types: list[str] = []
+```
+
+#### business\_attributes
+
+```
+business_attributes: dict[str, dict[str, BusinessAttribute]] = {}
+```
+
+#### category
+
+```
+category = category
+```
+
+#### display\_text\_attribute
+
+```
+display_text_attribute = entity_def.get_option(OPTION_DISPLAY_TEXT_ATTRIBUTE)
+```
+
+#### entity\_def
+
+```
+entity_def = entity_def
+```
+
+#### header\_attributes
+
+```
+header_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### is\_internal
+
+```
+is_internal = False
+```
+
+#### min\_info\_attributes
+
+```
+min_info_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### owned\_ref\_attributes
+
+```
+owned_ref_attributes: list[AtlasAttribute] = []
+```
+
+#### relationship\_attributes
+
+```
+relationship_attributes: dict[str, dict[str, AtlasAttribute]] = {}
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### struct\_def
+
+```
+struct_def = struct_def
+```
+
+#### sub\_types
+
+```
+sub_types: list[str] = []
+```
+
+#### super\_types
+
+```
+super_types: list[HierarchyType] = []
+```
+
+#### tag\_propagation\_edges
+
+```
+tag_propagation_edges: list[str | None] = []
+```
+
+#### type\_and\_all\_sub\_types
+
+```
+type_and_all_sub_types: list[str] = []
+```
+
+#### type\_and\_all\_super\_types
+
+```
+type_and_all_super_types: list[str] = []
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Equal for each super type and for this type (EVL-06).
+
+#### attribute
+
+```
+attribute(name: str | None) -> AtlasAttribute | None
+```
+
+The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+
+#### attribute\_type
+
+```
+attribute_type(name: str | None) -> AtlasType | None
+```
+
+The type of the attribute named `name`, or None (TRG-13).
+
+#### business\_attribute
+
+```
+business_attribute(metadata_name: str, attribute_name: str) -> BusinessAttribute | None
+```
+
+The attribute `attribute_name` of business metadata `metadata_name` on this type (THY-12).
+
+#### create\_default\_value
+
+```
+create_default_value() -> AtlasEntity
+```
+
+An entity of this type, with a temporary GUID and its mandatory attributes' defaults (EVL-05).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> Any
+```
+
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+As `get_normalized_value`, checked and normalised for update (EVL-03).
+
+#### is\_sub\_type\_of
+
+```
+is_sub_type_of(other: StructType | str | None) -> bool
+```
+
+Whether `other` is among this type's super types, at any depth (THY-04).
+
+#### is\_super\_type\_of
+
+```
+is_super_type_of(other: StructType | str | None) -> bool
+```
+
+Whether `other` is among this type's sub types, at any depth (THY-04).
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Valid for each super type, for its own attributes and its relationship attributes (EVL-08).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+Valid for update for each super type and its own attributes; relationship attributes are not checked.
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise for each super type, the own attributes, then the relationship attributes (EVL-09).
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+As `normalize_attribute_values`, for update (EVL-03, EVL-09).
+
+#### normalize\_relationship\_attribute\_values
+
+```
+normalize_relationship_attribute_values(value: StructValue, *, for_update: bool) -> None
+```
+
+Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+
+An entity's `relationshipAttributes`; a map at its top level, as Java's map overload does.
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Defaults for each super type's mandatory attributes, then this type's (EVL-05).
+
+#### relationship\_attribute
+
+```
+relationship_attribute(name: str, relationship_type: str | None = None) -> AtlasAttribute | None
+```
+
+The relationship attribute `name` of `relationship_type`, else of the first relationship (THY-10).
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+An attribute holds an entity as `objectid` of this entity type (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate for each super type, the own attributes, then the relationship attributes (EVL-08).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate for update for each super type and the own attributes (EVL-03, EVL-08).
+
+### entity\_types\_and\_all\_sub\_types
+
+```
+entity_types_and_all_sub_types(names: list[str], registry: TypeRegistry) -> list[str]
+```
+
+The entity types named and all their sub types (`getEntityTypesAndAllSubTypes`, THY-07).
+
+Raises:
+
+- `AtlasError` –
+
+  `TYPE_NAME_NOT_FOUND` for a name that is not an entity type.
+
+## aurelius\_atlas\_typesystem.relationship\_type
+
+`AtlasRelationshipType`: a relationship between two entity types and the attributes it adds (THY-10, THY-11).
+
+Classes:
+
+- **`RelationshipType`** –
+
+  A relationship type: its ends, label and the attributes it adds to them (THY-08 to THY-10).
+
+Functions:
+
+- **`validate_relationship_def`** –
+
+  Check the ends' cardinality and containers against the category (`validateAtlasRelationshipDef`, THY-08).
+
+Attributes:
+
+- **`RELATIONSHIP_VALUES_ERROR`** –
+
+### RELATIONSHIP\_VALUES\_ERROR
+
+```
+RELATIONSHIP_VALUES_ERROR = '{type}: relationship values arrive with AtlasRelationship in 3.1'
+```
+
+### RelationshipType
+
+```
+RelationshipType(relationship_def: AtlasRelationshipDef)
+```
+
+Bases: `StructType`
+
+A relationship type: its ends, label and the attributes it adds to them (THY-08 to THY-10).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+- **`attribute`** –
+
+  The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+- **`attribute_type`** –
+
+  The type of the attribute named `name`, or None (TRG-13).
+- **`create_default_value`** –
+
+  A struct of this type with the defaults of its mandatory attributes (EVL-05).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
+- **`is_valid_value`** –
+
+  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+- **`is_valid_value_for_update`** –
+
+  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+- **`normalize_attribute_values`** –
+
+  Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+- **`populate_default_values`** –
+
+  Set every mandatory own attribute to its default, replacing its value (EVL-05).
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
+- **`validate_value_for_update`** –
+
+  Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
+
+Attributes:
+
+- **`all_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`category`** –
+- **`end1_type`** (`EntityType | None`) –
+- **`end2_type`** (`EntityType | None`) –
+- **`has_legacy_attribute_end`** –
+- **`relationship_def`** –
+- **`relationship_label`** (`str | None`) –
+- **`service_type`** –
+- **`struct_def`** –
+- **`type_name`** –
+- **`unique_attributes`** (`dict[str, AtlasAttribute]`) –
+
+#### all\_attributes
+
+```
+all_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### category
+
+```
+category = category
+```
+
+#### end1\_type
+
+```
+end1_type: EntityType | None = None
+```
+
+#### end2\_type
+
+```
+end2_type: EntityType | None = None
+```
+
+#### has\_legacy\_attribute\_end
+
+```
+has_legacy_attribute_end = any(end is not None and end.is_legacy_attribute for end in ends)
+```
+
+#### relationship\_def
+
+```
+relationship_def = relationship_def
+```
+
+#### relationship\_label
+
+```
+relationship_label: str | None = None
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### struct\_def
+
+```
+struct_def = struct_def
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+
+#### attribute
+
+```
+attribute(name: str | None) -> AtlasAttribute | None
+```
+
+The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+
+#### attribute\_type
+
+```
+attribute_type(name: str | None) -> AtlasType | None
+```
+
+The type of the attribute named `name`, or None (TRG-13).
+
+#### create\_default\_value
+
+```
+create_default_value() -> AtlasStruct
+```
+
+A struct of this type with the defaults of its mandatory attributes (EVL-05).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> Any
+```
+
+The struct or map, its attributes normalised, when it is valid; else None (EVL-04).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+As `get_normalized_value`, checked and normalised for update (EVL-03).
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+
+A map is normalised at its top level, as Java's `normalizeAttributeValues(Map)` does.
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Set every mandatory own attribute to its default, replacing its value (EVL-05).
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
+
+### validate\_relationship\_def
+
+```
+validate_relationship_def(relationship_def: AtlasRelationshipDef) -> None
+```
+
+Check the ends' cardinality and containers against the category (`validateAtlasRelationshipDef`, THY-08).
+
+Raises:
+
+- `AtlasError` –
+
+  The `RELATIONSHIPDEF_*` code of the first rule broken.
+
+## aurelius\_atlas\_typesystem.business\_metadata\_type
+
+`AtlasBusinessMetadataType`: business metadata and the entity types it applies to (THY-12).
+
+Classes:
+
+- **`BusinessAttribute`** –
+
+  A business metadata attribute and the entity types it applies to (`AtlasBusinessAttribute`, THY-12).
+- **`BusinessMetadataType`** –
+
+  A business metadata type: its attributes and the entity types they apply to (THY-12).
+
+### BusinessAttribute
+
+```
+BusinessAttribute(
+    attribute: AtlasAttribute,
+    applicable_entity_types: list[EntityType],
+    max_string_length: int = 0,
+    valid_pattern: str | None = None,
+)
+```
+
+Bases: `AtlasAttribute`
+
+A business metadata attribute and the entity types it applies to (`AtlasBusinessAttribute`, THY-12).
+
+Methods:
+
+- **`option_int`** –
+
+  Option `name` as an integer, or None when blank (`getOptionInt`).
+- **`option_set`** –
+
+  Option `name` read as a JSON array of names, or None when blank or not an array (`getOptionSet`).
+- **`option_string`** –
+
+  Option `name`, or None when blank (`getOptionString`).
+
+Attributes:
+
+- **`applicable_entity_types`** –
+- **`attribute_def`** –
+- **`attribute_type`** –
+- **`defined_in`** –
+- **`inverse_ref_attribute`** (`AtlasAttribute | None`) –
+- **`inverse_ref_attribute_name`** –
+- **`is_legacy_attribute`** –
+- **`is_object_ref`** –
+- **`is_owned_ref`** –
+- **`max_string_length`** –
+- **`name`** –
+- **`qualified_name`** –
+- **`relationship_edge_direction`** –
+- **`relationship_edge_label`** –
+- **`relationship_name`** –
+- **`valid_pattern`** –
+
+#### applicable\_entity\_types
+
+```
+applicable_entity_types = applicable_entity_types
+```
+
+#### attribute\_def
+
+```
+attribute_def = attribute_def
+```
+
+#### attribute\_type
+
+```
+attribute_type = attribute_type.type_for_attribute()
+```
+
+#### defined\_in
+
+```
+defined_in = defined_in
+```
+
+#### inverse\_ref\_attribute
+
+```
+inverse_ref_attribute: AtlasAttribute | None = None
+```
+
+#### inverse\_ref\_attribute\_name
+
+```
+inverse_ref_attribute_name = next(
+    (
+        str(param)
+        for constraint in constraints
+        if constraint.is_constraint_type(CONSTRAINT_TYPE_INVERSE_REF)
+        and (param := constraint.get_param(CONSTRAINT_PARAM_ATTRIBUTE)) is not None
+    ),
+    None,
+)
+```
+
+#### is\_legacy\_attribute
+
+```
+is_legacy_attribute = False
+```
+
+#### is\_object\_ref
+
+```
+is_object_ref = _holds_object_ids(self.attribute_type)
+```
+
+#### is\_owned\_ref
+
+```
+is_owned_ref = any(constraint.is_constraint_type(CONSTRAINT_TYPE_OWNED_REF) for constraint in constraints)
+```
+
+#### max\_string\_length
+
+```
+max_string_length = max_string_length
+```
+
+#### name
+
+```
+name = attribute_def.name
+```
+
+#### qualified\_name
+
+```
+qualified_name = qualified_attribute_name(defined_in.struct_def, str(attribute_def.name))
+```
+
+#### relationship\_edge\_direction
+
+```
+relationship_edge_direction = EdgeDirection.OUT
+```
+
+#### relationship\_edge\_label
+
+```
+relationship_edge_label = relationship_label or f'__{self.qualified_name}'
+```
+
+#### relationship\_name
+
+```
+relationship_name = relationship_name
+```
+
+#### valid\_pattern
+
+```
+valid_pattern = valid_pattern
+```
+
+#### option\_int
+
+```
+option_int(name: str) -> int | None
+```
+
+Option `name` as an integer, or None when blank (`getOptionInt`).
+
+#### option\_set
+
+```
+option_set(name: str) -> list[str] | None
+```
+
+Option `name` read as a JSON array of names, or None when blank or not an array (`getOptionSet`).
+
+#### option\_string
+
+```
+option_string(name: str) -> str | None
+```
+
+Option `name`, or None when blank (`getOptionString`).
+
+### BusinessMetadataType
+
+```
+BusinessMetadataType(business_metadata_def: AtlasBusinessMetadataDef)
+```
+
+Bases: `StructType`
+
+A business metadata type: its attributes and the entity types they apply to (THY-12).
+
+Methods:
+
+- **`are_equal_values`** –
+
+  Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
+- **`attribute`** –
+
+  The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+- **`attribute_type`** –
+
+  The type of the attribute named `name`, or None (TRG-13).
+- **`create_default_value`** –
+
+  Null: business metadata has no instance (EVL-10).
+- **`create_default_value_of`** –
+
+  `createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+- **`create_optional_default_value`** –
+
+  The default of an optional attribute; the default, unless a type says otherwise.
+- **`get_normalized_value`** –
+
+  Null: business metadata has no instance (EVL-10).
+- **`get_normalized_value_for_update`** –
+
+  As `get_normalized_value`, checked and normalised for update (EVL-03).
+- **`is_valid_value`** –
+
+  Always: business metadata has no instance to check (EVL-10).
+- **`is_valid_value_for_update`** –
+
+  Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+- **`normalize_attribute_values`** –
+
+  Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+- **`normalize_attribute_values_for_update`** –
+
+  Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+- **`populate_default_values`** –
+
+  Set every mandatory own attribute to its default, replacing its value (EVL-05).
+- **`type_for_attribute`** –
+
+  The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+- **`validate_value`** –
+
+  Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
+- **`validate_value_for_update`** –
+
+  Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
+
+Attributes:
+
+- **`all_attributes`** (`dict[str, AtlasAttribute]`) –
+- **`business_metadata_def`** –
+- **`category`** –
+- **`service_type`** –
+- **`struct_def`** –
+- **`type_name`** –
+- **`unique_attributes`** (`dict[str, AtlasAttribute]`) –
+
+#### all\_attributes
+
+```
+all_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### business\_metadata\_def
+
+```
+business_metadata_def = business_metadata_def
+```
+
+#### category
+
+```
+category = category
+```
+
+#### service\_type
+
+```
+service_type = service_type
+```
+
+#### struct\_def
+
+```
+struct_def = struct_def
+```
+
+#### type\_name
+
+```
+type_name = type_name
+```
+
+#### unique\_attributes
+
+```
+unique_attributes: dict[str, AtlasAttribute] = {}
+```
+
+#### are\_equal\_values
+
+```
+are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
+```
+
+Both null, or structs of type names equal ignoring case with every attribute equal (EVL-06).
+
+Raises:
+
+- `TypeError` –
+
+  A string, on which Java's `getStructFromValue` fails with a `ClassCastException`.
+
+#### attribute
+
+```
+attribute(name: str | None) -> AtlasAttribute | None
+```
+
+The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
+
+#### attribute\_type
+
+```
+attribute_type(name: str | None) -> AtlasType | None
+```
+
+The type of the attribute named `name`, or None (TRG-13).
+
+#### create\_default\_value
+
+```
+create_default_value() -> None
+```
+
+Null: business metadata has no instance (EVL-10).
+
+#### create\_default\_value\_of
+
+```
+create_default_value_of(value: object) -> Any
+```
+
+`createDefaultValue(Object)`: the default, whatever value is given (EVL-05).
+
+#### create\_optional\_default\_value
+
+```
+create_optional_default_value() -> Any
+```
+
+The default of an optional attribute; the default, unless a type says otherwise.
+
+#### get\_normalized\_value
+
+```
+get_normalized_value(value: object) -> None
+```
+
+Null: business metadata has no instance (EVL-10).
+
+#### get\_normalized\_value\_for\_update
+
+```
+get_normalized_value_for_update(value: object) -> Any
+```
+
+As `get_normalized_value`, checked and normalised for update (EVL-03).
+
+#### is\_valid\_value
+
+```
+is_valid_value(value: object) -> bool
+```
+
+Always: business metadata has no instance to check (EVL-10).
+
+#### is\_valid\_value\_for\_update
+
+```
+is_valid_value_for_update(value: object) -> bool
+```
+
+Null, or a struct or map whose present attributes with a definition are valid for update (EVL-03).
+
+#### normalize\_attribute\_values
+
+```
+normalize_attribute_values(value: StructValue) -> None
+```
+
+Normalise the present own attributes and add the missing mandatory ones (EVL-04).
+
+A map is normalised at its top level, as Java's `normalizeAttributeValues(Map)` does.
+
+#### normalize\_attribute\_values\_for\_update
+
+```
+normalize_attribute_values_for_update(value: StructValue) -> None
+```
+
+Normalise the present own attributes for update; missing ones stay missing (EVL-03).
+
+#### populate\_default\_values
+
+```
+populate_default_values(struct: AtlasStruct) -> None
+```
+
+Set every mandatory own attribute to its default, replacing its value (EVL-05).
+
+#### type\_for\_attribute
+
+```
+type_for_attribute() -> AtlasType
+```
+
+The type an attribute of this type holds; an entity type is held as an `objectid` (TRG-11).
+
+#### validate\_value
+
+```
+validate_value(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate each own attribute as `<name>.<attribute>`; report missing mandatory ones (EVL-02).
+
+#### validate\_value\_for\_update
+
+```
+validate_value_for_update(value: object, name: str, messages: list[str]) -> bool
+```
+
+Validate each present attribute with a type as `<name>.<attribute>`, for update (EVL-03).
+
+## aurelius\_atlas\_typesystem.attribute
+
+`AtlasStructType.AtlasAttribute`: an attribute as its type resolves it (TRG-11, DD-041).
+
+Classes:
+
+- **`AtlasAttribute`** –
+
+  A resolved attribute of a struct-like type (`AtlasStructType.AtlasAttribute`).
+
+Functions:
+
+- **`qualified_attribute_name`** –
+
+  `Type.attribute`, or the name itself when it contains a dot or belongs to a root type (TRG-11, THY-05).
+
+### AtlasAttribute
+
+```
+AtlasAttribute(
+    defined_in: StructType,
+    attribute_def: AtlasAttributeDef,
+    attribute_type: AtlasType,
+    relationship_name: str | None = None,
+    relationship_label: str | None = None,
+)
+```
+
+A resolved attribute of a struct-like type (`AtlasStructType.AtlasAttribute`).
+
+Methods:
+
+- **`option_int`** –
+
+  Option `name` as an integer, or None when blank (`getOptionInt`).
+- **`option_set`** –
+
+  Option `name` read as a JSON array of names, or None when blank or not an array (`getOptionSet`).
+- **`option_string`** –
+
+  Option `name`, or None when blank (`getOptionString`).
+
+Attributes:
+
+- **`attribute_def`** –
+- **`attribute_type`** –
+- **`defined_in`** –
+- **`inverse_ref_attribute`** (`AtlasAttribute | None`) –
+- **`inverse_ref_attribute_name`** –
+- **`is_legacy_attribute`** –
+- **`is_object_ref`** –
+- **`is_owned_ref`** –
+- **`name`** –
+- **`qualified_name`** –
+- **`relationship_edge_direction`** –
+- **`relationship_edge_label`** –
+- **`relationship_name`** –
+
+#### attribute\_def
+
+```
+attribute_def = attribute_def
+```
+
+#### attribute\_type
+
+```
+attribute_type = attribute_type.type_for_attribute()
+```
+
+#### defined\_in
+
+```
+defined_in = defined_in
+```
+
+#### inverse\_ref\_attribute
+
+```
+inverse_ref_attribute: AtlasAttribute | None = None
+```
+
+#### inverse\_ref\_attribute\_name
+
+```
+inverse_ref_attribute_name = next(
+    (
+        str(param)
+        for constraint in constraints
+        if constraint.is_constraint_type(CONSTRAINT_TYPE_INVERSE_REF)
+        and (param := constraint.get_param(CONSTRAINT_PARAM_ATTRIBUTE)) is not None
+    ),
+    None,
+)
+```
+
+#### is\_legacy\_attribute
+
+```
+is_legacy_attribute = False
+```
+
+#### is\_object\_ref
+
+```
+is_object_ref = _holds_object_ids(self.attribute_type)
+```
+
+#### is\_owned\_ref
+
+```
+is_owned_ref = any(constraint.is_constraint_type(CONSTRAINT_TYPE_OWNED_REF) for constraint in constraints)
+```
+
+#### name
+
+```
+name = attribute_def.name
+```
+
+#### qualified\_name
+
+```
+qualified_name = qualified_attribute_name(defined_in.struct_def, str(attribute_def.name))
+```
+
+#### relationship\_edge\_direction
+
+```
+relationship_edge_direction = EdgeDirection.OUT
+```
+
+#### relationship\_edge\_label
+
+```
+relationship_edge_label = relationship_label or f'__{self.qualified_name}'
+```
+
+#### relationship\_name
+
+```
+relationship_name = relationship_name
+```
+
+#### option\_int
+
+```
+option_int(name: str) -> int | None
+```
+
+Option `name` as an integer, or None when blank (`getOptionInt`).
+
+#### option\_set
+
+```
+option_set(name: str) -> list[str] | None
+```
+
+Option `name` read as a JSON array of names, or None when blank or not an array (`getOptionSet`).
+
+#### option\_string
+
+```
+option_string(name: str) -> str | None
+```
+
+Option `name`, or None when blank (`getOptionString`).
+
+### qualified\_attribute\_name
+
+```
+qualified_attribute_name(struct_def: AtlasStructDef, attribute_name: str) -> str
+```
+
+`Type.attribute`, or the name itself when it contains a dot or belongs to a root type (TRG-11, THY-05).
 
 ## aurelius\_atlas\_typesystem.enum\_type
 
@@ -5672,6 +9050,9 @@ Functions:
 - **`is_number`** –
 
   `value instanceof Number`: an `int`, `float` or `Decimal`, but not a `bool`.
+- **`is_valid_time_zone`** –
+
+  `AtlasClassificationType.isValidTimeZone`: `GMT`, or an id `TimeZone` resolves to another zone.
 - **`long_value`** –
 
   `Number.longValue`: a `BigInteger` or `BigDecimal` wraps to 64 bits; a double saturates, NaN is 0.
@@ -5687,6 +9068,9 @@ Functions:
 - **`parse_long`** –
 
   `Long.valueOf(String)` and its kin: an optional sign and ASCII digits, or None.
+- **`time_zone`** –
+
+  `TimeZone.getTimeZone(id)`, or None for an id Java does not know (EVL-07, DD-042).
 - **`to_big_integer`** –
 
   `AtlasBuiltInTypes.toBigInteger`: an integer as it is, a decimal or a double truncated toward zero.
@@ -5708,6 +9092,9 @@ Attributes:
 - **`FLOAT_MIN`** –
 
   `Float.MIN_VALUE`, the smallest positive `float`, as a double.
+- **`SHORT_ZONE_IDS`** –
+
+  Java's legacy three-letter time zone ids that the tz database lacks, and the zones Java maps them to
 
 ### DOUBLE\_MAX
 
@@ -5740,6 +9127,40 @@ FLOAT_MIN = 1.401298464324817e-45
 ```
 
 `Float.MIN_VALUE`, the smallest positive `float`, as a double.
+
+### SHORT\_ZONE\_IDS
+
+```
+SHORT_ZONE_IDS = {
+    "ACT": "Australia/Darwin",
+    "AET": "Australia/Sydney",
+    "AGT": "America/Argentina/Buenos_Aires",
+    "ART": "Africa/Cairo",
+    "AST": "America/Anchorage",
+    "BET": "America/Sao_Paulo",
+    "BST": "Asia/Dhaka",
+    "CAT": "Africa/Harare",
+    "CNT": "America/St_Johns",
+    "CST": "America/Chicago",
+    "CTT": "Asia/Shanghai",
+    "EAT": "Africa/Addis_Ababa",
+    "ECT": "Europe/Paris",
+    "IET": "America/Indiana/Indianapolis",
+    "IST": "Asia/Kolkata",
+    "JST": "Asia/Tokyo",
+    "MIT": "Pacific/Apia",
+    "NET": "Asia/Yerevan",
+    "NST": "Pacific/Auckland",
+    "PLT": "Asia/Karachi",
+    "PNT": "America/Phoenix",
+    "PRT": "America/Puerto_Rico",
+    "PST": "America/Los_Angeles",
+    "SST": "Pacific/Guadalcanal",
+    "VST": "Asia/Ho_Chi_Minh",
+}
+```
+
+Java's legacy three-letter time zone ids that the tz database lacks, and the zones Java maps them to (`ZoneId.SHORT_IDS`).
 
 ### JavaNumber
 
@@ -5787,6 +9208,14 @@ is_number(value: object) -> TypeGuard[JavaNumber]
 
 `value instanceof Number`: an `int`, `float` or `Decimal`, but not a `bool`.
 
+### is\_valid\_time\_zone
+
+```
+is_valid_time_zone(zone_id: str) -> bool
+```
+
+`AtlasClassificationType.isValidTimeZone`: `GMT`, or an id `TimeZone` resolves to another zone.
+
 ### long\_value
 
 ```
@@ -5826,6 +9255,16 @@ parse_long(text: str) -> int | None
 ```
 
 `Long.valueOf(String)` and its kin: an optional sign and ASCII digits, or None.
+
+### time\_zone
+
+```
+time_zone(zone_id: str) -> tzinfo | None
+```
+
+`TimeZone.getTimeZone(id)`, or None for an id Java does not know (EVL-07, DD-042).
+
+Java knows tz database zones, its legacy short ids and custom `GMT±h[h][[:]mm]` offsets, and answers any other id with `GMT`.
 
 ### to\_big\_integer
 
