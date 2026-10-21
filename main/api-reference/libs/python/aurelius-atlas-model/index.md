@@ -1,6 +1,6 @@
 # aurelius-atlas-model
 
-Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): the patch record `AtlasPatch`. Since [2.1a](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-entity-models/index.md>): the entity models of `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`, `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON conventions all models share in `aurelius_atlas_model.base`.
+Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): the patch record `AtlasPatch`. Since [2.1a](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-entity-models/index.md>): the entity models of `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`, `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON conventions all models share in `aurelius_atlas_model.base`. Since [2.1b](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-value-types/index.md>): Atlas's JSON codec, `aurelius_atlas_model.codec`, which keeps the digits of decimals.
 
 ```
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -766,6 +766,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasBaseTypeDef
 
 Bases: `AtlasModel`
@@ -1053,6 +1055,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasBusinessMetadataDef
 
@@ -1593,6 +1597,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasClassificationDef
 
@@ -2234,6 +2240,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasConstraintDef
 
 Bases: `AtlasModel`
@@ -2330,6 +2338,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasEntityDef
 
@@ -3151,6 +3161,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasEnumDef
 
 Bases: `AtlasBaseTypeDef`
@@ -3547,6 +3559,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasEnumElementDef
 
 Bases: `AtlasModel`
@@ -3645,6 +3659,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasRelationshipAttributeDef
 
@@ -4068,6 +4084,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasRelationshipDef
 
@@ -4783,6 +4801,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasRelationshipEndDef
 
 Bases: `AtlasModel`
@@ -4936,6 +4956,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasStructDef
 
@@ -5477,6 +5499,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasTypeDefHeader
 
 Bases: `AtlasModel`
@@ -5620,6 +5644,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasTypesDef
 
@@ -7349,6 +7375,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### Cardinality
 
 Bases: `StrEnum`
@@ -7810,6 +7838,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### PatchStatus
 
 Bases: `StrEnum`
@@ -7973,6 +8003,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### empty\_when\_null
 
 ```
@@ -7988,6 +8020,55 @@ null_when_empty(values: list[T] | None) -> list[T] | None
 ```
 
 Read an empty list as null: a field Java leaves null when empty (TDM-11).
+
+## aurelius\_atlas\_model.codec
+
+Atlas's JSON: numbers with a fraction read as decimals, decimals and dates written as Jackson writes them.
+
+Atlas's REST mapper reads floats as `BigDecimal` (`USE_BIG_DECIMAL_FOR_FLOATS`) and writes a `BigDecimal` with its digits and a `Date` as epoch milliseconds (VAL-01, DD-039).
+
+Functions:
+
+- **`dumps`** –
+
+  Write `value` as Atlas's REST mapper does, compactly, in UTF-8 (VAL-01).
+- **`loads`** –
+
+  Read JSON as Jackson does with `USE_BIG_DECIMAL_FOR_FLOATS`: every float is a `Decimal` with its digits.
+
+Attributes:
+
+- **`NOT_JSON_ERROR`** –
+
+### NOT\_JSON\_ERROR
+
+```
+NOT_JSON_ERROR = '{type} is not a JSON value'
+```
+
+### dumps
+
+```
+dumps(value: Any) -> bytes
+```
+
+Write `value` as Atlas's REST mapper does, compactly, in UTF-8 (VAL-01).
+
+A `Decimal` keeps its digits, a `datetime` is epoch milliseconds, NaN and infinities are strings, a model is its `to_json`, and map keys are Java's text of the key.
+
+### loads
+
+```
+loads(text: str | bytes) -> Any
+```
+
+Read JSON as Jackson does with `USE_BIG_DECIMAL_FOR_FLOATS`: every float is a `Decimal` with its digits.
+
+Raises:
+
+- `ValueError` –
+
+  The text is not JSON.
 
 ## aurelius\_atlas\_model.instance.struct
 
@@ -8074,6 +8155,16 @@ model_config = ConfigDict(
 type_name: str | None = None
 ```
 
+#### from\_map
+
+```
+from_map(values: Mapping[str, Any]) -> Self
+```
+
+`AtlasStruct(Map)`: `typeName`, and `attributes` or, without an `attributes` map, the whole map.
+
+Not how a body is read, which is Jackson's (ENT-02); Atlas's code makes structs from maps (VAL-14).
+
 #### get\_attribute
 
 ```
@@ -8113,6 +8204,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.entity
 
@@ -8870,6 +8963,16 @@ add_meaning(meaning: AtlasTermAssignmentHeader) -> None
 
 Append a meaning, creating the list.
 
+#### from\_map
+
+```
+from_map(values: Mapping[str, Any]) -> Self
+```
+
+`AtlasStruct(Map)`: `typeName`, and `attributes` or, without an `attributes` map, the whole map.
+
+Not how a body is read, which is Jackson's (ENT-02); Atlas's code makes structs from maps (VAL-14).
+
 #### get\_attribute
 
 ```
@@ -8949,6 +9052,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### next\_internal\_id
 
@@ -9693,6 +9798,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 #### update\_entity\_guid
 
 ```
@@ -10411,6 +10518,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 #### update\_entity\_guid
 
@@ -11151,6 +11260,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 #### update\_entity\_guid
 
 ```
@@ -11275,6 +11386,22 @@ __eq__(other: object) -> bool
 
 `AtlasObjectId.equals`: by GUID when either has a non-empty one, else by type and unique attributes.
 
+#### from\_map
+
+```
+from_map(values: Mapping[str, Any]) -> Self
+```
+
+`AtlasObjectId(Map)`: `guid` and `typeName` as text, `uniqueAttributes` when it is a map (VAL-14).
+
+#### read\_map
+
+```
+read_map(values: Mapping[str, Any]) -> None
+```
+
+Set the fields Java's map constructor reads from `values`.
+
 #### to\_json
 
 ```
@@ -11282,6 +11409,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.related\_object\_id
 
@@ -11586,6 +11715,30 @@ __eq__(other: object) -> bool
 
 `AtlasRelatedObjectId.equals`: the object id's equality, then the relationship's fields.
 
+#### from\_map
+
+```
+from_map(values: Mapping[str, Any]) -> Self
+```
+
+`AtlasObjectId(Map)`: `guid` and `typeName` as text, `uniqueAttributes` when it is a map (VAL-14).
+
+#### read\_map
+
+```
+read_map(values: Mapping[str, Any]) -> None
+```
+
+`AtlasRelatedObjectId(Map)`: the object id's fields, then the relationship's (VAL-14).
+
+In Java's order: the GUID, the attributes as a struct (which set the type), the type and the status.
+
+Raises:
+
+- `ValueError` –
+
+  `relationshipStatus` is not a relationship status, as Java's `valueOf` fails.
+
 #### set\_relationship\_attributes
 
 ```
@@ -11601,6 +11754,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.relationship\_status
 
@@ -11880,6 +12035,16 @@ add_validity_period(validity_period: TimeBoundary) -> None
 
 Append a validity period, creating the list (`addValityPeriod`).
 
+#### from\_map
+
+```
+from_map(values: Mapping[str, Any]) -> Self
+```
+
+`AtlasStruct(Map)`: `typeName`, and `attributes` or, without an `attributes` map, the whole map.
+
+Not how a body is read, which is Jackson's (ENT-02); Atlas's code makes structs from maps (VAL-14).
+
 #### get\_attribute
 
 ```
@@ -11919,6 +12084,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.time\_boundary
 
@@ -12044,6 +12211,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.entity\_header
 
@@ -12611,6 +12780,16 @@ status: EntityStatus | None = EntityStatus.ACTIVE
 type_name: str | None = None
 ```
 
+#### from\_map
+
+```
+from_map(values: Mapping[str, Any]) -> Self
+```
+
+`AtlasStruct(Map)`: `typeName`, and `attributes` or, without an `attributes` map, the whole map.
+
+Not how a body is read, which is Jackson's (ENT-02); Atlas's code makes structs from maps (VAL-14).
+
 #### get\_attribute
 
 ```
@@ -12658,6 +12837,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.entity\_headers
 
@@ -13184,6 +13365,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.entity\_operation
 
@@ -13907,6 +14090,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ## aurelius\_atlas\_model.instance.term\_assignment\_header
 
 `AtlasTermAssignmentHeader`: a glossary term assigned to an entity, as the entity lists it (ENT-15).
@@ -14179,6 +14364,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ## aurelius\_atlas\_model.instance.term\_assignment\_status
 

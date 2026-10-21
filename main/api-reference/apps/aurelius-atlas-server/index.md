@@ -417,7 +417,7 @@ Classes:
 
 - **`AtlasJSONResponse`** –
 
-  A JSON response with the Atlas media type (SRV-05).
+  A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039).
 
 Functions:
 
@@ -455,7 +455,13 @@ __all__ = ['ATLAS_JSON_MEDIA_TYPE', 'AtlasError', 'AtlasErrorCode', 'AtlasJSONRe
 
 Bases: `JSONResponse`
 
-A JSON response with the Atlas media type (SRV-05).
+A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039).
+
+Methods:
+
+- **`render`** –
+
+  Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them.
 
 Attributes:
 
@@ -466,6 +472,14 @@ Attributes:
 ```
 media_type = ATLAS_JSON_MEDIA_TYPE
 ```
+
+#### render
+
+```
+render(content: Any) -> bytes
+```
+
+Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them.
 
 ### atlas\_error\_handler
 

@@ -70,6 +70,9 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-036](<#dd-036-start-up-loading-tries-a-raced-change-again>) | Start-up loading tries a raced change again | 1.6 | Proposed |
 | [DD-037](<#dd-037-instance-models-are-one-module-per-java-class>) | Instance models are one module per Java class | 2.1 | Proposed |
 | [DD-038](<#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them>) | Attribute values stay plain JSON values until their types read them | 2.1 | Proposed |
+| [DD-039](<#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits>) | One Atlas JSON codec reads floats as decimals and writes them with their digits | 2.1 | Proposed |
+| [DD-040](<#dd-040-java-values-are-held-as-the-python-values-closest-to-them>) | Java values are held as the Python values closest to them | 2.1 | Proposed |
+| [DD-041](<#dd-041-the-type-system-is-one-module-per-java-type-class-too>) | The type system is one module per Java type class too | 2.1 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -602,3 +605,45 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** Read every float as `Decimal` now: Pydantic writes a `Decimal` as a JSON string, so every writer would need a custom encoder, designed without the type that motivates it.
 
 **Consequences.** 2.1b decides how a `bigdecimal` value is read from a body and written back exactly, and applies it to these models.
+
+### DD-039. One Atlas JSON codec reads floats as decimals and writes them with their digits
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-21
+
+**Decision.** `aurelius_atlas_model.codec` holds Atlas's JSON reading and writing. `loads` reads every number with a fraction or exponent as a `Decimal`, as Jackson's `USE_BIG_DECIMAL_FOR_FLOATS` does. `dumps` writes a `Decimal` with its digits, a `datetime` as epoch milliseconds, NaN as the string `"NaN"`, and map keys as Java's text of the key. `AtlasModel.to_json` dumps in Pydantic's Python mode, so attribute values keep these types for the codec; typed timestamps are written as epoch milliseconds in both modes. The server's `AtlasJSONResponse` writes its content with `dumps`. This settles DD-038.
+
+**Reason.** A `bigdecimal` attribute keeps the digits it was given (`1.10`), and normalised dates are Java `Date` values that Jackson writes as numbers, even inside untyped attribute maps. Python's `json` turns a `Decimal` into a float, and Pydantic's JSON mode turns it, and a `datetime`, into a string.
+
+**Alternatives.** A custom Pydantic serializer per field: values inside `dict[str, Any]` have no field of their own. Converting decimals to floats: loses digits a client sent.
+
+**Consequences.** A double is written with Python's shortest form (`10000000.0`), where Jackson writes `Double.toString` (`1.0E7`): the same number in another notation, equal for every JSON reader and for the parity comparison. Request bodies with entity values are read with `loads` from 2.3 on.
+
+### DD-040. Java values are held as the Python values closest to them
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-21
+
+**Decision.** A Java `Integer`, `Long`, `BigInteger`, `Byte` or `Short` is a Python `int`; which of them it was follows from its size, as Jackson chooses by size (`Integer` within 32 bits, `Long` within 64, `BigInteger` beyond). A `BigDecimal` is a `Decimal`, a `Double` a `float`, and a `Float` a `float` holding the shortest decimal of the 32-bit value. A `Boolean` is a `bool`, never a number. A `Date` is an aware UTC `datetime` with millisecond precision. The conversions Java applies between them (`longValue`, `intValue`, `floatValue`, `toBigInteger`, `BigDecimal.valueOf(double)`, `valueOf(String)`, `String.valueOf`) are functions of `aurelius_atlas_typesystem.java`, each named after its Java original.
+
+**Reason.** The types branch on the Java class of a value (`instanceof Long`, `instanceof BigDecimal`), and their results depend on Java's arithmetic: truncation, saturation, 32-bit rounding. Values from a JSON body can only be integers, decimals, strings, booleans, lists and maps, so the Python types need only tell those apart; Java `Float` and `Double` arise from Atlas's own code and from Atlas's tests.
+
+**Alternatives.** Wrapper classes for every Java number type: every value would need wrapping on reading and unwrapping on writing, for distinctions JSON cannot express.
+
+**Consequences.** A `float` value written and read back is the same 32-bit value. An `Integer` and a `Long` of equal value cannot be told apart, and give the same result in every type. A `BigInteger` within 64 bits cannot be told apart from a `Long` either; `bigdecimal` treats them differently (`1` against `1.0`), but JSON never yields one, because Jackson reads such integers as `Integer` or `Long`.
+
+### DD-041. The type system is one module per Java type class too
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-21
+
+**Decision.** As DD-037 for the models: the types the value side adds or changes get one module each, `atlas_type`, `enum_type`, `array_type`, `map_type`, and `builtin/<name>_type` for each nested class of `AtlasBuiltInTypes`. `types.py` keeps the struct, classification, entity, relationship and business metadata types, which 2.1c moves the same way, and re-exports the moved classes.
+
+**Reason.** The value side roughly doubles the type classes; one file of all of them would pass two thousand lines. A reader who knows Atlas's `AtlasArrayType` finds `array_type`.
+
+**Alternatives.** Adding the value side to `types.py`: one module far beyond what anyone reads whole.
+
+**Consequences.** `from aurelius_atlas_typesystem.types import ArrayType` keeps working; new code imports from the class's own module.

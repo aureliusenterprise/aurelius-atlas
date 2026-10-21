@@ -4,7 +4,7 @@
 - **Pull request:** –
 - **Records:** DD-037, DD-038; relies on DD-002, DD-020, DD-021, DD-022, DD-025
 
-Increment 2.1 of the roadmap is split in two, each within the size limit of ADR 051: 2.1a, this specification, ports the entity models; 2.1b (`2-1-entity-validation.md`) ports the value side of the types that validates and normalises them (DD-025).
+Increment 2.1 of the roadmap is split in two, each within the size limit of ADR 051: 2.1a, this specification, ports the entity models; 2.1b (`2-1-value-types.md`) and 2.1c (`2-1-entity-validation.md`) port the value side of the types that validates and normalises them (DD-025).
 
 ## Scope
 

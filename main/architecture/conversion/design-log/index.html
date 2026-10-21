@@ -4031,6 +4031,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-039. One Atlas JSON codec reads floats as decimals and writes them with their digits
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-040-java-values-are-held-as-the-python-values-closest-to-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-040. Java values are held as the Python values closest to them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-041-the-type-system-is-one-module-per-java-type-class-too" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-041. The type system is one module per Java type class too
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4110,6 +4143,8 @@
       
         
           
+        
+      
         
       
         
@@ -4559,6 +4594,33 @@
     
   
   2.1a Entity models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-1-value-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.1b Value types
 
     
   </span>
@@ -6815,6 +6877,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-039. One Atlas JSON codec reads floats as decimals and writes them with their digits
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-040-java-values-are-held-as-the-python-values-closest-to-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-040. Java values are held as the Python values closest to them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-041-the-type-system-is-one-module-per-java-type-class-too" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-041. The type system is one module per Java type class too
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7212,6 +7307,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them">DD-038</a></td>
 <td>Attribute values stay plain JSON values until their types read them</td>
+<td>2.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits">DD-039</a></td>
+<td>One Atlas JSON codec reads floats as decimals and writes them with their digits</td>
+<td>2.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-040-java-values-are-held-as-the-python-values-closest-to-them">DD-040</a></td>
+<td>Java values are held as the Python values closest to them</td>
+<td>2.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-041-the-type-system-is-one-module-per-java-type-class-too">DD-041</a></td>
+<td>The type system is one module per Java type class too</td>
 <td>2.1</td>
 <td>Proposed</td>
 </tr>
@@ -7915,6 +8028,64 @@ a JSON reader and writer of its own for every model before any type needs it.</p
 writer would need a custom encoder, designed without the type that motivates it.</p>
 <p><strong>Consequences.</strong> 2.1b decides how a <code>bigdecimal</code> value is read from a body and written back exactly, and
 applies it to these models.</p>
+<h3 id="dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits">DD-039. One Atlas JSON codec reads floats as decimals and writes them with their digits<a class="headerlink" href="#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.1</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius_atlas_model.codec</code> holds Atlas's JSON reading and writing. <code>loads</code> reads every number
+with a fraction or exponent as a <code>Decimal</code>, as Jackson's <code>USE_BIG_DECIMAL_FOR_FLOATS</code> does. <code>dumps</code> writes a
+<code>Decimal</code> with its digits, a <code>datetime</code> as epoch milliseconds, NaN as the string <code>"NaN"</code>, and map keys as
+Java's text of the key. <code>AtlasModel.to_json</code> dumps in Pydantic's Python mode, so attribute values keep these
+types for the codec; typed timestamps are written as epoch milliseconds in both modes. The server's
+<code>AtlasJSONResponse</code> writes its content with <code>dumps</code>. This settles DD-038.</p>
+<p><strong>Reason.</strong> A <code>bigdecimal</code> attribute keeps the digits it was given (<code>1.10</code>), and normalised dates are Java
+<code>Date</code> values that Jackson writes as numbers, even inside untyped attribute maps. Python's <code>json</code> turns a
+<code>Decimal</code> into a float, and Pydantic's JSON mode turns it, and a <code>datetime</code>, into a string.</p>
+<p><strong>Alternatives.</strong> A custom Pydantic serializer per field: values inside <code>dict[str, Any]</code> have no field of
+their own. Converting decimals to floats: loses digits a client sent.</p>
+<p><strong>Consequences.</strong> A double is written with Python's shortest form (<code>10000000.0</code>), where Jackson writes
+<code>Double.toString</code> (<code>1.0E7</code>): the same number in another notation, equal for every JSON reader and for the
+parity comparison. Request bodies with entity values are read with <code>loads</code> from 2.3 on.</p>
+<h3 id="dd-040-java-values-are-held-as-the-python-values-closest-to-them">DD-040. Java values are held as the Python values closest to them<a class="headerlink" href="#dd-040-java-values-are-held-as-the-python-values-closest-to-them" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.1</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> A Java <code>Integer</code>, <code>Long</code>, <code>BigInteger</code>, <code>Byte</code> or <code>Short</code> is a Python <code>int</code>; which of them it
+was follows from its size, as Jackson chooses by size (<code>Integer</code> within 32 bits, <code>Long</code> within 64,
+<code>BigInteger</code> beyond). A <code>BigDecimal</code> is a <code>Decimal</code>, a <code>Double</code> a <code>float</code>, and a <code>Float</code> a <code>float</code> holding the
+shortest decimal of the 32-bit value. A <code>Boolean</code> is a <code>bool</code>, never a number. A <code>Date</code> is an aware UTC
+<code>datetime</code> with millisecond precision. The conversions Java applies between them (<code>longValue</code>, <code>intValue</code>,
+<code>floatValue</code>, <code>toBigInteger</code>, <code>BigDecimal.valueOf(double)</code>, <code>valueOf(String)</code>, <code>String.valueOf</code>) are
+functions of <code>aurelius_atlas_typesystem.java</code>, each named after its Java original.</p>
+<p><strong>Reason.</strong> The types branch on the Java class of a value (<code>instanceof Long</code>, <code>instanceof BigDecimal</code>), and
+their results depend on Java's arithmetic: truncation, saturation, 32-bit rounding. Values from a JSON body
+can only be integers, decimals, strings, booleans, lists and maps, so the Python types need only tell those
+apart; Java <code>Float</code> and <code>Double</code> arise from Atlas's own code and from Atlas's tests.</p>
+<p><strong>Alternatives.</strong> Wrapper classes for every Java number type: every value would need wrapping on reading
+and unwrapping on writing, for distinctions JSON cannot express.</p>
+<p><strong>Consequences.</strong> A <code>float</code> value written and read back is the same 32-bit value. An <code>Integer</code> and a <code>Long</code>
+of equal value cannot be told apart, and give the same result in every type. A <code>BigInteger</code> within 64 bits
+cannot be told apart from a <code>Long</code> either; <code>bigdecimal</code> treats them differently (<code>1</code> against <code>1.0</code>), but JSON
+never yields one, because Jackson reads such integers as <code>Integer</code> or <code>Long</code>.</p>
+<h3 id="dd-041-the-type-system-is-one-module-per-java-type-class-too">DD-041. The type system is one module per Java type class too<a class="headerlink" href="#dd-041-the-type-system-is-one-module-per-java-type-class-too" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.1</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> As DD-037 for the models: the types the value side adds or changes get one module each,
+<code>atlas_type</code>, <code>enum_type</code>, <code>array_type</code>, <code>map_type</code>, and <code>builtin/&lt;name&gt;_type</code> for each nested class of
+<code>AtlasBuiltInTypes</code>. <code>types.py</code> keeps the struct, classification, entity, relationship and business
+metadata types, which 2.1c moves the same way, and re-exports the moved classes.</p>
+<p><strong>Reason.</strong> The value side roughly doubles the type classes; one file of all of them would pass two
+thousand lines. A reader who knows Atlas's <code>AtlasArrayType</code> finds <code>array_type</code>.</p>
+<p><strong>Alternatives.</strong> Adding the value side to <code>types.py</code>: one module far beyond what anyone reads whole.</p>
+<p><strong>Consequences.</strong> <code>from aurelius_atlas_typesystem.types import ArrayType</code> keeps working; new code imports
+from the class's own module.</p>
 
 
 

@@ -1559,6 +1559,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.errors.AtlasJSONResponse.render" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;render
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4313,6 +4324,8 @@
       
         
       
+        
+      
     
     
     
@@ -4732,6 +4745,33 @@
     
   
   2.1a Entity models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/2-1-value-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.1b Value types
 
     
   </span>
@@ -6940,6 +6980,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.errors.AtlasJSONResponse.render" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;render
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8329,7 +8380,7 @@ models are loaded and patched (MDL-16).</p>
           <b><code><a class="autorefs autorefs-internal" title="            AtlasJSONResponse (aurelius_atlas_server.errors.AtlasJSONResponse)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse">AtlasJSONResponse</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A JSON response with the Atlas media type (SRV-05).</p>
+            <p>A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039).</p>
           </div>
         </li>
     </ul>
@@ -8469,7 +8520,7 @@ models are loaded and patched (MDL-16).</p>
 
 
 
-        <p>A JSON response with the Atlas media type (SRV-05).</p>
+        <p>A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039).</p>
 
 
 
@@ -8480,6 +8531,18 @@ models are loaded and patched (MDL-16).</p>
 
 
 
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            render (aurelius_atlas_server.errors.AtlasJSONResponse.render)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse.render">render</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them.</p>
+            </div>
+          </li>
+    </ul>
 
 
 
@@ -8542,6 +8605,26 @@ models are loaded and patched (MDL-16).</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_server.errors.AtlasJSONResponse.render" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">render</span>
+
+
+<a href="#aurelius_atlas_server.errors.AtlasJSONResponse.render" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">render</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.errors.AtlasJSONResponse.render(content)">content</span></span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bytes">bytes</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them.</p>
+
+
+    </div>
+
+</div>
 
 
 
