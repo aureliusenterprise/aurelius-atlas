@@ -113,6 +113,15 @@ export class Modal {
     }
 
     /**
+     * Handle Escape: dismisses the card anatomy, whose `role="dialog"` makes
+     * it the expected keyboard path (the backdrop is the pointer path).
+     * Ignored by the plain anatomy, as with backdrop clicks.
+     */
+    protected onEscape(): void {
+        this.onBackdropClick();
+    }
+
+    /**
      * Handle a confirm press: emits `confirmRequested` unless a caller-owned
      * action is pending.
      */

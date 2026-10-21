@@ -1,0 +1,14 @@
+/*
+ * The Aurelius legacy navbar sized its brand logo through a `.logo` rule
+ * (max-width 150px, max-height 50px — SHM-02, the legacy
+ * `libs/shell/src/lib/header/header.component.scss`). The ui-lib owns the
+ * navbar anatomy, so the sizing lives here; the class name is the
+ * `logoCssClass` input (default "logo").
+ */
+.navbar-brand img.logo {
+    display: block;
+    height: auto;
+    max-height: 50px;
+    max-width: 150px;
+    width: auto;
+}

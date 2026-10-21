@@ -1,4 +1,6 @@
 // Theme variables, must be included before the libraries to allow overriding defaults
+@use "sass:color";
+@use "sass:math";
 @use "variables";
 
 // Theme customization
@@ -6,3 +8,229 @@
 
 // Bulma
 @use "bulma/bulma";
+
+/*
+ * The Aurelius brand on Bulma 1 (SHM-01/03/04/06, DD-059) — emitted after
+ * Bulma so it wins the cascade against Bulma's :root, and outside the
+ * `:root:not([data-theme])` scheme machinery: light and dark follow the OS
+ * (SHM-01), the brand colours do not.
+ */
+:root {
+    @each $token, $value in variables.$bulma-token-overrides {
+        --bulma-#{$token}: #{$value};
+        --bulma-#{$token}-base: #{$value};
+        --bulma-#{$token}-rgb:
+            #{color.channel($value, "red", $space: rgb)}, #{color.channel($value, "green", $space: rgb)},
+            #{color.channel($value, "blue", $space: rgb)};
+        --bulma-#{$token}-h: #{color.channel($value, "hue", $space: hsl)};
+        --bulma-#{$token}-s: #{color.channel($value, "saturation", $space: hsl)};
+        --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
+    }
+
+    // The accent ramp (SHM-04, DD-063). $primary is deliberately NOT here:
+    // the legacy theme never overrode it, the demo highlights the landing's
+    // icons in Bulma's own teal #00d1b2 — Bulma 1's default, kept. Only its
+    // invert is pinned: the legacy findColorInvert puts white ink on the
+    // teal (Bulma 1 derives a dark one), so the solid surfaces (buttons,
+    // tags, hero) match the demo.
+    --bulma-primary-invert-l: 100%;
+
+    @each $name, $pair in variables.$bulma-accent-overrides {
+        $value: nth($pair, 1);
+        $ink-l: nth($pair, 2);
+
+        --bulma-#{$name}: #{$value};
+        --bulma-#{$name}-base: #{$value};
+        --bulma-#{$name}-rgb:
+            #{color.channel($value, "red", $space: rgb)}, #{color.channel($value, "green", $space: rgb)},
+            #{color.channel($value, "blue", $space: rgb)};
+        --bulma-#{$name}-h: #{color.channel($value, "hue", $space: hsl)};
+        --bulma-#{$name}-s: #{color.channel($value, "saturation", $space: hsl)};
+        --bulma-#{$name}-l: #{color.channel($value, "lightness", $space: hsl)};
+
+        // The solid-surface ink (the (value, ink) pair): white via the
+        // invert lightness; `null` keeps Bulma 1's dark invert — the demo's
+        // warning button inks rgba(0, 0, 0, .7), its 0.9.4 counterpart.
+        @if $ink-l {
+            --bulma-#{$name}-invert-l: #{$ink-l};
+        }
+    }
+
+    /*
+     * The legacy (Bulma 0.9.4) body metrics (SHM-03, DD-059): the system
+     * stack, 16px, line-height 1.5, weight 400, #4a4a4a ink on a white
+     * page — what the legacy app ships, and the reference the webapp is
+     * measured against. Bulma 1's defaults (Inter, 1rem, the scheme ink)
+     * render the app in the wrong type.
+     */
+    --bulma-family-primary:
+        BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --bulma-family-secondary: var(--bulma-family-primary);
+    --bulma-size-normal: 16px;
+    --bulma-body-line-height: 1.5;
+    --bulma-body-weight: 400;
+    --bulma-body-color: #4a4a4a;
+    --bulma-body-background-color: #fff;
+
+    // The navbar bar height: the legacy chrome ships 4.25rem (Bulma defaults
+    // to 3.25rem — the Aurelius navbar overrides it; the demo's bar is 68px).
+    // Bulma 1 reads the bar's min-height from --bulma-navbar-height, one
+    // knob for the bar and the `.has-navbar-fixed-top` body padding.
+    --bulma-navbar-height: 4.25rem;
+
+    /*
+     * The legacy (Bulma 0.9.4) text ramp (SHM-03, DD-062): Bulma 1 re-tinted
+     * its greys 221 degrees (text #4a5568, text-strong #2e333d) and moved the
+     * weights (title 800, strong 600, button 500), so pinning the body alone
+     * left every heading, box, content and navbar-adjacent ink off the legacy
+     * page. The channels are emitted neutral at the demo's measured values —
+     * #4a4a4a body/box/content ink, #363636 headings, #7a7a7a weak — and
+     * every token derived from the channels (text, text-strong, text-weak,
+     * the navbar/dropdown ink chain) resolves to the 0.9.4 ramp.
+     */
+    --bulma-text-h: 0deg;
+    --bulma-text-s: 0%;
+    --bulma-text-l: 29%; // hsl(0, 0%, 29%) = #4a4a4a — the demo's body/box ink
+    --bulma-text-base: #4a4a4a;
+    --bulma-text-rgb: 74, 74, 74;
+    --bulma-text-strong-h: 0deg;
+    --bulma-text-strong-s: 0%;
+    --bulma-text-strong-l: 21.18%; // = #363636 — the demo's title ink
+    --bulma-text-strong-base: #363636;
+    --bulma-text-weak-h: 0deg;
+    --bulma-text-weak-s: 0%;
+    --bulma-text-weak-l: 47.84%; // = #7a7a7a — Bulma 0.9.4's $grey
+    --bulma-text-weak-base: #7a7a7a;
+
+    // The legacy strong is 0.9.4's bold 700 — the demo's navbar locale
+    // <strong> measures 700; Bulma 1 dropped it to semibold (SHM-03, DD-062).
+    --bulma-strong-weight: 700;
+}
+
+/*
+ * The chrome tokens Bulma 1 scopes on its components (SHM-04): `.navbar`
+ * and `.footer` redefine their own background/ink tokens, so the Aurelius
+ * values land on the same selectors.
+ */
+.navbar {
+    // The legacy navbar ink is the body ink — the demo measures rgb(74,
+    // 74, 74) on the navbar links, not Bulma 1's tinted chain and not the
+    // 0.9.4 default rgba($black, 0.7) (SHM-03/04, DD-062). The navbar's
+    // <strong> (the locale badge) renders in the same ink — the demo
+    // measures #4a4a4a bold, not the 0.9.4 text-strong default.
+    --bulma-navbar-item-color: #4a4a4a;
+    --bulma-strong-color: #4a4a4a;
+
+    @each $token, $value in variables.$bulma-navbar-overrides {
+        --bulma-#{$token}: #{$value};
+        --bulma-#{$token}-h: #{color.channel($value, "hue", $space: hsl)};
+        --bulma-#{$token}-s: #{color.channel($value, "saturation", $space: hsl)};
+        --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
+    }
+
+    // Hover/active chrome (SHM-04, DD-063): the demo's navbar links hover
+    // and activate at the band grey with black ink (.navbar-link:hover
+    // measures rgb(245,245,245)/#000). Bulma 1 has no hover-colour token
+    // — the plate composes hsl(navbar-h/s, item-background-l + delta, a),
+    // so the channels are neutralised (the DD-062 pattern) and the delta
+    // set to the band grey's 96% lightness; the active/selected pair lands
+    // on the selected channels. The hover ink has no token at all and
+    // rides on the rule below.
+    --bulma-navbar-h: 0deg;
+    --bulma-navbar-s: 0%;
+    --bulma-navbar-item-hover-background-l-delta: -4%;
+    --bulma-navbar-item-active-background-l-delta: -4%;
+    --bulma-navbar-item-selected-h: 0deg;
+    --bulma-navbar-item-selected-s: 0%;
+    --bulma-navbar-item-selected-background-l: 100%;
+    --bulma-navbar-item-selected-color-l: 0%;
+
+    // The burger ink (SHM-04, DD-064): Bulma 1 derives it from link (the
+    // Aurelius blue) — 0.9.4 defaults it to the navbar ink, the demo's
+    // grey. The hover/active plate composes the burger channels at 10 % /
+    // 20 % alpha (0.9.4's rgba($navbar-burger-color, .1) — black over the
+    // band), so the channels go black and the ink rides on the colour.
+    --bulma-navbar-burger-color: #4a4a4a;
+    --bulma-burger-h: 0deg;
+    --bulma-burger-s: 0%;
+    --bulma-burger-l: 0%;
+
+    // The dropdown chevron (SHM-04, DD-064): the legacy theme pins
+    // $navbar-dropdown-arrow to black — Bulma 1 derives it from link (the
+    // Aurelius blue).
+    --bulma-navbar-dropdown-arrow: #000;
+
+    // The dropdown ink composes h/s from the (tinted) scheme with the text
+    // lightness; neutralized, it resolves to #4a4a4a like the demo (DD-062).
+    --bulma-navbar-dropdown-item-h: 0deg;
+    --bulma-navbar-dropdown-item-s: 0%;
+}
+
+// The mobile navbar (SHM-04, DD-064): 0.9.4 blends the burger menu's
+// dropdowns into the menu band (`.navbar-dropdown` transparent, items
+// transparent, no top padding — Bulma 1's dropdown-item plate rule is not
+// media-scoped, so its items render as white tiles on the grey band).
+@media screen and (max-width: 1023px) {
+    .navbar .navbar-dropdown {
+        padding-top: 0;
+    }
+
+    .navbar .navbar-dropdown .navbar-item {
+        background-color: transparent;
+    }
+
+    // Bulma 1 regression (jgthms/bulma#4173): the %arrow placeholder sets
+    // display at :not(.is-arrowless) specificity, beating the mobile hide
+    // rule — 0.9.4 hides the burger menu's chevrons, mirrored here.
+    .navbar .navbar-link:not(.is-arrowless)::after {
+        display: none;
+    }
+}
+
+// The hover ink (SHM-04, DD-063): Bulma 1 dropped 0.9.4's
+// navbar-item-hover-color token (links keep their ink and only the plate
+// changes), so the demo's black hover ink — 0.9.4's default, measured on
+// .navbar-link:hover — rides on a rule mirroring Bulma's plate triggers.
+// Scoped to the bar's own links (dropdown items inherit their ink in the
+// legacy theme, #0a0a0a, and keep it on hover).
+.navbar .navbar-link:focus,
+.navbar .navbar-link:focus-within,
+.navbar .navbar-link:hover,
+.navbar .navbar-start > .navbar-item:focus,
+.navbar .navbar-start > .navbar-item:focus-within,
+.navbar .navbar-start > .navbar-item:hover,
+.navbar .navbar-end > .navbar-item:focus,
+.navbar .navbar-end > .navbar-item:focus-within,
+.navbar .navbar-end > .navbar-item:hover {
+    color: #000;
+}
+
+/*
+ * The legacy type ramp beyond the body (SHM-03, DD-062). Bulma 1 scopes
+ * these tokens on the components, so the 0.9.4 values land there: the demo
+ * measures the title at 600/#363636 (Bulma 1 ships 800), buttons at weight
+ * 400 (Bulma 1 ships 500), and `.content` at the body ink #4a4a4a with
+ * 600/#363636 headings (Bulma 1 inks it text-strong).
+ */
+.title,
+.subtitle {
+    --bulma-title-weight: 600;
+}
+
+.button {
+    --bulma-button-weight: 400;
+}
+
+.content {
+    color: #4a4a4a;
+
+    --bulma-content-heading-color: #363636;
+    --bulma-content-heading-weight: 600;
+}
+
+.footer {
+    @each $token, $value in variables.$bulma-footer-overrides {
+        --bulma-#{$token}: #{$value};
+    }
+}

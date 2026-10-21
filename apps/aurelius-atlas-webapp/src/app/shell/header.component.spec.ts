@@ -52,9 +52,17 @@ describe("ShellHeader", () => {
         expect(TestBed.createComponent(ShellHeader).componentInstance).toBeTruthy();
     });
 
-    it("brands the navbar with the config app name (SHC-02)", () => {
-        // The ui-lib header shows a name (no logo) as its brand (SHC-02).
-        expect(normalize(render().querySelector("aurelius-atlas-ui-header")?.textContent)).toContain(config.appName);
+    it("brands the navbar with the Aurelius logo (SHM-02)", () => {
+        // The brand is the legacy navbar logo (DD-059): the Aurelius Atlas
+        // mark, linking home, sized by the ui-lib's .logo rule. The app
+        // name remains the accessible alt (SHC-02, superseded here).
+        const brand = render().querySelector<HTMLAnchorElement>(".navbar-brand a.navbar-item");
+        const img = brand?.querySelector("img");
+
+        expect(brand?.getAttribute("routerLink")).toBe("/");
+        expect(img?.getAttribute("src")).toBe("assets/aurelius-atlas-logo.png");
+        expect(img?.getAttribute("alt")).toBe(config.appName);
+        expect(img?.getAttribute("class")).toBe("logo");
     });
 
     it("carries the Documentation link with the Aurelius docs target (SHC-03)", () => {
@@ -125,11 +133,14 @@ describe("ShellHeader", () => {
     it("ends the Keycloak session on Logout (SHC-05)", () => {
         const { logout } = setup();
         const compiled = render();
-        const button = [...compiled.querySelectorAll<HTMLButtonElement>("button.navbar-item")].find((item) =>
+        // The legacy Logout is `a role="button" .navbar-item` (DD-064).
+        const anchor = [...compiled.querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
             item.textContent?.includes("Logout"),
         );
 
-        button?.click();
+        expect(anchor?.getAttribute("role")).toBe("button");
+
+        anchor?.click();
 
         expect(logout).toHaveBeenCalledOnce();
     });

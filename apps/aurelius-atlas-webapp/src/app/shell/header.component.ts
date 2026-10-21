@@ -36,6 +36,9 @@ export class ShellHeader {
 
     protected readonly appName = this.config.appName;
 
+    /** The Aurelius Atlas brand mark (SHM-02): the legacy navbar logo, served from public/. */
+    protected readonly appLogo = "assets/aurelius-atlas-logo.png";
+
     protected readonly session = inject(Session);
 
     protected readonly locales: readonly string[] = LOCALES;
@@ -73,7 +76,9 @@ export class ShellHeader {
 
     /** End the Keycloak session (SHC-05), returning to the sign-in page. */
     protected logout(): void {
-        this.keycloak.logout();
+        // The navigation starts immediately; the promise resolves on the
+        // sign-in page, where this context is gone — nothing left to await.
+        void this.keycloak.logout();
     }
 
     /** The active locale, as the served document declares it. */

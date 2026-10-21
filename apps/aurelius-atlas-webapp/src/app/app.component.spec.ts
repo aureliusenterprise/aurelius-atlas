@@ -41,11 +41,18 @@ describe("App", () => {
 
         // The Aurelius root wraps its outlet in the shell chrome: header
         // above, footer below (SHL-03's bare-outlet reading is superseded
-        // here — the legacy root renders <models4insight-shell>).
+        // here — the legacy root renders <models4insight-shell>). The
+        // outlet band is the legacy .is-tall-container (flex + 100vh), so
+        // the footer begins below the fold (SHM-05, SHM-07, DD-061).
         expect([...compiled.children].map((child) => child.tagName.toLowerCase())).toEqual([
             "aurelius-atlas-webapp-header",
-            "router-outlet",
+            "div",
             "aurelius-atlas-webapp-footer",
         ]);
+
+        const band = compiled.querySelector(":scope > div");
+
+        expect(band?.className).toBe("is-tall-container has-background-light");
+        expect(band?.querySelector("router-outlet")).toBeTruthy();
     });
 });

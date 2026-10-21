@@ -116,31 +116,27 @@ describe("Modal", () => {
             expect(fixture.nativeElement.querySelectorAll(".modal-card-foot .button")).toHaveLength(1);
         });
 
-        it("dismisses on a backdrop click (UIC-01)", () => {
+        it.each([
+            ["a backdrop click", ".modal-background"],
+            ["the header delete button", ".modal-card-head .delete"],
+            ["the cancel button", ".modal-card-foot .button:last-child"],
+        ] as const)("dismisses from %s (UIC-01)", (_label, selector) => {
             const cancels: void[] = [];
             component.cancelRequested.subscribe(() => cancels.push(undefined));
 
-            (fixture.nativeElement.querySelector(".modal-background") as HTMLElement).click();
+            (fixture.nativeElement.querySelector(selector) as HTMLElement).click();
 
             expect(cancels).toHaveLength(1);
             expect(component.active()).toBe(false);
         });
 
-        it("dismisses from the header delete button (UIC-01)", () => {
+        it("dismisses on Escape, the dialog's keyboard path (UIC-01)", () => {
             const cancels: void[] = [];
             component.cancelRequested.subscribe(() => cancels.push(undefined));
 
-            (fixture.nativeElement.querySelector(".modal-card-head .delete") as HTMLElement).click();
-
-            expect(cancels).toHaveLength(1);
-            expect(component.active()).toBe(false);
-        });
-
-        it("emits cancel and closes from the cancel button (UIC-01)", () => {
-            const cancels: void[] = [];
-            component.cancelRequested.subscribe(() => cancels.push(undefined));
-
-            (fixture.nativeElement.querySelector(".modal-card-foot .button:last-child") as HTMLElement).click();
+            fixture.nativeElement
+                .querySelector(".modal-card")
+                .dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 
             expect(cancels).toHaveLength(1);
             expect(component.active()).toBe(false);

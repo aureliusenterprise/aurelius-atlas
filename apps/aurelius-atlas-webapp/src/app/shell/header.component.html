@@ -9,7 +9,9 @@
   never `id|description` suffixes — the suffix joins the extracted id and the
   key-keyed bridge can never match it (DD-055).
 -->
-<aurelius-atlas-ui-header [name]="appName">
+<!-- The legacy navbar is pinned (SHM-05, `navbar is-fixed-top`); the body
+     carries the matching has-navbar-fixed-top padding (index.html). -->
+<aurelius-atlas-ui-header fixed [name]="appName" [logo]="appLogo" logoCssClass="logo">
     <ng-container navbar-end>
         <!-- Documentation (SHC-03) -->
         <div class="navbar-item">
@@ -66,10 +68,22 @@
                 <!-- Account-security: the Keycloak account console. -->
                 <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
                 <hr class="navbar-divider" />
-                <!-- Logout. -->
-                <button class="navbar-item has-text-danger" (click)="logout()" i18n="@@shell.header.logout">
-                    Logout
-                </button>
+                <!-- NOSONAR S125: a DD-064 decision note, not commented-out code.
+                     Logout is an anchor by legacy form: the dropdown's ink chain
+                     styles anchors, and a native button element keeps the browser's
+                     centered text and picks up the dropdown item's white plate on
+                     mobile (DD-064). Enter/Space is the keyboard path below. -->
+                <!-- NOSONAR S6851: the anchor form is the DD-064 decision; Enter/Space is the keyboard path, as role=button prescribes. -->
+                <a
+                    class="navbar-item"
+                    role="button"
+                    tabindex="0"
+                    (click)="logout()"
+                    (keydown.enter)="logout()"
+                    (keydown.space)="$event.preventDefault(); logout()"
+                    i18n="@@shell.header.logout"
+                    >Logout</a
+                >
             </div>
         </div>
     </ng-container>

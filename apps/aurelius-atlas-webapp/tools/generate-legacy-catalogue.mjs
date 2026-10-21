@@ -68,7 +68,7 @@ function flatten(obj, prefix, out) {
  * @returns {string} The XML-escaped string.
  */
 function escapeXml(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 
 /**
@@ -80,7 +80,8 @@ function escapeXml(text) {
  */
 function renderText(text, isTarget) {
     const escaped = escapeXml(text);
-    return escaped.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_full, name) =>
+    // prettier-ignore
+    return escaped.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_full, name) => // NOSONAR S5852: `[^}]+?` is bounded by the closing `}}` — Aurelius placeholders are short identifiers.
         isTarget
             ? `<x id="${escapeXml(String(name).trim())}"/>`
             : `<x id="${escapeXml(String(name).trim())}" equiv-text="{{${name}}}"/>`,
@@ -99,15 +100,20 @@ function renderText(text, isTarget) {
  * @returns {string} The document with line-end spaces encoded.
  */
 function encodeLineEndSpaces(text) {
-    return text
-        .split("\n")
-        .map((line) => line.replace(/ +$/, (spaces) => "&#32;".repeat(spaces.length)))
-        .join("\n");
+    return (
+        text
+            .split("\n")
+            // prettier-ignore
+            .map((line) => line.replace(/ +$/, (spaces) => "&#32;".repeat(spaces.length))) // NOSONAR S5852: ` +$` scans one line (the split above) — bounded, no nested quantifier.
+            .join("\n")
+    );
 }
 
 const enFlat = { ...flatten(en, "", {}), ...flatten(enComponents, "", {}), ...flatten(enShell, "", {}) };
 const nlFlat = { ...flatten(nl, "", {}), ...flatten(nlComponents, "", {}), ...flatten(nlShell, "", {}) };
-const keys = Object.keys(enFlat).sort();
+// The keys are ASCII dotted paths; code-unit sort is the stable, review-friendly
+// order the committed catalogues are keyed by.
+const keys = Object.keys(enFlat).sort(); // NOSONAR S3798: see the note above.
 const missingInNl = Object.keys(nlFlat).filter((k) => !(k in enFlat));
 if (missingInNl.length > 0) {
     console.error(`ERROR: ${missingInNl.length} keys exist only in nl-NL:`, missingInNl.slice(0, 10));

@@ -141,7 +141,7 @@ def _clear_cookies(retry_state: RetryCallState) -> None:
     page.context.clear_cookies()
 
 
-@pytest.fixture()
+@pytest.fixture
 @retry(
     retry=retry_if_exception_type(PlaywrightError),
     stop=stop_after_attempt(2),

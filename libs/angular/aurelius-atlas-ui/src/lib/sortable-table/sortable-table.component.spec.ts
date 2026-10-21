@@ -195,7 +195,7 @@ describe("SortableTable", () => {
         fixture.detectChanges();
         await fixture.whenStable();
 
-        expect(root().querySelector('[role="status"]')).toBeTruthy();
+        expect(root().querySelector("output")).toBeTruthy();
         expect(root().querySelector("table")).toBeNull();
     });
 });

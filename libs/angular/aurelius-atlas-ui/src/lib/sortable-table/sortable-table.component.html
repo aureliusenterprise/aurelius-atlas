@@ -3,11 +3,11 @@
 @let _emptyLabel = emptyLabel();
 
 @if (_loading) {
-    <div class="has-text-centered p-6" role="status">
+    <output class="block has-text-centered p-6">
         <span class="icon is-medium has-text-info">
             <fa-icon [animation]="'spin'" [fixedWidth]="true" [icon]="faSpinner"></fa-icon>
         </span>
-    </div>
+    </output>
 } @else if (_pageRows.length === 0) {
     <!-- Empty-state label: Aurelius table shell chrome (DD-047). The i18n id is
          the dictionary path exactly — see the note in the pagination template. -->
@@ -61,7 +61,13 @@
             </thead>
             <tbody>
                 @for (row of _pageRows; track $index) {
-                    <tr [class.is-selected]="row === selectedRow()" (click)="onRowClicked(row)">
+                    <tr
+                        [attr.tabindex]="rowsSelectable() ? 0 : null"
+                        [class.is-selected]="row === selectedRow()"
+                        (click)="onRowClicked(row)"
+                        (keydown.enter)="onRowClicked(row)"
+                        (keydown.space)="$event.preventDefault(); onRowClicked(row)"
+                    >
                         <ng-container
                             *ngTemplateOutlet="rowTemplate(); context: { $implicit: row, index: $index }"
                         ></ng-container>

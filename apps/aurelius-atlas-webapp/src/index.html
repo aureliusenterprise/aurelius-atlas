@@ -1,5 +1,11 @@
 <!doctype html>
-<html lang="en">
+<!-- NOSONAR S125: a decision note, not commented-out code.
+  The document root declares the light colour scheme (SHM-01). Bulma 1 follows
+  the operating system otherwise, the Aurelius legacy (Bulma 0.9.4) was
+  light-only, and the app has no theme switch yet; the attribute on the root
+  element is the switch's future knob (DD-059).
+-->
+<html lang="en" data-theme="light">
     <head>
         <meta charset="utf-8" />
         <title>Aurelius Atlas</title>
@@ -7,7 +13,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
     </head>
-    <body>
+    <!-- has-navbar-fixed-top: the chrome's navbar is pinned (SHM-05); Bulma pads
+         the body by the navbar height so content starts below the bar. -->
+    <body class="has-navbar-fixed-top">
         <aurelius-atlas-webapp-root></aurelius-atlas-webapp-root>
     </body>
 </html>

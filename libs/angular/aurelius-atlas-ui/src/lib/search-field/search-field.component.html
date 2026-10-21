@@ -4,10 +4,14 @@
 
 <div class="field has-addons">
     <div class="control has-icons-right is-expanded">
+        <!-- The ControlShell's label was the Aurelius context's chrome ('Search');
+             the accessible name rides the submit label, the component's
+             search-string of that name. -->
         <input
             class="input"
             type="search"
             [attr.placeholder]="_placeholder"
+            [attr.aria-label]="submitLabel()"
             [ngModel]="_query"
             (ngModelChange)="onQueryChange($event)"
             (search)="submitQuery()"

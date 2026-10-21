@@ -145,7 +145,7 @@ export type AtlasRelationshipDef = AtlasStructDef & {
 };
 
 /** A business metadata type: attributes that apply to the entity types its options name. */
-export type AtlasBusinessMetadataDef = AtlasStructDef;
+export type AtlasBusinessMetadataDef = AtlasStructDef; // NOSONAR S6478: the alias names the Atlas businessMetadataDefs wire type; Java parity.
 
 /** A type definition of any kind — what `/typedef/name/{name}` and `/typedef/guid/{guid}` answer with. */
 export type AtlasTypeDef =
