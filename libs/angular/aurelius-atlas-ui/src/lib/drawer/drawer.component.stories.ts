@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/angular";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Drawer } from "./drawer.component";
 
 /**
@@ -31,8 +31,10 @@ const host = (args: Record<string, unknown>) => ({ props: args, template });
 
 /**
  * The panel closed behind an "Open settings" button: the play() opens it,
- * checks the title and the projected content, and closes it with the
- * header's close button.
+ * checks the title, the projected content and the slide-in (DD-074), and
+ * closes it with the header's close button. `toBeNull` does not poll, so
+ * the closed assertions wait out the 200ms exit animation, which is what
+ * removes the layer (DD-074).
  */
 export const Primary: Story = {
     args: {
@@ -41,15 +43,18 @@ export const Primary: Story = {
         ariaLabel: "Close",
     },
     play: async ({ canvas }) => {
-        await expect(canvas.queryByRole("dialog")).toBeNull();
+        expect(canvas.queryByRole("dialog")).toBeNull();
 
         await userEvent.click(canvas.getByRole("button", { name: "Open settings" }));
         const dialog = canvas.getByRole("dialog", { name: "Settings" });
         await expect(dialog).toBeInTheDocument();
         await expect(within(dialog).getByText("Appearance")).toBeInTheDocument();
+        // The panel slides in from the right edge (DD-074); Angular scopes
+        // the keyframe name, so match it unanchored.
+        expect(getComputedStyle(dialog).animationName).toMatch(/aurelius-drawer-in/);
 
         await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
-        await expect(canvas.queryByRole("dialog")).toBeNull();
+        await waitFor(() => expect(canvas.queryByRole("dialog")).toBeNull());
     },
     render: host,
 };
@@ -71,9 +76,11 @@ export const EscapeCloses: Story = {
         await expect(dialog).toBeInTheDocument();
 
         await userEvent.keyboard("{Escape}");
-        await expect(canvas.queryByRole("dialog")).toBeNull();
-        // Focus returns to the button that opened the panel (SPL-02).
+        // Focus returns to the button that opened the panel (SPL-02) —
+        // at once, while the panel is still sliding out (DD-074).
         await expect(canvasElement.ownerDocument.activeElement).toBe(opener);
+        // The layer goes when the exit animation ends (DD-074).
+        await waitFor(() => expect(canvas.queryByRole("dialog")).toBeNull());
     },
     render: host,
 };

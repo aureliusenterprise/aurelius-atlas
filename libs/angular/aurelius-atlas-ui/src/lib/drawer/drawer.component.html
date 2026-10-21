@@ -1,5 +1,9 @@
-@if (active()) {
-    <div class="aurelius-drawer">
+<!--
+    The layer renders while open and while sliding out (DD-074): the
+    animationend handler on the panel removes it once the exit is done.
+-->
+@if (active() || closing()) {
+    <div class="aurelius-drawer" [class.is-closing]="closing()">
         <!--
             Scrim dismissal is a pointer affordance; the keyboard path is
             the Escape handler on the dialog (the Modal's S1077 precedent —
@@ -17,6 +21,7 @@
             [attr.aria-label]="label()"
             tabindex="-1"
             (keydown.escape)="onEscape()"
+            (animationend)="onAnimationEnd($event)"
         >
             <header class="aurelius-drawer-head">
                 <p class="aurelius-drawer-title">{{ title() }}</p>

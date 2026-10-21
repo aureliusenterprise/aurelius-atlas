@@ -7,6 +7,7 @@ import {
     input,
     model,
     output,
+    signal,
     viewChild,
 } from "@angular/core";
 
@@ -56,6 +57,14 @@ export class Drawer {
     /** The panel element, the focus target while the drawer is open. */
     private readonly panel = viewChild<ElementRef<HTMLElement>>("panel");
 
+    /**
+     * The drawer is sliding out: `active` is already false — dismissal
+     * takes effect at once (DD-069) — while the panel plays its exit
+     * animation, and the layer stays rendered until the animation ends
+     * (DD-074).
+     */
+    protected readonly closing = signal(false);
+
     /** What was focused when the drawer opened, to restore focus on close. */
     private opener: HTMLElement | null = null;
 
@@ -80,6 +89,14 @@ export class Drawer {
                 this.opener = null;
             });
         });
+
+        // Reopening mid-slide-out cancels the exit (DD-074): the layer is
+        // still rendered, so only the flag needs to go away.
+        effect(() => {
+            if (this.active()) {
+                this.closing.set(false);
+            }
+        });
     }
 
     /**
@@ -90,10 +107,15 @@ export class Drawer {
     }
 
     /**
-     * Close the drawer.
+     * Close the drawer. The layer lingers for the exit animation and is
+     * removed when it ends (DD-074); the open state, focus restoration
+     * and the caller's `active` binding all take effect immediately.
      */
     close(): void {
         this.active.set(false);
+        if (this.panel()) {
+            this.closing.set(true);
+        }
     }
 
     /**
@@ -120,5 +142,17 @@ export class Drawer {
     /** Handle Escape on the panel — the dialog's keyboard dismissal path. */
     protected onEscape(): void {
         this.dismiss();
+    }
+
+    /**
+     * The panel's exit animation has ended (the name check keeps bubbled
+     * animations from the drawer's own content out of it; it is a
+     * containment because Angular scopes keyframe names, decorating them
+     * `_ngcontent-ng-…_aurelius-drawer-out`): drop the layer.
+     */
+    protected onAnimationEnd(event: AnimationEvent): void {
+        if (this.closing() && event.animationName.includes("aurelius-drawer-out")) {
+            this.closing.set(false);
+        }
     }
 }

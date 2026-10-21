@@ -3,6 +3,25 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { Drawer } from "./drawer.component";
 
+/**
+ * Build the animationend a browser would fire (DD-074): jsdom runs no CSS
+ * animations and ships no `AnimationEvent` constructor, so a plain event
+ * carries the name. The name carries the emulated-encapsulation suffix a
+ * compiled component's keyframes get (`aurelius-drawer-out-c0`).
+ */
+function animationEnd(animationName: string): Event {
+    const event = new Event("animationend", { bubbles: true });
+    Object.defineProperty(event, "animationName", { value: animationName });
+    return event;
+}
+
+/** Play the exit animation's end: dispatch it on the panel and re-render. */
+function finishExit(fixture: ComponentFixture<unknown>): void {
+    const panel = fixture.nativeElement.querySelector(".aurelius-drawer-panel") as HTMLElement;
+    panel.dispatchEvent(animationEnd("aurelius-drawer-out-c0"));
+    fixture.detectChanges();
+}
+
 describe("Drawer", () => {
     let component: Drawer;
     let fixture: ComponentFixture<Drawer>;
@@ -28,7 +47,43 @@ describe("Drawer", () => {
 
         component.close();
         fixture.detectChanges();
+        // The layer lingers for the exit animation (DD-074); it is dropped
+        // when the animation ends.
+        expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeTruthy();
+        finishExit(fixture);
         expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeNull();
+    });
+
+    it("slides out on close and drops the layer on animationend (DD-074)", () => {
+        component.open();
+        fixture.detectChanges();
+
+        component.close();
+        fixture.detectChanges();
+        const layer = fixture.nativeElement.querySelector(".aurelius-drawer");
+        expect(layer.classList.contains("is-closing")).toBe(true);
+
+        // Content animations bubble; a foreign animationend must not
+        // remove the layer early.
+        layer.querySelector(".aurelius-drawer-panel").dispatchEvent(animationEnd("some-content-animation"));
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeTruthy();
+
+        finishExit(fixture);
+        expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeNull();
+    });
+
+    it("reopening mid-slide-out cancels the exit (DD-074)", () => {
+        component.open();
+        fixture.detectChanges();
+        component.close();
+        fixture.detectChanges();
+
+        component.open();
+        fixture.detectChanges();
+        const layer = fixture.nativeElement.querySelector(".aurelius-drawer");
+        expect(layer).toBeTruthy();
+        expect(layer.classList.contains("is-closing")).toBe(false);
     });
 
     it("toggle flips the open state (SPL-02)", () => {
