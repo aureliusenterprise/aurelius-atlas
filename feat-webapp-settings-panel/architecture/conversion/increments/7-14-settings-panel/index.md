@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** [\#105](<https://github.com/aureliusenterprise/aurelius-atlas/pull/105>)
-- **Records:** DD-069 (the drawer), DD-070 (telemetry toggle semantics), DD-071 (supersedes SHM-01: `data-theme` follows the stored choice), DD-072 (the settings facade and per-category owners); relies on ADR 053, DD-039, DD-046, DD-047, DD-068
+- **Records:** DD-069 (the drawer), DD-070 (telemetry toggle semantics), DD-071 (supersedes SHM-01: `data-theme` follows the stored choice), DD-072 (the settings facade and per-category owners), DD-073 (browser-scoped localStorage), DD-074 (the drawer's enter/exit animation); relies on ADR 053, DD-039, DD-046, DD-047, DD-068
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-settings-panel/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits. It is a **new feature**, not a port: neither the Apache Atlas dashboards nor the legacy Aurelius shell has a settings control (verified in `.scratch/aurelius`'s `libs/shell` header and `dashboardv2`'s `Header.html` — the legacy header's right side is Documentation, language and account, and no theme or settings control exists). DV-12 records it as a deliberate addition.
 
@@ -35,7 +35,7 @@ Not in scope:
 | Id | Rule |
 | --- | --- |
 | SPL-01 | The header's right side carries a gear button (`navbar-item`, a `faGear` icon, an accessible label `shell.header.settings`) that opens the settings panel; the language dropdown (SHC-04) leaves the navbar and its control lives in the panel. Documentation (SHC-03) and account (SHC-05) are unchanged. |
-| SPL-02 | `Drawer` is a dumb `aurelius-atlas-ui` component: Bulma-token styled fixed-right panel, `active` as a `model()`, a `title` heading, `ariaLabel` for the close control; `dismiss()` on the backdrop, the close button and Escape (the `Modal`'s dismissal set, card anatomy); content is projected; opening moves focus into the panel, Escape returns it. Bulma 1 ships no drawer (DD-069). |
+| SPL-02 | `Drawer` is a dumb `aurelius-atlas-ui` component: Bulma-token styled fixed-right panel, `active` as a `model()`, a `title` heading, `ariaLabel` for the close control; `dismiss()` on the backdrop, the close button and Escape (the `Modal`'s dismissal set, card anatomy); content is projected; opening moves focus into the panel, Escape returns it; it slides in on open and out on close, the layer living until the exit animation ends (DD-074). Bulma 1 ships no drawer (DD-069). |
 | SPL-03 | The Appearance radio writes the theme through the owner: Light/Dark set `data-theme` to `light`/`dark` on the document root; **Auto removes the attribute**, so Bulma's OS-scheme path (`:root:not([data-theme])`, DD-068's dark host) applies. An empty `data-theme` is never written — the empty attribute keeps the OS path from applying (DD-071). |
 | SPL-04 | The choice persists: the key `data-theme` in `localStorage` (the key `DarkModeService` already owns), and the stored value is applied at bootstrap, before the first render, so a returning user never sees a flash of the other scheme. |
 | SPL-05 | With no stored choice, the app renders the **light** scheme under any OS preference — SHM-01's user-visible promise, kept after its mechanism is superseded (DD-071): the light default is the `DarkModeService` mode default, not the html pin. |
@@ -66,7 +66,7 @@ Nothing is ported. The precedents the design leans on:
 
 - Vitest (`nx test aurelius-atlas-ui -c ci`, `nx test aurelius-atlas-webapp -c ci`):
 
-  - `drawer/drawer.component.spec.ts` — `active` model opens/closes, `dismiss()` on backdrop/close/Escape, `title` and `ariaLabel` render, content projected (SPL-02)
+  - `drawer/drawer.component.spec.ts` — `active` model opens/closes, `dismiss()` on backdrop/close/Escape, `title` and `ariaLabel` render, content projected (SPL-02); the close slides out and the layer drops on `animationend`, foreign animations are ignored, reopening mid-exit cancels it (DD-074)
   - `dark-mode/dark-mode.service.spec.ts` — `setMode` writes the attribute for light/dark and **removes** it for auto, persists to `data-theme`, defaults to light (SPL-03, SPL-04, SPL-05)
   - `settings/settings.service.spec.ts` — the facade delegates each category to its owner and exposes it read-only (SPL-10)
   - `settings/*/*.service.spec.ts` — `UserPreference` reads and writes its key (SPL-09); `TelemetryService` off stops the exporters, on is deferred to reload (SPL-11); `TimezoneService` id list and browser-default first (SPL-07); `PageSizeService` positive-integer guard (SPL-08)

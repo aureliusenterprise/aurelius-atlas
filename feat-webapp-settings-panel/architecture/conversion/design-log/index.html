@@ -4434,6 +4434,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-074-the-drawer-animates-in-and-out-the-layers-life-is-the-exit-animations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-074. The drawer animates in and out; the layer's life is the exit animation's
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7824,6 +7835,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-074-the-drawer-animates-in-and-out-the-layers-life-is-the-exit-animations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-074. The drawer animates in and out; the layer's life is the exit animation's
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9979,6 +10001,51 @@ putting a UI feature behind API work the user scoped later.</p>
 none). A shared browser shares its settings — acceptable for v1, named for
 the server-side slice to fix. Key names are documented in this entry so the
 server-side slice can migrate them.</p>
+<h3 id="dd-074-the-drawer-animates-in-and-out-the-layers-life-is-the-exit-animations">DD-074. The drawer animates in and out; the layer's life is the exit animation's<a class="headerlink" href="#dd-074-the-drawer-animates-in-and-out-the-layers-life-is-the-exit-animations" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.14</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The <code>Drawer</code>'s panel slides in from the right edge over a
+fading scrim (200ms, ease-out) and plays the reverse on close (ease-in,
+<code>forwards</code>). Dismissal is state-first: <code>active</code> flips to false at once —
+focus restoration, the caller's binding, and <code>cancelRequested</code> all land
+immediately — and a <code>closing</code> signal keeps the layer rendered for the exit
+pass; the panel's <code>animationend</code> (name-checked, so content animations
+bubbling out of the projected body are ignored) drops it. Reopening
+mid-slide-out clears the flag and the enter animation plays on the layer
+that never left. <code>prefers-reduced-motion: reduce</code> shortens the animations
+to 0.01ms; it does not remove them. Plain CSS keyframes — no
+<code>@angular/animations</code>, and the component stays a dumb
+<code>aurelius-atlas-ui</code> component (its AGENTS convention): the animation is
+styling, not service work.</p>
+<p><strong>Reason.</strong> The user asked for the drawer to be animated. A <code>@if (active())</code>
+template removes the DOM on close, so an exit animation needs a second
+signal to keep the layer alive; keying the layer's life to the exit
+animation's end is the CSS-native answer (the same lifecycle modal
+libraries use). State-first dismissal keeps every rule SPL-02 states —
+focus returns on close, <code>active</code> is false on dismissal — true <em>on close</em>,
+not 200ms later; tests and consumers never wait on motion. 0.01ms rather
+than <code>animation: none</code> under reduced motion because the exit's
+<code>animationend</code> is what removes the layer: no animation, no event, a
+drawer stranded on screen.</p>
+<p><strong>Alternatives.</strong> <code>@angular/animations</code>: a new dependency for the lib's
+peer set and a second styling system, for two translate keyframes. Enter
+only (keep <code>@if (active())</code>): simplest, and the snap-out reads as a bug
+next to the slide-in. Hiding with <code>visibility</code> after a timer: timers
+instead of the animation's own event, to race on every speed. Transition
+on a class toggle: keyframes were needed because the enter plays on
+element creation, where a transition has no start state.</p>
+<p><strong>Consequences.</strong> Focus restoration fires when <code>active</code> flips, so it lands
+before the slide-out finishes — the panel animates out behind the focus
+move; acceptable, named. The drawer spec drives <code>animationend</code> manually
+(jsdom runs no CSS animations, and ships no <code>AnimationEvent</code> constructor).
+Storybook's polling <code>expect</code> absorbs the 200ms close in the <code>play()</code>
+functions. Keyframe names are prefixed <code>aurelius-drawer-</code>; the exit's
+<code>animationend</code> is matched by containment, because Angular's emulated
+encapsulation decorates keyframe names (computed
+<code>_ngcontent-ng-…_aurelius-drawer-out</code>), not by prefix.</p>
 
 
 

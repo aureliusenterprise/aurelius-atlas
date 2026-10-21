@@ -1056,3 +1056,17 @@ The brand theme (DD-059/062) pins the light ink chain in `:root` — body `#4a4a
 **Alternatives.** Cookies: sent to the server on every request for data the server never reads. IndexedDB: asynchronous for values this small — the synchronous bootstrap read SPL-07/SPL-11 need becomes an ordering problem. Server-first now: blocks the panel on the 6.1 identity + a new endpoint, putting a UI feature behind API work the user scoped later.
 
 **Consequences.** DV-12 records the panel as a deliberate addition (Atlas has none). A shared browser shares its settings — acceptable for v1, named for the server-side slice to fix. Key names are documented in this entry so the server-side slice can migrate them.
+
+### DD-074. The drawer animates in and out; the layer's life is the exit animation's
+
+- **Status:** Accepted
+- **Increment:** 7.14
+- **Date:** 2026-10-21
+
+**Decision.** The `Drawer`'s panel slides in from the right edge over a fading scrim (200ms, ease-out) and plays the reverse on close (ease-in, `forwards`). Dismissal is state-first: `active` flips to false at once — focus restoration, the caller's binding, and `cancelRequested` all land immediately — and a `closing` signal keeps the layer rendered for the exit pass; the panel's `animationend` (name-checked, so content animations bubbling out of the projected body are ignored) drops it. Reopening mid-slide-out clears the flag and the enter animation plays on the layer that never left. `prefers-reduced-motion: reduce` shortens the animations to 0.01ms; it does not remove them. Plain CSS keyframes — no `@angular/animations`, and the component stays a dumb `aurelius-atlas-ui` component (its AGENTS convention): the animation is styling, not service work.
+
+**Reason.** The user asked for the drawer to be animated. A `@if (active())` template removes the DOM on close, so an exit animation needs a second signal to keep the layer alive; keying the layer's life to the exit animation's end is the CSS-native answer (the same lifecycle modal libraries use). State-first dismissal keeps every rule SPL-02 states — focus returns on close, `active` is false on dismissal — true *on close*, not 200ms later; tests and consumers never wait on motion. 0.01ms rather than `animation: none` under reduced motion because the exit's `animationend` is what removes the layer: no animation, no event, a drawer stranded on screen.
+
+**Alternatives.** `@angular/animations`: a new dependency for the lib's peer set and a second styling system, for two translate keyframes. Enter only (keep `@if (active())`): simplest, and the snap-out reads as a bug next to the slide-in. Hiding with `visibility` after a timer: timers instead of the animation's own event, to race on every speed. Transition on a class toggle: keyframes were needed because the enter plays on element creation, where a transition has no start state.
+
+**Consequences.** Focus restoration fires when `active` flips, so it lands before the slide-out finishes — the panel animates out behind the focus move; acceptable, named. The drawer spec drives `animationend` manually (jsdom runs no CSS animations, and ships no `AnimationEvent` constructor). Storybook's polling `expect` absorbs the 200ms close in the `play()` functions. Keyframe names are prefixed `aurelius-drawer-`; the exit's `animationend` is matched by containment, because Angular's emulated encapsulation decorates keyframe names (computed `_ngcontent-ng-…_aurelius-drawer-out`), not by prefix.

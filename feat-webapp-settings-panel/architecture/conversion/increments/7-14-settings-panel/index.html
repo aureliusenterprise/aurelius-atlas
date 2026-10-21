@@ -6484,7 +6484,8 @@
 <li><strong>Pull request:</strong> <a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/105">#105</a></li>
 <li><strong>Records:</strong> DD-069 (the drawer), DD-070 (telemetry toggle semantics), DD-071
   (supersedes SHM-01: <code>data-theme</code> follows the stored choice), DD-072 (the settings
-  facade and per-category owners); relies on ADR 053, DD-039, DD-046, DD-047, DD-068</li>
+  facade and per-category owners), DD-073 (browser-scoped localStorage), DD-074
+  (the drawer's enter/exit animation); relies on ADR 053, DD-039, DD-046, DD-047, DD-068</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07
 this slice inherits. It is a <strong>new feature</strong>, not a port: neither the Apache Atlas
@@ -6567,7 +6568,7 @@ APIs, the facade and the panel do not change when it lands.</p>
 </tr>
 <tr>
 <td>SPL-02</td>
-<td><code>Drawer</code> is a dumb <code>aurelius-atlas-ui</code> component: Bulma-token styled fixed-right panel, <code>active</code> as a <code>model()</code>, a <code>title</code> heading, <code>ariaLabel</code> for the close control; <code>dismiss()</code> on the backdrop, the close button and Escape (the <code>Modal</code>'s dismissal set, card anatomy); content is projected; opening moves focus into the panel, Escape returns it. Bulma 1 ships no drawer (DD-069).</td>
+<td><code>Drawer</code> is a dumb <code>aurelius-atlas-ui</code> component: Bulma-token styled fixed-right panel, <code>active</code> as a <code>model()</code>, a <code>title</code> heading, <code>ariaLabel</code> for the close control; <code>dismiss()</code> on the backdrop, the close button and Escape (the <code>Modal</code>'s dismissal set, card anatomy); content is projected; opening moves focus into the panel, Escape returns it; it slides in on open and out on close, the layer living until the exit animation ends (DD-074). Bulma 1 ships no drawer (DD-069).</td>
 </tr>
 <tr>
 <td>SPL-03</td>
@@ -6649,7 +6650,8 @@ APIs, the facade and the panel do not change when it lands.</p>
 <li>Vitest (<code>nx test aurelius-atlas-ui -c ci</code>, <code>nx test aurelius-atlas-webapp -c ci</code>):<ul>
 <li><code>drawer/drawer.component.spec.ts</code> — <code>active</code> model opens/closes, <code>dismiss()</code>
   on backdrop/close/Escape, <code>title</code> and <code>ariaLabel</code> render, content projected
-  (SPL-02)</li>
+  (SPL-02); the close slides out and the layer drops on <code>animationend</code>,
+  foreign animations are ignored, reopening mid-exit cancels it (DD-074)</li>
 <li><code>dark-mode/dark-mode.service.spec.ts</code> — <code>setMode</code> writes the attribute for
   light/dark and <strong>removes</strong> it for auto, persists to <code>data-theme</code>, defaults to
   light (SPL-03, SPL-04, SPL-05)</li>
