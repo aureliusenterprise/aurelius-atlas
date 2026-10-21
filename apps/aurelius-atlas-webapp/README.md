@@ -11,7 +11,8 @@ The increment ledger for this track is the 7.x series:
 [7-0 foundation](../../docs/architecture/conversion/increments/7-0-webapp-foundation.md),
 [7-1 shell](../../docs/architecture/conversion/increments/7-1-webapp-shell.md),
 [7-3 API client + auth](../../docs/architecture/conversion/increments/7-3-api-client-auth.md),
-[7-5 landing page](../../docs/architecture/conversion/increments/7-5-browse-landing.md).
+[7-5 landing page](../../docs/architecture/conversion/increments/7-5-browse-landing.md),
+[7-11 shell chrome](../../docs/architecture/conversion/increments/7-11-shell-chrome.md).
 
 ## Features (slice 7.1 — shell + localisation)
 
@@ -19,9 +20,10 @@ The increment ledger for this track is the 7.x series:
 - Runtime config: `/config.json` is fetched and validated into the typed
   `AppConfig` at bootstrap (`src/app/config.ts`); a missing or malformed file
   fails loudly. Only the development build bundles it (`dev/config.json`)
-- Root component renders a bare `<router-outlet />`, as the Aurelius root does;
-  `''` redirects to `/search/browse` (the Aurelius default destination), `'**'`
-  falls back to it, scroll position is restored on back/forward
+- Root component renders the router outlet; `''` redirects to
+  `/search/browse` (the Aurelius default destination), `'**'` falls back to it,
+  scroll position is restored on back/forward (the bare outlet is framed by the
+  shell chrome since 7.11, SHC-01)
 - `en-US` and `nl-NL` builds; the full Aurelius dictionary (495 leaves / 105
   key trees) is bridged into XLIFF catalogues keyed by the legacy dotted paths
   (`@@search.browse.description`), verified by `i18n-completeness.spec.ts`
@@ -33,9 +35,9 @@ The increment ledger for this track is the 7.x series:
   `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
   clickstream paths (DD-040)
 
-Not wired yet by design: the header/search bar and the search client (7.4,
-DD-051), and server-side token verification (6.1 — the bearer token rides from
-day one and is inert until then, DD-052).
+Not wired yet by design: the navbar's search bar and nav buttons (7.4, DD-051),
+and server-side token verification (6.1 — the bearer token rides from day one
+and is inert until then, DD-052).
 
 ## Features (slice 7.3 — API client + auth wiring)
 
@@ -68,9 +70,28 @@ day one and is inert until then, DD-052).
 - The page issues zero HTTP requests (BRW-04): all content is static, every
   string carries its `@@search.browse.*` bridge key, and the strings that must
   live in TypeScript use `$localize` with the same ids
-- Deferred by design (BRW-06, DD-054): the cards' search fields, explore
-  buttons, and the Shell chrome all arrive with the search slice (7.4), which
-  is gated on the server search API (4.1 + 2.3)
+- Deferred by design (BRW-06, DD-054): the cards' search fields and explore
+  buttons arrive with the search slice (7.4), which is gated on the server
+  search API (4.1 + 2.3); the Shell chrome landed with 7.11
+
+## Features (slice 7.11 — shell chrome)
+
+- The root frames every screen: the 7.2 `aurelius-atlas-ui` header above the
+  outlet, the footer below it (SHC-01, superseding the bare outlet), as the
+  Aurelius root wraps its outlet in `libs/shell`'s chrome (DD-056)
+- Navbar, search-free (SHC-02..SHC-05, DD-056): app-name brand, the Aurelius
+  Documentation link, the language dropdown, and the account dropdown —
+  welcome line, Keycloak account console, and logout over `keycloak-angular`
+  (the legacy `libs/authentication` session chrome is not ported)
+- Language switch is a full-page navigation into the locale tree the image
+  serves (DD-039): `localeHref` strips the active locale prefix and prepends
+  the chosen one
+- Footer from the runtime config (SHC-06): copyright year, app name, version —
+  `appName`/`appCopyright`/`appVersion` join `AppConfig`, the Aurelius
+  `shell` env block's role moving to `/config.json` (SHL-10)
+- The `libs/shell` dictionaries (en, nl) join the XLIFF bridge
+  (`@@shell.header.*`, `@@shell.footer.*`, SHC-07) — fixtures, generator, and
+  completeness spec all extended
 
 ## Running
 

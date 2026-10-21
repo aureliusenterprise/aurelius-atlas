@@ -31,6 +31,25 @@ export interface AppConfig {
      * swapping the trailing `traces` signal for `metrics`.
      */
     readonly otelMetricsExporterUrl?: string;
+
+    /**
+     * Application name: the shell header's brand and the footer's centre line
+     * (SHC-02, SHC-06). The Aurelius `environments/environment.ts`'s
+     * `shell.appName` — the runtime config is the settings channel (SHL-10).
+     */
+    readonly appName: string;
+
+    /**
+     * Copyright year shown in the footer, the Aurelius `shell.appCopyright`.
+     */
+    readonly appCopyright: number;
+
+    /**
+     * Application version shown in the footer, the Aurelius
+     * `VersionService.appVersion` (package version + git hash). The image
+     * label carries the same value; the deployment serves it here.
+     */
+    readonly appVersion: string;
 }
 
 /**
@@ -68,7 +87,8 @@ export function parseAppConfig(value: unknown): AppConfig {
         throw new Error("Invalid app config: expected a JSON object.");
     }
 
-    const { keycloak, apiBaseUrl, otelExporterUrl, otelMetricsExporterUrl } = value as Partial<AppConfig>;
+    const { keycloak, apiBaseUrl, otelExporterUrl, otelMetricsExporterUrl, appName, appCopyright, appVersion } =
+        value as Partial<AppConfig>;
 
     if (typeof keycloak !== "object" || keycloak === null) {
         throw new Error('Invalid app config: missing "keycloak" object.');
@@ -87,6 +107,13 @@ export function parseAppConfig(value: unknown): AppConfig {
         requireString("otelMetricsExporterUrl", otelMetricsExporterUrl);
     }
 
+    const requireYear = (name: string, field: unknown): number => {
+        if (typeof field !== "number" || !Number.isInteger(field)) {
+            throw new Error(`Invalid app config: "${name}" must be an integer year.`);
+        }
+        return field;
+    };
+
     return {
         keycloak: {
             clientId: requireString("keycloak.clientId", clientId),
@@ -95,6 +122,9 @@ export function parseAppConfig(value: unknown): AppConfig {
         },
         apiBaseUrl: requireString("apiBaseUrl", apiBaseUrl),
         otelExporterUrl: requireString("otelExporterUrl", otelExporterUrl),
+        appName: requireString("appName", appName),
+        appCopyright: requireYear("appCopyright", appCopyright),
+        appVersion: requireString("appVersion", appVersion),
         ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
     };
 }

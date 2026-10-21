@@ -1,0 +1,76 @@
+<!--
+  The Aurelius Atlas navbar chrome (SHC-02..SHC-05), ported from the legacy
+  Aurelius navbar search-free (DD-056): the search bar and the nav buttons stay
+  with the search slice; the PWA install/update items, the services dropdown,
+  and the loading/pipeline sticky block are not ported (see DD-056).
+
+  i18n ids are the legacy dictionary paths, read by the XLIFF bridge (DD-039,
+  extended to @@shell.* by SHC-07). Translation descriptions are comments,
+  never `id|description` suffixes — the suffix joins the extracted id and the
+  key-keyed bridge can never match it (DD-055).
+-->
+<aurelius-atlas-ui-header [name]="appName">
+    <ng-container navbar-end>
+        <!-- Documentation (SHC-03) -->
+        <div class="navbar-item">
+            <div class="buttons">
+                <!-- Legacy navbar-documentation: icon + word, opens in a new tab. -->
+                <a
+                    class="button is-outlined is-dark"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    [href]="documentationUrl"
+                >
+                    <span class="icon">
+                        <fa-icon aria-hidden="true" [icon]="faBook"></fa-icon>
+                    </span>
+                    <!-- Documentation. -->
+                    <span i18n="@@shell.header.documentation">Documentation</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Language switch (SHC-04): full-page navigation, locale prefix swap. -->
+        <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">
+                <span>
+                    <!-- Your language is. -->
+                    <span i18n="@@shell.header.language">Your language is</span>
+                    <span>&nbsp;</span>
+                    <strong>{{ activeLocale }}</strong>
+                </span>
+            </a>
+            <div class="navbar-dropdown is-right">
+                @for (locale of locales; track locale) {
+                    <a
+                        class="navbar-item"
+                        [attr.aria-current]="locale === activeLocale ? 'true' : null"
+                        [attr.href]="localeHref(locale)"
+                        [attr.hreflang]="locale"
+                        [class.is-active]="locale === activeLocale"
+                    >
+                        {{ locale }}
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Account dropdown (SHC-05): welcome / Account-security / Logout. -->
+        <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">
+                <!-- Logged in as. -->
+                <span i18n="@@shell.header.welcome">Logged in as</span>
+                {{ session.identity() }}
+            </a>
+            <div class="navbar-dropdown is-right">
+                <!-- Account-security: the Keycloak account console. -->
+                <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
+                <hr class="navbar-divider" />
+                <!-- Logout. -->
+                <button class="navbar-item has-text-danger" (click)="logout()" i18n="@@shell.header.logout">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </ng-container>
+</aurelius-atlas-ui-header>

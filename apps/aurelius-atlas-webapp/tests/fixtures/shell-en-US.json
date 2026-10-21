@@ -1,0 +1,24 @@
+{
+    "shell": {
+        "footer": {
+            "copyright": "Copyright"
+        },
+        "header": {
+            "documentation": "Documentation",
+            "install": "Install app",
+            "language": "Your language is",
+            "login": "Login",
+            "logout": "Logout",
+            "security": "Account security",
+            "services": "Models4Insight services",
+            "update": "Update available",
+            "welcome": "Logged in as"
+        },
+        "pipeline": {
+            "error": "Something went wrong while",
+            "oops": "Oops!",
+            "report": "Report this error",
+            "thanks": "Thank you!"
+        }
+    }
+}

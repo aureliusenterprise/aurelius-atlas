@@ -1,3 +1,4 @@
+import re
 import socket
 import ssl
 from urllib.parse import urljoin, urlsplit
@@ -201,3 +202,50 @@ def test__landing_renders_dutch_card_titles(authenticated: Page, root_url: str) 
 
     card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
     expect(card_titles).to_have_text(["Business context", "Technische context", "Data governance organisatie"])
+
+
+def test__navbar_greets_the_signed_in_user(authenticated: Page) -> None:
+    """The account dropdown's welcome line shows the Keycloak identity (SHC-05, SHC-09).
+
+    ``preferred_username`` from the token, greeted through the
+    shell.header.welcome bridge leaf.
+    """
+    welcome = authenticated.locator("a.navbar-link").filter(has_text="Logged in as")
+
+    expect(welcome).to_be_visible()
+    expect(welcome).to_have_text("Logged in as aurelius-writer")
+
+
+def test__language_dropdown_navigates_to_the_dutch_build(authenticated: Page) -> None:
+    """Choosing nl-NL in the language dropdown lands on the Dutch bundle (SHC-04, SHC-09).
+
+    A real click on the dropdown item, not a hand-written URL: the href the
+    header computes (locale prefix swap) and the nginx locale tree are
+    exercised together.
+    """
+    dropdown = authenticated.locator(".navbar-item.has-dropdown").filter(has_text="Your language is")
+    dropdown.hover()
+    dropdown.locator('a[hreflang="nl-NL"]').click()
+
+    authenticated.wait_for_url(re.compile(r"/nl-NL/search/browse$"))
+    expect(authenticated.locator("#browse-placeholder")).to_have_text(NL_PLACEHOLDER)
+
+
+def test__footer_shows_the_runtime_config_values(authenticated: Page) -> None:
+    """The footer renders copyright year, app name, and version from /config.json (SHC-06, SHC-09)."""
+    footer = authenticated.locator("footer.footer")
+
+    expect(footer).to_be_visible()
+    expect(footer.locator(".level-left")).to_have_text("Copyright 2022")
+    expect(footer.locator(".level > .level-item")).to_have_text("Aurelius Atlas Data Governance")
+    expect(footer.locator(".level-right")).to_have_text("0.0.0")
+    expect(footer.locator(".level-left .icon svg")).to_be_visible()  # faCopyright
+
+
+def test__documentation_link_points_at_the_aurelius_docs(authenticated: Page) -> None:
+    """The navbar's Documentation link opens the Aurelius docs safely (SHC-03, SHC-09)."""
+    link = authenticated.locator('a[target="_blank"]')
+
+    expect(link).to_have_attribute("href", "https://aureliusenterprise.github.io/aurelius-atlas-documentation/")
+    expect(link).to_have_attribute("rel", "noopener noreferrer")
+    expect(link).to_have_text("Documentation")

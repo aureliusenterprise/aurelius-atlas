@@ -192,6 +192,7 @@ nav:
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md
                       - 7.3 API client and auth wiring: architecture/conversion/increments/7-3-api-client-auth.md
                       - 7.5 Landing page (browse): architecture/conversion/increments/7-5-browse-landing.md
+                      - 7.11 Shell chrome: architecture/conversion/increments/7-11-shell-chrome.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

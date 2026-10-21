@@ -36,6 +36,13 @@ const nl = JSON.parse(readFileSync(join(fixtures, "nl-NL.json"), "utf8"));
 const enComponents = JSON.parse(readFileSync(join(fixtures, "components-en-US.json"), "utf8"));
 const nlComponents = JSON.parse(readFileSync(join(fixtures, "components-nl-NL.json"), "utf8"));
 
+// The Aurelius shell library shipped its own dictionary (the header/footer
+// chrome strings). The webapp's shell chrome carries them as
+// `i18n="@@shell.*"` units (7.11, SHC-07), so the same keys must exist in
+// the catalogues.
+const enShell = JSON.parse(readFileSync(join(fixtures, "shell-en-US.json"), "utf8"));
+const nlShell = JSON.parse(readFileSync(join(fixtures, "shell-nl-NL.json"), "utf8"));
+
 /**
  * Flatten a nested dictionary into `{ "a.b.c": "value" }`.
  * @param {Record<string, unknown>} obj The (sub)object to flatten.
@@ -98,8 +105,8 @@ function encodeLineEndSpaces(text) {
         .join("\n");
 }
 
-const enFlat = { ...flatten(en, "", {}), ...flatten(enComponents, "", {}) };
-const nlFlat = { ...flatten(nl, "", {}), ...flatten(nlComponents, "", {}) };
+const enFlat = { ...flatten(en, "", {}), ...flatten(enComponents, "", {}), ...flatten(enShell, "", {}) };
+const nlFlat = { ...flatten(nl, "", {}), ...flatten(nlComponents, "", {}), ...flatten(nlShell, "", {}) };
 const keys = Object.keys(enFlat).sort();
 const missingInNl = Object.keys(nlFlat).filter((k) => !(k in enFlat));
 if (missingInNl.length > 0) {

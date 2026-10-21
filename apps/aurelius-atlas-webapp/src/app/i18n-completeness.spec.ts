@@ -4,7 +4,9 @@
  * any key and find it translated (DD-039). The vendored dictionaries under
  * tests/fixtures/ are the reference, checked offline. The components
  * dictionaries are the chrome strings of the shared-components library,
- * carried by the `aurelius-atlas-ui` components (DD-047, UIC-04).
+ * carried by the `aurelius-atlas-ui` components (DD-047, UIC-04); the shell
+ * dictionaries are the header/footer chrome the webapp's shell carries
+ * (SHC-07).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -13,6 +15,8 @@ import componentsEnUs from "../../tests/fixtures/components-en-US.json";
 import componentsNlNl from "../../tests/fixtures/components-nl-NL.json";
 import enUs from "../../tests/fixtures/en-US.json";
 import nlNl from "../../tests/fixtures/nl-NL.json";
+import shellEnUs from "../../tests/fixtures/shell-en-US.json";
+import shellNlNl from "../../tests/fixtures/shell-nl-NL.json";
 
 /**
  * A parsed XLIFF catalogue: trans-unit id to decoded source/target text.
@@ -97,10 +101,12 @@ describe("Aurelius dictionary bridge", () => {
     const enLeaves = {
         ...flatten(enUs as Record<string, unknown>, "", {}),
         ...flatten(componentsEnUs as Record<string, unknown>, "", {}),
+        ...flatten(shellEnUs as Record<string, unknown>, "", {}),
     };
     const nlLeaves = {
         ...flatten(nlNl as Record<string, unknown>, "", {}),
         ...flatten(componentsNlNl as Record<string, unknown>, "", {}),
+        ...flatten(shellNlNl as Record<string, unknown>, "", {}),
     };
     const template = parseXlf("messages.xlf", "source");
     const translated = parseXlf("messages.nl-NL.xlf", "target");
@@ -138,20 +144,26 @@ describe("Aurelius dictionary bridge", () => {
         expect(translated.get(key)).toBe(nlLeaves[key]);
     });
 
-    it("uses only chrome strings the components dictionaries define (UIC-04, DD-047)", () => {
-        // Every `@@components.*` id carried by an aurelius-atlas-ui template
-        // must be a vendored chrome string — a component may not invent a
-        // unit the translations do not have.
-        const uiSrc = resolve("libs/angular/aurelius-atlas-ui/src");
+    it("uses only chrome strings the components/shell dictionaries define (UIC-04, DD-047, SHC-07)", () => {
+        // Every `@@components.*` id carried by an aurelius-atlas-ui template,
+        // and every `@@shell.*` id carried by the webapp's shell chrome, must
+        // be a vendored chrome string — a component may not invent a unit the
+        // translations do not have.
+        const roots = [
+            { dir: resolve("libs/angular/aurelius-atlas-ui/src"), pattern: /@@components\.[\w.]+/g },
+            { dir: resolve("apps/aurelius-atlas-webapp/src"), pattern: /@@shell\.[\w.]+/g },
+        ];
         const invented: string[] = [];
 
-        for (const file of readdirSync(uiSrc, { recursive: true })) {
-            const name = String(file);
-            if (!name.endsWith(".html")) continue;
-            const html = readFileSync(join(uiSrc, name), "utf8");
-            for (const match of html.matchAll(/@@components\.[\w.]+/g)) {
-                const id = match[0].slice(2);
-                if (!(id in enLeaves) || !(id in nlLeaves)) invented.push(`${name}: ${id}`);
+        for (const { dir, pattern } of roots) {
+            for (const file of readdirSync(dir, { recursive: true })) {
+                const name = String(file);
+                if (!name.endsWith(".html")) continue;
+                const html = readFileSync(join(dir, name), "utf8");
+                for (const match of html.matchAll(pattern)) {
+                    const id = match[0].slice(2);
+                    if (!(id in enLeaves) || !(id in nlLeaves)) invented.push(`${name}: ${id}`);
+                }
             }
         }
 

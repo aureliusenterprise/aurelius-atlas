@@ -47,10 +47,18 @@ project; workspace-wide rules live in the root `AGENTS.md`.
       resolved from the container env (`.env.enc`, `${VAR:?}` guards) by the same
       `replace-placeholders` flag as the client secrets; the apps' `.env` files
       point at `aurelius-writer`. The bootstrap `admin` account
-      (`KC_BOOTSTRAP_ADMIN_*`) stays reserved for the admin console. Gotcha (same
-      as secrets): after changing a user/role, delete the realm (or recreate the
-      stack) and re-import — re-imports don't overwrite, and placeholder values
-      never re-resolve for existing users.
+      (`KC_BOOTSTRAP_ADMIN_*`) stays reserved for the admin console. Both dev
+      users also carry `realmRoles: ["default-roles-master"]` explicitly —
+      Keycloak's import does not auto-grant the realm default role, and the
+      Account Console (7.11 SHC-05) needs the `manage-account`/`view-profile`
+      roles composited under it. Gotcha (same as secrets): after changing a
+      user/role, the boot re-import will not apply it to a running stack — it
+      skips an existing realm wholesale ("Import skipped"), and placeholder
+      values never re-resolve for existing users. `kcadm delete realms/master`
+      refuses ("Can't remove master realm"), so recreate: `docker compose ... \
+down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
+      changed users and restart Keycloak — the boot import then recreates just
+      the missing users with fresh placeholder resolution.
 - The `aurelius` client (frontend SPA, public) has explicit loopback redirect
   URIs and web origins: `http(s)://localhost|127.0.0.1:4200` (example
   `nx serve`), `http(s)://localhost|127.0.0.1:4300|4301` (webapp `nx serve`,

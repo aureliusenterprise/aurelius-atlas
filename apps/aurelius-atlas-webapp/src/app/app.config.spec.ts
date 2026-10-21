@@ -30,6 +30,9 @@ const configPayload = {
     keycloak: { clientId: "aurelius", realm: "master", url: "https://keycloak.localhost:8443" },
     apiBaseUrl: "/api",
     otelExporterUrl: "/otel/v1/traces",
+    appName: "Aurelius Atlas Data Governance",
+    appCopyright: 2022,
+    appVersion: "0.0.0",
 };
 
 vi.mock("aurelius-atlas-observability", () => ({
