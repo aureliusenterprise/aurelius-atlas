@@ -4269,6 +4269,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-058-dev-keycloak-users-carry-default-roles-master-explicitly" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-058. Dev Keycloak users carry <code>default-roles-master</code> explicitly
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7407,6 +7418,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-058-dev-keycloak-users-carry-default-roles-master-explicitly" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-058. Dev Keycloak users carry <code>default-roles-master</code> explicitly
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9037,6 +9059,39 @@ before the guard redirects, so only the built image exercised it.</p>
 <p><strong>Consequences.</strong> SHC-05/SHC-08's "Keycloak client" is now precise: the
 keycloak-js instance. Spec test providers use <code>{ provide: Keycloak, … }</code>.
 7.4's session-touching code follows the same token.</p>
+<h3 id="dd-058-dev-keycloak-users-carry-default-roles-master-explicitly">DD-058. Dev Keycloak users carry <code>default-roles-master</code> explicitly<a class="headerlink" href="#dd-058-dev-keycloak-users-carry-default-roles-master-explicitly" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.11 (dev infrastructure)</li>
+<li><strong>Date:</strong> 2026-10-21</li>
+</ul>
+<p><strong>Decision.</strong> The dev users in <code>dev/keycloak/import/master.json</code>
+(<code>aurelius-writer</code>, <code>aurelius-reader</code>) declare <code>"realmRoles":
+["default-roles-master"]</code>.</p>
+<p><strong>Reason.</strong> The SHC-05 Account-security link opens the Keycloak Account
+Console, whose REST calls (<code>/realms/master/account/*</code>) require the
+<code>account</code> client's <code>manage-account</code>/<code>view-profile</code>; those roles reach a
+user only through <code>default-roles-master</code>'s composites. Keycloak's realm
+import does <strong>not</strong> auto-grant the realm default role to imported users,
+so the dev users reached the console with no roles and every REST call
+401s — the console renders "Something went wrong". Verified live: with
+the role granted, the console's profile page renders; without it, the
+same session 401s on <code>supportedLocales</code> and the account root. The Admin
+REST cannot repair a running realm here (every <code>role-mappings/realm</code>
+POST answers 404 "Role not found" for these users), which makes the
+import file the single declarative place the grant can live.</p>
+<p><strong>Alternatives.</strong> Grant the roles per user through the admin console by
+hand: invisible to new clones, lost on stack recreate. Add the account
+client roles directly to the users: duplicates what
+<code>default-roles-master</code> already composites and drifts when Keycloak
+version changes reshape that role. A <code>defaultRoles</code> realm attribute
+(makes the role default for users created after import): does not reach
+the users the import itself creates.</p>
+<p><strong>Consequences.</strong> The Account Console works for both dev users, dev and
+e2e. Applying the change to a running stack requires recreating the
+users — a boot re-import skips an existing realm wholesale — the recipe
+is in <code>dev/keycloak/AGENTS.md</code>. New realm-default-role needs (e.g.
+<code>offline_access</code> for refresh tokens) arrive here, not per client.</p>
 
 
 

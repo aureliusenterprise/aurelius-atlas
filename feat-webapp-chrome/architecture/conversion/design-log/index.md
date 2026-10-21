@@ -866,3 +866,17 @@ Technical decisions made during the conversion that are too implementation-speci
 **Alternatives.** Provide `KeycloakService` manually (`useExisting: Keycloak` -style): re-provides a deprecated facade for a class slated for removal. `inject(KEYCLOAK_EVENT_SIGNAL)`: a signal wrapper, not the client — no `logout()` on it.
 
 **Consequences.** SHC-05/SHC-08's "Keycloak client" is now precise: the keycloak-js instance. Spec test providers use `{ provide: Keycloak, … }`. 7.4's session-touching code follows the same token.
+
+### DD-058. Dev Keycloak users carry `default-roles-master` explicitly
+
+- **Status:** Accepted
+- **Increment:** 7.11 (dev infrastructure)
+- **Date:** 2026-10-21
+
+**Decision.** The dev users in `dev/keycloak/import/master.json` (`aurelius-writer`, `aurelius-reader`) declare `"realmRoles": ["default-roles-master"]`.
+
+**Reason.** The SHC-05 Account-security link opens the Keycloak Account Console, whose REST calls (`/realms/master/account/*`) require the `account` client's `manage-account`/`view-profile`; those roles reach a user only through `default-roles-master`'s composites. Keycloak's realm import does **not** auto-grant the realm default role to imported users, so the dev users reached the console with no roles and every REST call 401s — the console renders "Something went wrong". Verified live: with the role granted, the console's profile page renders; without it, the same session 401s on `supportedLocales` and the account root. The Admin REST cannot repair a running realm here (every `role-mappings/realm` POST answers 404 "Role not found" for these users), which makes the import file the single declarative place the grant can live.
+
+**Alternatives.** Grant the roles per user through the admin console by hand: invisible to new clones, lost on stack recreate. Add the account client roles directly to the users: duplicates what `default-roles-master` already composites and drifts when Keycloak version changes reshape that role. A `defaultRoles` realm attribute (makes the role default for users created after import): does not reach the users the import itself creates.
+
+**Consequences.** The Account Console works for both dev users, dev and e2e. Applying the change to a running stack requires recreating the users — a boot re-import skips an existing realm wholesale — the recipe is in `dev/keycloak/AGENTS.md`. New realm-default-role needs (e.g. `offline_access` for refresh tokens) arrive here, not per client.
