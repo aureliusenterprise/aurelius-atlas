@@ -58,7 +58,9 @@ export class Modal {
     /**
      * Emits when the user presses the confirm button (card anatomy). Named
      * `confirmRequested` — `confirm` is a standard DOM event name, which the
-     * Angular ESLint rule bans for outputs.
+     * Angular ESLint rule bans for outputs. The modal stays open: where the
+     * legacy `closeOnConfirm` closed it (DD-065), the caller closes its own
+     * `active` model once the confirmed action completes.
      */
     readonly confirmRequested = output<void>();
 
