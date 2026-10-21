@@ -4368,6 +4368,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-068-the-brand-ships-a-dark-ink-ramp-on-bulmas-dark-hosts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-068. The brand ships a dark ink ramp on Bulma's dark hosts
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7663,6 +7674,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-068-the-brand-ships-a-dark-ink-ramp-on-bulmas-dark-hosts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-068. The brand ships a dark ink ramp on Bulma's dark hosts
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9607,6 +9629,48 @@ per 7.2's table: the details screens want a pure select today, and the
 presentation/data split lets 7.7 wire only the modal.</p>
 <p><strong>Consequences.</strong> 7.7 composes select + modal; the lib stays pure. Option
 identity is strict reference equality — callers pass stable objects.</p>
+<h3 id="dd-068-the-brand-ships-a-dark-ink-ramp-on-bulmas-dark-hosts">DD-068. The brand ships a dark ink ramp on Bulma's dark hosts<a class="headerlink" href="#dd-068-the-brand-ships-a-dark-ink-ramp-on-bulmas-dark-hosts" title="Permanent link">&para;</a></h3>
+<p>The brand theme (DD-059/062) pins the light ink chain in <code>:root</code> — body
+<code>#4a4a4a</code>, the neutral text ramp, <code>.content</code> — and <code>:root</code> out-cascades
+Bulma's own <code>[data-theme=dark]</code> block (equal specificity, later source).
+The result: under a dark scheme (the storybook theme switch, any future
+<code>DarkModeService</code> use) the surfaces flip to Bulma's dark scheme and the
+ink stays light-mode grey — illegible. This adds a dark ink ramp emitted
+on both of Bulma's dark hosts, <code>[data-theme="dark"]</code> (the explicit
+toggle, <code>DarkModeService</code>'s attribute) and <code>:root:not([data-theme])</code>
+inside <code>prefers-color-scheme: dark</code> (the OS path, Bulma's <code>system-theme</code>
+pattern): the text chain re-pins to Bulma's dark-scheme lightnesses over
+the DD-062 neutral hue (text 71% <code>#b5b5b5</code>, strong 93% <code>#ededed</code>, weak
+53% <code>#878787</code> — ~9:1 on the 9% surface), the body ink/background return
+to the scheme tokens, <code>.content</code> follows, the link lifts to Bulma's own
+dark adaptation (<code>link-on-scheme-l</code>, 73% — <code>#0073dd</code> is ~3.9:1 dark-on-
+dark), and the ui lib's legacy <code>.technical</code> type ink (pure <code>#0000ff</code>,
+~2:1) lifts to the same 75% lightness Bulma's contrast loop derives.
+<code>.technical</code> is the only legacy type colour that fails on dark: orange,
+teal and the grey all read 8:1+ and stay.</p>
+<p><strong>Reason.</strong> The switch must show the real app theme, and the app's dark
+mode (7.11's <code>DarkModeService</code> ships the toggle, 7.12 defers the theme)
+has no usable ink. Bulma 1's scheme machinery is the platform: its dark
+lightnesses are the WCAG-calibrated defaults, and its <code>generate-on-scheme-
+colors</code> contrast loop is the exact precedent for lifting <code>#0073dd</code>/
+<code>#0000ff</code> — the ramp mirrors those numbers instead of inventing greys.
+The chrome bands stay pinned (SHM-01: "the brand colours do not follow
+the scheme"): the navbar's <code>#f5f5f5</code>/<code>#4a4a4a</code> and the footer's blue/
+white are the legacy chrome in either scheme, and a light navbar over a
+dark page is Bulma's own <code>.navbar.is-light</code> idiom.</p>
+<p><strong>Alternatives.</strong> Unpin the ink from <code>:root</code> and let Bulma's schemes own
+it: correct, but it deletes the DD-062 legacy ramp (Bulma 1's dark ink is
+221°-tinted, the demo's is neutral) and out-of-scope churn on a light-
+only slice. A full brand dark palette (every accent re-tuned): the demo
+has no dark mode to measure against (the legacy Aurelius is light-only —
+verified in <code>.scratch/aurelius</code>), so every value would be invented; only
+the ink that fails contrast is lifted, the rest of SHM-04 stays.</p>
+<p><strong>Consequences.</strong> The storybook switch previews a legible app; a future
+theme-switch slice inherits the ramp. The webapp's <code>index.html</code> keeps
+pinning <code>data-theme="light"</code> (SHM-01 untouched) — the dark ramp reaches
+the app only through an explicit switch. Play tests cover the ramp on
+the entity-card/breadcrumbs dark composition stories; the light ramp is
+unchanged (SHM-03's measurements stand).</p>
 
 
 
