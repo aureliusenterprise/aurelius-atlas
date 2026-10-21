@@ -1,8 +1,10 @@
 """``AtlasEntityType``: an entity, its hierarchy, relationship and business attributes (THY-09 to THY-12)."""
 
-from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, cast
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_model.instance import AtlasEntity, AtlasStruct
 from aurelius_atlas_model.typedef import (
     ATLAS_TYPE_DATE,
     ATLAS_TYPE_INT,
@@ -13,9 +15,11 @@ from aurelius_atlas_model.typedef import (
     AtlasEntityDef,
     AtlasRelationshipAttributeDef,
     PropagateTags,
+    TypeCategory,
 )
 
-from aurelius_atlas_typesystem.atlas_type import AtlasType
+from aurelius_atlas_typesystem.array_type import ArrayType
+from aurelius_atlas_typesystem.atlas_type import AtlasType, resolved
 from aurelius_atlas_typesystem.builtin import ObjectIdType
 
 if TYPE_CHECKING:
@@ -23,6 +27,7 @@ if TYPE_CHECKING:
 
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.hierarchy_type import HierarchyType
+from aurelius_atlas_typesystem.struct_type import StructValue, relationship_attributes_of
 from aurelius_atlas_typesystem.type_names import (
     ENTITY_HEADER_ATTRIBUTES,
     ENTITY_ROOT_NAME,
@@ -30,7 +35,7 @@ from aurelius_atlas_typesystem.type_names import (
     OPTION_APPEND_RELATIONSHIPS_ON_PARTIAL_UPDATE,
     OPTION_SCHEMA_ATTRIBUTES,
 )
-from aurelius_atlas_typesystem.values import parse_json
+from aurelius_atlas_typesystem.values import java_class_name, parse_json, relationship_type_of
 
 if TYPE_CHECKING:
     from aurelius_atlas_typesystem.business_metadata_type import BusinessAttribute
@@ -201,6 +206,154 @@ class EntityType(HierarchyType):
             for metadata, attributes in self.business_attributes.items()
         }
 
+    def _entity_supers(self) -> list[EntityType]:
+        return [super_type for super_type in self.super_types if isinstance(super_type, EntityType)]
+
+    def create_default_value(self) -> AtlasEntity:
+        """An entity of this type, with a temporary GUID and its mandatory attributes' defaults (EVL-05)."""
+        entity = AtlasEntity(type_name=self.entity_def.name)
+        self.populate_default_values(entity)
+        return entity
+
+    def is_valid_value(self, value: object) -> bool:
+        """Valid for each super type, for its own attributes and its relationship attributes (EVL-08)."""
+        if value is None:
+            return True
+        if not all(super_type.is_valid_value(value) for super_type in self._entity_supers()):
+            return False
+        return super().is_valid_value(value) and self._relationship_values_valid(value)
+
+    def is_valid_value_for_update(self, value: object) -> bool:
+        """Valid for update for each super type and its own attributes; relationship attributes are not checked."""
+        if value is None:
+            return True
+        if not all(super_type.is_valid_value_for_update(value) for super_type in self._entity_supers()):
+            return False
+        return super().is_valid_value_for_update(value)
+
+    def validate_value(self, value: object, name: str, messages: list[str]) -> bool:
+        """Validate for each super type, the own attributes, then the relationship attributes (EVL-08)."""
+        if value is None:
+            return True
+        if not isinstance(value, AtlasEntity | Mapping):
+            messages.append(f"{name}: invalid value type '{java_class_name(value)}")
+            return False
+        valid = True
+        for super_type in self._entity_supers():
+            valid = super_type.validate_value(value, name, messages) and valid
+        own = super().validate_value(value, name, messages)
+        return own and self._validate_relationship_values(value, name, messages) and valid
+
+    def validate_value_for_update(self, value: object, name: str, messages: list[str]) -> bool:
+        """Validate for update for each super type and the own attributes (EVL-03, EVL-08)."""
+        if value is None:
+            return True
+        if not isinstance(value, AtlasEntity | Mapping):
+            messages.append(f"{name}: invalid value type '{java_class_name(value)}")
+            return False
+        valid = True
+        for super_type in self._entity_supers():
+            valid = super_type.validate_value_for_update(value, name, messages) and valid
+        return super().validate_value_for_update(value, name, messages) and valid
+
+    def are_equal_values(self, left: object, right: object, guid_assignments: dict[str, str] | None) -> bool:
+        """Equal for each super type and for this type (EVL-06)."""
+        return all(
+            super_type.are_equal_values(left, right, guid_assignments) for super_type in self._entity_supers()
+        ) and super().are_equal_values(left, right, guid_assignments)
+
+    def normalize_attribute_values(self, value: StructValue) -> None:
+        """Normalise for each super type, the own attributes, then the relationship attributes (EVL-09)."""
+        for super_type in self._entity_supers():
+            super_type.normalize_attribute_values(value)
+        super().normalize_attribute_values(value)
+        self.normalize_relationship_attribute_values(value, for_update=False)
+
+    def normalize_attribute_values_for_update(self, value: StructValue) -> None:
+        """As ``normalize_attribute_values``, for update (EVL-03, EVL-09)."""
+        for super_type in self._entity_supers():
+            super_type.normalize_attribute_values_for_update(value)
+        super().normalize_attribute_values_for_update(value)
+        self.normalize_relationship_attribute_values(value, for_update=True)
+
+    def populate_default_values(self, struct: AtlasStruct) -> None:
+        """Defaults for each super type's mandatory attributes, then this type's (EVL-05)."""
+        for super_type in self._entity_supers():
+            super_type.populate_default_values(struct)
+        super().populate_default_values(struct)
+
+    def normalize_relationship_attribute_values(self, value: StructValue, *, for_update: bool) -> None:
+        """Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+
+        An entity's ``relationshipAttributes``; a map at its top level, as Java's map overload does.
+        """
+        for attribute_name in self.relationship_attributes:
+            if isinstance(value, AtlasEntity):
+                if not value.has_relationship_attribute(attribute_name):
+                    continue
+                item = value.get_relationship_attribute(attribute_name)
+            elif isinstance(value, AtlasStruct) or attribute_name not in value:
+                continue
+            else:
+                item = value[attribute_name]
+            attribute = self.relationship_attribute(attribute_name, relationship_type_of(item))
+            if attribute is None or not _holds_references(attribute.attribute_type):  # pragma: no cover
+                continue  # every relationship attribute holds references; Java checks anyway
+            held = attribute.attribute_type
+            normalized = held.get_normalized_value_for_update(item) if for_update else held.get_normalized_value(item)
+            if isinstance(value, AtlasEntity):
+                value.set_relationship_attribute(attribute_name, normalized)
+            else:
+                value[attribute_name] = normalized
+
+    def _relationship_values(self, value: object) -> Mapping[str, Any] | None:
+        """The relationship attribute values of an entity or a map (empty for a map without them, DV-13)."""
+        if isinstance(value, AtlasEntity):
+            return value.relationship_attributes or {}
+        if isinstance(value, Mapping):
+            return relationship_attributes_of(cast("Mapping[str, Any]", value)) or {}
+        return None
+
+    def _relationship_values_valid(self, value: object) -> bool:
+        """``validateRelationshipAttributes(Object)``: each relationship attribute's value is assignable (EVL-08)."""
+        if not self.relationship_attributes:
+            return True
+        values = self._relationship_values(value)
+        if values is None:
+            return False
+        for attribute_name in self.relationship_attributes:
+            item = values.get(attribute_name)
+            attribute = self.relationship_attribute(attribute_name, relationship_type_of(item))
+            if (
+                item is not None
+                and attribute is not None
+                and not _holds_references(attribute.attribute_type)
+                and not attribute.attribute_type.is_valid_value(item)
+            ):  # pragma: no cover - every relationship attribute holds references; Java checks anyway
+                return False
+        return True
+
+    def _validate_relationship_values(self, value: object, name: str, messages: list[str]) -> bool:
+        """``validateRelationshipAttributes(Object, String, List)``: missing mandatory ones and references (EVL-08)."""
+        if not self.relationship_attributes:
+            return True
+        values = self._relationship_values(value) or {}
+        valid = True
+        for attribute_name in self.relationship_attributes:
+            item = values.get(attribute_name)
+            attribute = self.relationship_attribute(attribute_name, relationship_type_of(item))
+            if attribute is None:
+                continue  # pragma: no cover - every name has an attribute
+            field = f"{name}.{attribute_name}"
+            if isinstance(value, AtlasEntity) and not attribute.attribute_def.is_optional and item is None:
+                if value.is_incomplete:
+                    continue
+                valid = False
+                messages.append(f"{field}: mandatory attribute value missing in type {self.type_name}")
+            if item is not None and _holds_references(attribute.attribute_type):
+                valid = attribute.attribute_type.validate_value(item, field, messages) and valid
+        return valid
+
 
 def _root_entity_def() -> AtlasEntityDef:
     """``AtlasRootEntityType.getRootEntityDef``: the system attributes of every entity (THY-05)."""
@@ -240,3 +393,10 @@ ENTITY_ROOT = EntityType(_root_entity_def())
 def _option_json(value: str | None) -> object:
     """``AtlasType.fromJson`` of an option: None for a missing, blank or malformed value."""
     return None if value is None or not value.strip() else parse_json(value)
+
+
+def _holds_references(type_: AtlasType) -> bool:
+    """``isValidRelationshipType``: an object id or entity type, or an array of one."""
+    if isinstance(type_, ArrayType):
+        type_ = resolved(type_.element_type)
+    return type_.category in (TypeCategory.OBJECT_ID_TYPE, TypeCategory.ENTITY)

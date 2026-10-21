@@ -46,6 +46,16 @@ class BusinessMetadataType(StructType):
         super().__init__(business_metadata_def)
         self.business_metadata_def = business_metadata_def
 
+    def is_valid_value(self, value: object) -> bool:  # noqa: ARG002 - business metadata has no instances
+        """Always: business metadata has no instance to check (EVL-10)."""
+        return True
+
+    def create_default_value(self) -> None:  # pyright: ignore[reportIncompatibleMethodOverride] - Java's is nullable
+        """Null: business metadata has no instance (EVL-10)."""
+
+    def get_normalized_value(self, value: object) -> None:
+        """Null: business metadata has no instance (EVL-10)."""
+
     def _resolve_references(self, registry: TypeRegistry) -> None:
         super()._resolve_references(registry)
         business_attributes: dict[str, AtlasAttribute] = {}

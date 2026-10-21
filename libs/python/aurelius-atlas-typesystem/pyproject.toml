@@ -1,5 +1,5 @@
 [project]
-dependencies = ["aurelius-atlas-model"]
+dependencies = ["aurelius-atlas-model", "tzdata>=2025.2"]
 description = "The Atlas type system for Aurelius Atlas: resolved types and the type registry."
 name = "aurelius-atlas-typesystem"
 requires-python = ">=3.14"

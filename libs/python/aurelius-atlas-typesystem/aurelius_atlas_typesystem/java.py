@@ -8,8 +8,11 @@ A Java ``Integer``, ``Long`` or ``BigInteger`` is an ``int``, a ``BigDecimal`` a
 import math
 import re
 import struct
+from datetime import timedelta, timezone, tzinfo
 from decimal import ROUND_DOWN, Decimal, InvalidOperation
+from functools import cache
 from typing import TypeGuard
+from zoneinfo import ZoneInfo, available_timezones
 
 from aurelius_atlas_model.errors import java_double_string
 
@@ -151,3 +154,72 @@ def big_decimal_value_of(value: float) -> Decimal:
 
 _JAVA_WHITESPACE = "".join(chr(code) for code in range(0x21))
 """What ``String.trim`` removes: every character up to the space."""
+
+
+SHORT_ZONE_IDS = {
+    "ACT": "Australia/Darwin",
+    "AET": "Australia/Sydney",
+    "AGT": "America/Argentina/Buenos_Aires",
+    "ART": "Africa/Cairo",
+    "AST": "America/Anchorage",
+    "BET": "America/Sao_Paulo",
+    "BST": "Asia/Dhaka",
+    "CAT": "Africa/Harare",
+    "CNT": "America/St_Johns",
+    "CST": "America/Chicago",
+    "CTT": "Asia/Shanghai",
+    "EAT": "Africa/Addis_Ababa",
+    "ECT": "Europe/Paris",
+    "IET": "America/Indiana/Indianapolis",
+    "IST": "Asia/Kolkata",
+    "JST": "Asia/Tokyo",
+    "MIT": "Pacific/Apia",
+    "NET": "Asia/Yerevan",
+    "NST": "Pacific/Auckland",
+    "PLT": "Asia/Karachi",
+    "PNT": "America/Phoenix",
+    "PRT": "America/Puerto_Rico",
+    "PST": "America/Los_Angeles",
+    "SST": "Pacific/Guadalcanal",
+    "VST": "Asia/Ho_Chi_Minh",
+}
+"""Java's legacy three-letter time zone ids that the tz database lacks, and the zones Java maps them to
+(``ZoneId.SHORT_IDS``)."""
+
+_CUSTOM_ZONE = re.compile(r"GMT([+-])([0-9]{1,2})(?::([0-9]{2}))?|GMT([+-])([0-9]{3,4})")
+_MAX_OFFSET_HOURS = 23
+_MAX_OFFSET_MINUTES = 59
+
+
+def time_zone(zone_id: str) -> tzinfo | None:
+    """``TimeZone.getTimeZone(id)``, or None for an id Java does not know (EVL-07, DD-042).
+
+    Java knows tz database zones, its legacy short ids and custom ``GMT±h[h][[:]mm]`` offsets, and answers any other id
+    with ``GMT``.
+    """
+    if zone_id in _tz_database():
+        return ZoneInfo(zone_id)
+    if zone_id in SHORT_ZONE_IDS:
+        return ZoneInfo(SHORT_ZONE_IDS[zone_id])
+    match = _CUSTOM_ZONE.fullmatch(zone_id)
+    if match is None:
+        return None
+    if match[1] is not None:
+        sign, hours, minutes = match[1], int(match[2]), int(match[3] or 0)
+    else:
+        sign, digits = match[4], int(match[5])
+        hours, minutes = divmod(digits, 100)
+    if hours > _MAX_OFFSET_HOURS or minutes > _MAX_OFFSET_MINUTES:
+        return None
+    offset = timedelta(hours=hours, minutes=minutes)
+    return timezone(-offset if sign == "-" else offset)
+
+
+def is_valid_time_zone(zone_id: str) -> bool:
+    """``AtlasClassificationType.isValidTimeZone``: ``GMT``, or an id ``TimeZone`` resolves to another zone."""
+    return zone_id == "GMT" or time_zone(zone_id) is not None
+
+
+@cache
+def _tz_database() -> frozenset[str]:
+    return frozenset(available_timezones())

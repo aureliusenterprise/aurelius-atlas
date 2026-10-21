@@ -24,6 +24,8 @@ from aurelius_atlas_typesystem.edge_direction import EdgeDirection
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.struct_type import StructType
 
+RELATIONSHIP_VALUES_ERROR = "{type}: relationship values arrive with AtlasRelationship in 3.1"
+
 
 class RelationshipType(StructType):
     """A relationship type: its ends, label and the attributes it adds to them (THY-08 to THY-10)."""
@@ -36,6 +38,18 @@ class RelationshipType(StructType):
         self.relationship_label: str | None = None
         self.end1_type: EntityType | None = None
         self.end2_type: EntityType | None = None
+
+    def is_valid_value(self, value: object) -> bool:
+        """Takes an ``AtlasRelationship``, which arrives with relationship instances in 3.1."""
+        raise NotImplementedError(RELATIONSHIP_VALUES_ERROR.format(type=self.type_name))
+
+    def is_valid_value_for_update(self, value: object) -> bool:
+        """Takes an ``AtlasRelationship``, which arrives with relationship instances in 3.1."""
+        raise NotImplementedError(RELATIONSHIP_VALUES_ERROR.format(type=self.type_name))
+
+    def are_equal_values(self, left: object, right: object, guid_assignments: dict[str, str] | None) -> bool:
+        """Takes an ``AtlasRelationship``, which arrives with relationship instances in 3.1."""
+        raise NotImplementedError(RELATIONSHIP_VALUES_ERROR.format(type=self.type_name))
 
     def _resolve_references(self, registry: TypeRegistry) -> None:
         super()._resolve_references(registry)

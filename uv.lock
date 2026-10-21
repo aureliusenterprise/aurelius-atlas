@@ -555,10 +555,14 @@ version = "0.6.1"
 source = { editable = "libs/python/aurelius-atlas-typesystem" }
 dependencies = [
     { name = "aurelius-atlas-model" },
+    { name = "tzdata" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" }]
+requires-dist = [
+    { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
+    { name = "tzdata", specifier = ">=2025.2" },
+]
 
 [[package]]
 name = "aurelius-atlas-vulnerability-report"
