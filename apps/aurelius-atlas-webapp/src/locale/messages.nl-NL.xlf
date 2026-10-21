@@ -2562,6 +2562,11 @@ The technical data governance model consists of the following types of entities:
         <target>Models4Insight diensten</target>
         <note priority="1" from="description">Aurelius dictionary key: shell.header.services</note>
       </trans-unit>
+      <trans-unit id="shell.header.settings" datatype="html">
+        <source>Settings</source>
+        <target>Instellingen</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.settings</note>
+      </trans-unit>
       <trans-unit id="shell.header.update" datatype="html">
         <source>Update available</source>
         <target>Update beschikbaar</target>
@@ -2591,6 +2596,81 @@ The technical data governance model consists of the following types of entities:
         <source>Thank you!</source>
         <target>Bedankt!</target>
         <note priority="1" from="description">Aurelius dictionary key: shell.pipeline.thanks</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.about" datatype="html">
+        <source>About</source>
+        <target>Over</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.about</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.appearance" datatype="html">
+        <source>Appearance</source>
+        <target>Weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.appearance</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.close" datatype="html">
+        <source>Close</source>
+        <target>Sluiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.close</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.language" datatype="html">
+        <source>Language</source>
+        <target>Taal</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.language</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.languageHint" datatype="html">
+        <source>Switching language reloads the page in that language.</source>
+        <target>Als u van taal wisselt, wordt de pagina in die taal opnieuw geladen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.languageHint</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.pageSize" datatype="html">
+        <source>Default table page size</source>
+        <target>Standaard paginaformaat voor tabellen</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.pageSize</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.telemetry" datatype="html">
+        <source>Usage telemetry</source>
+        <target>Gebruikstelemetrie</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.telemetry</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.telemetryHint" datatype="html">
+        <source>Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.</source>
+        <target>Zet het verzamelen van gebruiks- en prestatiegegevens aan of uit. Als u het aanzet, wordt het na een herladen van de pagina actief.</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.telemetryHint</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.theme.auto" datatype="html">
+        <source>Auto</source>
+        <target>Automatisch</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.theme.auto</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.theme.dark" datatype="html">
+        <source>Dark</source>
+        <target>Donker</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.theme.dark</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.theme.light" datatype="html">
+        <source>Light</source>
+        <target>Licht</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.theme.light</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.timezone" datatype="html">
+        <source>Time zone</source>
+        <target>Tijdzone</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.timezone</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.timezoneBrowser" datatype="html">
+        <source>Browser default</source>
+        <target>Standaard van browser</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.timezoneBrowser</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.title" datatype="html">
+        <source>Settings</source>
+        <target>Instellingen</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.title</note>
+      </trans-unit>
+      <trans-unit id="shell.settings.version" datatype="html">
+        <source>Version</source>
+        <target>Versie</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.settings.version</note>
       </trans-unit>
       <trans-unit id="sourcetype" datatype="html">
         <source>Source</source>

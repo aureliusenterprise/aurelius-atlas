@@ -1,0 +1,139 @@
+/*
+ * The drawer's own layer (DD-069): Bulma 1 ships no drawer, so the anatomy
+ * lives here, styled on Bulma's tokens — scheme-main surface, the text
+ * chain, the border ramp, the modal's scrim recipe and z-band — so the
+ * brand's dark ink ramp (DD-068) themes it with no extra work.
+ *
+ * The modal tokens carry explicit fallbacks (DD-075): Bulma 1 emits
+ * `--bulma-modal-*` on the `.modal`/`.modal-card-*` selectors, not on
+ * `:root`, so outside a modal they are undefined — bare `var(...)` use
+ * collapsed the head/body padding to 0 and painted the scrim transparent
+ * in the app. The fallbacks are Bulma's own defaults, spelled from the
+ * root-scoped scheme ramp so dark mode keeps them (DD-068).
+ *
+ * Motion (DD-074): the panel slides in from the right edge over a fading
+ * scrim and plays the reverse on close; the component keeps the layer
+ * rendered until the exit animation ends. Reduced motion shortens the
+ * animations to 0.01ms rather than removing them — the exit's
+ * animationend is what removes the layer, and `animation: none` would
+ * strand it on screen.
+ */
+$aurelius-drawer-motion-duration: 200ms;
+
+@keyframes aurelius-drawer-in {
+    from {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes aurelius-drawer-out {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes aurelius-drawer-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes aurelius-drawer-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+.aurelius-drawer {
+    inset: 0;
+    position: fixed;
+    z-index: var(--bulma-modal-z, 40);
+}
+
+.aurelius-drawer-scrim {
+    animation: aurelius-drawer-fade-in $aurelius-drawer-motion-duration ease-out;
+    // Bulma's modal-background recipe (modal.scss), spelled from the root
+    // scheme ramp — the token itself is .modal-scoped and undefined here
+    // (DD-075).
+    background-color: var(
+        --bulma-modal-background-background-color,
+        hsla(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-invert-l), 0.86)
+    );
+    inset: 0;
+    position: absolute;
+}
+
+.aurelius-drawer-panel {
+    animation: aurelius-drawer-in $aurelius-drawer-motion-duration ease-out;
+    background-color: var(--bulma-scheme-main);
+    box-shadow: var(--bulma-shadow);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: min(28rem, 100vw);
+    overflow-y: auto;
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 28rem;
+
+    // Focus goes to the panel itself (the dialog); its outline would ring
+    // the whole panel — the focusable controls inside carry their own.
+    &:focus-visible {
+        outline: none;
+    }
+}
+
+.aurelius-drawer-head {
+    align-items: center;
+    border-bottom: 1px solid var(--bulma-scheme-main-bis);
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--bulma-block-spacing);
+    justify-content: space-between;
+    // 2rem is Bulma's $modal-card-head-padding — the token is .modal-scoped
+    // (DD-075).
+    padding: var(--bulma-modal-card-head-padding, 2rem);
+}
+
+.aurelius-drawer-title {
+    color: var(--bulma-text-strong);
+    flex-grow: 1;
+    font-size: var(--bulma-size-4);
+    font-weight: var(--bulma-weight-semibold);
+    line-height: var(--bulma-title-line-height);
+}
+
+.aurelius-drawer-body {
+    flex-grow: 1;
+    // The same 2rem inset below the head's border (DD-075).
+    padding: var(--bulma-modal-card-head-padding, 2rem);
+}
+
+// The exit pass (DD-074): `closing()` adds the class, the panel's
+// animationend removes the layer. `forwards` holds the end state so the
+// drawer never flashes back before the layer is dropped.
+.is-closing {
+    .aurelius-drawer-scrim {
+        animation: aurelius-drawer-fade-out $aurelius-drawer-motion-duration ease-in forwards;
+    }
+
+    .aurelius-drawer-panel {
+        animation: aurelius-drawer-out $aurelius-drawer-motion-duration ease-in forwards;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .aurelius-drawer-scrim,
+    .aurelius-drawer-panel {
+        animation-duration: 0.01ms;
+    }
+
+    // Repeated at the exit pass's specificity, where the shorthand lives.
+    .is-closing {
+        .aurelius-drawer-scrim,
+        .aurelius-drawer-panel {
+            animation-duration: 0.01ms;
+        }
+    }
+}

@@ -195,6 +195,7 @@ nav:
                       - 7.11 Shell chrome: architecture/conversion/increments/7-11-shell-chrome.md
                       - 7.12 Theme, branding and layout: architecture/conversion/increments/7-12-theme-branding-layout.md
                       - 7.13 UI components (details set): architecture/conversion/increments/7-13-ui-components-details.md
+                      - 7.14 Settings panel: architecture/conversion/increments/7-14-settings-panel.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

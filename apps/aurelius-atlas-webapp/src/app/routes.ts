@@ -54,6 +54,15 @@ export const routes: Routes = [
                 path: "search",
                 loadChildren: () => import("./search/search.routes").then((m) => m.SEARCH_ROUTES),
             },
+            // The settings panel, in the `drawer` aux outlet (SPL-14, DD-078):
+            // the gear navigates to `(drawer:settings)`, dismissal navigates
+            // away, and the segment rides the URL — the language switch's
+            // full-page reload (SPL-06) lands on the same page, panel open.
+            {
+                path: "settings",
+                outlet: "drawer",
+                loadComponent: () => import("./settings/settings-panel.component").then((m) => m.SettingsPanel),
+            },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain
             // '**' -> '' -> '/search/browse' lands on the default destination.

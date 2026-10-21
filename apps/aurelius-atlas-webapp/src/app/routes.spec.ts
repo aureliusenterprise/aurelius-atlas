@@ -8,6 +8,7 @@ vi.mock("keycloak-angular", () => ({
 
 import { routes } from "./routes";
 import { SEARCH_ROUTES } from "./search/search.routes";
+import { SettingsPanel } from "./settings/settings-panel.component";
 
 // The guard is registered once, at import time. Copy the calls now: Vitest clears mock history before each test.
 const createAuthGuardCalls = [...createAuthGuardMock.mock.calls];
@@ -35,6 +36,14 @@ describe("routes", () => {
 
         const loadChildren = search?.loadChildren as unknown as () => Promise<Routes>;
         await expect(loadChildren()).resolves.toBe(SEARCH_ROUTES);
+    });
+
+    it("routes the settings panel into the drawer aux outlet (SPL-14, DD-078)", async () => {
+        const settings = routes[0].children?.find((route) => route.outlet === "drawer");
+        expect(settings?.path).toBe("settings");
+
+        const loadComponent = settings?.loadComponent as unknown as () => Promise<unknown>;
+        await expect(loadComponent()).resolves.toBe(SettingsPanel);
     });
 
     it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-043)", () => {

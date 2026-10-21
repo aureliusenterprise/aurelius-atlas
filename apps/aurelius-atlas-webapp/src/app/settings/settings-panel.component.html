@@ -1,0 +1,124 @@
+<!--
+  The settings panel body (SPL-03..SPL-12), carried by the ui-lib drawer.
+  Every control writes through the SettingsService facade (SPL-10); the
+  panel stores nothing itself.
+
+  i18n ids are the shell.settings.* dictionary paths (DD-039 bridge,
+  SHC-07 pattern). Strings bound into component inputs live in TypeScript
+  as $localize (BRW-02), so only plain text carries markers here —
+  descriptions are comments, never `id|description` suffixes (DD-055).
+-->
+<aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel" (cancelRequested)="close()">
+    <div class="settings-section">
+        <!-- Appearance: the theme select (SPL-03, DD-076) — the ui-lib
+             Select as a plain dropdown (searchVisible off); its label is
+             the section heading. -->
+        <aurelius-atlas-ui-select
+            [options]="themes"
+            displayField="label"
+            [label]="appearanceLabel"
+            [value]="themeRow"
+            [searchVisible]="false"
+            (valueChange)="setTheme($event)"
+        ></aurelius-atlas-ui-select>
+    </div>
+
+    <div class="settings-section">
+        <!-- Language: full-page navigation, not a stored setting (SPL-06, SHC-04). The
+             links are not a form control, so the group carries the heading
+             through aria-labelledby (DD-081). -->
+        <p class="label" id="settings-language-heading">
+            <!-- Language. -->
+            <span i18n="@@shell.settings.language">Language</span>
+        </p>
+        <div class="buttons has-addons" role="group" aria-labelledby="settings-language-heading">
+            @for (locale of settings.locale.locales; track locale) {
+                <a
+                    class="button is-small"
+                    [class.is-selected]="locale === settings.locale.activeLocale"
+                    [attr.aria-current]="locale === settings.locale.activeLocale ? 'true' : null"
+                    [attr.href]="settings.locale.localeHref(locale)"
+                    [attr.hreflang]="locale"
+                    >{{ locale }}</a
+                >
+            }
+        </div>
+        <p class="help">
+            <!-- Switching language reloads the page in that language. -->
+            <span i18n="@@shell.settings.languageHint">Switching language reloads the page in that language.</span>
+        </p>
+    </div>
+
+    <div class="settings-section">
+        <!-- Time zone: DATE_PIPE_DEFAULT_TIMEZONE on reload, ADM-05 list (SPL-07). -->
+        <label class="label" for="settings-timezone">
+            <!-- Time zone. -->
+            <span i18n="@@shell.settings.timezone">Time zone</span>
+        </label>
+        <div class="select is-fullwidth">
+            <select id="settings-timezone" [ngModel]="timezoneValue" (ngModelChange)="setTimezone($event)">
+                <!-- Browser default: the null choice (SPL-07). -->
+                <option [ngValue]="null" i18n="@@shell.settings.timezoneBrowser">Browser default</option>
+                @for (zone of timezones(); track zone) {
+                    <option [ngValue]="zone">{{ zone }}</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <!-- Default table page size (SPL-08). -->
+        <label class="label" for="settings-page-size">
+            <!-- Default table page size. -->
+            <span i18n="@@shell.settings.pageSize">Default table page size</span>
+        </label>
+        <div class="select is-fullwidth">
+            <select
+                id="settings-page-size"
+                [ngModel]="settings.pageSize()"
+                (ngModelChange)="settings.setPageSize($event)"
+            >
+                @for (size of pageSizes; track size) {
+                    <option [ngValue]="size">{{ size }}</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <!-- Telemetry toggle (SPL-11, DD-070). The checkbox is a plain control on
+             the section grid: the label above is its accessible name (DD-081). -->
+        <label class="label" for="settings-telemetry">
+            <!-- Usage telemetry. -->
+            <span i18n="@@shell.settings.telemetry">Usage telemetry</span>
+        </label>
+        <input
+            id="settings-telemetry"
+            type="checkbox"
+            [ngModel]="settings.telemetry()"
+            (ngModelChange)="settings.setTelemetry($event)"
+        />
+        <p class="help">
+            <!-- Turns collection of usage and performance data on or off. Turning it on takes effect after a reload. -->
+            <span i18n="@@shell.settings.telemetryHint">
+                Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.
+            </span>
+        </p>
+    </div>
+
+    <div class="settings-section">
+        <!-- About: the build (SPL-12, DD-077). App and server share one
+             version under the Nx release strategy — one release, one
+             number — so the section shows the app version alone. -->
+        <p class="label">
+            <!-- About. -->
+            <span i18n="@@shell.settings.about">About</span>
+        </p>
+        <p>
+            {{ config.appName }}
+            <!-- Version. -->
+            <span class="has-text-grey-light" i18n="@@shell.settings.version">Version</span>
+            {{ config.appVersion }}
+        </p>
+    </div>
+</aurelius-atlas-ui-drawer>

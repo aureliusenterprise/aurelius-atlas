@@ -7,8 +7,10 @@ const MODES = ["dark", "light", null] as const;
 
 /**
  * The type representing the modes available in the dark mode service.
+ * Exported for the settings facade (SPL-03): the panel's theme radio
+ * chooses one and hands it to {@link DarkModeService.setMode}.
  */
-type Mode = (typeof MODES)[number];
+export type Mode = (typeof MODES)[number];
 
 @Injectable({
     providedIn: "root",
@@ -49,10 +51,23 @@ export class DarkModeService {
     }
 
     /**
+     * Choose the mode explicitly (the settings panel's radio): `"light"`,
+     * `"dark"`, or `null` for Auto — follow the operating system. The same
+     * persistence path as {@link next}: the root attribute (SPL-03) and the
+     * stored choice (SPL-04) both follow.
+     * @param mode the mode to switch to
+     */
+    setMode(mode: Mode): void {
+        this.mode.set(mode);
+    }
+
+    /**
      * @returns The initial mode based on the current HTML document's data-theme attribute.
      */
     private initialize(): Mode {
-        let dataTheme = (this.document.documentElement.dataset["theme"] ?? localStorage.getItem("data-theme")) as Mode;
+        const stored = localStorage.getItem("data-theme");
+        const attribute = this.document.documentElement.getAttribute("data-theme");
+        let dataTheme = (attribute || stored) as Mode;
 
         if (!MODES.includes(dataTheme)) {
             dataTheme = null;
@@ -62,12 +77,18 @@ export class DarkModeService {
     }
 
     /**
-     * Updates the HTML document's data-theme attribute based on the current mode.
+     * Updates the HTML document's data-theme attribute based on the current
+     * mode. Auto removes the attribute: the empty string would keep Bulma's
+     * `:root:not([data-theme])` OS path from applying (DD-071).
      * @param mode The current mode of the application.
      */
     private updateDataThemeAttribute(mode: Mode): void {
         const htmlElement = this.document.documentElement;
-        htmlElement.dataset["theme"] = mode ?? "";
+        if (mode === null) {
+            htmlElement.removeAttribute("data-theme");
+        } else {
+            htmlElement.setAttribute("data-theme", mode);
+        }
     }
 
     /**

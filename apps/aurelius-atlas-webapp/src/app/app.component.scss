@@ -5,8 +5,9 @@
  * the Aurelius `shell.component.scss` rule (`flex: 1 1 auto` AND
  * `min-height: 100vh`) — so the band is a full viewport and the footer
  * starts below the fold, as on the demo (the footer is never on the first
- * screen). The `has-background-light` band (#f5f5f5, the Aurelius light) is
- * the legacy shell's content background.
+ * screen). The `has-background` band is the legacy shell's content
+ * background — Bulma's scheme-following surface (DD-079): the legacy light
+ * in light mode, the dark ramp's surface in dark mode, matching the body.
  */
 :host {
     display: flex;

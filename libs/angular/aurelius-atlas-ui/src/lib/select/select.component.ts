@@ -101,6 +101,14 @@ export class Select<T extends Record<string, unknown> = Record<string, unknown>>
     readonly searchLabel = input("Search");
 
     /**
+     * Show the search button — the legacy modal opener, on by default as
+     * in Aurelius. Off, the field is a plain labelled dropdown (the
+     * settings panel's theme picker, DD-076), and the addons layout
+     * collapses with the button.
+     */
+    readonly searchVisible = input(true);
+
+    /**
      * The field's icon, shown left of the control, as the shell context's
      * `icon` did.
      */

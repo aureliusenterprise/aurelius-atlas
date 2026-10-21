@@ -32,30 +32,23 @@
             </div>
         </div>
 
-        <!-- Language switch (SHC-04): full-page navigation, locale prefix swap. -->
-        <div class="navbar-item has-dropdown is-hoverable">
-            <a class="navbar-link">
-                <span>
-                    <!-- Your language is. -->
-                    <span i18n="@@shell.header.language">Your language is</span>
-                    <span>&nbsp;</span>
-                    <strong>{{ activeLocale }}</strong>
-                </span>
-            </a>
-            <div class="navbar-dropdown is-right">
-                @for (locale of locales; track locale) {
-                    <a
-                        class="navbar-item"
-                        [attr.aria-current]="locale === activeLocale ? 'true' : null"
-                        [attr.href]="localeHref(locale)"
-                        [attr.hreflang]="locale"
-                        [class.is-active]="locale === activeLocale"
-                    >
-                        {{ locale }}
-                    </a>
-                }
-            </div>
-        </div>
+        <!-- Settings gear (SPL-01, SPL-14, DD-078, DD-079): opens the panel
+             by navigating the `drawer` aux outlet — the open state rides the
+             URL, so the locale switch's reload keeps it. RouterLinkActive
+             keys `is-active` off the drawer segment, so the gear is lit
+             while the panel is open; the link then targets the URL it is
+             on, and the router cancels that same-URL navigation — a no-op. -->
+        <a
+            class="navbar-item"
+            i18n-aria-label="@@shell.header.settings"
+            aria-label="Settings"
+            [routerLink]="[{ outlets: { drawer: ['settings'] } }]"
+            routerLinkActive="is-active"
+        >
+            <span class="icon">
+                <fa-icon aria-hidden="true" [icon]="faGear"></fa-icon>
+            </span>
+        </a>
 
         <!-- Account dropdown (SHC-05): welcome / Account-security / Logout. -->
         <div class="navbar-item has-dropdown is-hoverable">

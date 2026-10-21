@@ -1,24 +1,44 @@
 {
-    "shell": {
-        "footer": {
-            "copyright": "Copyright"
-        },
-        "header": {
-            "documentation": "Documentatie",
-            "install": "App installeren",
-            "language": "Geselecteerde taal",
-            "login": "Inloggen",
-            "logout": "Uitloggen",
-            "security": "Accountbeveiliging",
-            "services": "Models4Insight diensten",
-            "update": "Update beschikbaar",
-            "welcome": "Ingelogd als"
-        },
-        "pipeline": {
-            "error": "Er is iets misgegaan tijden",
-            "oops": "Oeps!",
-            "report": "Meld deze fout",
-            "thanks": "Bedankt!"
-        }
+  "shell": {
+    "footer": {
+      "copyright": "Copyright"
+    },
+    "header": {
+      "documentation": "Documentatie",
+      "install": "App installeren",
+      "language": "Geselecteerde taal",
+      "login": "Inloggen",
+      "logout": "Uitloggen",
+      "security": "Accountbeveiliging",
+      "services": "Models4Insight diensten",
+      "update": "Update beschikbaar",
+      "welcome": "Ingelogd als",
+      "settings": "Instellingen"
+    },
+    "pipeline": {
+      "error": "Er is iets misgegaan tijden",
+      "oops": "Oeps!",
+      "report": "Meld deze fout",
+      "thanks": "Bedankt!"
+    },
+    "settings": {
+      "title": "Instellingen",
+      "close": "Sluiten",
+      "appearance": "Weergave",
+      "theme": {
+        "auto": "Automatisch",
+        "light": "Licht",
+        "dark": "Donker"
+      },
+      "language": "Taal",
+      "languageHint": "Als u van taal wisselt, wordt de pagina in die taal opnieuw geladen.",
+      "timezone": "Tijdzone",
+      "timezoneBrowser": "Standaard van browser",
+      "pageSize": "Standaard paginaformaat voor tabellen",
+      "telemetry": "Gebruikstelemetrie",
+      "telemetryHint": "Zet het verzamelen van gebruiks- en prestatiegegevens aan of uit. Als u het aanzet, wordt het na een herladen van de pagina actief.",
+      "about": "Over",
+      "version": "Versie"
     }
+  }
 }

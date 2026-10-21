@@ -1,24 +1,44 @@
 {
-    "shell": {
-        "footer": {
-            "copyright": "Copyright"
-        },
-        "header": {
-            "documentation": "Documentation",
-            "install": "Install app",
-            "language": "Your language is",
-            "login": "Login",
-            "logout": "Logout",
-            "security": "Account security",
-            "services": "Models4Insight services",
-            "update": "Update available",
-            "welcome": "Logged in as"
-        },
-        "pipeline": {
-            "error": "Something went wrong while",
-            "oops": "Oops!",
-            "report": "Report this error",
-            "thanks": "Thank you!"
-        }
+  "shell": {
+    "footer": {
+      "copyright": "Copyright"
+    },
+    "header": {
+      "documentation": "Documentation",
+      "install": "Install app",
+      "language": "Your language is",
+      "login": "Login",
+      "logout": "Logout",
+      "security": "Account security",
+      "services": "Models4Insight services",
+      "update": "Update available",
+      "welcome": "Logged in as",
+      "settings": "Settings"
+    },
+    "pipeline": {
+      "error": "Something went wrong while",
+      "oops": "Oops!",
+      "report": "Report this error",
+      "thanks": "Thank you!"
+    },
+    "settings": {
+      "title": "Settings",
+      "close": "Close",
+      "appearance": "Appearance",
+      "theme": {
+        "auto": "Auto",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "language": "Language",
+      "languageHint": "Switching language reloads the page in that language.",
+      "timezone": "Time zone",
+      "timezoneBrowser": "Browser default",
+      "pageSize": "Default table page size",
+      "telemetry": "Usage telemetry",
+      "telemetryHint": "Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.",
+      "about": "About",
+      "version": "Version"
     }
+  }
 }

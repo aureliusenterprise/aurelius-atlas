@@ -1,4 +1,6 @@
+import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
+import { provideRouter, Router, type Routes } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import Keycloak from "keycloak-js";
 
@@ -18,12 +20,19 @@ const config: AppConfig = {
 
 const DOC_HREF = "https://aureliusenterprise.github.io/aurelius-atlas-documentation/";
 
-function setup(identity = "aurelius-writer") {
+// The drawer route's placeholder (SPL-14's shape): the router rejects a
+// componentless named-outlet route, and the header's template has no
+// drawer outlet, so this component is never rendered.
+@Component({ selector: "aurelius-atlas-webapp-lib-drawer-panel", template: "" })
+class DrawerPanelPlaceholder {}
+
+function setup(identity = "aurelius-writer", routes: Routes = []) {
     const logout = vi.fn();
 
     TestBed.configureTestingModule({
         imports: [FontAwesomeModule, ShellHeader],
         providers: [
+            provideRouter(routes),
             { provide: APP_CONFIG, useValue: config },
             { provide: Keycloak, useValue: { logout } },
             { provide: Session, useValue: { identity: () => identity } },
@@ -74,41 +83,47 @@ describe("ShellHeader", () => {
         expect(normalize(link?.textContent)).toBe("Documentation");
     });
 
-    it("lists both locales with hreflang on each dropdown item (SHC-04)", () => {
-        const items = [...render().querySelectorAll<HTMLAnchorElement>(".navbar-dropdown a[hreflang]")];
+    it("opens the settings panel from the gear (SPL-01, SPL-14, DD-078)", () => {
+        // The gear replaces the language dropdown in navbar-end and opens
+        // the panel by navigating the `drawer` aux outlet — the panel is a
+        // routed component, no longer the header's child (SPL-14).
+        const compiled = render();
+        const gear = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Settings"]');
 
-        expect(items.map((item) => normalize(item.textContent))).toEqual(["en-US", "nl-NL"]);
-        expect(items.map((item) => item.getAttribute("hreflang"))).toEqual(["en-US", "nl-NL"]);
+        expect(gear).toBeTruthy();
+        // RouterLink serialises the aux-outlet target into the href.
+        expect(gear?.getAttribute("href")).toBe("/(drawer:settings)");
+        expect(compiled.querySelector("aurelius-atlas-webapp-settings-panel")).toBeNull();
+        // On the plain URL the gear is not lit.
+        expect(gear?.classList.contains("is-active")).toBe(false);
     });
 
-    it("computes locale hrefs by swapping the locale prefix (SHC-04)", () => {
-        setup();
-        const header = TestBed.createComponent(ShellHeader).componentInstance as unknown as {
-            localeHref(locale: string, currentPath: string): string;
-        };
+    it("lights the gear while the drawer route is open (SPL-01, DD-079)", async () => {
+        // RouterLinkActive keys `is-active` off the drawer segment: with
+        // the settings outlet in the URL, the gear carries Bulma's
+        // active-navbar-item styling. The drawer route is the app's real
+        // shape; the header's template has no drawer outlet, so the
+        // component is never rendered. Navigating after the fixture
+        // exists is what the directive listens for (NavigationEnd).
+        setup("aurelius-writer", [{ path: "settings", outlet: "drawer", component: DrawerPanelPlaceholder }]);
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        await TestBed.inject(Router).navigate([{ outlets: { drawer: ["settings"] } }]);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const gear = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Settings"]');
 
-        expect(header.localeHref("nl-NL", "/en-US/search/browse")).toBe("/nl-NL/search/browse");
-        expect(header.localeHref("nl-NL", "/search/browse")).toBe("/nl-NL/search/browse");
-        expect(header.localeHref("en-US", "/nl-NL/")).toBe("/en-US/");
-        expect(header.localeHref("en-US", "/")).toBe("/en-US/");
+        expect(gear?.getAttribute("routerlinkactive")).toBe("is-active");
+        expect(gear?.classList.contains("is-active")).toBe(true);
     });
 
-    it("marks the active locale in the dropdown (SHC-04)", () => {
-        document.documentElement.lang = "nl-NL";
-        try {
-            const compiled = render();
-            const active = compiled.querySelector<HTMLAnchorElement>('.navbar-dropdown a[aria-current="true"]');
+    it("no longer carries the language dropdown (SPL-01, SPL-06)", () => {
+        // The language control moved into the panel; the navbar-end set is
+        // Documentation, the gear, and the account dropdown.
+        const compiled = render();
 
-            expect(normalize(active?.textContent)).toBe("nl-NL");
-            expect(active?.getAttribute("href")).toBe("/nl-NL/");
-
-            // The dropdown's trigger shows the label with the active locale,
-            // as the legacy header does ("Your language is nl-NL").
-            const label = compiled.querySelectorAll<HTMLElement>("a.navbar-link")[0];
-            expect(normalize(label?.textContent)).toBe("Your language is nl-NL");
-        } finally {
-            document.documentElement.lang = "en-US";
-        }
+        expect(compiled.querySelector("[hreflang]")).toBeNull();
+        expect(normalize(compiled.textContent)).not.toContain("Your language is");
     });
 
     it("greets the signed-in identity in the account dropdown (SHC-05)", () => {

@@ -119,10 +119,9 @@
  * Bulma's dark hosts (its themes/_index.scss pattern): the explicit
  * `[data-theme=dark]` and the OS-dark `:root:not([data-theme])`.
  *
- * The chrome bands stay pinned (SHM-01: "the brand colours do not follow
- * the scheme"): the navbar's #f5f5f5/#4a4a4a and the footer's blue/white
- * read the same in either scheme, and the light navbar over a dark page is
- * Bulma's own `.navbar.is-light` idiom. The accent values stay pinned too
+ * The chrome: the navbar follows the scheme (DD-080 — the slate band
+ * mixin below); the footer stays pinned (SHM-07: the blue/white reads
+ * the same in either scheme). The accent values stay pinned too
  * (SHM-04); only the text-role link follows Bulma's dark adaptation.
  */
 @mixin dark-ink {
@@ -168,6 +167,67 @@
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme]) .content {
         @include dark-content-ink;
+    }
+}
+
+/*
+ * The dark navbar — the slate band (DD-080, the user's choice after the
+ * logo was measured): in dark mode the navbar leaves the pinned light
+ * (#f5f5f5) for a neutral slate, #72757d — hsl(224, 4%, 47%), the faint
+ * cool cast of $blue, one step under the wordmark's 3:1 floor. The mark
+ * leads: the logo's navy wordmark (#151487) reads 3.1:1 on the slate
+ * against 1.0:1 on the scheme's dark surfaces, where navy and dark
+ * collide — no darker neutral clears it, and no darker saturated tint
+ * keeps the navy legible; the logo keeps its brand size (a logotype
+ * carries no WCAG text contrast, and the enlargement the first draft
+ * tried read as a defect).
+ *
+ * The bar's chrome composes on the slate: ink #000 (5.6:1 — the navbar
+ * items and the hover plate both keep it, DD-063's hover rule already
+ * pins #000 and the slate's lighter plate keeps it legible), hover/
+ * active the light plate (Bulma's +8%/+12% deltas — the DD-063 deltas
+ * inverted for a dark band: the light band's plate darkens, the slate's
+ * lightens), the gear's `is-active` the white plate (selected 100%/0%,
+ * DD-063's pair). The `is-dark` Documentation button flips to black
+ * ink/border — its pinned #363636 rides at 2.5:1 on the slate; its
+ * hover (the #363636 plate, $dark-invert ink) is untouched. The account
+ * dropdown stays the scheme's own plate (dark in dark) — Bulma composes
+ * it from the scheme tokens, the legacy dropdown idiom.
+ *
+ * Emitted on both of Bulma's dark hosts, like DD-068's ramp. Specificity
+ * 0,2,0 beats the `.navbar` chrome block (0,1,0), so it out-cascades the
+ * light pins it replaces.
+ */
+@mixin dark-navbar {
+    --bulma-navbar-background-color: #72757d;
+    --bulma-navbar-item-background-l: 47%; // the slate, for the composed plates
+    --bulma-navbar-item-color: #000;
+    --bulma-navbar-item-hover-background-l-delta: 8%;
+    --bulma-navbar-item-active-background-l-delta: 12%;
+    --bulma-navbar-burger-color: #000;
+    --bulma-navbar-dropdown-arrow: #000;
+}
+
+@mixin dark-navbar-chrome {
+    // The is-dark outlined button (SHC-03, the Documentation link): the
+    // pinned #363636 ink/border is 2.5:1 on the slate; the black pair
+    // lands at 5.6:1. Bulma 1's outlined hover thickens the border and
+    // keeps the ink — the pair applies to it as-is.
+    .button.is-dark.is-outlined {
+        border-color: #000;
+        color: #000;
+    }
+}
+
+[data-theme="dark"] .navbar {
+    @include dark-navbar;
+    @include dark-navbar-chrome;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .navbar {
+        @include dark-navbar;
+        @include dark-navbar-chrome;
     }
 }
 

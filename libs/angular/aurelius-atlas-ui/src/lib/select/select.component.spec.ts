@@ -61,6 +61,15 @@ describe("Select", () => {
         expect(optionLabels()[0]).toBe("-- No data available --");
     });
 
+    it("hides the search button on request, plain dropdown (DD-076)", () => {
+        fixture.componentRef.setInput("options", rows);
+        fixture.componentRef.setInput("searchVisible", false);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector("button.button.is-info")).toBeNull();
+        expect(control()).toBeTruthy();
+    });
+
     it("switches the placeholder between the null-input and no-data messages (UIC-14)", () => {
         fixture.componentRef.setInput("options", rows);
         fixture.detectChanges();
