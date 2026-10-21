@@ -11,7 +11,9 @@ their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's
 Since [2.1a](../../../architecture/conversion/increments/2-1-entity-models.md): the entity models of
 `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`,
 `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON
-conventions all models share in `aurelius_atlas_model.base`.
+conventions all models share in `aurelius_atlas_model.base`. Since
+[2.1b](../../../architecture/conversion/increments/2-1-value-types.md): Atlas's JSON codec,
+`aurelius_atlas_model.codec`, which keeps the digits of decimals.
 
 ```python
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -40,6 +42,8 @@ workspace = true
 ::: aurelius_atlas_model.patches
 
 ::: aurelius_atlas_model.base
+
+::: aurelius_atlas_model.codec
 
 ::: aurelius_atlas_model.instance.struct
 

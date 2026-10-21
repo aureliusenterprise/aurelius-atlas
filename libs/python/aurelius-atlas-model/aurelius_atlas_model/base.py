@@ -38,7 +38,7 @@ type Timestamp = Annotated[
     datetime,
     BeforeValidator(_read_epoch_millis),
     AfterValidator(_as_utc),
-    PlainSerializer(_write_epoch_millis, return_type=int, when_used="json"),
+    PlainSerializer(_write_epoch_millis, return_type=int),
 ]
 """A ``java.util.Date``: an aware datetime, written as epoch milliseconds (TDM-05)."""
 
@@ -96,5 +96,8 @@ class AtlasModel(BaseModel):
     )
 
     def to_json(self) -> dict[str, Any]:
-        """The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02)."""
-        return self.model_dump(mode="json", by_alias=True, exclude_none=True)
+        """The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+        Untyped values keep their Python types (``Decimal``, ``datetime``) for ``codec.dumps`` (VAL-01, DD-039).
+        """
+        return self.model_dump(mode="python", by_alias=True, exclude_none=True)

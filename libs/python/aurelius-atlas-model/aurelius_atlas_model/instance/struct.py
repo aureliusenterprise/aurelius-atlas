@@ -1,8 +1,10 @@
 """``AtlasStruct``: a type name and attribute values, the base of entities, classifications and headers."""
 
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, Self
 
 from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.errors import java_string
 
 
 class AtlasStruct(AtlasModel):
@@ -13,6 +15,19 @@ class AtlasStruct(AtlasModel):
 
     type_name: str | None = None
     attributes: dict[str, Any] | None = None
+
+    @classmethod
+    def from_map(cls, values: Mapping[str, Any]) -> Self:
+        """``AtlasStruct(Map)``: ``typeName``, and ``attributes`` or, without an ``attributes`` map, the whole map.
+
+        Not how a body is read, which is Jackson's (ENT-02); Atlas's code makes structs from maps (VAL-14).
+        """
+        type_name = values.get("typeName")
+        attributes = values.get("attributes")
+        return cls(
+            type_name=None if type_name is None else java_string(type_name),
+            attributes=dict(attributes if isinstance(attributes, Mapping) else values),
+        )
 
     def has_attribute(self, name: str) -> bool:
         """Whether attribute ``name`` is present, even with a null value."""

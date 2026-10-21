@@ -187,6 +187,7 @@ nav:
                       - 1.5 Built-in models and patches: architecture/conversion/increments/1-5-builtin-models.md
                       - 1.6 Types REST: architecture/conversion/increments/1-6-types-rest.md
                       - 2.1a Entity models: architecture/conversion/increments/2-1-entity-models.md
+                      - 2.1b Value types: architecture/conversion/increments/2-1-value-types.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

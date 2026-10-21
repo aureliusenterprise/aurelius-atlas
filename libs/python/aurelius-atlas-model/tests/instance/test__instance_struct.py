@@ -41,3 +41,14 @@ def test__attributes_are_found_set_and_removed_by_exact_name() -> None:
     assert struct.get_attribute("B") == 2
     assert struct.remove_attribute("B") == 2
     assert struct.attributes == {"a": None}
+
+
+@pytest.mark.covers("aurelius_atlas_model.instance.struct.AtlasStruct.from_map", rules=["VAL-14"])
+def test__a_struct_made_from_a_map_takes_its_attributes_or_the_whole_map() -> None:
+    """``AtlasStruct(Map)``: ``typeName`` as text; ``attributes`` when that is a map, else every entry."""
+    with_attributes = AtlasStruct.from_map({"typeName": 5, "attributes": {"a": 1}, "other": 2})
+    without = AtlasStruct.from_map({"typeName": "t", "a": 1})
+
+    assert (with_attributes.type_name, with_attributes.attributes) == ("5", {"a": 1})
+    assert (without.type_name, without.attributes) == ("t", {"typeName": "t", "a": 1})
+    assert AtlasStruct.from_map({"attributes": "not a map"}).attributes == {"attributes": "not a map"}
