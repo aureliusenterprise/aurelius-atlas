@@ -55,6 +55,11 @@
     "aliases": []
   },
   {
+    "version": "feat-webapp-settings-panel",
+    "title": "feat-webapp-settings-panel",
+    "aliases": []
+  },
+  {
     "version": "feat-webapp-port-plan",
     "title": "feat-webapp-port-plan",
     "aliases": []
