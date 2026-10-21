@@ -36,12 +36,42 @@ $background: $white;
 $white-ter: #f5f5f5; // Bulma 0.9.4 $white-ter: both chrome bands
 $dark-ter: #363636; // Bulma 0.9.4 $dark: the `is-dark` chrome pair
 $bulma-token-overrides: (
-    "primary": $blue,
-    "link": $blue,
     "light": $white-ter,
     "light-invert": $dark-ter,
     "dark": $dark-ter,
     "dark-invert": $white-ter,
+);
+
+// The accent ramp (SHM-04, DD-063), demo-measured. The legacy theme mapped
+// its Bootstrap-style palette onto Bulma's accents — $blue to $link, the
+// cyan/green/yellow/red to info/success/warning/danger — and did NOT
+// override $primary: the demo highlights the landing's icons in Bulma's
+// own teal #00d1b2 (Bulma 1's default, untouched). Each entry is
+// (value, solid-surface ink): the legacy findColorInvert renders white ink
+// on the solid surfaces (buttons, hero, tags) — Bulma 1 derives a dark ink
+// from the hue, so the invert lightness is pinned; `null` keeps Bulma 1's
+// dark invert, the 0.9.4 rgba(0,0,0,.7) counterpart of $yellow.
+$bulma-accent-overrides: (
+    "link": (
+        $blue,
+        100%,
+    ),
+    "info": (
+        $cyan,
+        100%,
+    ),
+    "success": (
+        $green,
+        100%,
+    ),
+    "warning": (
+        $yellow,
+        null,
+    ),
+    "danger": (
+        $red,
+        100%,
+    ),
 );
 
 // The tokens Bulma 1 scopes on its own components (`.navbar`, `.footer`

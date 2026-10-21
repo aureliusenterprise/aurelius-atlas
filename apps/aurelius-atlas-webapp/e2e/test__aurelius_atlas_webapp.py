@@ -348,6 +348,47 @@ def test__chrome_bands_carry_the_aurelius_palette(authenticated: Page) -> None:
     assert footer.locator(".level-item").first.evaluate("el => getComputedStyle(el).color") == "rgb(255, 255, 255)"
 
 
+def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
+    """The Bulma accents render the demo's palette (SHM-04, DD-063).
+
+    The legacy theme mapped its Bootstrap-style palette onto Bulma's
+    accents — $blue to link, cyan/green/yellow/red to info/success/
+    warning/danger — and left $primary Bulma's own teal: the demo
+    highlights the landing's icons in teal #00d1b2 and the info glyphs in
+    cyan #17a2b8; #0073dd is the link and the footer band, not the
+    primary. The navbar links hover at the band grey with black ink.
+    """
+    tokens = authenticated.evaluate(
+        "() => { const cs = getComputedStyle(document.documentElement);"
+        "const v = (t) => cs.getPropertyValue(t).trim(); return {"
+        "primary: v('--bulma-primary'), link: v('--bulma-link'), info: v('--bulma-info'),"
+        "success: v('--bulma-success'), warning: v('--bulma-warning'), danger: v('--bulma-danger'),"
+        "primaryInvert: v('--bulma-primary-invert')}; }"
+    )
+
+    # The teal is Bulma's own (untouched by the legacy theme, kept):
+    # hsl(171deg, 100%, 41%). The solid-surface ink is white.
+    assert "171deg, 100%, 41%" in tokens["primary"]
+    assert "171deg, 100%, 100%" in tokens["primaryInvert"]
+    assert tokens["link"] == "#0073dd"
+    assert tokens["info"] == "#17a2b8"
+    assert tokens["success"] == "#28a745"
+    assert tokens["warning"] == "#ffc107"
+    assert tokens["danger"] == "#dc3545"
+
+    # The icons as the landing renders them: teal search/compass spans,
+    # cyan info buttons (the card's only button, BRW-06).
+    expect(authenticated.locator("span.icon.has-text-primary").first).to_have_css("color", "rgb(0, 209, 178)")
+    expect(authenticated.locator("button.icon.has-text-info").first).to_have_css("color", "rgb(23, 162, 184)")
+
+    # The hover plate: a visible navbar link (the first .navbar-link is the
+    # burger's, hidden at the desktop viewport the fixtures run at).
+    link = authenticated.locator(".navbar-end .navbar-link").first
+    link.hover()
+    expect(link).to_have_css("background-color", "rgb(245, 245, 245)")
+    expect(link).to_have_css("color", "rgb(0, 0, 0)")
+
+
 def test__footer_sits_below_the_fold(authenticated: Page) -> None:
     """The footer starts below the first screen, never mid-fold (SHM-05, SHM-07).
 

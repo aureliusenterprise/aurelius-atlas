@@ -27,6 +27,35 @@
         --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
     }
 
+    // The accent ramp (SHM-04, DD-063). $primary is deliberately NOT here:
+    // the legacy theme never overrode it, the demo highlights the landing's
+    // icons in Bulma's own teal #00d1b2 — Bulma 1's default, kept. Only its
+    // invert is pinned: the legacy findColorInvert puts white ink on the
+    // teal (Bulma 1 derives a dark one), so the solid surfaces (buttons,
+    // tags, hero) match the demo.
+    --bulma-primary-invert-l: 100%;
+
+    @each $name, $pair in variables.$bulma-accent-overrides {
+        $value: nth($pair, 1);
+        $ink-l: nth($pair, 2);
+
+        --bulma-#{$name}: #{$value};
+        --bulma-#{$name}-base: #{$value};
+        --bulma-#{$name}-rgb:
+            #{color.channel($value, "red", $space: rgb)}, #{color.channel($value, "green", $space: rgb)},
+            #{color.channel($value, "blue", $space: rgb)};
+        --bulma-#{$name}-h: #{color.channel($value, "hue", $space: hsl)};
+        --bulma-#{$name}-s: #{color.channel($value, "saturation", $space: hsl)};
+        --bulma-#{$name}-l: #{color.channel($value, "lightness", $space: hsl)};
+
+        // The solid-surface ink (the (value, ink) pair): white via the
+        // invert lightness; `null` keeps Bulma 1's dark invert — the demo's
+        // warning button inks rgba(0, 0, 0, .7), its 0.9.4 counterpart.
+        @if $ink-l {
+            --bulma-#{$name}-invert-l: #{$ink-l};
+        }
+    }
+
     /*
      * The legacy (Bulma 0.9.4) body metrics (SHM-03, DD-059): the system
      * stack, 16px, line-height 1.5, weight 400, #4a4a4a ink on a white
@@ -100,10 +129,45 @@
         --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
     }
 
+    // Hover/active chrome (SHM-04, DD-063): the demo's navbar links hover
+    // and activate at the band grey with black ink (.navbar-link:hover
+    // measures rgb(245,245,245)/#000). Bulma 1 has no hover-colour token
+    // — the plate composes hsl(navbar-h/s, item-background-l + delta, a),
+    // so the channels are neutralised (the DD-062 pattern) and the delta
+    // set to the band grey's 96% lightness; the active/selected pair lands
+    // on the selected channels. The hover ink has no token at all and
+    // rides on the rule below.
+    --bulma-navbar-h: 0deg;
+    --bulma-navbar-s: 0%;
+    --bulma-navbar-item-hover-background-l-delta: -4%;
+    --bulma-navbar-item-active-background-l-delta: -4%;
+    --bulma-navbar-item-selected-h: 0deg;
+    --bulma-navbar-item-selected-s: 0%;
+    --bulma-navbar-item-selected-background-l: 96%;
+    --bulma-navbar-item-selected-color-l: 0%;
+
     // The dropdown ink composes h/s from the (tinted) scheme with the text
     // lightness; neutralized, it resolves to #4a4a4a like the demo (DD-062).
     --bulma-navbar-dropdown-item-h: 0deg;
     --bulma-navbar-dropdown-item-s: 0%;
+}
+
+// The hover ink (SHM-04, DD-063): Bulma 1 dropped 0.9.4's
+// navbar-item-hover-color token (links keep their ink and only the plate
+// changes), so the demo's black hover ink — 0.9.4's default, measured on
+// .navbar-link:hover — rides on a rule mirroring Bulma's plate triggers.
+// Scoped to the bar's own links (dropdown items inherit their ink in the
+// legacy theme, #0a0a0a, and keep it on hover).
+.navbar .navbar-link:focus,
+.navbar .navbar-link:focus-within,
+.navbar .navbar-link:hover,
+.navbar .navbar-start > .navbar-item:focus,
+.navbar .navbar-start > .navbar-item:focus-within,
+.navbar .navbar-start > .navbar-item:hover,
+.navbar .navbar-end > .navbar-item:focus,
+.navbar .navbar-end > .navbar-item:focus-within,
+.navbar .navbar-end > .navbar-item:hover {
+    color: #000;
 }
 
 /*
