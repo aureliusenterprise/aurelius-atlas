@@ -87,7 +87,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 7.12 | Theme, branding and layout | Aurelius palette, legacy type ramp, forced light mode, logo, pinned navbar, footer below the fold (SHM-01..07) | Aurelius `@models4insight/styles`, `libs/shell` | in progress |
 | 7.13 | UI components: details set | Breadcrumbs, entity-card, properties-item, select as dumb components (UIC-11..15, DD-066/067) | Aurelius `search/components/{bread-crumbs,cards}`, `properties-item`, `components/select` | in progress |
 | 7.14 | Settings panel | Drawer with theme, language, time zone, page size, telemetry; header gear (SPL-01..13, DD-069..073) | – (new feature, DV-12) | in progress |
-| 7.15 | Alerts drawer | Bell with severity badge, routed drawer, grouped alert feed, runtime/HTTP error capture (ALR-01..10, DD-083..087) | – (new feature, DV-13) | in progress |
+| 7.15 | Alerts drawer | Bell with severity badge, routed drawer, grouped alert feed, inbox bar with read tracking, runtime/HTTP error capture (ALR-01..12, DD-083..095) | – (new feature, DV-13) | in progress |
 
 ## After phase 0
 
