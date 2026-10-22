@@ -60,6 +60,7 @@ def test__a_new_entity_is_stored_active_with_its_system_properties(table_type: E
         "updateTime": 1000,
         "version": 3,
         "isIncomplete": False,
+        "isProxy": False,
         "provenanceType": 0,
         "labels": ["l"],
         "customAttributes": {"k": "v"},

@@ -18,6 +18,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | `GET /api/atlas/admin/liveness`  | `Service is live` while the server runs                              |
 | `GET /api/atlas/admin/readiness` | `Service is ready to accept requests` while Elasticsearch is healthy |
 | `/api/atlas/v2/types/...`        | The type definitions: read, search, create, update and delete        |
+| `GET /api/atlas/v2/entity/...`   | Entities and their headers by GUID or unique attributes, one or many |
 
 ## Dashboards
 
@@ -40,6 +41,13 @@ The 26 endpoints of Atlas's `TypesREST` (`aurelius_atlas_server/routes/types.py`
 definitions through that store. `GET typedefs` and `typedefs/headers` take Atlas's filter parameters (`type`,
 `name`, `servicetype`, `supertype`, their `not` forms and `excludeInternalTypesAndReferences`) and list each kind
 sorted by name (DD-034).
+
+## Entities
+
+The reads of Atlas's `EntityREST` (`aurelius_atlas_server/routes/entity.py`) answer entities from the entity
+store as Atlas does: `guid/{guid}`, `uniqueAttribute/type/{typeName}` with `attr:<name>=<value>`, their
+`header` forms, and `bulk` by `guid` or by `attr_<n>:<name>=<value>` sets, with `minExtInfo` and
+`ignoreRelationships`. Entities are created over REST from increment 2.4.
 
 ## Running it
 

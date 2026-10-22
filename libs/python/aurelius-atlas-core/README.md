@@ -11,7 +11,9 @@ models and their typedef patches, loaded at start-up. Since
 [1.6](../../../docs/architecture/conversion/increments/1-6-types-rest.md): the store's reads and the search of
 `/v2/types/typedefs`. Since [2.2](../../../docs/architecture/conversion/increments/2-2-entity-store.md): the
 entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes
-several entities all or nothing through a journal (DD-043 to DD-048).
+several entities all or nothing through a journal (DD-043 to DD-048). Since
+[2.3](../../../docs/architecture/conversion/increments/2-3-entity-read-rest.md): the entity retriever, which reads
+entities, their owned entities and headers back as Atlas answers them (DD-049, DD-050).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -21,6 +23,7 @@ await store.refresh()  # pick up another process's change (at most every 5 s)
 await ModelLoader(store).load(BUILTIN_MODELS_DIR)  # addons/models of Atlas 2.4.0, and their patches
 store.get_by_name("hive_table")  # the registered definition, as resolution completed it
 search_types_def(store.registry, TypeSearchFilter.from_query([("type", "ENTITY")]))  # each kind sorted by name
+await EntityRetriever(entity_store, min_ext_info=True).entity_with_ext_info(guid)  # as GET /v2/entity/guid/{guid}
 ```
 
 ## Installation
@@ -47,6 +50,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.typedef_store
 
 ::: aurelius_atlas_core.entity_store
+
+::: aurelius_atlas_core.entity_retriever
 
 ::: aurelius_atlas_core.entity_documents
 

@@ -34,6 +34,7 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-012",
         "Cardinality of attribute {0}.{1} requires a list or set type",
     )
+    ATTRIBUTE_UNIQUE_INVALID = (400, "ATLAS-400-00-013", "Type {0} with unique attribute {1} does not exist")
     TYPE_NAME_INVALID = (400, "ATLAS-400-00-014", "Type {0} with name {1} does not exist")
     PATCH_NOT_APPLICABLE_FOR_TYPE = (400, "ATLAS-400-00-016", "{0} - invalid patch for type {1}")
     PATCH_FOR_UNKNOWN_TYPE = (400, "ATLAS-400-00-017", "{0} - patch references unknown type {1}")
@@ -195,6 +196,12 @@ class AtlasErrorCode(Enum):
     )
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     TYPE_GUID_NOT_FOUND = (404, "ATLAS-404-00-002", "Given type guid {0} was invalid")
+    INSTANCE_GUID_NOT_FOUND = (404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found")
+    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND = (
+        404,
+        "ATLAS-404-00-009",
+        "Instance {0} with unique attribute {1} does not exist",
+    )
     TYPE_ALREADY_EXISTS = (409, "ATLAS-409-00-001", "Given type {0} already exists")
     TYPE_HAS_REFERENCES = (409, "ATLAS-409-00-002", "Given type {0} has references")
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")

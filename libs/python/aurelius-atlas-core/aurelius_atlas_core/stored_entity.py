@@ -31,6 +31,7 @@ class StoredEntity(AtlasModel):
     updated_by: str | None = None
     version: int = 0
     is_incomplete: bool = False
+    is_proxy: bool | None = None
     provenance_type: int = 0
     home_id: str | None = None
     labels: list[str] | None = None
@@ -54,6 +55,7 @@ class StoredEntity(AtlasModel):
             updated_by=user,
             version=entity.version or 0,
             is_incomplete=bool(entity.is_incomplete),
+            is_proxy=entity.is_proxy,
             provenance_type=entity.provenance_type or 0,
             home_id=entity.home_id,
             labels=entity.labels,
@@ -77,7 +79,11 @@ class StoredEntity(AtlasModel):
         return keys
 
     def to_entity(self, entity_type: EntityType) -> AtlasEntity:
-        """The entity with its system properties and attribute values by attribute name (2.3 adds the rest)."""
+        """The entity with its system properties and the stored attribute values by attribute name (ERD-03).
+
+        ``labels`` is a list even when empty, as Java's ``getLabels`` returns a set; ``EntityRetriever`` reads the
+        attribute values as Atlas answers them.
+        """
         attributes = {
             name: self.attributes[attribute.qualified_name]
             for name, attribute in entity_type.all_attributes.items()
@@ -93,9 +99,10 @@ class StoredEntity(AtlasModel):
             updated_by=self.updated_by,
             version=self.version,
             is_incomplete=self.is_incomplete,
+            is_proxy=self.is_proxy,
             provenance_type=self.provenance_type,
             home_id=self.home_id,
-            labels=self.labels,
+            labels=self.labels or [],
             custom_attributes=self.custom_attributes,
             attributes=attributes,
         )
