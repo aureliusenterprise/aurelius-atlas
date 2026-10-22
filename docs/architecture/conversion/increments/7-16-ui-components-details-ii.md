@@ -1,7 +1,7 @@
 # 7.16 UI components: details chrome set
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#110](https://github.com/aureliusenterprise/aurelius-atlas/pull/110)
 - **Records:** DD-099 (the chip atom is the classification chip), DD-100 (the
   type-name badge is its own component), DD-101 (details navigation is a shell;
   the scroll directive stays app-side), DD-102 (the section count bar is
