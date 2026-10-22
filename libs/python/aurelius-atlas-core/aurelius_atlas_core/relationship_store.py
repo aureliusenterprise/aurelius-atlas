@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from aurelius_atlas_model import codec
-from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
 from aurelius_atlas_model.instance import (
     AtlasObjectId,
     AtlasRelationship,
@@ -234,7 +234,7 @@ class RelationshipStore:
         name = relationship.type_name
         relationship_type = self._store.registry.relationship_type(name)
         if relationship_type is None:
-            raise AtlasError(AtlasErrorCode.INVALID_VALUE, UNKNOWN_TYPE.format(name=name))
+            raise AtlasError(AtlasErrorCode.INVALID_VALUE, UNKNOWN_TYPE.format(name=java_string(name)))
         end1_type, end2_type = _types(relationship_type)
         if end1 is None:
             raise AtlasError(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, end1_type.type_name)
