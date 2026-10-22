@@ -64,10 +64,23 @@
     --aurelius-chip-fill: #dc3545;
 }
 
+/*
+ * The count badge is the chip's only content taller than the button's
+ * own content box, and Bulma's `.tag` is a 2em-tall control: at the
+ * small button's font that is 1.5rem over a 1.125rem line — the badge
+ * stretched the chips a step above Show all and Clear all (measured
+ * live, DD-093). Compacted to the button's scale — line-height 1,
+ * hairline vertical padding, under the 1.125rem line — every member of
+ * the group computes to the plain small-button height, and the joined
+ * bar is one height (the group's flex stretch keeps them equal).
+ */
 .aurelius-alert-inbox-count {
     background-color: #f5f5f5; // $light, pinned in both schemes (DD-088)
     color: #363636; // its legacy invert (SHM-04's pair)
+    height: auto;
+    line-height: 1;
     margin-inline-start: 0.375rem;
+    padding: 0.125em 0.5em;
 }
 
 /*

@@ -184,6 +184,22 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(counts.map((c) => c.textContent.trim())).toEqual(["0", "0", "0"]);
     });
 
+    it("compacts the count badge so every segment is one height (DD-093)", () => {
+        fixture.componentRef.setInput("alerts", feed());
+        fixture.detectChanges();
+
+        // Bulma's `.tag` is a 2em control — at the small button's font
+        // it stretched the chips above Show all and Clear all (the
+        // joined bar stepped). The badge is compacted to the button's
+        // scale, so every group member computes to the plain small
+        // button's height (the bar's equal height is the group's
+        // stretch; the badge must not outgrow the line).
+        const badge = fixture.nativeElement.querySelector(".aurelius-alert-inbox-count") as HTMLElement;
+        const style = getComputedStyle(badge);
+        expect(style.height).toBe("auto");
+        expect(style.lineHeight).toBe("1");
+    });
+
     it("projects the caller's action into the strip (DD-090)", async () => {
         @Component({
             imports: [AlertInbox],
