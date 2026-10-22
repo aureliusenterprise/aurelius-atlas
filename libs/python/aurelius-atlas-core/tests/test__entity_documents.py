@@ -12,6 +12,7 @@ from aurelius_atlas_core.entity_documents import (
     Reservation,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_model.instance import EntityStatus
@@ -41,8 +42,8 @@ def entity(guid: str, **attributes: object) -> StoredEntity:
     return StoredEntity(guid=guid, type_name="table", attributes=attributes)
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01"])
-async def test__three_aliases_are_created_once(fake: FakeClient) -> None:
+@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05"])
+async def test__four_aliases_are_created_once(fake: FakeClient) -> None:
     """An index behind each alias; a second prepare changes nothing."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))
 
@@ -53,6 +54,7 @@ async def test__three_aliases_are_created_once(fake: FakeClient) -> None:
         "aurelius-atlas-entities",
         "aurelius-atlas-unique-values",
         "aurelius-atlas-entity-journal",
+        "aurelius-atlas-relationships",
     )
     assert fake.aliases == {alias: f"{alias}-000001" for alias in documents.aliases}
 
@@ -161,6 +163,9 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "journal",
             "count_type",
             "referring",
+            "get_relationships",
+            "restore_relationship",
+            "count_relationship_type",
         )
     ),
     rules=["ENS-07"],
@@ -198,3 +203,32 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
     assert set(await documents.get(["a", "c"])) == {"a"}
     assert "t-entities" in fake.refreshes
     assert fake.mapping_updates == ["t-entities"]
+
+
+@pytest.mark.covers(
+    f"{E}.write",
+    f"{E}.get_relationships",
+    f"{E}.restore_relationship",
+    f"{E}.count_relationship_type",
+    rules=["REL-05", "REL-08", "REL-10"],
+)
+async def test__relationships_are_written_with_entities_in_one_bulk_request(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient
+) -> None:
+    """Both indices in one request, each result marked by kind; relationships are read, restored and counted."""
+    link = StoredRelationship(guid="r", type_name="link", end1_guid="a", end2_guid="b")
+
+    results = await documents.write([(entity("a"), None)], [], [(link, None)])
+    found = await documents.get_relationships(["r", "nope"])
+    removed = await documents.write([], [], [], [("r", found["r"].version)])
+    await documents.restore_relationship("r", link)
+    await documents.restore_relationship("s", None)
+
+    assert [(result.guid, result.relationship) for result in results] == [("a", False), ("r", True)]
+    assert list(found) == ["r"]
+    assert [(result.guid, result.written) for result in removed] == [("r", True)]
+    assert await documents.count_relationship_type("link") == 1
+    assert await documents.get_relationships([]) == {}
+    await documents.restore_relationship("r", None)
+    assert await documents.count_relationship_type("link") == 0
+    assert "t-relationships" in fake.refreshes

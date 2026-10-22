@@ -19,7 +19,9 @@ discovers the entities a request names, resolves its references, maps it onto st
 in one write (DD-052, DD-053). Since
 [2.5](../../../docs/architecture/conversion/increments/2-5-delete-semantics.md): soft and hard deletes and
 purges with the owned-reference cascade, through writes that also remove documents and an indexed field of the
-GUIDs each entity refers to (DD-056 to DD-060).
+GUIDs each entity refers to (DD-056 to DD-060). Since
+[3.1a](../../../docs/architecture/conversion/increments/3-1-relationship-instances.md): relationship instances,
+documents of their own index listed by both ends and written with them (DD-061, DD-062).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -76,6 +78,10 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.hard_delete_handler
 
 ::: aurelius_atlas_core.delete_type
+
+::: aurelius_atlas_core.relationship_store
+
+::: aurelius_atlas_core.stored_relationship
 
 ::: aurelius_atlas_core.entity_documents
 

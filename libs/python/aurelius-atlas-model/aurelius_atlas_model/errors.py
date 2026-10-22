@@ -108,6 +108,11 @@ class AtlasErrorCode(Enum):
         "relationshipDef {0} cannot have a LIST cardinality on an end",
     )
     RELATIONSHIPDEF_INVALID_END_TYPE = (400, "ATLAS-400-00-035", "relationshipDef {0} has invalid end type {1}")
+    INVALID_RELATIONSHIP_END_TYPE = (
+        400,
+        "ATLAS-400-00-036",
+        "invalid relationshipDef: {0}: end type 1: {1}, end type 2: {2}",
+    )
     RELATIONSHIPDEF_INVALID_END1_UPDATE = (
         400,
         "ATLAS-400-00-037",
@@ -169,6 +174,20 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-088",
         "Invalid dateRange: startTime {0} must be before endTime {1}",
     )
+    RELATIONSHIP_UPDATE_END_CHANGE_NOT_ALLOWED = (
+        404,
+        "ATLAS-400-00-069",
+        (
+            "change of relationship end is not permitted. relationship-type={0}, relationship-guid={1}, "
+            "end-guid={2}, updated-end-guid={3}"
+        ),
+    )
+    RELATIONSHIP_UPDATE_TYPE_CHANGE_NOT_ALLOWED = (
+        404,
+        "ATLAS-400-00-06A",
+        "change of relationship type is not permitted. relationship-guid={0}, current-type={1}, new-type={2}",
+    )
+    RELATIONSHIP_END_IS_NULL = (400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL")
     PATCH_MISSING_RELATIONSHIP_LABEL = (
         400,
         "ATLAS-400-00-08B",
@@ -189,6 +208,11 @@ class AtlasErrorCode(Enum):
         400,
         "ATLAS-400-00-090",
         "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'",
+    )
+    INVALID_PROPAGATION_TYPE = (
+        400,
+        "ATLAS-400-00-091",
+        "Invalid propagation {0} for relationship-type={1}. Default value is {2}",
     )
     APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED = (
         400,
@@ -230,8 +254,24 @@ class AtlasErrorCode(Enum):
         "Invalid instance creation/updation parameters passed : {0}",
     )
     REFERENCED_ENTITY_NOT_FOUND = (404, "ATLAS-404-00-00A", "Referenced entity {0} is not found")
+    RELATIONSHIP_GUID_NOT_FOUND = (404, "ATLAS-404-00-00C", "Given relationship guid {0} is invalid/not found")
+    RELATIONSHIP_CRUD_INVALID_PARAMS = (
+        404,
+        "ATLAS-404-00-00D",
+        "Invalid relationship creation/updation parameters passed : {0}",
+    )
+    RELATIONSHIP_ALREADY_DELETED = (
+        404,
+        "ATLAS-404-00-00F",
+        "Attempting to delete a relationship which is already deleted : {0}",
+    )
     TYPE_ALREADY_EXISTS = (409, "ATLAS-409-00-001", "Given type {0} already exists")
     TYPE_HAS_REFERENCES = (409, "ATLAS-409-00-002", "Given type {0} has references")
+    RELATIONSHIP_ALREADY_EXISTS = (
+        409,
+        "ATLAS-409-00-004",
+        "relationship {0} already exists between entities {1} and {2}",
+    )
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")
     INTERNAL_ERROR = (500, "ATLAS-500-00-001", "Internal server error {0}")
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK = (

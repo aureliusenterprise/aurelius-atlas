@@ -61,6 +61,12 @@ with the entities it owns and change those referring to it; `PUT /api/atlas/admi
 entities for good. Deletes are soft unless `AURELIUS_ATLAS_SERVER_DELETE_TYPE` is `hard`; with
 `AURELIUS_ATLAS_SERVER_DELETE_TYPE_OVERRIDE=true` a request's `deleteType` chooses (DD-059).
 
+## Relationships
+
+The endpoints of Atlas's `RelationshipREST` (`aurelius_atlas_server/routes/relationship.py`) create, read,
+update and delete relationship instances; deleting an entity deletes its relationships with it. Relationship
+attributes of entities (`relationshipAttributes`) follow in increment 3.1b.
+
 ## Running it
 
 ```bash

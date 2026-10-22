@@ -105,6 +105,16 @@ class EntityRetriever:
             header.classifications = []
         return header
 
+    async def object_id_of(self, stored: StoredEntity) -> AtlasObjectId | None:
+        """The entity as a relationship's end: GUID, type and unique values, none when it has none (REL-06).
+
+        ``getEntityUniqueAttribute`` answers null rather than an empty map.
+        """
+        object_id = await self._reading(AtlasEntityExtInfo()).object_id(stored)
+        if object_id is not None and not object_id.unique_attributes:
+            object_id.unique_attributes = None
+        return object_id
+
     async def entity_attribute(self, stored: StoredEntity, attribute: AtlasAttribute) -> Any:  # noqa: ANN401 - Atlas JSON
         """``getEntityAttribute``: the stored value of ``attribute`` as a read answers it, without referred entities.
 

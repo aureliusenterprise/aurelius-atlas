@@ -16,7 +16,9 @@ from aurelius_atlas_model.instance.entity_status import EntityStatus
 from aurelius_atlas_model.instance.entity_with_ext_info import AtlasEntityWithExtInfo
 from aurelius_atlas_model.instance.object_id import AtlasObjectId
 from aurelius_atlas_model.instance.related_object_id import AtlasRelatedObjectId
+from aurelius_atlas_model.instance.relationship import AtlasRelationship
 from aurelius_atlas_model.instance.relationship_status import RelationshipStatus
+from aurelius_atlas_model.instance.relationship_with_ext_info import AtlasRelationshipWithExtInfo
 from aurelius_atlas_model.instance.struct import AtlasStruct
 from aurelius_atlas_model.instance.term_assignment_header import AtlasTermAssignmentHeader
 from aurelius_atlas_model.instance.term_assignment_status import AtlasTermAssignmentStatus
@@ -32,6 +34,8 @@ __all__ = [
     "AtlasEntityWithExtInfo",
     "AtlasObjectId",
     "AtlasRelatedObjectId",
+    "AtlasRelationship",
+    "AtlasRelationshipWithExtInfo",
     "AtlasStruct",
     "AtlasTermAssignmentHeader",
     "AtlasTermAssignmentStatus",

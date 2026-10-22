@@ -5,8 +5,15 @@ from collections.abc import Sequence
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
-from aurelius_atlas_core.entity_documents import JournalEntry, Reservation, VersionedEntity, WriteResult
+from aurelius_atlas_core.entity_documents import (
+    JournalEntry,
+    Reservation,
+    VersionedEntity,
+    VersionedRelationship,
+    WriteResult,
+)
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
 
 
@@ -69,7 +76,7 @@ class SimulatedCrashError(RuntimeError):
 
 
 class MemoryEntityDocuments:
-    """``EntityDocuments`` in memory, kept as JSON with a version per document, as Elasticsearch would.
+    """``EntityDocuments`` in memory, entities and relationships kept as JSON with a version per document.
 
     ``fail`` maps a GUID to ``"conflict"`` or ``"error"`` for the next bulk write of it; ``crash_after_write`` makes
     the next bulk write raise ``SimulatedCrashError`` after writing, as if the process died.
@@ -77,6 +84,7 @@ class MemoryEntityDocuments:
 
     def __init__(self) -> None:
         self.entities: dict[str, tuple[dict[str, object], DocumentVersion]] = {}
+        self.relationships: dict[str, tuple[dict[str, object], DocumentVersion]] = {}
         self.unique_values: dict[str, Reservation] = {}
         self.journal_entries: dict[str, dict[str, object]] = {}
         self.prepared = False
@@ -105,36 +113,68 @@ class MemoryEntityDocuments:
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
+        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
+        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
     ) -> list[WriteResult]:
-        """Write each entity, then remove each one, unless it conflicts or ``fail`` names it."""
-        results = []
-        for entity, version in items:
-            current = self.entities.get(entity.guid)
-            failure = self.fail.pop(entity.guid, None)
-            conflict = (version is None and current is not None) or (
-                version is not None and (current is None or current[1] != version)
-            )
-            if conflict or failure == "conflict":
-                results.append(WriteResult(entity.guid, written=False, conflict=True))
-            elif failure == "error":
-                results.append(WriteResult(entity.guid, written=False))
-            else:
-                self.entities[entity.guid] = (codec.loads(codec.dumps(entity.to_json())), self._next_version())
-                results.append(WriteResult(entity.guid, written=True))
-        for guid, version in removed:
-            current = self.entities.get(guid)
-            failure = self.fail.pop(guid, None)
-            if current is None or current[1] != version or failure == "conflict":
-                results.append(WriteResult(guid, written=False, conflict=True))
-            elif failure == "error":
-                results.append(WriteResult(guid, written=False))
-            else:
-                del self.entities[guid]
-                results.append(WriteResult(guid, written=True))
+        """Write and remove entities, then relationships, unless they conflict or ``fail`` names them."""
+        results: list[WriteResult] = []
+        for documents, written, gone, kind in (
+            (self.entities, items, removed, False),
+            (self.relationships, relationships, removed_relationships, True),
+        ):
+            for document, version in written:
+                results.append(self._put(documents, document.guid, document.to_json(), version, relationship=kind))
+            for guid, version in gone:
+                results.append(self._put(documents, guid, None, version, relationship=kind))
         if self.crash_after_write:
             self.crash_after_write = False
             raise SimulatedCrashError
         return results
+
+    def _put(
+        self,
+        documents: dict[str, tuple[dict[str, object], DocumentVersion]],
+        guid: str,
+        source: dict[str, object] | None,
+        version: DocumentVersion | None,
+        *,
+        relationship: bool,
+    ) -> WriteResult:
+        """Write ``source`` (None removes) unless the version is not the current one or ``fail`` names it."""
+        current = documents.get(guid)
+        failure = self.fail.pop(guid, None)
+        stale = (version is None and current is not None) or (
+            version is not None and (current is None or current[1] != version)
+        )
+        if stale or failure == "conflict":
+            return WriteResult(guid, written=False, conflict=True, relationship=relationship)
+        if failure == "error":
+            return WriteResult(guid, written=False, relationship=relationship)
+        if source is None:
+            del documents[guid]
+        else:
+            documents[guid] = (codec.loads(codec.dumps(source)), self._next_version())
+        return WriteResult(guid, written=True, relationship=relationship)
+
+    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
+        """The stored relationships with these GUIDs."""
+        return {
+            guid: VersionedRelationship(StoredRelationship.model_validate(codec.loads(codec.dumps(source))), version)
+            for guid in guids
+            if (found := self.relationships.get(guid)) is not None
+            for source, version in [found]
+        }
+
+    async def restore_relationship(self, guid: str, before: StoredRelationship | None) -> None:
+        """Put back the relationship's state before, or delete it."""
+        if before is None:
+            self.relationships.pop(guid, None)
+        else:
+            self.relationships[guid] = (codec.loads(codec.dumps(before.to_json())), self._next_version())
+
+    async def count_relationship_type(self, type_name: str) -> int:
+        """Relationships of the type."""
+        return sum(1 for source, _ in self.relationships.values() if source.get("typeName") == type_name)
 
     async def restore(self, guid: str, before: StoredEntity | None) -> None:
         """Put back the state before, or delete."""

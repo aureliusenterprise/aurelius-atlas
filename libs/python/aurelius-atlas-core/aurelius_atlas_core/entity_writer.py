@@ -175,8 +175,8 @@ class EntityWriter:
         deletion = await handler.delete_entities(candidates)
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=purge) for guid in deletion.deleted]
-        if deletion.changes:
-            await self._store.write(deletion.changes)
+        if deletion.changes or deletion.relationship_changes:
+            await self._store.write(deletion.changes, deletion.relationship_changes)
         response = EntityMutationResponse()
         for header in headers:
             response.add_entity(EntityOperation.PURGE if purge else EntityOperation.DELETE, header)
