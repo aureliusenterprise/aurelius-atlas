@@ -34,9 +34,16 @@ class Difference:
 
 
 def _show(value: Any) -> str:  # noqa: ANN401 - any JSON value
+    """A value as JSON; a marker, also one inside an object or array, as its text (``(volatile)``)."""
     if isinstance(value, Marker):
         return value.value
-    return json.dumps(value, ensure_ascii=False)
+    return json.dumps(value, ensure_ascii=False, default=_marker_text)
+
+
+def _marker_text(value: object) -> str:
+    if isinstance(value, Marker):
+        return value.value
+    raise TypeError(value)
 
 
 def _kind(value: Any) -> str:  # noqa: ANN401 - any JSON value

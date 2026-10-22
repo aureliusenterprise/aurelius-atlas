@@ -229,6 +229,7 @@ def test__check_response_compares_bodies_by_kind(
         ("/entity/{guid}/n/{count}", "/entity/g-1/n/3"),
         ("{{guid}} {{literal}}", "{guid} {literal}"),
         ({"list": ["{count}", "x{guid}"]}, {"list": [3, "xg-1"]}),
+        ({"{guid}": 1, "{count}": 2, "k-{guid}": 3}, {"g-1": 1, "3": 2, "k-g-1": 3}),
         ("a {entity}", 'a {"a": [1]}'),
         (7, 7),
         (None, None),

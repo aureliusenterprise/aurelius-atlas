@@ -41,7 +41,7 @@ stages:
 - **The body is compared exactly**: the same keys, arrays in order, `null` is not "absent", `true` is
   not `1`. Only `volatile` paths skip a value (the field must still be there).
 - **`save`** keeps a value for later stages; `"{guid}"` takes it with its JSON type, `/x/{guid}` writes
-  it into the text, `{{` and `}}` are literal braces.
+  it into the text, also into an object key, `{{` and `}}` are literal braces.
 - **`{run}`** is saved before the first stage: a value unique to each run, for names a scenario creates in a
   store that keeps them (DD-055).
 - **`deviations`** turn the Atlas expectation into the Aurelius answer, each with its id from
