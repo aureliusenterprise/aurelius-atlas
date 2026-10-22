@@ -354,3 +354,11 @@ class AtlasError(Exception):
         self.message = code.message(*params)
         self.cause = cause
         super().__init__(self.message)
+
+    @classmethod
+    def of_message(cls, code: AtlasErrorCode, message: str) -> AtlasError:
+        """``AtlasBaseException(String)``: an error whose message is the text itself, not the code's template."""
+        error = cls(code)
+        error.message = message
+        error.args = (message,)
+        return error
