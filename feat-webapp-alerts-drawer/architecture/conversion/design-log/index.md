@@ -1308,3 +1308,17 @@ The brand theme (DD-059/062) pins the light ink chain in `:root` — body `#4a4a
 **Alternatives.** Bulma's `.button.is-info`/`.is-warning`/`.is-danger` fills (scheme-following: the tints shift with the theme and collide with the brand's pinned plates — DD-088's trap, measured once on this very bar). Severity text ink on a plain chip, fill reserved (the user asked for coloured buttons; an outline bar reads disabled, not filtered). Ramp descending (error first, DD-090's first pass — kept for the feed's rows, newest/urgest-first; the bar is a dial, not a feed). The actions outside the group, flush right (DD-090's first pass: two visual systems on one strip — the user asked for one joined bar).
 
 **Consequences.** `SEVERITIES` is the inbox's order and the bar is the model's only consumer of it; the feed's order is the store's own (newest first), untouched. The clear-all button's contract is "an expanded member of the group" — the panel's button and the host test carry `is-expanded`. The unread dot loses its severity classes (`is-*`): the chip's face is the severity, the dot only marks news. The bar's tab order is info, warning, error, \[show all\], clear all.
+
+### DD-093 — The inbox bar is one height: the count badge is compacted
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** The inbox bar's count badge sheds Bulma's `.tag` height: `height: auto`, `line-height: 1`, `0.125em` vertical padding — the badge is compacted to the small button's scale, so every member of the group (chips, show all, Clear all) computes to the plain small-button height (ALR-11, DD-092).
+
+**Reason.** The user's review of the live bar: Show all and Clear all sat a step shorter than the severity chips. The cause was the badge, not the actions: Bulma's `.tag` is a 2em control, and at the small button's font that is 1.5rem of content inside a chip whose own line is 1.125rem — the badge stretched its chip, and the group's flex stretch dragged Show all and Clear all up to match. DD-092's "is-expanded everywhere" made the step visible: joined segments expose each other's heights.
+
+**Alternatives.** `align-items: flex-start` on the group (leaves the tall chips and short actions as they are, the join shows the gap). A plain `<span>` instead of a Bulma `.tag` (the tag's plate/rounding is the chip vocabulary, DD-088's pinned pair; the height is the only part to shed). `is-normal` on the tag (the size modifiers are font sizes, the `2em` height rides them all).
+
+**Consequences.** The badge reads as the button's own metadata (a superscript plate) rather than a control sharing the row. The unit test pins the compaction's two properties; the equal height across segments is the group's stretch, verified on the dev server.

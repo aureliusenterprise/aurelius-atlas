@@ -4632,6 +4632,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-093-the-inbox-bar-is-one-height-the-count-badge-is-compacted" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-093 — The inbox bar is one height: the count badge is compacted
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8220,6 +8231,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-093-the-inbox-bar-is-one-height-the-count-badge-is-compacted" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-093 — The inbox bar is one height: the count badge is compacted
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11022,6 +11044,35 @@ expanded member of the group" — the panel's button and the host test
 carry <code>is-expanded</code>. The unread dot loses its severity classes
 (<code>is-*</code>): the chip's face is the severity, the dot only marks news.
 The bar's tab order is info, warning, error, [show all], clear all.</p>
+<h3 id="dd-093-the-inbox-bar-is-one-height-the-count-badge-is-compacted">DD-093 — The inbox bar is one height: the count badge is compacted<a class="headerlink" href="#dd-093-the-inbox-bar-is-one-height-the-count-badge-is-compacted" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.15</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> The inbox bar's count badge sheds Bulma's <code>.tag</code> height:
+<code>height: auto</code>, <code>line-height: 1</code>, <code>0.125em</code> vertical padding — the
+badge is compacted to the small button's scale, so every member of the
+group (chips, show all, Clear all) computes to the plain small-button
+height (ALR-11, DD-092).</p>
+<p><strong>Reason.</strong> The user's review of the live bar: Show all and Clear all
+sat a step shorter than the severity chips. The cause was the badge,
+not the actions: Bulma's <code>.tag</code> is a 2em control, and at the small
+button's font that is 1.5rem of content inside a chip whose own line
+is 1.125rem — the badge stretched its chip, and the group's flex
+stretch dragged Show all and Clear all up to match. DD-092's
+"is-expanded everywhere" made the step visible: joined segments
+expose each other's heights.</p>
+<p><strong>Alternatives.</strong> <code>align-items: flex-start</code> on the group (leaves the
+tall chips and short actions as they are, the join shows the gap). A
+plain <code>&lt;span&gt;</code> instead of a Bulma <code>.tag</code> (the tag's plate/rounding is
+the chip vocabulary, DD-088's pinned pair; the height is the only
+part to shed). <code>is-normal</code> on the tag (the size modifiers are font
+sizes, the <code>2em</code> height rides them all).</p>
+<p><strong>Consequences.</strong> The badge reads as the button's own metadata (a
+superscript plate) rather than a control sharing the row. The unit
+test pins the compaction's two properties; the equal height across
+segments is the group's stretch, verified on the dev server.</p>
 
 
 
