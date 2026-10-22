@@ -2960,3 +2960,73 @@ The `shell.alerts.showAll` string leaves both fixture locales and both
 catalogues (25 shell.alerts entries → 24). The AllHidden story and the
 two bar tests carry the new contract: no control, three expanded
 segments, a hidden chip toggles back on.
+
+### DD-096 — Entity details arrives as a routed skeleton; its data spine joins 2.3
+
+- **Status:** Proposed
+- **Increment:** 7.6
+- **Date:** 2026-10-22
+
+**Decision.** 7.6 ports the Aurelius details screen (`search/details/:guid`) as
+the skeleton the data-free webapp can host today: the route contract, the header
+shape (title, type-name line, the 7.13 `breadcrumbs`), the description box, the
+properties accordion, and the side navigation — every part in its empty state,
+fed by the bridge keys `search.details.*` already in the catalogue. No entity
+fetch: `GET /v2/entity/guid/{guid}` is server 2.3 (planned), the type dispatch
+is nine `m4i_*` governance layouts, and the lineage/quality cards post to
+backends Aurelius Atlas will not have (DD-051). The wiring increment — the
+resolver, the header data, the type components, lineage — is named in the spec
+and lands when 2.3 does.
+
+**Reason.** Every Aurelius details section reads one resolved entity; the
+Aurelius `DetailsResolver` feeds a search stack that DD-051 deliberately left
+unported. Shipping the fetch against a 404 is the speculative build DD-051
+refuses, and shipping mock entity data is a UI promise the slice cannot keep —
+the 7.5 seam (DD-054) again, one screen deeper. The skeleton is what is true
+today: the URL is the screen's address, the chrome's strings are all keyed, the
+7.13 components already render the trail and the rows, and the deep-link
+contract (DET-07) is testable end to end with zero data.
+
+**Alternatives.** A full port against `HttpTestingController` mocks (the e2e
+stack runs the real server — the mocks evaporate at the first served test). A
+stub server (a second source of truth the parity harness must then ignore).
+Waiting for 2.3 entirely (the route, the layout, and the strings are real work
+that 2.3 does not gate; the 7.5 precedent ports exactly this kind of slice).
+
+**Consequences.** The webapp owns a details route that renders a provable
+empty state; 2.3+7.6 is composition, not design — the resolver calls the
+client method DET-03 builds, the header binds the DTO, the type components
+join the shell. The nine `m4i_*` layouts stay deferred: Aurelius's own type
+model, out of Aurelius Atlas's scope until its data exists (the slice table
+names the wiring increment).
+
+### DD-097 — The entity client is built test-first against the Atlas wire format
+
+- **Status:** Proposed
+- **Increment:** 7.6
+- **Date:** 2026-10-22
+
+**Decision.** `AtlasEntitiesService.getEntityByGuid(guid)` lands in 7.6: the
+DTOs are typed from the Apache Atlas 2.4.0 source (`AtlasEntity.java`,
+`EntityREST.java`), cited at the type, and the specs are `HttpTestingController`
+assertions on the request (path, headers, guid encoding) and the response
+mapping. No screen calls it (DD-096's skeleton fetches nothing); the 2.3+7.6
+wiring increment consumes it.
+
+**Reason.** DD-051's rule is one method per server increment, "each method
+lands testable against the real server." The entity-by-guid read is the
+surface 2.3 implements, and its wire format is fixed by Atlas's source and
+tests, not by this workspace — so the DTOs and the request shape are knowable
+today, and a spec that asserts them is honest (it never claims a 200).
+Building the client in the wiring increment makes that PR data + layout +
+client at once; splitting it keeps 2.3+7.6 about the server round-trip.
+
+**Alternatives.** Grow the client in 2.3+7.6 (the honest choice 7.3's pattern
+allows — accepted as the fallback if the split adds review load). Port the
+whole legacy `EntityAPIService` surface (create, update, bulk, relationships —
+endpoints 2.4/3.x, unportable per DD-051's audit).
+
+**Consequences.** The data-access lib gains one Atlas-native entity method,
+the typedefs client's shape (APC-01 base url, one method per legacy
+duplication, DD-051). When 2.3 lands, the e2e wiring scenario is the method's
+first real 200; its specs keep asserting the request until then.
