@@ -1,0 +1,396 @@
+name: Deletes cascade to owned entities, change referring ones, and purges remove deleted entities for good
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#deleteByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#deleteByUniqueAttribute
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#purgeByIds
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#deleteVertices
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#purgeVertices
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#getOwnedVertices
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteVertex
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteEdgeBetweenVertices
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/SoftDeleteHandlerV1.java
+rules: [EDL-03, EDL-04, EDL-05, EDL-06, EDL-07, EDL-08]
+covers:
+    - aurelius_atlas_server.routes.entity.delete_by_guid
+    - aurelius_atlas_server.routes.entity.delete_by_unique_attribute
+    - aurelius_atlas_server.routes.admin.purge_by_ids
+stages:
+    - name: create a database, a column and a table type that refers to one and owns the other
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_ddb_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                  - name: scenario_dcol_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                  - name: scenario_dtable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: db, typeName: "scenario_ddb_{run}", isOptional: true }
+                        - name: columns
+                          typeName: array<scenario_dcol_{run}>
+                          isOptional: true
+                          cardinality: LIST
+                          constraints: [{ type: ownedRef }]
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ddb_{run}
+                    description: scenario_ddb_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_dcol_{run}
+                    description: scenario_dcol_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_dtable_{run}
+                    description: scenario_dtable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: db
+                          typeName: scenario_ddb_{run}
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: columns
+                          typeName: array<scenario_dcol_{run}>
+                          isOptional: true
+                          cardinality: LIST
+                          valuesMinCount: 0
+                          valuesMaxCount: 2147483647
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          constraints: [{ type: ownedRef }]
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[1].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[1].updatedBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[2].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[2].updatedBy", absent: true }
+    - name: create a database, and a table that refers to it and owns a column
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - { typeName: "scenario_ddb_{run}", guid: "-1", attributes: { qualifiedName: "ddb_{run}" } }
+                  - typeName: scenario_dtable_{run}
+                    guid: "-2"
+                    attributes:
+                        qualifiedName: dt_{run}
+                        db: { guid: "-1", typeName: "scenario_ddb_{run}" }
+                        columns: [{ guid: "-3", typeName: "scenario_dcol_{run}" }]
+                  - { typeName: "scenario_dcol_{run}", guid: "-3", attributes: { qualifiedName: "dc_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - &db_header
+                        typeName: scenario_ddb_{run}
+                        attributes: { qualifiedName: "ddb_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: ddb_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - &table_header
+                        typeName: scenario_dtable_{run}
+                        attributes: { qualifiedName: "dt_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: dt_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - &column_header
+                        typeName: scenario_dcol_{run}
+                        attributes: { qualifiedName: "dc_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: dc_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID, "-2": a new GUID, "-3": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+              - $.guidAssignments['-3']
+          save:
+              db: $.guidAssignments['-1']
+              table: $.guidAssignments['-2']
+              column: $.guidAssignments['-3']
+    - name: deleting the database changes the table that refers to it
+      request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{db}" }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_ddb_{run}
+                        attributes: { qualifiedName: "ddb_{run}" }
+                        guid: "{db}"
+                        status: ACTIVE
+                        displayText: ddb_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                  UPDATE:
+                      - typeName: scenario_dtable_{run}
+                        attributes: { qualifiedName: "dt_{run}" }
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: dt_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: a soft delete leaves the reference to the deleted database
+      request: { method: GET, url: "/api/atlas/v2/entity/guid/{table}", params: { minExtInfo: "true" } }
+      response:
+          status: 200
+          json:
+              referredEntities:
+                  "{column}":
+                      typeName: scenario_dcol_{run}
+                      attributes: { qualifiedName: "dc_{run}" }
+                      guid: "{column}"
+                      isIncomplete: false
+                      provenanceType: 0
+                      status: ACTIVE
+                      createdBy: admin
+                      updatedBy: admin
+                      createTime: 0
+                      updateTime: 0
+                      version: 0
+                      labels: []
+              entity:
+                  typeName: scenario_dtable_{run}
+                  attributes:
+                      qualifiedName: dt_{run}
+                      db:
+                          {
+                              guid: "{db}",
+                              typeName: "scenario_ddb_{run}",
+                              uniqueAttributes: { qualifiedName: "ddb_{run}" },
+                          }
+                      columns: [{ guid: "{column}", typeName: "scenario_dcol_{run}" }]
+                  guid: "{table}"
+                  isIncomplete: false
+                  provenanceType: 0
+                  status: ACTIVE
+                  createdBy: admin
+                  updatedBy: admin
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  labels: []
+          volatile:
+              - $.entity.createTime
+              - $.entity.updateTime
+              - $.referredEntities[*].createTime
+              - $.referredEntities[*].updateTime
+          deviations:
+              - { id: DV-15, path: $.entity.createdBy, absent: true }
+              - { id: DV-15, path: $.entity.updatedBy, absent: true }
+              - { id: DV-15, path: "$.referredEntities[*].createdBy", absent: true }
+              - { id: DV-15, path: "$.referredEntities[*].updatedBy", absent: true }
+    - name: deleting the table by its unique value deletes the column it owns
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_dtable_{run}
+          params: { "attr:qualifiedName": "dt_{run}" }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_dtable_{run}
+                        attributes: { qualifiedName: "dt_{run}" }
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: dt_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_dcol_{run}
+                        attributes: { qualifiedName: "dc_{run}" }
+                        guid: "{column}"
+                        status: ACTIVE
+                        displayText: dc_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: a deleted entity holds its unique value no more, so deleting by it again deletes nothing
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_dtable_{run}
+          params: { "attr:qualifiedName": "dt_{run}" }
+      response:
+          status: 200
+          json: {}
+    - name: purging the table also purges the column it owns
+      request: { method: PUT, url: /api/atlas/admin/purge, json: ["{table}"] }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_dtable_{run}
+                        attributes: { qualifiedName: "dt_{run}" }
+                        guid: "{table}"
+                        status: DELETED
+                        displayText: dt_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_dcol_{run}
+                        attributes: { qualifiedName: "dc_{run}" }
+                        guid: "{column}"
+                        status: DELETED
+                        displayText: dc_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: a purged entity is gone
+      request: { method: GET, url: "/api/atlas/v2/entity/guid/{table}" }
+      response:
+          status: 404
+          json: { errorCode: ATLAS-404-00-005, errorMessage: "Given instance guid {table} is invalid/not found" }
+    - name: purge the database
+      request: { method: PUT, url: /api/atlas/admin/purge, json: ["{db}"] }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_ddb_{run}
+                        attributes: { qualifiedName: "ddb_{run}" }
+                        guid: "{db}"
+                        status: DELETED
+                        displayText: ddb_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: delete the table type
+      request: { method: DELETE, url: "/api/atlas/v2/types/typedef/name/scenario_dtable_{run}" }
+      response: { status: 204 }
+    - name: delete the column type
+      request: { method: DELETE, url: "/api/atlas/v2/types/typedef/name/scenario_dcol_{run}" }
+      response: { status: 204 }
+    - name: delete the database type
+      request: { method: DELETE, url: "/api/atlas/v2/types/typedef/name/scenario_ddb_{run}" }
+      response: { status: 204 }
