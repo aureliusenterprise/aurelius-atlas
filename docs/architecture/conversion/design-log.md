@@ -1051,7 +1051,9 @@ test.
 types cannot share one mapping. An index per entity type: thousands of small indices for Atlas's models alone,
 and queries across a super type touch them all.
 
-**Consequences.** 4.1 adds attribute mappings and indexes the existing documents again (an `update_by_query`),
+**Consequences.** The store's client reads floats as decimals and is given documents as the codec's bytes
+(DD-039), so values keep their digits through Elasticsearch. 4.1 adds attribute mappings and indexes the existing
+documents again (an `update_by_query`),
 the first change ADR 023 records as a migration if data exists by then. Reading an entity back maps qualified
 names to attribute names through the type registry (2.3).
 
@@ -1113,10 +1115,11 @@ write that never finished.
 3. all entities are written in one bulk request, each conditionally (DD-047) and marked with the write's id;
 4. if any entity fails, every entity written is restored to its state before, and the write's reservations are
    released;
-5. values no longer held are released and the journal entry is deleted.
+5. the journal entry is marked committed; values no longer held are released and the entry is deleted.
 
-Recovery, at start-up, finds journal entries whose lease has passed and undoes them as in step 4: it restores
-an entity only while it still carries that write's id, and releases only reservations made by that write.
+Recovery, at start-up, finds journal entries whose lease has passed. A committed entry only has its releases
+finished; any other is undone as in step 4: it restores an entity only while it still carries that write's id,
+and releases only reservations made by that write.
 
 **Reason.** Atlas commits all entities of a request in one graph transaction (`GraphTransactionInterceptor`).
 Elasticsearch writes one document atomically but no more (ADR 047). The user chose an all-or-nothing outcome,
