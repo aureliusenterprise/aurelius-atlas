@@ -1,10 +1,5 @@
 [
   {
-    "version": "phase2-2.3-entity-read-rest",
-    "title": "phase2-2.3-entity-read-rest",
-    "aliases": []
-  },
-  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
