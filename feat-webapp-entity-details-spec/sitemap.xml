@@ -232,7 +232,7 @@
         <loc>https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/054-the-webapp-talks-to-one-server-api/</loc>
+        <loc>https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/054-the-server-api-is-the-webapps-one-data-plane/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/template/</loc>
