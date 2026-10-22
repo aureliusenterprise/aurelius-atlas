@@ -117,6 +117,7 @@
 - [2.1b Value types](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-value-types/index.md>)
 - [2.2 Entity store](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-2-entity-store/index.md>)
 - [2.3 Entity read REST](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-3-entity-read-rest/index.md>)
+- [2.4 Entity write REST](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-4-entity-write-rest/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)
 - [Conversion](<https://aureliusenterprise.github.io/main/architecture/conversion/index.md>)

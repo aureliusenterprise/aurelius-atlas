@@ -60,7 +60,7 @@ Functions:
   Read every `*.scenario.yaml` below a directory as pytest parameters, one test per scenario (SCN-04).
 - **`run_scenario`** –
 
-  Run a scenario's stages in order through the client (SCN-05).
+  Run a scenario's stages in order through the client (SCN-05); `{run}` is unique to the run (SCN-16).
 
 ### \_\_all\_\_
 
@@ -438,7 +438,7 @@ Raises:
 run_scenario(scenario: Scenario, client: AsyncClient) -> None
 ```
 
-Run a scenario's stages in order through the client (SCN-05).
+Run a scenario's stages in order through the client (SCN-05); `{run}` is unique to the run (SCN-16).
 
 Parameters:
 
@@ -1637,7 +1637,7 @@ Functions:
   Read every `*.scenario.yaml` below a directory as pytest parameters, one test per scenario (SCN-04).
 - **`run_scenario`** –
 
-  Run a scenario's stages in order through the client (SCN-05).
+  Run a scenario's stages in order through the client (SCN-05); `{run}` is unique to the run (SCN-16).
 - **`substitute`** –
 
   Replace `{name}` by saved values in every string of a JSON value (SCN-06).
@@ -1647,6 +1647,9 @@ Attributes:
 - **`FAILURE_HEADER`** –
 - **`NOT_JSON_ERROR`** –
 - **`NO_DIRECTORY_ERROR`** –
+- **`RUN`** –
+
+  The name every scenario run starts with: a value unique to the run, in letters and digits (SCN-16, DD-055).
 - **`SAVE_NOT_ONE_ERROR`** –
 - **`UNKNOWN_NAME_ERROR`** –
 
@@ -1667,6 +1670,14 @@ NOT_JSON_ERROR = 'the body is not JSON: {body!r}'
 ```
 NO_DIRECTORY_ERROR = '{directory} is not a directory of scenarios'
 ```
+
+### RUN
+
+```
+RUN = 'run'
+```
+
+The name every scenario run starts with: a value unique to the run, in letters and digits (SCN-16, DD-055).
 
 ### SAVE\_NOT\_ONE\_ERROR
 
@@ -1743,7 +1754,7 @@ Raises:
 run_scenario(scenario: Scenario, client: AsyncClient) -> None
 ```
 
-Run a scenario's stages in order through the client (SCN-05).
+Run a scenario's stages in order through the client (SCN-05); `{run}` is unique to the run (SCN-16).
 
 Parameters:
 

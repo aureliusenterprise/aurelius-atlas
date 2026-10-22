@@ -4174,6 +4174,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-052. A request is mapped in memory and written once; a lost race runs it again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-053. Relationship attribute values are resolved, but stored only as legacy attributes until 3.1
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-054. Dynamic attributes are evaluated in first-seen dependency order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-055-scenarios-name-what-they-create-with-a-per-run-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-055. Scenarios name what they create with a per-run value
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4253,6 +4297,8 @@
       
         
           
+        
+      
         
       
         
@@ -4818,6 +4864,33 @@
     
   
   2.3 Entity read REST
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-4-entity-write-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.4 Entity write REST
 
     
   </span>
@@ -7217,6 +7290,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-052. A request is mapped in memory and written once; a lost race runs it again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-053. Relationship attribute values are resolved, but stored only as legacy attributes until 3.1
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-054. Dynamic attributes are evaluated in first-seen dependency order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-055-scenarios-name-what-they-create-with-a-per-run-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-055. Scenarios name what they create with a per-run value
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7693,6 +7810,30 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24">DD-051</a></td>
 <td>Entity reads are tested on entities written through the store until 2.4</td>
 <td>2.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again">DD-052</a></td>
+<td>A request is mapped in memory and written once; a lost race runs it again</td>
+<td>2.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31">DD-053</a></td>
+<td>Relationship attribute values are resolved, but stored only as legacy attributes until 3.1</td>
+<td>2.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order">DD-054</a></td>
+<td>Dynamic attributes are evaluated in first-seen dependency order</td>
+<td>2.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-055-scenarios-name-what-they-create-with-a-per-run-value">DD-055</a></td>
+<td>Scenarios name what they create with a per-run value</td>
+<td>2.4</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -8648,6 +8789,73 @@ entities over REST and read them back.</p>
 a write increment whose responses could not be read back.</p>
 <p><strong>Consequences.</strong> Until 2.4, the stored form the tests write is checked against Atlas's responses only by
 the expectations read from the Java source; 2.4's scenarios check both directions.</p>
+<h3 id="dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again">DD-052. A request is mapped in memory and written once; a lost race runs it again<a class="headerlink" href="#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.4</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> <code>EntityWriter</code> reads every stored entity a create or update request names, discovers and
+resolves its references, and maps its entities to their new stored form in memory, together with the
+entities EWR-12 touches. The response's headers are built from that form. The result is one
+<code>EntityStore.write</code> (ENS-07), each changed entity conditional on the version it was read in (ENS-08). When
+the write loses a race, the whole request is read, mapped and written again, once; a second loss, or a unique
+value another entity holds, is answered with <code>INTERNAL_ERROR</code> naming the cause (DV-20).</p>
+<p><strong>Reason.</strong> Atlas maps a request onto vertices inside one graph transaction and commits at the end; mapping
+onto documents in memory and writing them in one all-or-nothing write is the same shape on Elasticsearch
+(DD-046). Running the request again on the newer state is what a client would do, as DD-029 does for types.</p>
+<p><strong>Alternatives.</strong> Writing each entity as it is mapped: a failure part-way would leave a half-written request
+for recovery to undo, and headers would be read from the index. Answering a lost race with an error at once:
+two clients updating different attributes of an entity would fail where Atlas, serialising them, succeeds.</p>
+<p><strong>Consequences.</strong> A request's memory grows with its entities, as Atlas's transaction does. A unique value
+clash is no <code>400</code>: Atlas resolves an entity by its unique values before writing, so a clash needs an update
+that moves a value onto another entity, or two new entities with the same value in one request.</p>
+<h3 id="dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31">DD-053. Relationship attribute values are resolved, but stored only as legacy attributes until 3.1<a class="headerlink" href="#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.4</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> Until 3.1 stores relationships, a relationship attribute's value in a write is discovered,
+resolved, checked and normalised as Atlas does, so its errors are Atlas's. It is stored only when the entity's
+type has an attribute of the same name (a legacy relationship end, such as <code>hive_table.db</code>), as that
+attribute's value (DD-049); a relationship attribute without such an attribute is not stored (DV-22).</p>
+<p><strong>Reason.</strong> A legacy end is read from <code>attributes</code> (DD-050, DV-18); storing it there keeps what clients
+write readable. Storing other relationship values needs relationship instances, their GUIDs and both ends,
+which is 3.1's.</p>
+<p><strong>Alternatives.</strong> Rejecting relationship attributes until 3.1: requests Atlas accepts, such as the hook
+models', would fail. Storing them as plain references on one end: 3.1 would have to migrate them.</p>
+<p><strong>Consequences.</strong> 3.1 replaces this: relationship values become relationships, and the legacy attributes'
+values move to them.</p>
+<h3 id="dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order">DD-054. Dynamic attributes are evaluated in first-seen dependency order<a class="headerlink" href="#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.4</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> An entity type's dynamic attributes are ordered by a depth-first topological sort over their
+templates, visiting them in the order their <code>dynAttribute:</code> options appear, so that an attribute another
+template names is evaluated first.</p>
+<p><strong>Reason.</strong> Java sorts the same graph but starts from the keys of a <code>HashMap</code>; where the dependencies leave
+the order open, first-seen order is stable, as DD-027 chooses for derived type sets.</p>
+<p><strong>Alternatives.</strong> Sorting by name: stable too, but unrelated to the definition.</p>
+<p><strong>Consequences.</strong> Independent dynamic attributes may be evaluated in another order than Atlas's; their values
+do not depend on it.</p>
+<h3 id="dd-055-scenarios-name-what-they-create-with-a-per-run-value">DD-055. Scenarios name what they create with a per-run value<a class="headerlink" href="#dd-055-scenarios-name-what-they-create-with-a-per-run-value" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.4</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> The parity harness provides <code>{run}</code>, a value unique to each run of a scenario, in letters and
+digits, before any stage has saved a value. Entity scenarios name their types and entities with it, and
+leave them in the store until 2.5 lets them delete what they created (DD-035).</p>
+<p><strong>Reason.</strong> The dev store keeps its contents between runs. A scenario that creates an entity again on a
+second run would find it, update it and get a different answer; a type in use cannot be deleted.</p>
+<p><strong>Alternatives.</strong> Deleting the entity index before scenarios: other tests and a developer's data share the
+dev store. Waiting for 2.5: 2.4's writes would have no parity check (DD-051).</p>
+<p><strong>Consequences.</strong> Each run of the entity scenarios leaves a few types and entities in the dev store until
+2.5; CI starts from an empty store.</p>
 
 
 

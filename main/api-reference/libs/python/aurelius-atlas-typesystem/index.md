@@ -2420,11 +2420,14 @@ Attributes:
 - **`business_attributes`** (`dict[str, dict[str, BusinessAttribute]]`) –
 - **`category`** –
 - **`display_text_attribute`** –
+- **`dyn_eval_attributes`** (`list[AtlasAttribute]`) –
+- **`dyn_eval_trigger_attributes`** (`list[AtlasAttribute]`) –
 - **`entity_def`** –
 - **`header_attributes`** (`dict[str, AtlasAttribute]`) –
 - **`is_internal`** –
 - **`min_info_attributes`** (`dict[str, AtlasAttribute]`) –
 - **`owned_ref_attributes`** (`list[AtlasAttribute]`) –
+- **`parsed_templates`** (`dict[str, list[TemplateToken]]`) –
 - **`relationship_attributes`** (`dict[str, dict[str, AtlasAttribute]]`) –
 - **`service_type`** –
 - **`struct_def`** –
@@ -2472,6 +2475,18 @@ category = category
 display_text_attribute = entity_def.get_option(OPTION_DISPLAY_TEXT_ATTRIBUTE)
 ```
 
+#### dyn\_eval\_attributes
+
+```
+dyn_eval_attributes: list[AtlasAttribute] = []
+```
+
+#### dyn\_eval\_trigger\_attributes
+
+```
+dyn_eval_trigger_attributes: list[AtlasAttribute] = []
+```
+
 #### entity\_def
 
 ```
@@ -2500,6 +2515,12 @@ min_info_attributes: dict[str, AtlasAttribute] = {}
 
 ```
 owned_ref_attributes: list[AtlasAttribute] = []
+```
+
+#### parsed\_templates
+
+```
+parsed_templates: dict[str, list[TemplateToken]] = {}
 ```
 
 #### relationship\_attributes
@@ -4771,12 +4792,26 @@ Functions:
 - **`entity_types_and_all_sub_types`** –
 
   The entity types named and all their sub types (`getEntityTypesAndAllSubTypes`, THY-07).
+- **`template_split`** –
+
+  `templateSplit`: constants outside braces, `{name}` an attribute, `{a.b}` a dependent token (EWR-03).
 
 Attributes:
 
+- **`DYN_ATTRIBUTE_PREFIX`** –
+
+  The entity type option naming a dynamic attribute: `dynAttribute:<name>`, its value the template.
 - **`ENTITY_ROOT`** –
 
   `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
+
+### DYN\_ATTRIBUTE\_PREFIX
+
+```
+DYN_ATTRIBUTE_PREFIX = 'dynAttribute:'
+```
+
+The entity type option naming a dynamic attribute: `dynAttribute:<name>`, its value the template.
 
 ### ENTITY\_ROOT
 
@@ -4870,11 +4905,14 @@ Attributes:
 - **`business_attributes`** (`dict[str, dict[str, BusinessAttribute]]`) –
 - **`category`** –
 - **`display_text_attribute`** –
+- **`dyn_eval_attributes`** (`list[AtlasAttribute]`) –
+- **`dyn_eval_trigger_attributes`** (`list[AtlasAttribute]`) –
 - **`entity_def`** –
 - **`header_attributes`** (`dict[str, AtlasAttribute]`) –
 - **`is_internal`** –
 - **`min_info_attributes`** (`dict[str, AtlasAttribute]`) –
 - **`owned_ref_attributes`** (`list[AtlasAttribute]`) –
+- **`parsed_templates`** (`dict[str, list[TemplateToken]]`) –
 - **`relationship_attributes`** (`dict[str, dict[str, AtlasAttribute]]`) –
 - **`service_type`** –
 - **`struct_def`** –
@@ -4922,6 +4960,18 @@ category = category
 display_text_attribute = entity_def.get_option(OPTION_DISPLAY_TEXT_ATTRIBUTE)
 ```
 
+#### dyn\_eval\_attributes
+
+```
+dyn_eval_attributes: list[AtlasAttribute] = []
+```
+
+#### dyn\_eval\_trigger\_attributes
+
+```
+dyn_eval_trigger_attributes: list[AtlasAttribute] = []
+```
+
 #### entity\_def
 
 ```
@@ -4950,6 +5000,12 @@ min_info_attributes: dict[str, AtlasAttribute] = {}
 
 ```
 owned_ref_attributes: list[AtlasAttribute] = []
+```
+
+#### parsed\_templates
+
+```
+parsed_templates: dict[str, list[TemplateToken]] = {}
 ```
 
 #### relationship\_attributes
@@ -5195,6 +5251,16 @@ Raises:
 - `AtlasError` –
 
   `TYPE_NAME_NOT_FOUND` for a name that is not an entity type.
+
+### template\_split
+
+```
+template_split(template: str) -> list[TemplateToken]
+```
+
+`templateSplit`: constants outside braces, `{name}` an attribute, `{a.b}` a dependent token (EWR-03).
+
+Text after the last brace, and a name whose brace is not closed, are dropped, as Java drops them.
 
 ## aurelius\_atlas\_typesystem.relationship\_type
 

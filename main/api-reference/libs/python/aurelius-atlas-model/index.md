@@ -7751,6 +7751,15 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
 }
 ```
 
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
 Fields:
 
 - `id` (`str | None`)
@@ -7972,15 +7981,6 @@ The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
   "type": "object"
 }
 ```
-
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
 
 #### model\_config
 
@@ -11422,6 +11422,14 @@ from_map(values: Mapping[str, Any]) -> Self
 
 `AtlasObjectId(Map)`: `guid` and `typeName` as text, `uniqueAttributes` when it is a map (VAL-14).
 
+#### java\_string
+
+```
+java_string() -> str
+```
+
+`AtlasObjectId.toString`, as errors name an object id: `AtlasObjectId{guid='…', …}` (EWR-05).
+
 #### read\_map
 
 ```
@@ -11750,6 +11758,14 @@ from_map(values: Mapping[str, Any]) -> Self
 ```
 
 `AtlasObjectId(Map)`: `guid` and `typeName` as text, `uniqueAttributes` when it is a map (VAL-14).
+
+#### java\_string
+
+```
+java_string() -> str
+```
+
+`AtlasObjectId.toString`, as errors name an object id: `AtlasObjectId{guid='…', …}` (EWR-05).
 
 #### read\_map
 
