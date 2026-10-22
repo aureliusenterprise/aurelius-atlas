@@ -1,7 +1,7 @@
 # 7.6 Entity details
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#109](https://github.com/aureliusenterprise/aurelius-atlas/pull/109)
 - **Records:** DD-096 (details skeleton: route contract, gated data), DD-097 (the
   entity client grows with server 2.3), DD-098 (one API base: the client's URLs
   all ride the `API_BASE_URL` token, ADR 054); relies on ADR 053, DD-051,

@@ -1,0 +1,25 @@
+/*
+ * The details skeleton (DET-01): the page insets its content in
+ * `section > container`, the landing's grid (SHM-07, DD-061) — Bulma
+ * carries the boxes, the level, the accordion, and the menu, so this
+ * sheet is nearly empty.
+ */
+
+/*
+ * The type-name line rides the entity (the legacy entity-type-name read
+ * the resolved type): with no entity there is nothing to name, and the
+ * empty line is not chrome (DET-02's fake-state ban), so it takes no
+ * space.
+ */
+.aurelius-details-type:empty {
+    display: none;
+}
+
+/*
+ * The trail sits below the title with the legacy header's block rhythm
+ * (details.component.html spaced each header block with `.block`).
+ */
+.aurelius-details-trail {
+    display: block;
+    margin-top: 0.75rem;
+}
