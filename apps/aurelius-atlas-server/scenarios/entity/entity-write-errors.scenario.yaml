@@ -1,0 +1,61 @@
+name: Writes without entities, of unknown types or to unknown entities fail before anything is written
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#createOrUpdate
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#partialUpdateEntityAttrByGuid
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#partialUpdateEntityByUniqueAttrs
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#createOrUpdate
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityGraphDiscoveryV2.java#discover
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#updateEntityAttributeByGuid
+rules: [EWR-02, EWR-14, EWR-15]
+covers:
+    - aurelius_atlas_server.routes.entity.create_or_update
+    - aurelius_atlas_server.routes.entity.create_or_update_bulk
+    - aurelius_atlas_server.routes.entity.partial_update_entity_attr_by_guid
+    - aurelius_atlas_server.routes.entity.partial_update_entity_by_unique_attrs
+stages:
+    - name: a bulk request without entities
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json: { entities: [] }
+      response:
+          status: 400
+          json: { errorCode: ATLAS-400-00-01A, errorMessage: "invalid parameters: no entities to create/update." }
+    - name: a request whose entity is null
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json: { entity: null }
+      response:
+          status: 400
+          json: { errorCode: ATLAS-400-00-01A, errorMessage: "invalid parameters: found null entity" }
+    - name: an entity of a type that does not exist
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json: { entity: { typeName: "scenario_none_{run}", attributes: { qualifiedName: x } } }
+      response:
+          status: 400
+          json:
+              { errorCode: ATLAS-400-00-014, errorMessage: "Type ENTITY with name scenario_none_{run} does not exist" }
+    - name: one attribute of an entity that does not exist
+      request:
+          method: PUT
+          url: /api/atlas/v2/entity/guid/scenario_none_{run}
+          params: { name: qualifiedName }
+          json: x
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: "Given instance guid scenario_none_{run} is invalid/not found"
+    - name: a partial update of a type that does not exist
+      request:
+          method: PUT
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_none_{run}
+          params: { "attr:qualifiedName": x }
+          json: { entity: { typeName: "scenario_none_{run}" } }
+      response:
+          status: 400
+          json:
+              { errorCode: ATLAS-400-00-014, errorMessage: "Type ENTITY with name scenario_none_{run} does not exist" }
