@@ -1,8 +1,12 @@
-"""The entity reads and writes of ``EntityREST`` under ``/api/atlas/v2/entity`` (ERD-01 to ERD-10, EWR-01 to EWR-16)."""
+"""The entity reads, writes and deletes of ``EntityREST`` under ``/api/atlas/v2/entity``.
+
+ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08.
+"""
 
 from collections.abc import Mapping
 from typing import Annotated, Any
 
+from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -47,6 +51,19 @@ def retriever(request: Request, store: EntityStore) -> EntityRetriever:
     return EntityRetriever(
         store, min_ext_info=flag(request, "minExtInfo"), ignore_relationships=flag(request, "ignoreRelationships")
     )
+
+
+def writer(request: Request, store: EntityStore) -> EntityWriter:
+    """A writer deleting as the server's ``delete_type`` setting says unless a request chooses (EDL-04)."""
+    settings = request.app.state.settings
+    return EntityWriter(store, delete_type=DeleteType.of(settings.delete_type))
+
+
+def delete_type(request: Request) -> DeleteType:
+    """The request's ``deleteType`` when the override is enabled, else ``DEFAULT`` (EDL-04, DD-059)."""
+    if not request.app.state.settings.delete_type_override:
+        return DeleteType.DEFAULT
+    return DeleteType.of(request.query_params.get("deleteType"))
 
 
 def unique_attributes(request: Request) -> dict[str, Any]:
@@ -234,3 +251,29 @@ async def partial_update_entity_attr_by_guid(
     if name is not None:
         validate_param_length("name", name)
     return _json((await EntityWriter(store).update_attribute_by_guid(guid, name, body)).to_json())
+
+
+@ENTITY.delete("/guid/{guid}")
+async def delete_by_guid(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``deleteByGuid``: the entity and what it owns (EDL-01, EDL-03)."""
+    validate_param_length("guid", guid)
+    return _json((await writer(request, store).delete_by_id(guid, delete_type(request))).to_json())
+
+
+@ENTITY.delete("/bulk")
+async def delete_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
+    """``deleteByGuids``: the entities of every ``guid`` and what they own (EDL-01, EDL-02)."""
+    guids = request.query_params.getlist("guid")
+    for guid in guids:
+        validate_param_length("guid", guid)
+    return _json((await writer(request, store).delete_by_ids(guids, delete_type(request))).to_json())
+
+
+@ENTITY.delete("/uniqueAttribute/type/{type_name}")
+async def delete_by_unique_attribute(type_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``deleteByUniqueAttribute``: the entity holding the ``attr:`` values; they are not checked (EDL-02)."""
+    validate_param_length("typeName", type_name)
+    attributes = unique_attributes(request)
+    entity_type = ensure_entity_type(store, type_name)
+    deleted = await writer(request, store).delete_by_unique_attributes(entity_type, attributes, delete_type(request))
+    return _json(deleted.to_json())

@@ -53,6 +53,11 @@ class FakeIndices:
             self._client.aliases[alias] = index
         return {"acknowledged": True, "index": index}
 
+    async def put_mapping(self, *, index: str, **_mapping: object) -> dict[str, Any]:
+        """Count the call; the fake keeps no mappings."""
+        self._client.mapping_updates.append(index)
+        return {"acknowledged": True}
+
     async def refresh(self, *, index: str) -> dict[str, Any]:
         """Count the call; the fake's documents are always visible."""
         self._client.refreshes.append(index)
@@ -78,6 +83,7 @@ class FakeClient:
         self.aliases: dict[str, str] = {}
         self.documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
         self.primary_term = 1
+        self.mapping_updates: list[str] = []
         self.seq_no = -1
         self.refreshes: list[str] = []
 
@@ -136,23 +142,28 @@ class FakeClient:
         return {"docs": docs}
 
     async def bulk(self, *, operations: bytes, **_options: object) -> dict[str, Any]:
-        """Apply ``create`` and ``index`` actions of an NDJSON body, each with its own outcome."""
-        lines = [line for line in operations.split(b"\n") if line.strip()]
+        """Apply ``create``, ``index`` and ``delete`` actions of an NDJSON body, each with its own outcome."""
+        lines = iter([line for line in operations.split(b"\n") if line.strip()])
         items = []
-        for action_line, source_line in zip(lines[::2], lines[1::2], strict=True):
+        for action_line in lines:
             ((kind, action),) = _read(action_line).items()
+            versions = {"if_seq_no": action.get("if_seq_no"), "if_primary_term": action.get("if_primary_term")}
             try:
-                result = await self.index(
-                    index=action["_index"],
-                    id=action["_id"],
-                    document=_read(source_line),
-                    op_type="create" if kind == "create" else None,
-                    if_seq_no=action.get("if_seq_no"),
-                    if_primary_term=action.get("if_primary_term"),
-                )
-                items.append({kind: {"_id": action["_id"], "status": 201, **result}})
+                if kind == "delete":
+                    result = await self.delete(index=action["_index"], id=action["_id"], **versions)
+                else:
+                    result = await self.index(
+                        index=action["_index"],
+                        id=action["_id"],
+                        document=_read(next(lines)),
+                        op_type="create" if kind == "create" else None,
+                        **versions,
+                    )
+                items.append({kind: {"_id": action["_id"], "status": 200 if kind == "delete" else 201, **result}})
             except ConflictError:
                 items.append({kind: {"_id": action["_id"], "status": 409}})
+            except NotFoundError:
+                items.append({kind: {"_id": action["_id"], "status": 404}})
         return {"errors": any(next(iter(item.values()))["status"] >= 300 for item in items), "items": items}  # noqa: PLR2004
 
     async def delete(
@@ -173,13 +184,32 @@ class FakeClient:
         del documents[id]
         return {"_id": id, "result": "deleted"}
 
-    async def search(self, *, index: str, size: int = 10, query: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Answer like ``_search`` with the documents matching a ``match_all`` or ``term`` query."""
-        hits = [
-            {"_id": document_id, "_source": source}
-            for document_id, (source, _) in self._index_of(index).items()
-            if _matches(source, query)
-        ]
+    async def search(  # noqa: PLR0913 - Elasticsearch's keyword arguments
+        self,
+        *,
+        index: str,
+        size: int = 10,
+        query: dict[str, Any] | None = None,
+        sort: list[Any] | None = None,
+        search_after: list[Any] | None = None,
+        seq_no_primary_term: bool = False,
+    ) -> dict[str, Any]:
+        """Answer like ``_search`` with the documents matching a ``match_all`` or ``term`` query.
+
+        With ``sort``, hits are ordered by their id and carry it as their sort value, after ``search_after``.
+        """
+        hits = []
+        for document_id, (source, seq_no) in (
+            sorted(self._index_of(index).items()) if sort else self._index_of(index).items()
+        ):
+            if not _matches(source, query) or (search_after is not None and document_id <= search_after[0]):
+                continue
+            hit: dict[str, Any] = {"_id": document_id, "_source": source}
+            if seq_no_primary_term:
+                hit |= {"_seq_no": seq_no, "_primary_term": self.primary_term}
+            if sort:
+                hit["sort"] = [document_id]
+            hits.append(hit)
         return {"hits": {"total": {"value": len(hits)}, "hits": hits[:size]}}
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -203,9 +233,14 @@ def _read(body: bytes) -> dict[str, Any]:
 
 
 def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
-    """Whether ``source`` matches a ``match_all`` or single-field ``term`` query."""
+    """Whether ``source`` matches a ``match_all``, or a single-field ``term`` or ``terms`` query."""
     if query is None or "match_all" in query:
         return True
+    if "terms" in query:
+        ((field, values),) = query["terms"].items()
+        found = source.get(field)
+        held = found if isinstance(found, list) else [found]
+        return any(value in held for value in values)
     ((field, value),) = query["term"].items()
     found = source.get(field)
     return value in found if isinstance(found, list) else found == value

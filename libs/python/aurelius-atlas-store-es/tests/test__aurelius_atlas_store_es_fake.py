@@ -124,3 +124,52 @@ async def test__refresh_is_recorded() -> None:
     await fake.indices.refresh(index="docs")
 
     assert fake.refreshes == ["docs"]
+
+
+async def test__bulk_deletes_each_document_with_its_own_outcome() -> None:
+    """A ``delete`` action has no source line; a stale version conflicts, a missing document is not found."""
+    fake = FakeClient()
+    written = await fake.index(index="docs", id="a", document={"v": 1})
+    await fake.index(index="docs", id="b", document={"v": 1})
+    body = (
+        b'{"delete": {"_index": "docs", "_id": "a", "if_seq_no": %d, "if_primary_term": 1}}\n' % written["_seq_no"]
+        + b'{"delete": {"_index": "docs", "_id": "b", "if_seq_no": 99, "if_primary_term": 1}}\n'
+        + b'{"delete": {"_index": "docs", "_id": "c"}}\n'
+        + b'{"create": {"_index": "docs", "_id": "d"}}\n{"v": 2}\n'
+    )
+
+    response = await fake.bulk(operations=body)
+
+    assert [next(iter(item.values()))["status"] for item in response["items"]] == [200, 409, 404, 201]
+    assert [doc["found"] for doc in (await fake.mget(index="docs", ids=["a", "b", "d"]))["docs"]] == [
+        False,
+        True,
+        True,
+    ]
+
+
+async def test__search_pages_by_id_with_versions_and_matches_terms() -> None:
+    """``terms`` matches any value; with ``sort``, hits come by id after ``search_after``, with their sort value."""
+    fake = FakeClient()
+    for document_id, tags in (("c", ["x"]), ("a", ["y", "x"]), ("b", ["z"]), ("d", "x")):
+        await fake.index(index="docs", id=document_id, document={"tags": tags})
+
+    first = await fake.search(
+        index="docs", size=1, query={"terms": {"tags": ["x"]}}, sort=[{"guid": "asc"}], seq_no_primary_term=True
+    )
+    rest = await fake.search(
+        index="docs", size=10, query={"terms": {"tags": ["x", "q"]}}, sort=[{"guid": "asc"}], search_after=["a"]
+    )
+
+    hit = first["hits"]["hits"][0]
+    assert (hit["_id"], hit["sort"], hit["_primary_term"]) == ("a", ["a"], 1)
+    assert "_seq_no" in hit
+    assert [hit["_id"] for hit in rest["hits"]["hits"]] == ["c", "d"]
+
+
+async def test__a_mapping_update_is_recorded() -> None:
+    """The fake keeps no mappings; ``put_mapping`` is only counted."""
+    fake = FakeClient()
+
+    assert (await fake.indices.put_mapping(index="docs", properties={}))["acknowledged"]
+    assert fake.mapping_updates == ["docs"]

@@ -53,6 +53,8 @@ def test__compare_reports_every_difference_with_its_path() -> None:
         "$.b[0]: expected true, got false",
         '$.c: expected (absent), got "x"',
     ]
+    nested = compare({"a": {"t": Marker.VOLATILE}}, {})
+    assert [str(difference) for difference in nested] == ['$.a: expected {"t": "(volatile)"}, got (absent)']
 
 
 @pytest.mark.covers("aurelius_atlas_parity.compare.mask_volatile", rules=["SCN-10"])

@@ -1,10 +1,12 @@
-"""``EntityWriter``: creating and updating entities as ``AtlasEntityStoreV2`` does (EWR-02 to EWR-17, DD-052).
+"""``EntityWriter``: creating, updating and deleting entities as ``AtlasEntityStoreV2`` does (EWR-02 to EWR-17).
 
 ``createOrUpdate``, ``preCreateOrUpdate``, ``updateByUniqueAttributes`` and ``updateEntityAttributeByGuid``, with
-the ``EntityMutationContext`` they fill: a request is discovered, mapped in memory and written in one write.
+the ``EntityMutationContext`` they fill: a request is discovered, mapped in memory and written in one write
+(DD-052). ``deleteById``, ``deleteByIds``, ``deleteByUniqueAttributes`` and ``purgeByIds`` through the delete
+handlers (EDL-02 to EDL-09).
 """
 
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -24,6 +26,8 @@ from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.values import relationship_type_of
 
+from aurelius_atlas_core.delete_handler import DeleteHandler
+from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_comparator import EntityComparator
 from aurelius_atlas_core.entity_discovery import DiscoveryContext, EntityDiscovery, EntityStream, object_id_of
 from aurelius_atlas_core.entity_documents import VersionedEntity
@@ -36,9 +40,12 @@ from aurelius_atlas_core.entity_store import (
     EntityWriteError,
     UniqueValueTakenError,
 )
+from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
+from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 NO_ENTITY_TO_UPDATE = "no entity to update."
+NO_GUIDS = "Guid(s) not specified"
 ATTEMPTS = 2
 """A request that loses a race is run once more (DD-052)."""
 
@@ -73,12 +80,109 @@ class _Mutation:
             self.guids[request_guid] = guid
 
 
-class EntityWriter:
-    """Writes entities of a request into ``store``, as ``user``."""
+type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
+"""Reads the entities a delete names, again for each attempt."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
+
+class EntityWriter:
+    """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04)."""
+
+    def __init__(
+        self, store: EntityStore, *, user: str | None = None, delete_type: DeleteType = DeleteType.SOFT
+    ) -> None:
         self._store = store
         self._user = user
+        self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
+
+    async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
+        """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
+
+        Raises:
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` for an empty GUID.
+        """
+        if not guid:
+            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+        return await self._delete(lambda: self._stored([guid]), delete_type)
+
+    async def delete_by_ids(
+        self, guids: Sequence[str], delete_type: DeleteType = DeleteType.DEFAULT
+    ) -> EntityMutationResponse:
+        """``deleteByIds``: the entities with these GUIDs and what they own (EDL-02, EDL-03).
+
+        Raises:
+            AtlasError: ``INVALID_PARAMETERS`` when no GUID is given.
+        """
+        if not guids:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
+        return await self._delete(lambda: self._stored(guids), delete_type)
+
+    async def delete_by_unique_attributes(
+        self, entity_type: EntityType, values: Mapping[str, Any], delete_type: DeleteType = DeleteType.DEFAULT
+    ) -> EntityMutationResponse:
+        """``deleteByUniqueAttributes``: the ``ACTIVE`` entity holding the values, if any (EDL-02, EDL-03).
+
+        Raises:
+            AtlasError: ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND`` naming ``{}`` alone when no value is given.
+        """
+        if not values:
+            raise AtlasError(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, java_string(dict(values)))
+
+        async def holder() -> list[VersionedEntity]:
+            found = await self._store.find_by_unique_attributes(entity_type, values)
+            return [] if found is None else [found]
+
+        return await self._delete(holder, delete_type)
+
+    async def purge_by_ids(self, guids: Sequence[str]) -> EntityMutationResponse:
+        """``purgeByIds``: remove the ``DELETED`` entities with these GUIDs and what they own (EDL-02 to EDL-08).
+
+        Raises:
+            AtlasError: ``INVALID_PARAMETERS`` when no GUID is given.
+        """
+        if not guids:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
+
+        async def deleted() -> list[VersionedEntity]:
+            return [found for found in await self._stored(guids) if found.entity.state is EntityStatus.DELETED]
+
+        return await self._delete(deleted, DeleteType.HARD, purge=True)
+
+    async def _stored(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        found = await self._store.get_many(guids)
+        return [found[guid] for guid in dict.fromkeys(guids) if guid in found]
+
+    async def _delete(
+        self, candidates: Candidates, delete_type: DeleteType, *, purge: bool = False
+    ) -> EntityMutationResponse:
+        """``deleteVertices`` and ``purgeVertices``, run again once after a lost race (EDL-08, EDL-09)."""
+        hard = (self._delete_type if delete_type is DeleteType.DEFAULT else delete_type) is DeleteType.HARD
+        for attempt in range(1, ATTEMPTS + 1):
+            handler: DeleteHandler = (HardDeleteHandler if hard else SoftDeleteHandler)(
+                self._store, now=self._store.now(), user=self._user, purge=purge
+            )
+            try:
+                return await self._deleted(handler, await candidates(), purge=purge)
+            except EntityVersionConflictError as conflict:
+                if attempt == ATTEMPTS:
+                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
+            except (UniqueValueTakenError, EntityWriteError) as failure:
+                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
+        raise AssertionError  # pragma: no cover - the loop returns or raises
+
+    async def _deleted(
+        self, handler: DeleteHandler, candidates: list[VersionedEntity], *, purge: bool
+    ) -> EntityMutationResponse:
+        deletion = await handler.delete_entities(candidates)
+        retriever = EntityRetriever(self._store)
+        headers = [await retriever.header(guid, classifications=purge) for guid in deletion.deleted]
+        if deletion.changes:
+            await self._store.write(deletion.changes)
+        response = EntityMutationResponse()
+        for header in headers:
+            response.add_entity(EntityOperation.PURGE if purge else EntityOperation.DELETE, header)
+        for guid in [] if purge else deletion.updated:
+            response.add_entity(EntityOperation.UPDATE, await retriever.header(guid, classifications=False))
+        return response
 
     async def create_or_update(
         self, entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None

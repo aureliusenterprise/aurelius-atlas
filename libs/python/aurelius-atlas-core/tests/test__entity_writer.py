@@ -443,11 +443,11 @@ async def test__a_lost_race_is_run_again_once(store: EntityStore, documents: Mem
 
     original = documents.write
 
-    async def always_conflicting(items: Any) -> Any:  # noqa: ANN401 - the documents' signature
+    async def always_conflicting(*arguments: Any) -> Any:  # noqa: ANN401 - the documents' signature
         documents.fail[table] = "conflict"
-        return await original(items)
+        return await original(*arguments)
 
-    documents.write = always_conflicting
+    documents.write = always_conflicting  # pyright: ignore[reportAttributeAccessIssue]
     assert await failure(store, entity("s_table", table, name="b")) == (
         AtlasErrorCode.INTERNAL_ERROR,
         f"Internal server error entity {table} was changed by another write",

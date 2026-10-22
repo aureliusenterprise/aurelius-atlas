@@ -20,6 +20,8 @@ Atlas resource. What is ported, and how, is tracked in the
 | `/api/atlas/v2/types/...`         | The type definitions: read, search, create, update and delete         |
 | `GET /api/atlas/v2/entity/...`    | Entities and their headers by GUID or unique attributes, one or many  |
 | `POST`/`PUT /api/atlas/v2/entity` | Entities created or updated, in bulk, by unique attributes or by GUID |
+| `DELETE /api/atlas/v2/entity/...` | Entities deleted by GUID, in bulk or by unique attributes             |
+| `PUT /api/atlas/admin/purge`      | Deleted entities removed for good                                     |
 
 ## Dashboards
 
@@ -53,6 +55,11 @@ and those it names, `POST bulk`, `PUT uniqueAttribute/type/{typeName}` and `PUT 
 each answering Atlas's `EntityMutationResponse`. Classifications and business attributes given with an entity
 are ignored until their increments; relationship attribute values are stored only for legacy ends until 3.1
 (DD-053).
+
+Its deletes (`DELETE guid/{guid}`, `DELETE bulk`, `DELETE uniqueAttribute/type/{typeName}`) delete an entity
+with the entities it owns and change those referring to it; `PUT /api/atlas/admin/purge` removes deleted
+entities for good. Deletes are soft unless `AURELIUS_ATLAS_SERVER_DELETE_TYPE` is `hard`; with
+`AURELIUS_ATLAS_SERVER_DELETE_TYPE_OVERRIDE=true` a request's `deleteType` chooses (DD-059).
 
 ## Running it
 

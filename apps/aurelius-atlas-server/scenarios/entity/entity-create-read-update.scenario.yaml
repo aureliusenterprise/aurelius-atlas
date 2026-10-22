@@ -9,12 +9,17 @@ source:
     - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#mapAttribute
     - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#toAtlasEntityHeaderWithClassifications
     - intg/src/main/java/org/apache/atlas/model/instance/EntityMutationResponse.java
-rules: [EWR-02, EWR-05, EWR-06, EWR-09, EWR-11, EWR-12, EWR-13, EWR-14, EWR-15]
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#deleteByGuids
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#purgeByIds
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteEntities
+rules: [EWR-02, EWR-05, EWR-06, EWR-09, EWR-11, EWR-12, EWR-13, EWR-14, EWR-15, EDL-03, EDL-06, EDL-08]
 covers:
     - aurelius_atlas_server.routes.entity.create_or_update
     - aurelius_atlas_server.routes.entity.create_or_update_bulk
     - aurelius_atlas_server.routes.entity.partial_update_entity_attr_by_guid
     - aurelius_atlas_server.routes.entity.partial_update_entity_by_unique_attrs
+    - aurelius_atlas_server.routes.entity.delete_by_guids
+    - aurelius_atlas_server.routes.admin.purge_by_ids
 stages:
     - name: create a database and a table type, named for this run (DD-055)
       request:
@@ -320,3 +325,73 @@ stages:
           deviations:
               - { id: DV-15, path: $.entity.createdBy, absent: true }
               - { id: DV-15, path: $.entity.updatedBy, absent: true }
+    - name: delete both entities; no hard delete is asked for, so they are soft-deleted (EDL-04)
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/bulk
+          params: { guid: ["{table}", "{db}"] }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_table_{run}
+                        attributes: { qualifiedName: "t_{run}" }
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: t_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_db_{run}
+                        attributes: { qualifiedName: "db_{run}" }
+                        guid: "{db}"
+                        status: ACTIVE
+                        displayText: db_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: purge them
+      request:
+          method: PUT
+          url: /api/atlas/admin/purge
+          json: ["{table}", "{db}"]
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_table_{run}
+                        attributes: { qualifiedName: "t_{run}" }
+                        guid: "{table}"
+                        status: DELETED
+                        displayText: t_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_db_{run}
+                        attributes: { qualifiedName: "db_{run}" }
+                        guid: "{db}"
+                        status: DELETED
+                        displayText: db_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: the table type is no longer in use
+      request: { method: DELETE, url: "/api/atlas/v2/types/typedef/name/scenario_table_{run}" }
+      response:
+          status: 204
+    - name: nor the database type
+      request: { method: DELETE, url: "/api/atlas/v2/types/typedef/name/scenario_db_{run}" }
+      response:
+          status: 204

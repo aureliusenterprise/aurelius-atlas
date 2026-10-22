@@ -39,6 +39,11 @@ Attribute values are kept with their exact digits and become searchable when sea
 A value that is a structure is kept inside its entry; a link to another entry is kept as that entry's
 identifier, so a renamed entry is never shown under its old name
 ([DD-049](../conversion/design-log.md#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)).
+Each entry also lists, searchably, the identifiers of the entries it links to, so that deleting an entry finds
+the entries that link to it ([DD-057](../conversion/design-log.md#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids)).
+A deleted entry is kept, marked deleted, until it is purged; a purge or a hard delete removes it within the
+same all-or-nothing write as everything else the request changes
+([DD-056](../conversion/design-log.md#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others)).
 
 The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:
 

@@ -16,7 +16,10 @@ several entities all or nothing through a journal (DD-043 to DD-048). Since
 entities, their owned entities and headers back as Atlas answers them (DD-049, DD-050). Since
 [2.4](../../../docs/architecture/conversion/increments/2-4-entity-write-rest.md): the entity writer, which
 discovers the entities a request names, resolves its references, maps it onto stored entities and writes them
-in one write (DD-052, DD-053).
+in one write (DD-052, DD-053). Since
+[2.5](../../../docs/architecture/conversion/increments/2-5-delete-semantics.md): soft and hard deletes and
+purges with the owned-reference cascade, through writes that also remove documents and an indexed field of the
+GUIDs each entity refers to (DD-056 to DD-060).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -28,6 +31,7 @@ store.get_by_name("hive_table")  # the registered definition, as resolution comp
 search_types_def(store.registry, TypeSearchFilter.from_query([("type", "ENTITY")]))  # each kind sorted by name
 await EntityRetriever(entity_store, min_ext_info=True).entity_with_ext_info(guid)  # as GET /v2/entity/guid/{guid}
 await EntityWriter(entity_store).create_or_update(entities)  # as POST /v2/entity/bulk
+await EntityWriter(entity_store).delete_by_id(guid)  # as DELETE /v2/entity/guid/{guid}: soft by default
 ```
 
 ## Installation
@@ -64,6 +68,14 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.entity_mapper
 
 ::: aurelius_atlas_core.entity_comparator
+
+::: aurelius_atlas_core.delete_handler
+
+::: aurelius_atlas_core.soft_delete_handler
+
+::: aurelius_atlas_core.hard_delete_handler
+
+::: aurelius_atlas_core.delete_type
 
 ::: aurelius_atlas_core.entity_documents
 

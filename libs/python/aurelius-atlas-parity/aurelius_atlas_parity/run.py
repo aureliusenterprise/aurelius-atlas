@@ -60,13 +60,14 @@ def substitute(value: Any, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a
     """Replace ``{name}`` by saved values in every string of a JSON value (SCN-06).
 
     A string that is exactly ``{name}`` becomes the saved value with its JSON type; elsewhere the value is
-    written into the string. ``{{`` and ``}}`` stand for literal braces.
+    written into the string. Object keys are strings, so a value written into one is its text. ``{{`` and ``}}``
+    stand for literal braces.
 
     Raises:
         KeyError: A name was not saved by an earlier stage.
     """
     if isinstance(value, dict):
-        return {key: substitute(item, saved) for key, item in value.items()}
+        return {_key(key, saved): substitute(item, saved) for key, item in value.items()}
     if isinstance(value, list):
         return [substitute(item, saved) for item in value]
     if not isinstance(value, str):
@@ -82,6 +83,13 @@ def substitute(value: Any, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a
         return found if isinstance(found, str) else json.dumps(found)
 
     return _PLACEHOLDER.sub(replace, value)
+
+
+def _key(key: Any, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a JSON object key
+    if not isinstance(key, str):
+        return key
+    found = substitute(key, saved)
+    return found if isinstance(found, str) else json.dumps(found)
 
 
 def _saved(name: str, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - any JSON value

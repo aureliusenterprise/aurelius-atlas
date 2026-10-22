@@ -28,6 +28,9 @@ JOURNAL_INDEX = f"{INDEX_PREFIX}-entity-journal"
 JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
 
+REFERRING_PAGE = 1000
+"""How many referring entities one search page holds (DD-057)."""
+
 _KEYWORD = {"type": "keyword"}
 ENTITY_MAPPING: dict[str, Any] = {
     "dynamic": False,
@@ -47,11 +50,15 @@ ENTITY_MAPPING: dict[str, Any] = {
         "homeId": _KEYWORD,
         "labels": _KEYWORD,
         "writeId": _KEYWORD,
+        "references": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
 }
-"""System properties mapped for exact lookup; attribute values stored, not indexed, until 4.1 (DD-043)."""
+"""System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
+
+DD-043, DD-057.
+"""
 
 
 @dataclass(frozen=True)
@@ -81,13 +88,17 @@ class WriteResult:
 
 
 class JournalEntry(AtlasModel):
-    """A write in flight: its id, lease, the entities' states before it, its reservations and releases (DD-046)."""
+    """A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
+
+    DD-046, DD-056.
+    """
 
     write_id: str
     lease_until: int
     before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
     reserved: list[str] = Field(default_factory=list)
     released: list[str] = Field(default_factory=list)
+    removed: list[str] = Field(default_factory=list)
     committed: bool = False
 
     def before_entity(self, guid: str) -> StoredEntity | None:
@@ -108,8 +119,19 @@ class EntityDocuments(Protocol):
         """The stored entities with these GUIDs, in real time; unknown GUIDs are left out."""
         ...
 
-    async def write(self, items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]:
-        """Write each entity, new (no version) or over the version given, in one bulk request."""
+    async def write(
+        self,
+        items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+        removed: Sequence[tuple[str, DocumentVersion]] = (),
+    ) -> list[WriteResult]:
+        """Write each entity, new (no version) or over the version given, and remove those at the version given.
+
+        One bulk request; the results are in order, the writes' then the removals' (DD-056).
+        """
+        ...
+
+    async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose references name any of these GUIDs, as of now (DD-057)."""
         ...
 
     async def restore(self, guid: str, before: StoredEntity | None) -> None:
@@ -160,7 +182,10 @@ class ElasticsearchEntityDocuments:
         return self._entities, self._unique_values, self._journal
 
     async def prepare(self) -> None:
-        """Create each index behind its alias unless it exists; existing ones are not changed (ENS-01)."""
+        """Create each index behind its alias unless it exists (ENS-01).
+
+        An existing entity index gets the fields it lacks mapped, as ``references`` (EDL-10); mapped ones stay.
+        """
         mappings = {
             self._entities: ENTITY_MAPPING,
             self._unique_values: {"dynamic": False, "properties": {"guid": _KEYWORD, "writeId": _KEYWORD}},
@@ -171,6 +196,8 @@ class ElasticsearchEntityDocuments:
                 await self._client.indices.create(
                     index=f"{alias}-000001", aliases={alias: {"is_write_index": True}}, mappings=mapping
                 )
+            elif alias == self._entities:
+                await self._client.indices.put_mapping(index=alias, properties=mapping["properties"])
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
         """``mget`` of the entity index: real time, as a get by id is (ENS-04)."""
@@ -185,8 +212,12 @@ class ElasticsearchEntityDocuments:
             if doc.get("found")
         }
 
-    async def write(self, items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]:
-        """One bulk request: ``create`` for a new entity, ``index`` with ``if_seq_no`` for a changed one (DD-047)."""
+    async def write(
+        self,
+        items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+        removed: Sequence[tuple[str, DocumentVersion]] = (),
+    ) -> list[WriteResult]:
+        """One bulk request: ``create`` a new entity, ``index`` or ``delete`` with ``if_seq_no`` (DD-047, DD-056)."""
         lines: list[bytes] = []
         for entity, version in items:
             action: dict[str, Any] = {"_index": self._entities, "_id": entity.guid}
@@ -196,6 +227,10 @@ class ElasticsearchEntityDocuments:
                 action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
                 lines.append(codec.dumps({"index": action}))
             lines.append(codec.dumps(entity.to_json()))
+        for guid, version in removed:
+            action = {"_index": self._entities, "_id": guid}
+            action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
+            lines.append(codec.dumps({"delete": action}))
         body = b"\n".join(lines) + b"\n"  # NDJSON bytes: the transport sends them as they are
         response = await self._client.bulk(operations=body)  # pyright: ignore[reportArgumentType]
         results = []
@@ -204,6 +239,33 @@ class ElasticsearchEntityDocuments:
             status = int(outcome["status"])
             results.append(WriteResult(outcome["_id"], written=status < 300, conflict=status == 409))  # noqa: PLR2004
         return results
+
+    async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """Refresh the entity index, then page through the entities whose ``references`` hold a GUID (DD-057)."""
+        if not guids:
+            return []
+        await self._client.indices.refresh(index=self._entities)
+        found: list[VersionedEntity] = []
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=self._entities,
+                size=REFERRING_PAGE,
+                query={"terms": {"references": list(guids)}},
+                sort=[{"guid": "asc"}],
+                search_after=after,
+                seq_no_primary_term=True,
+            )
+            hits = response["hits"]["hits"]
+            found += [
+                VersionedEntity(
+                    StoredEntity.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"])
+                )
+                for hit in hits
+            ]
+            if len(hits) < REFERRING_PAGE:
+                return found
+            after = hits[-1]["sort"]
 
     async def restore(self, guid: str, before: StoredEntity | None) -> None:
         """Index the state before, or delete an entity that did not exist before (DD-046)."""
