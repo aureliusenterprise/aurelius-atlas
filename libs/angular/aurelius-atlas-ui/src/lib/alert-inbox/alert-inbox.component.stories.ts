@@ -129,8 +129,10 @@ export const AllHidden: Story = {
 };
 
 /**
- * The empty feed: the bar keeps its shape, every count zero — a filter
- * with no results is still a filter.
+ * The empty feed: the bar keeps its shape, every count zero — and every
+ * chip reads grey, disabled (DD-094): a filter with nothing to show has
+ * nothing to toggle. (In the app the bar shows at the store's first
+ * alert; the story renders the component bare.)
  */
 export const Empty: Story = {
     args: {
@@ -141,5 +143,9 @@ export const Empty: Story = {
         const counts = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>)];
         expect(counts.map((c) => c.textContent.trim())).toEqual(["0", "0", "0"]);
         expect(canvasElement.querySelector(".aurelius-alert-inbox-unread")).toBeNull();
+        const chips = [
+            ...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLButtonElement>),
+        ];
+        expect(chips.every((c) => c.disabled)).toBe(true);
     },
 };

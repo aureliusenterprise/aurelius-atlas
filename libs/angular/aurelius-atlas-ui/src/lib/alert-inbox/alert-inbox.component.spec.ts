@@ -171,17 +171,45 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         );
     });
 
-    it("counts an empty feed as three empty severities (ALR-11)", () => {
+    it("greys out a severity with no alerts (ALR-11, DD-094)", () => {
+        fixture.componentRef.setInput("alerts", [
+            group({ id: "e1", severity: "error", message: "GET /api/x 500" }),
+            group({ id: "i1", severity: "info", message: "Saved" }),
+        ]);
+        fixture.detectChanges();
+
+        // Warning has nothing to show: the chip is disabled — greyed,
+        // unpressed, no severity fill (a filter with nothing to filter
+        // has nothing to toggle).
+        const warning = chips()[1];
+        expect(warning.disabled).toBe(true);
+        expect(warning.getAttribute("aria-pressed")).toBe("false");
+        expect(warning.classList.contains("is-selected")).toBe(false);
+        // The severities with rows are untouched.
+        expect(chips()[0].disabled).toBe(false);
+        expect(chips()[2].disabled).toBe(false);
+
+        // A disabled chip does not toggle (the browser swallows the
+        // click; the assertion pins the contract, not the plumbing).
+        const severities: string[] = [];
+        fixture.componentInstance.toggleSeverity.subscribe((s) => severities.push(s));
+        warning.click();
+        expect(severities).toEqual([]);
+    });
+
+    it("counts an empty feed as three void severities (ALR-11, DD-094)", () => {
         fixture.componentRef.setInput("alerts", []);
         fixture.detectChanges();
 
         // A filter with no results is still a filter: the bar keeps its
-        // shape, the counts read zero.
+        // shape, the counts read zero — and every chip reads grey, the
+        // whole bar void (the bar shows at the store's first alert).
         expect(chips()).toHaveLength(3);
         const counts = [
             ...(fixture.nativeElement.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>),
         ];
         expect(counts.map((c) => c.textContent.trim())).toEqual(["0", "0", "0"]);
+        expect(chips().every((c) => c.disabled)).toBe(true);
     });
 
     it("compacts the count badge so every segment is one height (DD-093)", () => {

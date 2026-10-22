@@ -2882,3 +2882,40 @@ sizes, the `2em` height rides them all).
 superscript plate) rather than a control sharing the row. The unit
 test pins the compaction's two properties; the equal height across
 segments is the group's stretch, verified on the dev server.
+
+### DD-094 — The void chip: an empty severity greys out
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** An inbox chip whose severity the feed holds no alerts of
+is disabled (ALR-11): greyed by Bulma's disabled-button rule (the
+scheme-main plate, 0.5 opacity), unpressed, and carrying no severity
+fill. A chip with rows keeps DD-092's fills; a filtered-out chip keeps
+DD-090's plain-button reading. The three states read: severity-coloured
+= showing, plain = hidden by the user, grey = nothing to show.
+
+**Reason.** The user's review: "grey out the buttons that have no
+alerts". DD-092 made every chip severity-coloured, so a severity with
+zero alerts kept its full-colour face — the bar shouted three
+severities for a feed with one. The states now map to the chip's
+truth: the fill answers "this severity is on the screen", plain answers
+"you filtered it", grey answers "there is nothing of this". A disabled
+chip is also inert, which is honest: toggling a filter with nothing to
+filter changes nothing, and a chip whose click is a no-op should not
+look clickable (the pointer cursor promises a state change).
+
+**Alternatives.** Keep it clickable, greyed by class only (a click
+that does nothing — the affordance lies). Hide the empty chips (DD-090
+chose a fixed three-chip bar — the shape is the legend; hiding makes
+the bar reshuffle as the feed churns). Strike the zero, keep the
+colour (a coloured zero still reads "on").
+
+**Consequences.** The `is-selected` fill gate moves from
+"not hidden" to "has alerts and not shown hidden" — the `isOn`/`isVoid`
+pair on the component. `allHidden` (DD-090) was already void-aware: an
+empty severity's chip does not keep the show-all control away, and its
+disabled chip cannot be clicked off, so the control cannot strand a
+void-only bar. The panel hides the whole bar on an empty store, so the
+all-void state shows only in isolation (the Empty story).

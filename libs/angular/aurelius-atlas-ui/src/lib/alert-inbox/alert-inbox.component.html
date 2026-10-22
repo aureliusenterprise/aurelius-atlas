@@ -9,10 +9,12 @@
     A chip is a toggle button (ALR-11): `aria-pressed` carries the
     visible state — pressed while the severity shows — and the pressed
     chip rides its severity's pinned fill (the scss, DD-092; Bulma's own
-    `.button.is-*` fills are scheme-following, SHM-04's trap). The count
-    tag is the severity's total; the dot rides in the chip's ink while
-    any of its groups is unread (ALR-12), with an sr-only label so the
-    information is not colour-only.
+    `.button.is-*` fills are scheme-following, SHM-04's trap). A
+    severity with no alerts greys out: the chip is disabled — nothing to
+    show, nothing to toggle (DD-094). The count tag is the severity's
+    total; the dot rides in the chip's ink while any of its groups is
+    unread (ALR-12), with an sr-only label so the information is not
+    colour-only.
 -->
 <div class="aurelius-alert-inbox" role="group" [attr.aria-label]="ariaLabel()">
     <div class="buttons has-addons aurelius-alert-inbox-group">
@@ -22,9 +24,10 @@
                 [class]="
                     'button is-small is-expanded aurelius-alert-inbox-chip is-sev-' +
                     count.severity +
-                    (!hidden().includes(count.severity) ? ' is-selected' : '')
+                    (isOn(count) ? ' is-selected' : '')
                 "
-                [attr.aria-pressed]="!hidden().includes(count.severity)"
+                [disabled]="isVoid(count)"
+                [attr.aria-pressed]="isOn(count)"
                 (click)="toggleSeverity.emit(count.severity)"
             >
                 <span>{{ severityLabels()[count.severity] }}</span>

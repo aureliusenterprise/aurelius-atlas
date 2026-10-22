@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
 
 import { countSeverities } from "../alert-list/alert-group";
-import type { AlertGroup, AlertSeverity } from "../alert-list/alert-group";
+import type { AlertGroup, AlertSeverity, AlertSeverityCount } from "../alert-list/alert-group";
 
 /**
  * The inbox bar above the alert feed (ALR-11): a full-width Bulma
@@ -19,6 +19,10 @@ import type { AlertGroup, AlertSeverity } from "../alert-list/alert-group";
  * component derives the counts, and the caller applies the filter —
  * which severities are visible is a view concern of the panel that
  * embeds the bar (the list stays the rows, DD-088's boundary).
+ *
+ * A severity with no alerts greys out: its chip is disabled, unpressed,
+ * and takes no fill — there is nothing to show and nothing to toggle
+ * (DD-094).
  *
  * With every severity hidden the chips are all "off"; the component
  * shows a `showAllLabel` control that turns them all back on. Labels
@@ -77,6 +81,29 @@ export class AlertInbox {
 
     /** The feed counted by severity — totals and unread, inbox order. */
     protected readonly counts = computed(() => countSeverities(this.alerts()));
+
+    /**
+     * Whether a severity's chip is on: it has alerts and the feed does
+     * not hide it. An empty severity is never on (DD-094) — a filter
+     * with nothing to show is not showing it, so the chip takes no
+     * severity fill and reads grey (the {@link isVoid} state).
+     * @param count one severity's counts
+     * @returns whether the chip is pressed
+     */
+    protected isOn(count: AlertSeverityCount): boolean {
+        return count.total > 0 && !this.hidden().includes(count.severity);
+    }
+
+    /**
+     * Whether a severity's chip is void: the feed holds no alert of it,
+     * so the chip is disabled — greyed, and inert, since filtering
+     * nothing has nothing to toggle (DD-094).
+     * @param count one severity's counts
+     * @returns whether the chip is disabled
+     */
+    protected isVoid(count: AlertSeverityCount): boolean {
+        return count.total === 0;
+    }
 
     /**
      * Whether the filter hides the whole feed: every severity with groups
