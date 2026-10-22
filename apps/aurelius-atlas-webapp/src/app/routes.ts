@@ -63,6 +63,15 @@ export const routes: Routes = [
                 outlet: "drawer",
                 loadComponent: () => import("./settings/settings-panel.component").then((m) => m.SettingsPanel),
             },
+            // The alerts drawer, the second route in the one `drawer` outlet
+            // (ALR-01, DD-078's shape): the bell navigates to `(drawer:alerts)`
+            // and the outlet swaps panels — the settings panel and the alerts
+            // drawer replace each other, the open state rides the URL.
+            {
+                path: "alerts",
+                outlet: "drawer",
+                loadComponent: () => import("./alerts/alerts-panel.component").then((m) => m.AlertsPanel),
+            },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain
             // '**' -> '' -> '/search/browse' lands on the default destination.

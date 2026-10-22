@@ -1,0 +1,44 @@
+<!--
+  The alerts panel body (ALR-01, ALR-06, ALR-07, ALR-11), carried by the
+  ui-lib drawer. The inbox bar rides the drawer's subhead slot (DD-090):
+  a full-width strip below the head, outside the scrolling body, so a
+  long feed never pushes it away. The chips count the store (totals per
+  severity, ALR-11); a chip toggles its severity in the feed, and the
+  clear-all action is a member of the same button group (DD-092), the
+  strip's last segment.
+
+  The feed is the ui-lib AlertList, wired to the filtered rows: the
+  panel's `visible` signal applies the chips' filter (ALR-11), dismissal
+  writes through the store (ALR-06). Opening the drawer marks the feed
+  read (ALR-12, DD-090) — the effect in the panel's constructor.
+
+  i18n ids are the shell.alerts.* dictionary paths (DD-039 bridge,
+  SHC-07 pattern). Strings bound into component inputs live in TypeScript
+  as $localize (BRW-02), so no markers are needed here.
+-->
+<aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel" (cancelRequested)="close()">
+    @if (alerts.hasAlerts()) {
+        <aurelius-atlas-ui-alert-inbox
+            drawer-subhead
+            [alerts]="alerts.alerts()"
+            [hidden]="hidden()"
+            [severityLabels]="severityLabels"
+            [ariaLabel]="inboxLabel"
+            [unreadLabel]="unreadLabel"
+            (toggleSeverity)="toggleSeverity($event)"
+        >
+            <button type="button" class="button is-small is-expanded aurelius-alert-clear" (click)="alerts.clearAll()">
+                {{ clearLabel }}
+            </button>
+        </aurelius-atlas-ui-alert-inbox>
+    }
+    <aurelius-atlas-ui-alert-list
+        [alerts]="visible()"
+        [ariaLabel]="feedLabel"
+        [emptyLabel]="emptyLabel"
+        [dismissLabel]="dismissLabel"
+        [unreadLabel]="unreadLabel"
+        [timesPrefix]="timesPrefix"
+        (dismiss)="alerts.dismiss($event)"
+    ></aurelius-atlas-ui-alert-list>
+</aurelius-atlas-ui-drawer>

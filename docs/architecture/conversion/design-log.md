@@ -2463,3 +2463,500 @@ the fill joins them visually as a segmented control: the active plate
 is blue, its neighbours stay plain. The panel spec asserts the
 `is-selected` class on the active link (the scss fill itself is a
 style, not a testable DOM fact).
+
+### DD-083. The alerts store groups by a quiet window
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** `AlertsService` is the app's one alert door (ALR-03): an
+in-memory signal list of groups, newest first, capped at 30 (oldest
+evicted). Grouping is a quiet window — an alert whose key (severity +
+source + message) matches the **newest** group's merges into it while
+the window is open (60 s from that group's last alert: `count` +1,
+`lastSeen` moves); after the gap, a new group starts. A `newGroups`
+counter counts arrivals, not alerts (merges do not move it — ALR-02a's
+ring signal). The clock is an injectable token (`ALERT_CLOCK`), not
+fake timers.
+
+**Reason.** The user's review of the plan: "Sometimes the same error
+occurs multiple times in quick succession. I'd like to be able to group
+notifications so the user doesn't get overloaded." A flapping endpoint
+fails per retry — ungrouped, one drawer row per failure. Merging by key
+shows a burst as one row with a count (×7, 14:20–14:22). The window
+bound keeps history honest: merging session-wide would weld an hour-old
+error to a new burst of the same message; after the gap the old burst
+is context, and the new one needs its own row. The newest-only merge
+keeps the store append-only (a burst ends when anything else arrives —
+the row's count is the burst's, not the message's total).
+
+**Alternatives.** Merge into any group with the same key, session-wide
+(one row per message forever — the user's phrasing "in quick
+succession" named a window, and history loses its timestamps).
+Timestamp-bucketed grouping (fixed 60 s bins split a burst at a bin
+edge). A capped ring of raw alerts, grouped at render (the store then
+knows nothing, and every consumer re-derives the same groups; the
+bell's ring needs arrival counting, which raw-alert caps lose).
+`fakeAsync`/`tick` for the window (the token clock makes the window a
+constructor argument of the test, no zone patching under zoneless).
+
+**Consequences.** In-memory: alerts die with the tab — session events,
+not preferences; the persisted lane is DD-073's and this stays out of
+it. `AlertGroup` (the ui-lib model, ALR-10) is the store's public row;
+the merge-key `source` is internal to the store. A 60 s constant;
+raising it is a one-line change. The cap's eviction is silent (alerts
+are cheap, the drawer is not an archive).
+
+### DD-084. The app's ErrorHandler chains: alert, then trace
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The root `ErrorHandler` is `AlertsErrorHandler`,
+composing the trace handler: record the uncaught error as an `error`
+alert (source `app`), then delegate to `AureliusTraceErrorHandler`,
+which keeps its own delegation to Angular's default (ALR-04).
+Recording is wrapped in try/catch — alerting must never break the
+error path. The composition is a factory in `app.config.ts`
+(`useFactory: alertsErrorHandlerFactory`), not a class the app
+subclasses.
+
+**Reason.** SHL-14's telemetry (7.1) owns the root handler; the alerts
+drawer (ALR-04) needs the same event. Composition keeps both promises
+exactly: the trace handler sees the untouched error, the user sees the
+alert. The order is record-first: a delegate that throws (the default
+handler re-throws in dev mode) must not cost the user the alert.
+
+**Alternatives.** Subclass the trace handler (`super.handleError` then
+record — the user's alert would depend on the delegate surviving, and
+the app inherits a library's constructor). A second `ErrorHandler`
+provider (DI: one token, one value). `provideEnvironmentInitializer`
+with `window.addEventListener("error")` (the listeners are the DI
+handler's input, `provideBrowserGlobalErrorListeners` already wires
+them; a second listener double-records).
+
+**Consequences.** Every uncaught error is now user-visible — noisy
+runtime bugs surface in the drawer (the intent, ALR-04; the store's
+window, DD-083, absorbs repeat spam). The trace path is unchanged: the
+`app.config.spec.ts` provider-set specs keep SHL-14's shape.
+
+### DD-085. The HTTP reporter: 5xx and network failures on /api
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** A functional interceptor, last of the three on
+`provideHttpClient`, watches the response and reports the reportable
+set (ALR-05): `5xx` responses and status-0 network failures on URLs
+matching `/api/` — the bearer interceptor's pattern (APC-06), not a
+hardcoded prefix. The message names method, path, and status (`no
+response` for status 0) and rides the server's plain `error` message
+when it sends one. The interceptor reports and re-throws; the caller's
+observable is untouched. 4xx is silent.
+
+**Reason.** The user asked for "any app error messages if they occur"
+— a failing catalogue call is the app's most common real error. The
+`5xx`-plus-network cut is the plan's standing default, accepted: a 4xx
+is a client-side correction the calling feature already handles (its
+form, its not-found view), and reporting it would train users to
+ignore the drawer. The report is the drawer's, not the caller's:
+7.4+ features keep their own `onError` UX; DD-083's window folds the
+pairs into one row.
+
+**Alternatives.** Per-call `onError` reporting at each feature (every
+slice re-wires it, and un-wired calls go missing). Reporting 4xx too
+(the noise the plan asked about; Atlas proxies 404 through the 6.x
+ramp). A `HttpInterceptorFn` on the data-access library (the SDK is
+feature code's door; the app owns chrome-level alerting — the
+interceptor sits in the webapp's provider chain, where the bearer and
+OTLP interceptors sit).
+
+**Consequences.** A failed `/api` call is visible twice when the
+feature also shows its own error (accepted: the drawer is the
+collected record). The status-0 case cannot tell an offline browser
+from a refused connection — one message covers both.
+
+### DD-086. The bell: severity badge and ring, one outlet
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The header bell is the gear's pattern (DD-078, DD-079):
+a `navbar-item` routerLink to `(drawer:alerts)`, `is-active` while
+open, and the one `drawer` outlet swaps the settings panel and the
+alerts drawer (ALR-01). It carries the ui-lib `Badge`: a presence dot,
+visible while the store is non-empty, coloured by the highest severity
+present — presence, not a count, no read-state (ALR-02). The dot is
+`aria-hidden`: inside the bell's link it would join the link's
+accessible name. New groups animate the bell, a ~650 ms Web Animations
+pendulum swing on the icon (the effect watches `newGroups`, so a burst
+rings once, ALR-02a); `prefers-reduced-motion: reduce` skips it.
+
+**Reason.** The user asked for a badge "to indicate notifications are
+available", the "color of the highest severity notification available",
+and "a little animation on the bell whenever an alert becomes
+available" — the ring is the arrival, the dot is the presence, the
+colour is the worst. Presence beats a count: the store caps at 30 and
+merges bursts, so a count badge overflows its own model. The
+single-outlet swap is DD-078's mechanism with a second segment (the
+URL owns which drawer is open; the locale switch's reload keeps it,
+SPL-14's mechanic reused). The ring is WAAPI, not a CSS class: the
+animation restarts cleanly mid-swing (a class re-trigger needs a
+reflow hack); the pivot (`transform-origin: top center`) is scss on
+the icon, the keyframes are the component's.
+
+**Alternatives.** A count badge (Bulma's `.tag`, overflow-prone,
+read-state invented for it). An unread-only dot (the user's word was
+"available", not "unread"). A CSS `@keyframes` class toggle (the
+re-trigger hack; reduced-motion media queries alone cannot skip a
+JS-driven replay). `@angular/animations` (not a dependency; the zoneless
+app has no animation renderer, WAAPI is the browser's).
+
+**Consequences.** The dot's contrast on the navbar bands is the
+Badge's problem (its ring, DD-087's note); the header keeps the
+DD-080 slate. The dot is a component, not Bulma's `.badge` idiom (the
+lib has no Bulma DOM assumptions). A future read-model (server events,
+6.x) adds a source to the store, not a new door.
+
+### DD-087. AlertList and Badge are ui-lib presentational components
+
+- **Status:** Accepted (the `clearAll()` half of the contract superseded by DD-088)
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The feed and the dot live in `aurelius-atlas-ui` as
+presentational components (ALR-10): `AlertList` renders a
+caller-supplied `AlertGroup[]` (the model the lib exports — the row's
+shape is presentation vocabulary) and emits `dismiss(id)`/`clearAll()`;
+`Badge` wraps content, shows a severity dot on `visible`. Labels are
+inputs with English defaults (the `Drawer.ariaLabel` pattern), so the
+lib keeps no translation dependency and the app passes `@@shell.alerts.*`
+strings (ALR-08). The store, the window, and the routing stay app-side.
+
+**Reason.** The user: "let's ensure we make a reusable ui component
+for alerts." The feed has a second consumer by the plan's own logic
+(7.6+ feature slices push alerts through the same store, and the
+drawer is the product's surface); the dot generalises to any nav item.
+The lib's rule is the same one `Drawer` keeps (DD-069): Bulma-shaped
+presentational markup, state in the caller. The lib's chrome-strings
+lane (DD-047: legacy dictionary paths) has no alert keys to reuse —
+these are Aurelius's own strings (DV-13) — so the inputs carry
+defaults and the app's catalogue owns the translations; the XLIFF
+gate (SHL-08) and the purity gate (DD-048) stay app-side, the lib
+stays service-free (its AGENTS.md convention).
+
+**Alternatives.** App-local components under `src/app/alerts` (not
+reusable — the user's ask). A smart `AlertsDrawer` in the lib that
+injects a store (the lib owns no app state, no xlf dependency).
+`model()` for the alerts array (the list never edits rows; dismiss is
+an event, not a two-way value).
+
+**Consequences.** The `AlertGroup` type is public API of the lib
+(`src/index.ts`). The stories ship per UIC-15's bar (visual regression
+covers the feed and the dot). The badge's ring is Bulma-token ink
+(`--bulma-navbar-item-color`, currentColor fallback) — a future non-
+navbar host keeps a visible edge without a new input.
+
+### DD-088. The chip's pinned pair; Clear all in the drawer head
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** Two live-review fixes to the alert feed (ALR-06, ALR-07):
+the burst chip's pair is pinned — `#f5f5f5` plate, `#363636` ink — not
+Bulma's `tag is-light`; and the "Clear all" button is a content action
+in the drawer's head, not part of the feed. The Drawer grows a
+`drawer-actions` projection slot between the title and the close button
+and AlertList loses its `clearLabel`/`clearAll` — clearing a store the
+list does not own was the list's borrowed business (DD-087's
+presentational rule).
+
+**Reason.** The user's review of the live drawer: "the counter text is
+not visible on the white background" and the "clear all" button
+"will become buried" on a long feed — "let's keep it above the
+notifications". The chip's invisibility is a scheme trap, measured: the
+brand pins the `light` colour pair at `:root`, outside Bulma's scheme
+machinery (SHM-04, so the chrome colours survive), while Bulma 1's dark
+theme re-pins `light`'s invert to a scheme-following ink — the
+`is-light` tag composed the brand's white plate under dark-mode white
+ink (white-on-white). The pinned `#f5f5f5`/`#363636` pair is the
+footer's idiom (SHM-07): the same marker in either scheme, 9.3:1. The
+first fix placed Clear all above the rows inside the scrolling body
+(DD-088's first pass, unit-tested); on review the head is the stronger
+answer — the body scrolls, so the hatch must ride the sticky head.
+
+**Alternatives.** Pin `light-invert` in the brand's `dark-ink` ramp
+(fixes the tag and every `is-light` surface app-wide — rejected as
+wider than the bug: DD-068's ramp re-pins the ink chain Bulma itself
+adapts; `light` is a colour pair SHM-04 pins deliberately, and
+dark-adapting it reopens SHM-01's promise). A severity-coloured chip
+(the row is already severity-coloured; the chip is metadata, not a
+second signal). Clear all above the rows inside the body (the first
+pass: on a long feed the drawer body scrolls, taking the hatch away —
+rejected on review). A `clearLabel`/`clearAll` on AlertList kept "for
+reusability": a feed that owns a store-clearing button presumes the
+store's shape — the head slot keeps the list the rows.
+
+**Consequences.** The chip is the third pinned pair in the product
+(footer SHM-07, active locale DD-082, chip DD-088) — the growing list
+of surfaces that read the same in both schemes. The Drawer's head
+anatomy (DD-069's, shared with settings) gains an optional slot: the
+settings panel projects nothing and is unchanged. The alerts drawer's
+tab order is close, then Clear all (both in the head), then the rows.
+
+### DD-090 — The inbox bar: severity chips, read tracking, Clear all in the bar
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The drawer head's Clear all grows into a full-width inbox
+bar (ALR-11): a new ui-lib `AlertInbox`, a Bulma `buttons has-addons`
+group of one chip per severity (`is-expanded`, feed order, an empty
+severity's chip included), each chip a filter toggle showing that
+severity's **total** group count, a dot riding the DD-063 ramp while any
+of its groups is unread, and the caller's Clear all projected into the
+bar's end. The Drawer grows a second projection slot, `drawer-subhead`,
+a strip between the head and the body; the bar rides it. Read tracking
+lands with it (ALR-12): every `AlertGroup` carries `read`; an arrival —
+or a merge bumping a read burst — marks unread, and the panel's effect
+marks every group read while the drawer is open (visible-is-read). The
+bell badge answers unread presence in the highest **unread** severity's
+colour, superseding ALR-02's store-top reading.
+
+**Reason.** The user's ask: a bar showing the count per severity, each
+severity a show/hide button, Clear all kept, "keep track of whether
+notifications have been read", and the question of totals vs unread on
+the chips. Totals won: the chips are filters, and a filter's number is
+what it covers — unread counts on filter chips make the bar flicker
+under reading (the chips zero out as the drawer reads the feed, the
+turn the user is mid-reading through vanishes). Unread stays where the
+attention question is asked: the bell dot, the row, the chip's dot.
+Visible-is-read won over a per-row read toggle: the drawer is 28rem of
+rows the user came to read; a list that requires marking each row read
+is a queue, not a feed, and the merge-re-unreads rule means a returning
+burst re-asks for attention on its own. Filter state is the panel's,
+not the store's: the store's counts and the bell must answer with the
+whole store, and a view filter is not data.
+
+**Alternatives.** Chips showing unread counts (rejected above — the
+number changes under the user's eyes as the drawer reads). Filter state
+in the store (rejected: the bell's badge and the chips' totals must see
+everything, and persistence of a view toggle is scope the in-memory
+store does not have). A per-group read button (a queue; rejected).
+`markAllRead` on close (rejected: the badge would stay lit while the
+user is reading, and the ring/dot answers "has this been seen" — seen
+means seen). Clear all staying in the head beside the bar (two fixed
+strips stacked, the head's action orphaned from the bar it serves; the
+bar is the feed's command strip — the hatch belongs at its end).
+
+**Consequences.** The Drawer has two content slots, actions (head) and
+subhead (the strip); the settings panel uses neither. The alerts
+drawer's tab order is close, the three chips, Clear all, then the
+rows. `AlertGroup.read` joins the lib's model — the third field the
+store owns and the list renders (ALR-10's vocabulary grows). The bell
+badge goes quiet on open, which is the point: it asked for attention
+and got it. DD-088's Clear all in the head is superseded in placement
+(its "above the notifications" requirement keeps holding — the bar
+never scrolls, DD-091); DD-088's chip-pair pinning stands.
+
+### DD-091 — The drawer's body is the scroll container
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The Drawer's panel clips (`overflow: hidden`) and its
+body scrolls (`min-height: 0`, `overflow-y: auto`): the head and the
+`drawer-subhead` strip are fixed, the content scrolls under them
+(DD-090's inbox bar, ALR-06/ALR-11's escape hatch).
+
+**Reason.** Found while answering the user's question about a long
+feed: the panel carried `overflow-y: auto`, so the whole drawer
+scrolled — the head, title, close button, and DD-088's Clear all slid
+away with the feed, and the "head does not scroll" clause ALR-06 cited
+was not true. A drawer whose chrome scrolls away is a page, not a
+drawer: the close control and the command strip must be reachable at
+any scroll depth, and the inbox bar (DD-090) only pays off fixed.
+
+**Alternatives.** A sticky head inside the scrolling panel (`position:
+sticky`: works, but the scrim/panel geometry makes it fragile with the
+slide animation, and the head's border composes over scrolled content
+under the rounded corners). Two scroll containers (rejected: nested
+scrolling on a 28rem panel is a trap).
+
+**Consequences.** The settings panel's long body (six sections) now
+scrolls under a fixed head — the intended drawer reading, and the
+settings drawer's head carries its accessible name, so the panel
+reading it never loses it. jsdom runs no layout, so the scroll split is
+pinned by the spec's slot-placement test (DD-090) and the dev-server
+check, not by a unit assertion.
+
+### DD-092 — The inbox bar is one joined group, severity-coloured, ramp order
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** Three follow-ups to the inbox bar (ALR-11, DD-090), from
+the user's review: every segment of the bar — the three chips, show
+all, and the projected Clear all — is an `is-expanded` member of the
+one `buttons has-addons` group (the actions join the joined bar, not
+beside it); the chip order flips to the ramp ascending — `info`,
+`warning`, `error`, calm to urgent (SEVERITIES, the countSeverities
+output, and the chips all follow); and a shown chip rides its
+severity's fill — the DD-063 pinned ramp (`#17a2b8`/`#ffc107`/`#dc3545`)
+with the ramp's own inks (black on warning and info, white on danger),
+not a single Aurelius blue. The unread dot rides the chip's ink
+(currentColor) with a hairline ring in the chip's plate, and the fill
+rides `is-sev-*` classes, not Bulma's `is-info`/`is-warning`/`is-danger`
+button colours.
+
+**Reason.** The user's review of the live bar. The ramp order reads a
+bar the way the feed reads a stack — the urgent end lands beside the
+feed's own newest-first errors, and a bar whose colour intensifies
+left-to-right says "here is the dial". The severity fills carry the
+bar's own information: a chip IS a severity, and one blue bar made the
+chips interchangeable — the colours are the legend. Bulma's own
+`.button.is-info`-family fills are scheme-following token tints, and
+the brand pins `light` outside Bulma's scheme machinery (SHM-04): the
+pinned ramp is the product's severity vocabulary (DD-063, DD-080) and
+reads the same in both schemes, like the badge's dot and the footer's
+pair. The dot flips to ink for the same reason DD-088 pinned the
+count chip: a ramp-coloured dot on a ramp-coloured chip rides its own
+colour and vanishes.
+
+**Alternatives.** Bulma's `.button.is-info`/`.is-warning`/`.is-danger`
+fills (scheme-following: the tints shift with the theme and collide
+with the brand's pinned plates — DD-088's trap, measured once on this
+very bar). Severity text ink on a plain chip, fill reserved (the user
+asked for coloured buttons; an outline bar reads disabled, not
+filtered). Ramp descending (error first, DD-090's first pass — kept
+for the feed's rows, newest/urgest-first; the bar is a dial, not a
+feed). The actions outside the group, flush right (DD-090's first
+pass: two visual systems on one strip — the user asked for one joined
+bar).
+
+**Consequences.** `SEVERITIES` is the inbox's order and the bar is the
+model's only consumer of it; the feed's order is the store's own
+(newest first), untouched. The clear-all button's contract is "an
+expanded member of the group" — the panel's button and the host test
+carry `is-expanded`. The unread dot loses its severity classes
+(`is-*`): the chip's face is the severity, the dot only marks news.
+The bar's tab order is info, warning, error, [show all], clear all.
+
+### DD-093 — The inbox bar is one height: the count badge is compacted
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** The inbox bar's count badge sheds Bulma's `.tag` height:
+`height: auto`, `line-height: 1`, `0.125em` vertical padding — the
+badge is compacted to the small button's scale, so every member of the
+group (chips, show all, Clear all) computes to the plain small-button
+height (ALR-11, DD-092).
+
+**Reason.** The user's review of the live bar: Show all and Clear all
+sat a step shorter than the severity chips. The cause was the badge,
+not the actions: Bulma's `.tag` is a 2em control, and at the small
+button's font that is 1.5rem of content inside a chip whose own line
+is 1.125rem — the badge stretched its chip, and the group's flex
+stretch dragged Show all and Clear all up to match. DD-092's
+"is-expanded everywhere" made the step visible: joined segments
+expose each other's heights.
+
+**Alternatives.** `align-items: flex-start` on the group (leaves the
+tall chips and short actions as they are, the join shows the gap). A
+plain `<span>` instead of a Bulma `.tag` (the tag's plate/rounding is
+the chip vocabulary, DD-088's pinned pair; the height is the only
+part to shed). `is-normal` on the tag (the size modifiers are font
+sizes, the `2em` height rides them all).
+
+**Consequences.** The badge reads as the button's own metadata (a
+superscript plate) rather than a control sharing the row. The unit
+test pins the compaction's two properties; the equal height across
+segments is the group's stretch, verified on the dev server.
+
+### DD-094 — The void chip: an empty severity greys out
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** An inbox chip whose severity the feed holds no alerts of
+is disabled (ALR-11): greyed by Bulma's disabled-button rule (the
+scheme-main plate, 0.5 opacity), unpressed, and carrying no severity
+fill. A chip with rows keeps DD-092's fills; a filtered-out chip keeps
+DD-090's plain-button reading. The three states read: severity-coloured
+= showing, plain = hidden by the user, grey = nothing to show.
+
+**Reason.** The user's review: "grey out the buttons that have no
+alerts". DD-092 made every chip severity-coloured, so a severity with
+zero alerts kept its full-colour face — the bar shouted three
+severities for a feed with one. The states now map to the chip's
+truth: the fill answers "this severity is on the screen", plain answers
+"you filtered it", grey answers "there is nothing of this". A disabled
+chip is also inert, which is honest: toggling a filter with nothing to
+filter changes nothing, and a chip whose click is a no-op should not
+look clickable (the pointer cursor promises a state change).
+
+**Alternatives.** Keep it clickable, greyed by class only (a click
+that does nothing — the affordance lies). Hide the empty chips (DD-090
+chose a fixed three-chip bar — the shape is the legend; hiding makes
+the bar reshuffle as the feed churns). Strike the zero, keep the
+colour (a coloured zero still reads "on").
+
+**Consequences.** The `is-selected` fill gate moves from
+"not hidden" to "has alerts and not shown hidden" — the `isOn`/`isVoid`
+pair on the component. `allHidden` (DD-090) was already void-aware: an
+empty severity's chip does not keep the show-all control away, and its
+disabled chip cannot be clicked off, so the control cannot strand a
+void-only bar. The panel hides the whole bar on an empty store, so the
+all-void state shows only in isolation (the Empty story).
+
+### DD-095 — Show all is gone: the bar's shape never shifts
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** The inbox bar has no show-all control (ALR-11). The
+`showAllLabel` input, the `showAll` output, the `allHidden` computed,
+the conditional button, and the panel's `showAll()`/`showAllLabel` are
+removed; the way back from a fully-filtered feed is a chip — a hidden
+chip stays enabled (only a void chip is disabled, DD-094), and
+clicking it shows its severity again. DD-092's "actions as group
+members" stands for the projected clear-all; it no longer covers
+show-all.
+
+**Reason.** The user's review: appearing at full filtering, the control
+joined the `buttons has-addons` group as a fourth `is-expanded`
+segment — the three chips each jumped from a third to a quarter of the
+row, every toggle into and out of the fully-hidden state. A bar whose
+segments resize on state change reads as broken furniture; the escape
+hatch was worth less than the jump. It was also redundant: the chips
+were always clickable in that state (the hiding is per-severity and
+independent), so show-all only ever did what three clicks — usually
+one — already did.
+
+**Alternatives.** A fixed-width reserved slot (a gap in the bar,
+always sized for a button that is almost never there). Absolute
+positioning outside the group (a floating control breaking the joined
+bar, DD-092's shape). Auto-restoring the filter when the feed empties
+(filtering to nothing is a legitimate state — the counts stay, the
+user chose it; silently undoing it is worse than no control).
+
+**Consequences.** The bar's segment count is constant while it shows
+(chips + projected action), so the joined strip never reflows. The
+fully-filtered state shows the feed's empty line under all-flat chips
+— self-explanatory, and the counts on the chips say what is hidden.
+The `shell.alerts.showAll` string leaves both fixture locales and both
+catalogues (25 shell.alerts entries → 24). The AllHidden story and the
+two bar tests carry the new contract: no control, three expanded
+segments, a hidden chip toggles back on.
