@@ -1,5 +1,7 @@
 """A stand-in for ``AsyncElasticsearch`` for unit tests that need no server."""
 
+import json
+from decimal import Decimal
 from typing import Any
 
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
@@ -51,6 +53,11 @@ class FakeIndices:
             self._client.aliases[alias] = index
         return {"acknowledged": True, "index": index}
 
+    async def refresh(self, *, index: str) -> dict[str, Any]:
+        """Count the call; the fake's documents are always visible."""
+        self._client.refreshes.append(index)
+        return {"_shards": {"failed": 0}}
+
 
 class FakeClient:
     """Records how it was built and closed; ``info`` and ``cluster.health`` return or raise as configured.
@@ -72,6 +79,7 @@ class FakeClient:
         self.documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
         self.primary_term = 1
         self.seq_no = -1
+        self.refreshes: list[str] = []
 
     def _index_of(self, name: str) -> dict[str, tuple[dict[str, Any], int]]:
         return self.documents.setdefault(self.aliases.get(name, name), {})
@@ -92,13 +100,18 @@ class FakeClient:
         *,
         index: str,
         id: str,  # noqa: A002 - Elasticsearch's name
-        document: dict[str, Any],
+        document: dict[str, Any] | bytes,
         op_type: str | None = None,
         if_seq_no: int | None = None,
         if_primary_term: int | None = None,
         **_options: object,
     ) -> dict[str, Any]:
-        """Store ``document``, raising ``ConflictError`` like Elasticsearch for ``op_type=create`` or ``if_seq_no``."""
+        """Store ``document``, raising ``ConflictError`` like Elasticsearch for ``op_type=create`` or ``if_seq_no``.
+
+        A body given as bytes is read as Elasticsearch reads it, its floats kept as decimals.
+        """
+        if isinstance(document, bytes):
+            document = _read(document)
         documents = self._index_of(index)
         current = documents.get(id)
         if op_type == "create" and current is not None:
@@ -112,6 +125,67 @@ class FakeClient:
         documents[id] = (document, seq_no)
         return {"_id": id, "_seq_no": seq_no, "_primary_term": self.primary_term, "result": "created"}
 
+    async def mget(self, *, index: str, ids: list[str]) -> dict[str, Any]:
+        """Answer like ``_mget``: one entry per id, ``found`` or not."""
+        docs = []
+        for document_id in ids:
+            try:
+                docs.append(await self.get(index=index, id=document_id))
+            except NotFoundError:
+                docs.append({"_id": document_id, "found": False})
+        return {"docs": docs}
+
+    async def bulk(self, *, operations: bytes, **_options: object) -> dict[str, Any]:
+        """Apply ``create`` and ``index`` actions of an NDJSON body, each with its own outcome."""
+        lines = [line for line in operations.split(b"\n") if line.strip()]
+        items = []
+        for action_line, source_line in zip(lines[::2], lines[1::2], strict=True):
+            ((kind, action),) = _read(action_line).items()
+            try:
+                result = await self.index(
+                    index=action["_index"],
+                    id=action["_id"],
+                    document=_read(source_line),
+                    op_type="create" if kind == "create" else None,
+                    if_seq_no=action.get("if_seq_no"),
+                    if_primary_term=action.get("if_primary_term"),
+                )
+                items.append({kind: {"_id": action["_id"], "status": 201, **result}})
+            except ConflictError:
+                items.append({kind: {"_id": action["_id"], "status": 409}})
+        return {"errors": any(next(iter(item.values()))["status"] >= 300 for item in items), "items": items}  # noqa: PLR2004
+
+    async def delete(
+        self,
+        *,
+        index: str,
+        id: str,  # noqa: A002 - Elasticsearch's name
+        if_seq_no: int | None = None,
+        if_primary_term: int | None = None,
+    ) -> dict[str, Any]:
+        """Delete a document, raising ``NotFoundError`` when missing and ``ConflictError`` on a stale version."""
+        documents = self._index_of(index)
+        current = documents.get(id)
+        if current is None:
+            raise _not_found()
+        if if_seq_no is not None and (current[1] != if_seq_no or if_primary_term != self.primary_term):
+            raise _conflict()
+        del documents[id]
+        return {"_id": id, "result": "deleted"}
+
+    async def search(self, *, index: str, size: int = 10, query: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Answer like ``_search`` with the documents matching a ``match_all`` or ``term`` query."""
+        hits = [
+            {"_id": document_id, "_source": source}
+            for document_id, (source, _) in self._index_of(index).items()
+            if _matches(source, query)
+        ]
+        return {"hits": {"total": {"value": len(hits)}, "hits": hits[:size]}}
+
+    async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Answer like ``_count`` for a ``match_all`` or ``term`` query."""
+        return {"count": sum(1 for source, _ in self._index_of(index).values() if _matches(source, query))}
+
     async def info(self) -> dict[str, Any]:
         """Answer like ``GET /``, or raise the configured error."""
         if self.info_error is not None:
@@ -121,3 +195,17 @@ class FakeClient:
     async def close(self) -> None:
         """Count the call."""
         self.close_calls += 1
+
+
+def _read(body: bytes) -> dict[str, Any]:
+    """A JSON body as Elasticsearch reads it, its floats as decimals."""
+    return json.loads(body, parse_float=Decimal)
+
+
+def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
+    """Whether ``source`` matches a ``match_all`` or single-field ``term`` query."""
+    if query is None or "match_all" in query:
+        return True
+    ((field, value),) = query["term"].items()
+    found = source.get(field)
+    return value in found if isinstance(found, list) else found == value
