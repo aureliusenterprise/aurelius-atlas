@@ -10,7 +10,7 @@ import pytest
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.testing.entity_samples import sample_entity, sample_registry
+from aurelius_atlas_core.testing.entity_samples import sample_entities, sample_entity, sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import EntityStatus
@@ -39,39 +39,7 @@ TABLE_ATTRIBUTES_UNSET = {
 async def store() -> EntityStore:
     """A store of the sample types holding a database ``d``, columns ``c1`` to ``c3`` and table ``t``."""
     store = EntityStore(sample_registry(), MemoryEntityDocuments())
-    registry = store.registry
-    await store.write(
-        [
-            EntityChange(sample_entity(registry, "s_database", "d", {"qualifiedName": "db@cl", "title": "DB"})),
-            EntityChange(sample_entity(registry, "s_column", "c1", {"qualifiedName": "c1@cl", "position": 1})),
-            EntityChange(sample_entity(registry, "s_column", "c2", {"qualifiedName": "c2@cl", "comment": "x"})),
-            EntityChange(sample_entity(registry, "s_column", "c3", {"qualifiedName": "c3@cl"})),
-            EntityChange(
-                sample_entity(
-                    registry,
-                    "s_table",
-                    "t",
-                    {
-                        "qualifiedName": "t@cl",
-                        "name": "orders",
-                        "created": 1_700_000_000_000,
-                        "color": "BLUE",
-                        "place": {"typeName": "s_place", "attributes": {"x": 3, "at": "c3"}},
-                        "places": [{"typeName": "s_place", "attributes": {"label": "p"}}],
-                        "sizes": [1, 2],
-                        "props": {"k": "v"},
-                        "db": "d",
-                        "columns": ["c1", None, "gone"],
-                        "byName": {"second": "c2"},
-                        "primary": "s_column:c3",
-                        "spare": ["s_column:c3", "s_column:nowhere", "bad"],
-                    },
-                    labels=["gold"],
-                    home_id="home",
-                )
-            ),
-        ]
-    )
+    await store.write([EntityChange(entity) for entity in sample_entities(store.registry)])
     return store
 
 

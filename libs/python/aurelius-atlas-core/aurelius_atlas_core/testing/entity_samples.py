@@ -108,3 +108,39 @@ def sample_entity(
         AtlasEntity(type_name=type_name, attributes=attributes or {}), entity_type, guid=guid, now=1000, user=None
     )
     return stored.model_copy(update=system)
+
+
+def sample_entities(registry: TypeRegistry) -> list[StoredEntity]:
+    """Database ``d``, columns ``c1`` to ``c3`` and table ``t``, whose attributes reach them in every way they can.
+
+    ``t`` owns ``c1`` and ``c2``, refers to ``d``, holds ``c3`` in a struct and as soft references, and refers to
+    an entity that does not exist (``gone``, ``nowhere``).
+    """
+    return [
+        sample_entity(registry, "s_database", "d", {"qualifiedName": "db@cl", "title": "DB"}),
+        sample_entity(registry, "s_column", "c1", {"qualifiedName": "c1@cl", "position": 1}),
+        sample_entity(registry, "s_column", "c2", {"qualifiedName": "c2@cl", "comment": "x"}),
+        sample_entity(registry, "s_column", "c3", {"qualifiedName": "c3@cl"}),
+        sample_entity(
+            registry,
+            "s_table",
+            "t",
+            {
+                "qualifiedName": "t@cl",
+                "name": "orders",
+                "created": 1_700_000_000_000,
+                "color": "BLUE",
+                "place": {"typeName": "s_place", "attributes": {"x": 3, "at": "c3"}},
+                "places": [{"typeName": "s_place", "attributes": {"label": "p"}}],
+                "sizes": [1, 2],
+                "props": {"k": "v"},
+                "db": "d",
+                "columns": ["c1", None, "gone"],
+                "byName": {"second": "c2"},
+                "primary": "s_column:c3",
+                "spare": ["s_column:c3", "s_column:nowhere", "bad"],
+            },
+            labels=["gold"],
+            home_id="home",
+        ),
+    ]
