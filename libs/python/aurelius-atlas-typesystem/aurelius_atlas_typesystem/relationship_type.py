@@ -1,8 +1,10 @@
 """``AtlasRelationshipType``: a relationship between two entity types and the attributes it adds (THY-10, THY-11)."""
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_model.instance import AtlasRelationship
 from aurelius_atlas_model.typedef import (
     CONSTRAINT_TYPE_OWNED_REF,
     AtlasAttributeDef,
@@ -24,8 +26,6 @@ from aurelius_atlas_typesystem.edge_direction import EdgeDirection
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.struct_type import StructType
 
-RELATIONSHIP_VALUES_ERROR = "{type}: relationship values arrive with AtlasRelationship in 3.1"
-
 
 class RelationshipType(StructType):
     """A relationship type: its ends, label and the attributes it adds to them (THY-08 to THY-10)."""
@@ -40,16 +40,43 @@ class RelationshipType(StructType):
         self.end2_type: EntityType | None = None
 
     def is_valid_value(self, value: object) -> bool:
-        """Takes an ``AtlasRelationship``, which arrives with relationship instances in 3.1."""
-        raise NotImplementedError(RELATIONSHIP_VALUES_ERROR.format(type=self.type_name))
+        """Null, or an ``AtlasRelationship`` with valid ends and, given end types, valid attributes (REL-02)."""
+        if value is None:
+            return True
+        return isinstance(value, AtlasRelationship) and self._valid_relationship(value)
 
     def is_valid_value_for_update(self, value: object) -> bool:
-        """Takes an ``AtlasRelationship``, which arrives with relationship instances in 3.1."""
-        raise NotImplementedError(RELATIONSHIP_VALUES_ERROR.format(type=self.type_name))
+        """As ``is_valid_value``: Atlas checks a relationship for update the same way (REL-02)."""
+        return self.is_valid_value(value)
 
     def are_equal_values(self, left: object, right: object, guid_assignments: dict[str, str] | None) -> bool:
-        """Takes an ``AtlasRelationship``, which arrives with relationship instances in 3.1."""
-        raise NotImplementedError(RELATIONSHIP_VALUES_ERROR.format(type=self.type_name))
+        """Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status."""
+        if left is None or right is None:
+            return left is None and right is None
+        first, second = _relationship_of(left), _relationship_of(right)
+        if first is None or second is None or not super().are_equal_values(first, second, guid_assignments):
+            return False
+        return (first.guid, first.end1, first.end2, first.label, first.propagate_tags, first.status) == (
+            second.guid,
+            second.end1,
+            second.end2,
+            second.label,
+            second.propagate_tags,
+            second.status,
+        )
+
+    def _valid_relationship(self, relationship: AtlasRelationship) -> bool:
+        """``validateRelationship``: end types of the type's ends and valid attributes, else both end GUIDs."""
+        end1, end2 = relationship.end1, relationship.end2
+        if end1 is None or end2 is None:
+            return False
+        if end1.type_name and end2.type_name:
+            return (
+                _is_type_or_super_type_of(self.end1_type, end1.type_name)
+                and _is_type_or_super_type_of(self.end2_type, end2.type_name)
+                and super().is_valid_value(relationship)
+            )
+        return bool(end1.guid) and bool(end2.guid)
 
     def _resolve_references(self, registry: TypeRegistry) -> None:
         super()._resolve_references(registry)
@@ -143,6 +170,23 @@ class RelationshipType(StructType):
             first.relationship_edge_direction = direction1
         if second is not None:
             second.relationship_edge_direction = direction2
+
+
+def _relationship_of(value: object) -> AtlasRelationship | None:
+    """``getRelationshipFromValue``: a relationship, or one read from a map; None for anything else."""
+    if isinstance(value, AtlasRelationship):
+        return value
+    if isinstance(value, Mapping):
+        try:
+            return AtlasRelationship.model_validate(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _is_type_or_super_type_of(entity_type: EntityType | None, type_name: str) -> bool:
+    """``isTypeOrSuperTypeOf``: the type itself, or one of its sub types."""
+    return entity_type is not None and (type_name == entity_type.type_name or entity_type.is_super_type_of(type_name))
 
 
 def _ends(relationship_def: AtlasRelationshipDef) -> tuple[AtlasRelationshipEndDef, AtlasRelationshipEndDef]:
