@@ -1,7 +1,7 @@
 # 3.2 Ownership cascades
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#117](https://github.com/aureliusenterprise/aurelius-atlas/pull/117)
 - **Records:** DD-068, DD-069, DV-33; ends DV-31; relies on DD-052, DD-056 to DD-058, DD-062, DD-064, DD-066,
   DD-067
 
