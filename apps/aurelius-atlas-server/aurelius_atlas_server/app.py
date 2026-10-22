@@ -7,6 +7,8 @@ from importlib.metadata import version
 from pathlib import Path
 
 import logfire
+from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
@@ -47,7 +49,8 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
             starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
 
     The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
-    models are loaded and patched (MDL-16).
+    models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
+    (ENS-01, ENS-07).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
@@ -57,14 +60,19 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
         LOGGER.info("Starting %s %s", app.title, app.version)
         await store.open()
         try:
+            entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
+            await entity_store.prepare()
             typedef_store = TypedefStore(
                 registry,
                 ElasticsearchTypedefDocument(store.client),
+                usage=entity_store.type_in_use,
                 refresh_seconds=settings.typedef_refresh_seconds,
             )
             await typedef_store.load()
             await ModelLoader(typedef_store).load(settings.models_dir)
+            await entity_store.recover()
             app.state.typedef_store = typedef_store
+            app.state.entity_store = entity_store
             yield
         finally:
             await store.close()

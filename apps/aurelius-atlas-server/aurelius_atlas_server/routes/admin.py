@@ -7,6 +7,7 @@ from importlib.metadata import version
 from typing import Any
 from zoneinfo import available_timezones
 
+from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
@@ -91,6 +92,14 @@ async def get_session() -> dict[str, Any]:
         "timezones": time_zones(),
         "_csrfToken": csrf_token(),
     }
+
+
+@ADMIN.get("/patches")
+async def get_patches(request: Request) -> dict[str, Any]:
+    """``getAtlasPatches``: the typedef patch records, sorted by id (ENS-10, DV-14)."""
+    typedef_store: TypedefStore = request.app.state.typedef_store
+    await typedef_store.refresh()
+    return {"patches": [patch.to_json() for patch in typedef_store.patches()]}
 
 
 @ADMIN.get("/liveness", response_class=PlainTextResponse)
