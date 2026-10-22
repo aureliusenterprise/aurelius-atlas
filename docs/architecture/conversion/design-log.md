@@ -3037,17 +3037,24 @@ first real 200; its specs keep asserting the request until then.
 - **Increment:** 7.6
 - **Date:** 2026-10-22
 
-**Decision.** ADR 054's rule, in client shape: every Aurelius Atlas request
-composes its URL from the injected `API_BASE_URL` token (the APC-01 rule, now
-carrying the consolidated-server decision), and the webapp ships no second
-base-URL token, no hard-coded host, and no search-backend client. The
-served-app boundary holds it closed: the CSP keeps `connect-src 'self'`, and
-the e2e CSP scenario asserts the one origin.
+**Decision.** ADR 054's rule, in client shape: every Aurelius Atlas **data**
+request composes its URL from the injected `API_BASE_URL` token (the APC-01
+rule, now carrying the consolidated-server decision), and the webapp ships no
+second data-plane base URL, no hard-coded data host, and no search-backend
+client. Non-data surfaces keep their own configuration — Keycloak's URL
+(APC-05), the OTel exporter (SHL-11) — named at the deployment boundary, not
+through the token. The served-app boundary holds the rule closed: the CSP
+keeps `connect-src 'self'` for `/api`, widened only for Keycloak's origins,
+and the e2e CSP scenario asserts the baseline.
 
 **Reason.** The user's direction, 2026-10-22: "the legacy app had a split
 between the app search api and apache atlas api. This new version consolidates
 these into the server api... All requests can be expected to be made to the
-server api." The audit (7.3, DD-051) found the legacy split's two clients —
+server api," scoped the same day: "we may have other surfaces eventually but
+this is the one that replaces app search and the apache atlas apis" — the
+decision fixes the data plane's successor, and does not fence in identity,
+telemetry, or future non-data surfaces. The audit (7.3, DD-051) found the
+legacy split's two clients —
 the Atlas REST set and the App Search stack (`/elastic`, `/gov_quality`,
 `/data_quality`) — and ported only endpoints the server answers; the state
 already matches the rule. Recording it turns an audit outcome into a contract
