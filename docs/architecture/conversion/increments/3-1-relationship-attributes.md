@@ -1,7 +1,7 @@
 # 3.1b Relationship attributes
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#116](https://github.com/aureliusenterprise/aurelius-atlas/pull/116)
 - **Records:** DD-064 to DD-067, DV-31, DV-32; supersedes DD-050 and DD-053; relies on DD-049, DD-052, DD-061,
   DD-062
 
