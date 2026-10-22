@@ -1,0 +1,153 @@
+name: Reads by unique attributes check the type and the attributes, and find nothing that is not stored
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getByUniqueAttributes
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getEntityHeaderByUniqueAttributes
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getEntitiesByUniqueAttributes
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#ensureEntityType
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#validateUniqueAttribute
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getAttributesList
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasGraphUtilsV2.java#getVertexByUniqueAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#getEntitiesByUniqueAttributes
+rules: [ERD-08, ERD-09, ERD-10]
+covers:
+    - aurelius_atlas_server.routes.entity.get_by_unique_attributes
+    - aurelius_atlas_server.routes.entity.get_entity_header_by_unique_attributes
+    - aurelius_atlas_server.routes.entity.get_entities_by_unique_attributes
+stages:
+    - name: create an entity type with a unique attribute
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_unique_table
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: owner, typeName: string }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_unique_table
+                    description: scenario_unique_table
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: owner
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+          deviations:
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+    - name: an unknown type
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_no_such_type
+          params: { "attr:qualifiedName": x }
+      response:
+          status: 400
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-400-00-014
+              errorMessage: Type ENTITY with name scenario_no_such_type does not exist
+    - name: no unique attribute
+      request: { method: GET, url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_unique_table }
+      response:
+          status: 400
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-400-00-013
+              errorMessage: "Type scenario_unique_table with unique attribute  does not exist"
+    - name: an attribute that is not unique
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_unique_table/header
+          params: { "attr:owner": me }
+      response:
+          status: 400
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-400-00-013
+              errorMessage: Type scenario_unique_table with unique attribute owner does not exist
+    - name: a value no entity holds
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_unique_table
+          params: { "attr:qualifiedName": nothing@cl }
+      response:
+          status: 404
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-404-00-009
+              errorMessage: "Instance scenario_unique_table with unique attribute {qualifiedName=nothing@cl} does not exist"
+    - name: its header
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_unique_table/header
+          params: { "attr:qualifiedName": nothing@cl }
+      response:
+          status: 404
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-404-00-009
+              errorMessage: "Instance scenario_unique_table with unique attribute {qualifiedName=nothing@cl} does not exist"
+    - name: in bulk, sets that find nothing are left out
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/bulk/uniqueAttribute/type/scenario_unique_table
+          params: { "attr_1:qualifiedName": nothing@cl, "attr_2:qualifiedName": nor-this@cl }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json: {}
+    - name: in bulk, every set is checked
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/bulk/uniqueAttribute/type/scenario_unique_table
+          params: { "attr_1:qualifiedName": nothing@cl, "attr_2:owner": me }
+      response:
+          status: 400
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-400-00-013
+              errorMessage: Type scenario_unique_table with unique attribute owner does not exist
+    - name: delete the type
+      request: { method: DELETE, url: /api/atlas/v2/types/typedef/name/scenario_unique_table }
+      response:
+          status: 204
