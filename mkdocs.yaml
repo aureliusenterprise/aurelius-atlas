@@ -196,6 +196,7 @@ nav:
                       - 7.12 Theme, branding and layout: architecture/conversion/increments/7-12-theme-branding-layout.md
                       - 7.13 UI components (details set): architecture/conversion/increments/7-13-ui-components-details.md
                       - 7.14 Settings panel: architecture/conversion/increments/7-14-settings-panel.md
+                      - 7.15 Alerts drawer: architecture/conversion/increments/7-15-alerts-drawer.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
