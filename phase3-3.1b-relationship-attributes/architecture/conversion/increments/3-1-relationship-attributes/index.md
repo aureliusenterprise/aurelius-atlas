@@ -1,7 +1,7 @@
 # 3.1b Relationship attributes
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#116](<https://github.com/aureliusenterprise/aurelius-atlas/pull/116>)
 - **Records:** DD-064 to DD-067, DV-31, DV-32; supersedes DD-050 and DD-053; relies on DD-049, DD-052, DD-061, DD-062
 
 The second part of increment 3.1 (DD-063): the relationship attributes of entities. An entity write creates, reuses and deletes relationships for the values of its relationship attributes; an entity read answers them in `relationshipAttributes`, and the legacy ends among its attributes, through the relationships.
