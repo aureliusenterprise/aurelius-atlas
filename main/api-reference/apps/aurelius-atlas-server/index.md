@@ -111,6 +111,20 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Typedef Refresh Seconds",
 >       "type": "number"
 >     },
+>     "delete_type": {
+>       "default": "soft",
+>       "enum": [
+>         "soft",
+>         "hard"
+>       ],
+>       "title": "Delete Type",
+>       "type": "string"
+>     },
+>     "delete_type_override": {
+>       "default": false,
+>       "title": "Delete Type Override",
+>       "type": "boolean"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
@@ -170,6 +184,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `dashboard_dir` (`DirectoryPath | None`)
 > - `models_dir` (`Path`)
 > - `typedef_refresh_seconds` (`float`)
+> - `delete_type` (`Literal['soft', 'hard']`)
+> - `delete_type_override` (`bool`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
 > - `elasticsearch_username` (`str`)
@@ -187,6 +203,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The built dashboards: `dashboardv2` at its root and `dashboardv3` in `n/`; None serves the API only (DSH-04).
+>
+> ### delete\_type
+>
+> ```
+> delete_type: Literal['soft', 'hard'] = 'soft'
+> ```
+>
+> How entities are deleted unless a request chooses: `atlas.DeleteHandlerV1.impl` (EDL-04, DD-059).
+>
+> ### delete\_type\_override
+>
+> ```
+> delete_type_override: bool = False
+> ```
+>
+> Whether a request's `deleteType` chooses: `atlas.rest.enable.delete.type.override` (EDL-04, DD-059).
 >
 > ### elasticsearch\_ca\_certs
 >
@@ -491,7 +523,9 @@ Answer an `AtlasError` with its status and `{"errorCode", "errorMessage"[, "erro
 
 ## aurelius\_atlas\_server.routes.admin
 
-The admin endpoints of `AdminResource`: version, status, session, liveness and readiness (ADM-01 to ADM-05).
+The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches and purge.
+
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08.
 
 Functions:
 
@@ -516,6 +550,9 @@ Functions:
 - **`get_version`** –
 
   The server's name, release and revision (ADM-01, DV-03).
+- **`purge_by_ids`** –
+
+  `purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
 - **`time_zones`** –
 
   The IANA time zone ids, sorted (DV-05).
@@ -674,6 +711,20 @@ get_version(request: Request) -> dict[str, str]
 ```
 
 The server's name, release and revision (ADM-01, DV-03).
+
+### purge\_by\_ids
+
+```
+purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+```
+
+`purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
+
+Raises:
+
+- `AtlasError` –
+
+  `BAD_REQUEST` for a body that is not an array of strings (DV-10).
 
 ### time\_zones
 

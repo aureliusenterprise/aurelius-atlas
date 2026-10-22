@@ -3656,6 +3656,8 @@
       
         
       
+        
+      
     
     
     
@@ -4210,6 +4212,33 @@
     
   
   2.4 Entity write REST
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-5-delete-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.5 Delete semantics
 
     
   </span>
@@ -6350,6 +6379,30 @@ Atlas clients expect when it lands).</p>
 <td><code>INVALID_PARAMETERS</code>, as for a null entity or an empty list</td>
 <td>The failure is an unchecked exception in <code>AtlasEntityStream</code>, not a decision</td>
 <td>2.4</td>
+</tr>
+<tr>
+<td>DV-25</td>
+<td>Entities</td>
+<td>Deleted and changed entities of a delete are listed in the hash order of the request context's maps</td>
+<td>In the order they were reached</td>
+<td>Hash order is not something a client can rely on</td>
+<td>2.5</td>
+</tr>
+<tr>
+<td>DV-26</td>
+<td>Entities</td>
+<td>Deleting an entity a mandatory reference names fails with a message naming the referring vertex and its graph details</td>
+<td>Names the referring entity's GUID</td>
+<td>Aurelius Atlas has no vertices</td>
+<td>2.5</td>
+</tr>
+<tr>
+<td>DV-27</td>
+<td>Entities</td>
+<td>Every entity referring to a deleted one is changed in the same graph transaction</td>
+<td>Referring entities are found by a search, which may miss one written at the same moment as the delete</td>
+<td>Elasticsearch has no incoming edges (DD-057)</td>
+<td>2.5</td>
 </tr>
 </tbody>
 </table>

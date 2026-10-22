@@ -517,6 +517,7 @@ Attributes:
 
   How long a write may take before recovery may undo it (DD-046).
 - **`LEASE_PASSED_ERROR`** –
+- **`REMOVE_UNREAD_ERROR`** –
 - **`UNIQUE_VALUE_TAKEN_ERROR`** –
 - **`UNKNOWN_ENTITY_TYPE_ERROR`** –
 - **`VERSION_CONFLICT_ERROR`** –
@@ -534,6 +535,12 @@ How long a write may take before recovery may undo it (DD-046).
 
 ```
 LEASE_PASSED_ERROR = 'write {write_id} took longer than its lease'
+```
+
+### REMOVE\_UNREAD\_ERROR
+
+```
+REMOVE_UNREAD_ERROR = 'entity {guid} cannot be removed without the version it was read in'
 ```
 
 ### UNIQUE\_VALUE\_TAKEN\_ERROR
@@ -563,15 +570,18 @@ WRITE_FAILED_ERROR = 'entity {guid} could not be written'
 ### EntityChange
 
 ```
-EntityChange(entity: StoredEntity, expected: DocumentVersion | None = None)
+EntityChange(entity: StoredEntity, expected: DocumentVersion | None = None, remove: bool = False)
 ```
 
 One entity of a write: its new state, and the version it was read in, or None for a new entity.
+
+With `remove`, the write removes the entity, which must have been read: `entity` is its state then (DD-056).
 
 Attributes:
 
 - **`entity`** (`StoredEntity`) –
 - **`expected`** (`DocumentVersion | None`) –
+- **`remove`** (`bool`) –
 
 #### entity
 
@@ -583,6 +593,12 @@ entity: StoredEntity
 
 ```
 expected: DocumentVersion | None = None
+```
+
+#### remove
+
+```
+remove: bool = False
 ```
 
 ### EntityStore
@@ -622,12 +638,15 @@ Methods:
 - **`recover`** –
 
   Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
+- **`referring`** –
+
+  The entities whose references name any of these GUIDs (EDL-10, DD-057).
 - **`type_in_use`** –
 
   Whether an entity of exactly this type exists, in any state: the typedef store's check (ENS-09, DD-048).
 - **`write`** –
 
-  Write new and changed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08, DD-046).
+  Write new, changed and removed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08).
 
 Attributes:
 
@@ -699,6 +718,14 @@ Finish or undo the writes whose lease has passed; the number of entries handled 
 
 A committed write only releases what it no longer holds; any other is undone: an entity is restored only while it carries the write's id, a reservation released only while the write holds it.
 
+#### referring
+
+```
+referring(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities whose references name any of these GUIDs (EDL-10, DD-057).
+
 #### type\_in\_use
 
 ```
@@ -713,7 +740,9 @@ Whether an entity of exactly this type exists, in any state: the typedef store's
 write(changes: Sequence[EntityChange]) -> None
 ```
 
-Write new and changed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08, DD-046).
+Write new, changed and removed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08).
+
+Each written entity carries the GUIDs its references name (DD-057); removals are journaled too (DD-056).
 
 Raises:
 
@@ -796,7 +825,7 @@ Classes:
   Where `EntityStore` keeps entities, reservations and its journal.
 - **`JournalEntry`** –
 
-  A write in flight: its id, lease, the entities' states before it, its reservations and releases (DD-046).
+  A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
 - **`Reservation`** –
 
   A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
@@ -814,7 +843,7 @@ Attributes:
   The alias of the entity index (DD-043).
 - **`ENTITY_MAPPING`** (`dict[str, Any]`) –
 
-  System properties mapped for exact lookup; attribute values stored, not indexed, until 4.1 (DD-043).
+  System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
 - **`INDEX_PREFIX`** –
 
   The prefix of the three aliases; tests give their own.
@@ -824,6 +853,9 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`REFERRING_PAGE`** –
+
+  How many referring entities one search page holds (DD-057).
 - **`UNIQUE_VALUE_INDEX`** –
 
   The alias of the unique value reservations (DD-045).
@@ -857,13 +889,16 @@ ENTITY_MAPPING: dict[str, Any] = {
         "homeId": _KEYWORD,
         "labels": _KEYWORD,
         "writeId": _KEYWORD,
+        "references": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
 }
 ```
 
-System properties mapped for exact lookup; attribute values stored, not indexed, until 4.1 (DD-043).
+System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
+
+DD-043, DD-057.
 
 ### INDEX\_PREFIX
 
@@ -888,6 +923,14 @@ JOURNAL_PAGE = 1000
 ```
 
 How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+
+### REFERRING\_PAGE
+
+```
+REFERRING_PAGE = 1000
+```
+
+How many referring entities one search page holds (DD-057).
 
 ### UNIQUE\_VALUE\_INDEX
 
@@ -921,10 +964,13 @@ Methods:
   The entries of the journal, refreshed first so none written a moment ago is missed.
 - **`prepare`** –
 
-  Create each index behind its alias unless it exists; existing ones are not changed (ENS-01).
+  Create each index behind its alias unless it exists (ENS-01).
 - **`put_journal`** –
 
   Index the entry under its write id.
+- **`referring`** –
+
+  Refresh the entity index, then page through the entities whose `references` hold a GUID (DD-057).
 - **`release`** –
 
   Delete the reservation when `guid` still holds it, guarded by its version.
@@ -939,7 +985,7 @@ Methods:
   Index the state before, or delete an entity that did not exist before (DD-046).
 - **`write`** –
 
-  One bulk request: `create` for a new entity, `index` with `if_seq_no` for a changed one (DD-047).
+  One bulk request: `create` a new entity, `index` or `delete` with `if_seq_no` (DD-047, DD-056).
 
 Attributes:
 
@@ -993,7 +1039,9 @@ The entries of the journal, refreshed first so none written a moment ago is miss
 prepare() -> None
 ```
 
-Create each index behind its alias unless it exists; existing ones are not changed (ENS-01).
+Create each index behind its alias unless it exists (ENS-01).
+
+An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay.
 
 #### put\_journal
 
@@ -1002,6 +1050,14 @@ put_journal(entry: JournalEntry) -> None
 ```
 
 Index the entry under its write id.
+
+#### referring
+
+```
+referring(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+Refresh the entity index, then page through the entities whose `references` hold a GUID (DD-057).
 
 #### release
 
@@ -1038,10 +1094,12 @@ Index the state before, or delete an entity that did not exist before (DD-046).
 #### write
 
 ```
-write(items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]
+write(
+    items: Sequence[tuple[StoredEntity, DocumentVersion | None]], removed: Sequence[tuple[str, DocumentVersion]] = ()
+) -> list[WriteResult]
 ```
 
-One bulk request: `create` for a new entity, `index` with `if_seq_no` for a changed one (DD-047).
+One bulk request: `create` a new entity, `index` or `delete` with `if_seq_no` (DD-047, DD-056).
 
 ### EntityDocuments
 
@@ -1069,6 +1127,9 @@ Methods:
 - **`put_journal`** –
 
   Write a journal entry.
+- **`referring`** –
+
+  The entities whose references name any of these GUIDs, as of now (DD-057).
 - **`release`** –
 
   Delete the reservation of `key` if `guid` holds it.
@@ -1083,7 +1144,7 @@ Methods:
   Put back an entity's state before a write, or delete one the write created.
 - **`write`** –
 
-  Write each entity, new (no version) or over the version given, in one bulk request.
+  Write each entity, new (no version) or over the version given, and remove those at the version given.
 
 #### count\_type
 
@@ -1133,6 +1194,14 @@ put_journal(entry: JournalEntry) -> None
 
 Write a journal entry.
 
+#### referring
+
+```
+referring(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities whose references name any of these GUIDs, as of now (DD-057).
+
 #### release
 
 ```
@@ -1168,16 +1237,22 @@ Put back an entity's state before a write, or delete one the write created.
 #### write
 
 ```
-write(items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]
+write(
+    items: Sequence[tuple[StoredEntity, DocumentVersion | None]], removed: Sequence[tuple[str, DocumentVersion]] = ()
+) -> list[WriteResult]
 ```
 
-Write each entity, new (no version) or over the version given, in one bulk request.
+Write each entity, new (no version) or over the version given, and remove those at the version given.
+
+One bulk request; the results are in order, the writes' then the removals' (DD-056).
 
 ### JournalEntry
 
 Bases: `AtlasModel`
 
-A write in flight: its id, lease, the entities' states before it, its reservations and releases (DD-046).
+A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
+
+DD-046, DD-056.
 
 Methods:
 
@@ -1191,6 +1266,7 @@ Attributes:
 - **`committed`** (`bool`) –
 - **`lease_until`** (`int`) –
 - **`released`** (`list[str]`) –
+- **`removed`** (`list[str]`) –
 - **`reserved`** (`list[str]`) –
 - **`write_id`** (`str`) –
 
@@ -1216,6 +1292,12 @@ lease_until: int
 
 ```
 released: list[str] = Field(default_factory=list)
+```
+
+#### removed
+
+```
+removed: list[str] = Field(default_factory=list)
 ```
 
 #### reserved
@@ -1356,6 +1438,9 @@ Methods:
 - **`of`** –
 
   A new entity as stored (`createVertexWithGuid`): `ACTIVE`, both times `now`, `version` its own.
+- **`reference_guids`** –
+
+  The GUIDs this entity's references name, each once (EDL-10, DD-057).
 - **`to_entity`** –
 
   The entity with its system properties and the stored attribute values by attribute name (ERD-03).
@@ -1378,6 +1463,7 @@ Attributes:
 - **`is_proxy`** (`bool | None`) –
 - **`labels`** (`list[str] | None`) –
 - **`provenance_type`** (`int`) –
+- **`references`** (`list[str] | None`) –
 - **`state`** (`EntityStatus`) –
 - **`super_type_names`** (`list[str]`) –
 - **`type_name`** (`str`) –
@@ -1446,6 +1532,12 @@ labels: list[str] | None = None
 provenance_type: int = 0
 ```
 
+#### references
+
+```
+references: list[str] | None = None
+```
+
 #### state
 
 ```
@@ -1497,6 +1589,16 @@ of(entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: s
 A new entity as stored (`createVertexWithGuid`): `ACTIVE`, both times `now`, `version` its own.
 
 Attributes the type does not have are left out; the others are stored under their qualified names.
+
+#### reference\_guids
+
+```
+reference_guids(entity_type: EntityType) -> list[str]
+```
+
+The GUIDs this entity's references name, each once (EDL-10, DD-057).
+
+Its own object id attributes and the elements and values of its arrays and maps of object ids; not soft references, nor references in structs, which Atlas keeps as properties rather than edges.
 
 #### to\_entity
 

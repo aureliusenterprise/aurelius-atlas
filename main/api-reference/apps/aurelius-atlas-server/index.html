@@ -1200,6 +1200,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.delete_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;delete_type
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.delete_type_override" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;delete_type_override
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.elasticsearch_ca_certs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1773,6 +1795,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_version
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.purge_by_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;purge_by_ids
       </span>
     </span>
   </a>
@@ -4345,6 +4378,8 @@
       
         
       
+        
+      
     
     
     
@@ -4899,6 +4934,33 @@
     
   
   2.4 Entity write REST
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/2-5-delete-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.5 Delete semantics
 
     
   </span>
@@ -6748,6 +6810,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.delete_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;delete_type
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.delete_type_override" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;delete_type_override
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.elasticsearch_ca_certs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7328,6 +7412,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.purge_by_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;purge_by_ids
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.time_zones" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7580,6 +7675,20 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Typedef Refresh Seconds"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"delete_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"soft"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"enum"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"soft"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"hard"</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Delete Type"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"delete_type_override"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Delete Type Override"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"revision"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UNKNOWN"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Revision"</span><span class="p">,</span>
@@ -7706,6 +7815,24 @@ Elasticsearch settings; it does not start without its store.</p>
                 (<code><span title="float">float</span></code>)
             </li>
             <li>
+              <code><a class="autorefs autorefs-internal" title="            delete_type
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.delete_type)" href="./#aurelius_atlas_server.settings.ServerSettings.delete_type">delete_type</a></code>
+                (<code><span title="typing.Literal">Literal</span>[&#39;soft&#39;, &#39;hard&#39;]</code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            delete_type_override
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.delete_type_override)" href="./#aurelius_atlas_server.settings.ServerSettings.delete_type_override">delete_type_override</a></code>
+                (<code><span title="bool">bool</span></code>)
+            </li>
+            <li>
               <code><a class="autorefs autorefs-internal" title="            revision
 
 
@@ -7789,6 +7916,54 @@ Elasticsearch settings; it does not start without its store.</p>
 
         <p>The built dashboards: <code>dashboardv2</code> at its root and <code>dashboardv3</code> in <code>n/</code>; None serves the API only
 (DSH-04).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.delete_type" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">delete_type</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.delete_type" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">delete_type</span><span class="p">:</span> <span class="n"><span title="typing.Literal">Literal</span></span><span class="p">[</span><span class="s1">'soft'</span><span class="p">,</span> <span class="s1">'hard'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'soft'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>How entities are deleted unless a request chooses: <code>atlas.DeleteHandlerV1.impl</code> (EDL-04, DD-059).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.delete_type_override" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">delete_type_override</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.delete_type_override" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">delete_type_override</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Whether a request's <code>deleteType</code> chooses: <code>atlas.rest.enable.delete.type.override</code> (EDL-04, DD-059).</p>
 
     </div>
 
@@ -8813,7 +8988,8 @@ models are loaded and patched (MDL-16); the entity store's indices are created a
 
     <div class="doc doc-contents first">
 
-        <p>The admin endpoints of <code>AdminResource</code>: version, status, session, liveness and readiness (ADM-01 to ADM-05).</p>
+        <p>The admin endpoints of <code>AdminResource</code>: version, status, session, liveness, readiness, patches and purge.</p>
+<p>ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08.</p>
 
 
 
@@ -8905,6 +9081,18 @@ models are loaded and patched (MDL-16); the entity store's indices are created a
             –
             <div class="doc-md-description">
               <p>The server's name, release and revision (ADM-01, DV-03).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            purge_by_ids
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.purge_by_ids)" href="./#aurelius_atlas_server.routes.admin.purge_by_ids">purge_by_ids</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>purgeByIds</code>: remove the <code>DELETED</code> entities of a JSON array of GUIDs (EDL-01 to EDL-03).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -9440,6 +9628,42 @@ models are loaded and patched (MDL-16); the entity store's indices are created a
     <div class="doc doc-contents ">
 
         <p>The server's name, release and revision (ADM-01, DV-03).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.purge_by_ids" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">purge_by_ids</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.purge_by_ids" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">purge_by_ids</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.purge_by_ids(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.purge_by_ids(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.purge_by_ids(body)">body</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Body">Body</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasJSONResponse (aurelius_atlas_server.errors.AtlasJSONResponse)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse">AtlasJSONResponse</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>purgeByIds</code>: remove the <code>DELETED</code> entities of a JSON array of GUIDs (EDL-01 to EDL-03).</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="aurelius_atlas_server.errors.AtlasError">AtlasError</span></code>
+            –
+          <div class="doc-md-description">
+            <p><code>BAD_REQUEST</code> for a body that is not an array of strings (DV-10).</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

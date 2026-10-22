@@ -3642,6 +3642,8 @@
       
         
       
+        
+      
     
     
     
@@ -4196,6 +4198,33 @@
     
   
   2.4 Entity write REST
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/2-5-delete-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.5 Delete semantics
 
     
   </span>
@@ -6280,7 +6309,12 @@ by identifier always sees the last write; nothing waits for the search index to 
 Attribute values are kept with their exact digits and become searchable when search arrives (4.1).
 A value that is a structure is kept inside its entry; a link to another entry is kept as that entry's
 identifier, so a renamed entry is never shown under its old name
-(<a href="../../conversion/design-log/#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid">DD-049</a>).</p>
+(<a href="../../conversion/design-log/#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid">DD-049</a>).
+Each entry also lists, searchably, the identifiers of the entries it links to, so that deleting an entry finds
+the entries that link to it (<a href="../../conversion/design-log/#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids">DD-057</a>).
+A deleted entry is kept, marked deleted, until it is purged; a purge or a hard delete removes it within the
+same all-or-nothing write as everything else the request changes
+(<a href="../../conversion/design-log/#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others">DD-056</a>).</p>
 <p>The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:</p>
 <ul>
 <li><strong>A unique value is held once per type.</strong> Two entries of one type cannot share a <code>qualifiedName</code>, even when

@@ -1783,7 +1783,7 @@ substitute(value: Any, saved: Mapping[str, Any]) -> Any
 
 Replace `{name}` by saved values in every string of a JSON value (SCN-06).
 
-A string that is exactly `{name}` becomes the saved value with its JSON type; elsewhere the value is written into the string. `{{` and `}}` stand for literal braces.
+A string that is exactly `{name}` becomes the saved value with its JSON type; elsewhere the value is written into the string. Object keys are strings, so a value written into one is its text. `{{` and `}}` stand for literal braces.
 
 Raises:
 
