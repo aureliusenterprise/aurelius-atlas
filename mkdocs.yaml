@@ -194,6 +194,7 @@ nav:
                       - 2.4 Entity write REST: architecture/conversion/increments/2-4-entity-write-rest.md
                       - 2.5 Delete semantics: architecture/conversion/increments/2-5-delete-semantics.md
                       - 3.1a Relationship instances: architecture/conversion/increments/3-1-relationship-instances.md
+                      - 3.1b Relationship attributes: architecture/conversion/increments/3-1-relationship-attributes.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
