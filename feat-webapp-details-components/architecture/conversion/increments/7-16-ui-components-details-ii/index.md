@@ -1,7 +1,7 @@
 # 7.16 UI components: details chrome set
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#110](<https://github.com/aureliusenterprise/aurelius-atlas/pull/110>)
 - **Records:** DD-099 (the chip atom is the classification chip), DD-100 (the type-name badge is its own component), DD-101 (details navigation is a shell; the scroll directive stays app-side), DD-102 (the section count bar is `section-stats`); relies on ADR 053, DD-046, DD-047, DD-066, DD-067, UIC-15
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits, and of the design-system track opened by [7.2](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-2-design-system/index.md>), whose UIC rule ids (UIC-01..10) 7.13 continued (UIC-11..15); this increment carries the series on (UIC-16..20).
