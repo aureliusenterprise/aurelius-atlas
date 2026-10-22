@@ -1,4 +1,7 @@
-"""The admin endpoints of ``AdminResource``: version, status, session, liveness and readiness (ADM-01 to ADM-05)."""
+"""The admin endpoints of ``AdminResource``: version, status, session, liveness, readiness, patches and purge.
+
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08.
+"""
 
 import secrets
 import string
@@ -12,7 +15,9 @@ from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
 
-from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
+from aurelius_atlas_server.routes.entity import Body, Store, writer
+from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
 
 ADMIN = APIRouter(prefix="/api/atlas/admin", tags=["Admin"])
@@ -120,3 +125,18 @@ async def get_readiness(request: Request) -> str:
     if report.status is not HealthStatus.UP:
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, NOT_READY)
     return READY
+
+
+@ADMIN.put("/purge")
+async def purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONResponse:
+    """``purgeByIds``: remove the ``DELETED`` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is not an array of strings (DV-10).
+    """
+    if body is not None and (not isinstance(body, list) or not all(isinstance(guid, str) for guid in body)):
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, "Invalid body: a JSON array of GUIDs is expected")
+    guids = list(dict.fromkeys(body or []))
+    for guid in guids:
+        validate_param_length("guid", guid)
+    return AtlasJSONResponse(content=(await writer(request, store).purge_by_ids(guids)).to_json())

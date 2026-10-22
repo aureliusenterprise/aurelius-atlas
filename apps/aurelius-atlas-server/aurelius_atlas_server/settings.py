@@ -54,6 +54,12 @@ class ServerSettings(BaseSettings):
     """How long the server answers from its type registry before it checks for another process's type change
     (TDS-13, DD-029)."""
 
+    delete_type: Literal["soft", "hard"] = "soft"
+    """How entities are deleted unless a request chooses: ``atlas.DeleteHandlerV1.impl`` (EDL-04, DD-059)."""
+
+    delete_type_override: bool = False
+    """Whether a request's ``deleteType`` chooses: ``atlas.rest.enable.delete.type.override`` (EDL-04, DD-059)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
 
