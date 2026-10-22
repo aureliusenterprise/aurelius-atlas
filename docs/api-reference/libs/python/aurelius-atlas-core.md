@@ -9,7 +9,9 @@ store, which keeps type definitions in one Elasticsearch document and serves the
 Since [1.5](../../../architecture/conversion/increments/1-5-builtin-models.md): Apache Atlas's built-in
 models and their typedef patches, loaded at start-up. Since
 [1.6](../../../architecture/conversion/increments/1-6-types-rest.md): the store's reads and the search of
-`/v2/types/typedefs`.
+`/v2/types/typedefs`. Since [2.2](../../../architecture/conversion/increments/2-2-entity-store.md): the
+entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes
+several entities all or nothing through a journal (DD-043 to DD-048).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -43,6 +45,14 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ## Documentation
 
 ::: aurelius_atlas_core.typedef_store
+
+::: aurelius_atlas_core.entity_store
+
+::: aurelius_atlas_core.entity_documents
+
+::: aurelius_atlas_core.stored_entity
+
+::: aurelius_atlas_core.unique_key
 
 ::: aurelius_atlas_core.type_search
 

@@ -4,7 +4,8 @@ Elasticsearch access for Aurelius Atlas, the only store of the catalogue
 ([ADR 047](../../../docs/architecture/adr/047-one-search-store-is-the-system-of-record.md)).
 
 Introduced by increment 0.2 as a skeleton: settings, the lifecycle of one async client, a version
-check and a health check. Index layout arrives with the type and entity stores (1.3, 2.2).
+check and a health check. The client reads floats as decimals and sends bodies given as bytes unchanged
+(`serializer`, DD-039, DD-043); index layouts belong to the stores that use them, in `aurelius-atlas-core`.
 
 ## Usage
 

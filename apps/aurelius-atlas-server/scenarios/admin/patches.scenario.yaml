@@ -1,0 +1,14 @@
+name: The patch records are listed under patches
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getAtlasPatches
+    - repository/src/main/java/org/apache/atlas/repository/patches/AtlasPatchRegistry.java#getAllPatches
+    - intg/src/main/java/org/apache/atlas/model/patches/AtlasPatch.java#AtlasPatches
+rules: [ENS-10, SRV-05]
+covers: [aurelius_atlas_server.routes.admin.get_patches]
+stages:
+    - request: { method: GET, url: /api/atlas/admin/patches }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json: { patches: [] }
+          volatile: ["$.patches"]
