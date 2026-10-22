@@ -1108,8 +1108,8 @@ write that never finished.
 
 1. a journal entry in `aurelius-atlas-entity-journal` records the write's id, a lease time and the state of
    every entity before it (or that it is new);
-2. every unique value the write needs is reserved; a value held by another entity ends the write with
-   `INSTANCE_ALREADY_EXISTS` before any entity is written;
+2. every unique value the write needs is reserved; a value held by another entity ends the write, before any
+   entity is written, with an error 2.4 turns into an answer;
 3. all entities are written in one bulk request, each conditionally (DD-047) and marked with the write's id;
 4. if any entity fails, every entity written is restored to its state before, and the write's reservations are
    released;

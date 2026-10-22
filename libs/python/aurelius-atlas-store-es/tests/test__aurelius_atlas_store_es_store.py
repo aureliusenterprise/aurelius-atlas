@@ -8,6 +8,7 @@ from aurelius_atlas_store_es import (
     StoreUnavailableError,
     UnsupportedVersionError,
 )
+from aurelius_atlas_store_es.serializer import DecimalJsonSerializer
 from aurelius_atlas_store_es.store import STORE_NOT_OPEN_ERROR
 from aurelius_atlas_store_es.testing.fake import FakeClient, response_meta
 from elasticsearch import AuthenticationException, ConnectionTimeout
@@ -22,6 +23,8 @@ async def test__elasticsearch_store_open_builds_a_verifying_https_client(
     async with ElasticsearchStore(settings):
         kwargs = fake_client().kwargs
 
+    serializers = kwargs.pop("serializers")
+
     assert kwargs == {
         "hosts": ["https://localhost:9200"],
         "basic_auth": ("elastic", password),
@@ -29,6 +32,8 @@ async def test__elasticsearch_store_open_builds_a_verifying_https_client(
         "verify_certs": True,
         "request_timeout": 10.0,
     }
+    assert isinstance(serializers, dict)
+    assert all(isinstance(serializer, DecimalJsonSerializer) for serializer in serializers.values())
 
 
 @pytest.mark.covers(
