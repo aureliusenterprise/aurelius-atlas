@@ -1,7 +1,7 @@
-import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
-import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+
+import { TypeName } from "../type-name/type-name.component";
 
 /**
  * The Bulma card behind every Aurelius details screen (`models4insight-details-card`),
@@ -11,13 +11,13 @@ import { type IconDefinition } from "@fortawesome/free-solid-svg-icons";
  * column are inputs and content projection, and a title click emits
  * `entityClicked` — routing is the app's (7.6).
  *
- * The type-name badge is inlined (the legacy `entity-type-name` → `type-name`
- * chain, minus its service): icon, `typeAlias ?? typeName`, and the optional
- * base-type suffix.
+ * The type-name badge is the `type-name` component (DD-100 — 7.13's
+ * inlining reversed): the card passes its badge inputs through, and
+ * UIC-12's rendered output is the extraction's regression proof.
  */
 @Component({
     selector: "aurelius-atlas-ui-entity-card",
-    imports: [CommonModule, FontAwesomeModule],
+    imports: [TypeName],
     templateUrl: "./entity-card.component.html",
     styleUrl: "./entity-card.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,

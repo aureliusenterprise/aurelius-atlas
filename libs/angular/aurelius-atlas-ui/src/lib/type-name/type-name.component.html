@@ -1,0 +1,18 @@
+@let _name = typeAlias() ?? typeName();
+
+@if (_name) {
+    <!-- The title mirrors the legacy [attr.title]: the display name. -->
+    <span class="icon-text" [attr.title]="_name">
+        @if (showIcon() && icon()) {
+            <span class="icon" [ngClass]="iconClass()">
+                <fa-icon [icon]="icon()!"></fa-icon>
+            </span>
+        }
+        @if (showTypeName()) {
+            <span>{{ _name }}</span>
+        }
+        @if (showBaseTypeName() && typeAlias()) {
+            <span>&nbsp;({{ typeName() }})</span>
+        }
+    </span>
+}

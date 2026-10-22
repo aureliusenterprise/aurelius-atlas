@@ -19,22 +19,18 @@
                     </p>
                 </div>
                 <div class="media-right">
-                    @let _name = typeAlias() ?? typeName();
-                    @if (_name) {
-                        <span class="icon-text" [attr.title]="_name">
-                            @if (showIcon() && typeIcon()) {
-                                <span class="icon" [ngClass]="typeIconClass()">
-                                    <fa-icon [icon]="typeIcon()!"></fa-icon>
-                                </span>
-                            }
-                            @if (showTypeName()) {
-                                <span>{{ _name }}</span>
-                            }
-                            @if (showBaseTypeName() && typeAlias()) {
-                                <span>&nbsp;({{ typeName() }})</span>
-                            }
-                        </span>
-                    }
+                    <!-- The badge is its own component (DD-100); the card
+                         passes its inputs through. UIC-12's output — the
+                         span.icon-text, icon, name, suffix — is unchanged. -->
+                    <aurelius-atlas-ui-type-name
+                        [typeName]="typeName()"
+                        [typeAlias]="typeAlias()"
+                        [icon]="typeIcon()"
+                        [iconClass]="typeIconClass()"
+                        [showBaseTypeName]="showBaseTypeName()"
+                        [showIcon]="showIcon()"
+                        [showTypeName]="showTypeName()"
+                    />
                 </div>
             </div>
             <div class="columns is-gapless is-mobile">

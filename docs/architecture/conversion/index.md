@@ -94,6 +94,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 7.13 | UI components: details set      | Breadcrumbs, entity-card, properties-item, select as dumb components (UIC-11..15, DD-066/067)                                                   | Aurelius `search/components/{bread-crumbs,cards}`, `properties-item`, `components/select` | in progress |
 | 7.14 | Settings panel                  | Drawer with theme, language, time zone, page size, telemetry; header gear (SPL-01..13, DD-069..073)                                             | – (new feature, DV-12)                                                                    | in progress |
 | 7.15 | Alerts drawer                   | Bell with severity badge, routed drawer, grouped alert feed, inbox bar with read tracking, runtime/HTTP error capture (ALR-01..12, DD-083..095) | – (new feature, DV-13)                                                                    | in progress |
+| 7.16 | UI components: details chrome   | classification-chip, type-name, details-navigation, section-stats as dumb components (UIC-16..20, DD-099..102)                                  | Aurelius `search/components/classification`, `type-name`, `details/components/navigation` | in progress |
 
 ## After phase 0
 

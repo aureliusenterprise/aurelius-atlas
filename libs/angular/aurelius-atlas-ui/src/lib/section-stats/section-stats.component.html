@@ -1,0 +1,17 @@
+<!--
+    The Aurelius count bar (UIC-19): heading-link + count, per item. The
+    heading's #target href is the keyboard path; the click handler emits
+    and cancels the fragment jump (DD-066's pattern).
+-->
+<nav class="level">
+    @for (stat of items(); track stat.target) {
+        <div class="level-item has-text-centered">
+            <div>
+                <p class="heading">
+                    <a [attr.href]="'#' + stat.target" (click)="onStatClick($event, stat)">{{ stat.label }}</a>
+                </p>
+                <p class="title">{{ stat.count }}</p>
+            </div>
+        </div>
+    }
+</nav>
