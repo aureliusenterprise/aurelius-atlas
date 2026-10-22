@@ -2906,6 +2906,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.stored_entity.StoredEntity.is_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;is_proxy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.stored_entity.StoredEntity.labels" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6446,6 +6457,8 @@
       
         
       
+        
+      
     
     
     
@@ -6946,6 +6959,33 @@
     
   
   2.2 Entity store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/2-3-entity-read-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.3 Entity read REST
 
     
   </span>
@@ -10166,6 +10206,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;is_incomplete
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.stored_entity.StoredEntity.is_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;is_proxy
       </span>
     </span>
   </a>
@@ -14565,6 +14616,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
         <span class="s2">"updatedBy"</span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_core.entity_documents._KEYWORD">_KEYWORD</span></span><span class="p">,</span>
         <span class="s2">"version"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"long"</span><span class="p">},</span>
         <span class="s2">"isIncomplete"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"boolean"</span><span class="p">},</span>
+        <span class="s2">"isProxy"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"boolean"</span><span class="p">},</span>
         <span class="s2">"provenanceType"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">},</span>
         <span class="s2">"homeId"</span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_core.entity_documents._KEYWORD">_KEYWORD</span></span><span class="p">,</span>
         <span class="s2">"labels"</span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_core.entity_documents._KEYWORD">_KEYWORD</span></span><span class="p">,</span>
@@ -16624,7 +16676,7 @@ state, times, users, version and the attribute values, here under their qualifie
             <b><code><a class="autorefs autorefs-internal" title="            to_entity (aurelius_atlas_core.stored_entity.StoredEntity.to_entity)" href="./#aurelius_atlas_core.stored_entity.StoredEntity.to_entity">to_entity</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The entity with its system properties and attribute values by attribute name (2.3 adds the rest).</p>
+              <p>The entity with its system properties and the stored attribute values by attribute name (ERD-03).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -16740,6 +16792,20 @@ state, times, users, version and the attribute values, here under their qualifie
       instance-attribute
    (aurelius_atlas_core.stored_entity.StoredEntity.is_incomplete)" href="./#aurelius_atlas_core.stored_entity.StoredEntity.is_incomplete">is_incomplete</a></code></b>
               (<code><span title="bool">bool</span></code>)
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            is_proxy
+
+
+  
+      class-attribute
+      instance-attribute
+   (aurelius_atlas_core.stored_entity.StoredEntity.is_proxy)" href="./#aurelius_atlas_core.stored_entity.StoredEntity.is_proxy">is_proxy</a></code></b>
+              (<code><span title="bool">bool</span> | None</code>)
           –
           <div class="doc-md-description">
             
@@ -17047,6 +17113,29 @@ state, times, users, version and the attribute values, here under their qualifie
 
 
 
+<h4 id="aurelius_atlas_core.stored_entity.StoredEntity.is_proxy" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">is_proxy</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.stored_entity.StoredEntity.is_proxy" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">is_proxy</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h4 id="aurelius_atlas_core.stored_entity.StoredEntity.labels" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">labels</span>
 
@@ -17300,7 +17389,9 @@ state, times, users, version and the attribute values, here under their qualifie
 
     <div class="doc doc-contents ">
 
-        <p>The entity with its system properties and attribute values by attribute name (2.3 adds the rest).</p>
+        <p>The entity with its system properties and the stored attribute values by attribute name (ERD-03).</p>
+<p><code>labels</code> is a list even when empty, as Java's <code>getLabels</code> returns a set; <code>EntityRetriever</code> reads the
+attribute values as Atlas answers them.</p>
 
 
     </div>

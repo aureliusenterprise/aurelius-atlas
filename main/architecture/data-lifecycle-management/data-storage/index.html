@@ -3638,6 +3638,8 @@
       
         
       
+        
+      
     
     
     
@@ -4138,6 +4140,33 @@
     
   
   2.2 Entity store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/2-3-entity-read-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.3 Entity read REST
 
     
   </span>
@@ -6219,7 +6248,10 @@ searching over catalogue entries arrives with search in increment 4.1.</p>
 <p>Every catalogue entry (an entity of any type) is <strong>one record, found by its identifier</strong>: a random UUID, as
 Atlas's clients already know it (<a href="../../conversion/design-log/#dd-044-a-guid-is-a-random-uuid">DD-044</a>). A read
 by identifier always sees the last write; nothing waits for the search index to catch up (<a href="../../conversion/design-log/#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names">DD-043</a>).
-Attribute values are kept with their exact digits and become searchable when search arrives (4.1).</p>
+Attribute values are kept with their exact digits and become searchable when search arrives (4.1).
+A value that is a structure is kept inside its entry; a link to another entry is kept as that entry's
+identifier, so a renamed entry is never shown under its old name
+(<a href="../../conversion/design-log/#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid">DD-049</a>).</p>
 <p>The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:</p>
 <ul>
 <li><strong>A unique value is held once per type.</strong> Two entries of one type cannot share a <code>qualifiedName</code>, even when

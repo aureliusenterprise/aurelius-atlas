@@ -4141,6 +4141,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-049. Attribute values are stored normalised; a struct inline, a reference as a GUID
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-050-relationship-attributes-read-empty-until-relationships-are-stored" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-050. Relationship attributes read empty until relationships are stored
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-051. Entity reads are tested on entities written through the store until 2.4
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4220,6 +4253,8 @@
       
         
           
+        
+      
         
       
         
@@ -4756,6 +4791,33 @@
     
   
   2.2 Entity store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-3-entity-read-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.3 Entity read REST
 
     
   </span>
@@ -7122,6 +7184,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-049. Attribute values are stored normalised; a struct inline, a reference as a GUID
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-050-relationship-attributes-read-empty-until-relationships-are-stored" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-050. Relationship attributes read empty until relationships are stored
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-051. Entity reads are tested on entities written through the store until 2.4
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7580,6 +7675,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it">DD-048</a></td>
 <td>A type is in use while the entity index holds one of it</td>
 <td>2.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid">DD-049</a></td>
+<td>Attribute values are stored normalised; a struct inline, a reference as a GUID</td>
+<td>2.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-050-relationship-attributes-read-empty-until-relationships-are-stored">DD-050</a></td>
+<td>Relationship attributes read empty until relationships are stored</td>
+<td>2.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24">DD-051</a></td>
+<td>Entity reads are tested on entities written through the store until 2.4</td>
+<td>2.3</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -8478,6 +8591,63 @@ Classification and relationship types join the check when their instances are st
 is rare, so the refresh's cost does not matter.</p>
 <p><strong>Alternatives.</strong> Keeping a counter per type: one more document to update atomically with every write.</p>
 <p><strong>Consequences.</strong> Until 3.1 and 3.3, a classification or relationship type is never in use.</p>
+<h3 id="dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid">DD-049. Attribute values are stored normalised; a struct inline, a reference as a GUID<a class="headerlink" href="#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.3</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> An entity document holds each attribute value as its attribute's type normalises it
+(<code>getNormalizedValue</code>), in the codec's JSON (DD-039): a date as epoch milliseconds, an enum as its value's
+name, numbers with their digits. A struct value is held inline as <code>{"typeName": …, "attributes": {…}}</code>, its
+attributes by name and normalised the same way. A reference to an entity, whether an <code>objectid</code> attribute, an
+element of an array or a value of a map, is held as the referenced entity's GUID; a soft reference
+(<code>isSoftReference</code>) is held as Atlas holds it, <code>typeName:guid</code>. Reading an entity gets the entities its
+attributes refer to by GUID, in one request, to build their object ids and owned entities; a GUID that finds
+no entity reads as nothing, as an edge to a removed vertex does.</p>
+<p><strong>Reason.</strong> Atlas keeps a struct in a vertex of its own and a reference as an edge; Elasticsearch has
+neither, and one document per entity is what DD-043 decided. A struct belongs to its entity alone, so it
+stays inside it. A reference's GUID never changes, where the referenced entity's unique attributes and
+type may, so the GUID is the only stable thing to store; everything else the object id shows is read from
+the referenced entity, as <code>toAtlasObjectId</code> reads it from the vertex.</p>
+<p><strong>Alternatives.</strong> Storing the object id with its unique attributes: stale once the referenced entity
+changes. Structs as documents of their own: a second read per struct, and nothing ever refers to one.</p>
+<p><strong>Consequences.</strong> 2.4 writes values in this form, resolving every object id it is given, by GUID or by
+unique attributes, to a GUID first. A reference read needs a second <code>mget</code> per nesting level of owned
+entities. 3.1 decides how relationship attributes are stored; references that are also relationship ends
+(legacy attributes) move there then.</p>
+<h3 id="dd-050-relationship-attributes-read-empty-until-relationships-are-stored">DD-050. Relationship attributes read empty until relationships are stored<a class="headerlink" href="#dd-050-relationship-attributes-read-empty-until-relationships-are-stored" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.3</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> Until 3.1 stores relationships, an entity reads as Atlas reads one without relationship
+edges: <code>relationshipAttributes</code> names every relationship attribute of its type, null for a <code>SINGLE</code> end and
+<code>[]</code> for a <code>LIST</code> or <code>SET</code> end, the end chosen as Atlas chooses it without edges (the attribute's first
+relationship type). <code>ignoreRelationships=true</code> leaves <code>relationshipAttributes</code> out.</p>
+<p><strong>Reason.</strong> The keys and the empty values are what Atlas answers for an entity no relationship has reached
+yet; answering them now keeps the response's shape, and 3.1 only fills values in.</p>
+<p><strong>Alternatives.</strong> Leaving <code>relationshipAttributes</code> out until 3.1: a different shape for every entity, which
+clients that read the keys would notice.</p>
+<p><strong>Consequences.</strong> Until 3.1, a reference given as a legacy relationship attribute (DD-049) reads in
+<code>attributes</code> but not in <code>relationshipAttributes</code> (DV-18).</p>
+<h3 id="dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24">DD-051. Entity reads are tested on entities written through the store until 2.4<a class="headerlink" href="#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 2.3</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> 2.3's HTTP tests write the entities they read through <code>EntityStore</code> (2.2), in the stored form
+of DD-049, and check every read rule on them. Its parity scenarios cover what needs no entity: unknown GUIDs
+and types, invalid and missing unique attributes, values that find nothing. 2.4 adds scenarios that create
+entities over REST and read them back.</p>
+<p><strong>Reason.</strong> A parity scenario only reaches the server over REST, and entities can be created over REST from
+2.4 on. Seeding through the store tests the read path now without porting the write path early.</p>
+<p><strong>Alternatives.</strong> Merging 2.3 into 2.4: one pull request far above the size limit. Moving 2.4 before 2.3:
+a write increment whose responses could not be read back.</p>
+<p><strong>Consequences.</strong> Until 2.4, the stored form the tests write is checked against Atlas's responses only by
+the expectations read from the Java source; 2.4's scenarios check both directions.</p>
 
 
 

@@ -3652,6 +3652,8 @@
       
         
       
+        
+      
     
     
     
@@ -4152,6 +4154,33 @@
     
   
   2.2 Entity store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-3-entity-read-rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.3 Entity read REST
 
     
   </span>
@@ -6228,6 +6257,30 @@ Atlas clients expect when it lands).</p>
 <td>A reader may see part of a multi-entity write while its bulk request runs; the outcome is all or nothing</td>
 <td>Elasticsearch has no multi-document transactions (ADR 047, DD-046)</td>
 <td>2.2</td>
+</tr>
+<tr>
+<td>DV-17</td>
+<td>Entities</td>
+<td>A read by unique attributes given only a unique system attribute (<code>attr:__guid</code>) answers an arbitrary <code>ACTIVE</code> entity of the type</td>
+<td>Fails with <code>INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND</code></td>
+<td>Atlas's lookup drops attributes the type does not hold as unique properties and then queries by type alone, an accident of <code>findByUniqueAttributes</code></td>
+<td>2.3</td>
+</tr>
+<tr>
+<td>DV-18</td>
+<td>Entities</td>
+<td>A reference that is also a relationship end reads in <code>relationshipAttributes</code> as well as in <code>attributes</code></td>
+<td>Until 3.1, <code>relationshipAttributes</code> holds null or <code>[]</code> for it</td>
+<td>Relationships are stored from 3.1 (DD-050)</td>
+<td>2.3</td>
+</tr>
+<tr>
+<td>DV-19</td>
+<td>Entities</td>
+<td><code>bulk/uniqueAttribute</code> answers its entities in the hash order of the <code>attr_&lt;n&gt;</code> indices</td>
+<td>In the order the indices first appear in the query</td>
+<td>Java's order is that of a <code>HashMap</code>, which no client can rely on</td>
+<td>2.3</td>
 </tr>
 </tbody>
 </table>

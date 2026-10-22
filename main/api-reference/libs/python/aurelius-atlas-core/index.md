@@ -852,6 +852,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "updatedBy": _KEYWORD,
         "version": {"type": "long"},
         "isIncomplete": {"type": "boolean"},
+        "isProxy": {"type": "boolean"},
         "provenanceType": {"type": "integer"},
         "homeId": _KEYWORD,
         "labels": _KEYWORD,
@@ -1357,7 +1358,7 @@ Methods:
   A new entity as stored (`createVertexWithGuid`): `ACTIVE`, both times `now`, `version` its own.
 - **`to_entity`** –
 
-  The entity with its system properties and attribute values by attribute name (2.3 adds the rest).
+  The entity with its system properties and the stored attribute values by attribute name (ERD-03).
 - **`touched`** –
 
   This entity, changed at `now` by `user` (`updateModificationMetadata`).
@@ -1374,6 +1375,7 @@ Attributes:
 - **`guid`** (`str`) –
 - **`home_id`** (`str | None`) –
 - **`is_incomplete`** (`bool`) –
+- **`is_proxy`** (`bool | None`) –
 - **`labels`** (`list[str] | None`) –
 - **`provenance_type`** (`int`) –
 - **`state`** (`EntityStatus`) –
@@ -1424,6 +1426,12 @@ home_id: str | None = None
 
 ```
 is_incomplete: bool = False
+```
+
+#### is\_proxy
+
+```
+is_proxy: bool | None = None
 ```
 
 #### labels
@@ -1496,7 +1504,9 @@ Attributes the type does not have are left out; the others are stored under thei
 to_entity(entity_type: EntityType) -> AtlasEntity
 ```
 
-The entity with its system properties and attribute values by attribute name (2.3 adds the rest).
+The entity with its system properties and the stored attribute values by attribute name (ERD-03).
+
+`labels` is a list even when empty, as Java's `getLabels` returns a set; `EntityRetriever` reads the attribute values as Atlas answers them.
 
 #### touched
 
