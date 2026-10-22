@@ -167,6 +167,7 @@ nav:
                 - 051. The conversion proceeds in specified increments: architecture/adr/051-the-conversion-proceeds-in-specified-increments.md
                 - 052. Behaviour is specified by scenarios read from the reference source: architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md
                 - 053. The webapp is rewritten in Angular idiom, slice by slice: architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice.md
+                - 054. The server API is the webapp's one data plane: architecture/adr/054-the-server-api-is-the-webapps-one-data-plane.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md
@@ -192,6 +193,7 @@ nav:
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md
                       - 7.3 API client and auth wiring: architecture/conversion/increments/7-3-api-client-auth.md
                       - 7.5 Landing page (browse): architecture/conversion/increments/7-5-browse-landing.md
+                      - 7.6 Entity details: architecture/conversion/increments/7-6-entity-details.md
                       - 7.11 Shell chrome: architecture/conversion/increments/7-11-shell-chrome.md
                       - 7.12 Theme, branding and layout: architecture/conversion/increments/7-12-theme-branding-layout.md
                       - 7.13 UI components (details set): architecture/conversion/increments/7-13-ui-components-details.md

@@ -497,3 +497,34 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
         assert footer.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(0, 115, 221)"
     finally:
         context.close()
+
+
+def test__details_skeleton_renders_at_the_deep_link(authenticated: Page, root_url: str) -> None:
+    """A direct visit to /search/details/<guid> renders the skeleton, localized (DET-07, DET-01).
+
+    The URL is the screen's whole state (DD-096): the skeleton renders at
+    the deep link with no entity behind it — server 2.3 is planned — and
+    the chrome strings ride the bridge in both locales (DET-04).
+    """
+    api_requests: list[str] = []
+    authenticated.on("request", lambda request: api_requests.append(request.url))
+
+    authenticated.goto(urljoin(root_url, "/en-US/search/details/7a1b-2c3d"))
+
+    expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entity type")
+    expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Description")
+    expect(authenticated.locator(".aurelius-details-nav .menu-label")).to_have_text("Details")
+    expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Key")
+    expect(authenticated.locator(".aurelius-details-properties tbody tr")).to_have_count(0)
+
+    # The skeleton fetches nothing (DET-02): the entity endpoint is 2.3's.
+    assert [url for url in api_requests if "/api/" in url] == []
+
+
+def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: str) -> None:
+    """The nl-NL locale renders the Dutch details chrome through the bridge (DET-04, DET-07)."""
+    authenticated.goto(urljoin(root_url, "/nl-NL/search/details/7a1b-2c3d"))
+
+    expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entiteit type")
+    expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Beschrijving")
+    expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Sleutel")
