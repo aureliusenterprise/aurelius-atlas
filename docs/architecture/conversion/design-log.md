@@ -34,59 +34,63 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 
 ## Log
 
-| #                                                                                                 | Decision                                                                        | Increment | Status   |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------- | -------- |
-| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)                    | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged       | 0.1       | Accepted |
-| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                      | Atlas code lives in `aurelius-atlas-*` projects split by layer                  | 0.1       | Accepted |
-| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                      | All template projects carry the `aurelius-atlas-` prefix                        | 0.1       | Accepted |
-| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                         | The SPA keeps tokens in memory and renews them silently                         | 0.1       | Accepted |
-| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                          | The store uses the official async Elasticsearch client, one per store           | 0.2       | Proposed |
-| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                        | Development and tests run Elasticsearch with TLS and authentication on          | 0.2       | Proposed |
-| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)                     | The Elasticsearch test fixture ships with the store library                     | 0.2       | Proposed |
-| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                                     | A yellow cluster is healthy                                                     | 0.2       | Proposed |
-| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)              | Traceability is checked from collected markers, not from a test run             | 0.3       | Proposed |
-| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)                   | The traceability check covers Atlas code from increment 0.2 on                  | 0.3       | Proposed |
-| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)                | The test report is generated from JUnit, coverage and trace files               | 0.3       | Proposed |
-| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)                | Parity scenarios are YAML files run as parametrised pytest tests                | 0.4       | Proposed |
-| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)                | A scenario response is compared exactly, except at declared paths               | 0.4       | Proposed |
-| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                              | Scenario facts reach the report as test properties                              | 0.4       | Proposed |
-| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)          | The server is a FastAPI application with one router per Atlas resource          | 0.5       | Proposed |
-| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                                     | The server does not start without its store                                     | 0.5       | Proposed |
-| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)       | The dashboards are vendored unchanged and built with dart-sass on Node 24       | 0.6       | Proposed |
-| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                           | The server serves the dashboards from the API's origin                          | 0.6       | Proposed |
-| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                               | The template examples stay until the plan is done                               | 0.6       | Proposed |
-| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)              | Typedef models are Pydantic models that read and write Atlas's JSON             | 1.1       | Proposed |
-| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                       | Set-valued fields keep each name once, in first-seen order                      | 1.1       | Proposed |
-| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)            | Typedef timestamps are aware datetimes, written as epoch milliseconds           | 1.1       | Proposed |
-| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                          | Atlas errors live in the model library                                          | 1.2       | Proposed |
-| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)             | The registry is updated on a transient copy under a re-entrant lock             | 1.2       | Proposed |
-| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                                  | The type system ports the definition side only                                  | 1.2       | Proposed |
-| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)                 | Dynamic attributes and search lookups wait for their increments                 | 1.3       | Proposed |
-| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                         | Derived type sets keep first-seen order                                         | 1.3       | Proposed |
-| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                             | The type definitions are one Elasticsearch document                             | 1.4       | Proposed |
-| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version)       | Server processes share the type definitions through the document's version      | 1.4       | Proposed |
-| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                        | The store asks the entity store whether a type is in use                        | 1.4       | Proposed |
-| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                                  | The patch records live in the typedef document                                  | 1.5       | Proposed |
-| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)            | The built-in models are vendored unchanged and read from a directory            | 1.5       | Proposed |
-| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)                     | Start-up loading is one change per model file and per patch                     | 1.5       | Proposed |
-| [DD-034](#dd-034-lists-of-type-definitions-are-sorted-by-name)                                    | Lists of type definitions are sorted by name                                    | 1.6       | Proposed |
-| [DD-035](#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end)                 | Type scenarios create what they read and delete it at their end                 | 1.6       | Proposed |
-| [DD-036](#dd-036-start-up-loading-tries-a-raced-change-again)                                     | Start-up loading tries a raced change again                                     | 1.6       | Proposed |
-| [DD-037](#dd-037-instance-models-are-one-module-per-java-class)                                   | Instance models are one module per Java class                                   | 2.1       | Proposed |
-| [DD-038](#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them)             | Attribute values stay plain JSON values until their types read them             | 2.1       | Proposed |
-| [DD-039](#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits) | One Atlas JSON codec reads floats as decimals and writes them with their digits | 2.1       | Proposed |
-| [DD-040](#dd-040-java-values-are-held-as-the-python-values-closest-to-them)                       | Java values are held as the Python values closest to them                       | 2.1       | Proposed |
-| [DD-041](#dd-041-the-type-system-is-one-module-per-java-type-class-too)                           | The type system is one module per Java type class too                           | 2.1       | Proposed |
-| [DD-042](#dd-042-a-validity-period-without-a-time-zone-is-in-utc)                                 | A validity period without a time zone is in UTC                                 | 2.1       | Proposed |
-| [DD-043](#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names)      | Entities are documents of one index, their attributes under qualified names     | 2.2       | Proposed |
-| [DD-044](#dd-044-a-guid-is-a-random-uuid)                                                         | A GUID is a random UUID                                                         | 2.2       | Proposed |
-| [DD-045](#dd-045-unique-values-are-reserved-by-create-only-documents)                             | Unique values are reserved by create-only documents                             | 2.2       | Proposed |
-| [DD-046](#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal)                        | A multi-entity write is all or nothing, through a journal                       | 2.2       | Proposed |
-| [DD-047](#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version)               | Entities are written conditionally on their Elasticsearch version               | 2.2       | Proposed |
-| [DD-048](#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it)                         | A type is in use while the entity index holds one of it                         | 2.2       | Proposed |
-| [DD-049](#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)    | Attribute values are stored normalised; a struct inline, a reference as a GUID  | 2.3       | Proposed |
-| [DD-050](#dd-050-relationship-attributes-read-empty-until-relationships-are-stored)               | Relationship attributes read empty until relationships are stored               | 2.3       | Proposed |
-| [DD-051](#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24)          | Entity reads are tested on entities written through the store until 2.4         | 2.3       | Proposed |
+| #                                                                                                          | Decision                                                                                   | Increment | Status   |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------- | -------- |
+| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)                             | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged                  | 0.1       | Accepted |
+| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                               | Atlas code lives in `aurelius-atlas-*` projects split by layer                             | 0.1       | Accepted |
+| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                               | All template projects carry the `aurelius-atlas-` prefix                                   | 0.1       | Accepted |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                                  | The SPA keeps tokens in memory and renews them silently                                    | 0.1       | Accepted |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                                   | The store uses the official async Elasticsearch client, one per store                      | 0.2       | Proposed |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                                 | Development and tests run Elasticsearch with TLS and authentication on                     | 0.2       | Proposed |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)                              | The Elasticsearch test fixture ships with the store library                                | 0.2       | Proposed |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                                              | A yellow cluster is healthy                                                                | 0.2       | Proposed |
+| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)                       | Traceability is checked from collected markers, not from a test run                        | 0.3       | Proposed |
+| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)                            | The traceability check covers Atlas code from increment 0.2 on                             | 0.3       | Proposed |
+| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)                         | The test report is generated from JUnit, coverage and trace files                          | 0.3       | Proposed |
+| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)                         | Parity scenarios are YAML files run as parametrised pytest tests                           | 0.4       | Proposed |
+| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)                         | A scenario response is compared exactly, except at declared paths                          | 0.4       | Proposed |
+| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                                       | Scenario facts reach the report as test properties                                         | 0.4       | Proposed |
+| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)                   | The server is a FastAPI application with one router per Atlas resource                     | 0.5       | Proposed |
+| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                                              | The server does not start without its store                                                | 0.5       | Proposed |
+| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)                | The dashboards are vendored unchanged and built with dart-sass on Node 24                  | 0.6       | Proposed |
+| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                                    | The server serves the dashboards from the API's origin                                     | 0.6       | Proposed |
+| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                                        | The template examples stay until the plan is done                                          | 0.6       | Proposed |
+| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)                       | Typedef models are Pydantic models that read and write Atlas's JSON                        | 1.1       | Proposed |
+| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                                | Set-valued fields keep each name once, in first-seen order                                 | 1.1       | Proposed |
+| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)                     | Typedef timestamps are aware datetimes, written as epoch milliseconds                      | 1.1       | Proposed |
+| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                                   | Atlas errors live in the model library                                                     | 1.2       | Proposed |
+| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)                      | The registry is updated on a transient copy under a re-entrant lock                        | 1.2       | Proposed |
+| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                                           | The type system ports the definition side only                                             | 1.2       | Proposed |
+| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)                          | Dynamic attributes and search lookups wait for their increments                            | 1.3       | Proposed |
+| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                                  | Derived type sets keep first-seen order                                                    | 1.3       | Proposed |
+| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                                      | The type definitions are one Elasticsearch document                                        | 1.4       | Proposed |
+| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version)                | Server processes share the type definitions through the document's version                 | 1.4       | Proposed |
+| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                                 | The store asks the entity store whether a type is in use                                   | 1.4       | Proposed |
+| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                                           | The patch records live in the typedef document                                             | 1.5       | Proposed |
+| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)                     | The built-in models are vendored unchanged and read from a directory                       | 1.5       | Proposed |
+| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)                              | Start-up loading is one change per model file and per patch                                | 1.5       | Proposed |
+| [DD-034](#dd-034-lists-of-type-definitions-are-sorted-by-name)                                             | Lists of type definitions are sorted by name                                               | 1.6       | Proposed |
+| [DD-035](#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end)                          | Type scenarios create what they read and delete it at their end                            | 1.6       | Proposed |
+| [DD-036](#dd-036-start-up-loading-tries-a-raced-change-again)                                              | Start-up loading tries a raced change again                                                | 1.6       | Proposed |
+| [DD-037](#dd-037-instance-models-are-one-module-per-java-class)                                            | Instance models are one module per Java class                                              | 2.1       | Proposed |
+| [DD-038](#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them)                      | Attribute values stay plain JSON values until their types read them                        | 2.1       | Proposed |
+| [DD-039](#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits)          | One Atlas JSON codec reads floats as decimals and writes them with their digits            | 2.1       | Proposed |
+| [DD-040](#dd-040-java-values-are-held-as-the-python-values-closest-to-them)                                | Java values are held as the Python values closest to them                                  | 2.1       | Proposed |
+| [DD-041](#dd-041-the-type-system-is-one-module-per-java-type-class-too)                                    | The type system is one module per Java type class too                                      | 2.1       | Proposed |
+| [DD-042](#dd-042-a-validity-period-without-a-time-zone-is-in-utc)                                          | A validity period without a time zone is in UTC                                            | 2.1       | Proposed |
+| [DD-043](#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names)               | Entities are documents of one index, their attributes under qualified names                | 2.2       | Proposed |
+| [DD-044](#dd-044-a-guid-is-a-random-uuid)                                                                  | A GUID is a random UUID                                                                    | 2.2       | Proposed |
+| [DD-045](#dd-045-unique-values-are-reserved-by-create-only-documents)                                      | Unique values are reserved by create-only documents                                        | 2.2       | Proposed |
+| [DD-046](#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal)                                 | A multi-entity write is all or nothing, through a journal                                  | 2.2       | Proposed |
+| [DD-047](#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version)                        | Entities are written conditionally on their Elasticsearch version                          | 2.2       | Proposed |
+| [DD-048](#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it)                                  | A type is in use while the entity index holds one of it                                    | 2.2       | Proposed |
+| [DD-049](#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)             | Attribute values are stored normalised; a struct inline, a reference as a GUID             | 2.3       | Proposed |
+| [DD-050](#dd-050-relationship-attributes-read-empty-until-relationships-are-stored)                        | Relationship attributes read empty until relationships are stored                          | 2.3       | Proposed |
+| [DD-051](#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24)                   | Entity reads are tested on entities written through the store until 2.4                    | 2.3       | Proposed |
+| [DD-052](#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again)                 | A request is mapped in memory and written once; a lost race runs it again                  | 2.4       | Proposed |
+| [DD-053](#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31) | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1 | 2.4       | Proposed |
+| [DD-054](#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order)                          | Dynamic attributes are evaluated in first-seen dependency order                            | 2.4       | Proposed |
+| [DD-055](#dd-055-scenarios-name-what-they-create-with-a-per-run-value)                                     | Scenarios name what they create with a per-run value                                       | 2.4       | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -1242,3 +1246,86 @@ a write increment whose responses could not be read back.
 
 **Consequences.** Until 2.4, the stored form the tests write is checked against Atlas's responses only by
 the expectations read from the Java source; 2.4's scenarios check both directions.
+
+### DD-052. A request is mapped in memory and written once; a lost race runs it again
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** `EntityWriter` reads every stored entity a create or update request names, discovers and
+resolves its references, and maps its entities to their new stored form in memory, together with the
+entities EWR-12 touches. The response's headers are built from that form. The result is one
+`EntityStore.write` (ENS-07), each changed entity conditional on the version it was read in (ENS-08). When
+the write loses a race, the whole request is read, mapped and written again, once; a second loss, or a unique
+value another entity holds, is answered with `INTERNAL_ERROR` naming the cause (DV-20).
+
+**Reason.** Atlas maps a request onto vertices inside one graph transaction and commits at the end; mapping
+onto documents in memory and writing them in one all-or-nothing write is the same shape on Elasticsearch
+(DD-046). Running the request again on the newer state is what a client would do, as DD-029 does for types.
+
+**Alternatives.** Writing each entity as it is mapped: a failure part-way would leave a half-written request
+for recovery to undo, and headers would be read from the index. Answering a lost race with an error at once:
+two clients updating different attributes of an entity would fail where Atlas, serialising them, succeeds.
+
+**Consequences.** A request's memory grows with its entities, as Atlas's transaction does. A unique value
+clash is no `400`: Atlas resolves an entity by its unique values before writing, so a clash needs an update
+that moves a value onto another entity, or two new entities with the same value in one request.
+
+### DD-053. Relationship attribute values are resolved, but stored only as legacy attributes until 3.1
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** Until 3.1 stores relationships, a relationship attribute's value in a write is discovered,
+resolved, checked and normalised as Atlas does, so its errors are Atlas's. It is stored only when the entity's
+type has an attribute of the same name (a legacy relationship end, such as `hive_table.db`), as that
+attribute's value (DD-049); a relationship attribute without such an attribute is not stored (DV-22).
+
+**Reason.** A legacy end is read from `attributes` (DD-050, DV-18); storing it there keeps what clients
+write readable. Storing other relationship values needs relationship instances, their GUIDs and both ends,
+which is 3.1's.
+
+**Alternatives.** Rejecting relationship attributes until 3.1: requests Atlas accepts, such as the hook
+models', would fail. Storing them as plain references on one end: 3.1 would have to migrate them.
+
+**Consequences.** 3.1 replaces this: relationship values become relationships, and the legacy attributes'
+values move to them.
+
+### DD-054. Dynamic attributes are evaluated in first-seen dependency order
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** An entity type's dynamic attributes are ordered by a depth-first topological sort over their
+templates, visiting them in the order their `dynAttribute:` options appear, so that an attribute another
+template names is evaluated first.
+
+**Reason.** Java sorts the same graph but starts from the keys of a `HashMap`; where the dependencies leave
+the order open, first-seen order is stable, as DD-027 chooses for derived type sets.
+
+**Alternatives.** Sorting by name: stable too, but unrelated to the definition.
+
+**Consequences.** Independent dynamic attributes may be evaluated in another order than Atlas's; their values
+do not depend on it.
+
+### DD-055. Scenarios name what they create with a per-run value
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** The parity harness provides `{run}`, a value unique to each run of a scenario, in letters and
+digits, before any stage has saved a value. Entity scenarios name their types and entities with it, and
+leave them in the store until 2.5 lets them delete what they created (DD-035).
+
+**Reason.** The dev store keeps its contents between runs. A scenario that creates an entity again on a
+second run would find it, update it and get a different answer; a type in use cannot be deleted.
+
+**Alternatives.** Deleting the entity index before scenarios: other tests and a developer's data share the
+dev store. Waiting for 2.5: 2.4's writes would have no parity check (DD-051).
+
+**Consequences.** Each run of the entity scenarios leaves a few types and entities in the dev store until
+2.5; CI starts from an empty store.
