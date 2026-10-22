@@ -1,7 +1,7 @@
 # 7.6 Entity details
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#109](<https://github.com/aureliusenterprise/aurelius-atlas/pull/109>)
 - **Records:** DD-096 (details skeleton: route contract, gated data), DD-097 (the entity client grows with server 2.3), DD-098 (one API base: the client's URLs all ride the `API_BASE_URL` token, ADR 054); relies on ADR 053, DD-051, DD-054, UIC-11..13 (7.13), WBP rules (7.0)
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
