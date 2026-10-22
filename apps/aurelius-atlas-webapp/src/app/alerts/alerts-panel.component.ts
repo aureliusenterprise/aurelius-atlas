@@ -76,11 +76,6 @@ export class AlertsPanel {
         );
     }
 
-    /** The show-all control (ALR-11): every severity visible again. */
-    protected showAll(): void {
-        this.hidden.set([]);
-    }
-
     /** The drawer's accessible title (SPL-02's pattern). Strings bound into inputs use `$localize` (BRW-02). */
     protected readonly title = $localize`:@@shell.alerts.title:Alerts`;
 
@@ -107,9 +102,6 @@ export class AlertsPanel {
 
     /** The label on the unread markers (ALR-12). */
     protected readonly unreadLabel = $localize`:@@shell.alerts.unread:Unread`;
-
-    /** The control that shows every severity again (ALR-11). */
-    protected readonly showAllLabel = $localize`:@@shell.alerts.showAll:Show all`;
 
     /** The inbox chips' severity labels (ALR-11). */
     protected readonly severityLabels: Record<AlertSeverity, string> = {

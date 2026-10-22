@@ -127,33 +127,32 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(severities).toEqual(["warning"]);
     });
 
-    it("shows the show-all control only when every severity is hidden (ALR-11)", () => {
+    it("keeps the bar whole when every severity is hidden (ALR-11, DD-095)", () => {
         fixture.componentRef.setInput("alerts", feed());
         fixture.detectChanges();
+
+        // No show-all control (DD-095): appearing at full filtering,
+        // it inserted a fourth expanded segment and the chips jumped
+        // narrower — jarring on every toggle to the fully-hidden
+        // state. The way back is a chip, which stays clickable while
+        // hidden (only a void chip is disabled, DD-094).
+        fixture.componentRef.setInput("hidden", ["error", "warning", "info"]);
+        fixture.detectChanges();
+
         expect(fixture.nativeElement.querySelector(".aurelius-alert-inbox-show-all")).toBeNull();
-
-        fixture.componentRef.setInput("hidden", ["error", "warning", "info"]);
-        fixture.detectChanges();
-        const showAll = fixture.nativeElement.querySelector(".aurelius-alert-inbox-show-all") as HTMLButtonElement;
-        expect(showAll.textContent.trim()).toBe("Show all");
-
-        const calls: number[] = [];
-        fixture.componentInstance.showAll.subscribe(() => calls.push(1));
-        showAll.click();
-        expect(calls).toEqual([1]);
-    });
-
-    it("joins show-all and the projected action into the addons group (DD-092)", () => {
-        fixture.componentRef.setInput("alerts", feed());
-        fixture.componentRef.setInput("hidden", ["error", "warning", "info"]);
-        fixture.detectChanges();
-
-        // One joined bar: every segment is an expanded member of the
-        // same `buttons has-addons` group.
+        // The chips stay the group's only buttons, each expanded:
+        // three segments before, during, and after full filtering.
         const group = fixture.nativeElement.querySelector(".aurelius-alert-inbox-group");
-        const showAll = group.querySelector(".aurelius-alert-inbox-show-all");
-        expect(showAll.classList.contains("is-expanded")).toBe(true);
-        expect(showAll.parentElement).toBe(group);
+        const buttons = group.querySelectorAll("button");
+        expect(buttons).toHaveLength(3);
+        expect([...buttons].every((b) => b.classList.contains("is-expanded"))).toBe(true);
+        // A fully-hidden chip is unpressed and inert-looking, but the
+        // browser keeps it enabled: its click is the way back on.
+        expect(chips().every((c) => c.disabled)).toBe(false);
+        const severities: string[] = [];
+        fixture.componentInstance.toggleSeverity.subscribe((s) => severities.push(s));
+        chips()[0].click();
+        expect(severities).toEqual(["info"]);
     });
 
     it("uses the caller's labels (ALR-08)", () => {
@@ -217,7 +216,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         fixture.detectChanges();
 
         // Bulma's `.tag` is a 2em control — at the small button's font
-        // it stretched the chips above Show all and Clear all (the
+        // it stretched the chips above the projected action (the
         // joined bar stepped). The badge is compacted to the button's
         // scale, so every group member computes to the plain small
         // button's height (the bar's equal height is the group's

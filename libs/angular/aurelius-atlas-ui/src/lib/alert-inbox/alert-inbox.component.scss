@@ -2,9 +2,9 @@
  * The inbox bar (ALR-11): the chips ride Bulma's `buttons has-addons`
  * group — the joined shape comes from Bulma, this sheet carries the
  * full-width row, the severity fills, the count tag, and the unread dot.
- * Show all and the projected Clear all are members of the same group,
- * `is-expanded` like the chips, so the strip reads as one joined bar of
- * equal segments (DD-090, DD-092).
+ * The projected Clear all is a member of the same group, `is-expanded`
+ * like the chips, so the strip reads as one joined bar of equal
+ * segments (DD-090, DD-092).
  *
  * A pressed chip rides its severity's colour (DD-092): the fills are
  * DD-063's pinned ramp, fixed in both schemes like the badge's dot
@@ -68,7 +68,7 @@
  * The count badge is the chip's only content taller than the button's
  * own content box, and Bulma's `.tag` is a 2em-tall control: at the
  * small button's font that is 1.5rem over a 1.125rem line — the badge
- * stretched the chips a step above Show all and Clear all (measured
+ * stretched the chips a step above the projected action (measured
  * live, DD-093). Compacted to the button's scale — line-height 1,
  * hairline vertical padding, under the 1.125rem line — every member of
  * the group computes to the plain small-button height, and the joined

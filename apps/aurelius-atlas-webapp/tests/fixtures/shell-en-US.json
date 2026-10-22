@@ -51,7 +51,6 @@
       "times": "\u00d7",
       "inbox": "Alert filters",
       "unread": "Unread",
-      "showAll": "Show all",
       "severity": {
         "error": "Errors",
         "warning": "Warnings",

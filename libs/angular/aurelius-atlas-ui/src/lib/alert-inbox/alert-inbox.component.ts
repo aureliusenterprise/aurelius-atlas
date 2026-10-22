@@ -7,9 +7,9 @@ import type { AlertGroup, AlertSeverity, AlertSeverityCount } from "../alert-lis
  * The inbox bar above the alert feed (ALR-11): a full-width Bulma
  * button group with one chip per severity, in inbox order — `info`,
  * `warning`, `error`, the ramp calm to urgent (DD-092) — each showing
- * how many groups of that severity the feed holds, beside the show-all
- * and the caller's clear-all action, every segment an expanded member
- * of the joined group (DD-090, DD-092). A chip toggles its severity in
+ * how many groups of that severity the feed holds, beside the caller's
+ * clear-all action, every segment an expanded member of the joined
+ * group (DD-090, DD-092). A chip toggles its severity in
  * the feed and rides that severity's pinned fill while shown (an
  * unpressed chip is plain, "off" needs no colour); it carries a dot
  * while that severity has unread groups (ALR-12), so the bar answers
@@ -24,9 +24,10 @@ import type { AlertGroup, AlertSeverity, AlertSeverityCount } from "../alert-lis
  * and takes no fill — there is nothing to show and nothing to toggle
  * (DD-094).
  *
- * With every severity hidden the chips are all "off"; the component
- * shows a `showAllLabel` control that turns them all back on. Labels
- * are caller inputs with English defaults (the {@link Drawer}'s
+ * With every severity hidden the chips are all "off" and the feed
+ * shows its empty state; there is no show-all control (DD-095) — the
+ * way back is a chip, which stays clickable while hidden. Labels are
+ * caller inputs with English defaults (the {@link Drawer}'s
  * `ariaLabel` pattern) — the lib keeps no translation dependency and
  * the XLIFF gate stays app-side (ALR-08).
  */
@@ -58,9 +59,6 @@ export class AlertInbox {
         info: "Info",
     });
 
-    /** The label of the control that un-hides every severity. */
-    readonly showAllLabel = input("Show all");
-
     /**
      * Accessible name of the bar (the button group's label). The caller
      * localises it.
@@ -75,9 +73,6 @@ export class AlertInbox {
 
     /** Emits the severity whose chip was clicked (ALR-11). */
     readonly toggleSeverity = output<AlertSeverity>();
-
-    /** Emits when the show-all control is clicked. */
-    readonly showAll = output<void>();
 
     /** The feed counted by severity — totals and unread, inbox order. */
     protected readonly counts = computed(() => countSeverities(this.alerts()));
@@ -104,15 +99,4 @@ export class AlertInbox {
     protected isVoid(count: AlertSeverityCount): boolean {
         return count.total === 0;
     }
-
-    /**
-     * Whether the filter hides the whole feed: every severity with groups
-     * is switched off (an empty severity's chip filters nothing, so it
-     * does not keep the escape hatch away). The show-all control shows
-     * only in this state, and only while some chip is off.
-     */
-    protected readonly allHidden = computed(
-        () =>
-            this.hidden().length > 0 && this.counts().every((c) => c.total === 0 || this.hidden().includes(c.severity)),
-    );
 }

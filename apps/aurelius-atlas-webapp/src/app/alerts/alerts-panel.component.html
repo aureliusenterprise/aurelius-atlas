@@ -25,9 +25,7 @@
             [severityLabels]="severityLabels"
             [ariaLabel]="inboxLabel"
             [unreadLabel]="unreadLabel"
-            [showAllLabel]="showAllLabel"
             (toggleSeverity)="toggleSeverity($event)"
-            (showAll)="showAll()"
         >
             <button type="button" class="button is-small is-expanded aurelius-alert-clear" (click)="alerts.clearAll()">
                 {{ clearLabel }}

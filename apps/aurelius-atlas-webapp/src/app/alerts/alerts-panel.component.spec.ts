@@ -130,10 +130,14 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         expect(counts.map((c) => c.textContent.trim())).toEqual(["1", "0", "1"]);
         expect(compiled.querySelector(".aurelius-alert-empty")).toBeTruthy(); // the feed is empty
 
-        // Every chip off: the show-all control appears (ALR-11).
-        const showAll = compiled.querySelector<HTMLButtonElement>(".aurelius-alert-inbox-show-all");
-        expect(showAll).toBeTruthy();
-        showAll?.click();
+        // Every chip off: no show-all control appears (DD-095 — it
+        // used to join the group and the chips jumped narrower); the
+        // way back is a chip, and clicking it shows the rows again.
+        expect(compiled.querySelector(".aurelius-alert-inbox-show-all")).toBeNull();
+        chips[0].click(); // info back on
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".notification")).toHaveLength(1);
+        chips[2].click(); // errors back on
         fixture.detectChanges();
         expect(compiled.querySelectorAll(".notification")).toHaveLength(2);
     });

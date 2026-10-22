@@ -2,9 +2,9 @@
     The inbox bar (ALR-11): a full-width Bulma button group —
     `buttons has-addons` joins every member, `is-expanded` stretches
     them to fill the row. The chips come first, in inbox order (info,
-    warning, error — the ramp, calm to urgent, ALR-11); show all and the
-    caller's clear-all action join the group at its end (the panel
-    projects it, DD-090), so the strip is one joined bar (DD-092).
+    warning, error — the ramp, calm to urgent, ALR-11); the caller's
+    clear-all action joins the group at its end (the panel projects
+    it, DD-090), so the strip is one joined bar (DD-092).
 
     A chip is a toggle button (ALR-11): `aria-pressed` carries the
     visible state — pressed while the severity shows — and the pressed
@@ -36,16 +36,6 @@
                     <span class="aurelius-alert-inbox-unread" aria-hidden="true"></span>
                     <span class="is-sr-only">{{ unreadLabel() }}</span>
                 }
-            </button>
-        }
-        @if (allHidden()) {
-            <!-- Every filter is off: the escape hatch back, in the group (ALR-11, DD-092). -->
-            <button
-                type="button"
-                class="button is-small is-expanded aurelius-alert-inbox-show-all"
-                (click)="showAll.emit()"
-            >
-                {{ showAllLabel() }}
             </button>
         }
         <ng-content></ng-content>

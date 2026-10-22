@@ -68,7 +68,6 @@ export const Primary: Story = {
         hidden: [],
         ariaLabel: "Alert filters",
         unreadLabel: "Unread",
-        showAllLabel: "Show all",
     },
     play: async ({ canvasElement, componentInstance }) => {
         const chips = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLElement>)];
@@ -111,20 +110,23 @@ export const Filtered: Story = {
 };
 
 /**
- * Every filter off: the chips are all flat and the show-all control
- * appears (ALR-11's escape hatch).
+ * Every filter off: the chips are all flat, the bar unchanged (DD-095
+ * — no show-all control appears; the bar's shape never shifts). The
+ * way back is a chip: play() clicks info and sees the toggle output.
  */
 export const AllHidden: Story = {
     args: {
         alerts,
         hidden: ["error", "warning", "info"],
     },
-    play: async ({ canvas, canvasElement, componentInstance }) => {
-        expect(canvasElement.querySelector(".aurelius-alert-inbox-show-all")).toBeTruthy();
-        const calls: number[] = [];
-        componentInstance.showAll.subscribe(() => calls.push(1));
-        await userEvent.click(canvas.getByRole("button", { name: "Show all" }));
-        expect(calls).toEqual([1]);
+    play: async ({ canvasElement, componentInstance }) => {
+        expect(canvasElement.querySelector(".aurelius-alert-inbox-show-all")).toBeNull();
+        const chips = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLElement>)];
+        expect(chips.map((c) => c.getAttribute("aria-pressed"))).toEqual(["false", "false", "false"]);
+        const toggled: string[] = [];
+        componentInstance.toggleSeverity.subscribe((s: string) => toggled.push(s));
+        await userEvent.click(within(canvasElement).getByRole("button", { name: /Info/ }));
+        expect(toggled).toEqual(["info"]);
     },
 };
 
