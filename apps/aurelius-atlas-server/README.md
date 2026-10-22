@@ -54,7 +54,8 @@ store as Atlas does: `guid/{guid}`, `uniqueAttribute/type/{typeName}` with `attr
 and those it names, `POST bulk`, `PUT uniqueAttribute/type/{typeName}` and `PUT guid/{guid}?name=<attribute>`,
 each answering Atlas's `EntityMutationResponse`. Classifications and business attributes given with an entity
 are ignored until their increments. Relationship attribute values, legacy ends among the attributes included,
-become relationships, and reads answer them in `relationshipAttributes` (DD-064).
+become relationships, and reads answer them in `relationshipAttributes` (DD-064). An update that drops an owned
+entity deletes it, listed under `DELETE` in the response (DD-068).
 
 Its deletes (`DELETE guid/{guid}`, `DELETE bulk`, `DELETE uniqueAttribute/type/{typeName}`) delete an entity
 with the entities it owns and change those referring to it; `PUT /api/atlas/admin/purge` removes deleted
