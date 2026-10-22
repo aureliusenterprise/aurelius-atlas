@@ -101,8 +101,12 @@ class MemoryEntityDocuments:
             for source, version in [found]
         }
 
-    async def write(self, items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]:
-        """Write each entity unless it conflicts or ``fail`` names it."""
+    async def write(
+        self,
+        items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+        removed: Sequence[tuple[str, DocumentVersion]] = (),
+    ) -> list[WriteResult]:
+        """Write each entity, then remove each one, unless it conflicts or ``fail`` names it."""
         results = []
         for entity, version in items:
             current = self.entities.get(entity.guid)
@@ -117,6 +121,16 @@ class MemoryEntityDocuments:
             else:
                 self.entities[entity.guid] = (codec.loads(codec.dumps(entity.to_json())), self._next_version())
                 results.append(WriteResult(entity.guid, written=True))
+        for guid, version in removed:
+            current = self.entities.get(guid)
+            failure = self.fail.pop(guid, None)
+            if current is None or current[1] != version or failure == "conflict":
+                results.append(WriteResult(guid, written=False, conflict=True))
+            elif failure == "error":
+                results.append(WriteResult(guid, written=False))
+            else:
+                del self.entities[guid]
+                results.append(WriteResult(guid, written=True))
         if self.crash_after_write:
             self.crash_after_write = False
             raise SimulatedCrashError
@@ -156,6 +170,12 @@ class MemoryEntityDocuments:
     async def journal(self) -> list[JournalEntry]:
         """Every entry."""
         return [JournalEntry.model_validate(source) for source in self.journal_entries.values()]
+
+    async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose ``references`` hold any of the GUIDs."""
+        wanted = set(guids)
+        found = [guid for guid, (source, _) in self.entities.items() if wanted & set(source.get("references") or [])]  # type: ignore[arg-type]
+        return list((await self.get(found)).values())
 
     async def count_type(self, type_name: str) -> int:
         """Entities of exactly the type."""

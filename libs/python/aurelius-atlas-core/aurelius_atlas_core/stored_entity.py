@@ -9,7 +9,11 @@ from typing import Any, Self
 
 from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_model.instance import AtlasEntity, EntityStatus
+from aurelius_atlas_model.typedef import TypeCategory
+from aurelius_atlas_typesystem.array_type import ArrayType
+from aurelius_atlas_typesystem.atlas_type import resolved
 from aurelius_atlas_typesystem.entity_type import EntityType
+from aurelius_atlas_typesystem.map_type import MapType
 from pydantic import Field
 
 from aurelius_atlas_core.unique_key import UniqueKey
@@ -37,6 +41,7 @@ class StoredEntity(AtlasModel):
     labels: list[str] | None = None
     custom_attributes: dict[str, str] | None = None
     attributes: dict[str, Any] = Field(default_factory=dict)
+    references: list[str] | None = None
     write_id: str | None = None
 
     @classmethod
@@ -77,6 +82,27 @@ class StoredEntity(AtlasModel):
             if value is not None:
                 keys.append(UniqueKey(self.type_name, attribute.qualified_name, value))
         return keys
+
+    def reference_guids(self, entity_type: EntityType) -> list[str]:
+        """The GUIDs this entity's references name, each once (EDL-10, DD-057).
+
+        Its own object id attributes and the elements and values of its arrays and maps of object ids; not soft
+        references, nor references in structs, which Atlas keeps as properties rather than edges.
+        """
+        guids: dict[str, None] = {}
+        for attribute in entity_type.all_attributes.values():
+            value = self.attributes.get(attribute.qualified_name)
+            if value is None or attribute.attribute_def.is_soft_referenced():
+                continue
+            type_ = attribute.attribute_type
+            if type_.category is TypeCategory.OBJECT_ID_TYPE:
+                guids[str(value)] = None
+            elif isinstance(type_, ArrayType | MapType):
+                element = resolved(type_.element_type if isinstance(type_, ArrayType) else type_.value_type)
+                items = value.values() if isinstance(value, dict) else value if isinstance(value, list) else []
+                if element.category is TypeCategory.OBJECT_ID_TYPE:
+                    guids.update((str(item), None) for item in items if item is not None)
+        return list(guids)
 
     def to_entity(self, entity_type: EntityType) -> AtlasEntity:
         """The entity with its system properties and the stored attribute values by attribute name (ERD-03).

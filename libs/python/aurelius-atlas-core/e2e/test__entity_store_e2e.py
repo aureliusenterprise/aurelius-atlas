@@ -28,9 +28,13 @@ CRASH = "crash"
 class CrashingDocuments(ElasticsearchEntityDocuments):
     """Dies right after its first bulk write, as a process killed part-way would."""
 
-    async def write(self, items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]:
+    async def write(
+        self,
+        items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+        removed: Sequence[tuple[str, DocumentVersion]] = (),
+    ) -> list[WriteResult]:
         """Write, then crash."""
-        await super().write(items)
+        await super().write(items, removed)
         raise RuntimeError(CRASH)
 
 

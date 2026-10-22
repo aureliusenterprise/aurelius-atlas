@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import cast
 
 import pytest
+from aurelius_atlas_core import entity_documents
 from aurelius_atlas_core.entity_documents import (
     ElasticsearchEntityDocuments,
     EntityDocuments,
@@ -159,6 +160,7 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "delete_journal",
             "journal",
             "count_type",
+            "referring",
         )
     ),
     rules=["ENS-07"],
@@ -167,3 +169,32 @@ def test__both_implementations_are_entity_documents(documents: ElasticsearchEnti
     """The store takes any ``EntityDocuments``: Elasticsearch in the server, memory in tests."""
     assert isinstance(documents, EntityDocuments)
     assert isinstance(MemoryEntityDocuments(), EntityDocuments)
+
+
+@pytest.mark.covers(f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10"])
+async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_deletes(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After a refresh, by ``references``, in pages; a removal is conditional; prepare maps new fields."""
+    monkeypatch.setattr(entity_documents, "REFERRING_PAGE", 1)
+    written = [
+        entity("a").model_copy(update={"references": ["x"]}),
+        entity("b").model_copy(update={"references": ["x", "y"]}),
+        entity("c"),
+    ]
+    await documents.write([(item, None) for item in written])
+    found = await documents.get(["c"])
+
+    referring = await documents.referring(["x", "z"])
+    removed = await documents.write([], [("c", found["c"].version), ("a", DocumentVersion(99, 1))])
+    await documents.prepare()
+
+    assert [item.entity.guid for item in referring] == ["a", "b"]
+    assert await documents.referring([]) == []
+    assert [(result.guid, result.written, result.conflict) for result in removed] == [
+        ("c", True, False),
+        ("a", False, True),
+    ]
+    assert set(await documents.get(["a", "c"])) == {"a"}
+    assert "t-entities" in fake.refreshes
+    assert fake.mapping_updates == ["t-entities"]

@@ -32,6 +32,7 @@ UNIQUE_VALUE_TAKEN_ERROR = "unique value {attribute}={value} of type {type} is h
 VERSION_CONFLICT_ERROR = "entity {guid} was changed by another write"
 WRITE_FAILED_ERROR = "entity {guid} could not be written"
 LEASE_PASSED_ERROR = "write {write_id} took longer than its lease"
+REMOVE_UNREAD_ERROR = "entity {guid} cannot be removed without the version it was read in"
 
 
 class UniqueValueTakenError(Exception):
@@ -59,10 +60,14 @@ class EntityWriteError(Exception):
 
 @dataclass(frozen=True)
 class EntityChange:
-    """One entity of a write: its new state, and the version it was read in, or None for a new entity."""
+    """One entity of a write: its new state, and the version it was read in, or None for a new entity.
+
+    With ``remove``, the write removes the entity, which must have been read: ``entity`` is its state then (DD-056).
+    """
 
     entity: StoredEntity
     expected: DocumentVersion | None = None
+    remove: bool = False
 
 
 class EntityStore:
@@ -128,8 +133,14 @@ class EntityStore:
                 return await self.get(guid)
         return None
 
+    async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose references name any of these GUIDs (EDL-10, DD-057)."""
+        return await self._documents.referring(list(dict.fromkeys(guids)))
+
     async def write(self, changes: Sequence[EntityChange]) -> None:
-        """Write new and changed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08, DD-046).
+        """Write new, changed and removed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08).
+
+        Each written entity carries the GUIDs its references name (DD-057); removals are journaled too (DD-056).
 
         Raises:
             UniqueValueTakenError: A unique value is held by another entity.
@@ -137,19 +148,25 @@ class EntityStore:
             EntityWriteError: An entity could not be written; the write was undone.
         """
         write_id = self._new_id()
-        entities = [change.entity.model_copy(update={"write_id": write_id}) for change in changes]
+        for change in changes:
+            if change.remove and change.expected is None:
+                raise EntityWriteError(REMOVE_UNREAD_ERROR.format(guid=change.entity.guid))
+        kept = [change for change in changes if not change.remove]
+        removed = [change for change in changes if change.remove]
+        entities = [self._stamped(change.entity, write_id) for change in kept]
         before = await self._documents.get([change.entity.guid for change in changes if change.expected is not None])
         for change in changes:
             current = before.get(change.entity.guid)
             if change.expected is not None and (current is None or current.version != change.expected):
                 raise EntityVersionConflictError(change.entity.guid)
-        needed, released = self._key_changes(entities, before)
+        needed, released = self._key_changes(entities, before, [change.entity.guid for change in removed])
         entry = JournalEntry(
             write_id=write_id,
             lease_until=self.now() + LEASE_MILLISECONDS,
             before={change.entity.guid: _json_of(before.get(change.entity.guid)) for change in changes},
             reserved=[key.id for key, _ in needed],
             released=[key.id for key, _ in released],
+            removed=[change.entity.guid for change in removed],
         )
         await self._documents.put_journal(entry)
         reserved = await self._reserve(needed, write_id)
@@ -160,7 +177,8 @@ class EntityStore:
             await self._abandon(entry, needed, [])
             raise EntityWriteError(LEASE_PASSED_ERROR.format(write_id=write_id))
         results = await self._documents.write(
-            [(entity, change.expected) for entity, change in zip(entities, changes, strict=True)]
+            [(entity, change.expected) for entity, change in zip(entities, kept, strict=True)],
+            [(change.entity.guid, change.expected) for change in removed if change.expected is not None],
         )
         failed = next((result for result in results if not result.written), None)
         if failed is not None:
@@ -201,12 +219,26 @@ class EntityStore:
             raise EntityWriteError(UNKNOWN_ENTITY_TYPE_ERROR.format(type=entity.type_name))
         return entity_type
 
+    def _stamped(self, entity: StoredEntity, write_id: str) -> StoredEntity:
+        """The entity as written: the write's id, and the GUIDs its references name (DD-046, DD-057)."""
+        references = entity.reference_guids(self._entity_type(entity)) or None
+        return entity.model_copy(update={"write_id": write_id, "references": references})
+
     def _key_changes(
-        self, entities: Sequence[StoredEntity], before: Mapping[str, VersionedEntity]
+        self, entities: Sequence[StoredEntity], before: Mapping[str, VersionedEntity], removed: Sequence[str]
     ) -> tuple[list[tuple[UniqueKey, str]], list[tuple[UniqueKey, str]]]:
-        """The unique values to reserve, and those to release, with the GUID of their entity."""
+        """The unique values to reserve, and those to release, with the GUID of their entity.
+
+        A removed entity releases every value it held.
+        """
         needed: list[tuple[UniqueKey, str]] = []
         released: list[tuple[UniqueKey, str]] = []
+        for guid in removed:
+            old = before.get(guid)
+            if old is not None:
+                old_type = self.registry.entity_type(old.entity.type_name)
+                keys = [] if old_type is None else old.entity.unique_keys(old_type)
+                released += [(key, guid) for key in keys]
         for entity in entities:
             entity_type = self._entity_type(entity)
             new_keys = {key.id: key for key in entity.unique_keys(entity_type)}
@@ -239,10 +271,12 @@ class EntityStore:
         await self._documents.delete_journal(entry.write_id)
 
     async def _undo(self, entry: JournalEntry) -> None:
+        """Restore what the write wrote, and what it removed that no document has taken the place of (DD-056)."""
         current = await self._documents.get(list(entry.before))
         for guid in entry.before:
             found = current.get(guid)
-            if found is not None and found.entity.write_id == entry.write_id:
+            written = found is not None and found.entity.write_id == entry.write_id
+            if written or (found is None and guid in entry.removed):
                 await self._documents.restore(guid, entry.before_entity(guid))
         held = await self._documents.reservations(entry.reserved)
         for reservation in held.values():
