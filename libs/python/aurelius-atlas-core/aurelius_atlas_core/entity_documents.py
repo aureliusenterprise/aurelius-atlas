@@ -42,6 +42,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "updatedBy": _KEYWORD,
         "version": {"type": "long"},
         "isIncomplete": {"type": "boolean"},
+        "isProxy": {"type": "boolean"},
         "provenanceType": {"type": "integer"},
         "homeId": _KEYWORD,
         "labels": _KEYWORD,
