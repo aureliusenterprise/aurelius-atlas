@@ -122,6 +122,78 @@ WRITE_TYPES: dict[str, Any] = {
 """Types only writes need, on top of ``SAMPLE_TYPES``, as Atlas JSON."""
 
 
+RELATIONSHIP_TYPES: dict[str, Any] = {
+    "entityDefs": [
+        {
+            "name": "r_node",
+            "superTypes": ["s_ref"],
+            "options": {"appendRelationshipsOnPartialUpdate": '["friends"]'},
+            "attributeDefs": [
+                _attribute("keeper", "s_database"),
+                _attribute("members", "array<s_column>", cardinality="SET", options=APPEND),
+                _attribute("lead", "r_tag", constraints=[{"type": "inverseRef", "params": {"attribute": "follower"}}]),
+            ],
+        },
+        {"name": "r_part", "superTypes": ["s_ref"]},
+        {
+            "name": "r_tag",
+            "superTypes": ["s_ref"],
+            "attributeDefs": [
+                _attribute("follower", "r_node", constraints=[{"type": "inverseRef", "params": {"attribute": "lead"}}]),
+            ],
+        },
+    ],
+    "relationshipDefs": [
+        {
+            "name": "r_tree",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {"type": "r_node", "name": "parts", "cardinality": "SET", "isContainer": True},
+            "endDef2": {"type": "r_part", "name": "whole", "cardinality": "SINGLE"},
+        },
+        {
+            "name": "r_peer",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "r_node", "name": "friends", "cardinality": "SET"},
+            "endDef2": {"type": "r_node", "name": "friends", "cardinality": "SET"},
+        },
+        {
+            "name": "r_keeper",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "s_database", "name": "kept", "cardinality": "SET"},
+            "endDef2": {"type": "r_node", "name": "keeper", "cardinality": "SINGLE", "isLegacyAttribute": True},
+        },
+        {
+            "name": "r_members",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "r_node", "name": "members", "cardinality": "SET", "isLegacyAttribute": True},
+            "endDef2": {"type": "s_column", "name": "memberOf", "cardinality": "SET"},
+        },
+        {
+            "name": "r_badge",
+            "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "badge",
+            "endDef1": {"type": "r_node", "name": "badge", "cardinality": "SINGLE"},
+            "endDef2": {"type": "s_column", "name": "badgeOf", "cardinality": "SINGLE", "isLegacyAttribute": True},
+        },
+        {
+            "name": "r_lead",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "r_node", "name": "lead", "cardinality": "SINGLE", "isLegacyAttribute": True},
+            "endDef2": {"type": "r_tag", "name": "follower", "cardinality": "SINGLE", "isLegacyAttribute": True},
+        },
+    ],
+}
+"""Types for relationship attributes (REL-11 to REL-19), on top of the others, as Atlas JSON.
+
+``r_tree`` composes a node of parts (``parts`` is ``OUT`` and owned, ``whole`` ``IN`` and mandatory); ``r_peer``
+relates nodes both ways (``BOTH``); ``r_keeper``'s legacy end is end 2 (``keeper`` is ``OUT``, ``kept`` ``IN``);
+``members`` is a legacy array end that appends on a partial update; ``badgeOf`` is a legacy end ``s_column`` has
+no attribute for (``badge`` is ``IN``); ``r_lead``'s ends, ``r_node.lead`` and
+``r_tag.follower``, are legacy attributes, each the other's ``inverseRef``.
+``friends`` keeps its relationships on any update (``appendRelationshipsOnPartialUpdate``).
+"""
+
+
 def sample_types() -> AtlasTypesDef:
     """``SAMPLE_TYPES`` as definitions."""
     return AtlasTypesDef.model_validate(SAMPLE_TYPES)
@@ -132,13 +204,15 @@ def write_types() -> AtlasTypesDef:
     return AtlasTypesDef.model_validate(WRITE_TYPES)
 
 
-def sample_registry(*, writes: bool = False) -> TypeRegistry:
-    """A registry of the sample types, and of the write types with ``writes``."""
+def sample_registry(*, writes: bool = False, relationships: bool = False) -> TypeRegistry:
+    """A registry of the sample types, the write types with ``writes``, and ``RELATIONSHIP_TYPES`` too."""
     registry = TypeRegistry()
     with registry.update() as transient:
         transient.add_types(sample_types())
-        if writes:
+        if writes or relationships:
             transient.add_types(write_types())
+        if relationships:
+            transient.add_types(AtlasTypesDef.model_validate(RELATIONSHIP_TYPES))
     return registry
 
 

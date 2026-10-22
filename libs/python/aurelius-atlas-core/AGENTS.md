@@ -19,6 +19,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar)
 - `aurelius_atlas_core/entity_store.py` — `EntityStore`: GUIDs, reads by GUID and unique attributes,
   all-or-nothing writes through the journal, recovery and the type usage check (DD-043 to DD-048)
+- `aurelius_atlas_core/relationship_store.py` — `RelationshipStore` (`AtlasRelationshipStoreV2`) and the checks
+  and creation an entity write shares; `relationship_mapper.py` (`RelationshipMapper`) maps relationship
+  attributes onto relationships in memory; `graph_helper.py` holds `GraphHelper`'s edge lookups over an entity's
+  relationships
 - `aurelius_atlas_core/entity_documents.py` — `EntityDocuments` and its Elasticsearch implementation: the entity,
   unique value and journal indices; `stored_entity.py` (`StoredEntity`) and `unique_key.py` (`UniqueKey`)
 - `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` and `MemoryEntityDocuments` (with injected

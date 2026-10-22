@@ -12,12 +12,14 @@ from aurelius_atlas_model.instance import EntityStatus, RelationshipStatus
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
+from aurelius_atlas_typesystem.edge_direction import EdgeDirection
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.map_type import MapType
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore, RelationshipChange
+from aurelius_atlas_core.graph_helper import collection_elements, edge_for_label
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 UNSET_REQUIRED = "Cannot unset required attribute {name} on {guid} edge = {label}"
@@ -123,9 +125,34 @@ class DeleteHandler:
             if self._skipped(found.entity, deletion):
                 continue
             deletion.deleted[found.entity.guid] = found
-            guids = owned_guids(found.entity, self._entity_type(found.entity))
+            entity_type = self._entity_type(found.entity)
+            guids = owned_guids(found.entity, entity_type) + await self._owned_through_relationships(
+                found.entity, entity_type
+            )
             known = await self.store.get_many(guids)
             stack += [known[guid] for guid in guids if guid in known]
+
+    async def _owned_through_relationships(self, stored: StoredEntity, entity_type: EntityType) -> list[str]:
+        """``getOwnedVertices`` over relationships: end 2 of each relationship of an owned attribute (REL-19).
+
+        A single attribute's is its ``OUT`` relationship with the label, ``ACTIVE`` else the latest ``DELETED``; an
+        array's are all of its relationships. One ``DELETED`` (``ACTIVE`` for a purge) is skipped.
+        """
+        attributes = [attribute for attribute in entity_type.owned_ref_attributes if attribute.relationship_name]
+        if not attributes or not stored.relationship_guids:
+            return []
+        found = await self.store.get_relationships(stored.relationship_guids)
+        relationships = [found[guid].relationship for guid in stored.relationship_guids if guid in found]
+        skipped = RelationshipStatus.ACTIVE if self.purge else RelationshipStatus.DELETED
+        guids: list[str] = []
+        for attribute in attributes:
+            if attribute.attribute_type.category is TypeCategory.OBJECT_ID_TYPE:
+                edge = edge_for_label(stored.guid, relationships, attribute.relationship_edge_label, EdgeDirection.OUT)
+                edges = [] if edge is None else [edge]
+            else:
+                edges = collection_elements(stored.guid, relationships, attribute)
+            guids += [edge.end2_guid for edge in edges if edge.state is not skipped]
+        return guids
 
     async def _referrers(self, deletion: Deletion) -> None:
         """``deleteVertex``: drop or keep each reference to a deleted entity, and change its holder (EDL-07)."""
@@ -172,9 +199,14 @@ class DeleteHandler:
 
 
 def owned_guids(stored: StoredEntity, entity_type: EntityType) -> list[str]:
-    """The GUIDs an entity's owned reference attributes name: single, array or map, soft ones parsed (EDL-05)."""
+    """The GUIDs an entity's owned reference attributes name: single, array or map, soft ones parsed (EDL-05).
+
+    Relationship ends are not attribute values (DD-064); ``DeleteHandler`` follows their relationships (REL-19).
+    """
     guids: list[str] = []
     for attribute in entity_type.owned_ref_attributes:
+        if attribute.relationship_name is not None:
+            continue
         value = stored.attributes.get(attribute.qualified_name)
         items = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else [value]
         for item in items:

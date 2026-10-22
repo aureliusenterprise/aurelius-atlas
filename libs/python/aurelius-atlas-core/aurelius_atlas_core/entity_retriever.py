@@ -1,7 +1,7 @@
 """``EntityRetriever``: entities, headers and object ids built from stored entities (ERD-02 to ERD-09).
 
 The read side of ``EntityGraphRetriever`` and ``AtlasEntityStoreV2``: what Atlas maps from a vertex and its edges,
-here from an entity document and the documents its references name (DD-049, DD-050).
+here from an entity document, the documents its references name and its relationships (DD-049, DD-064).
 """
 
 from collections.abc import Iterable, Mapping, Sequence
@@ -15,23 +15,37 @@ from aurelius_atlas_model.instance import (
     AtlasEntityHeader,
     AtlasEntityWithExtInfo,
     AtlasObjectId,
+    AtlasRelatedObjectId,
     AtlasStruct,
+    EntityStatus,
+    RelationshipStatus,
 )
-from aurelius_atlas_model.typedef import Cardinality, TypeCategory
+from aurelius_atlas_model.typedef import AtlasRelationshipEndDef, Cardinality, TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.atlas_type import AtlasType, resolved
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.map_type import MapType
+from aurelius_atlas_typesystem.relationship_type import RelationshipType
 
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.graph_helper import (
+    collection_elements,
+    edge_for_label,
+    edges_for_label,
+    other_end,
+    relationship_type_name,
+)
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 
 SOFT_REFERENCE_SEPARATOR = ":"
 """``typeName:guid``, how Atlas holds a soft reference (DD-049)."""
 
 DISPLAY_TEXT_FALLBACKS = ("name", "displayName", "qualifiedName")
 """The attributes ``getDisplayText`` tries, in order, after the type's display text attribute."""
+
+QUALIFIED_NAME = "qualifiedName"
 
 _REFERENCES = {TypeCategory.OBJECT_ID_TYPE, TypeCategory.ENTITY}
 
@@ -172,6 +186,7 @@ class _Reading:
         self._min_ext_info = min_ext_info
         self._relationships = relationships
         self._stored: dict[str, StoredEntity | None] = {}
+        self._edges: dict[str, list[StoredRelationship]] = {}
 
     async def entity(self, stored: StoredEntity) -> AtlasEntity:
         """``mapVertexToAtlasEntity``: every attribute, relationship attributes unless ignored (ERD-03 to ERD-06)."""
@@ -185,15 +200,10 @@ class _Reading:
         self._stored[stored.guid] = stored
         await self._load(_references_of(stored.attributes, entity_type.all_attributes.values(), qualified=True))
         for name, attribute in entity_type.all_attributes.items():
-            value = stored.attributes.get(attribute.qualified_name)
-            entity.set_attribute(name, await self._attribute(attribute, value, ext_info=True))
+            entity.set_attribute(name, await self._entity_attribute(stored, attribute, ext_info=True))
         if self._relationships:
             for name in entity_type.relationship_attributes:
-                attribute = entity_type.relationship_attribute(name)
-                single = attribute is None or attribute.attribute_def.cardinality is Cardinality.SINGLE
-                if entity.relationship_attributes is None:
-                    entity.relationship_attributes = {}
-                entity.relationship_attributes[name] = None if single else []
+                await self._relationship_attribute(stored, entity_type, name, entity)
         return entity
 
     async def min_entity(self, stored: StoredEntity) -> AtlasEntity:
@@ -227,12 +237,9 @@ class _Reading:
         for name, attribute in entity_type.header_attributes.items():
             value = await self._vertex_attribute(stored, attribute)
             header.set_attribute(name, "" if value is None else value)
-        for name in (entity_type.display_text_attribute, *DISPLAY_TEXT_FALLBACKS):
-            attribute = entity_type.attribute(name)
-            value = None if attribute is None else await self._vertex_attribute(stored, attribute)
-            if value is not None:
-                header.display_text = java_string(value)
-                break
+        display_text = await self._display_text(stored, entity_type)
+        if display_text is not None:
+            header.display_text = java_string(display_text)
         return header
 
     async def object_id(self, stored: StoredEntity) -> AtlasObjectId | None:
@@ -267,7 +274,111 @@ class _Reading:
 
     async def _vertex_attribute(self, stored: StoredEntity, attribute: AtlasAttribute) -> Any:  # noqa: ANN401 - Atlas JSON
         """``getVertexAttribute``: the value without referred entities."""
-        return await self._attribute(attribute, stored.attributes.get(attribute.qualified_name), ext_info=False)
+        return await self._entity_attribute(stored, attribute, ext_info=False)
+
+    async def _display_text(self, stored: StoredEntity, entity_type: EntityType) -> Any:  # noqa: ANN401 - Atlas JSON
+        """``getDisplayText``: the display text attribute's value, else the first fallback with one (ERD-07)."""
+        for name in (entity_type.display_text_attribute, *DISPLAY_TEXT_FALLBACKS):
+            attribute = entity_type.attribute(name)
+            value = None if attribute is None else await self._vertex_attribute(stored, attribute)
+            if value is not None:
+                return value
+        return None
+
+    async def _entity_attribute(self, stored: StoredEntity, attribute: AtlasAttribute, *, ext_info: bool) -> Any:  # noqa: ANN401 - Atlas JSON
+        """``mapVertexToAttribute`` of an entity: a relationship end through its relationships (REL-18)."""
+        if attribute.relationship_name is not None:
+            return await self._relationship_end(stored, attribute, ext_info=ext_info)
+        return await self._attribute(attribute, stored.attributes.get(attribute.qualified_name), ext_info=ext_info)
+
+    async def _relationships_of(self, stored: StoredEntity) -> list[StoredRelationship]:
+        """The entity's relationships, in the order it lists them, read once per response (DD-061)."""
+        if stored.guid not in self._edges:
+            listed = stored.relationship_guids or []
+            found = await self._store.get_relationships(listed)
+            self._edges[stored.guid] = [found[guid].relationship for guid in listed if guid in found]
+        return self._edges[stored.guid]
+
+    async def _relationship_end(self, stored: StoredEntity, attribute: AtlasAttribute, *, ext_info: bool) -> Any:  # noqa: ANN401 - Atlas JSON
+        """``mapVertexToObjectId`` and ``mapVertexToArray`` over relationships: the other ends (REL-18)."""
+        relationships = await self._relationships_of(stored)
+        owned = ext_info and attribute.is_owned_ref
+        if attribute.attribute_type.category in _REFERENCES:
+            edge = edge_for_label(
+                stored.guid, relationships, attribute.relationship_edge_label, attribute.relationship_edge_direction
+            )
+            return None if edge is None else await self._reference(other_end(edge, stored.guid), owned=owned)
+        if not isinstance(attribute.attribute_type, ArrayType):  # pragma: no cover - an end is a reference or array
+            return None
+        guids = [other_end(edge, stored.guid) for edge in collection_elements(stored.guid, relationships, attribute)]
+        await self._load(guids)
+        items = [await self._reference(guid, owned=owned) for guid in guids]
+        return [item for item in items if item is not None]
+
+    async def _relationship_attribute(
+        self, stored: StoredEntity, entity_type: EntityType, name: str, entity: AtlasEntity
+    ) -> None:
+        """``mapVertexToRelationshipAttribute``: related object ids, and a legacy end not otherwise read (REL-17).
+
+        Raises:
+            AtlasError: ``RELATIONSHIPDEF_INVALID`` when the attribute has no relationship type or end.
+        """
+        relationships = await self._relationships_of(stored)
+        type_name = relationship_type_name(stored.guid, relationships, entity_type, name)
+        relationship_type = None if type_name is None else self._store.registry.relationship_type(type_name)
+        if relationship_type is None:  # pragma: no cover - a relationship attribute has a relationship type
+            raise AtlasError(AtlasErrorCode.RELATIONSHIPDEF_INVALID, "relationshipDef is null")
+        attribute = entity_type.relationship_attribute(name, type_name)
+        end = _end_of(relationship_type, entity_type, name)
+        if attribute is None or end is None:  # pragma: no cover - the registry added the attribute for this end
+            raise AtlasError(AtlasErrorCode.RELATIONSHIPDEF_INVALID, relationship_type.type_name)
+        label, direction = attribute.relationship_edge_label, attribute.relationship_edge_direction
+        if end.cardinality in (Cardinality.LIST, Cardinality.SET):
+            edges = edges_for_label(stored.guid, relationships, label, direction)
+            await self._load(other_end(edge, stored.guid) for edge in edges)
+            related = [await self._related(stored, edge, owned=attribute.is_owned_ref) for edge in edges]
+            value: Any = [item for item in related if item is not None]
+        else:
+            edge = edge_for_label(stored.guid, relationships, label, direction)
+            value = None if edge is None else await self._related(stored, edge, owned=attribute.is_owned_ref)
+        if entity.relationship_attributes is None:
+            entity.relationship_attributes = {}
+        entity.relationship_attributes[name] = value
+        if end.is_legacy_attribute and not entity.has_attribute(name):
+            entity.set_attribute(name, _legacy(value))
+
+    async def _related(
+        self, stored: StoredEntity, edge: StoredRelationship, *, owned: bool
+    ) -> AtlasRelatedObjectId | None:
+        """``mapVertexToRelatedObjectId``: the other end, with its status and display text, and the relationship."""
+        other = await self._get(other_end(edge, stored.guid))
+        if other is None:
+            return None
+        relationship_type = self._store.registry.relationship_type(edge.type_name)
+        names = [] if relationship_type is None else [str(name) for name in relationship_type.all_attributes]
+        related = AtlasRelatedObjectId(
+            guid=other.guid,
+            type_name=other.type_name,
+            entity_status=other.state,
+            relationship_type=edge.type_name,
+            relationship_guid=edge.guid,
+            relationship_status=edge.state,
+            relationship_attributes=AtlasStruct(
+                type_name=edge.type_name, attributes={name: edge.attributes.get(name) for name in names} or None
+            ),
+        )
+        entity_type = self._store.registry.entity_type(other.type_name)
+        if entity_type is not None:
+            display_text = await self._display_text(other, entity_type)
+            if display_text is not None:
+                related.display_text = java_string(display_text)
+            qualified_name = entity_type.attribute(QUALIFIED_NAME)
+            value = None if qualified_name is None else await self._vertex_attribute(other, qualified_name)
+            if value is not None:
+                related.qualified_name = java_string(value)
+        if owned:
+            await (self.min_entity(other) if self._min_ext_info else self.entity(other))
+        return related
 
     async def _attribute(self, attribute: AtlasAttribute, value: object, *, ext_info: bool) -> Any:  # noqa: ANN401 - Atlas JSON
         """``mapVertexToAttribute``: an owned reference adds its entity to the response when ``ext_info`` (ERD-04)."""
@@ -373,12 +484,40 @@ def _is_reference(type_: AtlasType) -> bool:
     return type_.category in _REFERENCES or type_.category is TypeCategory.STRUCT
 
 
+def _end_of(relationship_type: RelationshipType, entity_type: EntityType, name: str) -> AtlasRelationshipEndDef | None:
+    """The end of ``relationship_type`` whose type is or is a super type of ``entity_type`` and is named ``name``."""
+    definition = relationship_type.relationship_def
+    for end, end_type in (
+        (definition.end_def1, relationship_type.end1_type),
+        (definition.end_def2, relationship_type.end2_type),
+    ):
+        if (
+            end is not None
+            and end_type is not None
+            and end.name == name
+            and (end_type.type_name == entity_type.type_name or end_type.is_super_type_of(str(entity_type.type_name)))
+        ):
+            return end
+    return None
+
+
+def _legacy(value: object) -> Any:  # noqa: ANN401 - Atlas JSON
+    """``toLegacyAttribute``: object ids without the relationship; a deleted one to an active entity left out."""
+    if isinstance(value, AtlasRelatedObjectId):
+        if value.relationship_status is RelationshipStatus.DELETED and value.entity_status is EntityStatus.ACTIVE:
+            return None
+        return AtlasObjectId(guid=value.guid, type_name=value.type_name, unique_attributes=value.unique_attributes)
+    if isinstance(value, list):
+        return [found for item in value if (found := _legacy(item)) is not None]
+    return value
+
+
 def _references_of(values: Mapping[str, Any], attributes: Iterable[AtlasAttribute], *, qualified: bool) -> list[str]:
     """The GUIDs of the plain references among these values, to read in one request."""
     guids: list[str] = []
     for attribute in attributes:
         value = values.get(attribute.qualified_name if qualified else str(attribute.name))
-        if value is None or attribute.attribute_def.is_soft_referenced():
+        if value is None or attribute.attribute_def.is_soft_referenced() or attribute.relationship_name is not None:
             continue
         type_ = attribute.attribute_type
         contained = _contained(type_)

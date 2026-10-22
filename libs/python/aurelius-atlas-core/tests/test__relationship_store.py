@@ -23,7 +23,8 @@ from aurelius_atlas_model.instance import (
     RelationshipStatus,
 )
 
-R = "aurelius_atlas_core.relationship_store.RelationshipStore"
+S = "aurelius_atlas_core.relationship_store"
+R = f"{S}.RelationshipStore"
 NOW = 7000
 
 
@@ -78,7 +79,13 @@ async def failure(call: Any) -> tuple[AtlasErrorCode, str]:  # noqa: ANN401 - a 
     return raised.value.code, raised.value.message
 
 
-@pytest.mark.covers(f"{R}.create", f"{R}.get_by_id", rules=["REL-04", "REL-05", "REL-06"])
+@pytest.mark.covers(
+    f"{R}.create",
+    f"{R}.get_by_id",
+    f"{S}.created_relationship",
+    f"{S}.relationship_edge_label",
+    rules=["REL-04", "REL-05", "REL-06"],
+)
 async def test__a_relationship_is_created_between_two_entities_and_listed_by_both(store: EntityStore) -> None:
     """Its label and tag propagation from the type; its ends as object ids; twice is refused."""
     relationships = RelationshipStore(store)
@@ -112,7 +119,7 @@ async def test__a_relationship_is_created_between_two_entities_and_listed_by_bot
     )
 
 
-@pytest.mark.covers(f"{R}.create", rules=["REL-04"])
+@pytest.mark.covers(f"{R}.create", f"{S}.validate_relationship", rules=["REL-04"])
 async def test__a_relationship_is_checked_before_it_is_created(store: EntityStore) -> None:
     """Type, ends (missing or of other types), tag propagation and attribute values."""
     relationships = RelationshipStore(store)

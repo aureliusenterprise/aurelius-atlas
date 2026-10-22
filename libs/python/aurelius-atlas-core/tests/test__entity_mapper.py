@@ -1,4 +1,4 @@
-"""``EntityMapper`` (EWR-09 to EWR-12, EWR-17) and ``EntityComparator`` (EWR-08).
+"""``EntityMapper`` (EWR-09 to EWR-12, REL-11) and ``EntityComparator`` (EWR-08).
 
 Read from ``EntityGraphMapper`` (``mapAttributes``, ``mapAttribute``, ``mapStructValue``, ``mapArrayValue``,
 ``mapMapValue``, ``mapSoftRefValue``) and ``AtlasEntityComparator`` of Apache Atlas 2.4.0.
@@ -79,9 +79,9 @@ def test__a_new_entity_stores_every_attribute_and_records_what_it_references() -
     assert found.touched == ["d"]
 
 
-@pytest.mark.covers(f"{M}.update", f"{M}.touch", rules=["EWR-10", "EWR-12", "EWR-17"])
+@pytest.mark.covers(f"{M}.update", f"{M}.touch", rules=["EWR-10", "EWR-12", "REL-11"])
 async def test__an_update_changes_what_it_gives_and_the_time_only_when_it_gives_attributes() -> None:
-    """Custom attributes alone leave ``updateTime``; a legacy end lands in its attribute; touching sets the time."""
+    """Custom attributes alone leave ``updateTime``; a legacy end is not stored but changes it; touching sets it."""
     store = EntityStore(REGISTRY, MemoryEntityDocuments())
     await store.write([EntityChange(entity) for entity in sample_entities(store.registry)])
     table = await store.get("t")
@@ -99,7 +99,7 @@ async def test__an_update_changes_what_it_gives_and_the_time_only_when_it_gives_
         {"k": "v"},
         table.entity.attributes,
     )
-    assert (held.update_time, by_name(held.attributes)) == (7, {"holder": "d"})
+    assert (held.update_time, by_name(held.attributes)) == (7, {})
     assert found.touch(table.entity).update_time == 7
 
 

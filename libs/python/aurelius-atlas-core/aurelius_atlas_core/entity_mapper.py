@@ -1,7 +1,7 @@
-"""``EntityMapper``: an entity of a write request onto its stored form (EWR-09 to EWR-12, EWR-17, DD-049).
+"""``EntityMapper``: an entity of a write request onto its stored form (EWR-09 to EWR-12, DD-049).
 
-The value side of ``EntityGraphMapper``: what ``mapAttributes``, ``mapRelationshipAttributes`` and ``mapAttribute``
-put on a vertex and its edges, here into the attribute values of a ``StoredEntity``.
+The value side of ``EntityGraphMapper``: what ``mapAttributes`` and ``mapAttribute`` put on a vertex and its edges,
+here into the attribute values of a ``StoredEntity``. Relationship attributes are ``RelationshipMapper``'s (DD-064).
 """
 
 from collections.abc import Callable, Mapping
@@ -19,7 +19,7 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.map_type import MapType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_typesystem.struct_type import StructType, struct_attributes
-from aurelius_atlas_typesystem.values import java_distinct, relationship_type_of
+from aurelius_atlas_typesystem.values import java_distinct
 
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -51,13 +51,11 @@ class EntityMapper:
         self._guid_assignments = guid_assignments
         self._now = now
         self._user = user
-        self._recording = True
         self.touched: list[str] = []
 
     def create(self, entity: AtlasEntity, entity_type: EntityType, guid: str) -> StoredEntity:
         """``createVertexWithGuid`` and ``mapAttributes(CREATE)``: a new entity as stored (EWR-09)."""
         attributes: dict[str, Any] = {}
-        self._relationship_attributes(entity, entity_type, attributes, EntityOperation.CREATE)
         if entity.attributes:
             for name, attribute in entity_type.all_attributes.items():
                 self._set(attributes, attribute, entity.attributes.get(name), EntityOperation.CREATE)
@@ -81,7 +79,7 @@ class EntityMapper:
         """``mapAttributes(UPDATE)``: the given attributes and custom attributes over the stored ones (EWR-10)."""
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         attributes = dict(stored.attributes)
-        changed = self._relationship_attributes(entity, entity_type, attributes, operation)
+        changed = bool(entity.relationship_attributes)  # mapRelationshipAttributes changes it too (REL-11)
         for name, value in (entity.attributes or {}).items():
             attribute = entity_type.attribute(name)
             if attribute is not None:
@@ -97,30 +95,6 @@ class EntityMapper:
     def touch(self, stored: StoredEntity) -> StoredEntity:
         """``updateModificationMetadata``: the entity, changed by this request (EWR-12)."""
         return stored.touched(now=self._now, user=self._user)
-
-    def _relationship_attributes(
-        self, entity: AtlasEntity, entity_type: EntityType, attributes: dict[str, Any], operation: EntityOperation
-    ) -> bool:
-        """``mapRelationshipAttributes``: a legacy end's value as its attribute's, others checked only (EWR-17)."""
-        if not entity.relationship_attributes:
-            return False
-        for name in entity_type.relationship_attributes:
-            if operation is not EntityOperation.CREATE and not entity.has_relationship_attribute(name):
-                continue
-            value = entity.get_relationship_attribute(name)
-            attribute = entity_type.relationship_attribute(name, relationship_type_of(value))
-            legacy = entity_type.all_attributes.get(name)
-            if attribute is None:
-                continue  # pragma: no cover - every relationship attribute name has an attribute
-            if legacy is not None:
-                self._set(attributes, attribute, value, operation, key=legacy.qualified_name)
-            else:
-                self._recording = False
-                try:
-                    self._set({}, attribute, value, operation)
-                finally:
-                    self._recording = True
-        return True
 
     def _set(
         self,
@@ -154,7 +128,7 @@ class EntityMapper:
             if attribute.attribute_def.is_soft_referenced():
                 return self._soft_reference(value)
             guid = None if value is None else self._resolve(value)
-            if self._recording and current is None and guid is not None and guid not in self.touched:
+            if current is None and guid is not None and guid not in self.touched:
                 self.touched.append(guid)
             return guid
         if isinstance(type_, ArrayType):
