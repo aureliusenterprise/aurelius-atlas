@@ -1,7 +1,7 @@
 # 3.2 Ownership cascades
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#117](<https://github.com/aureliusenterprise/aurelius-atlas/pull/117>)
 - **Records:** DD-068, DD-069, DV-33; ends DV-31; relies on DD-052, DD-056 to DD-058, DD-062, DD-064, DD-066, DD-067
 
 What is left of ownership after 2.5 and 3.1b (DD-060, DD-067): an entity write that replaces or drops an owned reference deletes the owned entity, as Atlas's `deleteEdgeReference` does, and an owned map entry naming a deleted entity revives it.
