@@ -36,6 +36,9 @@ Every catalogue entry (an entity of any type) is **one record, found by its iden
 Atlas's clients already know it ([DD-044](../conversion/design-log.md#dd-044-a-guid-is-a-random-uuid)). A read
 by identifier always sees the last write; nothing waits for the search index to catch up ([DD-043][dd-043]).
 Attribute values are kept with their exact digits and become searchable when search arrives (4.1).
+A value that is a structure is kept inside its entry; a link to another entry is kept as that entry's
+identifier, so a renamed entry is never shown under its old name
+([DD-049](../conversion/design-log.md#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)).
 
 The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:
 
