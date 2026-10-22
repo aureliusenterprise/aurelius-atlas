@@ -1,0 +1,336 @@
+"""``EntityWriter``: creating and updating entities as ``AtlasEntityStoreV2`` does (EWR-02 to EWR-17, DD-052).
+
+``createOrUpdate``, ``preCreateOrUpdate``, ``updateByUniqueAttributes`` and ``updateEntityAttributeByGuid``, with
+the ``EntityMutationContext`` they fill: a request is discovered, mapped in memory and written in one write.
+"""
+
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from typing import Any
+
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntity,
+    AtlasEntityExtInfo,
+    AtlasEntityWithExtInfo,
+    AtlasObjectId,
+    EntityMutationResponse,
+    EntityOperation,
+    EntityStatus,
+)
+from aurelius_atlas_model.typedef import TypeCategory
+from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
+from aurelius_atlas_typesystem.entity_type import EntityType
+from aurelius_atlas_typesystem.values import relationship_type_of
+
+from aurelius_atlas_core.entity_comparator import EntityComparator
+from aurelius_atlas_core.entity_discovery import DiscoveryContext, EntityDiscovery, EntityStream, object_id_of
+from aurelius_atlas_core.entity_documents import VersionedEntity
+from aurelius_atlas_core.entity_mapper import EntityMapper
+from aurelius_atlas_core.entity_retriever import EntityRetriever
+from aurelius_atlas_core.entity_store import (
+    EntityChange,
+    EntityStore,
+    EntityVersionConflictError,
+    EntityWriteError,
+    UniqueValueTakenError,
+)
+from aurelius_atlas_core.stored_entity import StoredEntity
+
+NO_ENTITY_TO_UPDATE = "no entity to update."
+ATTEMPTS = 2
+"""A request that loses a race is run once more (DD-052)."""
+
+
+@dataclass
+class _Mutation:
+    """``EntityMutationContext``: the entities to create and to update, and the GUIDs given to them."""
+
+    created: list[tuple[AtlasEntity, EntityType]] = field(default_factory=list)
+    updated: list[tuple[AtlasEntity, EntityType, VersionedEntity]] = field(default_factory=list)
+    guid_assignments: dict[str, str] = field(default_factory=dict)
+    guids: dict[str | None, str] = field(default_factory=dict)
+
+    def add_created(self, request_guid: str | None, entity: AtlasEntity, entity_type: EntityType) -> None:
+        guid = str(entity.guid)
+        self.created.append((entity, entity_type))
+        self._assign(request_guid, guid)
+
+    def add_updated(
+        self, request_guid: str | None, entity: AtlasEntity, entity_type: EntityType, stored: VersionedEntity
+    ) -> None:
+        guid = str(entity.guid)
+        if request_guid in self.guids or guid in self.guids:
+            return
+        self.updated.append((entity, entity_type, stored))
+        self._assign(request_guid, guid)
+
+    def _assign(self, request_guid: str | None, guid: str) -> None:
+        self.guids[guid] = guid
+        if request_guid != guid:
+            self.guid_assignments[str(request_guid)] = guid
+            self.guids[request_guid] = guid
+
+
+class EntityWriter:
+    """Writes entities of a request into ``store``, as ``user``."""
+
+    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
+        self._store = store
+        self._user = user
+
+    async def create_or_update(
+        self, entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None
+    ) -> EntityMutationResponse:
+        """``createOrUpdate``: create the request's entities or update those already stored (EWR-02 to EWR-13)."""
+        return await self._run(_stream(entities), partial=False)
+
+    async def update_by_unique_attributes(
+        self, entity_type: EntityType, values: Mapping[str, Any], entity_info: AtlasEntityWithExtInfo | None
+    ) -> EntityMutationResponse:
+        """``updateByUniqueAttributes``: partially update the entity holding the unique values (EWR-14).
+
+        Raises:
+            AtlasError: ``INVALID_PARAMETERS`` without an entity, ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``.
+        """
+        if entity_info is None or entity_info.entity is None:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_ENTITY_TO_UPDATE)
+        found = await self._store.find_by_unique_attributes(entity_type, values)
+        if found is None:
+            raise AtlasError(
+                AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entity_type.type_name, java_string(dict(values))
+            )
+        entity_info.entity.guid = found.entity.guid
+        return await self._run(_stream(entity_info), partial=True)
+
+    async def update_attribute_by_guid(self, guid: str, name: str | None, value: object) -> EntityMutationResponse:
+        """``updateEntityAttributeByGuid``: set one primitive or reference attribute of an entity (EWR-15).
+
+        Raises:
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``UNKNOWN_ATTRIBUTE`` or ``ATTRIBUTE_UPDATE_NOT_SUPPORTED``.
+        """
+        found = await self._store.get(guid)
+        if found is None:
+            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+        type_name = found.entity.type_name
+        entity_type = self._store.registry.entity_type(type_name)
+        attribute = None
+        if entity_type is not None and name is not None:
+            attribute = entity_type.attribute(name) or entity_type.relationship_attribute(
+                name, relationship_type_of(value)
+            )
+        if attribute is None:
+            raise AtlasError(AtlasErrorCode.UNKNOWN_ATTRIBUTE, name, type_name)
+        match attribute.attribute_type.category:
+            case TypeCategory.PRIMITIVE:
+                pass
+            case TypeCategory.OBJECT_ID_TYPE if isinstance(value, str):
+                value = AtlasObjectId(guid=value, type_name=attribute.attribute_def.type_name)
+            case TypeCategory.OBJECT_ID_TYPE:
+                value = attribute.attribute_type.get_normalized_value(value)
+            case _:
+                raise AtlasError(
+                    AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, name, attribute.attribute_type.type_name
+                )
+        entity = AtlasEntity(guid=guid, type_name=type_name, attributes={str(name): value})
+        return await self._run(EntityStream([entity], AtlasEntityExtInfo()), partial=True)
+
+    async def _run(self, stream: EntityStream, *, partial: bool) -> EntityMutationResponse:
+        """Run the request, once more when its write loses a race (EWR-16, DD-052).
+
+        Raises:
+            AtlasError: ``INTERNAL_ERROR`` for a second lost race, a unique value held by another entity, or a
+                write that failed.
+        """
+        for attempt in range(1, ATTEMPTS + 1):
+            try:
+                return await self._create_or_update(_copy(stream), partial=partial)
+            except EntityVersionConflictError as conflict:
+                if attempt == ATTEMPTS:
+                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
+            except (UniqueValueTakenError, EntityWriteError) as failure:
+                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
+        raise AssertionError  # pragma: no cover - the loop returns or raises
+
+    async def _create_or_update(self, stream: EntityStream, *, partial: bool) -> EntityMutationResponse:
+        discovery = EntityDiscovery(self._store, stream)
+        context = await discovery.discover()
+        mutation = await self._prepare(discovery, context, partial=partial)
+        skipped = await self._unchanged(mutation)
+        mapper = EntityMapper(
+            self._store.registry,
+            resolve=lambda value: self._resolve(context, mutation, value),
+            guid_assignments=mutation.guid_assignments,
+            now=self._store.now(),
+            user=self._user,
+        )
+        changes: list[EntityChange] = []
+        written: dict[str, StoredEntity] = {}
+        for entity, entity_type in mutation.created:
+            written[str(entity.guid)] = mapper.create(entity, entity_type, str(entity.guid))
+        for entity, entity_type, stored in mutation.updated:
+            if entity.guid not in skipped:
+                new = mapper.update(entity, entity_type, stored.entity, partial=partial)
+                if not partial and stored.entity.is_incomplete:
+                    new = new.model_copy(update={"is_incomplete": False})
+                written[str(entity.guid)] = new
+        reported = await self._touch(mapper, context, written, skipped)
+        for guid, new in written.items():
+            stored = context.stored.get(guid)
+            changes.append(EntityChange(new, None if stored is None else stored.version))
+        if changes:
+            await self._store.write(changes)
+        return await self._response(mutation, skipped, reported, partial=partial)
+
+    async def _prepare(self, discovery: EntityDiscovery, context: DiscoveryContext, *, partial: bool) -> _Mutation:
+        """``preCreateOrUpdate``: each request entity among the references, to update or to create (EWR-06)."""
+        mutation = _Mutation()
+        for request_guid in context.referenced_guids:
+            entity = discovery.stream.get_by_guid(request_guid)
+            if entity is None or request_guid in mutation.guids:
+                continue
+            entity_type = discovery.entity_type(entity.type_name)
+            compact_attributes(entity, entity_type)
+            found = self._resolved_entity(context, entity, entity_type)
+            if found is not None:
+                stored = context.stored[found]
+                discovery.validate_and_normalize(entity, for_update=partial)
+                entity.guid = found
+                if partial and stored.entity.is_incomplete:
+                    continue  # Atlas leaves an incomplete entity out of a partial update
+                if stored.entity.is_incomplete:
+                    entity.is_incomplete = False
+                mutation.add_updated(request_guid, entity, entity_type, stored)
+            else:
+                discovery.validate_and_normalize(entity, for_update=False)
+                guid = self._store.new_guid()
+                context.resolved_guids[request_guid] = guid
+                context.add_resolved_by_unique(_object_id(entity, entity_type), guid)
+                entity.guid = guid
+                mutation.add_created(request_guid, entity, entity_type)
+        return mutation
+
+    def _resolved_entity(self, context: DiscoveryContext, entity: AtlasEntity, entity_type: EntityType) -> str | None:
+        """``getResolvedEntityVertex``: the stored entity the request's entity resolved to, by GUID or values."""
+        object_id = _object_id(entity, entity_type)
+        found = context.resolved_guids.get(entity.guid)
+        if found is not None:
+            context.add_resolved_by_unique(object_id, found)
+            return found
+        found = context.resolved_object_id(object_id, list(entity_type.all_sub_types))
+        if found is not None and found in context.stored:
+            context.resolved_guids[entity.guid] = found
+            return found
+        return None
+
+    async def _unchanged(self, mutation: _Mutation) -> set[str]:
+        """The updated entities the comparator finds unchanged; they are neither written nor reported (EWR-08)."""
+        comparator = EntityComparator(EntityRetriever(self._store), mutation.guid_assignments)
+        skipped: set[str] = set()
+        for entity, entity_type, stored in mutation.updated:
+            if entity.status is EntityStatus.DELETED:
+                continue
+            if not await comparator.has_difference(entity, entity_type, stored.entity):
+                skipped.add(str(entity.guid))
+        return skipped
+
+    def _resolve(self, context: DiscoveryContext, mutation: _Mutation, value: object) -> str:
+        """``getInstanceType`` and ``mapObjectIdValue``: the GUID of the entity a reference names (EWR-11).
+
+        Raises:
+            AtlasError: ``INVALID_OBJECT_ID`` when the reference names no entity of a known type.
+        """
+        object_id = object_id_of(value)
+        if object_id is None:
+            raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, None)
+        guid = object_id.guid
+        found = context.resolved_guids.get(guid) if guid is not None else None
+        if found is None and guid is not None and is_assigned_guid(guid):
+            found = mutation.guids.get(guid)
+        type_name = object_id.type_name
+        if type_name is None and found is not None:
+            known = context.stored.get(found)
+            created = next((e.type_name for e, _ in mutation.created if e.guid == found), None)
+            type_name = known.entity.type_name if known is not None else created
+        entity_type = None if type_name is None else self._store.registry.entity_type(type_name)
+        if entity_type is None:
+            raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value)
+        if found is None:
+            found = context.resolved_object_id(object_id, list(entity_type.all_sub_types))
+        if found is None:
+            raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value)
+        return found
+
+    async def _touch(
+        self, mapper: EntityMapper, context: DiscoveryContext, written: dict[str, StoredEntity], skipped: set[str]
+    ) -> list[str]:
+        """``recordEntityUpdate``: entities a new single reference reached are changed now (EWR-12).
+
+        Answers those to report: not the skipped ones.
+        """
+        missing = [guid for guid in mapper.touched if guid not in written and guid not in context.stored]
+        if missing:
+            context.stored.update(await self._store.get_many(missing))
+        for guid in mapper.touched:
+            current = written.get(guid) or (context.stored[guid].entity if guid in context.stored else None)
+            if current is not None:
+                written[guid] = mapper.touch(current)
+        return [guid for guid in mapper.touched if guid not in skipped and guid in written]
+
+    async def _response(
+        self, mutation: _Mutation, skipped: set[str], reported: list[str], *, partial: bool
+    ) -> EntityMutationResponse:
+        """``mapAttributesAndClassifications``' response: headers by operation, and the GUID assignments (EWR-13)."""
+        retriever = EntityRetriever(self._store)
+        response = EntityMutationResponse()
+        operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
+        for entity, _ in mutation.created:
+            response.add_entity(EntityOperation.CREATE, await retriever.header(str(entity.guid)))
+        for entity, _, _ in mutation.updated:
+            if entity.guid not in skipped:
+                response.add_entity(operation, await retriever.header(str(entity.guid)))
+        for guid in reported:
+            response.add_entity(operation, await retriever.header(guid, classifications=False))
+        response.guid_assignments = mutation.guid_assignments
+        return response
+
+
+def compact_attributes(entity: AtlasEntity, entity_type: EntityType) -> None:
+    """``compactAttributes``: a relationship attribute given in ``attributes`` moves to ``relationshipAttributes``.
+
+    It is dropped when ``relationshipAttributes`` already holds it (EWR-06).
+    """
+    for name in entity_type.relationship_attributes:
+        if entity.has_attribute(name):
+            value = entity.remove_attribute(name)
+            if value is not None and entity.get_relationship_attribute(name) is None:
+                entity.set_relationship_attribute(name, value)
+
+
+def _object_id(entity: AtlasEntity, entity_type: EntityType) -> AtlasObjectId:
+    """``getAtlasObjectId``: the entity's unique values, its GUID only when it has none."""
+    unique = {
+        name: value for name in entity_type.unique_attributes if (value := entity.get_attribute(name)) is not None
+    }
+    return AtlasObjectId(guid=None if unique else entity.guid, type_name=entity.type_name, unique_attributes=unique)
+
+
+def _stream(entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None) -> EntityStream:
+    """``AtlasEntityStream``: one entity, possibly null, or the list of a bulk request."""
+    if isinstance(entities, AtlasEntityWithExtInfo):
+        return EntityStream([entities.entity], entities)
+    if entities is None:
+        return EntityStream([], AtlasEntityExtInfo())
+    return EntityStream(list(entities.entities or []), entities)
+
+
+def _copy(stream: EntityStream) -> EntityStream:
+    """A copy of the request to change: discovery and mapping change its entities as Java's do."""
+    ext_info = stream.ext_info.model_copy(deep=True)
+    copies = {id(entity): entity.model_copy(deep=True) for entity in stream.entities if entity is not None}
+    if isinstance(ext_info, AtlasEntityWithExtInfo) and ext_info.entity is not None:
+        copies[id(stream.entities[0])] = ext_info.entity
+    elif isinstance(ext_info, AtlasEntitiesWithExtInfo):
+        ext_info.entities = [copies[id(entity)] for entity in stream.entities if entity is not None]
+    return EntityStream([None if entity is None else copies[id(entity)] for entity in stream.entities], ext_info)

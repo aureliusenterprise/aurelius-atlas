@@ -40,3 +40,11 @@ class AtlasObjectId(AtlasModel):
         return self.guid == other.guid
 
     __hash__ = None  # mutable, as the Java class
+
+    def java_string(self) -> str:
+        """``AtlasObjectId.toString``, as errors name an object id: ``AtlasObjectId{guid='…', …}`` (EWR-05)."""
+        unique = ", ".join(
+            f"{java_string(key)}:{java_string(value)}" for key, value in (self.unique_attributes or {}).items()
+        )
+        guid, type_name = java_string(self.guid), java_string(self.type_name)
+        return f"AtlasObjectId{{guid='{guid}', typeName='{type_name}', uniqueAttributes={{{unique}}}}}"

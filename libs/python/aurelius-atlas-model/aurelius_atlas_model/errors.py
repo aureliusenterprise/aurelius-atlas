@@ -36,6 +36,7 @@ class AtlasErrorCode(Enum):
     )
     ATTRIBUTE_UNIQUE_INVALID = (400, "ATLAS-400-00-013", "Type {0} with unique attribute {1} does not exist")
     TYPE_NAME_INVALID = (400, "ATLAS-400-00-014", "Type {0} with name {1} does not exist")
+    TYPE_CATEGORY_INVALID = (400, "ATLAS-400-00-015", "Type Category {0} is invalid")
     PATCH_NOT_APPLICABLE_FOR_TYPE = (400, "ATLAS-400-00-016", "{0} - invalid patch for type {1}")
     PATCH_FOR_UNKNOWN_TYPE = (400, "ATLAS-400-00-017", "{0} - patch references unknown type {1}")
     PATCH_INVALID_DATA = (400, "ATLAS-400-00-018", "{0} - patch data is invalid for type {1}")
@@ -47,6 +48,7 @@ class AtlasErrorCode(Enum):
             "space, or '_' characters"
         ),
     )
+    INVALID_PARAMETERS = (400, "ATLAS-400-00-01A", "invalid parameters: {0}")
     CONSTRAINT_INVERSE_REF_ATTRIBUTE_INVALID_TYPE = (
         400,
         "ATLAS-400-00-01C",
@@ -67,7 +69,11 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-01F",
         "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type",
     )
+    INVALID_OBJECT_ID = (400, "ATLAS-400-00-021", "ObjectId is not valid {0}")
+    UNKNOWN_ATTRIBUTE = (400, "ATLAS-400-00-023", "Attribute {0} not found for type {1}")
     SYSTEM_TYPE = (400, "ATLAS-400-00-024", "{0} is a System-type")
+    INVALID_STRUCT_VALUE = (400, "ATLAS-400-00-025", "not a valid struct value {0}")
+    ATTRIBUTE_UPDATE_NOT_SUPPORTED = (400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported")
     INVALID_VALUE = (400, "ATLAS-400-00-028", "invalid value: {0}")
     BAD_REQUEST = (400, "ATLAS-400-00-029", "{0}")
     MISSING_MANDATORY_ATTRIBUTE = (400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value")
@@ -168,6 +174,22 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-08B",
         "{0} - must include relationship label for type {1}",
     )
+    INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH = (
+        400,
+        "ATLAS-400-00-08C",
+        "Invalid key: {0} in custom attribute, key size should not be greater than 50",
+    )
+    INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS = (
+        400,
+        "ATLAS-400-00-08D",
+        "Invalid key: {0} in custom attribute, key should only contain alphanumeric characters, '_' or '-'",
+    )
+    INVALID_LABEL_LENGTH = (400, "ATLAS-400-00-08F", "Invalid label: {0}, label size should not be greater than {1}")
+    INVALID_LABEL_CHARACTERS = (
+        400,
+        "ATLAS-400-00-090",
+        "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'",
+    )
     APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED = (
         400,
         "ATLAS-400-00-093",
@@ -202,6 +224,12 @@ class AtlasErrorCode(Enum):
         "ATLAS-404-00-009",
         "Instance {0} with unique attribute {1} does not exist",
     )
+    INSTANCE_CRUD_INVALID_PARAMS = (
+        404,
+        "ATLAS-404-00-007",
+        "Invalid instance creation/updation parameters passed : {0}",
+    )
+    REFERENCED_ENTITY_NOT_FOUND = (404, "ATLAS-404-00-00A", "Referenced entity {0} is not found")
     TYPE_ALREADY_EXISTS = (409, "ATLAS-409-00-001", "Given type {0} already exists")
     TYPE_HAS_REFERENCES = (409, "ATLAS-409-00-002", "Given type {0} has references")
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")
@@ -260,11 +288,14 @@ def java_string(value: object) -> str:
     """``String.valueOf``: ``null``, ``true``, ``[a, b]`` for collections and ``{k=v}`` for maps (THY-13).
 
     A double is written as ``Double.toString``, a decimal as ``BigDecimal.toString`` and a date as
-    ``Date.toString`` (VAL-09).
+    ``Date.toString`` (VAL-09); a model with a ``java_string`` method as that method writes it (EWR-05).
     """
     scalar = _java_scalar(value)
     if scalar is not None:
         return scalar
+    own = getattr(value, "java_string", None)
+    if callable(own):
+        return str(own())
     if isinstance(value, Mapping):
         return "{" + ", ".join(f"{java_string(key)}={java_string(item)}" for key, item in value.items()) + "}"
     if isinstance(value, Iterable):

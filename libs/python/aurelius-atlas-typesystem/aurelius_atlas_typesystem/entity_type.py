@@ -26,6 +26,10 @@ if TYPE_CHECKING:
     from aurelius_atlas_typesystem.registry import TypeRegistry
 
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
+from aurelius_atlas_typesystem.attribute_token import AttributeToken
+from aurelius_atlas_typesystem.builtin.string_type import StringType
+from aurelius_atlas_typesystem.constant_token import ConstantToken
+from aurelius_atlas_typesystem.dependent_token import DependentToken
 from aurelius_atlas_typesystem.hierarchy_type import HierarchyType
 from aurelius_atlas_typesystem.struct_type import StructValue, relationship_attributes_of
 from aurelius_atlas_typesystem.type_names import (
@@ -38,8 +42,15 @@ from aurelius_atlas_typesystem.type_names import (
 from aurelius_atlas_typesystem.values import java_class_name, parse_json, relationship_type_of
 
 if TYPE_CHECKING:
+    from aurelius_atlas_typesystem.template_token import TemplateToken
+
+if TYPE_CHECKING:
     from aurelius_atlas_typesystem.business_metadata_type import BusinessAttribute
     from aurelius_atlas_typesystem.relationship_type import RelationshipType
+
+
+DYN_ATTRIBUTE_PREFIX = "dynAttribute:"
+"""The entity type option naming a dynamic attribute: ``dynAttribute:<name>``, its value the template."""
 
 
 def entity_types_and_all_sub_types(names: list[str], registry: TypeRegistry) -> list[str]:
@@ -71,6 +82,9 @@ class EntityType(HierarchyType):
         self.tag_propagation_edges: list[str | None] = []
         self.display_text_attribute = entity_def.get_option(OPTION_DISPLAY_TEXT_ATTRIBUTE)
         self.is_internal = False
+        self.parsed_templates: dict[str, list[TemplateToken]] = {}
+        self.dyn_eval_attributes: list[AtlasAttribute] = []
+        self.dyn_eval_trigger_attributes: list[AtlasAttribute] = []
 
     def _declared_super_types(self) -> list[str]:
         return self.entity_def.super_types
@@ -169,6 +183,47 @@ class EntityType(HierarchyType):
                 if super_type is not None and super_type.display_text_attribute is not None:
                     self.display_text_attribute = super_type.display_text_attribute
                     break
+        self.parsed_templates = self._parse_dyn_attribute_templates()
+        self._populate_dyn_flags_info()
+
+    def _parse_dyn_attribute_templates(self) -> dict[str, list[TemplateToken]]:
+        """``parseDynAttributeTemplates``: the template of each ``dynAttribute:`` string attribute (EWR-03)."""
+        parsed: dict[str, list[TemplateToken]] = {}
+        for key, template in (self.entity_def.options or {}).items():
+            if not key.startswith(DYN_ATTRIBUTE_PREFIX):
+                continue
+            attribute = self.attribute(key.removeprefix(DYN_ATTRIBUTE_PREFIX))
+            if attribute is not None and isinstance(attribute.attribute_type, StringType):
+                parsed[str(attribute.name)] = template_split(template)
+        return parsed
+
+    def _populate_dyn_flags_info(self) -> None:
+        """``populateDynFlagsInfo``: dynamic attributes in evaluation order, and those templates read (DD-054)."""
+        dynamic = {name: self.all_attributes[name] for name in self.parsed_templates if name in self.all_attributes}
+        following: dict[str, list[str]] = {name: [] for name in dynamic}
+        for name in dynamic:
+            for token in self.parsed_templates[name]:
+                if isinstance(token, AttributeToken) and token.value in following:
+                    following[token.value].append(name)
+        order: list[str] = []
+        visited: set[str] = set()
+
+        def visit(name: str) -> None:
+            if name not in visited:
+                visited.add(name)
+                for after in following[name]:
+                    visit(after)
+                order.append(name)
+
+        for name in dynamic:
+            visit(name)
+        self.dyn_eval_attributes = [dynamic[name] for name in reversed(order)]
+        self.dyn_eval_trigger_attributes = [
+            attribute
+            for tokens in self.parsed_templates.values()
+            for token in tokens
+            if isinstance(token, AttributeToken) and (attribute := self.attribute(token.value)) is not None
+        ]
 
     def _inherit_from(self, super_type: EntityType) -> None:
         """Take a super type's relationship, business attributes and tag-propagation edges (THY-11, THY-12)."""
@@ -353,6 +408,31 @@ class EntityType(HierarchyType):
             if item is not None and _holds_references(attribute.attribute_type):
                 valid = attribute.attribute_type.validate_value(item, field, messages) and valid
         return valid
+
+
+def template_split(template: str) -> list[TemplateToken]:
+    """``templateSplit``: constants outside braces, ``{name}`` an attribute, ``{a.b}`` a dependent token (EWR-03).
+
+    Text after the last brace, and a name whose brace is not closed, are dropped, as Java drops them.
+    """
+    tokens: list[TemplateToken] = []
+    text: list[str] = []
+    in_name = False
+    for char in template:
+        if char == "{":
+            in_name = True
+            if text:
+                tokens.append(ConstantToken("".join(text)))
+                text.clear()
+        elif char == "}" and in_name:
+            in_name = False
+            if text:
+                name = "".join(text)
+                tokens.append(DependentToken(name) if "." in name else AttributeToken(name))
+                text.clear()
+        else:
+            text.append(char)
+    return tokens
 
 
 def _root_entity_def() -> AtlasEntityDef:

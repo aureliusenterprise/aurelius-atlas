@@ -1,13 +1,18 @@
-"""The entity reads of ``EntityREST`` under ``/api/atlas/v2/entity`` (ERD-01 to ERD-10)."""
+"""The entity reads and writes of ``EntityREST`` under ``/api/atlas/v2/entity`` (ERD-01 to ERD-10, EWR-01 to EWR-16)."""
 
 from collections.abc import Mapping
 from typing import Annotated, Any
 
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_model import codec
+from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.entity_type import EntityType
 from fastapi import APIRouter, Depends, Request
+from pydantic import ValidationError
 
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.types import validate_param_length
@@ -97,6 +102,41 @@ def _json(content: Any) -> AtlasJSONResponse:  # noqa: ANN401 - Atlas JSON
     return AtlasJSONResponse(content=content)
 
 
+async def json_body(request: Request) -> Any:  # noqa: ANN401 - any JSON value
+    """The request body read by Atlas's JSON codec (DD-039); None when it is empty, as Jersey gives null.
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is not JSON (DV-10).
+    """
+    body = await request.body()
+    if not body.strip():
+        return None
+    try:
+        return codec.loads(body)
+    except ValueError as error:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid JSON: {error}") from error
+
+
+def model_body[T: AtlasModel](model: type[T], body: Any) -> T | None:  # noqa: ANN401 - any JSON value
+    """``body`` as ``model``, or None for no body; unknown fields are ignored.
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is not a ``model`` (DV-10).
+    """
+    if body is None:
+        return None
+    try:
+        return model.model_validate(body)
+    except ValidationError as error:
+        problem = error.errors(include_url=False)[0]
+        location = ".".join(str(part) for part in problem["loc"])
+        message = f"Invalid {model.__name__}: {problem['msg']}" + (f" at {location}" if location else "")
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, message) from error
+
+
+type Body = Annotated[Any, Depends(json_body)]
+
+
 @ENTITY.get("/guid/{guid}")
 async def get_by_id(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
     """``getById``: the entity and the entities it owns (ERD-02)."""
@@ -155,3 +195,42 @@ async def get_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
     if not guids:
         raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids)
     return _json((await retriever(request, store).entities_with_ext_info(guids)).to_json())
+
+
+@ENTITY.post("")
+async def create_or_update(body: Body, store: Store) -> AtlasJSONResponse:
+    """``createOrUpdate``: create the entity, and the entities it names, or update them (EWR-02)."""
+    entity = model_body(AtlasEntityWithExtInfo, body) or AtlasEntityWithExtInfo()
+    return _json((await EntityWriter(store).create_or_update(entity)).to_json())
+
+
+@ENTITY.post("/bulk")
+async def create_or_update_bulk(body: Body, store: Store) -> AtlasJSONResponse:
+    """``createOrUpdate`` of a bulk request: create or update every entity (EWR-02)."""
+    entities = model_body(AtlasEntitiesWithExtInfo, body)
+    return _json((await EntityWriter(store).create_or_update(entities)).to_json())
+
+
+@ENTITY.put("/uniqueAttribute/type/{type_name}")
+async def partial_update_entity_by_unique_attrs(
+    type_name: str, request: Request, body: Body, store: Store
+) -> AtlasJSONResponse:
+    """``partialUpdateEntityByUniqueAttrs``: partially update the entity holding the ``attr:`` values (EWR-14)."""
+    validate_param_length("typeName", type_name)
+    attributes = unique_attributes(request)
+    entity_type = ensure_entity_type(store, type_name)
+    validate_unique_attributes(entity_type, attributes)
+    entity = model_body(AtlasEntityWithExtInfo, body)
+    return _json((await EntityWriter(store).update_by_unique_attributes(entity_type, attributes, entity)).to_json())
+
+
+@ENTITY.put("/guid/{guid}")
+async def partial_update_entity_attr_by_guid(
+    guid: str, request: Request, body: Body, store: Store
+) -> AtlasJSONResponse:
+    """``partialUpdateEntityAttrByGuid``: set the attribute ``name`` of the entity to the body (EWR-15)."""
+    validate_param_length("guid", guid)
+    name = request.query_params.get("name")
+    if name is not None:
+        validate_param_length("name", name)
+    return _json((await EntityWriter(store).update_attribute_by_guid(guid, name, body)).to_json())

@@ -2,6 +2,7 @@
 
 import json
 import re
+import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,9 @@ SAVE_NOT_ONE_ERROR = "save {name}: {path} matches {count} values in the response
 NOT_JSON_ERROR = "the body is not JSON: {body!r}"
 NO_DIRECTORY_ERROR = "{directory} is not a directory of scenarios"
 FAILURE_HEADER = "scenario {scenario}, stage {number} ({name}): {endpoint}"
+
+RUN = "run"
+"""The name every scenario run starts with: a value unique to the run, in letters and digits (SCN-16, DD-055)."""
 
 
 class ScenarioFailedError(AssertionError):
@@ -87,7 +91,7 @@ def _saved(name: str, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - any JS
 
 
 async def run_scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
-    """Run a scenario's stages in order through the client (SCN-05).
+    """Run a scenario's stages in order through the client (SCN-05); ``{run}`` is unique to the run (SCN-16).
 
     Args:
         scenario: The scenario, as ``load_scenarios`` gives it.
@@ -97,7 +101,7 @@ async def run_scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
         ScenarioFailedError: A stage's response differs from its expectation, or the stage cannot run; later
             stages do not run.
     """
-    saved: dict[str, Any] = {}
+    saved: dict[str, Any] = {RUN: uuid.uuid4().hex}
     for number, stage in enumerate(scenario.stages, start=1):
         differences: list[str | Difference]
         try:

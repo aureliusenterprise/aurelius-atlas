@@ -10,15 +10,16 @@ Atlas resource. What is ported, and how, is tracked in the
 
 ## Endpoints
 
-| Endpoint                         | Answers                                                              |
-| -------------------------------- | -------------------------------------------------------------------- |
-| `GET /api/atlas/admin/version`   | Name, release and revision of the server                             |
-| `GET /api/atlas/admin/status`    | `{"Status": "ACTIVE"}` while the server runs                         |
-| `GET /api/atlas/admin/session`   | The dashboard's settings and the user (no login until 6.1)           |
-| `GET /api/atlas/admin/liveness`  | `Service is live` while the server runs                              |
-| `GET /api/atlas/admin/readiness` | `Service is ready to accept requests` while Elasticsearch is healthy |
-| `/api/atlas/v2/types/...`        | The type definitions: read, search, create, update and delete        |
-| `GET /api/atlas/v2/entity/...`   | Entities and their headers by GUID or unique attributes, one or many |
+| Endpoint                          | Answers                                                               |
+| --------------------------------- | --------------------------------------------------------------------- |
+| `GET /api/atlas/admin/version`    | Name, release and revision of the server                              |
+| `GET /api/atlas/admin/status`     | `{"Status": "ACTIVE"}` while the server runs                          |
+| `GET /api/atlas/admin/session`    | The dashboard's settings and the user (no login until 6.1)            |
+| `GET /api/atlas/admin/liveness`   | `Service is live` while the server runs                               |
+| `GET /api/atlas/admin/readiness`  | `Service is ready to accept requests` while Elasticsearch is healthy  |
+| `/api/atlas/v2/types/...`         | The type definitions: read, search, create, update and delete         |
+| `GET /api/atlas/v2/entity/...`    | Entities and their headers by GUID or unique attributes, one or many  |
+| `POST`/`PUT /api/atlas/v2/entity` | Entities created or updated, in bulk, by unique attributes or by GUID |
 
 ## Dashboards
 
@@ -47,7 +48,11 @@ sorted by name (DD-034).
 The reads of Atlas's `EntityREST` (`aurelius_atlas_server/routes/entity.py`) answer entities from the entity
 store as Atlas does: `guid/{guid}`, `uniqueAttribute/type/{typeName}` with `attr:<name>=<value>`, their
 `header` forms, and `bulk` by `guid` or by `attr_<n>:<name>=<value>` sets, with `minExtInfo` and
-`ignoreRelationships`. Entities are created over REST from increment 2.4.
+`ignoreRelationships`. Its writes create and update entities through the entity writer: `POST` with one entity
+and those it names, `POST bulk`, `PUT uniqueAttribute/type/{typeName}` and `PUT guid/{guid}?name=<attribute>`,
+each answering Atlas's `EntityMutationResponse`. Classifications and business attributes given with an entity
+are ignored until their increments; relationship attribute values are stored only for legacy ends until 3.1
+(DD-053).
 
 ## Running it
 

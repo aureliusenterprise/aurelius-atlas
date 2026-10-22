@@ -57,6 +57,33 @@ async def test__run_scenario_passes_a_matching_round_trip(
     assert app.entities == {}
 
 
+@pytest.mark.covers("aurelius_atlas_parity.run.run_scenario", rules=["SCN-16"])
+async def test__run_scenario_gives_each_run_its_own_run_value(
+    write_scenario: WriteScenario, client: httpx.AsyncClient, app: SampleApp
+) -> None:
+    """``{run}`` is there before any stage saves a value, and differs between runs (DD-055)."""
+    scenario = scenario_from(
+        write_scenario,
+        """
+name: Create with a per-run name
+source: [x]
+stages:
+  - request: {method: POST, url: /api/entities, json: {name: "t_{run}"}}
+    response:
+      status: 200
+      json: {guid: "", name: "t_{run}", createTime: 0}
+      volatile: [$.guid, $.createTime]
+""",
+    )
+
+    await run_scenario(scenario, client)
+    await run_scenario(scenario, client)
+
+    names = [entity["name"] for entity in app.entities.values()]
+    assert len(set(names)) == 2
+    assert all(name.startswith("t_") and name[2:].isalnum() for name in names)
+
+
 @pytest.mark.covers("aurelius_atlas_parity.run.run_scenario", rules=["SCN-02", "SCN-08"])
 async def test__run_scenario_sends_params_headers_and_bodies(
     write_scenario: WriteScenario, client: httpx.AsyncClient
@@ -151,7 +178,7 @@ async def test__run_scenario_applies_deviations_to_the_expectation(
             '{status: 200, json: {Version: "2.4.0", Name: apache-atlas, Description: Metadata}, save: {x: "$[*]"}}',
             "save x: $[*] matches 3 values in the response, not one",
         ),
-        ('{status: 200, json: "{unknown}"}', "{unknown} names no saved value; saved so far: nothing"),
+        ('{status: 200, json: "{unknown}"}', "{unknown} names no saved value; saved so far: run"),
     ],
 )
 async def test__run_scenario_fails_a_stage_that_cannot_be_checked(
