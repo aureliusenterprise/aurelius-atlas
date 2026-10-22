@@ -190,6 +190,7 @@ nav:
                       - 2.1b Value types: architecture/conversion/increments/2-1-value-types.md
                       - 2.1c Entity validation: architecture/conversion/increments/2-1-entity-validation.md
                       - 2.2 Entity store: architecture/conversion/increments/2-2-entity-store.md
+                      - 2.3 Entity read REST: architecture/conversion/increments/2-3-entity-read-rest.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
