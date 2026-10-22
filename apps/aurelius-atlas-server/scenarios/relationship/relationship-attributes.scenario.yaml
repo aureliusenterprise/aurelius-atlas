@@ -1,0 +1,659 @@
+name: An entity's relationship attributes are relationships, read from both ends and deleted when replaced
+source:
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#mapRelationshipAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#mapObjectIdValueUsingRelationship
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#updateRelationship
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipStoreV2.java#getOrCreate
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteEdgeReference
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapVertexToRelationshipAttribute
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapVertexToRelatedObjectId
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapVertexToObjectId
+rules:
+    - REL-11
+    - REL-12
+    - REL-13
+    - REL-15
+    - REL-17
+    - REL-18
+covers:
+    - aurelius_atlas_server.routes.entity.create_or_update
+    - aurelius_atlas_server.routes.entity.create_or_update_bulk
+    - aurelius_atlas_server.routes.entity.get_by_id
+stages:
+    - name: create a database type, a table type and the table's db as a legacy relationship end
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_xdb_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                        - name: name
+                          typeName: string
+                          isOptional: true
+                  - name: scenario_xtable_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                        - name: db
+                          typeName: scenario_xdb_{run}
+                          isOptional: true
+              relationshipDefs:
+                  - name: scenario_xtable_db_{run}
+                    relationshipCategory: ASSOCIATION
+                    endDef1:
+                        type: scenario_xtable_{run}
+                        name: db
+                        cardinality: SINGLE
+                        isLegacyAttribute: true
+                    endDef2:
+                        type: scenario_xdb_{run}
+                        name: tables
+                        cardinality: SET
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_xdb_{run}
+                    description: scenario_xdb_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: name
+                          typeName: string
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: tables
+                          typeName: array<scenario_xtable_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_xtable_db_{run}
+                          isLegacyAttribute: false
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_xtable_{run}
+                    description: scenario_xtable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: db
+                          typeName: scenario_xdb_{run}
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: db
+                          typeName: scenario_xdb_{run}
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_xtable_db_{run}
+                          isLegacyAttribute: true
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_xtable_db_{run}
+                    description: scenario_xtable_db_{run}
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: NONE
+                    endDef1:
+                        type: scenario_xtable_{run}
+                        name: db
+                        isContainer: false
+                        cardinality: SINGLE
+                        isLegacyAttribute: true
+                    endDef2:
+                        type: scenario_xdb_{run}
+                        name: tables
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    category: RELATIONSHIP
+                    createdBy: admin
+                    updatedBy: admin
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.entityDefs[1].guid
+              - $.entityDefs[1].createTime
+              - $.entityDefs[1].updateTime
+              - $.relationshipDefs[0].guid
+              - $.relationshipDefs[0].createTime
+              - $.relationshipDefs[0].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].updatedBy
+                absent: true
+    - name: create two databases and a table whose db is the first
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_xdb_{run}
+                    guid: "-1"
+                    attributes:
+                        qualifiedName: db1_{run}
+                        name: one
+                  - typeName: scenario_xdb_{run}
+                    guid: "-2"
+                    attributes:
+                        qualifiedName: db2_{run}
+                        name: two
+                  - typeName: scenario_xtable_{run}
+                    guid: "-3"
+                    attributes:
+                        qualifiedName: t_{run}
+                        db:
+                            typeName: scenario_xdb_{run}
+                            guid: "-1"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db1_{run}
+                            name: one
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: one
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db2_{run}
+                            name: two
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: two
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xtable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: t_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments:
+                  "-1": a new GUID
+                  "-2": a new GUID
+                  "-3": a new GUID
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+              - $.guidAssignments['-3']
+          save:
+              db1: $.guidAssignments['-1']
+              db2: $.guidAssignments['-2']
+              table: $.guidAssignments['-3']
+    - name: the table reads its db in attributes, and as a related object id in relationshipAttributes
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{table}
+      response:
+          status: 200
+          json:
+              referredEntities: {}
+              entity:
+                  typeName: scenario_xtable_{run}
+                  attributes:
+                      qualifiedName: t_{run}
+                      db:
+                          guid: "{db1}"
+                          typeName: scenario_xdb_{run}
+                          uniqueAttributes:
+                              qualifiedName: db1_{run}
+                  guid: "{table}"
+                  isIncomplete: false
+                  provenanceType: 0
+                  status: ACTIVE
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  relationshipAttributes:
+                      db:
+                          guid: "{db1}"
+                          typeName: scenario_xdb_{run}
+                          entityStatus: ACTIVE
+                          displayText: one
+                          relationshipGuid: a new GUID
+                          relationshipStatus: ACTIVE
+                          relationshipAttributes:
+                              typeName: scenario_xtable_db_{run}
+                          qualifiedName: db1_{run}
+                          relationshipType: scenario_xtable_db_{run}
+                  labels: []
+                  createdBy: admin
+                  updatedBy: admin
+          volatile:
+              - $.entity.createTime
+              - $.entity.updateTime
+              - $.entity.relationshipAttributes.db.relationshipGuid
+          save:
+              rel1: $.entity.relationshipAttributes.db.relationshipGuid
+          deviations:
+              - id: DV-15
+                path: $.entity.createdBy
+                absent: true
+              - id: DV-15
+                path: $.entity.updatedBy
+                absent: true
+    - name: the database lists the table among its tables
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{db1}
+      response:
+          status: 200
+          json:
+              referredEntities: {}
+              entity:
+                  typeName: scenario_xdb_{run}
+                  attributes:
+                      qualifiedName: db1_{run}
+                      name: one
+                  guid: "{db1}"
+                  isIncomplete: false
+                  provenanceType: 0
+                  status: ACTIVE
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  relationshipAttributes:
+                      tables:
+                          - guid: "{table}"
+                            typeName: scenario_xtable_{run}
+                            entityStatus: ACTIVE
+                            displayText: t_{run}
+                            relationshipGuid: "{rel1}"
+                            relationshipStatus: ACTIVE
+                            relationshipAttributes:
+                                typeName: scenario_xtable_db_{run}
+                            qualifiedName: t_{run}
+                            relationshipType: scenario_xtable_db_{run}
+                  labels: []
+                  createdBy: admin
+                  updatedBy: admin
+          volatile:
+              - $.entity.createTime
+              - $.entity.updateTime
+          deviations:
+              - id: DV-15
+                path: $.entity.createdBy
+                absent: true
+              - id: DV-15
+                path: $.entity.updatedBy
+                absent: true
+    - name: moving the table to the second database updates both databases (reported in the order reached, DV-21)
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity:
+                  typeName: scenario_xtable_{run}
+                  guid: "{table}"
+                  attributes:
+                      qualifiedName: t_{run}
+                      db:
+                          guid: "{db2}"
+                          typeName: scenario_xdb_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  UPDATE:
+                      - typeName: scenario_xtable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: t_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db2_{run}
+                            name: two
+                        guid: "{db2}"
+                        status: ACTIVE
+                        displayText: two
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db1_{run}
+                            name: one
+                        guid: "{db1}"
+                        status: ACTIVE
+                        displayText: one
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: {}
+    - name: the first database keeps the old relationship, DELETED
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{db1}
+      response:
+          status: 200
+          json:
+              referredEntities: {}
+              entity:
+                  typeName: scenario_xdb_{run}
+                  attributes:
+                      qualifiedName: db1_{run}
+                      name: one
+                  guid: "{db1}"
+                  isIncomplete: false
+                  provenanceType: 0
+                  status: ACTIVE
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  relationshipAttributes:
+                      tables:
+                          - guid: "{table}"
+                            typeName: scenario_xtable_{run}
+                            entityStatus: ACTIVE
+                            displayText: t_{run}
+                            relationshipGuid: "{rel1}"
+                            relationshipStatus: DELETED
+                            relationshipAttributes:
+                                typeName: scenario_xtable_db_{run}
+                            qualifiedName: t_{run}
+                            relationshipType: scenario_xtable_db_{run}
+                  labels: []
+                  createdBy: admin
+                  updatedBy: admin
+          volatile:
+              - $.entity.createTime
+              - $.entity.updateTime
+          deviations:
+              - id: DV-15
+                path: $.entity.createdBy
+                absent: true
+              - id: DV-15
+                path: $.entity.updatedBy
+                absent: true
+    - name: the table reads the second database
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{table}
+      response:
+          status: 200
+          json:
+              referredEntities: {}
+              entity:
+                  typeName: scenario_xtable_{run}
+                  attributes:
+                      qualifiedName: t_{run}
+                      db:
+                          guid: "{db2}"
+                          typeName: scenario_xdb_{run}
+                          uniqueAttributes:
+                              qualifiedName: db2_{run}
+                  guid: "{table}"
+                  isIncomplete: false
+                  provenanceType: 0
+                  status: ACTIVE
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  relationshipAttributes:
+                      db:
+                          guid: "{db2}"
+                          typeName: scenario_xdb_{run}
+                          entityStatus: ACTIVE
+                          displayText: two
+                          relationshipGuid: a new GUID
+                          relationshipStatus: ACTIVE
+                          relationshipAttributes:
+                              typeName: scenario_xtable_db_{run}
+                          qualifiedName: db2_{run}
+                          relationshipType: scenario_xtable_db_{run}
+                  labels: []
+                  createdBy: admin
+                  updatedBy: admin
+          volatile:
+              - $.entity.createTime
+              - $.entity.updateTime
+              - $.entity.relationshipAttributes.db.relationshipGuid
+          deviations:
+              - id: DV-15
+                path: $.entity.createdBy
+                absent: true
+              - id: DV-15
+                path: $.entity.updatedBy
+                absent: true
+    - name: delete the three
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/bulk
+          params:
+              guid:
+                  - "{table}"
+                  - "{db1}"
+                  - "{db2}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_xtable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: t_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db1_{run}
+                            name: one
+                        guid: "{db1}"
+                        status: ACTIVE
+                        displayText: one
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db2_{run}
+                            name: two
+                        guid: "{db2}"
+                        status: ACTIVE
+                        displayText: two
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: purge them, and their relationships with them
+      request:
+          method: PUT
+          url: /api/atlas/admin/purge
+          json:
+              - "{table}"
+              - "{db1}"
+              - "{db2}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_xtable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: "{table}"
+                        status: DELETED
+                        displayText: t_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db1_{run}
+                            name: one
+                        guid: "{db1}"
+                        status: DELETED
+                        displayText: one
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_xdb_{run}
+                        attributes:
+                            qualifiedName: db2_{run}
+                            name: two
+                        guid: "{db2}"
+                        status: DELETED
+                        displayText: two
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: delete type scenario_xtable_db_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_xtable_db_{run}
+      response:
+          status: 204
+    - name: delete type scenario_xtable_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_xtable_{run}
+      response:
+          status: 204
+    - name: delete type scenario_xdb_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_xdb_{run}
+      response:
+          status: 204
