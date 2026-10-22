@@ -1939,6 +1939,8 @@
       
         
       
+        
+      
     
     
     
@@ -3441,6 +3443,33 @@
     
   
   053. The webapp is rewritten in Angular idiom, slice by slice
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/054-the-webapp-talks-to-one-server-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  054. The webapp talks to one server API
 
     
   </span>
@@ -6579,8 +6608,9 @@
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> –</li>
 <li><strong>Records:</strong> DD-096 (details skeleton: route contract, gated data), DD-097 (the
-  entity client grows with server 2.3); relies on ADR 053, DD-051, DD-054,
-  UIC-11..13 (7.13), WBP rules (7.0)</li>
+  entity client grows with server 2.3), DD-098 (one API base: the client's URLs
+  all ride the <code>API_BASE_URL</code> token, ADR 054); relies on ADR 053, DD-051,
+  DD-054, UIC-11..13 (7.13), WBP rules (7.0)</li>
 </ul>
 <p>Part of the <a href=".././7-0-webapp-foundation/">7.0 umbrella</a>, whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.</p>
@@ -6668,7 +6698,7 @@ test names, the 7.3 pattern).</p>
 </tr>
 <tr>
 <td>DET-03</td>
-<td><code>AtlasEntitiesService.getEntityByGuid(guid)</code> is the one client method for <code>GET {API_BASE_URL}/atlas/v2/entity/guid/{guid}</code> (DD-051's one-method rule, the typedefs client's pattern): the wire DTOs (<code>AtlasEntity</code>, its <code>relationships</code>, <code>classificationNames</code>, <code>relationshipAttributes.meanings</code>) are typed from the Apache Atlas 2.4.0 source (<code>intg/.../model/instance/AtlasEntity.java</code>, <code>EntityREST.java</code>), cited at the type. Specs use <code>HttpTestingController</code> — the method is honest against the wire format, and answers 404 against today's server; no screen calls it (DET-02).</td>
+<td><code>AtlasEntitiesService.getEntityByGuid(guid)</code> is the one client method for <code>GET {API_BASE_URL}/atlas/v2/entity/guid/{guid}</code> — composed from the injected token, no second base URL anywhere (DD-051's one-method rule, APC-01, the consolidated-server rule of ADR 054/DD-098, the typedefs client's pattern): the wire DTOs (<code>AtlasEntity</code>, its <code>relationships</code>, <code>classificationNames</code>, <code>relationshipAttributes.meanings</code>) are typed from the Apache Atlas 2.4.0 source (<code>intg/.../model/instance/AtlasEntity.java</code>, <code>EntityREST.java</code>), cited at the type. Specs use <code>HttpTestingController</code> — the method is honest against the wire format, and answers 404 against today's server; no screen calls it (DET-02).</td>
 </tr>
 <tr>
 <td>DET-04</td>

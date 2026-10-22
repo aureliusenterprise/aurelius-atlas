@@ -1939,6 +1939,8 @@
       
         
       
+        
+      
     
     
     
@@ -3453,6 +3455,33 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/054-the-webapp-talks-to-one-server-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  054. The webapp talks to one server API
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -4681,6 +4710,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         DD-097 — The entity client is built test-first against the Atlas wire format
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-098-one-api-base-the-clients-urls-all-ride-the-api_base_url-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-098 — One API base: the client's URLs all ride the API_BASE_URL token
       </span>
     </span>
   </a>
@@ -8388,6 +8428,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-098-one-api-base-the-clients-urls-all-ride-the-api_base_url-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-098 — One API base: the client's URLs all ride the API_BASE_URL token
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11351,6 +11402,36 @@ endpoints 2.4/3.x, unportable per DD-051's audit).</p>
 the typedefs client's shape (APC-01 base url, one method per legacy
 duplication, DD-051). When 2.3 lands, the e2e wiring scenario is the method's
 first real 200; its specs keep asserting the request until then.</p>
+<h3 id="dd-098-one-api-base-the-clients-urls-all-ride-the-api_base_url-token">DD-098 — One API base: the client's URLs all ride the API_BASE_URL token<a class="headerlink" href="#dd-098-one-api-base-the-clients-urls-all-ride-the-api_base_url-token" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.6</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> ADR 054's rule, in client shape: every Aurelius Atlas request
+composes its URL from the injected <code>API_BASE_URL</code> token (the APC-01 rule, now
+carrying the consolidated-server decision), and the webapp ships no second
+base-URL token, no hard-coded host, and no search-backend client. The
+served-app boundary holds it closed: the CSP keeps <code>connect-src 'self'</code>, and
+the e2e CSP scenario asserts the one origin.</p>
+<p><strong>Reason.</strong> The user's direction, 2026-10-22: "the legacy app had a split
+between the app search api and apache atlas api. This new version consolidates
+these into the server api... All requests can be expected to be made to the
+server api." The audit (7.3, DD-051) found the legacy split's two clients —
+the Atlas REST set and the App Search stack (<code>/elastic</code>, <code>/gov_quality</code>,
+<code>/data_quality</code>) — and ported only endpoints the server answers; the state
+already matches the rule. Recording it turns an audit outcome into a contract
+the search slice (7.4) cannot erode: when search lands, it lands as a server
+endpoint family (4.1) behind the same token, not as a second stack.</p>
+<p><strong>Alternatives.</strong> Record nothing (true today, silent tomorrow — 7.4 is the
+slice where a legacy-shaped search client would sneak back in). A purity-gate
+grep for the legacy hosts (the CSP assertion is the served-app's proof, the
+token is the code's; a grep bans strings, not shapes).</p>
+<p><strong>Consequences.</strong> DET-03's entity client composes from the token like the
+typedefs client; 7.4's search client joins it, specified from the Atlas
+source. The template example's <code>EntitiesService</code> (FastAPI CRUD/SSE, one SSE
+stream) stays a retiring example (DD-019, 7.10), not a second API. Any future
+non-server call site is an ADR event, not a pull request.</p>
 
 
 

@@ -97,6 +97,7 @@
 - [051\. The conversion proceeds in specified increments](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>)
 - [052\. Behaviour is specified by scenarios read from the reference source](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/index.md>)
 - [053\. The webapp is rewritten in Angular idiom, slice by slice](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice/index.md>)
+- [054\. The webapp talks to one server API](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/054-the-webapp-talks-to-one-server-api/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/conversion/design-log/index.md>)

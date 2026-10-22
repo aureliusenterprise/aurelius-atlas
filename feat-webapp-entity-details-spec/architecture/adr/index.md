@@ -60,6 +60,8 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [050](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>) | The system carries only the capabilities the catalogue needs — a named deviation from the template spine. | Accepted |
 | [051](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>) | The conversion proceeds in increments, each defined by a written specification before it is built. | Accepted |
 | [052](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/index.md>) | Behaviour is specified by scenarios read from the reference source and its tests, each citing where; the reference is never run. | Proposed |
+| [053](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice/index.md>) | The webapp is rewritten in Angular idiom, slice by slice, each slice specified before it is built. | Proposed |
+| [054](<https://aureliusenterprise.github.io/feat-webapp-entity-details-spec/architecture/adr/054-the-webapp-talks-to-one-server-api/index.md>) | The webapp talks to one server API - the consolidated Aurelius Atlas server; the legacy app-search/catalogue split is retired, not ported. | Proposed |
 
 ## Why record decisions
 
