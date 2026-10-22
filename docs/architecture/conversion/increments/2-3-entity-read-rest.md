@@ -67,7 +67,8 @@ Apache Atlas `release-2.4.0`:
 ## Deviations
 
 - DV-17: a read by a unique system attribute alone finds nothing; Atlas answers an arbitrary entity of the type.
-- DV-18: until 3.1, a reference that is also a relationship end is not in `relationshipAttributes` (DD-050).
+- DV-18: until 3.1, a reference that is also a relationship end is not in `relationshipAttributes` (DD-050);
+  ended by 3.1b (DD-064), whose REL-17 and REL-18 replace ERD-06's empty values.
 - DV-19: `bulk/uniqueAttribute` answers in query order, not Java's hash order.
 
 DV-15 and DV-16 hold for every entity.

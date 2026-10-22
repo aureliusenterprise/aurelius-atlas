@@ -1,9 +1,9 @@
-"""``EntityWriter``: creating, updating and deleting entities as ``AtlasEntityStoreV2`` does (EWR-02 to EWR-17).
+"""``EntityWriter``: creating, updating and deleting entities as ``AtlasEntityStoreV2`` does (EWR-02 to EWR-16).
 
 ``createOrUpdate``, ``preCreateOrUpdate``, ``updateByUniqueAttributes`` and ``updateEntityAttributeByGuid``, with
-the ``EntityMutationContext`` they fill: a request is discovered, mapped in memory and written in one write
-(DD-052). ``deleteById``, ``deleteByIds``, ``deleteByUniqueAttributes`` and ``purgeByIds`` through the delete
-handlers (EDL-02 to EDL-09).
+the ``EntityMutationContext`` they fill: a request is discovered, mapped in memory, its relationship attributes
+too (REL-11, DD-066), and written in one write (DD-052). ``deleteById``, ``deleteByIds``,
+``deleteByUniqueAttributes`` and ``purgeByIds`` through the delete handlers (EDL-02 to EDL-09).
 """
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
@@ -41,6 +41,7 @@ from aurelius_atlas_core.entity_store import (
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
+from aurelius_atlas_core.relationship_mapper import RelationshipMapper
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_entity import StoredEntity
 
@@ -262,29 +263,54 @@ class EntityWriter:
         context = await discovery.discover()
         mutation = await self._prepare(discovery, context, partial=partial)
         skipped = await self._unchanged(mutation)
+        now = self._store.now()
         mapper = EntityMapper(
             self._store.registry,
             resolve=lambda value: self._resolve(context, mutation, value),
             guid_assignments=mutation.guid_assignments,
-            now=self._store.now(),
+            now=now,
             user=self._user,
         )
-        changes: list[EntityChange] = []
+        relationships = RelationshipMapper(
+            self._store,
+            resolve=lambda value: self._resolve(context, mutation, value),
+            known=context.stored,
+            created={
+                str(entity.guid): StoredEntity(
+                    guid=str(entity.guid),
+                    type_name=str(entity_type.type_name),
+                    super_type_names=list(entity_type.all_super_types),
+                )
+                for entity, entity_type in mutation.created
+            },
+            now=now,
+            user=self._user,
+            hard=self._delete_type is DeleteType.HARD,
+            touched=mapper.touched,
+        )
         written: dict[str, StoredEntity] = {}
         for entity, entity_type in mutation.created:
+            await relationships.map(entity, entity_type, str(entity.guid), EntityOperation.CREATE)
             written[str(entity.guid)] = mapper.create(entity, entity_type, str(entity.guid))
+        operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         for entity, entity_type, stored in mutation.updated:
             if entity.guid not in skipped:
+                await relationships.map(entity, entity_type, str(entity.guid), operation)
                 new = mapper.update(entity, entity_type, stored.entity, partial=partial)
                 if not partial and stored.entity.is_incomplete:
                     new = new.model_copy(update={"is_incomplete": False})
                 written[str(entity.guid)] = new
         reported = await self._touch(mapper, context, written, skipped)
+        for guid, listed in relationships.listings().items():
+            current = written[guid] if guid in written else context.stored[guid].entity
+            written[guid] = current.model_copy(update={"relationship_guids": listed or None})
+        changes: list[EntityChange] = []
         for guid, new in written.items():
             stored = context.stored.get(guid)
             changes.append(EntityChange(new, None if stored is None else stored.version))
-        if changes:
-            await self._store.write(changes)
+        relationship_changes = relationships.relationship_changes()
+        if changes or relationship_changes:
+            await self._store.write(changes, relationship_changes)
         return await self._response(mutation, skipped, reported, partial=partial)
 
     async def _prepare(self, discovery: EntityDiscovery, context: DiscoveryContext, *, partial: bool) -> _Mutation:

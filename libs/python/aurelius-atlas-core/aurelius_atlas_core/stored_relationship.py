@@ -15,7 +15,8 @@ _MILLISECOND = timedelta(milliseconds=1)
 class StoredRelationship(AtlasModel):
     """One document of the relationship index: its ends' GUIDs, label, state, times, users and attribute values.
 
-    Attribute values are stored by attribute name (DD-049); ``write_id`` names the write that last wrote it (DD-046).
+    Attribute values are stored by attribute name (DD-049); ``index`` is the position the last write of an array
+    gave it (DD-065); ``write_id`` names the write that last wrote it (DD-046).
     """
 
     guid: str
@@ -33,6 +34,7 @@ class StoredRelationship(AtlasModel):
     provenance_type: int | None = None
     home_id: str | None = None
     attributes: dict[str, Any] = Field(default_factory=dict)
+    index: int | None = None
     write_id: str | None = None
 
     def ends(self) -> tuple[str, str]:

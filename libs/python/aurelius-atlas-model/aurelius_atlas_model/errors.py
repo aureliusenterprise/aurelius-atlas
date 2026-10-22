@@ -108,6 +108,7 @@ class AtlasErrorCode(Enum):
         "relationshipDef {0} cannot have a LIST cardinality on an end",
     )
     RELATIONSHIPDEF_INVALID_END_TYPE = (400, "ATLAS-400-00-035", "relationshipDef {0} has invalid end type {1}")
+    RELATIONSHIPDEF_INVALID = (400, "ATLAS-400-00-044", "Invalid relationshipDef: {0}")
     INVALID_RELATIONSHIP_END_TYPE = (
         400,
         "ATLAS-400-00-036",

@@ -1,4 +1,4 @@
-"""``EntityWriter`` (EWR-02 to EWR-17) on the in-memory documents.
+"""``EntityWriter`` (EWR-02 to EWR-17, REL-11) on the in-memory documents.
 
 The expected stored values and responses are read from ``AtlasEntityStoreV2`` (``createOrUpdate``,
 ``preCreateOrUpdate``, ``updateByUniqueAttributes``, ``updateEntityAttributeByGuid``), ``EntityGraphMapper`` and the
@@ -366,11 +366,11 @@ async def test__one_attribute_is_set_by_guid(store: EntityStore) -> None:
         assert raised.value.message == message
 
 
-@pytest.mark.covers(f"{W}.EntityWriter.create_or_update", rules=["EWR-17"])
-async def test__a_legacy_relationship_end_is_stored_as_its_attribute_and_others_are_resolved_only(
+@pytest.mark.covers(f"{W}.EntityWriter.create_or_update", rules=["EWR-17", "REL-11"])
+async def test__relationship_attribute_values_become_relationships_and_must_name_an_entity(
     store: EntityStore,
 ) -> None:
-    """``holder`` is also an attribute and is stored; ``home`` is not; both must name an entity."""
+    """``holder`` (a legacy end) and ``home`` are relationships, not attribute values (DD-064)."""
     await write(store, entity("s_database", "-1", qualifiedName="db@cl"))
     database = {"guid": g("-1"), "typeName": "s_database"}
 
@@ -380,8 +380,14 @@ async def test__a_legacy_relationship_end_is_stored_as_its_attribute_and_others_
         {**entity("s_table", "-3", qualifiedName="t@cl"), "relationshipAttributes": {"home": database}},
     )
 
-    assert (await stored(store, g("-2")))["holder"] == g("-1")
+    held = await store.get(g("-1"))
+    assert held is not None
+    relationships = await store.get_relationships(held.entity.relationship_guids or [])
+    assert "holder" not in await stored(store, g("-2"))
     assert "home" not in await stored(store, g("-3"))
+    assert sorted((found.relationship.type_name, found.relationship.end1_guid) for found in relationships.values()) == (
+        sorted([("w_item_holder", g("-2")), ("s_table_home", g("-3"))])
+    )
     assert await failure(store, {**entity("s_table", "-3"), "relationshipAttributes": {"home": {"guid": "x"}}}) == (
         AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND,
         "Referenced entity x is not found",

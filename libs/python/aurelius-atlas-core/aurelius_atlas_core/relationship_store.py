@@ -18,6 +18,7 @@ from aurelius_atlas_model.instance import (
 from aurelius_atlas_model.typedef import PropagateTags
 from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 from aurelius_atlas_typesystem.entity_type import EntityType
+from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_typesystem.relationship_type import RelationshipType
 
 from aurelius_atlas_core.delete_type import DeleteType
@@ -140,8 +141,15 @@ class RelationshipStore:
     async def _create(self, relationship: AtlasRelationship) -> AtlasRelationship:
         end1 = await self._end(relationship.end1)
         end2 = await self._end(relationship.end2)
-        relationship_type, end1, end2 = self._validate(end1, end2, relationship)
-        label = _edge_label(relationship_type, end1.entity, end2.entity)
+        relationship_type = validate_relationship(
+            self._store.registry,
+            None if end1 is None else end1.entity,
+            None if end2 is None else end2.entity,
+            relationship,
+        )
+        if end1 is None or end2 is None:  # pragma: no cover - validate_relationship raises first
+            raise AssertionError
+        label = relationship_edge_label(relationship_type, end1.entity, end2.entity)
         listed = await self._store.get_relationships(end1.entity.relationship_guids or [])
         for found in listed.values():
             existing = found.relationship
@@ -152,26 +160,15 @@ class RelationshipStore:
                     end1.entity.guid,
                     end2.entity.guid,
                 )
-        now = self._store.now()
-        stored = StoredRelationship(
-            guid=given if (given := relationship.guid) and is_assigned_guid(given) else self._store.new_guid(),
-            type_name=str(relationship_type.type_name),
-            label=label,
-            end1_guid=end1.entity.guid,
-            end2_guid=end2.entity.guid,
-            propagate_tags=_tag_propagation(relationship_type, end1.entity, end2.entity),
-            create_time=now,
-            update_time=now,
-            created_by=self._user,
-            updated_by=self._user,
-            version=relationship.version or 0,
-            provenance_type=relationship.provenance_type,
-            home_id=relationship.home_id,
-            attributes={
-                name: _stored(relationship.get_attribute(name))
-                for name in relationship_type.all_attributes
-                if relationship.get_attribute(name) is not None
-            },
+        given = relationship.guid
+        stored = created_relationship(
+            relationship_type,
+            end1.entity,
+            end2.entity,
+            relationship,
+            guid=given if given and is_assigned_guid(given) else self._store.new_guid(),
+            now=self._store.now(),
+            user=self._user,
         )
         ends = {end1.entity.guid: end1, end2.entity.guid: end2}
         changes = [EntityChange(end.entity.listing(stored.guid), end.version) for end in ends.values()]
@@ -197,7 +194,13 @@ class RelationshipStore:
         unnamed = not relationship.type_name
         if unnamed:
             relationship.type_name = stored.type_name
-        relationship_type, _, _ = self._validate(ends.get(stored.end1_guid), ends.get(stored.end2_guid), relationship)
+        end1, end2 = ends.get(stored.end1_guid), ends.get(stored.end2_guid)
+        relationship_type = validate_relationship(
+            self._store.registry,
+            None if end1 is None else end1.entity,
+            None if end2 is None else end2.entity,
+            relationship,
+        )
         if unnamed:
             relationship.type_name = None
         update: dict[str, Any] = {"attributes": _updated_attributes(relationship_type, relationship, stored)}
@@ -223,44 +226,6 @@ class RelationshipStore:
                 current,
                 given.guid,
             )
-
-    def _validate(
-        self, end1: VersionedEntity | None, end2: VersionedEntity | None, relationship: AtlasRelationship
-    ) -> tuple[RelationshipType, VersionedEntity, VersionedEntity]:
-        """``validateRelationship``: type, ends, end types, tag propagation, then the type's value checks.
-
-        Answers the type and both ends, found.
-        """
-        name = relationship.type_name
-        relationship_type = self._store.registry.relationship_type(name)
-        if relationship_type is None:
-            raise AtlasError(AtlasErrorCode.INVALID_VALUE, UNKNOWN_TYPE.format(name=java_string(name)))
-        end1_type, end2_type = _types(relationship_type)
-        if end1 is None:
-            raise AtlasError(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, end1_type.type_name)
-        if end2 is None:
-            raise AtlasError(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, end2_type.type_name)
-        name1, name2 = end1.entity.type_name, end2.entity.type_name
-        if _of_type(end1_type, name1):
-            valid = _of_type(end2_type, name2)
-        else:
-            valid = _of_type(end2_type, name1) and _of_type(end1_type, name2)
-        if not valid:
-            raise AtlasError(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, name, end2_type.type_name, name1)
-        type_propagation = relationship_type.relationship_def.propagate_tags or PropagateTags.NONE
-        propagation = relationship.propagate_tags or PropagateTags.NONE
-        if (
-            propagation is not PropagateTags.NONE
-            and type_propagation is not PropagateTags.BOTH
-            and propagation is not type_propagation
-        ):
-            raise AtlasError(AtlasErrorCode.INVALID_PROPAGATION_TYPE, propagation.value, name, type_propagation.value)
-        messages: list[str] = []
-        relationship_type.validate_value(relationship, str(name), messages)
-        if messages:
-            raise AtlasError(AtlasErrorCode.RELATIONSHIP_CRUD_INVALID_PARAMS, messages)
-        relationship_type.get_normalized_value(relationship)
-        return relationship_type, end1, end2
 
     async def _end(self, end: AtlasObjectId | None) -> VersionedEntity | None:
         """``getVertexFromEndPoint``: by GUID in any state, else the ``ACTIVE`` holder of the unique values."""
@@ -293,6 +258,82 @@ class RelationshipStore:
         return stored.to_relationship(object_ids[0], object_ids[1], names)
 
 
+def validate_relationship(
+    registry: TypeRegistry, end1: StoredEntity | None, end2: StoredEntity | None, relationship: AtlasRelationship
+) -> RelationshipType:
+    """``validateRelationship``: type, ends, end types, tag propagation, then the type's value checks (REL-04).
+
+    Normalises the relationship's attribute values and answers its type.
+
+    Raises:
+        AtlasError: ``INVALID_VALUE``, ``RELATIONSHIP_END_IS_NULL``, ``INVALID_RELATIONSHIP_END_TYPE``,
+            ``INVALID_PROPAGATION_TYPE`` or ``RELATIONSHIP_CRUD_INVALID_PARAMS``.
+    """
+    name = relationship.type_name
+    relationship_type = registry.relationship_type(name)
+    if relationship_type is None:
+        raise AtlasError(AtlasErrorCode.INVALID_VALUE, UNKNOWN_TYPE.format(name=java_string(name)))
+    end1_type, end2_type = _types(relationship_type)
+    if end1 is None:
+        raise AtlasError(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, end1_type.type_name)
+    if end2 is None:
+        raise AtlasError(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, end2_type.type_name)
+    name1, name2 = end1.type_name, end2.type_name
+    if _of_type(end1_type, name1):
+        valid = _of_type(end2_type, name2)
+    else:
+        valid = _of_type(end2_type, name1) and _of_type(end1_type, name2)
+    if not valid:
+        raise AtlasError(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, name, end2_type.type_name, name1)
+    type_propagation = relationship_type.relationship_def.propagate_tags or PropagateTags.NONE
+    propagation = relationship.propagate_tags or PropagateTags.NONE
+    if (
+        propagation is not PropagateTags.NONE
+        and type_propagation is not PropagateTags.BOTH
+        and propagation is not type_propagation
+    ):
+        raise AtlasError(AtlasErrorCode.INVALID_PROPAGATION_TYPE, propagation.value, name, type_propagation.value)
+    messages: list[str] = []
+    relationship_type.validate_value(relationship, str(name), messages)
+    if messages:
+        raise AtlasError(AtlasErrorCode.RELATIONSHIP_CRUD_INVALID_PARAMS, messages)
+    relationship_type.get_normalized_value(relationship)
+    return relationship_type
+
+
+def created_relationship(  # noqa: PLR0913 - Java takes the time and user from the request context
+    relationship_type: RelationshipType,
+    end1: StoredEntity,
+    end2: StoredEntity,
+    relationship: AtlasRelationship,
+    *,
+    guid: str,
+    now: int,
+    user: str | None,
+) -> StoredRelationship:
+    """``createRelationship``: the relationship REL-05 creates from ``end1`` to ``end2``, not yet written."""
+    return StoredRelationship(
+        guid=guid,
+        type_name=str(relationship_type.type_name),
+        label=relationship_edge_label(relationship_type, end1, end2),
+        end1_guid=end1.guid,
+        end2_guid=end2.guid,
+        propagate_tags=_tag_propagation(relationship_type, end1, end2),
+        create_time=now,
+        update_time=now,
+        created_by=user,
+        updated_by=user,
+        version=relationship.version or 0,
+        provenance_type=relationship.provenance_type,
+        home_id=relationship.home_id,
+        attributes={
+            name: _stored(relationship.get_attribute(name))
+            for name in relationship_type.all_attributes
+            if relationship.get_attribute(name) is not None
+        },
+    )
+
+
 def _types(relationship_type: RelationshipType) -> tuple[EntityType, EntityType]:
     end1_type, end2_type = relationship_type.end1_type, relationship_type.end2_type
     if end1_type is None or end2_type is None:  # pragma: no cover - a registered relationship type has both
@@ -309,8 +350,10 @@ def _type_and_super_types(store_entity: StoredEntity) -> set[str]:
     return {store_entity.type_name, *store_entity.super_type_names}
 
 
-def _edge_label(relationship_type: RelationshipType, from_entity: StoredEntity, to_entity: StoredEntity) -> str | None:
-    """``getRelationshipEdgeLabel``: the label of the relationship attribute of the end ``from_entity`` is."""
+def relationship_edge_label(
+    relationship_type: RelationshipType, from_entity: StoredEntity, to_entity: StoredEntity
+) -> str | None:
+    """``getRelationshipEdgeLabel``: the label of the relationship attribute of the end ``from_entity`` is (REL-05)."""
     end1_def, end2_def = relationship_type.relationship_def.end_def1, relationship_type.relationship_def.end_def2
     end1_type, end2_type = _types(relationship_type)
     from_types, to_types = _type_and_super_types(from_entity), _type_and_super_types(to_entity)

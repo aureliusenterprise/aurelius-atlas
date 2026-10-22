@@ -53,8 +53,8 @@ store as Atlas does: `guid/{guid}`, `uniqueAttribute/type/{typeName}` with `attr
 `ignoreRelationships`. Its writes create and update entities through the entity writer: `POST` with one entity
 and those it names, `POST bulk`, `PUT uniqueAttribute/type/{typeName}` and `PUT guid/{guid}?name=<attribute>`,
 each answering Atlas's `EntityMutationResponse`. Classifications and business attributes given with an entity
-are ignored until their increments; relationship attribute values are stored only for legacy ends until 3.1
-(DD-053).
+are ignored until their increments. Relationship attribute values, legacy ends among the attributes included,
+become relationships, and reads answer them in `relationshipAttributes` (DD-064).
 
 Its deletes (`DELETE guid/{guid}`, `DELETE bulk`, `DELETE uniqueAttribute/type/{typeName}`) delete an entity
 with the entities it owns and change those referring to it; `PUT /api/atlas/admin/purge` removes deleted
@@ -64,8 +64,9 @@ entities for good. Deletes are soft unless `AURELIUS_ATLAS_SERVER_DELETE_TYPE` i
 ## Relationships
 
 The endpoints of Atlas's `RelationshipREST` (`aurelius_atlas_server/routes/relationship.py`) create, read,
-update and delete relationship instances; deleting an entity deletes its relationships with it. Relationship
-attributes of entities (`relationshipAttributes`) follow in increment 3.1b.
+update and delete relationship instances; deleting an entity deletes its relationships with it. An entity
+write creates, reuses and deletes the relationships its relationship attributes name, in the same write
+(DD-066).
 
 ## Running it
 

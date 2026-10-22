@@ -23,8 +23,7 @@ class EntityComparator:
     async def has_difference(self, entity: AtlasEntity, entity_type: EntityType, stored: StoredEntity) -> bool:
         """``getDiffResult(…).hasDifference()``: a given attribute, relationship attribute or custom attributes differ.
 
-        A relationship attribute is compared with the stored value of the attribute of the same name, the only
-        place it is stored until 3.1 (DD-053).
+        A relationship attribute is compared with what its relationships read (REL-18).
         """
         for name, value in (entity.attributes or {}).items():
             attribute = entity_type.all_attributes.get(name)
@@ -36,8 +35,7 @@ class EntityComparator:
             attribute = entity_type.relationship_attribute(name, relationship_type_of(value))
             if attribute is None:
                 continue
-            legacy = entity_type.all_attributes.get(name)
-            current = None if legacy is None else await self._retriever.entity_attribute(stored, legacy)
+            current = await self._retriever.entity_attribute(stored, attribute)
             if not attribute.attribute_type.are_equal_values(current, value, self._guid_assignments):
                 return True
         return entity.custom_attributes is not None and entity.custom_attributes != stored.custom_attributes
