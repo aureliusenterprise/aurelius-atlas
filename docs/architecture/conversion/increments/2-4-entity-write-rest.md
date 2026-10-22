@@ -99,8 +99,9 @@ two races (DD-052). DV-21: Atlas orders the references of an array by the hash o
 reported in the order they were reached, where Atlas uses a `HashMap`'s. DV-22: until 3.1, a relationship
 attribute that is not also an attribute of the type is not stored (DD-053). DV-23: a partial update appending
 to an array or map of references fails in Atlas with `INVALID_OBJECT_ID`, since it maps the stored edges as
-values; Aurelius Atlas appends. DV-24: a bulk request without `entities` fails in Atlas with a
-`NullPointerException`; Aurelius Atlas answers it as one with none.
+values; Aurelius Atlas appends. DV-24: a `POST` without a body, or a bulk request without `entities`, fails in
+Atlas with a `NullPointerException`; Aurelius Atlas answers them as a null entity and as an empty list. A body
+that is not JSON, or not the request's model, is answered as DV-10 answers it for types.
 
 ## Acceptance
 
