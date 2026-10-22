@@ -17,7 +17,12 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   models directory and the nine typedef patch actions
 - `aurelius_atlas_core/models/` — `addons/models` of Atlas 2.4.0, byte for byte: never edit, reformat or
   re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar)
-- `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` for unit tests
+- `aurelius_atlas_core/entity_store.py` — `EntityStore`: GUIDs, reads by GUID and unique attributes,
+  all-or-nothing writes through the journal, recovery and the type usage check (DD-043 to DD-048)
+- `aurelius_atlas_core/entity_documents.py` — `EntityDocuments` and its Elasticsearch implementation: the entity,
+  unique value and journal indices; `stored_entity.py` (`StoredEntity`) and `unique_key.py` (`UniqueKey`)
+- `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` and `MemoryEntityDocuments` (with injected
+  failures and crashes) for unit tests
 - `tests/` — TDS-01 to TDS-13 and MDL-01 to MDL-15 on the in-memory document and the fake client;
   `tests/fixtures/` holds Atlas's `0010-base_model.json`, unchanged and skipped by the hooks
 - `e2e/` — the store on the dev Elasticsearch, each test on an alias of its own

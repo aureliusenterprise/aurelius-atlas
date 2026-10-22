@@ -469,3 +469,15 @@ async def test__while_patching_a_changed_end_still_fails(store: TypedefStore) ->
     end2 = await store.apply_patch(record("2"), lambda _registry: update(("c", "toA"), ("a", "toB")))
 
     assert (end1, end2) == (PatchStatus.FAILED, PatchStatus.FAILED)
+
+
+@pytest.mark.covers("aurelius_atlas_core.typedef_store.TypedefStore.patches", rules=["ENS-10"])
+async def test__the_patch_records_are_listed_by_id(store: TypedefStore) -> None:
+    """``AtlasPatchRegistry.getAllPatches`` sorts by id as Java compares strings: ``p-10`` before ``p-2``."""
+    await store.create_types_def(types(entity("t", version="1.0")))
+    assert store.patches() == []
+
+    for patch_id in ("p-2", "p-10", "p-1"):
+        await store.apply_patch(record(patch_id), lambda registry: set_service_type(registry, "svc"))
+
+    assert [patch.id for patch in store.patches()] == ["p-1", "p-10", "p-2"]

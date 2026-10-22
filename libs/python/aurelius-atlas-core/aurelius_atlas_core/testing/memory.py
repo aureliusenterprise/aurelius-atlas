@@ -1,7 +1,12 @@
-"""A ``TypedefDocument`` in memory, for unit tests that need no Elasticsearch."""
+"""``TypedefDocument`` and ``EntityDocuments`` in memory, for unit tests that need no Elasticsearch."""
 
+from collections.abc import Sequence
+
+from aurelius_atlas_model import codec
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
+from aurelius_atlas_core.entity_documents import JournalEntry, Reservation, VersionedEntity, WriteResult
+from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
 
 
@@ -57,3 +62,101 @@ class MemoryTypedefDocument:
         """Put definitions in place, as another process would."""
         self.seq_no += 1
         self.json = types_def.to_json()
+
+
+class SimulatedCrashError(RuntimeError):
+    """Raised by ``MemoryEntityDocuments`` to stand for a process dying part-way through a write."""
+
+
+class MemoryEntityDocuments:
+    """``EntityDocuments`` in memory, kept as JSON with a version per document, as Elasticsearch would.
+
+    ``fail`` maps a GUID to ``"conflict"`` or ``"error"`` for the next bulk write of it; ``crash_after_write`` makes
+    the next bulk write raise ``SimulatedCrashError`` after writing, as if the process died.
+    """
+
+    def __init__(self) -> None:
+        self.entities: dict[str, tuple[dict[str, object], DocumentVersion]] = {}
+        self.unique_values: dict[str, Reservation] = {}
+        self.journal_entries: dict[str, dict[str, object]] = {}
+        self.prepared = False
+        self.fail: dict[str, str] = {}
+        self.crash_after_write = False
+        self._seq_no = -1
+
+    def _next_version(self) -> DocumentVersion:
+        self._seq_no += 1
+        return DocumentVersion(self._seq_no, 1)
+
+    async def prepare(self) -> None:
+        """Record the call."""
+        self.prepared = True
+
+    async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
+        """The stored entities with these GUIDs."""
+        return {
+            guid: VersionedEntity(StoredEntity.model_validate(codec.loads(codec.dumps(source))), version)
+            for guid in guids
+            if (found := self.entities.get(guid)) is not None
+            for source, version in [found]
+        }
+
+    async def write(self, items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]:
+        """Write each entity unless it conflicts or ``fail`` names it."""
+        results = []
+        for entity, version in items:
+            current = self.entities.get(entity.guid)
+            failure = self.fail.pop(entity.guid, None)
+            conflict = (version is None and current is not None) or (
+                version is not None and (current is None or current[1] != version)
+            )
+            if conflict or failure == "conflict":
+                results.append(WriteResult(entity.guid, written=False, conflict=True))
+            elif failure == "error":
+                results.append(WriteResult(entity.guid, written=False))
+            else:
+                self.entities[entity.guid] = (codec.loads(codec.dumps(entity.to_json())), self._next_version())
+                results.append(WriteResult(entity.guid, written=True))
+        if self.crash_after_write:
+            self.crash_after_write = False
+            raise SimulatedCrashError
+        return results
+
+    async def restore(self, guid: str, before: StoredEntity | None) -> None:
+        """Put back the state before, or delete."""
+        if before is None:
+            self.entities.pop(guid, None)
+        else:
+            self.entities[guid] = (codec.loads(codec.dumps(before.to_json())), self._next_version())
+
+    async def reserve(self, reservation: Reservation) -> Reservation | None:
+        """Create-only."""
+        if reservation.key in self.unique_values:
+            return self.unique_values[reservation.key]
+        self.unique_values[reservation.key] = reservation
+        return None
+
+    async def reservations(self, keys: Sequence[str]) -> dict[str, Reservation]:
+        """The reservations that exist."""
+        return {key: self.unique_values[key] for key in keys if key in self.unique_values}
+
+    async def release(self, key: str, guid: str) -> None:
+        """Delete the reservation if ``guid`` holds it."""
+        if (held := self.unique_values.get(key)) is not None and held.guid == guid:
+            del self.unique_values[key]
+
+    async def put_journal(self, entry: JournalEntry) -> None:
+        """Keep the entry."""
+        self.journal_entries[entry.write_id] = codec.loads(codec.dumps(entry.to_json()))
+
+    async def delete_journal(self, write_id: str) -> None:
+        """Drop the entry."""
+        self.journal_entries.pop(write_id, None)
+
+    async def journal(self) -> list[JournalEntry]:
+        """Every entry."""
+        return [JournalEntry.model_validate(source) for source in self.journal_entries.values()]
+
+    async def count_type(self, type_name: str) -> int:
+        """Entities of exactly the type."""
+        return sum(1 for source, _ in self.entities.values() if source.get("typeName") == type_name)
