@@ -6183,7 +6183,8 @@
   body-scroll: the head and subhead stay fixed), DD-092 (the joined bar: ramp
   order, severity fills, actions as group members), DD-093 (the bar's equal
   height: the compacted count badge), DD-094 (the void chip: an empty severity
-  greys out); relies on ADR 053, DD-063,
+  greys out), DD-095 (show-all removed: the bar's shape never shifts);
+  relies on ADR 053, DD-063,
   DD-069, DD-070, DD-078, DD-079</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
@@ -6269,7 +6270,7 @@ the drawer — ALR-12; no read-later list), or served-app e2e scenarios
 </tr>
 <tr>
 <td>ALR-11</td>
-<td>Above the feed rides the inbox bar (the ui-lib <code>AlertInbox</code>, DD-090): a full-width Bulma button group (<code>buttons has-addons</code>) of one chip per severity, in inbox order — <code>info</code>, <code>warning</code>, <code>error</code>, the ramp calm to urgent (DD-092) — a chip appears even for an empty severity, a filter with no results is still a filter. Each chip shows that severity's <strong>total</strong> group count (the chips are filters; the number is coverage, not news) and carries a dot while any of its groups is unread (ALR-12); a severity with <strong>no</strong> alerts greys out — the chip is disabled, unpressed, and takes no fill, a filter with nothing to show has nothing to toggle (DD-094). A chip toggles its severity's rows in the feed (pressed = shown); a shown chip rides its severity's pinned fill (DD-063's ramp, the inks the ramp's own inverts — Bulma's <code>.button.is-*</code> fills are scheme-following, SHM-04's trap, DD-092), an unpressed chip is a plain button. Which severities are hidden is the panel's view state, the store's counts and the bell ignore it. Show all (fully filtered) and Clear all are members of the same group, <code>is-expanded</code> like the chips (DD-092) — the strip is one joined bar. The bar rides the drawer's <code>drawer-subhead</code> slot — a strip below the head, outside the scrolling body (DD-090, DD-091).</td>
+<td>Above the feed rides the inbox bar (the ui-lib <code>AlertInbox</code>, DD-090): a full-width Bulma button group (<code>buttons has-addons</code>) of one chip per severity, in inbox order — <code>info</code>, <code>warning</code>, <code>error</code>, the ramp calm to urgent (DD-092) — a chip appears even for an empty severity, a filter with no results is still a filter. Each chip shows that severity's <strong>total</strong> group count (the chips are filters; the number is coverage, not news) and carries a dot while any of its groups is unread (ALR-12); a severity with <strong>no</strong> alerts greys out — the chip is disabled, unpressed, and takes no fill, a filter with nothing to show has nothing to toggle (DD-094). A chip toggles its severity's rows in the feed (pressed = shown); a shown chip rides its severity's pinned fill (DD-063's ramp, the inks the ramp's own inverts — Bulma's <code>.button.is-*</code> fills are scheme-following, SHM-04's trap, DD-092), an unpressed chip is a plain button. Which severities are hidden is the panel's view state, the store's counts and the bell ignore it. Clear all is a member of the same group, <code>is-expanded</code> like the chips (DD-092) — the strip is one joined bar. The bar shows no show-all control: appearing at full filtering it inserted a fourth expanded segment and the chips jumped narrower, and the way back is a chip, which stays clickable while hidden (DD-095). The bar rides the drawer's <code>drawer-subhead</code> slot — a strip below the head, outside the scrolling body (DD-090, DD-091).</td>
 </tr>
 <tr>
 <td>ALR-12</td>
@@ -6317,8 +6318,9 @@ per feature, uncollected. The drawer is Aurelius's own interface (ADR 053).</p>
   (ALR-07, ALR-09, ALR-10, ALR-12)</li>
 <li><code>alert-inbox/alert-inbox.component.spec.ts</code> — one chip per severity in
   feed order, totals not unread counts, the unread dot and its label,
-  pressed/hidden chips, the toggle output, show-all only fully filtered,
-  caller labels, the projected action (ALR-11, ALR-12)</li>
+  pressed/hidden chips, the toggle output, the bar's stable shape at
+  full filtering (DD-095), caller labels, the projected action
+  (ALR-11, ALR-12)</li>
 <li><code>drawer/drawer.component.spec.ts</code> — the <code>drawer-subhead</code> slot projects
   between head and body, outside the scrolling body (DD-090)</li>
 <li><code>alerts/alerts.service.spec.ts</code> — add appends newest-first, the 60 s

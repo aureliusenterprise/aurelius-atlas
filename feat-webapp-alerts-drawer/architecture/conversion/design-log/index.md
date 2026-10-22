@@ -1336,3 +1336,17 @@ The brand theme (DD-059/062) pins the light ink chain in `:root` — body `#4a4a
 **Alternatives.** Keep it clickable, greyed by class only (a click that does nothing — the affordance lies). Hide the empty chips (DD-090 chose a fixed three-chip bar — the shape is the legend; hiding makes the bar reshuffle as the feed churns). Strike the zero, keep the colour (a coloured zero still reads "on").
 
 **Consequences.** The `is-selected` fill gate moves from "not hidden" to "has alerts and not shown hidden" — the `isOn`/`isVoid` pair on the component. `allHidden` (DD-090) was already void-aware: an empty severity's chip does not keep the show-all control away, and its disabled chip cannot be clicked off, so the control cannot strand a void-only bar. The panel hides the whole bar on an empty store, so the all-void state shows only in isolation (the Empty story).
+
+### DD-095 — Show all is gone: the bar's shape never shifts
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** The inbox bar has no show-all control (ALR-11). The `showAllLabel` input, the `showAll` output, the `allHidden` computed, the conditional button, and the panel's `showAll()`/`showAllLabel` are removed; the way back from a fully-filtered feed is a chip — a hidden chip stays enabled (only a void chip is disabled, DD-094), and clicking it shows its severity again. DD-092's "actions as group members" stands for the projected clear-all; it no longer covers show-all.
+
+**Reason.** The user's review: appearing at full filtering, the control joined the `buttons has-addons` group as a fourth `is-expanded` segment — the three chips each jumped from a third to a quarter of the row, every toggle into and out of the fully-hidden state. A bar whose segments resize on state change reads as broken furniture; the escape hatch was worth less than the jump. It was also redundant: the chips were always clickable in that state (the hiding is per-severity and independent), so show-all only ever did what three clicks — usually one — already did.
+
+**Alternatives.** A fixed-width reserved slot (a gap in the bar, always sized for a button that is almost never there). Absolute positioning outside the group (a floating control breaking the joined bar, DD-092's shape). Auto-restoring the filter when the feed empties (filtering to nothing is a legitimate state — the counts stay, the user chose it; silently undoing it is worse than no control).
+
+**Consequences.** The bar's segment count is constant while it shows (chips + projected action), so the joined strip never reflows. The fully-filtered state shows the feed's empty line under all-flat chips — self-explanatory, and the counts on the chips say what is hidden. The `shell.alerts.showAll` string leaves both fixture locales and both catalogues (25 shell.alerts entries → 24). The AllHidden story and the two bar tests carry the new contract: no control, three expanded segments, a hidden chip toggles back on.
