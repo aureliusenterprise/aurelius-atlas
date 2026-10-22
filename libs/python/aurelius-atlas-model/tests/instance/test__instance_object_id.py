@@ -1,7 +1,10 @@
 """``AtlasObjectId`` (ENT-11), read from ``org.apache.atlas.model.instance.AtlasObjectId`` of Atlas 2.4.0."""
 
 import pytest
+from aurelius_atlas_model.errors import java_string
 from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelatedObjectId
+
+OBJECT_ID = "aurelius_atlas_model.instance.object_id.AtlasObjectId"
 
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["ENT-11"])
@@ -39,3 +42,12 @@ def test__an_object_id_made_from_a_map_reads_three_keys() -> None:
 
     assert (read.guid, read.type_name, read.unique_attributes) == ("5", "t", {"q": "n"})
     assert AtlasObjectId.from_map({"uniqueAttributes": ["q"]}).to_json() == {}
+
+
+@pytest.mark.covers(f"{OBJECT_ID}.java_string", "aurelius_atlas_model.errors.java_string", rules=["EWR-05"])
+def test__an_object_id_is_written_as_java_writes_it() -> None:
+    """``AtlasObjectId.toString``: ``null`` for no GUID, unique attributes as ``name:value``."""
+    by_values = AtlasObjectId(type_name="t", unique_attributes={"qualifiedName": "x", "n": 1})
+
+    assert java_string(by_values) == "AtlasObjectId{guid='null', typeName='t', uniqueAttributes={qualifiedName:x, n:1}}"
+    assert java_string(AtlasObjectId(guid="g")) == "AtlasObjectId{guid='g', typeName='null', uniqueAttributes={}}"
