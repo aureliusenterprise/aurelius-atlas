@@ -18,9 +18,11 @@ from aurelius_atlas_core.entity_documents import (
     JournalEntry,
     Reservation,
     VersionedEntity,
+    VersionedRelationship,
     WriteResult,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_core.unique_key import UniqueKey
 
@@ -70,8 +72,20 @@ class EntityChange:
     remove: bool = False
 
 
+@dataclass(frozen=True)
+class RelationshipChange:
+    """One relationship of a write: its new state and the version it was read in, or None for a new one.
+
+    With ``remove``, the write removes the relationship, which must have been read (DD-062).
+    """
+
+    relationship: StoredRelationship
+    expected: DocumentVersion | None = None
+    remove: bool = False
+
+
 class EntityStore:
-    """Entities of the registry's entity types in ``EntityDocuments``."""
+    """Entities of the registry's entity types, and the relationships between them, in ``EntityDocuments``."""
 
     def __init__(
         self,
@@ -137,10 +151,17 @@ class EntityStore:
         """The entities whose references name any of these GUIDs (EDL-10, DD-057)."""
         return await self._documents.referring(list(dict.fromkeys(guids)))
 
-    async def write(self, changes: Sequence[EntityChange]) -> None:
-        """Write new, changed and removed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08).
+    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
+        """The relationships with these GUIDs that exist, as last written (REL-06, DD-061)."""
+        return await self._documents.get_relationships(list(dict.fromkeys(guids)))
 
-        Each written entity carries the GUIDs its references name (DD-057); removals are journaled too (DD-056).
+    async def write(
+        self, changes: Sequence[EntityChange], relationship_changes: Sequence[RelationshipChange] = ()
+    ) -> None:
+        """Write new, changed and removed entities and relationships, all or nothing, through the journal.
+
+        ENS-05, ENS-07, ENS-08. Each written entity carries the GUIDs its references name (DD-057); removals and
+        relationships are journaled too (DD-056, DD-062).
 
         Raises:
             UniqueValueTakenError: A unique value is held by another entity.
@@ -148,9 +169,11 @@ class EntityStore:
             EntityWriteError: An entity could not be written; the write was undone.
         """
         write_id = self._new_id()
-        for change in changes:
+        for guid, change in [(change.entity.guid, change) for change in changes] + [
+            (change.relationship.guid, change) for change in relationship_changes
+        ]:
             if change.remove and change.expected is None:
-                raise EntityWriteError(REMOVE_UNREAD_ERROR.format(guid=change.entity.guid))
+                raise EntityWriteError(REMOVE_UNREAD_ERROR.format(guid=guid))
         kept = [change for change in changes if not change.remove]
         removed = [change for change in changes if change.remove]
         entities = [self._stamped(change.entity, write_id) for change in kept]
@@ -159,6 +182,7 @@ class EntityStore:
             current = before.get(change.entity.guid)
             if change.expected is not None and (current is None or current.version != change.expected):
                 raise EntityVersionConflictError(change.entity.guid)
+        relationships_before = await self._relationships_before(relationship_changes)
         needed, released = self._key_changes(entities, before, [change.entity.guid for change in removed])
         entry = JournalEntry(
             write_id=write_id,
@@ -167,6 +191,11 @@ class EntityStore:
             reserved=[key.id for key, _ in needed],
             released=[key.id for key, _ in released],
             removed=[change.entity.guid for change in removed],
+            relationships_before={
+                change.relationship.guid: _relationship_json_of(relationships_before.get(change.relationship.guid))
+                for change in relationship_changes
+            },
+            removed_relationships=[change.relationship.guid for change in relationship_changes if change.remove],
         )
         await self._documents.put_journal(entry)
         reserved = await self._reserve(needed, write_id)
@@ -179,6 +208,16 @@ class EntityStore:
         results = await self._documents.write(
             [(entity, change.expected) for entity, change in zip(entities, kept, strict=True)],
             [(change.entity.guid, change.expected) for change in removed if change.expected is not None],
+            [
+                (change.relationship.model_copy(update={"write_id": write_id}), change.expected)
+                for change in relationship_changes
+                if not change.remove
+            ],
+            [
+                (change.relationship.guid, change.expected)
+                for change in relationship_changes
+                if change.remove and change.expected is not None
+            ],
         )
         failed = next((result for result in results if not result.written), None)
         if failed is not None:
@@ -210,8 +249,23 @@ class EntityStore:
         return handled
 
     async def type_in_use(self, type_name: str) -> bool:
-        """Whether an entity of exactly this type exists, in any state: the typedef store's check (ENS-09, DD-048)."""
-        return await self._documents.count_type(type_name) > 0
+        """Whether an entity or relationship of exactly this type exists, in any state (ENS-09, REL-10, DD-048).
+
+        The typedef store's check.
+        """
+        if await self._documents.count_type(type_name) > 0:
+            return True
+        return await self._documents.count_relationship_type(type_name) > 0
+
+    async def _relationships_before(self, changes: Sequence[RelationshipChange]) -> dict[str, VersionedRelationship]:
+        """The relationships' states before, each written only over the version it was read in (ENS-08)."""
+        read = [change.relationship.guid for change in changes if change.expected is not None]
+        before = await self._documents.get_relationships(read)
+        for change in changes:
+            current = before.get(change.relationship.guid)
+            if change.expected is not None and (current is None or current.version != change.expected):
+                raise EntityVersionConflictError(change.relationship.guid)
+        return before
 
     def _entity_type(self, entity: StoredEntity) -> EntityType:
         entity_type = self.registry.entity_type(entity.type_name)
@@ -261,7 +315,9 @@ class EntityStore:
     ) -> None:
         """Undo a write that failed: restore what it wrote, release what it reserved, drop its entry."""
         for result in results:
-            if result.written:
+            if result.written and result.relationship:
+                await self._documents.restore_relationship(result.guid, entry.before_relationship(result.guid))
+            elif result.written:
                 await self._documents.restore(result.guid, entry.before_entity(result.guid))
         held = await self._documents.reservations([key.id for key, _ in needed])
         for key, guid in needed:
@@ -278,6 +334,12 @@ class EntityStore:
             written = found is not None and found.entity.write_id == entry.write_id
             if written or (found is None and guid in entry.removed):
                 await self._documents.restore(guid, entry.before_entity(guid))
+        relationships = await self._documents.get_relationships(list(entry.relationships_before))
+        for guid in entry.relationships_before:
+            found_relationship = relationships.get(guid)
+            written = found_relationship is not None and found_relationship.relationship.write_id == entry.write_id
+            if written or (found_relationship is None and guid in entry.removed_relationships):
+                await self._documents.restore_relationship(guid, entry.before_relationship(guid))
         held = await self._documents.reservations(entry.reserved)
         for reservation in held.values():
             if reservation.write_id == entry.write_id:
@@ -300,3 +362,7 @@ class EntityStore:
 
 def _json_of(found: VersionedEntity | None) -> dict[str, Any] | None:
     return None if found is None else found.entity.to_json()
+
+
+def _relationship_json_of(found: VersionedRelationship | None) -> dict[str, Any] | None:
+    return None if found is None else found.relationship.to_json()

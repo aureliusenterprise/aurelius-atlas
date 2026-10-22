@@ -13,6 +13,7 @@ from aurelius_atlas_core.entity_store import (
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_model.instance import AtlasEntity
 from aurelius_atlas_model.typedef import AtlasAttributeDef, AtlasEntityDef, AtlasTypesDef
@@ -32,9 +33,11 @@ class CrashingDocuments(ElasticsearchEntityDocuments):
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
+        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
+        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
     ) -> list[WriteResult]:
         """Write, then crash."""
-        await super().write(items, removed)
+        await super().write(items, removed, relationships, removed_relationships)
         raise RuntimeError(CRASH)
 
 

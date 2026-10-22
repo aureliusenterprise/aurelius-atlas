@@ -2,7 +2,8 @@
 
 ``table`` has an attribute of every kind the reads map: dates, enums, structs, arrays and maps, plain, owned and
 soft references, and a relationship attribute (``home``). ``WRITE_TYPES`` add what only writes treat apart:
-defaults, sets, appending on partial update, a dynamic attribute and a legacy relationship end.
+defaults, sets, appending on partial update, a dynamic attribute, a legacy relationship end, and a relationship
+type with attributes and tag propagation.
 """
 
 from typing import Any
@@ -107,6 +108,14 @@ WRITE_TYPES: dict[str, Any] = {
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {"type": "w_item", "name": "holder", "cardinality": "SINGLE", "isLegacyAttribute": True},
             "endDef2": {"type": "s_database", "name": "items", "cardinality": "SET"},
+        },
+        {
+            "name": "w_link",
+            "relationshipCategory": "ASSOCIATION",
+            "propagateTags": "ONE_TO_TWO",
+            "endDef1": {"type": "w_item", "name": "links", "cardinality": "SET"},
+            "endDef2": {"type": "s_column", "name": "linkedBy", "cardinality": "SET"},
+            "attributeDefs": [_attribute("weight", "int"), _attribute("note", "string", defaultValue="n")],
         },
     ],
 }

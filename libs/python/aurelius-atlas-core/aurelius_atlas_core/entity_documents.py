@@ -14,6 +14,7 @@ from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
 INDEX_PREFIX = "aurelius-atlas"
@@ -24,6 +25,8 @@ UNIQUE_VALUE_INDEX = f"{INDEX_PREFIX}-unique-values"
 """The alias of the unique value reservations (DD-045)."""
 JOURNAL_INDEX = f"{INDEX_PREFIX}-entity-journal"
 """The alias of the write journal (DD-046)."""
+RELATIONSHIP_INDEX = f"{INDEX_PREFIX}-relationships"
+"""The alias of the relationship index (DD-061)."""
 
 JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
@@ -51,6 +54,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "labels": _KEYWORD,
         "writeId": _KEYWORD,
         "references": _KEYWORD,
+        "relationshipGuids": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
@@ -66,6 +70,30 @@ class VersionedEntity:
     """A stored entity and the version it was read in (DD-047)."""
 
     entity: StoredEntity
+    version: DocumentVersion
+
+
+RELATIONSHIP_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "typeName": _KEYWORD,
+        "label": _KEYWORD,
+        "end1Guid": _KEYWORD,
+        "end2Guid": _KEYWORD,
+        "state": _KEYWORD,
+        "writeId": _KEYWORD,
+        "attributes": {"type": "object", "dynamic": False},
+    },
+}
+"""Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061)."""
+
+
+@dataclass(frozen=True)
+class VersionedRelationship:
+    """A stored relationship and the version it was read in (DD-047, DD-061)."""
+
+    relationship: StoredRelationship
     version: DocumentVersion
 
 
@@ -85,6 +113,7 @@ class WriteResult:
     guid: str
     written: bool
     conflict: bool = False
+    relationship: bool = False
 
 
 class JournalEntry(AtlasModel):
@@ -99,12 +128,19 @@ class JournalEntry(AtlasModel):
     reserved: list[str] = Field(default_factory=list)
     released: list[str] = Field(default_factory=list)
     removed: list[str] = Field(default_factory=list)
+    relationships_before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
+    removed_relationships: list[str] = Field(default_factory=list)
     committed: bool = False
 
     def before_entity(self, guid: str) -> StoredEntity | None:
         """The state of ``guid`` before the write, or None for an entity the write created."""
         source = self.before.get(guid)
         return None if source is None else StoredEntity.model_validate(source)
+
+    def before_relationship(self, guid: str) -> StoredRelationship | None:
+        """The state of relationship ``guid`` before the write, or None for one the write created (DD-062)."""
+        source = self.relationships_before.get(guid)
+        return None if source is None else StoredRelationship.model_validate(source)
 
 
 @runtime_checkable
@@ -123,11 +159,26 @@ class EntityDocuments(Protocol):
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
+        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
+        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
     ) -> list[WriteResult]:
-        """Write each entity, new (no version) or over the version given, and remove those at the version given.
+        """Write and remove entities and relationships, new (no version) or at the version given.
 
-        One bulk request; the results are in order, the writes' then the removals' (DD-056).
+        One bulk request; the results are in order: entities written, removed, relationships written, removed
+        (DD-056, DD-062).
         """
+        ...
+
+    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
+        """The stored relationships with these GUIDs, in real time; unknown GUIDs are left out (DD-061)."""
+        ...
+
+    async def restore_relationship(self, guid: str, before: StoredRelationship | None) -> None:
+        """Put back a relationship's state before a write, or delete one the write created (DD-062)."""
+        ...
+
+    async def count_relationship_type(self, type_name: str) -> int:
+        """How many relationships of the type exist, in any state, as of now (REL-10)."""
         ...
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
@@ -175,11 +226,12 @@ class ElasticsearchEntityDocuments:
         self._entities = f"{prefix}-entities"
         self._unique_values = f"{prefix}-unique-values"
         self._journal = f"{prefix}-entity-journal"
+        self._relationships = f"{prefix}-relationships"
 
     @property
-    def aliases(self) -> tuple[str, str, str]:
-        """The aliases of the entity index, the reservations and the journal."""
-        return self._entities, self._unique_values, self._journal
+    def aliases(self) -> tuple[str, str, str, str]:
+        """The aliases of the entity index, the reservations, the journal and the relationship index."""
+        return self._entities, self._unique_values, self._journal, self._relationships
 
     async def prepare(self) -> None:
         """Create each index behind its alias unless it exists (ENS-01).
@@ -190,6 +242,7 @@ class ElasticsearchEntityDocuments:
             self._entities: ENTITY_MAPPING,
             self._unique_values: {"dynamic": False, "properties": {"guid": _KEYWORD, "writeId": _KEYWORD}},
             self._journal: {"dynamic": False, "properties": {"leaseUntil": {"type": "long"}}},
+            self._relationships: RELATIONSHIP_MAPPING,
         }
         for alias, mapping in mappings.items():
             if not await self._client.indices.exists_alias(name=alias):
@@ -216,29 +269,78 @@ class ElasticsearchEntityDocuments:
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
+        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
+        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
     ) -> list[WriteResult]:
-        """One bulk request: ``create`` a new entity, ``index`` or ``delete`` with ``if_seq_no`` (DD-047, DD-056)."""
+        """One bulk request over both indices: ``create`` a new document, ``index`` or ``delete`` with ``if_seq_no``.
+
+        DD-047, DD-056, DD-062.
+        """
         lines: list[bytes] = []
-        for entity, version in items:
-            action: dict[str, Any] = {"_index": self._entities, "_id": entity.guid}
-            if version is None:
-                lines.append(codec.dumps({"create": action}))
-            else:
+        kinds: list[bool] = []
+        for index, documents, removals, is_relationship in (
+            (self._entities, items, removed, False),
+            (self._relationships, relationships, removed_relationships, True),
+        ):
+            for document, version in documents:
+                action: dict[str, Any] = {"_index": index, "_id": document.guid}
+                if version is None:
+                    lines.append(codec.dumps({"create": action}))
+                else:
+                    action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
+                    lines.append(codec.dumps({"index": action}))
+                lines.append(codec.dumps(document.to_json()))
+                kinds.append(is_relationship)
+            for guid, version in removals:
+                action = {"_index": index, "_id": guid}
                 action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
-                lines.append(codec.dumps({"index": action}))
-            lines.append(codec.dumps(entity.to_json()))
-        for guid, version in removed:
-            action = {"_index": self._entities, "_id": guid}
-            action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
-            lines.append(codec.dumps({"delete": action}))
+                lines.append(codec.dumps({"delete": action}))
+                kinds.append(is_relationship)
         body = b"\n".join(lines) + b"\n"  # NDJSON bytes: the transport sends them as they are
         response = await self._client.bulk(operations=body)  # pyright: ignore[reportArgumentType]
         results = []
-        for item in response["items"]:
+        for item, is_relationship in zip(response["items"], kinds, strict=True):
             outcome = next(iter(item.values()))
             status = int(outcome["status"])
-            results.append(WriteResult(outcome["_id"], written=status < 300, conflict=status == 409))  # noqa: PLR2004
+            results.append(
+                WriteResult(
+                    outcome["_id"],
+                    written=status < 300,  # noqa: PLR2004
+                    conflict=status == 409,  # noqa: PLR2004
+                    relationship=is_relationship,
+                )
+            )
         return results
+
+    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
+        """``mget`` of the relationship index: real time (DD-061)."""
+        if not guids:
+            return {}
+        response = await self._client.mget(index=self._relationships, ids=list(guids))
+        return {
+            doc["_id"]: VersionedRelationship(
+                StoredRelationship.model_validate(doc["_source"]),
+                DocumentVersion(doc["_seq_no"], doc["_primary_term"]),
+            )
+            for doc in response["docs"]
+            if doc.get("found")
+        }
+
+    async def restore_relationship(self, guid: str, before: StoredRelationship | None) -> None:
+        """Index the relationship's state before, or delete one that did not exist before (DD-062)."""
+        if before is None:
+            try:
+                await self._client.delete(index=self._relationships, id=guid)
+            except NotFoundError:
+                return
+        else:
+            await self._client.index(index=self._relationships, id=guid, document=codec.dumps(before.to_json()))  # type: ignore[arg-type]
+
+    async def count_relationship_type(self, type_name: str) -> int:
+        """Refresh the relationship index, then count the relationships of the type (REL-10)."""
+        await self._client.indices.refresh(index=self._relationships)
+        response = await self._client.count(index=self._relationships, query={"term": {"typeName": type_name}})
+        return int(response["count"])
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """Refresh the entity index, then page through the entities whose ``references`` hold a GUID (DD-057)."""

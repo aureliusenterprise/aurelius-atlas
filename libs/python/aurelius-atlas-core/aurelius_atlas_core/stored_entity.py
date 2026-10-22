@@ -42,6 +42,7 @@ class StoredEntity(AtlasModel):
     custom_attributes: dict[str, str] | None = None
     attributes: dict[str, Any] = Field(default_factory=dict)
     references: list[str] | None = None
+    relationship_guids: list[str] | None = None
     write_id: str | None = None
 
     @classmethod
@@ -71,6 +72,18 @@ class StoredEntity(AtlasModel):
     def touched(self, *, now: int, user: str | None) -> Self:
         """This entity, changed at ``now`` by ``user`` (``updateModificationMetadata``)."""
         return self.model_copy(update={"update_time": now, "updated_by": user})
+
+    def listing(self, relationship_guid: str) -> Self:
+        """This entity listing relationship ``relationship_guid`` as one it is an end of (DD-061)."""
+        guids = list(self.relationship_guids or [])
+        if relationship_guid not in guids:
+            guids.append(relationship_guid)
+        return self.model_copy(update={"relationship_guids": guids})
+
+    def unlisting(self, relationship_guids: set[str]) -> Self:
+        """This entity no longer listing these relationships (DD-061)."""
+        guids = [guid for guid in self.relationship_guids or [] if guid not in relationship_guids]
+        return self.model_copy(update={"relationship_guids": guids or None})
 
     def unique_keys(self, entity_type: EntityType) -> list[UniqueKey]:
         """The unique values this entity holds: those of its unique attributes with a value, while ``ACTIVE``."""

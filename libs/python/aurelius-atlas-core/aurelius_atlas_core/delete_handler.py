@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
-from aurelius_atlas_model.instance import EntityStatus
+from aurelius_atlas_model.instance import EntityStatus, RelationshipStatus
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
@@ -17,7 +17,7 @@ from aurelius_atlas_typesystem.map_type import MapType
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
-from aurelius_atlas_core.entity_store import EntityChange, EntityStore
+from aurelius_atlas_core.entity_store import EntityChange, EntityStore, RelationshipChange
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 UNSET_REQUIRED = "Cannot unset required attribute {name} on {guid} edge = {label}"
@@ -32,6 +32,11 @@ class Deletion:
     deleted: dict[str, VersionedEntity] = field(default_factory=dict)
     updated: dict[str, VersionedEntity] = field(default_factory=dict)
     changes: list[EntityChange] = field(default_factory=list)
+    relationship_changes: list[RelationshipChange] = field(default_factory=list)
+
+    def change(self, guid: str) -> int | None:
+        """The index of the change of entity ``guid``, or None."""
+        return next((index for index, change in enumerate(self.changes) if change.entity.guid == guid), None)
 
 
 class DeleteHandler:
@@ -64,7 +69,46 @@ class DeleteHandler:
             entity_type = self._entity_type(found.entity)
             after = None if entity_type.is_internal else self._delete_vertex(found.entity)
             deletion.changes.append(EntityChange(after or found.entity, found.version, remove=after is None))
+        await self._relationships(deletion)
         return deletion
+
+    async def _relationships(self, deletion: Deletion) -> None:
+        """``deleteVertex`` for relationship edges (REL-09).
+
+        A removed entity takes all its relationships with it, and the other ends stop listing them; a soft delete
+        marks ``DELETED`` the ``ACTIVE`` ones whose end 2 it deletes, Atlas's incoming edges.
+        """
+        removed = {change.entity.guid for change in deletion.changes if change.remove}
+        listed = [guid for found in deletion.deleted.values() for guid in found.entity.relationship_guids or []]
+        relationships = await self.store.get_relationships(listed)
+        dropped: dict[str, set[str]] = {}
+        for found in relationships.values():
+            relationship = found.relationship
+            if removed & set(relationship.ends()):
+                deletion.relationship_changes.append(RelationshipChange(relationship, found.version, remove=True))
+                for end in relationship.ends():
+                    dropped.setdefault(end, set()).add(relationship.guid)
+            elif (
+                relationship.end2_guid in deletion.deleted
+                and relationship.state is RelationshipStatus.ACTIVE
+                and not self.purge
+            ):
+                changed = relationship.model_copy(
+                    update={"state": RelationshipStatus.DELETED, "update_time": self.now, "updated_by": self.user}
+                )
+                deletion.relationship_changes.append(RelationshipChange(changed, found.version))
+        await self._unlist(deletion, {guid: guids for guid, guids in dropped.items() if guid not in removed})
+
+    async def _unlist(self, deletion: Deletion, dropped: dict[str, set[str]]) -> None:
+        """The other ends of removed relationships stop listing them, merged with their other changes."""
+        unchanged = await self.store.get_many([guid for guid in dropped if deletion.change(guid) is None])
+        for guid, guids in dropped.items():
+            index = deletion.change(guid)
+            if index is not None:
+                change = deletion.changes[index]
+                deletion.changes[index] = EntityChange(change.entity.unlisting(guids), change.expected, change.remove)
+            elif guid in unchanged:
+                deletion.changes.append(EntityChange(unchanged[guid].entity.unlisting(guids), unchanged[guid].version))
 
     def _skipped(self, stored: StoredEntity, deletion: Deletion) -> bool:
         """``skipVertexForDelete``: deleted by this request, or ``DELETED`` (``ACTIVE`` for a purge) (EDL-03)."""
