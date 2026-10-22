@@ -3636,6 +3636,8 @@
       
         
       
+        
+      
     
     
     
@@ -4109,6 +4111,33 @@
     
   
   2.1c Entity validation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/2-2-entity-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.2 Entity store
 
     
   </span>
@@ -6185,12 +6214,25 @@ This is a property the type system needs — Atlas changes several definitions i
 a create stores all of a request or none — stated here, implemented there: the alias names,
 write-index mechanics, and size trade-offs are the design documentation's. The unit loads into
 the type registry when the service starts (rule TDS-12). The definitions are not searched —
-searching over catalogue entries arrives with the entity layout in increment 2.2.</p>
+searching over catalogue entries arrives with search in increment 4.1.</p>
 <h2 id="the-entity-layout-increment-22">The entity layout (increment 2.2)<a class="headerlink" href="#the-entity-layout-increment-22" title="Permanent link">&para;</a></h2>
-<p>The roadmap states what 2.2 adds: the entity layout, identities, unique-attribute lookups, and
-optimistic versioning — the port of <code>AtlasEntityStoreV2</code>. When it lands, this page states the
-properties — layout, sharding and refresh behaviour, the versioning protocol — and the concrete
-mapping goes to the store's design documentation.</p>
+<p>Every catalogue entry (an entity of any type) is <strong>one record, found by its identifier</strong>: a random UUID, as
+Atlas's clients already know it (<a href="../../conversion/design-log/#dd-044-a-guid-is-a-random-uuid">DD-044</a>). A read
+by identifier always sees the last write; nothing waits for the search index to catch up (<a href="../../conversion/design-log/#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names">DD-043</a>).
+Attribute values are kept with their exact digits and become searchable when search arrives (4.1).</p>
+<p>The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:</p>
+<ul>
+<li><strong>A unique value is held once per type.</strong> Two entries of one type cannot share a <code>qualifiedName</code>, even when
+  two servers try at the same instant; a deleted entry gives its value up
+  (<a href="../../conversion/design-log/#dd-045-unique-values-are-reserved-by-create-only-documents">DD-045</a>).</li>
+<li><strong>A write of several entries succeeds or fails as a whole</strong>, also when a server dies part-way: a journal lets
+  the next start undo what was left half done. While a write is in flight another reader may see part of it
+  (<a href="../../conversion/design-log/#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal">DD-046</a>, DV-16).</li>
+<li><strong>Concurrent changes are detected, not lost.</strong> A change is written only over the version it was read in
+  (<a href="../../conversion/design-log/#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version">DD-047</a>).</li>
+</ul>
+<p>The concrete indices, mappings and write steps are the
+<a href="../../../api-reference/libs/python/aurelius-atlas-core/">core library's design documentation</a>.</p>
 <h2 id="rules-that-bind-storage">Rules that bind storage<a class="headerlink" href="#rules-that-bind-storage" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Schema changes go by recorded migration, data moved rather than replaced

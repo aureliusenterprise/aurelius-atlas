@@ -53,7 +53,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 2.1a | Entity models | `AtlasEntity`, extended info, headers, object ids, classifications, mutation responses | `intg/.../model/instance` | in progress |
 | 2.1b | Value types | Value side of the built-in, enum, array and map types; the Atlas JSON codec (DD-025, DD-038) | `AtlasBuiltInTypes`, `AtlasArrayType`, `AtlasMapType` | in progress |
 | 2.1c | Entity validation | Value side of the struct, classification, entity, relationship and business metadata types | `AtlasStructType`, `AtlasEntityType` | in progress |
-| 2.2 | Entity store | Index layout, GUIDs, unique attributes, optimistic versioning | `AtlasEntityStoreV2` | planned |
+| 2.2 | Entity store | Index layout, GUIDs, unique attributes, optimistic versioning | `AtlasEntityStoreV2` | in progress |
 | 2.3 | Entity read REST | By GUID, by unique attributes, bulk, headers | `EntityREST` | planned |
 | 2.4 | Entity write REST | Create/update, partial update, bulk | `EntityREST`, `EntityGraphMapper` | planned |
 | 2.5 | Delete semantics | Soft and hard delete, purge | `DeleteHandlerV1`, `SoftDeleteHandlerV1` | planned |

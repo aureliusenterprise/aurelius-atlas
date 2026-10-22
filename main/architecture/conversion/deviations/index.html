@@ -3650,6 +3650,8 @@
       
         
       
+        
+      
     
     
     
@@ -4123,6 +4125,33 @@
     
   
   2.1c Entity validation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/2-2-entity-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.2 Entity store
 
     
   </span>
@@ -6175,6 +6204,30 @@ Atlas clients expect when it lands).</p>
 <td>The map is checked as one without relationship attribute values</td>
 <td>The failure is an unchecked exception in <code>AtlasEntityType.validateRelationshipAttributes</code>, not a decision</td>
 <td>2.1c</td>
+</tr>
+<tr>
+<td>DV-14</td>
+<td>Admin</td>
+<td><code>admin/patches</code> lists the typedef patches and the Java patches that repair JanusGraph and Solr indexes</td>
+<td>Lists the typedef patches only</td>
+<td>The Java patches repair indexes Elasticsearch does not have</td>
+<td>2.2</td>
+</tr>
+<tr>
+<td>DV-15</td>
+<td>Entities</td>
+<td>An entity's <code>createdBy</code> and <code>updatedBy</code> name the logged-in user</td>
+<td>Until 6.1, absent</td>
+<td>There is no login until 6.1</td>
+<td>2.2</td>
+</tr>
+<tr>
+<td>DV-16</td>
+<td>Entities</td>
+<td>A request's entities are committed in one graph transaction, never seen half done</td>
+<td>A reader may see part of a multi-entity write while its bulk request runs; the outcome is all or nothing</td>
+<td>Elasticsearch has no multi-document transactions (ADR 047, DD-046)</td>
+<td>2.2</td>
 </tr>
 </tbody>
 </table>

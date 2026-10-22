@@ -12,11 +12,19 @@ All catalogue data lives in one search store — the system of record and the se
 
 The store library owns the client: the link is TLS-only with certificate verification and credentials — an unencrypted endpoint is rejected at settings validation, before the service opens. A deployment runs and monitors the cluster; the development arrangement runs one (`dev/elasticsearch`).
 
-Type definitions move as **one unit of storage**: the store replaces all definitions whole under a concurrency guard, so a change to several definitions lands atomically, with one version number for all types ([DD-028](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-028-the-type-definitions-are-one-elasticsearch-document>)). This is a property the type system needs — Atlas changes several definitions in one transaction, a create stores all of a request or none — stated here, implemented there: the alias names, write-index mechanics, and size trade-offs are the design documentation's. The unit loads into the type registry when the service starts (rule TDS-12). The definitions are not searched — searching over catalogue entries arrives with the entity layout in increment 2.2.
+Type definitions move as **one unit of storage**: the store replaces all definitions whole under a concurrency guard, so a change to several definitions lands atomically, with one version number for all types ([DD-028](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-028-the-type-definitions-are-one-elasticsearch-document>)). This is a property the type system needs — Atlas changes several definitions in one transaction, a create stores all of a request or none — stated here, implemented there: the alias names, write-index mechanics, and size trade-offs are the design documentation's. The unit loads into the type registry when the service starts (rule TDS-12). The definitions are not searched — searching over catalogue entries arrives with search in increment 4.1.
 
 ## The entity layout (increment 2.2)
 
-The roadmap states what 2.2 adds: the entity layout, identities, unique-attribute lookups, and optimistic versioning — the port of `AtlasEntityStoreV2`. When it lands, this page states the properties — layout, sharding and refresh behaviour, the versioning protocol — and the concrete mapping goes to the store's design documentation.
+Every catalogue entry (an entity of any type) is **one record, found by its identifier**: a random UUID, as Atlas's clients already know it ([DD-044](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-044-a-guid-is-a-random-uuid>)). A read by identifier always sees the last write; nothing waits for the search index to catch up ([DD-043](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names>)). Attribute values are kept with their exact digits and become searchable when search arrives (4.1).
+
+The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:
+
+- **A unique value is held once per type.** Two entries of one type cannot share a `qualifiedName`, even when two servers try at the same instant; a deleted entry gives its value up ([DD-045](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-045-unique-values-are-reserved-by-create-only-documents>)).
+- **A write of several entries succeeds or fails as a whole**, also when a server dies part-way: a journal lets the next start undo what was left half done. While a write is in flight another reader may see part of it ([DD-046](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal>), DV-16).
+- **Concurrent changes are detected, not lost.** A change is written only over the version it was read in ([DD-047](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version>)).
+
+The concrete indices, mappings and write steps are the [core library's design documentation](<https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-core/index.md>).
 
 ## Rules that bind storage
 

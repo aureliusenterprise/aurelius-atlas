@@ -395,7 +395,7 @@ Parameters:
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
 
-The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16).
+The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07).
 
 ### mount\_dashboards
 
@@ -501,6 +501,9 @@ Functions:
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
+- **`get_patches`** –
+
+  `getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
 - **`get_readiness`** –
 
   Whether the server can serve requests: its store must be healthy (ADM-04).
@@ -625,6 +628,14 @@ get_liveness() -> str
 ```
 
 Whether the server runs (ADM-03).
+
+### get\_patches
+
+```
+get_patches(request: Request) -> dict[str, Any]
+```
+
+`getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
 
 ### get\_readiness
 

@@ -1725,6 +1725,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_patches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_patches
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_readiness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -4328,6 +4339,8 @@
       
         
       
+        
+      
     
     
     
@@ -4801,6 +4814,33 @@
     
   
   2.1c Entity validation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/2-2-entity-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2.2 Entity store
 
     
   </span>
@@ -7175,6 +7215,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_patches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_patches
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_readiness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8038,12 +8089,7 @@ none (MDL-01, MDL-16, DD-032).</p>
 
 
 <a href="#aurelius_atlas_server.settings.ServerSettings.store_settings" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">store_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            StoreSettings
-
-
-  
-      pydantic-model
-   (aurelius_atlas_store_es.StoreSettings)" href="../../libs/python/aurelius-atlas-store-es/#aurelius_atlas_store_es.StoreSettings">StoreSettings</a></span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">store_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="aurelius_atlas_store_es.StoreSettings">StoreSettings</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -8307,7 +8353,7 @@ scenario (ADR 052).</p>
 
   
       pydantic-model
-  " href="./#aurelius_atlas_server.settings.ServerSettings">ServerSettings</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="store (aurelius_atlas_server.app.create_app(store))" href="./#aurelius_atlas_server.app.create_app(store)">store</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            ElasticsearchStore (aurelius_atlas_store_es.ElasticsearchStore)" href="../../libs/python/aurelius-atlas-store-es/#aurelius_atlas_store_es.ElasticsearchStore">ElasticsearchStore</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="fastapi.FastAPI">FastAPI</span></span>
+  " href="./#aurelius_atlas_server.settings.ServerSettings">ServerSettings</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="store (aurelius_atlas_server.app.create_app(store))" href="./#aurelius_atlas_server.app.create_app(store)">store</a></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_store_es.ElasticsearchStore">ElasticsearchStore</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="fastapi.FastAPI">FastAPI</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -8332,7 +8378,7 @@ scenario (ADR 052).</p>
         </li>
         <li class="doc-section-item field-body">
 <h4 id="aurelius_atlas_server.app.create_app(store)" class="doc doc-heading doc-heading-parameter">              <b><code>store</code></b>
-<a href="#aurelius_atlas_server.app.create_app(store)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><a class="autorefs autorefs-internal" title="            ElasticsearchStore (aurelius_atlas_store_es.ElasticsearchStore)" href="../../libs/python/aurelius-atlas-store-es/#aurelius_atlas_store_es.ElasticsearchStore">ElasticsearchStore</a> | None</code>, default:
+<a href="#aurelius_atlas_server.app.create_app(store)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="aurelius_atlas_store_es.ElasticsearchStore">ElasticsearchStore</span> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -8343,7 +8389,8 @@ starts, which fails when the store cannot be opened (SRV-02), and closed when it
         </li>
     </ul>
         <p>The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
-models are loaded and patched (MDL-16).</p>
+models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
+(ENS-01, ENS-07).</p>
 
 
     </div>
@@ -8740,6 +8787,18 @@ models are loaded and patched (MDL-16).</p>
             –
             <div class="doc-md-description">
               <p>Whether the server runs (ADM-03).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_patches
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.get_patches)" href="./#aurelius_atlas_server.routes.admin.get_patches">get_patches</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>getAtlasPatches</code>: the typedef patch records, sorted by id (ENS-10, DV-14).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -9191,6 +9250,30 @@ models are loaded and patched (MDL-16).</p>
     <div class="doc doc-contents ">
 
         <p>Whether the server runs (ADM-03).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.get_patches" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_patches</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.get_patches" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_patches</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.get_patches(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>getAtlasPatches</code>: the typedef patch records, sorted by id (ENS-10, DV-14).</p>
 
 
     </div>

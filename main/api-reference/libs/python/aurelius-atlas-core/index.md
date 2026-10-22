@@ -1,6 +1,6 @@
 # aurelius-atlas-core
 
-Atlas stores and services for Aurelius Atlas ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.4](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-4-typedef-store/index.md>): the typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type registry. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): Apache Atlas's built-in models and their typedef patches, loaded at start-up. Since [1.6](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-6-types-rest/index.md>): the store's reads and the search of `/v2/types/typedefs`.
+Atlas stores and services for Aurelius Atlas ([DD-002](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.4](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-4-typedef-store/index.md>): the typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type registry. Since [1.5](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-5-builtin-models/index.md>): Apache Atlas's built-in models and their typedef patches, loaded at start-up. Since [1.6](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/1-6-types-rest/index.md>): the store's reads and the search of `/v2/types/typedefs`. Since [2.2](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-2-entity-store/index.md>): the entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes several entities all or nothing through a journal (DD-043 to DD-048).
 
 ```
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -197,6 +197,9 @@ Methods:
 - **`load`** –
 
   Prepare the document and load every stored definition into the registry (`init`, TDS-12).
+- **`patches`** –
+
+  The patch records, sorted by id as Java compares strings (`AtlasPatchRegistry.getAllPatches`, ENS-10).
 - **`refresh`** –
 
   Reload when another process changed the definitions; checked at most every refresh interval (TDS-13).
@@ -366,6 +369,14 @@ load() -> None
 
 Prepare the document and load every stored definition into the registry (`init`, TDS-12).
 
+#### patches
+
+```
+patches() -> list[AtlasPatch]
+```
+
+The patch records, sorted by id as Java compares strings (`AtlasPatchRegistry.getAllPatches`, ENS-10).
+
 #### refresh
 
 ```
@@ -475,6 +486,1096 @@ types_to_update(types_def: AtlasTypesDef, registry: TypeRegistry, *, check_type_
 The definitions registered as the same kind, when newer (`getTypesToUpdate`, MDL-02).
 
 With `check_type_version`, only those whose `typeVersion` is greater than the registered one. Each keeps the registered attributes, or an enum the registered elements, that it lacks.
+
+## aurelius\_atlas\_core.entity\_store
+
+`EntityStore`: entities by GUID and unique attributes, written all or nothing (ENS-02 to ENS-09).
+
+The storage side of `AtlasEntityStoreV2` and `EntityGraphMapper`: what a graph transaction gave Atlas, rebuilt on Elasticsearch with reserved unique values, conditional writes and a journal (DD-044 to DD-048).
+
+Classes:
+
+- **`EntityChange`** –
+
+  One entity of a write: its new state, and the version it was read in, or None for a new entity.
+- **`EntityStore`** –
+
+  Entities of the registry's entity types in `EntityDocuments`.
+- **`EntityVersionConflictError`** –
+
+  Another write changed an entity after it was read (ENS-08); nothing was written.
+- **`EntityWriteError`** –
+
+  An entity could not be written for another reason; the write was undone (ENS-07).
+- **`UniqueValueTakenError`** –
+
+  A write needs a unique value another entity holds (ENS-05); nothing was written.
+
+Attributes:
+
+- **`LEASE_MILLISECONDS`** –
+
+  How long a write may take before recovery may undo it (DD-046).
+- **`LEASE_PASSED_ERROR`** –
+- **`UNIQUE_VALUE_TAKEN_ERROR`** –
+- **`UNKNOWN_ENTITY_TYPE_ERROR`** –
+- **`VERSION_CONFLICT_ERROR`** –
+- **`WRITE_FAILED_ERROR`** –
+
+### LEASE\_MILLISECONDS
+
+```
+LEASE_MILLISECONDS = 60000
+```
+
+How long a write may take before recovery may undo it (DD-046).
+
+### LEASE\_PASSED\_ERROR
+
+```
+LEASE_PASSED_ERROR = 'write {write_id} took longer than its lease'
+```
+
+### UNIQUE\_VALUE\_TAKEN\_ERROR
+
+```
+UNIQUE_VALUE_TAKEN_ERROR = 'unique value {attribute}={value} of type {type} is held by entity {holder}'
+```
+
+### UNKNOWN\_ENTITY\_TYPE\_ERROR
+
+```
+UNKNOWN_ENTITY_TYPE_ERROR = '{type} is not an entity type'
+```
+
+### VERSION\_CONFLICT\_ERROR
+
+```
+VERSION_CONFLICT_ERROR = 'entity {guid} was changed by another write'
+```
+
+### WRITE\_FAILED\_ERROR
+
+```
+WRITE_FAILED_ERROR = 'entity {guid} could not be written'
+```
+
+### EntityChange
+
+```
+EntityChange(entity: StoredEntity, expected: DocumentVersion | None = None)
+```
+
+One entity of a write: its new state, and the version it was read in, or None for a new entity.
+
+Attributes:
+
+- **`entity`** (`StoredEntity`) –
+- **`expected`** (`DocumentVersion | None`) –
+
+#### entity
+
+```
+entity: StoredEntity
+```
+
+#### expected
+
+```
+expected: DocumentVersion | None = None
+```
+
+### EntityStore
+
+```
+EntityStore(
+    registry: TypeRegistry,
+    documents: EntityDocuments,
+    *,
+    clock: Callable[[], float] = time,
+    new_id: Callable[[], str] = lambda: str(uuid4()),
+)
+```
+
+Entities of the registry's entity types in `EntityDocuments`.
+
+Methods:
+
+- **`find_by_unique_attributes`** –
+
+  The `ACTIVE` entity of the type, else of its first sub type, holding every given unique value (ENS-06).
+- **`get`** –
+
+  The entity with `guid` as last written, or None (ENS-04).
+- **`get_many`** –
+
+  The entities with these GUIDs that exist (ENS-04).
+- **`new_guid`** –
+
+  A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044).
+- **`now`** –
+
+  The current time in epoch milliseconds, as Atlas stores times.
+- **`prepare`** –
+
+  Create the indices that are missing (ENS-01).
+- **`recover`** –
+
+  Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
+- **`type_in_use`** –
+
+  Whether an entity of exactly this type exists, in any state: the typedef store's check (ENS-09, DD-048).
+- **`write`** –
+
+  Write new and changed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08, DD-046).
+
+Attributes:
+
+- **`registry`** –
+
+#### registry
+
+```
+registry = registry
+```
+
+#### find\_by\_unique\_attributes
+
+```
+find_by_unique_attributes(entity_type: EntityType, values: Mapping[str, Any]) -> VersionedEntity | None
+```
+
+The `ACTIVE` entity of the type, else of its first sub type, holding every given unique value (ENS-06).
+
+Values are normalised by the attribute's type; values of other attributes and nulls are ignored.
+
+#### get
+
+```
+get(guid: str) -> VersionedEntity | None
+```
+
+The entity with `guid` as last written, or None (ENS-04).
+
+#### get\_many
+
+```
+get_many(guids: Sequence[str]) -> dict[str, VersionedEntity]
+```
+
+The entities with these GUIDs that exist (ENS-04).
+
+#### new\_guid
+
+```
+new_guid() -> str
+```
+
+A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044).
+
+#### now
+
+```
+now() -> int
+```
+
+The current time in epoch milliseconds, as Atlas stores times.
+
+#### prepare
+
+```
+prepare() -> None
+```
+
+Create the indices that are missing (ENS-01).
+
+#### recover
+
+```
+recover() -> int
+```
+
+Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
+
+A committed write only releases what it no longer holds; any other is undone: an entity is restored only while it carries the write's id, a reservation released only while the write holds it.
+
+#### type\_in\_use
+
+```
+type_in_use(type_name: str) -> bool
+```
+
+Whether an entity of exactly this type exists, in any state: the typedef store's check (ENS-09, DD-048).
+
+#### write
+
+```
+write(changes: Sequence[EntityChange]) -> None
+```
+
+Write new and changed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08, DD-046).
+
+Raises:
+
+- `UniqueValueTakenError` –
+
+  A unique value is held by another entity.
+- `EntityVersionConflictError` –
+
+  An entity changed since it was read.
+- `EntityWriteError` –
+
+  An entity could not be written; the write was undone.
+
+### EntityVersionConflictError
+
+```
+EntityVersionConflictError(guid: str)
+```
+
+Bases: `Exception`
+
+Another write changed an entity after it was read (ENS-08); nothing was written.
+
+Attributes:
+
+- **`guid`** –
+
+#### guid
+
+```
+guid = guid
+```
+
+### EntityWriteError
+
+Bases: `Exception`
+
+An entity could not be written for another reason; the write was undone (ENS-07).
+
+### UniqueValueTakenError
+
+```
+UniqueValueTakenError(key: UniqueKey, holder: str)
+```
+
+Bases: `Exception`
+
+A write needs a unique value another entity holds (ENS-05); nothing was written.
+
+Attributes:
+
+- **`holder`** –
+- **`key`** –
+
+#### holder
+
+```
+holder = holder
+```
+
+#### key
+
+```
+key = key
+```
+
+## aurelius\_atlas\_core.entity\_documents
+
+The entities' documents in Elasticsearch: entities, unique value reservations and the write journal (ENS-01).
+
+The I/O behind `EntityStore`: reads in real time, conditional writes, create-only reservations (DD-043 to DD-047). Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep their digits (DD-039).
+
+Classes:
+
+- **`ElasticsearchEntityDocuments`** –
+
+  `EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
+- **`EntityDocuments`** –
+
+  Where `EntityStore` keeps entities, reservations and its journal.
+- **`JournalEntry`** –
+
+  A write in flight: its id, lease, the entities' states before it, its reservations and releases (DD-046).
+- **`Reservation`** –
+
+  A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+- **`VersionedEntity`** –
+
+  A stored entity and the version it was read in (DD-047).
+- **`WriteResult`** –
+
+  How one entity of a bulk write ended: written, or failed by a version conflict or another error.
+
+Attributes:
+
+- **`ENTITY_INDEX`** –
+
+  The alias of the entity index (DD-043).
+- **`ENTITY_MAPPING`** (`dict[str, Any]`) –
+
+  System properties mapped for exact lookup; attribute values stored, not indexed, until 4.1 (DD-043).
+- **`INDEX_PREFIX`** –
+
+  The prefix of the three aliases; tests give their own.
+- **`JOURNAL_INDEX`** –
+
+  The alias of the write journal (DD-046).
+- **`JOURNAL_PAGE`** –
+
+  How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`UNIQUE_VALUE_INDEX`** –
+
+  The alias of the unique value reservations (DD-045).
+
+### ENTITY\_INDEX
+
+```
+ENTITY_INDEX = f'{INDEX_PREFIX}-entities'
+```
+
+The alias of the entity index (DD-043).
+
+### ENTITY\_MAPPING
+
+```
+ENTITY_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "typeName": _KEYWORD,
+        "superTypeNames": _KEYWORD,
+        "state": _KEYWORD,
+        "createTime": {"type": "long"},
+        "updateTime": {"type": "long"},
+        "createdBy": _KEYWORD,
+        "updatedBy": _KEYWORD,
+        "version": {"type": "long"},
+        "isIncomplete": {"type": "boolean"},
+        "provenanceType": {"type": "integer"},
+        "homeId": _KEYWORD,
+        "labels": _KEYWORD,
+        "writeId": _KEYWORD,
+        "attributes": {"type": "object", "dynamic": False},
+        "customAttributes": {"type": "object", "dynamic": False},
+    },
+}
+```
+
+System properties mapped for exact lookup; attribute values stored, not indexed, until 4.1 (DD-043).
+
+### INDEX\_PREFIX
+
+```
+INDEX_PREFIX = 'aurelius-atlas'
+```
+
+The prefix of the three aliases; tests give their own.
+
+### JOURNAL\_INDEX
+
+```
+JOURNAL_INDEX = f'{INDEX_PREFIX}-entity-journal'
+```
+
+The alias of the write journal (DD-046).
+
+### JOURNAL\_PAGE
+
+```
+JOURNAL_PAGE = 1000
+```
+
+How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+
+### UNIQUE\_VALUE\_INDEX
+
+```
+UNIQUE_VALUE_INDEX = f'{INDEX_PREFIX}-unique-values'
+```
+
+The alias of the unique value reservations (DD-045).
+
+### ElasticsearchEntityDocuments
+
+```
+ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PREFIX)
+```
+
+`EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
+
+Methods:
+
+- **`count_type`** –
+
+  Refresh the entity index, then count the entities of the type (DD-048).
+- **`delete_journal`** –
+
+  Delete the entry; one already gone is fine.
+- **`get`** –
+
+  `mget` of the entity index: real time, as a get by id is (ENS-04).
+- **`journal`** –
+
+  The entries of the journal, refreshed first so none written a moment ago is missed.
+- **`prepare`** –
+
+  Create each index behind its alias unless it exists; existing ones are not changed (ENS-01).
+- **`put_journal`** –
+
+  Index the entry under its write id.
+- **`release`** –
+
+  Delete the reservation when `guid` still holds it, guarded by its version.
+- **`reservations`** –
+
+  `mget` of the reservations, in real time.
+- **`reserve`** –
+
+  `op_type=create`: of two processes reserving one value, one fails (DD-045).
+- **`restore`** –
+
+  Index the state before, or delete an entity that did not exist before (DD-046).
+- **`write`** –
+
+  One bulk request: `create` for a new entity, `index` with `if_seq_no` for a changed one (DD-047).
+
+Attributes:
+
+- **`aliases`** (`tuple[str, str, str]`) –
+
+  The aliases of the entity index, the reservations and the journal.
+
+#### aliases
+
+```
+aliases: tuple[str, str, str]
+```
+
+The aliases of the entity index, the reservations and the journal.
+
+#### count\_type
+
+```
+count_type(type_name: str) -> int
+```
+
+Refresh the entity index, then count the entities of the type (DD-048).
+
+#### delete\_journal
+
+```
+delete_journal(write_id: str) -> None
+```
+
+Delete the entry; one already gone is fine.
+
+#### get
+
+```
+get(guids: Sequence[str]) -> dict[str, VersionedEntity]
+```
+
+`mget` of the entity index: real time, as a get by id is (ENS-04).
+
+#### journal
+
+```
+journal() -> list[JournalEntry]
+```
+
+The entries of the journal, refreshed first so none written a moment ago is missed.
+
+#### prepare
+
+```
+prepare() -> None
+```
+
+Create each index behind its alias unless it exists; existing ones are not changed (ENS-01).
+
+#### put\_journal
+
+```
+put_journal(entry: JournalEntry) -> None
+```
+
+Index the entry under its write id.
+
+#### release
+
+```
+release(key: str, guid: str) -> None
+```
+
+Delete the reservation when `guid` still holds it, guarded by its version.
+
+#### reservations
+
+```
+reservations(keys: Sequence[str]) -> dict[str, Reservation]
+```
+
+`mget` of the reservations, in real time.
+
+#### reserve
+
+```
+reserve(reservation: Reservation) -> Reservation | None
+```
+
+`op_type=create`: of two processes reserving one value, one fails (DD-045).
+
+#### restore
+
+```
+restore(guid: str, before: StoredEntity | None) -> None
+```
+
+Index the state before, or delete an entity that did not exist before (DD-046).
+
+#### write
+
+```
+write(items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]
+```
+
+One bulk request: `create` for a new entity, `index` with `if_seq_no` for a changed one (DD-047).
+
+### EntityDocuments
+
+Bases: `Protocol`
+
+Where `EntityStore` keeps entities, reservations and its journal.
+
+Methods:
+
+- **`count_type`** –
+
+  How many entities of exactly this type exist, in any state, as of now.
+- **`delete_journal`** –
+
+  Delete a journal entry.
+- **`get`** –
+
+  The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
+- **`journal`** –
+
+  Every journal entry.
+- **`prepare`** –
+
+  Create the indices that are missing.
+- **`put_journal`** –
+
+  Write a journal entry.
+- **`release`** –
+
+  Delete the reservation of `key` if `guid` holds it.
+- **`reservations`** –
+
+  The reservations of these keys that exist.
+- **`reserve`** –
+
+  Make a reservation, create-only; the one holding the key when it is taken.
+- **`restore`** –
+
+  Put back an entity's state before a write, or delete one the write created.
+- **`write`** –
+
+  Write each entity, new (no version) or over the version given, in one bulk request.
+
+#### count\_type
+
+```
+count_type(type_name: str) -> int
+```
+
+How many entities of exactly this type exist, in any state, as of now.
+
+#### delete\_journal
+
+```
+delete_journal(write_id: str) -> None
+```
+
+Delete a journal entry.
+
+#### get
+
+```
+get(guids: Sequence[str]) -> dict[str, VersionedEntity]
+```
+
+The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
+
+#### journal
+
+```
+journal() -> list[JournalEntry]
+```
+
+Every journal entry.
+
+#### prepare
+
+```
+prepare() -> None
+```
+
+Create the indices that are missing.
+
+#### put\_journal
+
+```
+put_journal(entry: JournalEntry) -> None
+```
+
+Write a journal entry.
+
+#### release
+
+```
+release(key: str, guid: str) -> None
+```
+
+Delete the reservation of `key` if `guid` holds it.
+
+#### reservations
+
+```
+reservations(keys: Sequence[str]) -> dict[str, Reservation]
+```
+
+The reservations of these keys that exist.
+
+#### reserve
+
+```
+reserve(reservation: Reservation) -> Reservation | None
+```
+
+Make a reservation, create-only; the one holding the key when it is taken.
+
+#### restore
+
+```
+restore(guid: str, before: StoredEntity | None) -> None
+```
+
+Put back an entity's state before a write, or delete one the write created.
+
+#### write
+
+```
+write(items: Sequence[tuple[StoredEntity, DocumentVersion | None]]) -> list[WriteResult]
+```
+
+Write each entity, new (no version) or over the version given, in one bulk request.
+
+### JournalEntry
+
+Bases: `AtlasModel`
+
+A write in flight: its id, lease, the entities' states before it, its reservations and releases (DD-046).
+
+Methods:
+
+- **`before_entity`** –
+
+  The state of `guid` before the write, or None for an entity the write created.
+
+Attributes:
+
+- **`before`** (`dict[str, dict[str, Any] | None]`) –
+- **`committed`** (`bool`) –
+- **`lease_until`** (`int`) –
+- **`released`** (`list[str]`) –
+- **`reserved`** (`list[str]`) –
+- **`write_id`** (`str`) –
+
+#### before
+
+```
+before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
+```
+
+#### committed
+
+```
+committed: bool = False
+```
+
+#### lease\_until
+
+```
+lease_until: int
+```
+
+#### released
+
+```
+released: list[str] = Field(default_factory=list)
+```
+
+#### reserved
+
+```
+reserved: list[str] = Field(default_factory=list)
+```
+
+#### write\_id
+
+```
+write_id: str
+```
+
+#### before\_entity
+
+```
+before_entity(guid: str) -> StoredEntity | None
+```
+
+The state of `guid` before the write, or None for an entity the write created.
+
+### Reservation
+
+```
+Reservation(key: str, guid: str, write_id: str)
+```
+
+A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+
+Attributes:
+
+- **`guid`** (`str`) –
+- **`key`** (`str`) –
+- **`write_id`** (`str`) –
+
+#### guid
+
+```
+guid: str
+```
+
+#### key
+
+```
+key: str
+```
+
+#### write\_id
+
+```
+write_id: str
+```
+
+### VersionedEntity
+
+```
+VersionedEntity(entity: StoredEntity, version: DocumentVersion)
+```
+
+A stored entity and the version it was read in (DD-047).
+
+Attributes:
+
+- **`entity`** (`StoredEntity`) –
+- **`version`** (`DocumentVersion`) –
+
+#### entity
+
+```
+entity: StoredEntity
+```
+
+#### version
+
+```
+version: DocumentVersion
+```
+
+### WriteResult
+
+```
+WriteResult(guid: str, written: bool, conflict: bool = False)
+```
+
+How one entity of a bulk write ended: written, or failed by a version conflict or another error.
+
+Attributes:
+
+- **`conflict`** (`bool`) –
+- **`guid`** (`str`) –
+- **`written`** (`bool`) –
+
+#### conflict
+
+```
+conflict: bool = False
+```
+
+#### guid
+
+```
+guid: str
+```
+
+#### written
+
+```
+written: bool
+```
+
+## aurelius\_atlas\_core.stored\_entity
+
+`StoredEntity`: an entity as stored, its system properties and its attribute values (ENS-03, DD-043).
+
+What `EntityGraphMapper` and `GraphHelper` keep on an entity's vertex: the GUID, type and super type names, state, times, users, version and the attribute values, here under their qualified names.
+
+Classes:
+
+- **`StoredEntity`** –
+
+  One document of the entity index; `write_id` names the write that last wrote it (DD-046).
+
+Functions:
+
+- **`stored_attributes`** –
+
+  Attribute values keyed by qualified name; names the type does not have are left out (DD-043).
+
+### StoredEntity
+
+Bases: `AtlasModel`
+
+One document of the entity index; `write_id` names the write that last wrote it (DD-046).
+
+Methods:
+
+- **`of`** –
+
+  A new entity as stored (`createVertexWithGuid`): `ACTIVE`, both times `now`, `version` its own.
+- **`to_entity`** –
+
+  The entity with its system properties and attribute values by attribute name (2.3 adds the rest).
+- **`touched`** –
+
+  This entity, changed at `now` by `user` (`updateModificationMetadata`).
+- **`unique_keys`** –
+
+  The unique values this entity holds: those of its unique attributes with a value, while `ACTIVE`.
+
+Attributes:
+
+- **`attributes`** (`dict[str, Any]`) –
+- **`create_time`** (`int`) –
+- **`created_by`** (`str | None`) –
+- **`custom_attributes`** (`dict[str, str] | None`) –
+- **`guid`** (`str`) –
+- **`home_id`** (`str | None`) –
+- **`is_incomplete`** (`bool`) –
+- **`labels`** (`list[str] | None`) –
+- **`provenance_type`** (`int`) –
+- **`state`** (`EntityStatus`) –
+- **`super_type_names`** (`list[str]`) –
+- **`type_name`** (`str`) –
+- **`update_time`** (`int`) –
+- **`updated_by`** (`str | None`) –
+- **`version`** (`int`) –
+- **`write_id`** (`str | None`) –
+
+#### attributes
+
+```
+attributes: dict[str, Any] = Field(default_factory=dict)
+```
+
+#### create\_time
+
+```
+create_time: int = 0
+```
+
+#### created\_by
+
+```
+created_by: str | None = None
+```
+
+#### custom\_attributes
+
+```
+custom_attributes: dict[str, str] | None = None
+```
+
+#### guid
+
+```
+guid: str
+```
+
+#### home\_id
+
+```
+home_id: str | None = None
+```
+
+#### is\_incomplete
+
+```
+is_incomplete: bool = False
+```
+
+#### labels
+
+```
+labels: list[str] | None = None
+```
+
+#### provenance\_type
+
+```
+provenance_type: int = 0
+```
+
+#### state
+
+```
+state: EntityStatus = EntityStatus.ACTIVE
+```
+
+#### super\_type\_names
+
+```
+super_type_names: list[str] = Field(default_factory=list)
+```
+
+#### type\_name
+
+```
+type_name: str
+```
+
+#### update\_time
+
+```
+update_time: int = 0
+```
+
+#### updated\_by
+
+```
+updated_by: str | None = None
+```
+
+#### version
+
+```
+version: int = 0
+```
+
+#### write\_id
+
+```
+write_id: str | None = None
+```
+
+#### of
+
+```
+of(entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: str | None) -> Self
+```
+
+A new entity as stored (`createVertexWithGuid`): `ACTIVE`, both times `now`, `version` its own.
+
+Attributes the type does not have are left out; the others are stored under their qualified names.
+
+#### to\_entity
+
+```
+to_entity(entity_type: EntityType) -> AtlasEntity
+```
+
+The entity with its system properties and attribute values by attribute name (2.3 adds the rest).
+
+#### touched
+
+```
+touched(*, now: int, user: str | None) -> Self
+```
+
+This entity, changed at `now` by `user` (`updateModificationMetadata`).
+
+#### unique\_keys
+
+```
+unique_keys(entity_type: EntityType) -> list[UniqueKey]
+```
+
+The unique values this entity holds: those of its unique attributes with a value, while `ACTIVE`.
+
+### stored\_attributes
+
+```
+stored_attributes(attributes: dict[str, Any], entity_type: EntityType) -> dict[str, Any]
+```
+
+Attribute values keyed by qualified name; names the type does not have are left out (DD-043).
+
+## aurelius\_atlas\_core.unique\_key
+
+`UniqueKey`: one unique attribute value of one entity type, the id of its reservation (ENS-05, DD-045).
+
+Classes:
+
+- **`UniqueKey`** –
+
+  A value of a unique attribute of an entity type: what Atlas's `PER_TYPE_UNIQUE` index keeps once.
+
+### UniqueKey
+
+```
+UniqueKey(type_name: str, attribute: str, value: Any)
+```
+
+A value of a unique attribute of an entity type: what Atlas's `PER_TYPE_UNIQUE` index keeps once.
+
+`attribute` is the attribute's qualified name (`Referenceable.qualifiedName`), `value` the normalised value.
+
+Attributes:
+
+- **`attribute`** (`str`) –
+- **`id`** (`str`) –
+
+  The reservation's document id: a SHA-256 of type, attribute and value as the codec writes them.
+- **`type_name`** (`str`) –
+- **`value`** (`Any`) –
+
+#### attribute
+
+```
+attribute: str
+```
+
+#### id
+
+```
+id: str
+```
+
+The reservation's document id: a SHA-256 of type, attribute and value as the codec writes them.
+
+#### type\_name
+
+```
+type_name: str
+```
+
+#### value
+
+```
+value: Any
+```
 
 ## aurelius\_atlas\_core.type\_search
 

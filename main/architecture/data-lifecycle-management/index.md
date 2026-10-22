@@ -5,7 +5,7 @@ A data asset's journey in the catalogue: getting discovered and registered, stay
 | Page | Scope | Written by |
 | --- | --- | --- |
 | [Data Collection](<https://aureliusenterprise.github.io/main/architecture/data-lifecycle-management/data-collection/index.md>) | Ingestion: entity/typedef create and update, bulk, headers | 2.4 (entity write REST) |
-| [Data Storage](<https://aureliusenterprise.github.io/main/architecture/data-lifecycle-management/data-storage/index.md>) | One search store as system of record: layout, identities, versioning | written (0.2/1.4); entity layout with 2.2 |
+| [Data Storage](<https://aureliusenterprise.github.io/main/architecture/data-lifecycle-management/data-storage/index.md>) | One search store as system of record: layout, identities, versioning | written (0.2/1.4/2.2) |
 | [Data Processing](<https://aureliusenterprise.github.io/main/architecture/data-lifecycle-management/data-processing/index.md>) | Classification propagation, audits, cascades | 3.2–3.5 |
 | [Data Sharing](<https://aureliusenterprise.github.io/main/architecture/data-lifecycle-management/data-sharing/index.md>) | Export ZIP, import, migration of an existing Atlas | 6.3 |
 | [Data Archiving](<https://aureliusenterprise.github.io/main/architecture/data-lifecycle-management/data-archiving/index.md>) | Soft delete, purge, retention of the store; snapshots | 2.5, 6.4 |
