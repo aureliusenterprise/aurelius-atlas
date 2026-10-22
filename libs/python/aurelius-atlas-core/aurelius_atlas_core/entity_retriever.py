@@ -92,15 +92,25 @@ class EntityRetriever:
         result.compact()
         return result
 
-    async def header(self, guid: str) -> AtlasEntityHeader:
+    async def header(self, guid: str, *, classifications: bool = True) -> AtlasEntityHeader:
         """The header of the entity with ``guid``, with its (empty) classifications (ERD-07, ``getHeaderById``).
+
+        Without ``classifications``, as ``toAtlasEntityHeader`` answers it (EWR-13).
 
         Raises:
             AtlasError: ``INSTANCE_GUID_NOT_FOUND`` when no entity has the GUID.
         """
         header = await self._reading(AtlasEntityExtInfo()).header(await self._found(guid))
-        header.classifications = []
+        if classifications:
+            header.classifications = []
         return header
+
+    async def entity_attribute(self, stored: StoredEntity, attribute: AtlasAttribute) -> Any:  # noqa: ANN401 - Atlas JSON
+        """``getEntityAttribute``: the stored value of ``attribute`` as a read answers it, without referred entities.
+
+        What ``AtlasEntityComparator`` compares a request's value with (EWR-08).
+        """
+        return await self._reading(AtlasEntityExtInfo())._vertex_attribute(stored, attribute)  # noqa: SLF001 - same module
 
     async def header_by_unique_attributes(
         self, entity_type: EntityType, values: Mapping[str, Any]

@@ -1,7 +1,8 @@
-"""Types and stored entities to read back in tests of the entity reads (DD-049, DD-051).
+"""Types and stored entities to read back in tests of the entity reads and writes (DD-049, DD-051).
 
 ``table`` has an attribute of every kind the reads map: dates, enums, structs, arrays and maps, plain, owned and
-soft references, and a relationship attribute (``home``).
+soft references, and a relationship attribute (``home``). ``WRITE_TYPES`` add what only writes treat apart:
+defaults, sets, appending on partial update, a dynamic attribute and a legacy relationship end.
 """
 
 from typing import Any
@@ -80,16 +81,55 @@ SAMPLE_TYPES: dict[str, Any] = {
 """The sample types as Atlas JSON, to register directly or create over REST."""
 
 
+APPEND = {"isAppendOnPartialUpdate": "true"}
+
+WRITE_TYPES: dict[str, Any] = {
+    "entityDefs": [
+        {
+            "name": "w_item",
+            "superTypes": ["s_ref"],
+            "options": {"dynAttribute:name": "item-{qualifiedName}"},
+            "attributeDefs": [
+                _attribute("count", "int"),
+                _attribute("flag", "boolean"),
+                _attribute("when", "date"),
+                _attribute("label", "string", defaultValue="none"),
+                _attribute("tags", "array<string>", cardinality="SET", options=APPEND),
+                _attribute("notes", "map<string,string>", options=APPEND),
+                _attribute("peers", "array<s_column>", cardinality="SET"),
+                _attribute("holder", "s_database"),
+            ],
+        },
+    ],
+    "relationshipDefs": [
+        {
+            "name": "w_item_holder",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "w_item", "name": "holder", "cardinality": "SINGLE", "isLegacyAttribute": True},
+            "endDef2": {"type": "s_database", "name": "items", "cardinality": "SET"},
+        },
+    ],
+}
+"""Types only writes need, on top of ``SAMPLE_TYPES``, as Atlas JSON."""
+
+
 def sample_types() -> AtlasTypesDef:
     """``SAMPLE_TYPES`` as definitions."""
     return AtlasTypesDef.model_validate(SAMPLE_TYPES)
 
 
-def sample_registry() -> TypeRegistry:
-    """A registry of the sample types."""
+def write_types() -> AtlasTypesDef:
+    """``WRITE_TYPES`` as definitions."""
+    return AtlasTypesDef.model_validate(WRITE_TYPES)
+
+
+def sample_registry(*, writes: bool = False) -> TypeRegistry:
+    """A registry of the sample types, and of the write types with ``writes``."""
     registry = TypeRegistry()
     with registry.update() as transient:
         transient.add_types(sample_types())
+        if writes:
+            transient.add_types(write_types())
     return registry
 
 
