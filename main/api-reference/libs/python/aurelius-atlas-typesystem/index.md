@@ -3318,7 +3318,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+  Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -3342,10 +3342,10 @@ Methods:
   As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_valid_value`** –
 
-  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+  Null, or an `AtlasRelationship` with valid ends and, given end types, valid attributes (REL-02).
 - **`is_valid_value_for_update`** –
 
-  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+  As `is_valid_value`: Atlas checks a relationship for update the same way (REL-02).
 - **`normalize_attribute_values`** –
 
   Normalise the present own attributes and add the missing mandatory ones (EVL-04).
@@ -3451,7 +3451,7 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.
 
 #### attribute
 
@@ -3515,7 +3515,7 @@ As `get_normalized_value`, checked and normalised for update (EVL-03).
 is_valid_value(value: object) -> bool
 ```
 
-Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+Null, or an `AtlasRelationship` with valid ends and, given end types, valid attributes (REL-02).
 
 #### is\_valid\_value\_for\_update
 
@@ -3523,7 +3523,7 @@ Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
 is_valid_value_for_update(value: object) -> bool
 ```
 
-Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+As `is_valid_value`: Atlas checks a relationship for update the same way (REL-02).
 
 #### normalize\_attribute\_values
 
@@ -5278,16 +5278,6 @@ Functions:
 
   Check the ends' cardinality and containers against the category (`validateAtlasRelationshipDef`, THY-08).
 
-Attributes:
-
-- **`RELATIONSHIP_VALUES_ERROR`** –
-
-### RELATIONSHIP\_VALUES\_ERROR
-
-```
-RELATIONSHIP_VALUES_ERROR = '{type}: relationship values arrive with AtlasRelationship in 3.1'
-```
-
 ### RelationshipType
 
 ```
@@ -5302,7 +5292,7 @@ Methods:
 
 - **`are_equal_values`** –
 
-  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+  Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.
 - **`attribute`** –
 
   The attribute named exactly `name`, then the system and business attribute, or None (TRG-13, THY-05).
@@ -5326,10 +5316,10 @@ Methods:
   As `get_normalized_value`, checked and normalised for update (EVL-03).
 - **`is_valid_value`** –
 
-  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+  Null, or an `AtlasRelationship` with valid ends and, given end types, valid attributes (REL-02).
 - **`is_valid_value_for_update`** –
 
-  Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+  As `is_valid_value`: Atlas checks a relationship for update the same way (REL-02).
 - **`normalize_attribute_values`** –
 
   Normalise the present own attributes and add the missing mandatory ones (EVL-04).
@@ -5435,7 +5425,7 @@ unique_attributes: dict[str, AtlasAttribute] = {}
 are_equal_values(left: object, right: object, guid_assignments: dict[str, str] | None) -> bool
 ```
 
-Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.
 
 #### attribute
 
@@ -5499,7 +5489,7 @@ As `get_normalized_value`, checked and normalised for update (EVL-03).
 is_valid_value(value: object) -> bool
 ```
 
-Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+Null, or an `AtlasRelationship` with valid ends and, given end types, valid attributes (REL-02).
 
 #### is\_valid\_value\_for\_update
 
@@ -5507,7 +5497,7 @@ Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
 is_valid_value_for_update(value: object) -> bool
 ```
 
-Takes an `AtlasRelationship`, which arrives with relationship instances in 3.1.
+As `is_valid_value`: Atlas checks a relationship for update the same way (REL-02).
 
 #### normalize\_attribute\_values
 

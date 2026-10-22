@@ -4273,6 +4273,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-061. Relationships are documents of their own index, listed by both ends
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-062-an-entity-write-also-writes-relationships-all-or-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-062. An entity write also writes relationships, all or nothing
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-063. 3.1 is split into relationship instances and relationship attributes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4352,6 +4385,8 @@
       
         
           
+        
+      
         
       
         
@@ -4975,6 +5010,33 @@
     
   
   2.5 Delete semantics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-1-relationship-instances/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.1a Relationship instances
 
     
   </span>
@@ -7473,6 +7535,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-061. Relationships are documents of their own index, listed by both ends
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-062-an-entity-write-also-writes-relationships-all-or-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-062. An entity write also writes relationships, all or nothing
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-063. 3.1 is split into relationship instances and relationship attributes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8003,6 +8098,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-060-the-owned-reference-cascade-moves-from-32-to-25">DD-060</a></td>
 <td>The owned-reference cascade moves from 3.2 to 2.5</td>
 <td>2.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends">DD-061</a></td>
+<td>Relationships are documents of their own index, listed by both ends</td>
+<td>3.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-062-an-entity-write-also-writes-relationships-all-or-nothing">DD-062</a></td>
+<td>An entity write also writes relationships, all or nothing</td>
+<td>3.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes">DD-063</a></td>
+<td>3.1 is split into relationship instances and relationship attributes</td>
+<td>3.1</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -9101,6 +9214,53 @@ entity whose reference an update drops stay with 3.2.</p>
 them a delete would leave owned entities <code>ACTIVE</code>, unlike Atlas.</p>
 <p><strong>Alternatives.</strong> All cascades in 3.2, as the roadmap first had it: deletes would differ from Atlas until then.</p>
 <p><strong>Consequences.</strong> The roadmap's 2.5 and 3.2 rows change accordingly.</p>
+<h3 id="dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends">DD-061. Relationships are documents of their own index, listed by both ends<a class="headerlink" href="#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.1</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> A relationship instance is one document of the index behind <code>aurelius-atlas-relationships</code>, keyed
+by its GUID: type name, label, end 1 and end 2 GUIDs, status, times, users, version, provenance type, home id,
+tag propagation and attribute values (as DD-049 stores values). Each end entity's document lists the GUIDs of
+the relationships it is an end of (<code>relationshipGuids</code>), written with the relationship. Reading an entity's
+relationships is a get of its document and of the listed relationships, in real time.</p>
+<p><strong>Reason.</strong> Atlas keeps a relationship as an edge both vertices reach. Listing the GUIDs on both ends keeps
+entity reads to gets by id, never a search that waits for a refresh, at the cost of writing the ends with the
+relationship.</p>
+<p><strong>Alternatives.</strong> Relationship documents found by searching their end GUIDs: writes touch only the relationship,
+but every entity read with relationships pays a refresh and a search, and may miss one just written.</p>
+<p><strong>Consequences.</strong> An entity at the centre of many relationships (a database with thousands of tables) has a long
+list in its document, and writers relating entities to it conflict on it and retry (DD-052, DV-30). Ten thousand
+GUIDs are about 400 KB, well inside Elasticsearch's document size.</p>
+<h3 id="dd-062-an-entity-write-also-writes-relationships-all-or-nothing">DD-062. An entity write also writes relationships, all or nothing<a class="headerlink" href="#dd-062-an-entity-write-also-writes-relationships-all-or-nothing" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.1</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> <code>EntityStore.write</code> takes relationship changes next to entity changes: new, changed and removed
+relationships, conditional on the version read, in the same bulk request and the same journal entry as the
+entities (DD-046, DD-056). Recovery restores relationships as it restores entities.</p>
+<p><strong>Reason.</strong> Creating a relationship changes three documents, deleting an entity may change many; a partial write
+would leave a relationship its ends do not list, or a list naming a relationship that does not exist.</p>
+<p><strong>Alternatives.</strong> A separate relationship store with its own journal: two writes per request, with a window in
+which one is done and the other not.</p>
+<p><strong>Consequences.</strong> The journal entry holds the relationships' states before the write too.</p>
+<h3 id="dd-063-31-is-split-into-relationship-instances-and-relationship-attributes">DD-063. 3.1 is split into relationship instances and relationship attributes<a class="headerlink" href="#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.1</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> 3.1a ports relationship instances: models, the relationship type's value side, storage and
+<code>RelationshipREST</code>, and the deletion of an entity's relationships. 3.1b ports relationship attributes of entities:
+<code>relationshipAttributes</code> in reads, relationships created, changed and deleted by entity writes, legacy ends read
+through relationships, and inverse references; it replaces DD-053.</p>
+<p><strong>Reason.</strong> Together they are two to three times the size an increment may have (ADR 051).</p>
+<p><strong>Alternatives.</strong> One increment: one pull request far above the limit.</p>
+<p><strong>Consequences.</strong> Until 3.1b, entities read with empty relationship attributes (DD-050) even when relationships
+created over <code>RelationshipREST</code> name them.</p>
 
 
 

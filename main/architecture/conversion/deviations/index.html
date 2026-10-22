@@ -3658,6 +3658,8 @@
       
         
       
+        
+      
     
     
     
@@ -4239,6 +4241,33 @@
     
   
   2.5 Delete semantics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-1-relationship-instances/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.1a Relationship instances
 
     
   </span>
@@ -6403,6 +6432,30 @@ Atlas clients expect when it lands).</p>
 <td>Referring entities are found by a search, which may miss one written at the same moment as the delete</td>
 <td>Elasticsearch has no incoming edges (DD-057)</td>
 <td>2.5</td>
+</tr>
+<tr>
+<td>DV-28</td>
+<td>Relationships</td>
+<td>A relationship without <code>end1</code> or <code>end2</code> fails with a <code>NullPointerException</code>, an internal error</td>
+<td><code>RELATIONSHIP_END_IS_NULL</code></td>
+<td>The failure is an unchecked exception, not a decision</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>DV-29</td>
+<td>Relationships</td>
+<td>An update without <code>propagateTags</code> fails with a <code>NullPointerException</code></td>
+<td>Keeps the stored <code>propagateTags</code></td>
+<td>The failure is an unchecked exception in <code>updateTagPropagations</code>, not a decision</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>DV-30</td>
+<td>Relationships</td>
+<td>Relationships to one entity are created without touching it</td>
+<td>Both ends' documents list the relationship, so concurrent writers relating many entities to one retry more often</td>
+<td>Entity reads stay gets by id (DD-061)</td>
+<td>3.1</td>
 </tr>
 </tbody>
 </table>

@@ -7483,17 +7483,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#aurelius_atlas_typesystem.relationship_type.RELATIONSHIP_VALUES_ERROR" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;RELATIONSHIP_VALUES_ERROR
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#aurelius_atlas_typesystem.relationship_type.RelationshipType" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13899,6 +13888,8 @@
       
         
       
+        
+      
     
     
     
@@ -14480,6 +14471,33 @@
     
   
   2.5 Delete semantics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/3-1-relationship-instances/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.1a Relationship instances
 
     
   </span>
@@ -22093,17 +22111,6 @@
   
     <nav class="md-nav" aria-label="relationship_type">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#aurelius_atlas_typesystem.relationship_type.RELATIONSHIP_VALUES_ERROR" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;RELATIONSHIP_VALUES_ERROR
-      </span>
-    </span>
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#aurelius_atlas_typesystem.relationship_type.RelationshipType" class="md-nav__link">
@@ -37303,7 +37310,7 @@ that the definitions it then creates resolve against them.</p>
             <b><code><a class="autorefs autorefs-internal" title="            are_equal_values (aurelius_atlas_typesystem.types.RelationshipType.are_equal_values)" href="./#aurelius_atlas_typesystem.types.RelationshipType.are_equal_values">are_equal_values</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+              <p>Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -37359,14 +37366,14 @@ that the definitions it then creates resolve against them.</p>
             <b><code><a class="autorefs autorefs-internal" title="            is_valid_value (aurelius_atlas_typesystem.types.RelationshipType.is_valid_value)" href="./#aurelius_atlas_typesystem.types.RelationshipType.is_valid_value">is_valid_value</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+              <p>Null, or an <code>AtlasRelationship</code> with valid ends and, given end types, valid attributes (REL-02).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            is_valid_value_for_update (aurelius_atlas_typesystem.types.RelationshipType.is_valid_value_for_update)" href="./#aurelius_atlas_typesystem.types.RelationshipType.is_valid_value_for_update">is_valid_value_for_update</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+              <p>As <code>is_valid_value</code>: Atlas checks a relationship for update the same way (REL-02).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -37826,7 +37833,7 @@ that the definitions it then creates resolve against them.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+        <p>Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.</p>
 
 
     </div>
@@ -37991,7 +37998,7 @@ that the definitions it then creates resolve against them.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+        <p>Null, or an <code>AtlasRelationship</code> with valid ends and, given end types, valid attributes (REL-02).</p>
 
 
     </div>
@@ -38011,7 +38018,7 @@ that the definitions it then creates resolve against them.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+        <p>As <code>is_valid_value</code>: Atlas checks a relationship for update the same way (REL-02).</p>
 
 
     </div>
@@ -43622,23 +43629,6 @@ added once.</p>
 
 
 
-<p><span class="doc-section-title">Attributes:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-          <b><code><a class="autorefs autorefs-internal" title="            RELATIONSHIP_VALUES_ERROR
-
-
-  
-      module-attribute
-   (aurelius_atlas_typesystem.relationship_type.RELATIONSHIP_VALUES_ERROR)" href="./#aurelius_atlas_typesystem.relationship_type.RELATIONSHIP_VALUES_ERROR">RELATIONSHIP_VALUES_ERROR</a></code></b>
-          –
-          <div class="doc-md-description">
-            
-          </div>
-        </li>
-    </ul>
-
-
 
 <div class="doc doc-children">
 
@@ -43647,28 +43637,6 @@ added once.</p>
 
 
 
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="aurelius_atlas_typesystem.relationship_type.RELATIONSHIP_VALUES_ERROR" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">RELATIONSHIP_VALUES_ERROR</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#aurelius_atlas_typesystem.relationship_type.RELATIONSHIP_VALUES_ERROR" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">RELATIONSHIP_VALUES_ERROR</span> <span class="o">=</span> <span class="s1">'</span><span class="si">{type}</span><span class="s1">: relationship values arrive with AtlasRelationship in 3.1'</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
 
 
 
@@ -43714,7 +43682,7 @@ added once.</p>
             <b><code><a class="autorefs autorefs-internal" title="            are_equal_values (aurelius_atlas_typesystem.relationship_type.RelationshipType.are_equal_values)" href="./#aurelius_atlas_typesystem.relationship_type.RelationshipType.are_equal_values">are_equal_values</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+              <p>Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -43770,14 +43738,14 @@ added once.</p>
             <b><code><a class="autorefs autorefs-internal" title="            is_valid_value (aurelius_atlas_typesystem.relationship_type.RelationshipType.is_valid_value)" href="./#aurelius_atlas_typesystem.relationship_type.RelationshipType.is_valid_value">is_valid_value</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+              <p>Null, or an <code>AtlasRelationship</code> with valid ends and, given end types, valid attributes (REL-02).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            is_valid_value_for_update (aurelius_atlas_typesystem.relationship_type.RelationshipType.is_valid_value_for_update)" href="./#aurelius_atlas_typesystem.relationship_type.RelationshipType.is_valid_value_for_update">is_valid_value_for_update</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+              <p>As <code>is_valid_value</code>: Atlas checks a relationship for update the same way (REL-02).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -44237,7 +44205,7 @@ added once.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+        <p>Both null, or relationships equal as structs and by GUID, ends, label, tag propagation and status.</p>
 
 
     </div>
@@ -44402,7 +44370,7 @@ added once.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+        <p>Null, or an <code>AtlasRelationship</code> with valid ends and, given end types, valid attributes (REL-02).</p>
 
 
     </div>
@@ -44422,7 +44390,7 @@ added once.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Takes an <code>AtlasRelationship</code>, which arrives with relationship instances in 3.1.</p>
+        <p>As <code>is_valid_value</code>: Atlas checks a relationship for update the same way (REL-02).</p>
 
 
     </div>

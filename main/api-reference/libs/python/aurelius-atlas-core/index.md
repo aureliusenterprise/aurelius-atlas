@@ -500,13 +500,16 @@ Classes:
   One entity of a write: its new state, and the version it was read in, or None for a new entity.
 - **`EntityStore`** –
 
-  Entities of the registry's entity types in `EntityDocuments`.
+  Entities of the registry's entity types, and the relationships between them, in `EntityDocuments`.
 - **`EntityVersionConflictError`** –
 
   Another write changed an entity after it was read (ENS-08); nothing was written.
 - **`EntityWriteError`** –
 
   An entity could not be written for another reason; the write was undone (ENS-07).
+- **`RelationshipChange`** –
+
+  One relationship of a write: its new state and the version it was read in, or None for a new one.
 - **`UniqueValueTakenError`** –
 
   A write needs a unique value another entity holds (ENS-05); nothing was written.
@@ -613,7 +616,7 @@ EntityStore(
 )
 ```
 
-Entities of the registry's entity types in `EntityDocuments`.
+Entities of the registry's entity types, and the relationships between them, in `EntityDocuments`.
 
 Methods:
 
@@ -626,6 +629,9 @@ Methods:
 - **`get_many`** –
 
   The entities with these GUIDs that exist (ENS-04).
+- **`get_relationships`** –
+
+  The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
 - **`new_guid`** –
 
   A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044).
@@ -643,10 +649,10 @@ Methods:
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
 - **`type_in_use`** –
 
-  Whether an entity of exactly this type exists, in any state: the typedef store's check (ENS-09, DD-048).
+  Whether an entity or relationship of exactly this type exists, in any state (ENS-09, REL-10, DD-048).
 - **`write`** –
 
-  Write new, changed and removed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08).
+  Write new, changed and removed entities and relationships, all or nothing, through the journal.
 
 Attributes:
 
@@ -683,6 +689,14 @@ get_many(guids: Sequence[str]) -> dict[str, VersionedEntity]
 ```
 
 The entities with these GUIDs that exist (ENS-04).
+
+#### get\_relationships
+
+```
+get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+```
+
+The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
 
 #### new\_guid
 
@@ -732,17 +746,19 @@ The entities whose references name any of these GUIDs (EDL-10, DD-057).
 type_in_use(type_name: str) -> bool
 ```
 
-Whether an entity of exactly this type exists, in any state: the typedef store's check (ENS-09, DD-048).
+Whether an entity or relationship of exactly this type exists, in any state (ENS-09, REL-10, DD-048).
+
+The typedef store's check.
 
 #### write
 
 ```
-write(changes: Sequence[EntityChange]) -> None
+write(changes: Sequence[EntityChange], relationship_changes: Sequence[RelationshipChange] = ()) -> None
 ```
 
-Write new, changed and removed entities, all or nothing, through the journal (ENS-05, ENS-07, ENS-08).
+Write new, changed and removed entities and relationships, all or nothing, through the journal.
 
-Each written entity carries the GUIDs its references name (DD-057); removals are journaled too (DD-056).
+ENS-05, ENS-07, ENS-08. Each written entity carries the GUIDs its references name (DD-057); removals and relationships are journaled too (DD-056, DD-062).
 
 Raises:
 
@@ -781,6 +797,40 @@ guid = guid
 Bases: `Exception`
 
 An entity could not be written for another reason; the write was undone (ENS-07).
+
+### RelationshipChange
+
+```
+RelationshipChange(relationship: StoredRelationship, expected: DocumentVersion | None = None, remove: bool = False)
+```
+
+One relationship of a write: its new state and the version it was read in, or None for a new one.
+
+With `remove`, the write removes the relationship, which must have been read (DD-062).
+
+Attributes:
+
+- **`expected`** (`DocumentVersion | None`) –
+- **`relationship`** (`StoredRelationship`) –
+- **`remove`** (`bool`) –
+
+#### expected
+
+```
+expected: DocumentVersion | None = None
+```
+
+#### relationship
+
+```
+relationship: StoredRelationship
+```
+
+#### remove
+
+```
+remove: bool = False
+```
 
 ### UniqueValueTakenError
 
@@ -832,6 +882,9 @@ Classes:
 - **`VersionedEntity`** –
 
   A stored entity and the version it was read in (DD-047).
+- **`VersionedRelationship`** –
+
+  A stored relationship and the version it was read in (DD-047, DD-061).
 - **`WriteResult`** –
 
   How one entity of a bulk write ended: written, or failed by a version conflict or another error.
@@ -856,6 +909,12 @@ Attributes:
 - **`REFERRING_PAGE`** –
 
   How many referring entities one search page holds (DD-057).
+- **`RELATIONSHIP_INDEX`** –
+
+  The alias of the relationship index (DD-061).
+- **`RELATIONSHIP_MAPPING`** (`dict[str, Any]`) –
+
+  Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
 - **`UNIQUE_VALUE_INDEX`** –
 
   The alias of the unique value reservations (DD-045).
@@ -890,6 +949,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "labels": _KEYWORD,
         "writeId": _KEYWORD,
         "references": _KEYWORD,
+        "relationshipGuids": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
@@ -932,6 +992,34 @@ REFERRING_PAGE = 1000
 
 How many referring entities one search page holds (DD-057).
 
+### RELATIONSHIP\_INDEX
+
+```
+RELATIONSHIP_INDEX = f'{INDEX_PREFIX}-relationships'
+```
+
+The alias of the relationship index (DD-061).
+
+### RELATIONSHIP\_MAPPING
+
+```
+RELATIONSHIP_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "typeName": _KEYWORD,
+        "label": _KEYWORD,
+        "end1Guid": _KEYWORD,
+        "end2Guid": _KEYWORD,
+        "state": _KEYWORD,
+        "writeId": _KEYWORD,
+        "attributes": {"type": "object", "dynamic": False},
+    },
+}
+```
+
+Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
+
 ### UNIQUE\_VALUE\_INDEX
 
 ```
@@ -950,6 +1038,9 @@ ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PRE
 
 Methods:
 
+- **`count_relationship_type`** –
+
+  Refresh the relationship index, then count the relationships of the type (REL-10).
 - **`count_type`** –
 
   Refresh the entity index, then count the entities of the type (DD-048).
@@ -959,6 +1050,9 @@ Methods:
 - **`get`** –
 
   `mget` of the entity index: real time, as a get by id is (ENS-04).
+- **`get_relationships`** –
+
+  `mget` of the relationship index: real time (DD-061).
 - **`journal`** –
 
   The entries of the journal, refreshed first so none written a moment ago is missed.
@@ -983,23 +1077,34 @@ Methods:
 - **`restore`** –
 
   Index the state before, or delete an entity that did not exist before (DD-046).
+- **`restore_relationship`** –
+
+  Index the relationship's state before, or delete one that did not exist before (DD-062).
 - **`write`** –
 
-  One bulk request: `create` a new entity, `index` or `delete` with `if_seq_no` (DD-047, DD-056).
+  One bulk request over both indices: `create` a new document, `index` or `delete` with `if_seq_no`.
 
 Attributes:
 
-- **`aliases`** (`tuple[str, str, str]`) –
+- **`aliases`** (`tuple[str, str, str, str]`) –
 
-  The aliases of the entity index, the reservations and the journal.
+  The aliases of the entity index, the reservations, the journal and the relationship index.
 
 #### aliases
 
 ```
-aliases: tuple[str, str, str]
+aliases: tuple[str, str, str, str]
 ```
 
-The aliases of the entity index, the reservations and the journal.
+The aliases of the entity index, the reservations, the journal and the relationship index.
+
+#### count\_relationship\_type
+
+```
+count_relationship_type(type_name: str) -> int
+```
+
+Refresh the relationship index, then count the relationships of the type (REL-10).
 
 #### count\_type
 
@@ -1024,6 +1129,14 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 ```
 
 `mget` of the entity index: real time, as a get by id is (ENS-04).
+
+#### get\_relationships
+
+```
+get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+```
+
+`mget` of the relationship index: real time (DD-061).
 
 #### journal
 
@@ -1091,15 +1204,28 @@ restore(guid: str, before: StoredEntity | None) -> None
 
 Index the state before, or delete an entity that did not exist before (DD-046).
 
+#### restore\_relationship
+
+```
+restore_relationship(guid: str, before: StoredRelationship | None) -> None
+```
+
+Index the relationship's state before, or delete one that did not exist before (DD-062).
+
 #### write
 
 ```
 write(
-    items: Sequence[tuple[StoredEntity, DocumentVersion | None]], removed: Sequence[tuple[str, DocumentVersion]] = ()
+    items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+    removed: Sequence[tuple[str, DocumentVersion]] = (),
+    relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
+    removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
 ) -> list[WriteResult]
 ```
 
-One bulk request: `create` a new entity, `index` or `delete` with `if_seq_no` (DD-047, DD-056).
+One bulk request over both indices: `create` a new document, `index` or `delete` with `if_seq_no`.
+
+DD-047, DD-056, DD-062.
 
 ### EntityDocuments
 
@@ -1109,6 +1235,9 @@ Where `EntityStore` keeps entities, reservations and its journal.
 
 Methods:
 
+- **`count_relationship_type`** –
+
+  How many relationships of the type exist, in any state, as of now (REL-10).
 - **`count_type`** –
 
   How many entities of exactly this type exist, in any state, as of now.
@@ -1118,6 +1247,9 @@ Methods:
 - **`get`** –
 
   The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
+- **`get_relationships`** –
+
+  The stored relationships with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 - **`journal`** –
 
   Every journal entry.
@@ -1142,9 +1274,20 @@ Methods:
 - **`restore`** –
 
   Put back an entity's state before a write, or delete one the write created.
+- **`restore_relationship`** –
+
+  Put back a relationship's state before a write, or delete one the write created (DD-062).
 - **`write`** –
 
-  Write each entity, new (no version) or over the version given, and remove those at the version given.
+  Write and remove entities and relationships, new (no version) or at the version given.
+
+#### count\_relationship\_type
+
+```
+count_relationship_type(type_name: str) -> int
+```
+
+How many relationships of the type exist, in any state, as of now (REL-10).
 
 #### count\_type
 
@@ -1169,6 +1312,14 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 ```
 
 The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
+
+#### get\_relationships
+
+```
+get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+```
+
+The stored relationships with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 
 #### journal
 
@@ -1234,17 +1385,28 @@ restore(guid: str, before: StoredEntity | None) -> None
 
 Put back an entity's state before a write, or delete one the write created.
 
+#### restore\_relationship
+
+```
+restore_relationship(guid: str, before: StoredRelationship | None) -> None
+```
+
+Put back a relationship's state before a write, or delete one the write created (DD-062).
+
 #### write
 
 ```
 write(
-    items: Sequence[tuple[StoredEntity, DocumentVersion | None]], removed: Sequence[tuple[str, DocumentVersion]] = ()
+    items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+    removed: Sequence[tuple[str, DocumentVersion]] = (),
+    relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
+    removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
 ) -> list[WriteResult]
 ```
 
-Write each entity, new (no version) or over the version given, and remove those at the version given.
+Write and remove entities and relationships, new (no version) or at the version given.
 
-One bulk request; the results are in order, the writes' then the removals' (DD-056).
+One bulk request; the results are in order: entities written, removed, relationships written, removed (DD-056, DD-062).
 
 ### JournalEntry
 
@@ -1259,14 +1421,19 @@ Methods:
 - **`before_entity`** –
 
   The state of `guid` before the write, or None for an entity the write created.
+- **`before_relationship`** –
+
+  The state of relationship `guid` before the write, or None for one the write created (DD-062).
 
 Attributes:
 
 - **`before`** (`dict[str, dict[str, Any] | None]`) –
 - **`committed`** (`bool`) –
 - **`lease_until`** (`int`) –
+- **`relationships_before`** (`dict[str, dict[str, Any] | None]`) –
 - **`released`** (`list[str]`) –
 - **`removed`** (`list[str]`) –
+- **`removed_relationships`** (`list[str]`) –
 - **`reserved`** (`list[str]`) –
 - **`write_id`** (`str`) –
 
@@ -1288,6 +1455,12 @@ committed: bool = False
 lease_until: int
 ```
 
+#### relationships\_before
+
+```
+relationships_before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
+```
+
 #### released
 
 ```
@@ -1298,6 +1471,12 @@ released: list[str] = Field(default_factory=list)
 
 ```
 removed: list[str] = Field(default_factory=list)
+```
+
+#### removed\_relationships
+
+```
+removed_relationships: list[str] = Field(default_factory=list)
 ```
 
 #### reserved
@@ -1319,6 +1498,14 @@ before_entity(guid: str) -> StoredEntity | None
 ```
 
 The state of `guid` before the write, or None for an entity the write created.
+
+#### before\_relationship
+
+```
+before_relationship(guid: str) -> StoredRelationship | None
+```
+
+The state of relationship `guid` before the write, or None for one the write created (DD-062).
 
 ### Reservation
 
@@ -1377,10 +1564,35 @@ entity: StoredEntity
 version: DocumentVersion
 ```
 
+### VersionedRelationship
+
+```
+VersionedRelationship(relationship: StoredRelationship, version: DocumentVersion)
+```
+
+A stored relationship and the version it was read in (DD-047, DD-061).
+
+Attributes:
+
+- **`relationship`** (`StoredRelationship`) –
+- **`version`** (`DocumentVersion`) –
+
+#### relationship
+
+```
+relationship: StoredRelationship
+```
+
+#### version
+
+```
+version: DocumentVersion
+```
+
 ### WriteResult
 
 ```
-WriteResult(guid: str, written: bool, conflict: bool = False)
+WriteResult(guid: str, written: bool, conflict: bool = False, relationship: bool = False)
 ```
 
 How one entity of a bulk write ended: written, or failed by a version conflict or another error.
@@ -1389,6 +1601,7 @@ Attributes:
 
 - **`conflict`** (`bool`) –
 - **`guid`** (`str`) –
+- **`relationship`** (`bool`) –
 - **`written`** (`bool`) –
 
 #### conflict
@@ -1401,6 +1614,12 @@ conflict: bool = False
 
 ```
 guid: str
+```
+
+#### relationship
+
+```
+relationship: bool = False
 ```
 
 #### written
@@ -1435,6 +1654,9 @@ One document of the entity index; `write_id` names the write that last wrote it 
 
 Methods:
 
+- **`listing`** –
+
+  This entity listing relationship `relationship_guid` as one it is an end of (DD-061).
 - **`of`** –
 
   A new entity as stored (`createVertexWithGuid`): `ACTIVE`, both times `now`, `version` its own.
@@ -1450,6 +1672,9 @@ Methods:
 - **`unique_keys`** –
 
   The unique values this entity holds: those of its unique attributes with a value, while `ACTIVE`.
+- **`unlisting`** –
+
+  This entity no longer listing these relationships (DD-061).
 
 Attributes:
 
@@ -1464,6 +1689,7 @@ Attributes:
 - **`labels`** (`list[str] | None`) –
 - **`provenance_type`** (`int`) –
 - **`references`** (`list[str] | None`) –
+- **`relationship_guids`** (`list[str] | None`) –
 - **`state`** (`EntityStatus`) –
 - **`super_type_names`** (`list[str]`) –
 - **`type_name`** (`str`) –
@@ -1538,6 +1764,12 @@ provenance_type: int = 0
 references: list[str] | None = None
 ```
 
+#### relationship\_guids
+
+```
+relationship_guids: list[str] | None = None
+```
+
 #### state
 
 ```
@@ -1579,6 +1811,14 @@ version: int = 0
 ```
 write_id: str | None = None
 ```
+
+#### listing
+
+```
+listing(relationship_guid: str) -> Self
+```
+
+This entity listing relationship `relationship_guid` as one it is an end of (DD-061).
 
 #### of
 
@@ -1625,6 +1865,14 @@ unique_keys(entity_type: EntityType) -> list[UniqueKey]
 ```
 
 The unique values this entity holds: those of its unique attributes with a value, while `ACTIVE`.
+
+#### unlisting
+
+```
+unlisting(relationship_guids: set[str]) -> Self
+```
+
+This entity no longer listing these relationships (DD-061).
 
 ### stored\_attributes
 
