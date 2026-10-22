@@ -3650,6 +3650,8 @@
       
         
       
+        
+      
     
     
     
@@ -4362,6 +4364,33 @@
     
   
   3.1a Relationship instances
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../3-1-relationship-attributes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.1b Relationship attributes
 
     
   </span>
@@ -6387,6 +6416,8 @@
       
         
       
+        
+      
     
     
     
@@ -6619,7 +6650,8 @@ of a scenario (DD-055).</p>
 two races (DD-052). DV-21: Atlas orders the references of an array by the hash order of their edges
 (<code>CollectionUtils.union</code>); Aurelius Atlas keeps the request's order. Entities EWR-12 makes updated are
 reported in the order they were reached, where Atlas uses a <code>HashMap</code>'s. DV-22: until 3.1, a relationship
-attribute that is not also an attribute of the type is not stored (DD-053). DV-23: a partial update appending
+attribute that is not also an attribute of the type is not stored (DD-053); ended by 3.1b (DD-064), whose
+REL-11 to REL-16 replace EWR-17's storage. DV-23: a partial update appending
 to an array or map of references fails in Atlas with <code>INVALID_OBJECT_ID</code>, since it maps the stored edges as
 values; Aurelius Atlas appends. DV-24: a <code>POST</code> without a body, or a bulk request without <code>entities</code>, fails in
 Atlas with a <code>NullPointerException</code>; Aurelius Atlas answers them as a null entity and as an empty list. A body

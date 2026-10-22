@@ -3660,6 +3660,8 @@
       
         
       
+        
+      
     
     
     
@@ -4268,6 +4270,33 @@
     
   
   3.1a Relationship instances
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-1-relationship-attributes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.1b Relationship attributes
 
     
   </span>
@@ -6354,14 +6383,6 @@ Atlas clients expect when it lands).</p>
 <td>2.3</td>
 </tr>
 <tr>
-<td>DV-18</td>
-<td>Entities</td>
-<td>A reference that is also a relationship end reads in <code>relationshipAttributes</code> as well as in <code>attributes</code></td>
-<td>Until 3.1, <code>relationshipAttributes</code> holds null or <code>[]</code> for it</td>
-<td>Relationships are stored from 3.1 (DD-050)</td>
-<td>2.3</td>
-</tr>
-<tr>
 <td>DV-19</td>
 <td>Entities</td>
 <td><code>bulk/uniqueAttribute</code> answers its entities in the hash order of the <code>attr_&lt;n&gt;</code> indices</td>
@@ -6380,17 +6401,9 @@ Atlas clients expect when it lands).</p>
 <tr>
 <td>DV-21</td>
 <td>Entities</td>
-<td>The references of an array are ordered by the hash order of their edges; entities a new reference made updated are reported in a <code>HashMap</code>'s order</td>
-<td>Kept in the request's order; reported in the order reached</td>
+<td>The references of an array, and an array's relationships, are ordered by the hash order of their edges; entities a new reference made updated are reported in a <code>HashMap</code>'s order</td>
+<td>Kept in the request's order, after the relationships that stay; reported in the order reached</td>
 <td>Hash order is not something a client can rely on</td>
-<td>2.4</td>
-</tr>
-<tr>
-<td>DV-22</td>
-<td>Entities</td>
-<td>A relationship attribute's value is stored as a relationship</td>
-<td>Until 3.1, stored only when the type has an attribute of the same name, as that attribute's value</td>
-<td>Relationships are stored from 3.1 (DD-053)</td>
 <td>2.4</td>
 </tr>
 <tr>
@@ -6455,6 +6468,22 @@ Atlas clients expect when it lands).</p>
 <td>Relationships to one entity are created without touching it</td>
 <td>Both ends' documents list the relationship, so concurrent writers relating many entities to one retry more often</td>
 <td>Entity reads stay gets by id (DD-061)</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>DV-31</td>
+<td>Relationships</td>
+<td>An update that replaces or drops a relationship of an owned attribute deletes the owned entity</td>
+<td>Until 3.2, only the relationship is deleted</td>
+<td>Owned entities an update drops arrive in 3.2 (DD-067)</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>DV-32</td>
+<td>Relationships</td>
+<td>An <code>inverseRef</code> whose inverse attribute is no relationship attribute is kept as a legacy edge</td>
+<td>Not maintained</td>
+<td>Plain references are attribute values (DD-049), and Atlas types since 1.0 use relationships instead</td>
 <td>3.1</td>
 </tr>
 </tbody>
