@@ -3030,3 +3030,37 @@ endpoints 2.4/3.x, unportable per DD-051's audit).
 the typedefs client's shape (APC-01 base url, one method per legacy
 duplication, DD-051). When 2.3 lands, the e2e wiring scenario is the method's
 first real 200; its specs keep asserting the request until then.
+
+### DD-098 — One API base: the client's URLs all ride the API_BASE_URL token
+
+- **Status:** Accepted
+- **Increment:** 7.6
+- **Date:** 2026-10-22
+
+**Decision.** ADR 054's rule, in client shape: every Aurelius Atlas request
+composes its URL from the injected `API_BASE_URL` token (the APC-01 rule, now
+carrying the consolidated-server decision), and the webapp ships no second
+base-URL token, no hard-coded host, and no search-backend client. The
+served-app boundary holds it closed: the CSP keeps `connect-src 'self'`, and
+the e2e CSP scenario asserts the one origin.
+
+**Reason.** The user's direction, 2026-10-22: "the legacy app had a split
+between the app search api and apache atlas api. This new version consolidates
+these into the server api... All requests can be expected to be made to the
+server api." The audit (7.3, DD-051) found the legacy split's two clients —
+the Atlas REST set and the App Search stack (`/elastic`, `/gov_quality`,
+`/data_quality`) — and ported only endpoints the server answers; the state
+already matches the rule. Recording it turns an audit outcome into a contract
+the search slice (7.4) cannot erode: when search lands, it lands as a server
+endpoint family (4.1) behind the same token, not as a second stack.
+
+**Alternatives.** Record nothing (true today, silent tomorrow — 7.4 is the
+slice where a legacy-shaped search client would sneak back in). A purity-gate
+grep for the legacy hosts (the CSP assertion is the served-app's proof, the
+token is the code's; a grep bans strings, not shapes).
+
+**Consequences.** DET-03's entity client composes from the token like the
+typedefs client; 7.4's search client joins it, specified from the Atlas
+source. The template example's `EntitiesService` (FastAPI CRUD/SSE, one SSE
+stream) stays a retiring example (DD-019, 7.10), not a second API. Any future
+non-server call site is an ADR event, not a pull request.
