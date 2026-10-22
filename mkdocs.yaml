@@ -195,6 +195,7 @@ nav:
                       - 2.5 Delete semantics: architecture/conversion/increments/2-5-delete-semantics.md
                       - 3.1a Relationship instances: architecture/conversion/increments/3-1-relationship-instances.md
                       - 3.1b Relationship attributes: architecture/conversion/increments/3-1-relationship-attributes.md
+                      - 3.2 Ownership cascades: architecture/conversion/increments/3-2-ownership-cascades.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
