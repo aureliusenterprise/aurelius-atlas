@@ -2796,3 +2796,56 @@ settings drawer's head carries its accessible name, so the panel
 reading it never loses it. jsdom runs no layout, so the scroll split is
 pinned by the spec's slot-placement test (DD-090) and the dev-server
 check, not by a unit assertion.
+
+### DD-092 — The inbox bar is one joined group, severity-coloured, ramp order
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** Three follow-ups to the inbox bar (ALR-11, DD-090), from
+the user's review: every segment of the bar — the three chips, show
+all, and the projected Clear all — is an `is-expanded` member of the
+one `buttons has-addons` group (the actions join the joined bar, not
+beside it); the chip order flips to the ramp ascending — `info`,
+`warning`, `error`, calm to urgent (SEVERITIES, the countSeverities
+output, and the chips all follow); and a shown chip rides its
+severity's fill — the DD-063 pinned ramp (`#17a2b8`/`#ffc107`/`#dc3545`)
+with the ramp's own inks (black on warning and info, white on danger),
+not a single Aurelius blue. The unread dot rides the chip's ink
+(currentColor) with a hairline ring in the chip's plate, and the fill
+rides `is-sev-*` classes, not Bulma's `is-info`/`is-warning`/`is-danger`
+button colours.
+
+**Reason.** The user's review of the live bar. The ramp order reads a
+bar the way the feed reads a stack — the urgent end lands beside the
+feed's own newest-first errors, and a bar whose colour intensifies
+left-to-right says "here is the dial". The severity fills carry the
+bar's own information: a chip IS a severity, and one blue bar made the
+chips interchangeable — the colours are the legend. Bulma's own
+`.button.is-info`-family fills are scheme-following token tints, and
+the brand pins `light` outside Bulma's scheme machinery (SHM-04): the
+pinned ramp is the product's severity vocabulary (DD-063, DD-080) and
+reads the same in both schemes, like the badge's dot and the footer's
+pair. The dot flips to ink for the same reason DD-088 pinned the
+count chip: a ramp-coloured dot on a ramp-coloured chip rides its own
+colour and vanishes.
+
+**Alternatives.** Bulma's `.button.is-info`/`.is-warning`/`.is-danger`
+fills (scheme-following: the tints shift with the theme and collide
+with the brand's pinned plates — DD-088's trap, measured once on this
+very bar). Severity text ink on a plain chip, fill reserved (the user
+asked for coloured buttons; an outline bar reads disabled, not
+filtered). Ramp descending (error first, DD-090's first pass — kept
+for the feed's rows, newest/urgest-first; the bar is a dial, not a
+feed). The actions outside the group, flush right (DD-090's first
+pass: two visual systems on one strip — the user asked for one joined
+bar).
+
+**Consequences.** `SEVERITIES` is the inbox's order and the bar is the
+model's only consumer of it; the feed's order is the store's own
+(newest first), untouched. The clear-all button's contract is "an
+expanded member of the group" — the panel's button and the host test
+carry `is-expanded`. The unread dot loses its severity classes
+(`is-*`): the chip's face is the severity, the dot only marks news.
+The bar's tab order is info, warning, error, [show all], clear all.

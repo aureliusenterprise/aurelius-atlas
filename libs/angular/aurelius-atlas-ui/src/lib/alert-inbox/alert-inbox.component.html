@@ -1,14 +1,16 @@
 <!--
     The inbox bar (ALR-11): a full-width Bulma button group —
-    `buttons has-addons` joins the chips, `is-expanded` stretches them
-    to fill the row. The caller's clear-all action projects in at the
-    end of the strip (the panel passes it, DD-090).
+    `buttons has-addons` joins every member, `is-expanded` stretches
+    them to fill the row. The chips come first, in inbox order (info,
+    warning, error — the ramp, calm to urgent, ALR-11); show all and the
+    caller's clear-all action join the group at its end (the panel
+    projects it, DD-090), so the strip is one joined bar (DD-092).
 
     A chip is a toggle button (ALR-11): `aria-pressed` carries the
-    visible state — pressed while the severity shows — and the pinned
-    `is-selected` fill (the scss; Bulma 1 gives a selected button no
-    fill, DD-082's finding) makes it readable. The count tag is the
-    severity's total; the dot rides in the severity's ramp colour while
+    visible state — pressed while the severity shows — and the pressed
+    chip rides its severity's pinned fill (the scss, DD-092; Bulma's own
+    `.button.is-*` fills are scheme-following, SHM-04's trap). The count
+    tag is the severity's total; the dot rides in the chip's ink while
     any of its groups is unread (ALR-12), with an sr-only label so the
     information is not colour-only.
 -->
@@ -17,22 +19,29 @@
         @for (count of counts(); track count.severity) {
             <button
                 type="button"
-                class="button is-small is-expanded aurelius-alert-inbox-chip"
-                [class.is-selected]="!hidden().includes(count.severity)"
+                [class]="
+                    'button is-small is-expanded aurelius-alert-inbox-chip is-sev-' +
+                    count.severity +
+                    (!hidden().includes(count.severity) ? ' is-selected' : '')
+                "
                 [attr.aria-pressed]="!hidden().includes(count.severity)"
                 (click)="toggleSeverity.emit(count.severity)"
             >
                 <span>{{ severityLabels()[count.severity] }}</span>
                 <span class="tag aurelius-alert-inbox-count">{{ count.total }}</span>
                 @if (count.unread > 0) {
-                    <span [class]="'aurelius-alert-inbox-unread is-' + count.severity" aria-hidden="true"></span>
+                    <span class="aurelius-alert-inbox-unread" aria-hidden="true"></span>
                     <span class="is-sr-only">{{ unreadLabel() }}</span>
                 }
             </button>
         }
         @if (allHidden()) {
-            <!-- Every filter is off: the escape hatch back (ALR-11). -->
-            <button type="button" class="button is-small aurelius-alert-inbox-show-all" (click)="showAll.emit()">
+            <!-- Every filter is off: the escape hatch back, in the group (ALR-11, DD-092). -->
+            <button
+                type="button"
+                class="button is-small is-expanded aurelius-alert-inbox-show-all"
+                (click)="showAll.emit()"
+            >
                 {{ showAllLabel() }}
             </button>
         }

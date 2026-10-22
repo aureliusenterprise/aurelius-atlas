@@ -31,8 +31,8 @@ export type AlertGroup = {
     read: boolean;
 };
 
-/** The severities from highest to lowest rank — the feed and inbox order (ALR-11). */
-export const SEVERITIES: readonly AlertSeverity[] = ["error", "warning", "info"];
+/** The severities from lowest to highest rank — the inbox order (ALR-11): a bar reads as a ramp, calm to urgent, left to right. */
+export const SEVERITIES: readonly AlertSeverity[] = ["info", "warning", "error"];
 
 /** The severities from lowest to highest rank (ALR-02). */
 const RANK: readonly AlertSeverity[] = ["info", "warning", "error"];
@@ -66,7 +66,7 @@ export type AlertSeverityCount = {
  * each with its totals, so a chip appears even for a severity with nothing
  * (a filter with no results is still a filter).
  * @param groups the feed, in any order
- * @returns one count per severity, in feed order: `error`, `warning`, `info`
+ * @returns one count per severity, in inbox order: `info`, `warning`, `error`
  */
 export function countSeverities(groups: readonly AlertGroup[]): readonly AlertSeverityCount[] {
     return SEVERITIES.map((severity) => {

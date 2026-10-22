@@ -4,8 +4,8 @@
   a full-width strip below the head, outside the scrolling body, so a
   long feed never pushes it away. The chips count the store (totals per
   severity, ALR-11); a chip toggles its severity in the feed, and the
-  clear-all action projects into the bar's end (DD-090 moves it out of
-  the head — the bar owns the strip now).
+  clear-all action is a member of the same button group (DD-092), the
+  strip's last segment.
 
   The feed is the ui-lib AlertList, wired to the filtered rows: the
   panel's `visible` signal applies the chips' filter (ALR-11), dismissal
@@ -29,7 +29,7 @@
             (toggleSeverity)="toggleSeverity($event)"
             (showAll)="showAll()"
         >
-            <button type="button" class="button is-small is-text aurelius-alert-clear" (click)="alerts.clearAll()">
+            <button type="button" class="button is-small is-expanded aurelius-alert-clear" (click)="alerts.clearAll()">
                 {{ clearLabel }}
             </button>
         </aurelius-atlas-ui-alert-inbox>

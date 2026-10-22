@@ -54,11 +54,13 @@ const alerts: AlertGroup[] = [
 ];
 
 /**
- * The full bar: three chips with totals, the unread dots on the
- * severities with unread groups (error, warning), every chip pressed
- * (nothing hidden). The play() toggles the warning chip off and sees
- * the output. The caller's clear-all action projects into the bar
- * (DD-090) — the host test in the spec covers the projection.
+ * The full bar, in inbox order (info, warning, error — the ramp, calm
+ * to urgent, DD-092): three severity-coloured chips with totals, the
+ * unread dots on the severities with unread groups (warning, error),
+ * every chip pressed (nothing hidden). The play() toggles the warning
+ * chip off and sees the output. The caller's clear-all action joins the
+ * bar as an expanded member (DD-090, DD-092) — the host test in the
+ * spec covers the projection.
  */
 export const Primary: Story = {
     args: {
@@ -72,11 +74,17 @@ export const Primary: Story = {
         const chips = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLElement>)];
         expect(chips).toHaveLength(3);
         expect(chips.map((c) => c.getAttribute("aria-pressed"))).toEqual(["true", "true", "true"]);
-        // The unread dots: error and warning have unread groups (ALR-12).
+        // The pressed chips ride their severity's fill (DD-092).
+        expect(chips.map((c) => [...c.classList].find((k) => k.startsWith("is-sev-")))).toEqual([
+            "is-sev-info",
+            "is-sev-warning",
+            "is-sev-error",
+        ]);
+        // The unread dots: warning and error have unread groups (ALR-12).
         expect(canvasElement.querySelectorAll(".aurelius-alert-inbox-unread")).toHaveLength(2);
-        // The chips' totals (ALR-11).
+        // The chips' totals (ALR-11), inbox order.
         const counts = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>)];
-        expect(counts.map((c) => c.textContent.trim())).toEqual(["2", "1", "1"]);
+        expect(counts.map((c) => c.textContent.trim())).toEqual(["1", "1", "2"]);
 
         const toggled: string[] = [];
         componentInstance.toggleSeverity.subscribe((s: string) => toggled.push(s));

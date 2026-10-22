@@ -104,10 +104,10 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         const chips = [...(compiled.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLButtonElement>)];
         expect(chips).toHaveLength(3); // one per severity, always (ALR-11)
 
-        chips[0].click(); // hide errors
+        chips[0].click(); // hide info (inbox order: info, warning, error)
         fixture.detectChanges();
         expect(compiled.querySelectorAll(".notification")).toHaveLength(1);
-        expect(compiled.querySelector(".notification")?.textContent).toContain("Saved");
+        expect(compiled.querySelector(".notification")?.textContent).toContain("500");
 
         chips[0].click(); // show them again — the chip toggles
         fixture.detectChanges();
@@ -122,8 +122,8 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         // totals — a filter with no results is still a filter, and the
         // bell's dot answers with the store, not the view.
         const chips = [...(compiled.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLButtonElement>)];
-        chips[0].click(); // errors off
-        chips[2].click(); // info off
+        chips[0].click(); // info off
+        chips[2].click(); // errors off
         fixture.detectChanges();
 
         const counts = [...(compiled.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>)];

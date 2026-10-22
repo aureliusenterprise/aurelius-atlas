@@ -217,16 +217,16 @@ describe("AlertsService (ALR-02, ALR-03, ALR-06)", () => {
         service.add({ severity: "info", message: "saved", source: "app" });
 
         expect(service.severityCounts().map((c) => `${c.severity}:${c.total}:${c.unread}`)).toEqual([
-            "error:2:2",
-            "warning:0:0",
             "info:1:1",
+            "warning:0:0",
+            "error:2:2",
         ]);
 
         service.markAllRead();
         expect(service.severityCounts().map((c) => `${c.severity}:${c.total}:${c.unread}`)).toEqual([
-            "error:2:0",
-            "warning:0:0",
             "info:1:0",
+            "warning:0:0",
+            "error:2:0",
         ]);
     });
 });

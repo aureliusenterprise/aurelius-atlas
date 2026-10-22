@@ -5,10 +5,13 @@ import type { AlertGroup, AlertSeverity } from "../alert-list/alert-group";
 
 /**
  * The inbox bar above the alert feed (ALR-11): a full-width Bulma
- * button group with one chip per severity, each showing how many groups
- * of that severity the feed holds, beside the caller's clear-all action
- * (projected into the bar, not the head — DD-090 folds the two into one
- * strip). A chip toggles its severity in the feed, and carries a dot
+ * button group with one chip per severity, in inbox order — `info`,
+ * `warning`, `error`, the ramp calm to urgent (DD-092) — each showing
+ * how many groups of that severity the feed holds, beside the show-all
+ * and the caller's clear-all action, every segment an expanded member
+ * of the joined group (DD-090, DD-092). A chip toggles its severity in
+ * the feed and rides that severity's pinned fill while shown (an
+ * unpressed chip is plain, "off" needs no colour); it carries a dot
  * while that severity has unread groups (ALR-12), so the bar answers
  * "what's new" at a glance.
  *
@@ -72,7 +75,7 @@ export class AlertInbox {
     /** Emits when the show-all control is clicked. */
     readonly showAll = output<void>();
 
-    /** The feed counted by severity — totals and unread, feed order. */
+    /** The feed counted by severity — totals and unread, inbox order. */
     protected readonly counts = computed(() => countSeverities(this.alerts()));
 
     /**

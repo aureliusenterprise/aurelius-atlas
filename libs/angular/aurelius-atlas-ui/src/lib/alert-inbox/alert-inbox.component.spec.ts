@@ -37,17 +37,36 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         fixture.detectChanges();
     });
 
-    it("renders one chip per severity, feed order (ALR-11)", () => {
+    it("renders one chip per severity, inbox order (ALR-11)", () => {
         fixture.componentRef.setInput("alerts", feed());
         fixture.detectChanges();
 
         // The chip's parts: its label, its total tag (ALR-11). The
         // unread dot's sr-only label is the chip's fourth part, tested
-        // on its own below.
+        // on its own below. The ramp order is calm to urgent (DD-092).
         const labels = chips().map((c) => c.querySelector("span")?.textContent.trim());
-        expect(labels.join(", ")).toMatchInlineSnapshot('"Errors, Warnings, Info"');
+        expect(labels.join(", ")).toMatchInlineSnapshot('"Info, Warnings, Errors"');
         const totals = chips().map((c) => c.querySelector(".aurelius-alert-inbox-count")?.textContent.trim());
-        expect(totals.join(", ")).toMatchInlineSnapshot('"2, 1, 1"');
+        expect(totals.join(", ")).toMatchInlineSnapshot('"1, 1, 2"');
+    });
+
+    it("rides each chip in its severity's class (ALR-11, DD-092)", () => {
+        fixture.componentRef.setInput("alerts", feed());
+        fixture.detectChanges();
+
+        // The fill is the severity's (the scss pins the pressed fills);
+        // an unpressed chip stays a plain Bulma button — `is-selected`
+        // gates the colour, the severity class only names it.
+        expect(chips().map((c) => [...c.classList].find((k) => k.startsWith("is-sev-")))).toEqual([
+            "is-sev-info",
+            "is-sev-warning",
+            "is-sev-error",
+        ]);
+        expect(chips().every((c) => c.classList.contains("is-selected"))).toBe(true);
+
+        fixture.componentRef.setInput("hidden", ["warning"]);
+        fixture.detectChanges();
+        expect(chips()[1].classList.contains("is-selected")).toBe(false);
     });
 
     it("shows each severity's total, not its unread count (ALR-11)", () => {
@@ -57,8 +76,9 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         const counts = [
             ...(fixture.nativeElement.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>),
         ];
-        // e2 and w1 are unread; the totals stay the feed's coverage.
-        expect(counts.map((c) => c.textContent.trim())).toEqual(["2", "1", "1"]);
+        // e2 (error) and w1 (warning) are unread; the totals stay the
+        // feed's coverage, in inbox order.
+        expect(counts.map((c) => c.textContent.trim())).toEqual(["1", "1", "2"]);
     });
 
     it("dots a severity with unread groups and names the dot (ALR-12)", () => {
@@ -68,10 +88,13 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         const dots = [
             ...(fixture.nativeElement.querySelectorAll(".aurelius-alert-inbox-unread") as NodeListOf<HTMLElement>),
         ];
-        expect(dots).toHaveLength(2); // error (e2) and warning (w1)
-        expect(dots[0].classList.contains("is-error")).toBe(true);
-        expect(dots[1].classList.contains("is-warning")).toBe(true);
-        // The dot is decorative; the sr-only label carries the meaning.
+        expect(dots).toHaveLength(2); // warning (w1) and error (e2), inbox order
+        // The dot rides the chip's ink (the scss) — the chip's face is
+        // the severity's colour now (DD-092), a ramp-coloured dot would
+        // ride its own colour. The dot is decorative; the sr-only label
+        // carries the meaning.
+        expect(dots[0].closest("button")?.textContent).toContain("Warnings");
+        expect(dots[1].closest("button")?.textContent).toContain("Errors");
         expect(dots[0].getAttribute("aria-hidden")).toBe("true");
         expect(fixture.nativeElement.textContent).toContain("Unread");
     });
@@ -120,6 +143,19 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(calls).toEqual([1]);
     });
 
+    it("joins show-all and the projected action into the addons group (DD-092)", () => {
+        fixture.componentRef.setInput("alerts", feed());
+        fixture.componentRef.setInput("hidden", ["error", "warning", "info"]);
+        fixture.detectChanges();
+
+        // One joined bar: every segment is an expanded member of the
+        // same `buttons has-addons` group.
+        const group = fixture.nativeElement.querySelector(".aurelius-alert-inbox-group");
+        const showAll = group.querySelector(".aurelius-alert-inbox-show-all");
+        expect(showAll.classList.contains("is-expanded")).toBe(true);
+        expect(showAll.parentElement).toBe(group);
+    });
+
     it("uses the caller's labels (ALR-08)", () => {
         fixture.componentRef.setInput("alerts", feed());
         fixture.componentRef.setInput("severityLabels", { error: "Fouten", warning: "Waarschuwingen", info: "Info" });
@@ -127,7 +163,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         fixture.componentRef.setInput("ariaLabel", "Meldingsfilters");
         fixture.detectChanges();
 
-        expect(chips()[0].textContent).toContain("Fouten");
+        expect(chips()[2].textContent).toContain("Fouten");
         expect(chips()[1].textContent).toContain("Waarschuwingen");
         expect(fixture.nativeElement.textContent).toContain("Ongelezen");
         expect(fixture.nativeElement.querySelector(".aurelius-alert-inbox").getAttribute("aria-label")).toBe(
@@ -152,7 +188,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         @Component({
             imports: [AlertInbox],
             template: `<aurelius-atlas-ui-alert-inbox>
-                <button type="button" class="button is-small aurelius-alert-clear">Clear all</button>
+                <button type="button" class="button is-small is-expanded aurelius-alert-clear">Clear all</button>
             </aurelius-atlas-ui-alert-inbox>`,
         })
         class Host {}
@@ -162,6 +198,10 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         hostFixture.detectChanges();
 
         const group = hostFixture.nativeElement.querySelector(".aurelius-alert-inbox-group");
-        expect(group.querySelector(".aurelius-alert-clear")?.textContent.trim()).toBe("Clear all");
+        const clear = group.querySelector(".aurelius-alert-clear");
+        expect(clear?.textContent.trim()).toBe("Clear all");
+        // The caller's contract: the action joins the bar as an expanded
+        // member of the addons group, the strip's last segment (DD-092).
+        expect(clear?.classList.contains("is-expanded")).toBe(true);
     });
 });

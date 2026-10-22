@@ -1,16 +1,25 @@
 /*
  * The inbox bar (ALR-11): the chips ride Bulma's `buttons has-addons`
  * group — the joined shape comes from Bulma, this sheet carries the
- * full-width row, the selected fill, the count tag, and the unread dot.
+ * full-width row, the severity fills, the count tag, and the unread dot.
+ * Show all and the projected Clear all are members of the same group,
+ * `is-expanded` like the chips, so the strip reads as one joined bar of
+ * equal segments (DD-090, DD-092).
  *
- * Bulma 1 gives a selected button no fill (DD-082's finding, measured on
- * the locale switcher), so `is-selected` is the pinned Aurelius blue
- * with white ink — the settings panel's idiom, the footer's pair
- * (SHM-07): 4.9:1, the same in either scheme. An "off" chip is a plain
- * Bulma button, a "visible" severity a blue one.
+ * A pressed chip rides its severity's colour (DD-092): the fills are
+ * DD-063's pinned ramp, fixed in both schemes like the badge's dot
+ * (DD-080) and the footer's pair (SHM-07). Bulma's own `.button.is-*`
+ * fills are scheme-following token tints, and the brand pins the
+ * `light` plate outside Bulma's scheme machinery (SHM-04) — DD-088's
+ * measured trap. The inks are the ramp's own inverts: Bulma's black on
+ * warning and info (yellow and teal take dark ink, 11.7:1 and 9.7:1),
+ * white on danger (4.5:1). An unpressed chip is a plain Bulma button —
+ * "off" needs no colour. The fill rides `is-sev-*` classes, not Bulma's
+ * `is-info` etc., so Bulma's scheme-following button rules stay off the
+ * chip: unpressed must stay plain.
  *
  * The count tag is the chip's pinned pair (DD-088): Bulma's `is-light`
- * is a scheme trap here — the brand pins the light plate outside Bulma's
+ * is a scheme trap — the brand pins the light plate outside Bulma's
  * scheme machinery (SHM-04) while Bulma's dark theme re-pins the ink,
  * white-on-white in dark mode.
  */
@@ -25,10 +34,34 @@
     margin-bottom: 0;
 }
 
-.aurelius-alert-inbox-chip.is-selected {
-    background-color: #0073dd; // the footer's pinned pair (SHM-07, DD-082)
-    border-color: #0073dd;
-    color: var(--bulma-white);
+/*
+ * `--aurelius-chip-fill` is the chip's background plate — the unread
+ * dot rings against it (below). A plain chip rides the panel's surface;
+ * the selected rules re-pin it to their fill.
+ */
+.aurelius-alert-inbox-chip {
+    --aurelius-chip-fill: var(--bulma-scheme-main);
+}
+
+.aurelius-alert-inbox-chip.is-selected.is-sev-info {
+    background-color: #17a2b8; // $info (DD-063)
+    border-color: #17a2b8;
+    color: var(--bulma-black-bis); // #141414, 9.7:1 on the teal
+    --aurelius-chip-fill: #17a2b8;
+}
+
+.aurelius-alert-inbox-chip.is-selected.is-sev-warning {
+    background-color: #ffc107; // $warning (DD-063)
+    border-color: #ffc107;
+    color: var(--bulma-black-bis); // Bulma's warning ink, 11.7:1
+    --aurelius-chip-fill: #ffc107;
+}
+
+.aurelius-alert-inbox-chip.is-selected.is-sev-error {
+    background-color: #dc3545; // $danger (DD-063)
+    border-color: #dc3545;
+    color: var(--bulma-white); // 4.5:1 on the red (Bulma's danger invert)
+    --aurelius-chip-fill: #dc3545;
 }
 
 .aurelius-alert-inbox-count {
@@ -38,28 +71,18 @@
 }
 
 /*
- * The unread dot (ALR-12): DD-063's pinned ramp, the badge's colours —
- * a severity marker reads the same in both schemes. The hairline ring
- * is the badge's idiom so the dot keeps an edge on the blue fill of a
- * selected chip (info's teal on Aurelius blue needs it).
+ * The unread dot (ALR-12): the chip's own ink (currentColor) with a
+ * hairline ring in the chip's plate — the badge's idiom (DD-080). The
+ * ramp's colour is the chip's whole face now (DD-092), so a ramp-
+ * coloured dot would ride its own colour and vanish; the ink dot keeps
+ * a clear edge on every fill and on the plain chip.
  */
 .aurelius-alert-inbox-unread {
-    border: 1.5px solid var(--bulma-scheme-main-bis);
+    background-color: currentColor;
+    border: 1.5px solid var(--aurelius-chip-fill);
     border-radius: var(--bulma-radius-rounded);
     flex-shrink: 0;
     height: 0.5rem;
     margin-inline-start: 0.25rem;
     width: 0.5rem;
-}
-
-.aurelius-alert-inbox-unread.is-error {
-    background-color: #dc3545; // $danger (DD-063)
-}
-
-.aurelius-alert-inbox-unread.is-warning {
-    background-color: #ffc107; // $warning (DD-063)
-}
-
-.aurelius-alert-inbox-unread.is-info {
-    background-color: #17a2b8; // $info (DD-063)
 }
