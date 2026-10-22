@@ -7751,15 +7751,6 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
 }
 ```
 
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
-
 Fields:
 
 - `id` (`str | None`)
@@ -7981,6 +7972,15 @@ The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
   "type": "object"
 }
 ```
+
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
 
 #### model\_config
 
