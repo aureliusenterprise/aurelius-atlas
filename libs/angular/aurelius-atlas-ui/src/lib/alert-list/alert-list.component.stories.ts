@@ -41,9 +41,12 @@ const alerts: AlertGroup[] = [
         message: "Request failed: GET /api/v2/entity/guid/7 500",
         count: 7,
         lastSeen: Date.UTC(2026, 9, 21, 10, 30),
-        read: false,
+        read: true,
     },
 ];
+
+/** The ids the play() tests collect from dismiss (the render-template spy). */
+const dismissed: string[] = [];
 
 /**
  * The full feed: three rows, the severity colours (danger/warning/info,
@@ -59,7 +62,7 @@ export const Primary: Story = {
         emptyLabel: "No alerts",
         dismissLabel: "Dismiss",
     },
-    play: async ({ canvas, canvasElement, componentInstance }) => {
+    play: async ({ canvas, canvasElement }) => {
         const rows = [...canvasElement.querySelectorAll(".notification")] as HTMLElement[];
         expect(rows).toHaveLength(3);
         expect(rows[0].classList.contains("is-info")).toBe(true);
@@ -71,11 +74,24 @@ export const Primary: Story = {
         expect(unread).toHaveLength(2);
         expect(unread[0].querySelector(".aurelius-alert-unread-dot")).toBeTruthy();
 
-        const dismissed: string[] = [];
-        componentInstance.dismiss.subscribe((id: string) => dismissed.push(id));
+        // The dismiss spy rides the render template: under zoneless,
+        // componentInstance is not handed to play() (the breadcrumbs pattern).
+        dismissed.length = 0;
         await userEvent.click(within(rows[2] as HTMLElement).getByRole("button", { name: "Dismiss" }));
         expect(dismissed).toEqual(["g1"]);
     },
+    render: (args) => ({
+        props: { ...args, onDismiss: (id: string) => dismissed.push(id) },
+        template: `
+<aurelius-atlas-ui-alert-list
+    [alerts]="alerts"
+    [ariaLabel]="ariaLabel"
+    [emptyLabel]="emptyLabel"
+    [dismissLabel]="dismissLabel"
+    (dismiss)="onDismiss($event)"
+></aurelius-atlas-ui-alert-list>
+`,
+    }),
 };
 
 /**

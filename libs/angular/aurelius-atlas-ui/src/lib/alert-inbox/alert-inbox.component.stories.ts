@@ -18,6 +18,25 @@ export default meta;
 
 type Story = StoryObj<AlertInbox>;
 
+/** The severities the play() tests collect from toggleSeverity (the render-template spy). */
+const toggled: string[] = [];
+
+/** The template binding the inputs, with the toggleSeverity spy. */
+const template = `
+<aurelius-atlas-ui-alert-inbox
+    [alerts]="alerts"
+    [hidden]="hidden"
+    [ariaLabel]="ariaLabel"
+    [unreadLabel]="unreadLabel"
+    (toggleSeverity)="onToggle($event)"
+></aurelius-atlas-ui-alert-inbox>
+`;
+
+const host = (args: Record<string, unknown>) => ({
+    props: { ...args, onToggle: (s: string) => toggled.push(s) },
+    template,
+});
+
 const alerts: AlertGroup[] = [
     {
         id: "e1",
@@ -69,7 +88,7 @@ export const Primary: Story = {
         ariaLabel: "Alert filters",
         unreadLabel: "Unread",
     },
-    play: async ({ canvasElement, componentInstance }) => {
+    play: async ({ canvasElement }) => {
         const chips = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLElement>)];
         expect(chips).toHaveLength(3);
         expect(chips.map((c) => c.getAttribute("aria-pressed"))).toEqual(["true", "true", "true"]);
@@ -85,12 +104,14 @@ export const Primary: Story = {
         const counts = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-count") as NodeListOf<HTMLElement>)];
         expect(counts.map((c) => c.textContent.trim())).toEqual(["1", "1", "2"]);
 
-        const toggled: string[] = [];
-        componentInstance.toggleSeverity.subscribe((s: string) => toggled.push(s));
+        // The toggle spy rides the render template: under zoneless,
+        // componentInstance is not handed to play() (the breadcrumbs pattern).
+        toggled.length = 0;
         const warning = within(canvasElement).getByRole("button", { name: /Warnings/ });
         await userEvent.click(warning);
         expect(toggled).toEqual(["warning"]);
     },
+    render: host,
 };
 
 /**
@@ -119,15 +140,15 @@ export const AllHidden: Story = {
         alerts,
         hidden: ["error", "warning", "info"],
     },
-    play: async ({ canvasElement, componentInstance }) => {
+    play: async ({ canvasElement }) => {
         expect(canvasElement.querySelector(".aurelius-alert-inbox-show-all")).toBeNull();
         const chips = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLElement>)];
         expect(chips.map((c) => c.getAttribute("aria-pressed"))).toEqual(["false", "false", "false"]);
-        const toggled: string[] = [];
-        componentInstance.toggleSeverity.subscribe((s: string) => toggled.push(s));
+        toggled.length = 0;
         await userEvent.click(within(canvasElement).getByRole("button", { name: /Info/ }));
         expect(toggled).toEqual(["info"]);
     },
+    render: host,
 };
 
 /**
