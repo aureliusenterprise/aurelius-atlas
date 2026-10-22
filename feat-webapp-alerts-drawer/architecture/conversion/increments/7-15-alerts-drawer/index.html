@@ -6180,7 +6180,8 @@
   AlertList and Badge are presentational), DD-088 (the live-review fix: the
   chip's pinned pair, Clear all in the drawer head), DD-090 (the inbox bar:
   severity chips, read tracking, Clear all in the bar), DD-091 (the drawer's
-  body-scroll: the head and subhead stay fixed); relies on ADR 053, DD-063,
+  body-scroll: the head and subhead stay fixed), DD-092 (the joined bar: ramp
+  order, severity fills, actions as group members); relies on ADR 053, DD-063,
   DD-069, DD-070, DD-078, DD-079</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
@@ -6266,7 +6267,7 @@ the drawer — ALR-12; no read-later list), or served-app e2e scenarios
 </tr>
 <tr>
 <td>ALR-11</td>
-<td>Above the feed rides the inbox bar (the ui-lib <code>AlertInbox</code>, DD-090): a full-width Bulma button group (<code>buttons has-addons</code>, the chips <code>is-expanded</code>) with one chip per severity, in feed order (<code>error</code>, <code>warning</code>, <code>info</code>) — a chip appears even for an empty severity, a filter with no results is still a filter. Each chip shows that severity's <strong>total</strong> group count (the chips are filters; the number is coverage, not news) and carries a dot while any of its groups is unread (ALR-12). A chip toggles its severity's rows in the feed (pressed = shown; the pinned <code>is-selected</code> fill, DD-082's finding — Bulma gives a selected button no fill); which severities are hidden is the panel's view state, the store's counts and the bell ignore it. With every group's severity hidden the bar shows a show-all control. Clear all projects into the bar's end (ALR-06). The bar rides the drawer's <code>drawer-subhead</code> slot — a strip below the head, outside the scrolling body (DD-090, DD-091).</td>
+<td>Above the feed rides the inbox bar (the ui-lib <code>AlertInbox</code>, DD-090): a full-width Bulma button group (<code>buttons has-addons</code>) of one chip per severity, in inbox order — <code>info</code>, <code>warning</code>, <code>error</code>, the ramp calm to urgent (DD-092) — a chip appears even for an empty severity, a filter with no results is still a filter. Each chip shows that severity's <strong>total</strong> group count (the chips are filters; the number is coverage, not news) and carries a dot while any of its groups is unread (ALR-12). A chip toggles its severity's rows in the feed (pressed = shown); a shown chip rides its severity's pinned fill (DD-063's ramp, the inks the ramp's own inverts — Bulma's <code>.button.is-*</code> fills are scheme-following, SHM-04's trap, DD-092), an unpressed chip is a plain button. Which severities are hidden is the panel's view state, the store's counts and the bell ignore it. Show all (fully filtered) and Clear all are members of the same group, <code>is-expanded</code> like the chips (DD-092) — the strip is one joined bar. The bar rides the drawer's <code>drawer-subhead</code> slot — a strip below the head, outside the scrolling body (DD-090, DD-091).</td>
 </tr>
 <tr>
 <td>ALR-12</td>
