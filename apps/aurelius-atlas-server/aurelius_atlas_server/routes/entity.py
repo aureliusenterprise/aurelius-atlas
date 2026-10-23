@@ -512,12 +512,12 @@ async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJS
             a parameter that is no value of its type (DV-39).
     """
     audits: EntityAuditRepository = request.app.state.entity_audits
-    start_key = _first(request, "startKey")
-    action_name = _first(request, "auditAction")
-    action = None if action_name is None else _parsed("auditAction", action_name, EntityAuditActionV2.from_string)
-    count = _java_number(request, "count", AUDIT_COUNT_DEFAULT, SHORT_RANGE)
-    offset = _java_number(request, "offset", AUDIT_OFFSET_DEFAULT, INT_RANGE)
-    sort_by, sort_order = _first(request, "sortBy"), _first(request, "sortOrder")
+    start_key = first_value(request, "startKey")
+    action_name = first_value(request, "auditAction")
+    action = None if action_name is None else parsed_value("auditAction", action_name, EntityAuditActionV2.from_string)
+    count = java_number(request, "count", AUDIT_COUNT_DEFAULT, SHORT_RANGE)
+    offset = java_number(request, "offset", AUDIT_OFFSET_DEFAULT, INT_RANGE)
+    sort_by, sort_order = first_value(request, "sortBy"), first_value(request, "sortOrder")
     if await store.get(guid) is None:
         purges = await audits.list_events(guid, EntityAuditActionV2.ENTITY_PURGE, None, 1)
         if not purges or purges[0].entity_header() is None:
@@ -539,7 +539,7 @@ async def get_entity_headers(request: Request, store: Store) -> AtlasJSONRespons
     Raises:
         AtlasError: ``BAD_REQUEST`` for a start after now, or one that is no number (DV-41).
     """
-    start = _java_number(request, "tagUpdateStartTime", 0, LONG_RANGE)
+    start = java_number(request, "tagUpdateStartTime", 0, LONG_RANGE)
     end = store.now()
     if start > end:
         raise AtlasError(AtlasErrorCode.BAD_REQUEST, START_AFTER_END)
@@ -553,32 +553,34 @@ AUDIT_COUNT_DEFAULT = 100
 AUDIT_OFFSET_DEFAULT = -1
 SHORT_RANGE = (-(2**15), 2**15 - 1)
 INT_RANGE = (-(2**31), 2**31 - 1)
+"""A Java ``int``'s values."""
 INVALID_PARAMETER = "Invalid value {value} for query parameter {name}"
 
 
-def _first(request: Request, name: str) -> str | None:
+def first_value(request: Request, name: str) -> str | None:
     """A query parameter's first value, as JAX-RS reads one."""
     values = request.query_params.getlist(name)
     return values[0] if values else None
 
 
-def _parsed[T](name: str, value: str, parse: Callable[[str], T]) -> T:
+def parsed_value[T](name: str, value: str, parse: Callable[[str], T]) -> T:
+    """A query parameter read by ``parse``, as JAX-RS converts one; ``BAD_REQUEST`` when it cannot (DV-39)."""
     try:
         return parse(value)
     except ValueError as error:
         raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_PARAMETER.format(value=value, name=name)) from error
 
 
-def _java_number(request: Request, name: str, default: int, bounds: tuple[int, int]) -> int:
+def java_number(request: Request, name: str, default: int, bounds: tuple[int, int]) -> int:
     """A Java ``short`` or ``int`` query parameter, its default when absent (AUD-09).
 
     Raises:
         AtlasError: ``BAD_REQUEST`` for text that is no number of the type (DV-39).
     """
-    value = _first(request, name)
+    value = first_value(request, name)
     if value is None:
         return default
-    number = _parsed(name, value, int)
+    number = parsed_value(name, value, int)
     if not bounds[0] <= number <= bounds[1] or not value.lstrip("-+").isdigit():
         raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_PARAMETER.format(value=value, name=name))
     return number

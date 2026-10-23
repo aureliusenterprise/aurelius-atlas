@@ -22,7 +22,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
-from aurelius_atlas_server.routes import ADMIN, ENTITY, RELATIONSHIP, TYPES
+from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, RELATIONSHIP, TYPES
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.task_worker import TaskWorker
 
@@ -114,6 +114,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     app.include_router(TYPES)
     app.include_router(ENTITY)
     app.include_router(RELATIONSHIP)
+    app.include_router(DISCOVERY)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
 
