@@ -130,6 +130,11 @@
     "aliases": []
   },
   {
+    "version": "feat-api-client-libraries",
+    "title": "feat-api-client-libraries",
+    "aliases": []
+  },
+  {
     "version": "dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0",
     "title": "dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0",
     "aliases": []
