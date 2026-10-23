@@ -15,6 +15,7 @@ dev = [
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
+    "aurelius-atlas-lineage-model",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
@@ -80,6 +81,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-license-report]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-lineage-model]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-model]
 workspace = true
 
@@ -110,6 +114,7 @@ workspace = true
 [tool.uv.workspace]
 members = [
     "apps/aurelius-atlas-data2model",
+    "apps/aurelius-atlas-lineage-model",
     "apps/aurelius-atlas-fastapi-example",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
@@ -148,6 +153,12 @@ reportUnnecessaryTypeIgnoreComment = "error"
 typeCheckingMode = "standard"
 venv = ".venv"
 venvPath = "."
+
+# pytest's conftest dir lands on sys.path at collection; pyright needs the same
+# view for the app tests' helper-module imports (the 8.2 fake upstream).
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-lineage-model/tests"]
+root = "apps/aurelius-atlas-lineage-model"
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "module"

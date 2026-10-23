@@ -1,0 +1,34 @@
+{
+    "baseEntityGuid": "e-in",
+    "guidEntityMap": {
+        "e-in": {
+            "displayText": "Ingest Topic",
+            "guid": "e-in",
+            "typeName": "kafka_topic"
+        },
+        "e-out": {
+            "displayText": "Sales Table",
+            "guid": "e-out",
+            "typeName": "hive_table"
+        },
+        "p-load": {
+            "displayText": "Load Job",
+            "guid": "p-load",
+            "typeName": "m4i_generic_process"
+        }
+    },
+    "lineageDepth": 3,
+    "lineageDirection": "BOTH",
+    "relations": [
+        {
+            "fromEntityId": "e-in",
+            "relationshipId": "rel-1",
+            "toEntityId": "p-load"
+        },
+        {
+            "fromEntityId": "p-load",
+            "relationshipId": "rel-2",
+            "toEntityId": "e-out"
+        }
+    ]
+}

@@ -11,6 +11,7 @@ members = [
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
+    "aurelius-atlas-lineage-model",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
@@ -229,6 +230,7 @@ dev = [
     { name = "aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report" },
+    { name = "aurelius-atlas-lineage-model" },
     { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-otel" },
     { name = "aurelius-atlas-parity" },
@@ -279,6 +281,7 @@ dev = [
     { name = "aurelius-atlas-example", editable = "libs/python/aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example", editable = "apps/aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
+    { name = "aurelius-atlas-lineage-model", editable = "apps/aurelius-atlas-lineage-model" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "aurelius-atlas-parity", editable = "libs/python/aurelius-atlas-parity" },
@@ -454,6 +457,33 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
+]
+
+[[package]]
+name = "aurelius-atlas-lineage-model"
+version = "0.1.0"
+source = { editable = "apps/aurelius-atlas-lineage-model" }
+dependencies = [
+    { name = "aurelius-atlas-auth" },
+    { name = "aurelius-atlas-otel" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "logfire", extra = ["fastapi"] },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
+    { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
+    { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "logfire", extras = ["fastapi"], specifier = ">=5.2.0" },
+    { name = "pydantic", specifier = ">=2.14.1" },
+    { name = "pydantic-settings", specifier = ">=2.15.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]
 
 [[package]]
