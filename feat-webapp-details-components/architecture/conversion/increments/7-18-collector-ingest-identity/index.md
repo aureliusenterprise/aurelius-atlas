@@ -1,7 +1,7 @@
 # 7.18 Collector ingest identity
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#119](<https://github.com/aureliusenterprise/aurelius-atlas/pull/119>)
 - **Records:** DD-107 (per-service ingest identity: Keycloak client-credentials JWTs on the service leg, azp-stamped); supersedes the service-leg half of DD-103 (user JWTs on the browser leg, the loopback pinning, and the shared-token mechanism all stand); extends ADR 039 and ADR 034; relies on CIA-01..05 (7.17 — the two legs, the OIDC extension, the `otel-ingest` scope, the DD-105 stamping, the DD-106 boot race)
 
 ## Scope
