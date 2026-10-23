@@ -1838,4 +1838,6 @@ want a write to be complete when it answers.
 
 **Alternatives.** Always deferred: no way to have a propagation done when its request answers.
 
-**Consequences.** The core takes the choice as a parameter of the writers and stores that propagate.
+**Consequences.** The core takes the choice as a parameter of the writers and stores that propagate. The parity
+scenarios run against a server with tasks disabled, as against an Atlas with `atlas.tasks.enabled=false`: they
+check what propagation produces, not when, and `admin/session` reports the setting.
