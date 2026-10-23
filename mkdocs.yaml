@@ -197,6 +197,7 @@ nav:
                       - 3.1b Relationship attributes: architecture/conversion/increments/3-1-relationship-attributes.md
                       - 3.2 Ownership cascades: architecture/conversion/increments/3-2-ownership-cascades.md
                       - 3.3a Direct classifications: architecture/conversion/increments/3-3-direct-classifications.md
+                      - 3.3b Bulk classifications: architecture/conversion/increments/3-3-bulk-classifications.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
