@@ -11,7 +11,7 @@ from typing import Protocol
 
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
-from aurelius_atlas_core.entity_documents import VersionedEntity, VersionedRelationship
+from aurelius_atlas_core.entity_documents import VersionedClassification, VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.entity_store import EntityStore
 
 
@@ -30,6 +30,10 @@ class EntityView(Protocol):
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The entities whose references name any of these GUIDs."""
+        ...
+
+    async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
+        """The classification instances with these GUIDs that exist."""
         ...
 
 
@@ -68,6 +72,10 @@ class TransactionView:
             for guid in wanted
             if guid in self._relationships or guid in found
         }
+
+    async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
+        """The classification instances with these GUIDs: a write that drops owned entities changes none (CLS-11)."""
+        return await self._store.get_classifications(guids)
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The entities whose references, as the request changed them, name any of these GUIDs (DD-057)."""

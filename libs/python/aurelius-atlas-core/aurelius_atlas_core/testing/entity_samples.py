@@ -201,6 +201,25 @@ owned array that appends on a partial update; ``r_pin.pinned`` is a mandatory pl
 """
 
 
+CLASSIFICATION_TYPES: dict[str, Any] = {
+    "classificationDefs": [
+        {
+            "name": "c_pii",
+            "attributeDefs": [
+                _attribute("level", "int"),
+                _attribute("note", "string"),
+                _attribute("since", "date"),
+            ],
+        },
+        {"name": "c_secret", "superTypes": ["c_pii"]},
+        {"name": "c_tabular", "entityTypes": ["s_table"]},
+        {"name": "c_owned", "attributeDefs": [{**_attribute("owner", "string"), "isOptional": False}]},
+    ],
+}
+"""Classification types (CLS-01 to CLS-12), on top of the others: ``c_secret`` is a ``c_pii``, ``c_tabular`` may
+classify tables only, ``c_owned`` has a mandatory attribute."""
+
+
 def sample_types() -> AtlasTypesDef:
     """``SAMPLE_TYPES`` as definitions."""
     return AtlasTypesDef.model_validate(SAMPLE_TYPES)
@@ -211,15 +230,22 @@ def write_types() -> AtlasTypesDef:
     return AtlasTypesDef.model_validate(WRITE_TYPES)
 
 
-def sample_registry(*, writes: bool = False, relationships: bool = False) -> TypeRegistry:
-    """A registry of the sample types, the write types with ``writes``, and ``RELATIONSHIP_TYPES`` too."""
+def sample_registry(
+    *, writes: bool = False, relationships: bool = False, classifications: bool = False
+) -> TypeRegistry:
+    """A registry of the sample types; the write types, ``RELATIONSHIP_TYPES`` or ``CLASSIFICATION_TYPES`` as asked.
+
+    Relationships and classifications bring the write types too.
+    """
     registry = TypeRegistry()
     with registry.update() as transient:
         transient.add_types(sample_types())
-        if writes or relationships:
+        if writes or relationships or classifications:
             transient.add_types(write_types())
         if relationships:
             transient.add_types(AtlasTypesDef.model_validate(RELATIONSHIP_TYPES))
+        if classifications:
+            transient.add_types(AtlasTypesDef.model_validate(CLASSIFICATION_TYPES))
     return registry
 
 

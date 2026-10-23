@@ -207,6 +207,11 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-06D",
         "Classification {0} is not associated with entity",
     )
+    PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY = (
+        400,
+        "ATLAS-400-00-070",
+        "Propagated classification {0} is not associated with entity {2}, it is associated with entity {1}",
+    )
     INVALID_CLASSIFICATION_PARAMS = (
         400,
         "ATLAS-400-00-06F",

@@ -18,7 +18,7 @@ from aurelius_atlas_typesystem.map_type import MapType
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
-from aurelius_atlas_core.entity_store import EntityChange, RelationshipChange
+from aurelius_atlas_core.entity_store import ClassificationChange, EntityChange, RelationshipChange
 from aurelius_atlas_core.graph_helper import collection_elements, edge_for_label
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.transaction_view import EntityView
@@ -36,6 +36,7 @@ class Deletion:
     updated: dict[str, VersionedEntity] = field(default_factory=dict)
     changes: list[EntityChange] = field(default_factory=list)
     relationship_changes: list[RelationshipChange] = field(default_factory=list)
+    classification_changes: list[ClassificationChange] = field(default_factory=list)
 
     def change(self, guid: str) -> int | None:
         """The index of the change of entity ``guid``, or None."""
@@ -73,7 +74,25 @@ class DeleteHandler:
             after = None if entity_type.is_internal else self._delete_vertex(found.entity)
             deletion.changes.append(EntityChange(after or found.entity, found.version, remove=after is None))
         await self._relationships(deletion)
+        await self._classifications(deletion)
         return deletion
+
+    async def _classifications(self, deletion: Deletion) -> None:
+        """``deleteAllClassifications``: a kept entity's are ``DELETED``, a removed one's go with it (CLS-11)."""
+        removed = {change.entity.guid for change in deletion.changes if change.remove}
+        for found in deletion.deleted.values():
+            listed = found.entity.classification_guids or []
+            instances = await self.store.get_classifications(listed)
+            for guid in listed:
+                instance = instances.get(guid)
+                if instance is None:
+                    continue
+                if found.entity.guid in removed:
+                    change = ClassificationChange(instance.classification, instance.version, remove=True)
+                else:
+                    deleted = instance.classification.model_copy(update={"entity_status": EntityStatus.DELETED})
+                    change = ClassificationChange(deleted, instance.version)
+                deletion.classification_changes.append(change)
 
     async def _relationships(self, deletion: Deletion) -> None:
         """``deleteVertex`` for relationship edges (REL-09).

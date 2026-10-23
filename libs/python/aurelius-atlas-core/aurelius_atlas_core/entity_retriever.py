@@ -9,6 +9,7 @@ from typing import Any
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
 from aurelius_atlas_model.instance import (
+    AtlasClassification,
     AtlasEntitiesWithExtInfo,
     AtlasEntity,
     AtlasEntityExtInfo,
@@ -36,6 +37,7 @@ from aurelius_atlas_core.graph_helper import (
     other_end,
     relationship_type_name,
 )
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 
@@ -107,17 +109,27 @@ class EntityRetriever:
         return result
 
     async def header(self, guid: str, *, classifications: bool = True) -> AtlasEntityHeader:
-        """The header of the entity with ``guid``, with its (empty) classifications (ERD-07, ``getHeaderById``).
+        """The header of the entity with ``guid``, with its classifications (ERD-07, CLS-02, ``getHeaderById``).
 
         Without ``classifications``, as ``toAtlasEntityHeader`` answers it (EWR-13).
 
         Raises:
             AtlasError: ``INSTANCE_GUID_NOT_FOUND`` when no entity has the GUID.
         """
-        header = await self._reading(AtlasEntityExtInfo()).header(await self._found(guid))
+        reading = self._reading(AtlasEntityExtInfo())
+        stored = await self._found(guid)
+        header = await reading.header(stored)
         if classifications:
-            header.classifications = []
+            header.classifications = await reading.classifications(stored)
         return header
+
+    async def classifications(self, guid: str) -> list[AtlasClassification]:
+        """``getAllClassifications``: the classifications of the entity with ``guid``, in order (CLS-02, CLS-03).
+
+        Raises:
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` when no entity has the GUID.
+        """
+        return await self._reading(AtlasEntityExtInfo()).classifications(await self._found(guid))
 
     async def object_id_of(self, stored: StoredEntity) -> AtlasObjectId | None:
         """The entity as a relationship's end: GUID, type and unique values, none when it has none (REL-06).
@@ -187,6 +199,7 @@ class _Reading:
         self._relationships = relationships
         self._stored: dict[str, StoredEntity | None] = {}
         self._edges: dict[str, list[StoredRelationship]] = {}
+        self._classified: dict[str, list[AtlasClassification]] = {}
 
     async def entity(self, stored: StoredEntity) -> AtlasEntity:
         """``mapVertexToAtlasEntity``: every attribute, relationship attributes unless ignored (ERD-03 to ERD-06)."""
@@ -204,6 +217,7 @@ class _Reading:
         if self._relationships:
             for name in entity_type.relationship_attributes:
                 await self._relationship_attribute(stored, entity_type, name, entity)
+        entity.classifications = await self.classifications(stored) or None
         return entity
 
     async def min_entity(self, stored: StoredEntity) -> AtlasEntity:
@@ -215,6 +229,7 @@ class _Reading:
         entity = stored.to_entity(entity_type)
         entity.attributes = None
         self._ext_info.add_referred_entity_as(stored.guid, entity)
+        entity.classifications = await self.classifications(stored) or None
         for name, attribute in entity_type.min_info_attributes.items():
             value = await self._vertex_attribute(stored, attribute)
             if value is not None:
@@ -228,7 +243,7 @@ class _Reading:
             type_name=stored.type_name,
             guid=stored.guid,
             status=stored.state,
-            classification_names=[],
+            classification_names=[str(found.type_name) for found in await self.classifications(stored)],
             is_incomplete=stored.is_incomplete,
             labels=stored.labels or [],
             meanings=[],
@@ -253,6 +268,30 @@ class _Reading:
             if value is not None:
                 unique[name] = value
         return AtlasObjectId(guid=stored.guid, type_name=stored.type_name, unique_attributes=unique)
+
+    async def classifications(self, stored: StoredEntity) -> list[AtlasClassification]:
+        """``mapClassifications``: the entity's classifications, in the order it lists them (CLS-02, DD-070).
+
+        Read once per entity and response; each has every attribute of its type, null when it has no value.
+        """
+        if stored.guid not in self._classified:
+            listed = stored.classification_guids or []
+            found = await self._store.get_classifications(listed)
+            self._classified[stored.guid] = [
+                await self._classification(found[guid].classification) for guid in listed if guid in found
+            ]
+        return [found.model_copy(deep=True) for found in self._classified[stored.guid]]
+
+    async def _classification(self, stored: StoredClassification) -> AtlasClassification:
+        """``toAtlasClassification``: the system fields and every attribute of the classification's type."""
+        classification = stored.to_classification()
+        classification_type = self._store.registry.classification_type(stored.type_name)
+        if classification_type is not None:
+            for name, attribute in classification_type.all_attributes.items():
+                classification.set_attribute(
+                    name, await self._attribute(attribute, stored.attributes.get(str(name)), ext_info=False)
+                )
+        return classification
 
     def _entity_type(self, stored: StoredEntity) -> EntityType:
         entity_type = self._store.registry.entity_type(stored.type_name)
