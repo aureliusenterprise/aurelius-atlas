@@ -40,7 +40,10 @@ writer tells what it changed, and the audit listener and repository that record 
 (DD-082 to DD-084). Since
 [3.5b](../../../docs/architecture/conversion/increments/3-5-classification-audit.md): classification events from
 every operation that attaches or propagates classifications, recorded in Atlas's order, and the retriever behind
-`bulk/headers` (DD-085, DD-086).
+`bulk/headers` (DD-085, DD-086). Since
+[4.1a](../../../docs/architecture/conversion/increments/4-1-entity-search.md): the search fields every entity
+document carries, and basic search for entities by type, attribute filters, sort and paging, as one query the
+entity documents answer (DD-087 to DD-089).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -125,6 +128,16 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.entity_audit_listener
 
 ::: aurelius_atlas_core.entity_audit_repository
+
+::: aurelius_atlas_core.search_fields
+
+::: aurelius_atlas_core.search_query
+
+::: aurelius_atlas_core.search_context
+
+::: aurelius_atlas_core.entity_search_processor
+
+::: aurelius_atlas_core.discovery_service
 
 ::: aurelius_atlas_core.stored_relationship
 

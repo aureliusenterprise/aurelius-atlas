@@ -11,10 +11,21 @@ from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.discovery import Condition
 from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
+from aurelius_atlas_core.search_fields import KEYWORD, KINDS
+from aurelius_atlas_core.search_query import (
+    ACTIVE,
+    STATE_FIELD,
+    TYPE_NAME_FIELD,
+    Filter,
+    Group,
+    SearchQuery,
+    Test,
+)
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
@@ -83,12 +94,18 @@ ENTITY_MAPPING: dict[str, Any] = {
         "pendingTasks": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
+        "search": {"type": "object", "dynamic": True, "subobjects": False},
     },
+    "dynamic_templates": [
+        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": {"type": kind}}} for kind in KINDS
+    ],
 }
-"""System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
-
-DD-043, DD-057.
+"""System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
+in the typed fields of ``search``, which the dynamic templates map by their kind (DD-043, DD-057, DD-088).
 """
+
+ENTITY_FIELD_LIMIT = 100_000
+"""``index.mapping.total_fields.limit`` of the entity index: a field per searchable attribute (DD-088)."""
 
 
 @dataclass(frozen=True)
@@ -299,6 +316,10 @@ class EntityDocuments(Protocol):
         """How many entities of exactly this type exist, in any state, as of now."""
         ...
 
+    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
+        """The entities of the query's page, as of now, and how many match it in all (DD-089)."""
+        ...
+
 
 class ElasticsearchEntityDocuments:
     """``EntityDocuments`` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046)."""
@@ -328,13 +349,20 @@ class ElasticsearchEntityDocuments:
             self._linked[LinkedKind.CLASSIFICATION]: CLASSIFICATION_MAPPING,
             self._linked[LinkedKind.TASK]: TASK_MAPPING,
         }
+        limit = {"index.mapping.total_fields.limit": ENTITY_FIELD_LIMIT}
         for alias, mapping in mappings.items():
             if not await self._client.indices.exists_alias(name=alias):
                 await self._client.indices.create(
-                    index=f"{alias}-000001", aliases={alias: {"is_write_index": True}}, mappings=mapping
+                    index=f"{alias}-000001",
+                    aliases={alias: {"is_write_index": True}},
+                    mappings=mapping,
+                    settings=limit if alias == self._entities else None,
                 )
             elif alias == self._entities:
-                await self._client.indices.put_mapping(index=alias, properties=mapping["properties"])
+                await self._client.indices.put_mapping(
+                    index=alias, properties=mapping["properties"], dynamic_templates=mapping["dynamic_templates"]
+                )
+                await self._client.indices.put_settings(index=alias, settings=limit)
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
         """``mget`` of the entity index: real time, as a get by id is (ENS-04)."""
@@ -559,3 +587,84 @@ class ElasticsearchEntityDocuments:
         await self._client.indices.refresh(index=self._entities)
         response = await self._client.count(index=self._entities, query={"term": {"typeName": type_name}})
         return int(response["count"])
+
+    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
+        """Refresh the entity index, then answer the query as a ``bool`` query of the search fields (DD-089)."""
+        await self._client.indices.refresh(index=self._entities)
+        clauses: list[dict[str, Any]] = []
+        if query.type_names is not None:
+            clauses.append({"terms": {_search_path(TYPE_NAME_FIELD): sorted(query.type_names)}})
+        if query.active_only:
+            clauses.append({"term": {_search_path(STATE_FIELD): ACTIVE}})
+        if query.filter is not None:
+            clauses.append(_es_filter(query.filter))
+        sort = [] if query.sort_field is None else [_es_sort(query.sort_field, descending=query.descending)]
+        sort += [_es_sort(name, descending=False) for name in query.tie_break]
+        response = await self._client.search(
+            index=self._entities,
+            query={"bool": {"filter": clauses}},
+            sort=sort,
+            from_=query.offset,
+            size=query.size,
+            track_total_hits=True,
+        )
+        hits = response["hits"]
+        return [StoredEntity.model_validate(hit["_source"]) for hit in hits["hits"]], int(hits["total"]["value"])
+
+
+def _search_path(name: str) -> str:
+    return f"search.{name}"
+
+
+def _es_sort(name: str, *, descending: bool) -> dict[str, Any]:
+    """A sort on a search field, entities without a value last; a field no entity has yet sorts as its kind."""
+    kind = name.partition(".")[0]
+    return {_search_path(name): {"order": "desc" if descending else "asc", "missing": "_last", "unmapped_type": kind}}
+
+
+def _escape_wildcard(value: str) -> str:
+    return "".join(f"\\{character}" if character in "*?\\" else character for character in value)
+
+
+def _es_filter(node: Filter) -> dict[str, Any]:  # noqa: C901, PLR0911, PLR0912 - one clause per test
+    """A filter of the search query as an Elasticsearch query (SRC-05, DD-089)."""
+    if isinstance(node, Group):
+        clauses = [_es_filter(child) for child in node.criteria]
+        if node.condition is Condition.AND:
+            return {"bool": {"filter": clauses}}
+        return {"bool": {"should": clauses, "minimum_should_match": 1}}
+    path, value = _search_path(node.field), node.value
+    match node.test:
+        case Test.NOTHING:
+            return {"match_none": {}}
+        case Test.ANYTHING:
+            return {"match_all": {}}
+        case Test.EQ:
+            return {"term": {path: value}}
+        case Test.NEQ:
+            return {"bool": {"must_not": [{"term": {path: value}}]}}
+        case Test.LT | Test.LTE | Test.GT | Test.GTE:
+            return {"range": {path: {node.test.value.lower(): value}}}
+        case Test.RANGE:
+            return {"range": {path: {"gte": value, "lte": node.value2}}}
+        case Test.STARTS_WITH:
+            return {"prefix": {path: value}}
+        case Test.ENDS_WITH:
+            return {"wildcard": {path: {"value": "*" + _escape_wildcard(value)}}}
+        case Test.CONTAINS:
+            return _es_contains(path, value, array=node.array)
+        case Test.NOT_CONTAINS:
+            return {"bool": {"must_not": [_es_contains(path, value, array=node.array)]}}
+        case Test.IS_NULL:
+            return {"bool": {"must_not": [{"exists": {"field": path}}]}}
+        case Test.NOT_NULL:
+            return {"exists": {"field": path}}
+        case _:  # Test.NOT_EMPTY
+            empty = [{"term": {path: ""}}] if node.field.startswith(f"{KEYWORD}.") else []
+            return {"bool": {"filter": [{"exists": {"field": path}}], "must_not": empty}}
+
+
+def _es_contains(path: str, value: Any, *, array: bool) -> dict[str, Any]:  # noqa: ANN401 - a field's value
+    if array:
+        return {"term": {path: value}}
+    return {"wildcard": {path: {"value": "*" + _escape_wildcard(str(value)) + "*"}}}

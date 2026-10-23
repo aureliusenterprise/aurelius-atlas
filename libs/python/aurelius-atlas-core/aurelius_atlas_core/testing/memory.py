@@ -1,6 +1,7 @@
 """``TypedefDocument`` and ``EntityDocuments`` in memory, for unit tests that need no Elasticsearch."""
 
 from collections.abc import Mapping, Sequence
+from typing import Any
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
@@ -18,6 +19,7 @@ from aurelius_atlas_core.entity_documents import (
     VersionedEntity,
     WriteResult,
 )
+from aurelius_atlas_core.search_query import SearchQuery, selects
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
@@ -252,6 +254,25 @@ class MemoryEntityDocuments:
         """Entities of exactly the type."""
         return sum(1 for source, _ in self.entities.values() if source.get("typeName") == type_name)
 
+    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
+        """The query evaluated over every entity's search fields (DD-089)."""
+        found = [
+            StoredEntity.model_validate(source)
+            for source, _ in self.entities.values()
+            if selects(query, source.get("search") or {})  # type: ignore[arg-type]
+        ]
+        for name in reversed(query.tie_break):
+            found.sort(key=lambda entity, field=name: _sort_key(entity, field))
+        if query.sort_field is not None:
+            present = [entity for entity in found if _sort_key(entity, query.sort_field)[0] == 0]
+            absent = [entity for entity in found if _sort_key(entity, query.sort_field)[0] != 0]
+            present.sort(
+                key=lambda entity: _sort_key(entity, str(query.sort_field), largest=query.descending),
+                reverse=query.descending,
+            )
+            found = present + absent
+        return found[query.offset : query.offset + query.size], len(found)
+
 
 class InMemoryEntityAuditRepository:
     """``EntityAuditRepository`` in memory: Atlas's ``InMemoryEntityAuditRepository``, ordered by event key."""
@@ -291,3 +312,13 @@ class InMemoryEntityAuditRepository:
                 if event.action in TAG_ACTIONS and from_timestamp <= event.timestamp < to_timestamp
             )
         )
+
+
+def _sort_key(entity: StoredEntity, name: str, *, largest: bool = False) -> tuple[int, Any]:
+    """Entities without a value after those with one; an array by its least element, or its largest when sorting
+    descending, as Elasticsearch sorts.
+    """  # noqa: D205 - one sentence
+    value = (entity.search or {}).get(name)
+    if isinstance(value, list):
+        value = (max(value) if largest else min(value)) if value else None
+    return (1, "") if value is None else (0, value)

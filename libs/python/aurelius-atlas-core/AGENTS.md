@@ -32,6 +32,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 - `aurelius_atlas_core/entity_change_notifier.py` — `EntityChangeNotifier`: prunes a writer's response and tells
   its listeners; `entity_audit_listener.py` records audit events, `entity_audit_repository.py` keeps and lists
   them (DD-082 to DD-084); `testing/memory.py` has `InMemoryEntityAuditRepository`
+- `aurelius_atlas_core/discovery_service.py` — `EntityDiscoveryService`: basic search; `search_context.py`
+  checks it, `entity_search_processor.py` turns it into a `SearchQuery` (`search_query.py`, also its in-memory
+  meaning), which the entity documents answer over the search fields of `search_fields.py` (DD-088, DD-089)
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task
