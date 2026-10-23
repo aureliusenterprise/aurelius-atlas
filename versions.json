@@ -140,6 +140,11 @@
     "aliases": []
   },
   {
+    "version": "dependabot-uv-types-boto3-full--gte-1.43.115",
+    "title": "dependabot-uv-types-boto3-full--gte-1.43.115",
+    "aliases": []
+  },
+  {
     "version": "dependabot-uv-all-eee2495a17",
     "title": "dependabot-uv-all-eee2495a17",
     "aliases": []
