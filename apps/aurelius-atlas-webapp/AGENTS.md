@@ -65,6 +65,11 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
 - Auth is `keycloak-angular` only: the root guard + `check-sso`/silent-SSO, and
   `includeBearerTokenInterceptor` on `/api`. Never hand-write an `updateToken`
   loop (APC-07) and never store tokens outside keycloak-js's own memory (DD-004).
+  The OTLP exporters are the one non-`/api` authenticated leg: they ride the
+  user's own token through `createAureliusOtelIngestAuth`'s headers factory
+  (aurelius-atlas-observability, DD-103) —
+  the collector's browser receiver validates it via OIDC; token-less (logged-out)
+  pushes 401 by design.
 - Every new component gets a Storybook story (7.2 wires the ui library pattern);
   every new route gets an e2e scenario.
 - Template strings carry `i18n="@@legacy.key"` markers matching the catalogue ids.

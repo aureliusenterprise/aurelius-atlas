@@ -2463,3 +2463,1072 @@ the fill joins them visually as a segmented control: the active plate
 is blue, its neighbours stay plain. The panel spec asserts the
 `is-selected` class on the active link (the scss fill itself is a
 style, not a testable DOM fact).
+
+### DD-083. The alerts store groups by a quiet window
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** `AlertsService` is the app's one alert door (ALR-03): an
+in-memory signal list of groups, newest first, capped at 30 (oldest
+evicted). Grouping is a quiet window — an alert whose key (severity +
+source + message) matches the **newest** group's merges into it while
+the window is open (60 s from that group's last alert: `count` +1,
+`lastSeen` moves); after the gap, a new group starts. A `newGroups`
+counter counts arrivals, not alerts (merges do not move it — ALR-02a's
+ring signal). The clock is an injectable token (`ALERT_CLOCK`), not
+fake timers.
+
+**Reason.** The user's review of the plan: "Sometimes the same error
+occurs multiple times in quick succession. I'd like to be able to group
+notifications so the user doesn't get overloaded." A flapping endpoint
+fails per retry — ungrouped, one drawer row per failure. Merging by key
+shows a burst as one row with a count (×7, 14:20–14:22). The window
+bound keeps history honest: merging session-wide would weld an hour-old
+error to a new burst of the same message; after the gap the old burst
+is context, and the new one needs its own row. The newest-only merge
+keeps the store append-only (a burst ends when anything else arrives —
+the row's count is the burst's, not the message's total).
+
+**Alternatives.** Merge into any group with the same key, session-wide
+(one row per message forever — the user's phrasing "in quick
+succession" named a window, and history loses its timestamps).
+Timestamp-bucketed grouping (fixed 60 s bins split a burst at a bin
+edge). A capped ring of raw alerts, grouped at render (the store then
+knows nothing, and every consumer re-derives the same groups; the
+bell's ring needs arrival counting, which raw-alert caps lose).
+`fakeAsync`/`tick` for the window (the token clock makes the window a
+constructor argument of the test, no zone patching under zoneless).
+
+**Consequences.** In-memory: alerts die with the tab — session events,
+not preferences; the persisted lane is DD-073's and this stays out of
+it. `AlertGroup` (the ui-lib model, ALR-10) is the store's public row;
+the merge-key `source` is internal to the store. A 60 s constant;
+raising it is a one-line change. The cap's eviction is silent (alerts
+are cheap, the drawer is not an archive).
+
+### DD-084. The app's ErrorHandler chains: alert, then trace
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The root `ErrorHandler` is `AlertsErrorHandler`,
+composing the trace handler: record the uncaught error as an `error`
+alert (source `app`), then delegate to `AureliusTraceErrorHandler`,
+which keeps its own delegation to Angular's default (ALR-04).
+Recording is wrapped in try/catch — alerting must never break the
+error path. The composition is a factory in `app.config.ts`
+(`useFactory: alertsErrorHandlerFactory`), not a class the app
+subclasses.
+
+**Reason.** SHL-14's telemetry (7.1) owns the root handler; the alerts
+drawer (ALR-04) needs the same event. Composition keeps both promises
+exactly: the trace handler sees the untouched error, the user sees the
+alert. The order is record-first: a delegate that throws (the default
+handler re-throws in dev mode) must not cost the user the alert.
+
+**Alternatives.** Subclass the trace handler (`super.handleError` then
+record — the user's alert would depend on the delegate surviving, and
+the app inherits a library's constructor). A second `ErrorHandler`
+provider (DI: one token, one value). `provideEnvironmentInitializer`
+with `window.addEventListener("error")` (the listeners are the DI
+handler's input, `provideBrowserGlobalErrorListeners` already wires
+them; a second listener double-records).
+
+**Consequences.** Every uncaught error is now user-visible — noisy
+runtime bugs surface in the drawer (the intent, ALR-04; the store's
+window, DD-083, absorbs repeat spam). The trace path is unchanged: the
+`app.config.spec.ts` provider-set specs keep SHL-14's shape.
+
+### DD-085. The HTTP reporter: 5xx and network failures on /api
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** A functional interceptor, last of the three on
+`provideHttpClient`, watches the response and reports the reportable
+set (ALR-05): `5xx` responses and status-0 network failures on URLs
+matching `/api/` — the bearer interceptor's pattern (APC-06), not a
+hardcoded prefix. The message names method, path, and status (`no
+response` for status 0) and rides the server's plain `error` message
+when it sends one. The interceptor reports and re-throws; the caller's
+observable is untouched. 4xx is silent.
+
+**Reason.** The user asked for "any app error messages if they occur"
+— a failing catalogue call is the app's most common real error. The
+`5xx`-plus-network cut is the plan's standing default, accepted: a 4xx
+is a client-side correction the calling feature already handles (its
+form, its not-found view), and reporting it would train users to
+ignore the drawer. The report is the drawer's, not the caller's:
+7.4+ features keep their own `onError` UX; DD-083's window folds the
+pairs into one row.
+
+**Alternatives.** Per-call `onError` reporting at each feature (every
+slice re-wires it, and un-wired calls go missing). Reporting 4xx too
+(the noise the plan asked about; Atlas proxies 404 through the 6.x
+ramp). A `HttpInterceptorFn` on the data-access library (the SDK is
+feature code's door; the app owns chrome-level alerting — the
+interceptor sits in the webapp's provider chain, where the bearer and
+OTLP interceptors sit).
+
+**Consequences.** A failed `/api` call is visible twice when the
+feature also shows its own error (accepted: the drawer is the
+collected record). The status-0 case cannot tell an offline browser
+from a refused connection — one message covers both.
+
+### DD-086. The bell: severity badge and ring, one outlet
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The header bell is the gear's pattern (DD-078, DD-079):
+a `navbar-item` routerLink to `(drawer:alerts)`, `is-active` while
+open, and the one `drawer` outlet swaps the settings panel and the
+alerts drawer (ALR-01). It carries the ui-lib `Badge`: a presence dot,
+visible while the store is non-empty, coloured by the highest severity
+present — presence, not a count, no read-state (ALR-02). The dot is
+`aria-hidden`: inside the bell's link it would join the link's
+accessible name. New groups animate the bell, a ~650 ms Web Animations
+pendulum swing on the icon (the effect watches `newGroups`, so a burst
+rings once, ALR-02a); `prefers-reduced-motion: reduce` skips it.
+
+**Reason.** The user asked for a badge "to indicate notifications are
+available", the "color of the highest severity notification available",
+and "a little animation on the bell whenever an alert becomes
+available" — the ring is the arrival, the dot is the presence, the
+colour is the worst. Presence beats a count: the store caps at 30 and
+merges bursts, so a count badge overflows its own model. The
+single-outlet swap is DD-078's mechanism with a second segment (the
+URL owns which drawer is open; the locale switch's reload keeps it,
+SPL-14's mechanic reused). The ring is WAAPI, not a CSS class: the
+animation restarts cleanly mid-swing (a class re-trigger needs a
+reflow hack); the pivot (`transform-origin: top center`) is scss on
+the icon, the keyframes are the component's.
+
+**Alternatives.** A count badge (Bulma's `.tag`, overflow-prone,
+read-state invented for it). An unread-only dot (the user's word was
+"available", not "unread"). A CSS `@keyframes` class toggle (the
+re-trigger hack; reduced-motion media queries alone cannot skip a
+JS-driven replay). `@angular/animations` (not a dependency; the zoneless
+app has no animation renderer, WAAPI is the browser's).
+
+**Consequences.** The dot's contrast on the navbar bands is the
+Badge's problem (its ring, DD-087's note); the header keeps the
+DD-080 slate. The dot is a component, not Bulma's `.badge` idiom (the
+lib has no Bulma DOM assumptions). A future read-model (server events,
+6.x) adds a source to the store, not a new door.
+
+### DD-087. AlertList and Badge are ui-lib presentational components
+
+- **Status:** Accepted (the `clearAll()` half of the contract superseded by DD-088)
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The feed and the dot live in `aurelius-atlas-ui` as
+presentational components (ALR-10): `AlertList` renders a
+caller-supplied `AlertGroup[]` (the model the lib exports — the row's
+shape is presentation vocabulary) and emits `dismiss(id)`/`clearAll()`;
+`Badge` wraps content, shows a severity dot on `visible`. Labels are
+inputs with English defaults (the `Drawer.ariaLabel` pattern), so the
+lib keeps no translation dependency and the app passes `@@shell.alerts.*`
+strings (ALR-08). The store, the window, and the routing stay app-side.
+
+**Reason.** The user: "let's ensure we make a reusable ui component
+for alerts." The feed has a second consumer by the plan's own logic
+(7.6+ feature slices push alerts through the same store, and the
+drawer is the product's surface); the dot generalises to any nav item.
+The lib's rule is the same one `Drawer` keeps (DD-069): Bulma-shaped
+presentational markup, state in the caller. The lib's chrome-strings
+lane (DD-047: legacy dictionary paths) has no alert keys to reuse —
+these are Aurelius's own strings (DV-13) — so the inputs carry
+defaults and the app's catalogue owns the translations; the XLIFF
+gate (SHL-08) and the purity gate (DD-048) stay app-side, the lib
+stays service-free (its AGENTS.md convention).
+
+**Alternatives.** App-local components under `src/app/alerts` (not
+reusable — the user's ask). A smart `AlertsDrawer` in the lib that
+injects a store (the lib owns no app state, no xlf dependency).
+`model()` for the alerts array (the list never edits rows; dismiss is
+an event, not a two-way value).
+
+**Consequences.** The `AlertGroup` type is public API of the lib
+(`src/index.ts`). The stories ship per UIC-15's bar (visual regression
+covers the feed and the dot). The badge's ring is Bulma-token ink
+(`--bulma-navbar-item-color`, currentColor fallback) — a future non-
+navbar host keeps a visible edge without a new input.
+
+### DD-088. The chip's pinned pair; Clear all in the drawer head
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** Two live-review fixes to the alert feed (ALR-06, ALR-07):
+the burst chip's pair is pinned — `#f5f5f5` plate, `#363636` ink — not
+Bulma's `tag is-light`; and the "Clear all" button is a content action
+in the drawer's head, not part of the feed. The Drawer grows a
+`drawer-actions` projection slot between the title and the close button
+and AlertList loses its `clearLabel`/`clearAll` — clearing a store the
+list does not own was the list's borrowed business (DD-087's
+presentational rule).
+
+**Reason.** The user's review of the live drawer: "the counter text is
+not visible on the white background" and the "clear all" button
+"will become buried" on a long feed — "let's keep it above the
+notifications". The chip's invisibility is a scheme trap, measured: the
+brand pins the `light` colour pair at `:root`, outside Bulma's scheme
+machinery (SHM-04, so the chrome colours survive), while Bulma 1's dark
+theme re-pins `light`'s invert to a scheme-following ink — the
+`is-light` tag composed the brand's white plate under dark-mode white
+ink (white-on-white). The pinned `#f5f5f5`/`#363636` pair is the
+footer's idiom (SHM-07): the same marker in either scheme, 9.3:1. The
+first fix placed Clear all above the rows inside the scrolling body
+(DD-088's first pass, unit-tested); on review the head is the stronger
+answer — the body scrolls, so the hatch must ride the sticky head.
+
+**Alternatives.** Pin `light-invert` in the brand's `dark-ink` ramp
+(fixes the tag and every `is-light` surface app-wide — rejected as
+wider than the bug: DD-068's ramp re-pins the ink chain Bulma itself
+adapts; `light` is a colour pair SHM-04 pins deliberately, and
+dark-adapting it reopens SHM-01's promise). A severity-coloured chip
+(the row is already severity-coloured; the chip is metadata, not a
+second signal). Clear all above the rows inside the body (the first
+pass: on a long feed the drawer body scrolls, taking the hatch away —
+rejected on review). A `clearLabel`/`clearAll` on AlertList kept "for
+reusability": a feed that owns a store-clearing button presumes the
+store's shape — the head slot keeps the list the rows.
+
+**Consequences.** The chip is the third pinned pair in the product
+(footer SHM-07, active locale DD-082, chip DD-088) — the growing list
+of surfaces that read the same in both schemes. The Drawer's head
+anatomy (DD-069's, shared with settings) gains an optional slot: the
+settings panel projects nothing and is unchanged. The alerts drawer's
+tab order is close, then Clear all (both in the head), then the rows.
+
+### DD-090 — The inbox bar: severity chips, read tracking, Clear all in the bar
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The drawer head's Clear all grows into a full-width inbox
+bar (ALR-11): a new ui-lib `AlertInbox`, a Bulma `buttons has-addons`
+group of one chip per severity (`is-expanded`, feed order, an empty
+severity's chip included), each chip a filter toggle showing that
+severity's **total** group count, a dot riding the DD-063 ramp while any
+of its groups is unread, and the caller's Clear all projected into the
+bar's end. The Drawer grows a second projection slot, `drawer-subhead`,
+a strip between the head and the body; the bar rides it. Read tracking
+lands with it (ALR-12): every `AlertGroup` carries `read`; an arrival —
+or a merge bumping a read burst — marks unread, and the panel's effect
+marks every group read while the drawer is open (visible-is-read). The
+bell badge answers unread presence in the highest **unread** severity's
+colour, superseding ALR-02's store-top reading.
+
+**Reason.** The user's ask: a bar showing the count per severity, each
+severity a show/hide button, Clear all kept, "keep track of whether
+notifications have been read", and the question of totals vs unread on
+the chips. Totals won: the chips are filters, and a filter's number is
+what it covers — unread counts on filter chips make the bar flicker
+under reading (the chips zero out as the drawer reads the feed, the
+turn the user is mid-reading through vanishes). Unread stays where the
+attention question is asked: the bell dot, the row, the chip's dot.
+Visible-is-read won over a per-row read toggle: the drawer is 28rem of
+rows the user came to read; a list that requires marking each row read
+is a queue, not a feed, and the merge-re-unreads rule means a returning
+burst re-asks for attention on its own. Filter state is the panel's,
+not the store's: the store's counts and the bell must answer with the
+whole store, and a view filter is not data.
+
+**Alternatives.** Chips showing unread counts (rejected above — the
+number changes under the user's eyes as the drawer reads). Filter state
+in the store (rejected: the bell's badge and the chips' totals must see
+everything, and persistence of a view toggle is scope the in-memory
+store does not have). A per-group read button (a queue; rejected).
+`markAllRead` on close (rejected: the badge would stay lit while the
+user is reading, and the ring/dot answers "has this been seen" — seen
+means seen). Clear all staying in the head beside the bar (two fixed
+strips stacked, the head's action orphaned from the bar it serves; the
+bar is the feed's command strip — the hatch belongs at its end).
+
+**Consequences.** The Drawer has two content slots, actions (head) and
+subhead (the strip); the settings panel uses neither. The alerts
+drawer's tab order is close, the three chips, Clear all, then the
+rows. `AlertGroup.read` joins the lib's model — the third field the
+store owns and the list renders (ALR-10's vocabulary grows). The bell
+badge goes quiet on open, which is the point: it asked for attention
+and got it. DD-088's Clear all in the head is superseded in placement
+(its "above the notifications" requirement keeps holding — the bar
+never scrolls, DD-091); DD-088's chip-pair pinning stands.
+
+### DD-091 — The drawer's body is the scroll container
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-21
+
+**Decision.** The Drawer's panel clips (`overflow: hidden`) and its
+body scrolls (`min-height: 0`, `overflow-y: auto`): the head and the
+`drawer-subhead` strip are fixed, the content scrolls under them
+(DD-090's inbox bar, ALR-06/ALR-11's escape hatch).
+
+**Reason.** Found while answering the user's question about a long
+feed: the panel carried `overflow-y: auto`, so the whole drawer
+scrolled — the head, title, close button, and DD-088's Clear all slid
+away with the feed, and the "head does not scroll" clause ALR-06 cited
+was not true. A drawer whose chrome scrolls away is a page, not a
+drawer: the close control and the command strip must be reachable at
+any scroll depth, and the inbox bar (DD-090) only pays off fixed.
+
+**Alternatives.** A sticky head inside the scrolling panel (`position:
+sticky`: works, but the scrim/panel geometry makes it fragile with the
+slide animation, and the head's border composes over scrolled content
+under the rounded corners). Two scroll containers (rejected: nested
+scrolling on a 28rem panel is a trap).
+
+**Consequences.** The settings panel's long body (six sections) now
+scrolls under a fixed head — the intended drawer reading, and the
+settings drawer's head carries its accessible name, so the panel
+reading it never loses it. jsdom runs no layout, so the scroll split is
+pinned by the spec's slot-placement test (DD-090) and the dev-server
+check, not by a unit assertion.
+
+### DD-092 — The inbox bar is one joined group, severity-coloured, ramp order
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** Three follow-ups to the inbox bar (ALR-11, DD-090), from
+the user's review: every segment of the bar — the three chips, show
+all, and the projected Clear all — is an `is-expanded` member of the
+one `buttons has-addons` group (the actions join the joined bar, not
+beside it); the chip order flips to the ramp ascending — `info`,
+`warning`, `error`, calm to urgent (SEVERITIES, the countSeverities
+output, and the chips all follow); and a shown chip rides its
+severity's fill — the DD-063 pinned ramp (`#17a2b8`/`#ffc107`/`#dc3545`)
+with the ramp's own inks (black on warning and info, white on danger),
+not a single Aurelius blue. The unread dot rides the chip's ink
+(currentColor) with a hairline ring in the chip's plate, and the fill
+rides `is-sev-*` classes, not Bulma's `is-info`/`is-warning`/`is-danger`
+button colours.
+
+**Reason.** The user's review of the live bar. The ramp order reads a
+bar the way the feed reads a stack — the urgent end lands beside the
+feed's own newest-first errors, and a bar whose colour intensifies
+left-to-right says "here is the dial". The severity fills carry the
+bar's own information: a chip IS a severity, and one blue bar made the
+chips interchangeable — the colours are the legend. Bulma's own
+`.button.is-info`-family fills are scheme-following token tints, and
+the brand pins `light` outside Bulma's scheme machinery (SHM-04): the
+pinned ramp is the product's severity vocabulary (DD-063, DD-080) and
+reads the same in both schemes, like the badge's dot and the footer's
+pair. The dot flips to ink for the same reason DD-088 pinned the
+count chip: a ramp-coloured dot on a ramp-coloured chip rides its own
+colour and vanishes.
+
+**Alternatives.** Bulma's `.button.is-info`/`.is-warning`/`.is-danger`
+fills (scheme-following: the tints shift with the theme and collide
+with the brand's pinned plates — DD-088's trap, measured once on this
+very bar). Severity text ink on a plain chip, fill reserved (the user
+asked for coloured buttons; an outline bar reads disabled, not
+filtered). Ramp descending (error first, DD-090's first pass — kept
+for the feed's rows, newest/urgest-first; the bar is a dial, not a
+feed). The actions outside the group, flush right (DD-090's first
+pass: two visual systems on one strip — the user asked for one joined
+bar).
+
+**Consequences.** `SEVERITIES` is the inbox's order and the bar is the
+model's only consumer of it; the feed's order is the store's own
+(newest first), untouched. The clear-all button's contract is "an
+expanded member of the group" — the panel's button and the host test
+carry `is-expanded`. The unread dot loses its severity classes
+(`is-*`): the chip's face is the severity, the dot only marks news.
+The bar's tab order is info, warning, error, [show all], clear all.
+
+### DD-093 — The inbox bar is one height: the count badge is compacted
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** The inbox bar's count badge sheds Bulma's `.tag` height:
+`height: auto`, `line-height: 1`, `0.125em` vertical padding — the
+badge is compacted to the small button's scale, so every member of the
+group (chips, show all, Clear all) computes to the plain small-button
+height (ALR-11, DD-092).
+
+**Reason.** The user's review of the live bar: Show all and Clear all
+sat a step shorter than the severity chips. The cause was the badge,
+not the actions: Bulma's `.tag` is a 2em control, and at the small
+button's font that is 1.5rem of content inside a chip whose own line
+is 1.125rem — the badge stretched its chip, and the group's flex
+stretch dragged Show all and Clear all up to match. DD-092's
+"is-expanded everywhere" made the step visible: joined segments
+expose each other's heights.
+
+**Alternatives.** `align-items: flex-start` on the group (leaves the
+tall chips and short actions as they are, the join shows the gap). A
+plain `<span>` instead of a Bulma `.tag` (the tag's plate/rounding is
+the chip vocabulary, DD-088's pinned pair; the height is the only
+part to shed). `is-normal` on the tag (the size modifiers are font
+sizes, the `2em` height rides them all).
+
+**Consequences.** The badge reads as the button's own metadata (a
+superscript plate) rather than a control sharing the row. The unit
+test pins the compaction's two properties; the equal height across
+segments is the group's stretch, verified on the dev server.
+
+### DD-094 — The void chip: an empty severity greys out
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** An inbox chip whose severity the feed holds no alerts of
+is disabled (ALR-11): greyed by Bulma's disabled-button rule (the
+scheme-main plate, 0.5 opacity), unpressed, and carrying no severity
+fill. A chip with rows keeps DD-092's fills; a filtered-out chip keeps
+DD-090's plain-button reading. The three states read: severity-coloured
+= showing, plain = hidden by the user, grey = nothing to show.
+
+**Reason.** The user's review: "grey out the buttons that have no
+alerts". DD-092 made every chip severity-coloured, so a severity with
+zero alerts kept its full-colour face — the bar shouted three
+severities for a feed with one. The states now map to the chip's
+truth: the fill answers "this severity is on the screen", plain answers
+"you filtered it", grey answers "there is nothing of this". A disabled
+chip is also inert, which is honest: toggling a filter with nothing to
+filter changes nothing, and a chip whose click is a no-op should not
+look clickable (the pointer cursor promises a state change).
+
+**Alternatives.** Keep it clickable, greyed by class only (a click
+that does nothing — the affordance lies). Hide the empty chips (DD-090
+chose a fixed three-chip bar — the shape is the legend; hiding makes
+the bar reshuffle as the feed churns). Strike the zero, keep the
+colour (a coloured zero still reads "on").
+
+**Consequences.** The `is-selected` fill gate moves from
+"not hidden" to "has alerts and not shown hidden" — the `isOn`/`isVoid`
+pair on the component. `allHidden` (DD-090) was already void-aware: an
+empty severity's chip does not keep the show-all control away, and its
+disabled chip cannot be clicked off, so the control cannot strand a
+void-only bar. The panel hides the whole bar on an empty store, so the
+all-void state shows only in isolation (the Empty story).
+
+### DD-095 — Show all is gone: the bar's shape never shifts
+
+- **Status:** Accepted
+- **Increment:** 7.15
+- **Date:** 2026-10-22
+
+**Decision.** The inbox bar has no show-all control (ALR-11). The
+`showAllLabel` input, the `showAll` output, the `allHidden` computed,
+the conditional button, and the panel's `showAll()`/`showAllLabel` are
+removed; the way back from a fully-filtered feed is a chip — a hidden
+chip stays enabled (only a void chip is disabled, DD-094), and
+clicking it shows its severity again. DD-092's "actions as group
+members" stands for the projected clear-all; it no longer covers
+show-all.
+
+**Reason.** The user's review: appearing at full filtering, the control
+joined the `buttons has-addons` group as a fourth `is-expanded`
+segment — the three chips each jumped from a third to a quarter of the
+row, every toggle into and out of the fully-hidden state. A bar whose
+segments resize on state change reads as broken furniture; the escape
+hatch was worth less than the jump. It was also redundant: the chips
+were always clickable in that state (the hiding is per-severity and
+independent), so show-all only ever did what three clicks — usually
+one — already did.
+
+**Alternatives.** A fixed-width reserved slot (a gap in the bar,
+always sized for a button that is almost never there). Absolute
+positioning outside the group (a floating control breaking the joined
+bar, DD-092's shape). Auto-restoring the filter when the feed empties
+(filtering to nothing is a legitimate state — the counts stay, the
+user chose it; silently undoing it is worse than no control).
+
+**Consequences.** The bar's segment count is constant while it shows
+(chips + projected action), so the joined strip never reflows. The
+fully-filtered state shows the feed's empty line under all-flat chips
+— self-explanatory, and the counts on the chips say what is hidden.
+The `shell.alerts.showAll` string leaves both fixture locales and both
+catalogues (25 shell.alerts entries → 24). The AllHidden story and the
+two bar tests carry the new contract: no control, three expanded
+segments, a hidden chip toggles back on.
+
+### DD-096 — Entity details arrives as a routed skeleton; its data spine joins 2.3
+
+- **Status:** Proposed
+- **Increment:** 7.6
+- **Date:** 2026-10-22
+
+**Decision.** 7.6 ports the Aurelius details screen (`search/details/:guid`) as
+the skeleton the data-free webapp can host today: the route contract, the header
+shape (title, type-name line, the 7.13 `breadcrumbs`), the description box, the
+properties accordion, and the side navigation — every part in its empty state,
+fed by the bridge keys `search.details.*` already in the catalogue. No entity
+fetch: `GET /v2/entity/guid/{guid}` is server 2.3 (planned), the type dispatch
+is nine `m4i_*` governance layouts, and the lineage/quality cards post to
+backends Aurelius Atlas will not have (DD-051). The wiring increment — the
+resolver, the header data, the type components, lineage — is named in the spec
+and lands when 2.3 does.
+
+**Reason.** Every Aurelius details section reads one resolved entity; the
+Aurelius `DetailsResolver` feeds a search stack that DD-051 deliberately left
+unported. Shipping the fetch against a 404 is the speculative build DD-051
+refuses, and shipping mock entity data is a UI promise the slice cannot keep —
+the 7.5 seam (DD-054) again, one screen deeper. The skeleton is what is true
+today: the URL is the screen's address, the chrome's strings are all keyed, the
+7.13 components already render the trail and the rows, and the deep-link
+contract (DET-07) is testable end to end with zero data.
+
+**Alternatives.** A full port against `HttpTestingController` mocks (the e2e
+stack runs the real server — the mocks evaporate at the first served test). A
+stub server (a second source of truth the parity harness must then ignore).
+Waiting for 2.3 entirely (the route, the layout, and the strings are real work
+that 2.3 does not gate; the 7.5 precedent ports exactly this kind of slice).
+
+**Consequences.** The webapp owns a details route that renders a provable
+empty state; 2.3+7.6 is composition, not design — the resolver calls the
+client method DET-03 builds, the header binds the DTO, the type components
+join the shell. The nine `m4i_*` layouts stay deferred: Aurelius's own type
+model, out of Aurelius Atlas's scope until its data exists (the slice table
+names the wiring increment).
+
+### DD-097 — The entity client is built test-first against the Atlas wire format
+
+- **Status:** Proposed
+- **Increment:** 7.6
+- **Date:** 2026-10-22
+
+**Decision.** `AtlasEntitiesService.getEntityByGuid(guid)` lands in 7.6: the
+DTOs are typed from the Apache Atlas 2.4.0 source (`AtlasEntity.java`,
+`EntityREST.java`), cited at the type, and the specs are `HttpTestingController`
+assertions on the request (path, headers, guid encoding) and the response
+mapping. No screen calls it (DD-096's skeleton fetches nothing); the 2.3+7.6
+wiring increment consumes it.
+
+**Reason.** DD-051's rule is one method per server increment, "each method
+lands testable against the real server." The entity-by-guid read is the
+surface 2.3 implements, and its wire format is fixed by Atlas's source and
+tests, not by this workspace — so the DTOs and the request shape are knowable
+today, and a spec that asserts them is honest (it never claims a 200).
+Building the client in the wiring increment makes that PR data + layout +
+client at once; splitting it keeps 2.3+7.6 about the server round-trip.
+
+**Alternatives.** Grow the client in 2.3+7.6 (the honest choice 7.3's pattern
+allows — accepted as the fallback if the split adds review load). Port the
+whole legacy `EntityAPIService` surface (create, update, bulk, relationships —
+endpoints 2.4/3.x, unportable per DD-051's audit).
+
+**Consequences.** The data-access lib gains one Atlas-native entity method,
+the typedefs client's shape (APC-01 base url, one method per legacy
+duplication, DD-051). When 2.3 lands, the e2e wiring scenario is the method's
+first real 200; its specs keep asserting the request until then.
+
+### DD-098 — One API base: the client's URLs all ride the API_BASE_URL token
+
+- **Status:** Accepted
+- **Increment:** 7.6
+- **Date:** 2026-10-22
+
+**Decision.** ADR 054's rule, in client shape: every Aurelius Atlas **data**
+request composes its URL from the injected `API_BASE_URL` token (the APC-01
+rule, now carrying the consolidated-server decision), and the webapp ships no
+second data-plane base URL, no hard-coded data host, and no search-backend
+client. Non-data surfaces keep their own configuration — Keycloak's URL
+(APC-05), the OTel exporter (SHL-11) — named at the deployment boundary, not
+through the token. The served-app boundary holds the rule closed: the CSP
+keeps `connect-src 'self'` for `/api`, widened only for Keycloak's origins,
+and the e2e CSP scenario asserts the baseline.
+
+**Reason.** The user's direction, 2026-10-22: "the legacy app had a split
+between the app search api and apache atlas api. This new version consolidates
+these into the server api... All requests can be expected to be made to the
+server api," scoped the same day: "we may have other surfaces eventually but
+this is the one that replaces app search and the apache atlas apis" — the
+decision fixes the data plane's successor, and does not fence in identity,
+telemetry, or future non-data surfaces. The audit (7.3, DD-051) found the
+legacy split's two clients —
+the Atlas REST set and the App Search stack (`/elastic`, `/gov_quality`,
+`/data_quality`) — and ported only endpoints the server answers; the state
+already matches the rule. Recording it turns an audit outcome into a contract
+the search slice (7.4) cannot erode: when search lands, it lands as a server
+endpoint family (4.1) behind the same token, not as a second stack.
+
+**Alternatives.** Record nothing (true today, silent tomorrow — 7.4 is the
+slice where a legacy-shaped search client would sneak back in). A purity-gate
+grep for the legacy hosts (the CSP assertion is the served-app's proof, the
+token is the code's; a grep bans strings, not shapes).
+
+**Consequences.** DET-03's entity client composes from the token like the
+typedefs client; 7.4's search client joins it, specified from the Atlas
+source. The template example's `EntitiesService` (FastAPI CRUD/SSE, one SSE
+stream) stays a retiring example (DD-019, 7.10), not a second API. Any future
+non-server call site is an ADR event, not a pull request.
+
+### DD-099 — The details chip is the classification chip; its sources project in
+
+- **Status:** Proposed
+- **Increment:** 7.16
+- **Date:** 2026-10-22
+
+**Decision.** `classification-chip` is the Bulma `tags.has-addons` chip of
+`search/components/classification/`: icon lead tag, label tag with tooltip,
+loading tag, and the optional propagation tag whose hoverable dropdown projects
+the sources list via `[chip-sources]`. The legacy `ClassificationService` (the
+type-definition lookup by name) and `ClassificationSourceService` (the
+repository-fed source rows) are inputs and projection — name, description,
+`propagated`, and the sources content arrive from the caller. The glossary-term
+chip (`search/components/term/`) is the same atom with `is-info` on the lead
+tag, so it is not a second component: the lead colour is an input.
+
+**Reason.** The two legacy chips are byte-identical markup around one colour
+class and one label key; a `term-chip` twin would be a copy. Everything the
+chip's services fetched is a fact the caller already holds wherever the chip
+renders (the details header reads classifications off the entity DTO; 2.3's
+entity read carries them) — the service indirection existed to cache
+per-name lookups, a data concern, and the lib's rule (UIC-15) is that the
+caller supplies what it has. The sources rows stay projected rather than
+modelled because their shape (a media row: name link, crumbs, type badge) is
+the app's `classification-source` anatomy — the 7.6 deferral table's
+repository-fed part — and the chip should not reach past a slot into it.
+
+**Alternatives.** One generic `tag-chip` with colour + icon + label inputs
+(refused — it erases the propagation dropdown, the chip's real behaviour, and
+"details chip" named for no legacy source). Two components, classification +
+term (refused — the copy-paste twin). Model the sources as `{guid, name}`
+inputs with a built-in row (refused — the row is repository-fed, the wiring
+7.6 defers).
+
+**Consequences.** The chip is speccable and storyable with zero data (the
+sources slot stories the dropdown's content). When 2.3 lands, the header
+composes `@for (c of entity.classificationNames)` chips and feeds the slot
+from the propagated-sources lookup — the chip itself does not change. The
+term chip's key (`search.components.term.term`, "Term") becomes the term
+call site's lead label input.
+
+### DD-100 — The type-name badge is extracted from entity-card
+
+- **Status:** Proposed
+- **Increment:** 7.16
+- **Date:** 2026-10-22
+
+**Decision.** `type-name` is its own component: the `span.icon-text` badge
+(icon, `typeAlias ?? typeName`, base-type suffix) of
+`search/components/type-name/`, with `iconsByType` as caller inputs (UIC-15).
+7.13 inlined this badge inside `entity-card` (UIC-12); `entity-card` now
+renders `type-name`, and UIC-12's rendered output is unchanged — its spec is
+the extraction's regression proof.
+
+**Reason.** The badge's call sites in the legacy app outnumber the card's: the
+details header's `.subtitle.name` line, the propagated-sources rows, the
+editor (7.7), the results cards. 7.13 inlined it because the card was the
+only component shipping it then; the details audit found three more call
+sites, and an inlined badge gets copied at each. The `iconsByType` index the
+legacy badge reads is app meta (UIC-15's split), so the standalone form needs
+no app code: icon and class are inputs, as the card already passes them.
+
+**Alternatives.** Keep the badge inlined and let the header compose the badge
+markup by hand (a third copy of the badge's markup in the webapp, inside the
+skeleton 2.3+7.6 then edits again). Export the badge as a directive on
+`entity-card`'s internals (refused — the lib's components are the public
+surface; internals are not).
+
+**Consequences.** One badge implementation; `entity-card`'s inputs pass
+through to it (the public API is unchanged — UIC-12's spec stays the
+guard). The details header composition (2.3+7.6) uses it for the type line
+without touching the card. `classification-chip`'s sources slot rows use it
+as their badge (DD-099).
+
+### DD-101 — Details navigation is a shell; the scroll directive stays app-side
+
+- **Status:** Proposed
+- **Increment:** 7.16
+- **Date:** 2026-10-22
+
+**Decision.** `details-navigation` ports the shell of
+`details/components/navigation/`: `box.is-paddingless` around a Bulma
+`dropdown.is-up.is-right`, the toggle button (caller icon input, `is-active`
+toggled on click), and the `nav.menu` with the label input and the
+`ul.menu-list` fed by `ng-content`. The legacy `DetailsNavigationItem`
+directive — click scrolls the target into view — is not ported into the lib;
+items are caller markup, and the app wires their behaviour.
+
+**Reason.** The shell is presentational and complete on its own (the Bulma
+dropdown's open/close is pure CSS once `is-active` toggles). The directive is
+DOM behaviour on the application's document (`document.body` is the legacy
+label's target): a lib component that scrolled the page would own layout the
+app owns — the purity rule's same line as `breadcrumbs`' routing split
+(UIC-11). Keeping `li`s as projected content also means the nav composes with
+any anchor scheme: the 7.6 skeleton's same-page `#section` hrefs today, the
+wiring increment's hash-router links later, without the lib changing.
+
+**Alternatives.** Port the directive too (a lib scrolling the host document
+is library overreach, and the target ids are app anatomy). Emit
+`itemClicked(target)` like `section-stats` (refused for the nav: the legacy
+nav's items are arbitrary projected markup, the directive is the wiring — an
+emit would only cover component-owned anchors, i.e. it would cover the shape
+that isn't here).
+
+**Consequences.** The webapp's 7.6 side nav swaps its inline `nav.menu` for
+this shell and (in 2.3+7.6) adds a small app-side directive for scroll —
+named in 7.16's deferral table. Storybook stories the shell with static
+items; the toggle's `play()` test proves the interaction.
+
+### DD-102 — The count bar is section-stats: one component, two call sites
+
+- **Status:** Proposed
+- **Increment:** 7.16
+- **Date:** 2026-10-22
+
+**Decision.** `section-stats` ports the `nav.level` count bar the legacy
+details screens duplicate — `default-details.component.html` (one stat:
+properties) and `gov-quality-details.component.html` (three: non-compliant,
+compliant, properties) — as one component: `items: { label, target, count }`,
+`p.heading > a` (href `#target`) + `p.title` per item, `itemClicked(target)`
+on activation (DD-066's emit-instead-of-navigate pattern; the anchor's href
+is the keyboard path).
+
+**Reason.** The two bars are the same Bulma block with a different item
+count, and the details header (2.3+7.6) and editor (7.7) repeat it again —
+the Aurelius pattern is "a heading-link that jumps to the section, with its
+count above the fold". The legacy count came from a service stream; here the
+count is a string the caller renders (it is a count, not a number with
+locale semantics — the legacy template interpolated it raw). Making `target`
+a plain id keeps the href honest for the same-page case the skeleton is
+(7.6), and `itemClicked` lets the app intercept (the nav directive's
+smooth-scroll, analytics, hash-router links).
+
+**Alternatives.** A `properties-count` special case (refused — the gov-quality
+bar proves the shape generalizes). Bulma `level` as slots per item (refused —
+items are homogeneous, an array input is the smaller API).
+
+**Consequences.** The 7.6 skeleton's inline count bar becomes
+`section-stats` with one item when the wiring increment lands (the skeleton
+stays as specced until then — DET-02's zero-row bar is its contract).
+Gov-quality (7.8) composes three. The strings ride the caller's inputs; the
+bridge keys (`search.details.default.properties`,
+`search.details.govQuality.*`) already exist.
+
+### DD-103 — Collector ingest is authenticated in two legs: user JWTs for browsers, a shared token for services
+
+- **Status:** Proposed
+- **Increment:** 7.17
+- **Date:** 2026-10-22
+
+**Decision.** The OTel collector's OTLP receivers stop accepting anonymous
+writes, with a per-leg proof of the writer (CIA-01). The **browser leg**
+(HTTP 4318) authenticates the signed-in user: the collector's `oidc`
+extension validates the Keycloak access token the SPA sends — issuer,
+signature, and the `otel-collector` audience the realm's `otel-ingest` client
+scope mints — so every span and metric carries the user's identity (the `sub`
+claim). The **service leg** (gRPC 4317, HTTP 4319) keeps a shared ingest token
+(`bearertokenauth`): headless producers — the Atlas server, the FastAPI
+example, Keycloak's own OTLP, the slice pullers — present it through the
+standard `OTEL_EXPORTER_OTLP_HEADERS` / their exporter's `headers` block
+(CIA-04). The browser's proxies pass the `Authorization` header through
+untouched (nginx's default, and http-proxy's): the proxy is a pipe, not a
+credential (CIA-02). The SPA attaches the token through the OTLP exporters'
+`headers` factory — an async callback OTel invokes per export (the OTLP
+transport rides XHR/fetch outside Angular's HttpClient, so the bearer
+interceptor cannot cover it). The seam is shared, not per-app:
+`createAureliusOtelIngestAuth` in `aurelius-atlas-observability` carries the
+factory and an `attach` binding, and each app hands it the live `Keycloak`
+client in a `provideAppInitializer` (the webapp's sits inside its telemetry
+gate — with telemetry off there is no exporter to feed); no registration
+order is load-bearing, as the factory resolves the token at export time.
+`updateToken(30)` per export covers the dev realm's 60s token. The collector's
+host publishes pin to 127.0.0.1 (4317/4318/4319) and the prometheus
+exporter's publish drops — CIA-03. The issuer URL is compose env (dev default
+at the plaintext `:8080` issuer, ADR 039's relaxation; the e2e conftests
+override with the TLS `:8443` issuer plus the shared dev CA, matching each
+stack's `iss` claim); the extension discovers JWKS from the issuer itself and
+needs Keycloak reachable at startup. The dev token lives in
+`dev/observability/.env(.enc)` and every producer project's `.env.enc`.
+
+**Reason.** ADR 039 states the collector's ingest rule as TLS — that proves
+_which collector_ a writer reaches, not _who_ writes: on a dev machine the
+published 4317/4318 accepted anonymous writes from anything that could route
+to the Docker host, and through the webapp's own `/otel/` proxy from anywhere
+that could reach the site. The credentials stack on the verified channel;
+ADR 034's one collection point stays (a credential, not a hop). The browser
+leg chooses user JWTs over a shared secret for **attribution**: forged
+telemetry carries the forger's `sub` and is revocable per user, and the
+telemetry's user joins the traces the SDK already correlates. This corrects
+the claim made earlier in this increment's design (and in the NasTech
+write-up's counterexample) that a public client makes a JWT gate worthless:
+`publicClient` means the _client_ holds no secret, not that tokens are free —
+auth-code + PKCE still requires the user's credentials, so "anyone with a
+connection" becomes "anyone with an account", the same bar a shared proxy
+secret sets, with identity for free.
+
+**Alternatives.** One shared token on both legs, the proxy injecting the
+browser's (this design's first cut, refused — it closes open ingest but
+attributes nothing, and a leaked proxy secret forges un-attributed telemetry
+forever; the user-JWT gate has the same bar and keeps the identity). Making
+the `aurelius` client confidential (refused — an SPA is a public client by
+definition: anything shipped in the bundle is public, keycloak-js's PKCE flow
+rejects confidential clients, and confidentiality protects the client, not
+the token — attribution rides the token's `sub`). Keycloak JWTs on the service
+leg too (refused for now — Keycloak bootstrapping itself as its own
+telemetry's issuer is a chicken/egg, the pullers need a client-credentials
+`oauth2client` extension, the Python SDK's headers env is static so a 5-min
+JWT needs a refresh shim, and the observability stack starts before Keycloak
+by design — the per-service graduation stays open: the extension validates
+JWKS for any audience. (Delivered by DD-107 in 7.18: the pullers'
+`oauth2client` extension, the server's refresh shim, and the issuer-shaped
+boot order each closed one named wall; Keycloak-native — the one producer
+with no answer — keeps the shared token on the legacy leg.) `optional: true` on the OIDC receiver, or starting
+OTel after auth, to keep pre-login telemetry flowing (both refused —
+unauthenticated pass-through reopens the exact door this closes, and a
+post-auth SDK start loses the cold-load Core Web Vitals the dashboard is
+built on; the first-load telemetry loss is **accepted**, the login is the
+telemetry gate). Keeping the seam per-app (refused at the review pass — the
+first draft carried a byte-identical copy in each app config; the seam is
+the OTLP transport's relation to auth, which is `aurelius-atlas-observability`'s
+knowledge, and one tested copy beats two. The lib's exporter-agnostic rule
+is untouched: the seam types its client structurally — `authenticated` /
+`updateToken` / `token`, the same shape keycloak-angular's interceptor
+reads — so the lib depends on a shape, not on `keycloak-js`).
+
+**Consequences.** The browser leg makes Keycloak a dependency of browser
+ingest: the collector fetches JWKS from it, the e2e conftests start Keycloak
+before the collector's issuer is consulted, and a dev machine exporting
+browser telemetry with Keycloak down sees 401s (the service leg keeps
+flowing). Pre-login exports (the landing page's first spans/metrics) are
+rejected — accepted. Every service producer must present the token, including
+future ones — each slice's `nx serve`/e2e runs are the gate (CIA-04, the
+webapp e2e's accepted-export test plus every slice's suite). The realm's
+`otel-ingest` scope is part of the `aurelius` client contract: tokens minted
+before a realm re-import carry no `aud` and are rejected (dev/keycloak
+AGENTS.md). The e2e suites mint a real user token (password grant, the dev
+sign-in user) to drive the browser-leg tests, and the collector's compose
+gains `OTEL_COLLECTOR_OIDC_*` env with a `/dev-ca` CA mount;
+`dev/observability` gains a `.env.enc`, so its compose targets now
+`dependsOn` `decrypt` like every other slice. The NasTech pattern this
+follows (OIDC extension on the HTTP receiver, user token from Keycloak) is
+credited: <https://blog.nashtechglobal.com/secure-opentelemetry-collector-for-tracing-front-end/>
+
+### DD-105 — The collector stamps the verified user onto the telemetry: `enduser.id`
+
+- **Status:** Accepted
+- **Increment:** 7.17
+- **Date:** 2026-10-22
+
+**Decision.** DD-103's browser leg verifies the user's token; this makes the
+verified identity ride the data (CIA-05). The collector's shared `resource`
+processor copies the OIDC context's subject claim onto every browser-leg
+push: `key: enduser.id, from_context: auth.claims.sub` (the claims land in
+the request context under their **raw JWT names** — Keycloak's subject claim
+is `sub`; the extension README's `auth.claims.subject` example fits issuers
+that name the claim that, and a missing source upserts an **empty**
+attribute, not nothing — verified against 0.162 with a Tempo read-back).
+The attribute key is `enduser.id` (the semconv registry's key for a user
+identifier; `subject` alone is ambiguous next to `service.name`). The
+traces/metrics pipelines share the processor, so a user's spans and web
+metrics carry it. On the metrics leg a `transform` processor
+(`context: datapoint`, `set(attributes["enduser.id"],
+resource.attributes["enduser.id"])`) promotes it to datapoint level, where
+the prometheus exporter turns it into the `enduser_id` label — the exporter
+keeps only a few resource attributes as labels (`service.name` →
+`exported_job`) and drops the rest, so without the promotion the stamped
+identity never reaches Prometheus. The service leg has no OIDC context: its
+pushes carry `enduser.id=""` (empty upsert, above) — producers stay
+unattributed, and the label is one constant value, no cardinality growth.
+
+**Reason.** Attribution was the browser leg's reason for user JWTs over a
+shared secret (DD-103): a forged push is attributable to the account that
+minted the token. That clause is only true once the identity is ON the data
+— verification alone leaves Tempo/Prometheus blind to which user a span came
+from, and the dashboards (keyed on `service_name`/`exported_job`) cannot
+answer "whose load is this". Tempo searches it as a resource attribute
+(`{ .resource["enduser.id"] = "<sub>" }`, TraceQL 2.3 scoped syntax) and the
+e2e reads it back through trace-by-id.
+
+**Alternatives.** `resourcedetection` with an auth detector (refused — no
+auth detector exists; the claim copy is the `resource`/`transform`
+processors' job). Span-attribute copy instead of resource (refused — the
+resource is the per-push envelope: one copy per push, every span in it
+inherits; a span-level copy needs OTTL per span and misses metrics, whose
+datapoints the transform already covers). `enduser.id` + `enduser.name`
+(`preferred_username`) (deferred — the readable name doubles the PII surface
+for a dev stack; the `sub` UUID is joinable to Keycloak's admin at query
+time; add the display name with the audit slice if the dashboards need it).
+Tempo's `metrics_generator` with `dimensions: [enduser.id]` (refused for
+now — it would generate span-metrics/service-graphs series per user from
+traces; the collector-side label promotion covers the dashboards, the
+generator stays off as in the rest of the stack).
+
+**Consequences.** `sub` (a UUID) is PII-adjacent: it is a persistent per-user
+identifier inside telemetry retention — accepted for the dev stack, and the
+production posture note is ADR 039's (the collector's own). Dashboards can
+group by `enduser_id` (metrics) or filter `{ .resource["enduser.id"] = … }`
+(Traces); Tempo's live-store search indexes span attributes only, so
+resource-predicate searches hit backend blocks (older than ~30 min) —
+Grafana's TraceQL UI handles the fan-out, the e2e asserts storage through
+trace-by-id (`GET /api/traces/<id>?encoding=json` — Tempo 3.x's route is the
+plural, the singular `api/trace/` 404s, and the default encoding is
+protobuf). Pre-login telemetry stays lost (DD-103's accepted trade).
+
+### DD-106 — The collector rides out Keycloak's boot: bounded restart, awaited readiness
+
+- **Status:** Accepted
+- **Increment:** 7.17
+- **Date:** 2026-10-22
+
+**Decision.** DD-103's `oidc` extension discovers JWKS at extension start, so
+the collector exits 1 whenever Keycloak is not answering yet. The boot order
+makes that window structural: keycloak (and the postgres/elasticsearch slice
+composes) attach `aurelius-atlas-dev-observability-network` as an **external**
+network, so observability must come up first — Nx's `implicitDependencies`/
+`^up` chain and the e2e conftest fixtures both start it before Keycloak. The
+fix is therefore on the collector side, not the order: `restart: on-failure:15`
+in `dev/observability/docker-compose.yaml` (Docker backs off 100ms doubling to
+a 1min cap — ~15 attempts span ~6 minutes, far past Keycloak's boot, and the
+bound means a Keycloak that never comes up ends in a loud `compose up --wait`
+exit rather than an infinite crash loop). Keycloak's readiness gate is compose's
+own: the conftest fixtures' `start()` runs `up --wait` and the keycloak service
+carries a healthcheck, so the command returns when Keycloak is ready. The
+fixtures' post-start `HealthcheckWaitStrategy` registration is dead code
+(`waiting_for` is a setter, `start()` runs the strategies) and is removed from
+the webapp/frontend-example conftests — it could never have worked: the strategy
+reads docker-py `attrs`, which the `ComposeContainer` wrapper
+`DockerCompose.get_container()` returns does not have (verified: it raises
+`AttributeError` the moment it runs). The fastapi-example's dead registration
+stays — its `_wait_for_dev_users` poll is that suite's real Keycloak gate.
+
+**Reason.** Found as a full e2e failure: with a cold stack, `docker compose up
+--wait` on observability exits 1 on the collector's first crash, every fixture
+errors, and 90 tests never run. Verified: `up --wait`'s watcher survives the
+intermediate exits and returns when the container lands on a running/exit-0
+state, so the restart policy makes the cold start self-heal (collector ~30s
+behind Keycloak's health).
+
+**Alternatives.** Start Keycloak first (refused — the external-network
+attachment makes the order structural, and the Nx graph would invert for a
+dev-stack-only reason). A healthcheck-gated collector (refused — the image
+is shell-less/hardened, and compose has no keycloak service to gate on from
+this stack). A testcontainers `HealthcheckWaitStrategy` on the keycloak fixture
+(refused — the strategy reads docker-py `attrs` the `ComposeContainer` wrapper
+does not expose, so it raises `AttributeError`; `up --wait` already gates on the
+service healthcheck). Retries inside the extension (refused — the oidc extension
+has no retry knob; discovery hard-fails at start by design). An unbounded
+`restart: on-failure` (refused — a permanently broken issuer then crash-loops
+forever and `up --wait` never returns; the bounded count keeps the failure
+loud).
+
+**Consequences.** A cold `nx up`/e2e start costs the collector a few restart
+cycles (~30s) — invisible behind Keycloak's own ~40s boot. The dev stack's
+plaintext :8080 issuer keeps the same window. The nginx `/otel/` proxy in the
+webapp/frontend-example e2e configs moves to a variable upstream
+(`set $otel_upstream` + resolver) like the `/api/` block: a literal
+`proxy_pass https://otel-collector:4318` resolves at config load, which fails
+nginx while the collector is restarting (DD-106 makes that window normal). The
+`set` must precede the `rewrite ... break` — `break` halts the rewrite module,
+of which `set` is a directive, so a `set` after the rewrite never runs and the
+upstream host resolves empty (500, "no host in upstream"; the shipped
+production template orders them the same way, discovered by measurement). The
+`collector_container` fixture polls for the settled running state — a restarting
+container reports no port bindings, which the loopback-pinned test reads.
+
+### DD-107 — The service leg graduates to per-service identity: Keycloak client-credentials JWTs, azp-stamped
+
+- **Status:** Proposed
+- **Increment:** 7.18
+- **Date:** 2026-10-23
+
+**Decision.** DD-103's service leg proved _that a writer holds the shared
+secret_, not _which writer_ — a leaked secret forges un-attributed service
+telemetry forever. The graduable headless producers now mint their own
+Keycloak identity: four confidential service-account clients
+(`otel-postgres`, `otel-keycloak`, `otel-elasticsearch`, `otel-atlas-server`)
+on the `otel-ingest` default scope (the same `aud: otel-collector` mapper as
+the browser leg), the shared dev client secret carried as an
+`${OTEL_INGEST_CLIENT_SECRET}` placeholder in the realm import (the dev-users'
+pattern). The collector's `otlp/services` receivers (gRPC 4317 / HTTP 4319)
+swap `bearertokenauth` for the **same `oidc` extension** the browser leg uses
+— one issuer, one validator, both legs (the contrib image has no
+`compositeauth`, so a port carries one authenticator: the per-service leg and
+the legacy leg are separate ports by construction). The three slice
+metrics-pullers present their JWT through the contrib collector's own
+`oauth2client` extension (mint/cache/refresh natively, zero custom code,
+`restart: on-failure:15` for the DD-106 race, issuer-shaped now). The Atlas
+server (Python, logfire) presents its JWT through an in-app refresh seam:
+`ClientCredentialsTokenSource` (stdlib urllib, thread-safe cache,
+refresh-ahead, header-less export on mint failure = the visible 401) feeding
+per-export `headers` into app-owned OTLP exporters wired through logfire's
+`additional_span_processors` / `MetricsOptions.additional_readers` — the
+static `OTEL_EXPORTER_OTLP_HEADERS` env is dropped, the app owns the OTLP
+export (logfire reads it statically; a 60s dev token cannot ride a static
+header). Staying on the **legacy leg** (a new `otlp/legacy` pair, gRPC 4320 /
+HTTP 4321, `bearertokenauth`, loopback-published): **Keycloak's native
+OTLP** — the issuer cannot present a token it has not minted yet at cold boot
+(DD-103's chicken-and-egg, now scoped to exactly this) — and the **FastAPI
+example** (the same static-header wall as the server, paid at the server
+where it earns). Attribution (DD-105 extended): the resource processor
+upserts `otel.ingest.client` from the verified token's `azp`, and a
+`transform/identity` (resource context) clears `enduser.id` for
+service-account pushes (`azp` prefix `otel-`) — human and machine identity
+stay distinguishable in Tempo/Prometheus; browser pushes carry
+`otel.ingest.client="aurelius"` + `enduser.id=<sub>`, legacy pushes carry
+neither (DD-105's empty-upsert rule, unchanged).
+
+**Reason.** DD-103 refused this graduation for four reasons (Keycloak
+self-boot, the pullers' client-credentials need, the Python SDK's static
+headers, the boot order) — every one has a bounded answer now: the
+`oauth2client` extension is the pullers' client-credentials
+mint+refresh, the shim is the Python answer, and Keycloak-native — the one
+producer with no answer — keeps the shared token on its own leg. Keycloak is
+the issuer of record for every credential in the stack (browsers, APIs);
+reusing it for services means one validator, one trust story, and the same
+`otel-ingest` audience contract on both legs. Per-client attribution
+de-anonymizes the shared secret's blast radius: a leaked `otel-postgres`
+secret forges only postgres telemetry, visibly.
+
+**Alternatives.** Static JWTs in env (refused — the dev realm mints 60s
+tokens; static bearer JWTs expire in a minute, the whole point of
+mint+refresh). One leg with two authenticators (refused — contrib 0.162 has
+no `compositeauth`; a client-id allowlist inside one OIDC leg was also
+refused: the extension verifies credential _type_, not identity, so the
+honest posture is credential-typed legs, every push authenticated and
+attributed — a user token on the service leg is a curiosity, not a hole).
+Per-service dev secrets (deferred — the clients already carry distinct ids,
+which is what the stamp and the revocation target use; distinct secrets
+rotate per-producer and the realm placeholder machinery multiplies; prod
+deployments inject per-client secrets, the realm import supports it as-is).
+A mint sidecar for the Python producers (refused — a sidecar adds a boot
+unit per app and a localhost hop; the shim is ~100 stdlib lines with a unit
+suite, and the server owns its telemetry the way it owns its store). A
+client-credentials file credential source (the OTel spec's
+`credentials-file` shape, not implemented in the Python SDK) — the shim is
+its stdlib form (watch this: upstream, delete the shim). Permissive-issuer
+boot windows for Keycloak-native (refused — an unauthenticated window at
+cold boot reopens DD-103's door). Dropping Keycloak-native OTLP (refused —
+the IdP's own traces/logs are first-class telemetry for an auth-gated
+platform; the puller covers its DB metrics only).
+
+**Consequences.** The dev stack's ingest surface is five loopback-published
+ports (4317/4319 per-service OIDC, 4318 browser OIDC, 4320/4321 legacy
+shared). Keycloak boot is now load-bearing for the per-service leg the same
+way it is for the browser leg: the pullers and the server 401 until the
+issuer answers (restart policies + refresh-ahead carry them; DD-106's
+collector restart covers the collector itself). The collector's
+`enduser.id=""` for services (was DD-103: `sub`-shaped UUID on service
+pushes under the DD-105 stamp) is a **label change** for the dashboards:
+service series move to `enduser_id=""` + `otel_ingest_client=<id>`; the
+dev-stack dashboards' queries ride this increment. The shared ingest token
+survives for exactly two producers (Keycloak-native, FastAPI example) — the
+legacy leg retires when a gRPC-native producer can present a JWT (a Quarkus
+bearer-header hook) and the example app adopts the shim pattern. Realm
+re-import rotates the dev client secret: every `.env.enc` carrying it
+re-encrypts in the same PR (the DD-103 `otel-ingest` note, extended). e2e:
+the webapp suite mints a service token (client_credentials grant, the
+`otel-atlas-server` client) beside the 7.17 `user_token` fixture;
+`test__collector_accepts_the_shared_ingest_token` moves to the legacy port;
+the loopback-pin test's socket set grows to 4317–4321.

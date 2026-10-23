@@ -1,0 +1,93 @@
+<!--
+    The details skeleton (DET-01): the legacy default-details anatomy —
+    header box (title, type-name line, trail), description box,
+    property-count level, properties accordion, side navigation — in its
+    empty state (DET-02, DD-096): no entity answers (server 2.3 is
+    planned), so the title rides the localized fallback, the trail
+    renders nothing under the breadcrumbs' empty guard, the type-name
+    line is empty, the description is empty, and the accordion holds
+    zero rows, counted 0. No fetch, no mock — the wiring increment
+    binds the same shape to the entity read (DET-03).
+
+    The strings ride the bridge (DET-04): `search.details.default.*`,
+    `search.details.components.properties.*`,
+    `search.details.components.navigation.details` — keys the Aurelius
+    catalogue carries in both locales (SHL-08, DD-055); the fallback
+    title is `search.details.typeSelect.label`. Strings bound into
+    component inputs live in TypeScript as $localize (BRW-02).
+
+    The legacy ids ride along — #description-details, #properties-details
+    are the anchors the side navigation links to (the legacy
+    details-navigation's scroll targets).
+-->
+<section class="section">
+    <div class="container aurelius-details">
+        <div class="box aurelius-details-header">
+            <h1 class="title is-1 entity aurelius-details-title">{{ titleFallback }}</h1>
+            <div class="subtitle name aurelius-details-type"></div>
+            <aurelius-atlas-ui-breadcrumbs
+                class="aurelius-details-trail"
+                [activeGuid]="guid()"
+                (itemClicked)="onCrumbClick($event)"
+            />
+        </div>
+
+        <div class="columns">
+            <div class="column">
+                <div id="description-details" class="box">
+                    <h3 class="title is-3" i18n="@@search.details.default.description">Description</h3>
+                    <div class="content aurelius-details-description"></div>
+                </div>
+
+                <div class="box">
+                    <nav class="level">
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">
+                                    <a href="#properties-details" i18n="@@search.details.default.properties">
+                                        Properties
+                                    </a>
+                                </p>
+                                <p class="title aurelius-details-property-count">0</p>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+
+                <aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
+                    <ng-container header>
+                        <h3 class="title is-3" i18n="@@search.details.default.properties">Properties</h3>
+                    </ng-container>
+                    <ng-container content>
+                        <table class="table is-fullwidth aurelius-details-properties">
+                            <thead>
+                                <tr>
+                                    <th i18n="@@search.details.components.properties.key">Key</th>
+                                    <th i18n="@@search.details.components.properties.value">Value</th>
+                                </tr>
+                            </thead>
+                            <!-- Zero rows (DET-02); the wiring increment adds a
+                                 properties-item per property (DET-05). -->
+                            <tbody></tbody>
+                        </table>
+                    </ng-container>
+                </aurelius-atlas-ui-accordion>
+            </div>
+
+            <div class="column is-narrow">
+                <div class="box">
+                    <nav class="menu aurelius-details-nav">
+                        <p class="menu-label" i18n="@@search.details.components.navigation.details">Details</p>
+                        <ul class="menu-list">
+                            <li>
+                                <a href="#properties-details" i18n="@@search.details.default.properties">
+                                    Properties
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -13,7 +13,8 @@
       "services": "Models4Insight diensten",
       "update": "Update beschikbaar",
       "welcome": "Ingelogd als",
-      "settings": "Instellingen"
+      "settings": "Instellingen",
+      "alerts": "Meldingen"
     },
     "pipeline": {
       "error": "Er is iets misgegaan tijden",
@@ -39,6 +40,22 @@
       "telemetryHint": "Zet het verzamelen van gebruiks- en prestatiegegevens aan of uit. Als u het aanzet, wordt het na een herladen van de pagina actief.",
       "about": "Over",
       "version": "Versie"
+    },
+    "alerts": {
+      "title": "Meldingen",
+      "close": "Sluiten",
+      "feed": "Meldingen",
+      "empty": "Geen meldingen",
+      "dismiss": "Verbergen",
+      "clear": "Alles wissen",
+      "times": "\u00d7",
+      "inbox": "Meldingsfilters",
+      "unread": "Ongelezen",
+      "severity": {
+        "error": "Fouten",
+        "warning": "Waarschuwingen",
+        "info": "Info"
+      }
     }
   }
 }

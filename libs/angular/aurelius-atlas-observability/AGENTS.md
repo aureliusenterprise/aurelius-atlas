@@ -15,6 +15,14 @@ covers wiring specific to this lib; workspace-wide rules live in the root
   `flushMetricsOnPageHide` (attached _after_ instrumentation, listener order!) is
   a belt-and-braces flush; `service.instance.id` is generated so the collector
   emits `target_info` and resource attributes become Prometheus labels.
+- `src/lib/opentelemetry-ingest-auth.ts` — `createAureliusOtelIngestAuth()`, the
+  OTLP ingest-credential seam (DD-103): the exporter `headers` factory reading
+  the user's Keycloak token, with `attach` binding it to the live client. The
+  app wires both ends — the factory into its exporter construction, `attach`
+  into a `provideAppInitializer` right after `provideKeycloak`. Keycloak is the
+  dev stack's IdP, named in the doc comment; the seam itself takes the client
+  structurally (`authenticated` / `updateToken` / `token` — the same shape
+  keycloak-angular's interceptor reads), so the lib stays auth-provider-agnostic
 - `src/lib/opentelemetry-session.ts` — tab-scoped `session.id` resource shared by
   the tracer and meter providers (`createAureliusSessionResource`)
 - `src/lib/opentelemetry-error.handler.ts` — `AureliusTraceErrorHandler`, bound as

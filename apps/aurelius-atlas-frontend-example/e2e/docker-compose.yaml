@@ -14,13 +14,18 @@ services:
         volumes:
             - ../certs:/certs:ro
         extra_hosts:
+            # Keycloak is reached on the host; the collector over the
+            # observability network (joined below) — its publishes are
+            # loopback-pinned (CIA-03), so the gateway address would not answer.
             - keycloak.localhost:host-gateway
-            - otel-collector:host-gateway
         ports:
             # Fixed host port: the SPA origin must be a literal entry in the
             # Keycloak client's web origins (Keycloak compares origins exactly,
             # no port wildcards). conftest.py discovers the port dynamically.
             - 18443:8080
+        networks:
+            - default
+            - aurelius-atlas-dev-observability-network
 
     aurelius-atlas-fastapi-example:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-fastapi-example:local
@@ -59,11 +64,16 @@ services:
             # export to the same collector the browser's /otel/ proxy feeds —
             # otherwise the frontend trace has no server span to join (same
             # wiring as aurelius-atlas-fastapi-example/e2e/docker-compose.yaml).
-            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
+            # The legacy leg (DD-107, CIA-10): the logfire SDK attaches its
+            # bearer statically from OTEL_EXPORTER_OTLP_HEADERS and cannot
+            # refresh (the dev realm's tokens live 60s), so this producer
+            # keeps the shared ingest token — and the per-service leg (4319)
+            # is OIDC-only now and would answer it 401 (CIA-08).
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4321
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
         extra_hosts:
             - keycloak.localhost:host-gateway
-            - otel-collector:host-gateway
         networks:
             # default: reached by the nginx /api/ proxy and postgres-app;
             # observability: reaches the dev collector (conftest starts it first).

@@ -57,8 +57,26 @@ services:
         # exists. Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        # The oauth2client extension mints its ingest JWT from Keycloak at
+        # startup (DD-107): the collector's DD-106 restart pattern, applied
+        # to the pullers now that the issuer — not a static token — gates
+        # their export.
+        restart: on-failure:15
         environment:
             ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
+            # Per-service ingest identity (7.18, DD-107): the puller mints
+            # client-credentials JWTs as the otel-elasticsearch realm client
+            # — the oauth2client extension in config/metrics-puller.yaml
+            # (mint, cache, refresh).
+            OTEL_INGEST_CLIENT_ID: otel-elasticsearch
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            OTEL_INGEST_TOKEN_URL: ${OTEL_INGEST_TOKEN_URL:-http://keycloak.localhost:8080/realms/master/protocol/openid-connect/token}
+            OTEL_INGEST_CA_FILE: ${OTEL_INGEST_CA_FILE:-}
+        extra_hosts:
+            # The mint target: this slice has no Keycloak of its own, so
+            # keycloak.localhost is the dev Keycloak's published listener on
+            # this machine (the collector's JWKS fetch uses the same mapping).
+            - keycloak.localhost:host-gateway
         volumes:
             - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
             - ./certs:/certs:ro

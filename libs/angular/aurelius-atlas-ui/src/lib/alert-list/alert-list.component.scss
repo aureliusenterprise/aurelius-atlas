@@ -1,0 +1,49 @@
+/*
+ * The alert feed (ALR-07): the rows are Bulma notifications, so the
+ * colour, padding, and the delete button come from Bulma — this sheet
+ * carries the rhythm and the count chip.
+ *
+ * The chip's pair is pinned (DD-088), not Bulma's `is-light`: the brand
+ * pins the `light` plate outside Bulma's scheme machinery (SHM-04),
+ * while Bulma's dark theme re-pins `light`'s invert — a scheme-following
+ * ink — so in dark mode the tag painted white ink on the brand's white
+ * plate (measured live: the count vanished). The pinned #f5f5f5/#363636
+ * pair is the footer's idiom (SHM-07): the same in either scheme, 9.3:1.
+ */
+.aurelius-alert-message {
+    // Notifications default their body to the inherited text; the
+    // message is the row's body — no override beyond wrapping.
+    overflow-wrap: anywhere;
+}
+
+.aurelius-alert-meta {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.aurelius-alert-count {
+    background-color: #f5f5f5; // $light, pinned in both schemes
+    color: #363636; // its legacy invert (SHM-04's pair, SHM-07's idiom)
+}
+
+/*
+ * Unread rows (ALR-12): the message goes bold and the meta line carries a
+ * ring dot. The dot rides in the row's own ink (currentColor) so it is
+ * visible on every severity plate — a severity-coloured dot would vanish
+ * on its own colour — with a hairline ring in the plate lifting it off
+ * the background (the badge's idiom, DD-080).
+ */
+.aurelius-alert-unread .aurelius-alert-message {
+    font-weight: 700;
+}
+
+.aurelius-alert-unread-dot {
+    background-color: currentColor;
+    border: 1.5px solid var(--bulma-notification-background-color, transparent);
+    border-radius: 50%;
+    flex-shrink: 0;
+    height: 0.6rem;
+    width: 0.6rem;
+}

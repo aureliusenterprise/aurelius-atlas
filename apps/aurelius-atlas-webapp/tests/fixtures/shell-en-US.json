@@ -13,7 +13,8 @@
       "services": "Models4Insight services",
       "update": "Update available",
       "welcome": "Logged in as",
-      "settings": "Settings"
+      "settings": "Settings",
+      "alerts": "Alerts"
     },
     "pipeline": {
       "error": "Something went wrong while",
@@ -39,6 +40,22 @@
       "telemetryHint": "Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.",
       "about": "About",
       "version": "Version"
+    },
+    "alerts": {
+      "title": "Alerts",
+      "close": "Close",
+      "feed": "Alerts",
+      "empty": "No alerts",
+      "dismiss": "Dismiss",
+      "clear": "Clear all",
+      "times": "\u00d7",
+      "inbox": "Alert filters",
+      "unread": "Unread",
+      "severity": {
+        "error": "Errors",
+        "warning": "Warnings",
+        "info": "Info"
+      }
     }
   }
 }

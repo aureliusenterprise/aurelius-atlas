@@ -5,6 +5,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import Keycloak from "keycloak-js";
 
 import { AppConfig } from "../config";
+import { AlertsService } from "../alerts/alerts.service";
 import { APP_CONFIG } from "../tokens";
 import { ShellHeader } from "./header.component";
 import { Session } from "./session.service";
@@ -28,6 +29,9 @@ class DrawerPanelPlaceholder {}
 
 function setup(identity = "aurelius-writer", routes: Routes = []) {
     const logout = vi.fn();
+
+    // jsdom ships no matchMedia (the reduced-motion probe, ALR-02a).
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
     TestBed.configureTestingModule({
         imports: [FontAwesomeModule, ShellHeader],
@@ -119,11 +123,99 @@ describe("ShellHeader", () => {
 
     it("no longer carries the language dropdown (SPL-01, SPL-06)", () => {
         // The language control moved into the panel; the navbar-end set is
-        // Documentation, the gear, and the account dropdown.
+        // Documentation, the gear, the bell, and the account dropdown.
         const compiled = render();
 
         expect(compiled.querySelector("[hreflang]")).toBeNull();
         expect(normalize(compiled.textContent)).not.toContain("Your language is");
+    });
+
+    it("opens the alerts drawer from the bell (ALR-01)", () => {
+        // The bell is the gear's pattern for the second drawer (ALR-01):
+        // a routerLink into the one `drawer` outlet, lit while open.
+        const compiled = render();
+        const bell = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Alerts"]');
+
+        expect(bell).toBeTruthy();
+        expect(bell?.getAttribute("href")).toBe("/(drawer:alerts)");
+        expect(bell?.classList.contains("is-active")).toBe(false);
+    });
+
+    it("lights the bell while the alerts route is open (ALR-01)", async () => {
+        setup("aurelius-writer", [{ path: "alerts", outlet: "drawer", component: DrawerPanelPlaceholder }]);
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        await TestBed.inject(Router).navigate([{ outlets: { drawer: ["alerts"] } }]);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const bell = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Alerts"]');
+
+        expect(bell?.classList.contains("is-active")).toBe(true);
+    });
+
+    it("carries the unread severity badge (ALR-02, ALR-12)", () => {
+        setup();
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const alerts = TestBed.inject(AlertsService);
+
+        // Presence, not a count: no dot on an empty store.
+        expect(compiled.querySelector(".aurelius-badge-dot")).toBeNull();
+
+        alerts.add({ severity: "warning", message: "slow", source: "app" });
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-badge-dot")?.classList.contains("is-warning")).toBe(true);
+
+        // The dot answers what has not been seen (ALR-12): opening the
+        // drawer reads the feed, the dot goes with it.
+        alerts.markAllRead();
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-badge-dot")).toBeNull();
+
+        // The colour rides the highest UNREAD severity, not the store's
+        // top: a read error no longer out-colours a new warning.
+        alerts.add({ severity: "error", message: "boom", source: "app" });
+        alerts.markAllRead();
+        alerts.add({ severity: "warning", message: "slow again", source: "app" });
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-badge-dot")?.classList.contains("is-warning")).toBe(true);
+    });
+
+    it("rings the bell on a new alert group, once per burst (ALR-02a)", () => {
+        setup();
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        const alerts = TestBed.inject(AlertsService);
+        const icon = (fixture.nativeElement as HTMLElement).querySelector(".aurelius-bell-icon") as HTMLElement;
+        const animate = vi.fn();
+        icon.animate = animate;
+
+        alerts.add({ severity: "error", message: "boom", source: "app" });
+        TestBed.flushEffects();
+        expect(animate).toHaveBeenCalledTimes(1);
+
+        // A merge into the burst (ALR-03) is not a new group: no second ring.
+        alerts.add({ severity: "error", message: "boom", source: "app" });
+        TestBed.flushEffects();
+        expect(animate).toHaveBeenCalledTimes(1);
+    });
+
+    it("skips the ring under reduced motion (ALR-02a)", () => {
+        setup();
+        vi.spyOn(window, "matchMedia").mockReturnValue({ matches: true } as MediaQueryList);
+        const fixture = TestBed.createComponent(ShellHeader);
+        fixture.detectChanges();
+        const icon = (fixture.nativeElement as HTMLElement).querySelector(".aurelius-bell-icon") as HTMLElement;
+        const animate = vi.fn();
+        icon.animate = animate;
+
+        TestBed.inject(AlertsService).add({ severity: "error", message: "boom", source: "app" });
+        TestBed.flushEffects();
+
+        expect(animate).not.toHaveBeenCalled();
     });
 
     it("greets the signed-in identity in the account dropdown (SHC-05)", () => {

@@ -214,9 +214,16 @@ describe("app providers (7.3)", () => {
         const sources = readdirSync(appDir, { recursive: true })
             .filter((entry): entry is string => typeof entry == "string")
             .filter((entry) => entry.endsWith(".ts") && !entry.endsWith(".spec.ts"))
-            .map((entry) => readFileSync(join(appDir, entry), "utf8"));
+            .map((entry) => ({ path: entry, text: readFileSync(join(appDir, entry), "utf8") }));
+
+        // APC-07 bans the legacy periodic updateToken loop. Not even the
+        // 7.17 ingest seam (DD-103) refreshes here: its on-demand
+        // updateToken(30) lives in aurelius-atlas-observability's
+        // createAureliusOtelIngestAuth, keyed to OTLP exports — the app
+        // tree carries no refresh call site at all.
+        const refreshCallers = sources.filter((source) => source.text.includes("updateToken("));
 
         expect(sources.length).toBeGreaterThan(0);
-        expect(sources.some((source) => source.includes("updateToken("))).toBe(false);
+        expect(refreshCallers.map((source) => source.path)).toEqual([]);
     });
 });

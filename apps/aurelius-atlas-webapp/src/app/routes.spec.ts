@@ -46,6 +46,29 @@ describe("routes", () => {
         await expect(loadComponent()).resolves.toBe(SettingsPanel);
     });
 
+    it("routes the alerts panel into the drawer aux outlet (ALR-01)", async () => {
+        // The one named outlet carries both drawers (ALR-01): the bell
+        // navigates to `(drawer:alerts)`, and the outlet swaps the panels.
+        const alerts = routes[0].children?.find((route) => route.path === "alerts");
+        expect(alerts?.outlet).toBe("drawer");
+
+        const loadComponent = alerts?.loadComponent as unknown as () => Promise<unknown>;
+        const { AlertsPanel } = await import("./alerts/alerts-panel.component");
+        await expect(loadComponent()).resolves.toBe(AlertsPanel);
+    });
+
+    it("routes the details skeleton at search/details/:guid (DET-01)", async () => {
+        // The Aurelius `details` module's `:id` child (DET-01): the deep
+        // link is the screen's whole state until the 2.3 wiring increment
+        // feeds it (DD-096).
+        const details = SEARCH_ROUTES.find((route) => route.path === "details/:guid");
+        expect(details).toBeDefined();
+
+        const loadComponent = details?.loadComponent as unknown as () => Promise<unknown>;
+        const { Details } = await import("./search/details/details.component");
+        await expect(loadComponent()).resolves.toBe(Details);
+    });
+
     it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-043)", () => {
         expect(routes[0].children?.at(-1)).toMatchObject({
             path: "**",

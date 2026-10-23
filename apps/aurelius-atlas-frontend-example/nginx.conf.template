@@ -112,6 +112,13 @@ server {
 
     # OTLP push (traces and metrics) for the browser SDK; same-origin keeps
     # the CSP at 'self' (see the provideAureliusOpenTelemetry* wiring).
+    # The collector's browser leg (4318) authenticates the signed-in user:
+    # the SPA attaches its Keycloak access token to every OTLP push, and the
+    # proxy passes the Authorization header through untouched (nginx's
+    # default — no proxy_set_header here) to the collector's OIDC receiver,
+    # which validates issuer, signature and the otel-collector audience
+    # (DD-103, CIA-01/02). A logged-out push has no token and is answered
+    # 401 — accepted, the telemetry gate is the login (DD-103).
     location /otel/ {
         set $otel_upstream ${AURELIUS_ATLAS_FRONTEND_OTEL_UPSTREAM};
         rewrite ^/otel(/.*)$ $1 break;
