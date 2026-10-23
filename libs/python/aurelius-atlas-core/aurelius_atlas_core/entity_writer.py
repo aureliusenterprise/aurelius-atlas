@@ -43,6 +43,7 @@ from aurelius_atlas_core.entity_store import (
     EntityVersionConflictError,
     EntityWriteError,
     RelationshipChange,
+    TaskChange,
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
@@ -50,7 +51,7 @@ from aurelius_atlas_core.relationship_mapper import RelationshipMapper
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.tag_propagation import TagPropagation
+from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
 from aurelius_atlas_core.transaction_view import TransactionView
 
 NO_ENTITY_TO_UPDATE = "no entity to update."
@@ -96,6 +97,7 @@ class _Dropped:
     headers: list[AtlasEntityHeader] = field(default_factory=list)
     updated: list[str] = field(default_factory=list)
     classification_changes: list[ClassificationChange] = field(default_factory=list)
+    task_changes: list[TaskChange] = field(default_factory=list)
 
 
 type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
@@ -103,14 +105,23 @@ type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
 
 
 class EntityWriter:
-    """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04)."""
+    """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
+
+    ``tasks`` defers propagation to tasks (TSK-02).
+    """
 
     def __init__(
-        self, store: EntityStore, *, user: str | None = None, delete_type: DeleteType = DeleteType.SOFT
+        self,
+        store: EntityStore,
+        *,
+        user: str | None = None,
+        delete_type: DeleteType = DeleteType.SOFT,
+        tasks: bool = False,
     ) -> None:
         self._store = store
         self._user = user
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
+        self._tasks = tasks
 
     async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
         """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
@@ -176,7 +187,7 @@ class EntityWriter:
         hard = (self._delete_type if delete_type is DeleteType.DEFAULT else delete_type) is DeleteType.HARD
         for attempt in range(1, ATTEMPTS + 1):
             handler: DeleteHandler = (HardDeleteHandler if hard else SoftDeleteHandler)(
-                self._store, now=self._store.now(), user=self._user, purge=purge
+                self._store, now=self._store.now(), user=self._user, purge=purge, deferral=self._deferral()
             )
             try:
                 return await self._deleted(handler, await candidates(), purge=purge)
@@ -194,7 +205,9 @@ class EntityWriter:
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=purge) for guid in deletion.deleted]
         if deletion.changes or deletion.relationship_changes or deletion.classification_changes:
-            await self._store.write(deletion.changes, deletion.relationship_changes, deletion.classification_changes)
+            await self._store.write(
+                deletion.changes, deletion.relationship_changes, deletion.classification_changes, deletion.task_changes
+            )
         response = EntityMutationResponse()
         for header in headers:
             response.add_entity(EntityOperation.PURGE if purge else EntityOperation.DELETE, header)
@@ -336,7 +349,7 @@ class EntityWriter:
         for guid, new in written.items():
             stored = context.stored.get(guid)
             changes[guid] = EntityChange(new, None if stored is None else stored.version)
-        await self._propagate(relationships, changes, classified)
+        tasks = await self._propagate(relationships, changes, classified)
         relationship_changes = {change.relationship.guid: change for change in relationships.relationship_changes()}
         deleted = await self._drop_owned(
             mapper.dropped,
@@ -346,8 +359,9 @@ class EntityWriter:
             now,
         )
         classified += deleted.classification_changes
+        tasks += deleted.task_changes
         if changes or relationship_changes or classified:
-            await self._store.write(list(changes.values()), list(relationship_changes.values()), classified)
+            await self._store.write(list(changes.values()), list(relationship_changes.values()), classified, tasks)
         return await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
 
     async def _propagate(
@@ -355,10 +369,10 @@ class EntityWriter:
         relationships: RelationshipMapper,
         changes: dict[str, EntityChange],
         classified: list[ClassificationChange],
-    ) -> None:
+    ) -> list[TaskChange]:
         """Propagation by the relationships the request created or removed, and by its new entities' classifications.
 
-        PRO-04, PRO-06, PRO-03; written with the request (PRO-10).
+        PRO-04, PRO-06, PRO-03; written with the request (PRO-10). Answers the tasks recorded (TSK-02).
         """
         pending, removed = relationships.pending()
         instances = {change.classification.guid: change.classification for change in classified}
@@ -368,6 +382,7 @@ class EntityWriter:
             relationships={guid: found.relationship for guid, found in pending.items()},
             removed=removed,
             classifications=instances,
+            deferral=self._deferral(),
         )
         for relationship in relationships.created():
             await propagation.relationship_created(relationship)
@@ -375,9 +390,14 @@ class EntityWriter:
             await propagation.relationship_removed(relationship)
         for instance in instances.values():
             if instance.propagate and instance.entity_guid:
-                await propagation.add(instance, await propagation.impacted(instance.entity_guid))
+                await propagation.propagate(instance, instance.entity_guid)
         for change in propagation.entity_changes(changes):
             changes[change.entity.guid] = change
+        return [TaskChange(task) for task in propagation.tasks()]
+
+    def _deferral(self) -> Deferral | None:
+        """Tasks for propagation, recorded by the writer's user now, when they are enabled (TSK-02, TSK-08)."""
+        return Deferral(self._user, self._store.now(), self._store.new_guid) if self._tasks else None
 
     def _classified(
         self, entity: StoredEntity, classifications: list[AtlasClassification]
@@ -419,7 +439,7 @@ class EntityWriter:
             removed=removed,
         )
         handler: DeleteHandler = (HardDeleteHandler if self._delete_type is DeleteType.HARD else SoftDeleteHandler)(
-            view, now=now, user=self._user
+            view, now=now, user=self._user, deferral=self._deferral()
         )
         found = await view.get_many(dropped)
         deletion = await handler.delete_entities([found[guid] for guid in dropped if guid in found])
@@ -439,6 +459,7 @@ class EntityWriter:
             headers,
             [guid for guid in deletion.updated if guid not in deletion.deleted],
             deletion.classification_changes,
+            deletion.task_changes,
         )
 
     async def _prepare(self, discovery: EntityDiscovery, context: DiscoveryContext, *, partial: bool) -> _Mutation:

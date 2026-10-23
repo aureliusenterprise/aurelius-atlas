@@ -289,8 +289,8 @@ class EntityStore:
         self._notify(task_changes)
 
     def _notify(self, task_changes: Sequence[TaskChange]) -> None:
-        """Wake the task listeners after a write that recorded or changed tasks (DD-080)."""
-        if any(not change.remove for change in task_changes):
+        """Wake the task listeners after a write that recorded new tasks (DD-080)."""
+        if any(change.expected is None and not change.remove for change in task_changes):
             for listener in self.task_listeners:
                 listener()
 

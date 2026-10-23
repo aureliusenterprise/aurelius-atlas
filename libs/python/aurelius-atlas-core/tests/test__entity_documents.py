@@ -17,9 +17,11 @@ from aurelius_atlas_core.entity_documents import (
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
+from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_model.instance import EntityStatus
+from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch
 
@@ -170,6 +172,7 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "count_type",
             "referring",
             "classified",
+            "list_tasks",
             "get_linked",
             "restore_linked",
             "count_linked_type",
@@ -226,6 +229,25 @@ async def test__classified_entities_are_found_by_their_listed_instances(
 
     assert [item.entity.guid for item in await documents.classified(["k"])] == ["a", "b"]
     assert await documents.classified([]) == []
+
+
+@pytest.mark.covers(f"{E}.list_tasks", rules=["TSK-04", "TSK-06"])
+async def test__tasks_are_listed_oldest_first_all_or_open(
+    documents: ElasticsearchEntityDocuments, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sorted, page by page; the open ones are ``PENDING`` or ``IN_PROGRESS`` (the fake sorts by GUID)."""
+    monkeypatch.setattr(entity_documents, "TASK_PAGE", 1)
+    tasks = [
+        StoredTask(guid="a", type="t", created_time=1, status=TaskStatus.IN_PROGRESS),
+        StoredTask(guid="b", type="t", created_time=2),
+        StoredTask(guid="c", type="t", created_time=3, status=TaskStatus.FAILED),
+    ]
+    await documents.write([], [], {LinkedKind.TASK: LinkedWrite([(task, None) for task in tasks])})
+
+    every = [task.guid for task, _ in await documents.list_tasks(open_only=False)]
+    waiting = [task.guid for task, _ in await documents.list_tasks(open_only=True)]
+
+    assert (every, waiting) == (["a", "b", "c"], ["a", "b"])
 
 
 @pytest.mark.covers(

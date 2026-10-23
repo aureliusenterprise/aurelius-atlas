@@ -6,8 +6,9 @@ The propagation of ``DeleteHandlerV1`` (``addTagPropagation``, ``removeTagPropag
 the request's own changes; the caller writes what it changed with the request (DD-077).
 """
 
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from aurelius_atlas_model.instance import AtlasClassification, RelationshipStatus
 from aurelius_atlas_model.typedef import PropagateTags
@@ -16,11 +17,26 @@ from aurelius_atlas_core.entity_store import EntityChange
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
+from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.transaction_view import EntityView
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
+ADD = "CLASSIFICATION_PROPAGATION_ADD"
+DELETE = "CLASSIFICATION_PROPAGATION_DELETE"
+RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE"
+"""``ClassificationPropagateTaskFactory``'s task types (TSK-02)."""
+
 _FROM_END1 = {PropagateTags.ONE_TO_TWO, PropagateTags.BOTH}
 _FROM_END2 = {PropagateTags.TWO_TO_ONE, PropagateTags.BOTH}
+
+
+@dataclass(frozen=True)
+class Deferral:
+    """Propagation deferred to tasks (TSK-02, DD-081): recorded by ``user`` at ``now``, new GUIDs from ``new_id``."""
+
+    user: str | None
+    now: int
+    new_id: Callable[[], str]
 
 
 @dataclass
@@ -40,7 +56,7 @@ class TagPropagation:
     new or changed classification instances.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the request's pending changes, as ``EntityMutationContext``
         self,
         store: EntityView,
         *,
@@ -48,6 +64,7 @@ class TagPropagation:
         relationships: Mapping[str, StoredRelationship] | None = None,
         removed: Collection[str] = (),
         classifications: Mapping[str, StoredClassification] | None = None,
+        deferral: Deferral | None = None,
     ) -> None:
         self._store = store
         self._entities = {guid: _Entity(entity, version) for guid, (entity, version) in (entities or {}).items()}
@@ -55,6 +72,84 @@ class TagPropagation:
         self._removed = set(removed)
         self._classifications = dict(classifications or {})
         self._leaving: dict[str, StoredRelationship] = {}
+        self._deferral = deferral
+        self._tasks: list[StoredTask] = []
+
+    @property
+    def deferred(self) -> bool:
+        """Whether propagation is deferred to tasks (TSK-02)."""
+        return self._deferral is not None
+
+    def tasks(self) -> list[StoredTask]:
+        """The tasks recorded, to write with the request (DD-079)."""
+        return list(self._tasks)
+
+    async def queue(
+        self,
+        task_type: str,
+        guid: str,
+        classification: StoredClassification | None = None,
+        relationship_guid: str | None = None,
+    ) -> StoredTask | None:
+        """``createAndQueueTask``: a task on entity ``guid``, which lists it in ``pendingTasks`` (TSK-02)."""
+        found = await self._found(guid)
+        if self._deferral is None or found is None:
+            return None
+        task = self._task(
+            task_type,
+            {
+                "entityGuid": guid,
+                "classificationVertexId": None if classification is None else classification.guid,
+                "classificationName": None if classification is None else classification.type_name,
+                "relationshipGuid": relationship_guid,
+            },
+        )
+        found.entity = found.entity.model_copy(
+            update={"pending_tasks": [*(found.entity.pending_tasks or []), task.guid]}
+        )
+        found.changed = True
+        return task
+
+    async def unqueue(self, task_guid: str, guid: str) -> None:
+        """``removePendingTaskFromEntity``: entity ``guid`` stops listing the task in ``pendingTasks`` (TSK-05)."""
+        found = await self._found(guid)
+        if found is not None and task_guid in (found.entity.pending_tasks or []):
+            listed = [listed for listed in found.entity.pending_tasks or [] if listed != task_guid]
+            found.entity = found.entity.model_copy(update={"pending_tasks": listed or None})
+            found.changed = True
+
+    def _task(self, task_type: str, parameters: dict[str, Any]) -> StoredTask:
+        deferral = self._deferral
+        if deferral is None:  # pragma: no cover - only queued when deferred
+            raise RuntimeError(task_type)
+        task = StoredTask(
+            guid=deferral.new_id(),
+            type=task_type,
+            created_by=deferral.user,
+            created_time=deferral.now,
+            updated_time=deferral.now,
+            parameters=parameters,
+        )
+        self._tasks.append(task)
+        return task
+
+    async def propagate(self, classification: StoredClassification, guid: str, *, blocks: bool = False) -> None:
+        """Propagate a classification of entity ``guid`` to what it reaches, or record an ``ADD`` task (PRO-03).
+
+        ``blocks`` counts the relationships' blocks, as ``propagate`` turned on does.
+        """
+        if self.deferred:
+            await self.queue(ADD, guid, classification)
+            return
+        reached = await self.impacted(guid, classification=classification.guid if blocks else None)
+        await self.add(classification, reached)
+
+    async def withdraw(self, classification: StoredClassification, guid: str) -> None:
+        """Remove every propagation of a classification of entity ``guid``, or record a ``DELETE`` task (PRO-03)."""
+        if self.deferred:
+            await self.queue(DELETE, guid, classification)
+            return
+        await self.remove_all(classification)
 
     def changed_entities(self) -> list[EntityChange]:
         """The documents of entities whose classification lists propagation changed, to write."""
@@ -211,6 +306,20 @@ class TagPropagation:
         if propagation in _FROM_END2:
             await self._across(relationship, relationship.end2_guid, relationship.end1_guid)
 
+    def defer_update(self, before: StoredRelationship, after: StoredRelationship, given: str) -> StoredRelationship:
+        """A ``RELATIONSHIP_UPDATE`` task for an update; its tag propagation and blocks stay until it runs (TSK-02).
+
+        ``given`` is the update's JSON. Answers the relationship to write, listing the task.
+        """
+        task = self._task(RELATIONSHIP_UPDATE, {"relationshipEdgeId": after.guid, "relationshipObject": given})
+        return after.model_copy(
+            update={
+                "propagate_tags": before.propagate_tags,
+                "blocked_classification_guids": before.blocked_classification_guids,
+                "pending_tasks": [*(after.pending_tasks or []), task.guid],
+            }
+        )
+
     async def relationship_removed(self, relationship: StoredRelationship) -> None:
         """``removeTagPropagation(edge)``: classifications that remove propagations lose what it carried (PRO-06).
 
@@ -293,6 +402,11 @@ class TagPropagation:
         """``addTagPropagation(from, to, edge)``: the source end's classifications to the target and its reach."""
         classifications = await self.propagation_enabled(source)
         if not classifications:
+            return
+        if self.deferred:
+            for classification in classifications:
+                if classification.guid not in self._classifications:  # a new one records its own task
+                    await self.queue(ADD, target, classification, relationship.guid)
             return
         reached = await self.impacted(target, exclude=relationship.guid, include=True)
         for classification in classifications:
