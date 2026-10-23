@@ -4427,6 +4427,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-075. A propagated classification is listed by the entities it reaches
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-076. The entities a classification reached are found through an indexed field
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-077-propagation-runs-within-the-request-until-34b" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-077. Propagation runs within the request until 3.4b
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-078-34-is-split-into-propagation-and-propagation-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-078. 3.4 is split into propagation and propagation tasks
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4506,6 +4550,8 @@
       
         
           
+        
+      
         
       
         
@@ -5274,6 +5320,33 @@
     
   
   3.3b Bulk classifications
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-4-classification-propagation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.4a Classification propagation
 
     
   </span>
@@ -7926,6 +7999,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-075. A propagated classification is listed by the entities it reaches
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-076. The entities a classification reached are found through an indexed field
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-077-propagation-runs-within-the-request-until-34b" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-077. Propagation runs within the request until 3.4b
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-078-34-is-split-into-propagation-and-propagation-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-078. 3.4 is split into propagation and propagation tasks
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8540,6 +8657,30 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-074-bulkheaders-moves-to-35">DD-074</a></td>
 <td><code>bulk/headers</code> moves to 3.5</td>
 <td>3.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches">DD-075</a></td>
+<td>A propagated classification is listed by the entities it reaches</td>
+<td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field">DD-076</a></td>
+<td>The entities a classification reached are found through an indexed field</td>
+<td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-077-propagation-runs-within-the-request-until-34b">DD-077</a></td>
+<td>Propagation runs within the request until 3.4b</td>
+<td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-078-34-is-split-into-propagation-and-propagation-tasks">DD-078</a></td>
+<td>3.4 is split into propagation and propagation tasks</td>
+<td>3.4</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -9847,6 +9988,59 @@ repository (<code>getEntitiesWithTagChanges</code>); without audit events it cou
 second record of classification changes that 3.5 would replace.</p>
 <p><strong>Alternatives.</strong> An index of classification change times now: a record 3.5's audit events supersede.</p>
 <p><strong>Consequences.</strong> Until 3.5 the endpoint answers <code>404</code>. 3.3b ports <code>bulk/setClassifications</code> alone.</p>
+<h3 id="dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches">DD-075. A propagated classification is listed by the entities it reaches<a class="headerlink" href="#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> An entity a classification is propagated to lists the instance's GUID in its
+<code>classificationGuids</code>, after its own, as its entity does; an instance listed by an entity other than its
+<code>entityGuid</code> is propagated to it. Atlas's propagated <code>classifiedAs</code> edge is this listing.</p>
+<p><strong>Reason.</strong> One instance stays one document (DD-070): an update of it reaches every entity listing it at once,
+as in Atlas, and an entity's reads stay gets by id.</p>
+<p><strong>Alternatives.</strong> A copy of the classification per entity reached: every change rewrites every copy.</p>
+<p><strong>Consequences.</strong> A classification propagated far makes many entity documents change in one write (DD-071),
+and writers relating those entities conflict more (DV-30).</p>
+<h3 id="dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field">DD-076. The entities a classification reached are found through an indexed field<a class="headerlink" href="#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> <code>classificationGuids</code> is indexed; the entities listing an instance are found by searching it
+after a refresh, page by page, as DD-057 finds referring entities, and checked against the request's own
+changes.</p>
+<p><strong>Reason.</strong> Removing a propagation needs the entities a classification reached (<code>getPropagatedEdges</code>); a
+search keeps the classification's document small however far it propagates.</p>
+<p><strong>Alternatives.</strong> The instance listing the entities it reached: exact and real time, but as large as its
+reach, and rewritten on every change of it.</p>
+<p><strong>Consequences.</strong> A search may miss an entity a concurrent write has just made list the instance, as DV-27
+says for references.</p>
+<h3 id="dd-077-propagation-runs-within-the-request-until-34b">DD-077. Propagation runs within the request until 3.4b<a class="headerlink" href="#dd-077-propagation-runs-within-the-request-until-34b" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> In 3.4a, the request that causes a propagation computes and writes it, as Atlas does with
+<code>atlas.tasks.enabled=false</code>; 3.4b defers it to tasks, Atlas's default.</p>
+<p><strong>Reason.</strong> The propagation itself is the same either way; deferring it is a second, separable concern with
+its own queue, worker and endpoints.</p>
+<p><strong>Alternatives.</strong> Tasks from the start: one increment far above the size limit.</p>
+<p><strong>Consequences.</strong> Until 3.4b a request that propagates far takes as long as its propagation, and entities have
+no <code>pendingTasks</code>.</p>
+<h3 id="dd-078-34-is-split-into-propagation-and-propagation-tasks">DD-078. 3.4 is split into propagation and propagation tasks<a class="headerlink" href="#dd-078-34-is-split-into-propagation-and-propagation-tasks" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> 3.4a ports propagation and its triggers, run within the request (DD-077); 3.4b ports the
+deferred tasks: the task index and worker, <code>pendingTasks</code>, <code>admin/tasks</code> and the checks of pending tasks.</p>
+<p><strong>Reason.</strong> Together they are above the size an increment may have (ADR 051).</p>
+<p><strong>Alternatives.</strong> One increment.</p>
+<p><strong>Consequences.</strong> 3.4b changes when propagation runs, not what it does.</p>
 
 
 

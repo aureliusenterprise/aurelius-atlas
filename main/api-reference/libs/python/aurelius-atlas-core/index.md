@@ -659,6 +659,9 @@ Entities of the registry's entity types, and the relationships between them, in 
 
 Methods:
 
+- **`classified`** –
+
+  The entities listing any of these classification instances, attached or propagated (DD-075, DD-076).
 - **`find_by_unique_attributes`** –
 
   The `ACTIVE` entity of the type, else of its first sub type, holding every given unique value (ENS-06).
@@ -705,6 +708,14 @@ Attributes:
 ```
 registry = registry
 ```
+
+#### classified
+
+```
+classified(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities listing any of these classification instances, attached or propagated (DD-075, DD-076).
 
 #### find\_by\_unique\_attributes
 
@@ -1161,6 +1172,9 @@ ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PRE
 
 Methods:
 
+- **`classified`** –
+
+  Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
 - **`count_linked_type`** –
 
   Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
@@ -1220,6 +1234,14 @@ aliases: tuple[str, ...]
 ```
 
 The aliases of the entity index, the reservations, the journal and the linked documents' indices.
+
+#### classified
+
+```
+classified(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
 
 #### count\_linked\_type
 
@@ -1357,6 +1379,9 @@ Where `EntityStore` keeps entities, reservations and its journal.
 
 Methods:
 
+- **`classified`** –
+
+  The entities listing any of these classification instances, as of now (DD-076).
 - **`count_linked_type`** –
 
   How many documents of the kind and type exist, in any state, as of now (REL-10, CLS-12).
@@ -1402,6 +1427,14 @@ Methods:
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
+
+#### classified
+
+```
+classified(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities listing any of these classification instances, as of now (DD-076).
 
 #### count\_linked\_type
 

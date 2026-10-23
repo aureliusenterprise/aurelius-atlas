@@ -3668,6 +3668,8 @@
       
         
       
+        
+      
     
     
     
@@ -4384,6 +4386,33 @@
     
   
   3.3b Bulk classifications
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-4-classification-propagation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.4a Classification propagation
 
     
   </span>
@@ -6574,14 +6603,6 @@ Atlas clients expect when it lands).</p>
 <td>2.4</td>
 </tr>
 <tr>
-<td>DV-34</td>
-<td>Classifications</td>
-<td>A classification with <code>propagate</code> true reaches the entities related to its entity; <code>associatedEntityGuid</code> deletes a propagated one</td>
-<td>Until 3.4, nothing is propagated, so a delete naming another entity finds nothing to delete</td>
-<td>Propagation arrives in 3.4</td>
-<td>3.3</td>
-</tr>
-<tr>
 <td>DV-35</td>
 <td>Classifications</td>
 <td>An entity create with a classification of an unknown type fails with a <code>NullPointerException</code>, an internal error</td>
@@ -6596,6 +6617,14 @@ Atlas clients expect when it lands).</p>
 <td>The header is skipped as not found, <code>&lt;no unique name&gt;</code> named; no body answers <code>[]</code></td>
 <td>The failures are unchecked exceptions, not decisions</td>
 <td>3.3</td>
+</tr>
+<tr>
+<td>DV-37</td>
+<td>Classifications</td>
+<td>Propagation runs as deferred tasks by default (<code>atlas.tasks.enabled</code>); entities show <code>pendingTasks</code> meanwhile</td>
+<td>Until 3.4b, propagation runs within the request, as with <code>atlas.tasks.enabled=false</code></td>
+<td>Tasks arrive in 3.4b (DD-077)</td>
+<td>3.4</td>
 </tr>
 </tbody>
 </table>
