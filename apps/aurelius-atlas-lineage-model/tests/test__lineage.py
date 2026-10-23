@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 import pytest
-from aurelius_atlas_lineage_model.app import create_app  # noqa: F401 - the covers target
+from aurelius_atlas_data2model_client.models import RulesDef
 from aurelius_atlas_lineage_model.lineage import (
     LINEAGE_RULES,
     PROCESS_TYPES,
@@ -123,13 +123,21 @@ def test__the_process_family_is_the_legacy_list() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-04"])
+@pytest.mark.covers(
+    "aurelius_atlas_lineage_model.app.create_app",
+    rules=["LM-04", "CL-03", "CL-07", "CL-50"],
+)
 async def test__the_extract_request_carries_the_rows_and_fixed_rules(
     client: httpx.AsyncClient,
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """The flattening's rows plus the fixed rules document, POSTed to data2model/extract."""
+    """The flattening's rows plus the fixed rules document, POSTed to data2model/extract.
+
+    The body is the client library's ``ExtractionRequest`` (CL-07), and the
+    answer the route returns is the library's ``ExtractionResponse`` dumped
+    verbatim (CL-50).
+    """
     upstream.handler = lambda request: (
         upstream.json(200, LINEAGE)
         if request.url.path == "/v2/lineage/e-in"
@@ -142,7 +150,10 @@ async def test__the_extract_request_carries_the_rows_and_fixed_rules(
     extract = upstream.of("/extract")
     assert len(extract) == 1
     sent = json.loads(extract[0].content)
-    assert sent["rules"] == LINEAGE_RULES
+    # The client serialises the rules through the contract model, which fills in
+    # the defaults the 8.2 fixture left out (empty strings). Compared as parsed
+    # rules so the assertion is about semantics, not key presence.
+    assert RulesDef.model_validate(sent["rules"]) == RulesDef.model_validate(LINEAGE_RULES)
     assert [row["id"] for row in sent["data"]] == ["rel-1", "rel-2"]
 
 

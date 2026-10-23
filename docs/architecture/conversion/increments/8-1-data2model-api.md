@@ -6,7 +6,7 @@
 | Author     | Aurelius Atlas maintainers                                                                                                                                   |
 | Date       | 2026-10-23                                                                                                                                                   |
 | ADRs       | 055 (auxiliary APIs are a named data surface), 051 (increments), 049 (traceability), 052 (parity cites the reference; here the reference is Aurelius source) |
-| Design log | DD-108 (foundation), DD-109 (no pandas: pydantic rules, plain rows), DD-043 (audience-scoped roles), DV-15 (native layout)                                   |
+| Design log | DD-108 (foundation), DD-120 (provider/route layout), DD-109 (no pandas: pydantic rules, plain rows), DD-043 (audience-scoped roles), DV-15 (native layout)   |
 
 ## Objective
 
@@ -105,7 +105,9 @@ as data, not as the enum machinery.
 ## Test list
 
 - Unit: `apps/aurelius-atlas-data2model/tests/test__extract.py` (the DTM
-  rules), `test__app.py` (settings/liveness wiring).
+  rules), `test__app.py` (settings/liveness wiring),
+  `test__…_providers_auth.py`/`test__…_providers_telemetry.py`/`test__…_routes.py`
+  (the DD-120 providers and route factories, on the fake issuer).
 - Scenario (parity, read from Aurelius source — ADR 052 applied to the
   Aurelius reference): `scenarios/lineage/extract.scenario.yaml` — the 8.2
   caller's fixed rules with a two-relation lineage payload, the expected

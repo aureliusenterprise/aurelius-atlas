@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 
 import pytest
+from aurelius_atlas_server_client import AtlasClient
 from playwright.async_api import Browser, Response, async_playwright
 
 SESSION = "/api/atlas/admin/session"
@@ -48,3 +49,25 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
     assert await page.title() == "Atlas"
     assert broken == []
     await context.close()
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server_client.client.AdminApi.version",
+    "aurelius_atlas_server_client.client.AdminApi.status",
+    "aurelius_atlas_server_client.client.AdminApi.liveness",
+    "aurelius_atlas_server_client.client.AdminApi.readiness",
+    rules=["ADM-01", "ADM-02", "ADM-03", "ADM-04", "CL-11"],
+)
+async def test__the_admin_answers_come_through_the_client_library(api: AtlasClient) -> None:
+    """The client library reads the container's admin routes over TLS (CL-11, ADM-01..ADM-04).
+
+    The typed twin of the dashboard's session call: the same server, the same
+    dev CA, parsed into the contract models (CL-10) — readiness proves the
+    store is healthy enough to serve, which is what the image's healthcheck asserts.
+    """
+    version = await api.admin.version()
+    assert version.name == "aurelius-atlas"
+    assert version.version
+    assert (await api.admin.status()).status == "ACTIVE"
+    assert await api.admin.liveness() == "Service is live"
+    assert await api.admin.readiness() == "Service is ready to accept requests"

@@ -8,19 +8,23 @@ members = [
     "aurelius-atlas-auth",
     "aurelius-atlas-core",
     "aurelius-atlas-data2model",
+    "aurelius-atlas-data2model-client",
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
+    "aurelius-atlas-lineage-model-client",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
     "aurelius-atlas-sdk",
     "aurelius-atlas-server",
+    "aurelius-atlas-server-client",
     "aurelius-atlas-store-es",
     "aurelius-atlas-trace",
     "aurelius-atlas-typesystem",
     "aurelius-atlas-validate-entity",
+    "aurelius-atlas-validate-entity-client",
     "aurelius-atlas-vulnerability-report",
 ]
 
@@ -228,19 +232,23 @@ dev = [
     { name = "aurelius-atlas-auth" },
     { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-data2model" },
+    { name = "aurelius-atlas-data2model-client" },
     { name = "aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report" },
     { name = "aurelius-atlas-lineage-model" },
+    { name = "aurelius-atlas-lineage-model-client" },
     { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-otel" },
     { name = "aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extra = ["full"] },
     { name = "aurelius-atlas-server" },
+    { name = "aurelius-atlas-server-client" },
     { name = "aurelius-atlas-store-es", extra = ["testing"] },
     { name = "aurelius-atlas-trace" },
     { name = "aurelius-atlas-typesystem" },
     { name = "aurelius-atlas-validate-entity" },
+    { name = "aurelius-atlas-validate-entity-client" },
     { name = "aurelius-atlas-vulnerability-report" },
     { name = "griffe-pydantic" },
     { name = "mike" },
@@ -280,19 +288,23 @@ dev = [
     { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
     { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-data2model", editable = "apps/aurelius-atlas-data2model" },
+    { name = "aurelius-atlas-data2model-client", editable = "libs/python/aurelius-atlas-data2model-client" },
     { name = "aurelius-atlas-example", editable = "libs/python/aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example", editable = "apps/aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
     { name = "aurelius-atlas-lineage-model", editable = "apps/aurelius-atlas-lineage-model" },
+    { name = "aurelius-atlas-lineage-model-client", editable = "libs/python/aurelius-atlas-lineage-model-client" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "aurelius-atlas-parity", editable = "libs/python/aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extras = ["full"], editable = "libs/python/aurelius-atlas-sdk" },
     { name = "aurelius-atlas-server", editable = "apps/aurelius-atlas-server" },
+    { name = "aurelius-atlas-server-client", editable = "libs/python/aurelius-atlas-server-client" },
     { name = "aurelius-atlas-store-es", extras = ["testing"], editable = "libs/python/aurelius-atlas-store-es" },
     { name = "aurelius-atlas-trace", editable = "libs/python/aurelius-atlas-trace" },
     { name = "aurelius-atlas-typesystem", editable = "libs/python/aurelius-atlas-typesystem" },
     { name = "aurelius-atlas-validate-entity", editable = "apps/aurelius-atlas-validate-entity" },
+    { name = "aurelius-atlas-validate-entity-client", editable = "libs/python/aurelius-atlas-validate-entity-client" },
     { name = "aurelius-atlas-vulnerability-report", editable = "reports/aurelius-atlas-vulnerability-report" },
     { name = "griffe-pydantic", specifier = ">=1.3.2" },
     { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=2d4ad799442f4592db8ad53b179bfb33db8c69ac" },
@@ -372,6 +384,7 @@ version = "0.1.0"
 source = { editable = "apps/aurelius-atlas-data2model" }
 dependencies = [
     { name = "aurelius-atlas-auth" },
+    { name = "aurelius-atlas-data2model-client" },
     { name = "aurelius-atlas-otel" },
     { name = "fastapi" },
     { name = "logfire", extra = ["fastapi"] },
@@ -383,12 +396,28 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
+    { name = "aurelius-atlas-data2model-client", editable = "libs/python/aurelius-atlas-data2model-client" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "logfire", extras = ["fastapi"], specifier = ">=5.2.0" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
+]
+
+[[package]]
+name = "aurelius-atlas-data2model-client"
+version = "0.1.0"
+source = { editable = "libs/python/aurelius-atlas-data2model-client" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
 ]
 
 [[package]]
@@ -468,10 +497,14 @@ version = "0.1.0"
 source = { editable = "apps/aurelius-atlas-lineage-model" }
 dependencies = [
     { name = "aurelius-atlas-auth" },
+    { name = "aurelius-atlas-data2model-client" },
+    { name = "aurelius-atlas-lineage-model-client" },
     { name = "aurelius-atlas-otel" },
+    { name = "aurelius-atlas-server-client" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "logfire", extra = ["fastapi"] },
+    { name = "pybreaker" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "uvicorn", extra = ["standard"] },
@@ -480,13 +513,34 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
+    { name = "aurelius-atlas-data2model-client", editable = "libs/python/aurelius-atlas-data2model-client" },
+    { name = "aurelius-atlas-lineage-model-client", editable = "libs/python/aurelius-atlas-lineage-model-client" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
+    { name = "aurelius-atlas-server-client", editable = "libs/python/aurelius-atlas-server-client" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "logfire", extras = ["fastapi"], specifier = ">=5.2.0" },
+    { name = "pybreaker", specifier = ">=1.4.1" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
+]
+
+[[package]]
+name = "aurelius-atlas-lineage-model-client"
+version = "0.1.0"
+source = { editable = "libs/python/aurelius-atlas-lineage-model-client" }
+dependencies = [
+    { name = "aurelius-atlas-server-client" },
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aurelius-atlas-server-client", editable = "libs/python/aurelius-atlas-server-client" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
 ]
 
 [[package]]
@@ -624,6 +678,23 @@ requires-dist = [
 ]
 
 [[package]]
+name = "aurelius-atlas-server-client"
+version = "0.1.0"
+source = { editable = "libs/python/aurelius-atlas-server-client" }
+dependencies = [
+    { name = "aurelius-atlas-model" },
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
+]
+
+[[package]]
 name = "aurelius-atlas-store-es"
 version = "0.6.1"
 source = { editable = "libs/python/aurelius-atlas-store-es" }
@@ -676,6 +747,7 @@ source = { editable = "apps/aurelius-atlas-validate-entity" }
 dependencies = [
     { name = "aurelius-atlas-auth" },
     { name = "aurelius-atlas-otel" },
+    { name = "aurelius-atlas-validate-entity-client" },
     { name = "fastapi" },
     { name = "logfire", extra = ["fastapi"] },
     { name = "pydantic" },
@@ -687,11 +759,27 @@ dependencies = [
 requires-dist = [
     { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
+    { name = "aurelius-atlas-validate-entity-client", editable = "libs/python/aurelius-atlas-validate-entity-client" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "logfire", extras = ["fastapi"], specifier = ">=5.2.0" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
+]
+
+[[package]]
+name = "aurelius-atlas-validate-entity-client"
+version = "0.1.0"
+source = { editable = "libs/python/aurelius-atlas-validate-entity-client" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
 ]
 
 [[package]]

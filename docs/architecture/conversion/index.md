@@ -101,6 +101,8 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 8.1  | data2model API                  | Legacy `/extract` as a FastAPI app: archimate rows in, ar3 model string out, native layout (ADR 055, DV-15)                                          | Aurelius `m4i-data2model`, `m4i-analytics`                                                | planned     |
 | 8.2  | lineage-model API               | Legacy lineage flattening as a FastAPI app: Atlas lineage in, archimate rows out; source stubbed until 5.1 (ADR 055, DV-16)                          | Aurelius `m4i-lineage-model`                                                              | planned     |
 | 8.3  | validate-entity API             | Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-14)                                                             | Aurelius `m4i-validate-entity`                                                            | in progress |
+| 8.4  | API client libraries            | Contract + async client library per Python API (CL-01..50, DD-114/115): models move to the lib, the app imports its own contract                     | Aurelius `libs/atlas/api` (the Angular twin), 8.1-8.3 apps                                | in progress |
+| 8.5  | lineage-model circuit breakers  | Per-upstream circuit breakers on the 8.2 chain: outages open the circuit, the open circuit fast-fails 502 (LM-11..15, DD-117, DV-26)                 | Aurelius `m4i-lineage-model` (bare `requests.post`, no breaker)                           | in progress |
 
 ## After phase 0
 

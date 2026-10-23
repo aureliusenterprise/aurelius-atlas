@@ -6,10 +6,21 @@ live in the root `AGENTS.md`.
 
 ## Layout
 
-- `aurelius_atlas_validate_entity/app.py` — `create_app(settings, auth=None)`: the auth
-  dependency (the shared `aurelius-atlas-auth` lib, DD-108), the `POST /` route (the
-  fixed answer, VE-01), the OTLP export (the shared `aurelius-atlas-otel` lib:
-  `otel-validate-entity`, DD-107/DD-108). `auth` is injectable for tests (DD-112).
+The app follows the workspace's example-app layout (DD-118/DD-119's shape,
+DD-120): providers build collaborators, routes serve requests, `app.py` wires.
+
+- `aurelius_atlas_validate_entity/app.py` — the composition root: `create_app(settings,
+auth=None)` builds the verifier, mounts the routers, and configures the telemetry.
+  `auth` is injectable for tests (DD-112).
+- `aurelius_atlas_validate_entity/globals.py` — `NAME`, `LOGGER`, the healthcheck
+  status (VE-04)
+- `aurelius_atlas_validate_entity/providers/` — `auth.py` (`build_auth`, the shared
+  `aurelius-atlas-auth` verifier mapped from the settings, DD-108) and `telemetry.py`
+  (`ingest_pipeline`/`configure_telemetry` — the app-owned OTLP leg, the shared
+  `aurelius-atlas-otel` lib: `otel-validate-entity`, DD-107/DD-108)
+- `aurelius_atlas_validate_entity/routes/` — `validate.py` (`build_router(auth)`: the
+  gated `POST /` answering the fixed mock, VE-01) and `health.py` (the anonymous
+  `/liveness`)
 - `aurelius_atlas_validate_entity/mock.py` — `MOCK_VALIDATION`: the legacy's `output`
   dict verbatim, as data (VE-02, DV-14, DD-112). The ids, `raw` strings, names and
   verdicts are the webapp governance cards' contract — changing them is a visible

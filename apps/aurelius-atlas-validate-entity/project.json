@@ -4,7 +4,8 @@
         "aurelius-atlas-auth",
         "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
-        "aurelius-atlas-otel"
+        "aurelius-atlas-otel",
+        "aurelius-atlas-validate-entity-client"
     ],
     "name": "aurelius-atlas-validate-entity",
     "projectType": "application",

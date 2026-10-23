@@ -8,6 +8,9 @@ from the Aurelius `m4i-data2model` service
 
 Introduced by increment 8.1. The rules are pydantic models and the extraction is
 plain Python — the port carries no pandas (DD-109) and no `m4i-analytics` (DV-15).
+The code follows the workspace's example-app layout (DD-120): the collaborators
+built by `providers/`, the endpoints in `routes/` (the extract route calls the
+engine directly), and a thin composition root in `app.py`.
 
 ## Endpoints
 

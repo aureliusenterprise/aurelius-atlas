@@ -73,3 +73,21 @@ def test__no_tls_means_plain_http(environment: pytest.MonkeyPatch) -> None:
     """With no certificate configured, tls is None."""
     _ = environment  # The issuer and upstream URLs it sets: the required settings.
     assert LineageModelSettings().tls is None  # pyright: ignore[reportCallIssue]
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.settings.LineageModelSettings.tls", rules=["LM-15"])
+def test__the_breaker_settings_have_the_auth_shape(environment: pytest.MonkeyPatch) -> None:
+    """The upstream breakers default to the auth library's issuer-breaker shape (LM-15, AUX-02)."""
+    _ = environment  # The issuer and upstream URLs it sets: the required settings.
+    settings = LineageModelSettings()  # pyright: ignore[reportCallIssue]
+    assert settings.breaker_fail_max == 5  # the same fail_max as AuthConfig
+    assert settings.breaker_reset_timeout == 60.0  # the same reset_timeout as AuthConfig
+
+    environment.setenv("AURELIUS_ATLAS_LINEAGE_MODEL_BREAKER_FAIL_MAX", "2")
+    environment.setenv("AURELIUS_ATLAS_LINEAGE_MODEL_BREAKER_RESET_TIMEOUT", "1")
+    tuned = LineageModelSettings()  # pyright: ignore[reportCallIssue]
+    assert (tuned.breaker_fail_max, tuned.breaker_reset_timeout) == (2, 1.0)
+
+    environment.setenv("AURELIUS_ATLAS_LINEAGE_MODEL_BREAKER_FAIL_MAX", "0")
+    with pytest.raises(ValidationError, match="breaker_fail_max"):
+        LineageModelSettings()  # pyright: ignore[reportCallIssue]

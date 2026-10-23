@@ -13,14 +13,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
+from aurelius_atlas_data2model_client.models import ExtractionResponse, MetadataEntry
+from aurelius_atlas_data2model_client.types import ELEMENT_TYPE_LAYERS, LAYOUT_NAMES, RELATIONSHIP_SHORTHANDS
+
 from aurelius_atlas_data2model.rules import ElementRule, ExtractionRequest, RelationRule, ViewRule
-from aurelius_atlas_data2model.types import (
-    ELEMENT_TYPE_LAYERS,
-    LAYOUT_NAMES,
-    NODE_HEIGHT,
-    NODE_WIDTH,
-    RELATIONSHIP_SHORTHANDS,
-)
+from aurelius_atlas_data2model.types import NODE_HEIGHT, NODE_WIDTH
 
 MODEL_NAME = "Generated model"
 """The model name the legacy extractor hard-codes (``ArchimateModel('Generated model')``)."""
@@ -347,12 +344,12 @@ def _name_of(rule: ViewRule, row: dict[str, Any] | None) -> str:
     return rule.view_name_prefix + "nan"
 
 
-def extract(request: ExtractionRequest) -> dict[str, Any]:
+def extract(request: ExtractionRequest) -> ExtractionResponse:
     """Run the extraction: the legacy ``extract`` endpoint's body, pandas-free (DTM-01).
 
     :param request: the parsed ``POST /extract`` body
-    :returns: ``{"metadata": [...], "model": "<ar3 JSON string>"}`` — the model is a
-        JSON string inside the JSON body, as the legacy answer is
+    :returns: the ``{metadata, model}`` answer as the client library's model (CL-20) —
+        the model is a JSON string inside the JSON body, as the legacy answer is
     """
     rows = request.data
     elements = {rule.id: rule for rule in request.rules.elements}
@@ -398,7 +395,10 @@ def extract(request: ExtractionRequest) -> dict[str, Any]:
             organizations.append(organization)
 
     model = _ar3_model(nodes, edges, diagrams, organizations)
-    return {"metadata": metadata, "model": json.dumps(model)}
+    return ExtractionResponse(
+        metadata=[MetadataEntry.model_validate(entry) for entry in metadata],
+        model=json.dumps(model),
+    )
 
 
 def _view_groups(

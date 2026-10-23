@@ -1,12 +1,16 @@
 [project]
 dependencies = [
     "aurelius-atlas-auth",
+    "aurelius-atlas-data2model-client",
+    "aurelius-atlas-lineage-model-client",
     "aurelius-atlas-otel",
+    "aurelius-atlas-server-client",
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "logfire[fastapi]>=5.2.0",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.15.0",
+    "pybreaker>=1.4.1",
     "uvicorn[standard]>=0.54.0",
 ]
 description = "The Aurelius Atlas lineage-model API: an entity guid in, the lineage graph's archimate model out."
@@ -28,7 +32,16 @@ required_plugins = ["pytest-asyncio"]
 [tool.uv.sources.aurelius-atlas-auth]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-data2model-client]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-lineage-model-client]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-otel]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-server-client]
 workspace = true
 
 [build-system]

@@ -100,14 +100,18 @@ nav:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-auth: api-reference/libs/python/aurelius-atlas-auth.md
                       - aurelius-atlas-core: api-reference/libs/python/aurelius-atlas-core.md
+                      - aurelius-atlas-data2model-client: api-reference/libs/python/aurelius-atlas-data2model-client.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
+                      - aurelius-atlas-lineage-model-client: api-reference/libs/python/aurelius-atlas-lineage-model-client.md
                       - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
                       - aurelius-atlas-otel: api-reference/libs/python/aurelius-atlas-otel.md
                       - aurelius-atlas-parity: api-reference/libs/python/aurelius-atlas-parity.md
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
+                      - aurelius-atlas-server-client: api-reference/libs/python/aurelius-atlas-server-client.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
                       - aurelius-atlas-trace: api-reference/libs/python/aurelius-atlas-trace.md
                       - aurelius-atlas-typesystem: api-reference/libs/python/aurelius-atlas-typesystem.md
+                      - aurelius-atlas-validate-entity-client: api-reference/libs/python/aurelius-atlas-validate-entity-client.md
                 - Styles:
                       - api-reference/libs/styles/index.md
                       - aurelius-atlas-brand: api-reference/libs/styles/aurelius-atlas-brand.md
@@ -209,6 +213,8 @@ nav:
                       - 8.1 data2model API: architecture/conversion/increments/8-1-data2model-api.md
                       - 8.2 lineage-model API: architecture/conversion/increments/8-2-lineage-model-api.md
                       - 8.3 validate-entity API: architecture/conversion/increments/8-3-validate-entity-api.md
+                      - 8.4 API client libraries: architecture/conversion/increments/8-4-api-client-libraries.md
+                      - 8.5 lineage-model circuit breakers: architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

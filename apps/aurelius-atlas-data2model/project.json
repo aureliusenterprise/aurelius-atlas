@@ -2,6 +2,7 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": [
         "aurelius-atlas-auth",
+        "aurelius-atlas-data2model-client",
         "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-otel"

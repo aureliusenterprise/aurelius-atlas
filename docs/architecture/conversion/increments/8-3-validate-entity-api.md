@@ -1,12 +1,12 @@
 # Increment 8.3 — validate-entity API
 
-| Field      | Value                                                                                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Status     | accepted                                                                                                                                                     |
-| Author     | Aurelius Atlas maintainers                                                                                                                                   |
-| Date       | 2026-10-23                                                                                                                                                   |
-| ADRs       | 055 (auxiliary APIs are a named data surface), 051 (increments), 049 (traceability), 052 (parity cites the reference; here the reference is Aurelius source) |
-| Design log | DD-108 (foundation), DD-110 (test env), DD-112 (the mock body as module data, the injectable verifier), DV-14 (the app ships as the legacy mock)             |
+| Field      | Value                                                                                                                                                                            |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status     | accepted                                                                                                                                                                         |
+| Author     | Aurelius Atlas maintainers                                                                                                                                                       |
+| Date       | 2026-10-23                                                                                                                                                                       |
+| ADRs       | 055 (auxiliary APIs are a named data surface), 051 (increments), 049 (traceability), 052 (parity cites the reference; here the reference is Aurelius source)                     |
+| Design log | DD-108 (foundation), DD-120 (provider/route layout), DD-110 (test env), DD-112 (the mock body as module data, the injectable verifier), DV-14 (the app ships as the legacy mock) |
 
 ## Objective
 
@@ -105,6 +105,9 @@ parity scenario a whole-body comparison with no volatile fields.
 - Unit: `apps/aurelius-atlas-validate-entity/tests/test__app.py` (VE-01/02/
   03/04 wiring on the fake issuer, the mock document verbatim),
   `test__aurelius_atlas_validate_entity_settings.py` (VE-05),
+  `test__aurelius_atlas_validate_entity_providers_auth.py`/
+  `test__…_providers_telemetry.py`/`test__…_routes.py` (the DD-120 providers and
+  route factories, on the fake issuer),
   `test__…___main__.py`.
 - Scenario (parity, read from Aurelius source): `scenarios/validation/
 mock.scenario.yaml` — the caller's entity payload, `POST /` → the full

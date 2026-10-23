@@ -10,6 +10,14 @@ Introduced by increment 8.2. The app is a proxy with a flattener: it calls the
 Atlas `v2/lineage` feed and the 8.1 data2model API, forwarding the caller's
 bearer token to both, and answers the extraction verbatim
 ([spec](../../docs/architecture/conversion/increments/8-2-lineage-model-api.md)).
+Each upstream is guarded by its own circuit breaker (increment 8.5, DV-26):
+repeated outages open the circuit and the 502 arrives fast, without calling the
+upstream, until a half-open trial closes it again
+([spec](../../docs/architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md)).
+The code follows the workspace's example-app layout (DD-118, DD-119): the
+collaborators built by `providers/`, the endpoints in `routes/` (the lineage
+route composes the fetch → flatten → extract flow), and a thin composition
+root in `app.py`.
 
 ## Endpoints
 
@@ -17,6 +25,7 @@ bearer token to both, and answers the extraction verbatim
 | --------------- | --------------- | -------------------------------------------------------------------------- |
 | `GET /`         | Keycloak bearer | the data2model answer, verbatim (`{metadata: […], model: "<ar3 string>"}`) |
 | `GET /`         | Keycloak bearer | `204` when the guid has no lineage; `400`/`502` on upstream failures       |
+| `GET /`         | Keycloak bearer | `502` fast, without the upstream call, while a circuit is open (8.5)       |
 | `GET /liveness` | –               | `204` while the app runs (the container healthcheck)                       |
 
 ## Run

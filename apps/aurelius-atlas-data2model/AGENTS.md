@@ -6,9 +6,22 @@ live in the root `AGENTS.md`.
 
 ## Layout
 
-- `aurelius_atlas_data2model/app.py` — `create_app`: the auth dependency (the shared
-  `aurelius-atlas-auth` lib, DD-108), the `/extract` route, the 400 handler, the OTLP
-  export (the shared `aurelius-atlas-otel` lib: `otel-data2model`, DD-107/DD-108)
+The app follows the workspace's example-app layout (DD-118/DD-119's shape,
+DD-120): providers build collaborators, routes serve requests, `app.py` wires.
+
+- `aurelius_atlas_data2model/app.py` — the composition root: `create_app(settings,
+auth=None)` builds the verifier, mounts the routers and the 400 handler (the app's
+  own contract, kept at the root), and configures the telemetry. `auth` is injectable
+  for tests (DD-111's seam).
+- `aurelius_atlas_data2model/globals.py` — `NAME`, `LOGGER`, the status and error-code
+  constants (DTM-01, DTM-11)
+- `aurelius_atlas_data2model/providers/` — `auth.py` (`build_auth`, the shared
+  `aurelius-atlas-auth` verifier mapped from the settings, DD-108) and `telemetry.py`
+  (`ingest_pipeline`/`configure_telemetry` — the app-owned OTLP leg, the shared
+  `aurelius-atlas-otel` lib: `otel-data2model`, DD-107/DD-108)
+- `aurelius_atlas_data2model/routes/` — `extract.py` (`build_router(auth)`: the gated
+  `POST /extract`, the route calling the engine and answering its bytes, DTM-01) and
+  `health.py` (the anonymous `/liveness`)
 - `aurelius_atlas_data2model/settings.py` — `Data2ModelSettings` (`AURELIUS_ATLAS_DATA2MODEL_` prefix)
 - `aurelius_atlas_data2model/rules.py` — the request contract as pydantic models
   (`ExtractionRequest`…; DTM-11/DTM-12, DD-109: no pandas, `data` is plain row maps)

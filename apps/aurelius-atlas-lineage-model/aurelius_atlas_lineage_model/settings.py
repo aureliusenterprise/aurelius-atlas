@@ -12,6 +12,12 @@ ENV_PREFIX = "AURELIUS_ATLAS_LINEAGE_MODEL_"
 DEFAULT_PORT = 21002
 """The app's port: the second auxiliary API, above data2model's 21001."""
 
+DEFAULT_BREAKER_FAIL_MAX = 5
+"""Outages that open an upstream circuit; the auth library's issuer-breaker default (AUX-02)."""
+
+DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS = 60.0
+"""Seconds an open circuit stays open before its half-open trial; the auth library's default."""
+
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels both logfire and uvicorn know."""
 
@@ -59,6 +65,13 @@ class LineageModelSettings(BaseSettings):
 
     data2model_url: HttpUrl
     """The data2model API (8.1) the flattened rows and fixed rules are POSTed to (LM-04)."""
+
+    breaker_fail_max: int = Field(default=DEFAULT_BREAKER_FAIL_MAX, ge=1)
+    """The upstream outages that open a circuit (LM-15, LM-13): 5xx answers and transport
+    failures count, 4xx answers are facts (the auth library's JWKS breaker shape, AUX-02)."""
+
+    breaker_reset_timeout: float = Field(default=DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS, gt=0)
+    """Seconds an open circuit stays open before its half-open trial call (LM-14, LM-15)."""
 
     otel_token_url: HttpUrl | None = None
     """The issuer's token endpoint for the OTLP ingest credential (DD-107, DD-108): with

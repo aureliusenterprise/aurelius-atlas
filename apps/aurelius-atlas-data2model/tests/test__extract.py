@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from aurelius_atlas_data2model.extract import extract
 from aurelius_atlas_data2model.rules import ExtractionRequest
+from aurelius_atlas_data2model_client.models import ExtractionResponse
 
 # The smallest rules that produce a node: one element rule over an `eid` column.
 _ONE_ELEMENT: dict[str, Any] = {
@@ -22,14 +23,14 @@ _ONE_ELEMENT: dict[str, Any] = {
 }
 
 
-def _request(data: list[dict[str, Any]], rules: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Run an extraction: data rows plus rules, the answer as a dict."""
+def _request(data: list[dict[str, Any]], rules: dict[str, Any] | None = None) -> ExtractionResponse:
+    """Run an extraction: data rows plus rules, the answer as the contract model."""
     return extract(ExtractionRequest.model_validate({"data": data, "rules": rules or _ONE_ELEMENT}))
 
 
-def _model(answer: dict[str, Any]) -> dict[str, Any]:
+def _model(answer: ExtractionResponse) -> dict[str, Any]:
     """The ar3 model the answer carries, parsed from its JSON string (DTM-01)."""
-    return json.loads(answer["model"])
+    return json.loads(answer.model)
 
 
 def _identifiers(ar3: dict[str, Any]) -> list[str]:
@@ -111,7 +112,7 @@ def test__metadata_names_the_source_row_per_rule() -> None:
         "views": [],
     }
     answer = _request([{"eid": "a", "ename": "A", "etype": "kafka_topic"}], rules)
-    assert answer["metadata"] == [
+    assert [entry.model_dump() for entry in answer.metadata] == [
         {
             "id": "p:a",
             "data": {
@@ -147,7 +148,7 @@ def test__metadata_lists_elements_then_relations_then_views() -> None:
         ],
     }
     answer = _request([{"eid": "a", "eid2": "b", "rid": "e1"}], rules)
-    ids = [entry["data"]["m4i_original_id"] for entry in answer["metadata"]]
+    ids = [entry.data["m4i_original_id"] for entry in answer.metadata]
     assert ids == ["a", "b", "e1", "view"]
 
 
@@ -201,7 +202,7 @@ def test__every_edge_endpoint_is_a_model_node() -> None:
     targets = {r["@target"] for r in relationships}
     assert sources <= node_ids
     assert targets <= node_ids
-    metadata_ids = [entry["data"]["m4i_original_id"] for entry in answer["metadata"]]
+    metadata_ids = [entry.data["m4i_original_id"] for entry in answer.metadata]
     assert "e1" in metadata_ids
     assert "e2" in metadata_ids
 
@@ -258,7 +259,7 @@ def test__a_view_with_an_unknown_layout_is_ignored_entirely() -> None:
     answer = _request([{"eid": "a", "ename": "A"}], _UNKNOWN_VIEW)
     ar3 = _model(answer)
     assert ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"] == []
-    assert [e["data"]["m4i_original_id"] for e in answer["metadata"]] == ["a"]
+    assert [e.data["m4i_original_id"] for e in answer.metadata] == ["a"]
 
 
 @pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06"])

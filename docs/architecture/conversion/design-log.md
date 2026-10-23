@@ -3802,3 +3802,399 @@ listeners, audience-gated, and the legacy leg is unchanged. The
 `OTEL_INGEST_TOKEN_URL`/`OTEL_INGEST_CA_FILE` quartet retires from the slice
 composes; the pullers' `restart: on-failure:15` (DD-106, issuer-shaped)
 stays. `dev/observability` remains slice-agnostic.
+
+### DD-114 — The wire contract lives in a client library; the app imports it
+
+- **Status:** Accepted
+- **Increment:** 8.4
+- **Date:** 2026-10-23
+
+**Decision.** Each Python HTTP API gets an accompanying library under
+`libs/python/` that owns its wire contract — the pydantic request/response models —
+and an API client for it: `aurelius-atlas-server-client`,
+`aurelius-atlas-data2model-client`, `aurelius-atlas-lineage-model-client`,
+`aurelius-atlas-validate-entity-client`. The models **move** out of the app that
+served them (`ExtractionRequest` and the rule family out of `data2model.rules`;
+`LineageInfo`/`EntityHeaderLite`/`LineageRelation`/`Direction` out of
+`lineage_model.lineage`) and the response models the apps never had
+(`ExtractionResponse`, `ValidationResponse`, the admin shapes) are written there.
+The app then imports its own contract from the library (CL-07), and a consumer and
+the server validate against one class. The app keeps its logic — `data2model` keeps
+`types.py`/`extract.py`, `lineage-model` keeps `flatten_relations`/`LINEAGE_RULES`/
+`UpstreamError` — only the _contract_ relocates.
+
+**Reason.** Before 8.4 the contract was scattered and half-absent: the server answers
+`.to_json()` dicts with no response models, `data2model` answers an untyped
+`dict[str, Any]`, `validate-entity` answers a `dict` constant, and there is no Python
+client at all (`aurelius-atlas-sdk` is utility code; the only outbound calls are
+ad-hoc `httpx`). One home per contract removes the drift the Angular data-access lib
+already fights (its DTOs are hand-mirrored from `aurelius_atlas_model`), and gives
+every API a typed caller for free — `lineage-model` calls `data2model` and Atlas
+through clients, so the 8.2 chain's payload validates as the 8.1 server's body
+(CL-21). It is the pattern the workspace already runs for the server's _domain_
+models (`aurelius-atlas-model`, DD-002/DD-020: models with no I/O, imported by every
+layer); 8.4 extends it to the _REST_ contract and the client.
+
+**Alternatives.** (a) Keep models in-app, have the library mirror them (refused —
+two copies drift, the exact failure the Angular side lives with). (b) One
+consolidated `aurelius-atlas-client` for all four APIs (refused — the removable-slice
+and per-project `AGENTS.md` convention wants a consumer to depend on only the API it
+calls; a shared lib would tie the aux APIs and the server together). (c) Generate the
+clients from the OpenAPI schema (deferred — hand-written contracts are reviewable and
+parity-guarded (ADR 052); a generator is a tooling increment of its own).
+
+**Consequences.** The four libraries join the uv workspace and, being Atlas projects
+under ADR 049, every public function needs a `covers`-named test (CL ids, this
+increment's spec). `data2model.rules` becomes a thin re-export of the client lib's
+family, so the app's DTM docstrings and the 8.1 tests keep citing the same names. The
+Angular data-access lib stays hand-mirrored (a Python→TypeScript contract generator is
+out of scope). The client home is per-API, so increment 5.1 adds `AtlasClient.get_lineage`
+and 2.x–6.x add the entity/search routes to the _server_ client as they ship.
+
+### DD-115 — Clients are async httpx with an injectable transport, and read no env
+
+- **Status:** Accepted (the construction sentence — base URL plus TLS/timeout/transport
+  overrides — is superseded by DD-116: the `httpx.AsyncClient` is provided externally)
+- **Increment:** 8.4
+- **Date:** 2026-10-23
+
+**Decision.** Each client wraps an `httpx.AsyncClient` (not a sync `Client`), built
+from a base URL, a **token source** (a callable yielding the bearer token), and
+optional `verify`/`timeout`/`transport` overrides. The transport is injectable so a
+test answers it with a `MockTransport` and no socket opens — the DD-111 seam, made
+async. A non-2xx answer raises the library's `*ClientError` (status + parsed
+`{errorCode, errorMessage}`); an unreachable upstream propagates as `httpx`'s own
+`RequestError` — mapping a transport failure to an HTTP status stays the **app's**
+job (5.1's/LM-07's DV-22), not the client's (CL-04/CL-05). A client library reads no
+environment variables; apps pass their settings' values (the libs-python rule, as
+`aurelius-atlas-auth` and `aurelius-atlas-otel`).
+
+**Reason.** Async is the workspace's outbound direction: the parity harness injects
+an `httpx.AsyncClient`, FastAPI routes are `async def`, and the 8.2 chain (fetch
+lineage, then extract) is two awaits that a sync client serialises. The
+`httpx.Client` the app used (8.2's `_http`) was the odd sync holdout. The token
+_source_ is a callable, not a stored token, so 8.2's browser-token forwarding
+(LM-04 — forward the caller's raw token to both upstreams) is one source, not a
+special case, and the same client serves a long-lived service identity. Keeping
+transport-failure→status mapping in the app is DD-111/LM-07's existing split (the
+client raises, the route answers 502): a shared client that invents a status would
+steal that decision from the specs that own it.
+
+**Alternatives.** (a) Sync `httpx.Client` (refused — the parity harness and async
+routes are async; a sync client forces `run_in_threadpool` in every caller).
+(b) Both a sync and an async client per API (refused — doubles the public surface
+ADR 049 must name, for no in-workspace caller that is sync). (c) The client maps
+`RequestError` to a 502 (refused — DV-22's mapping is LM-07's rule, app-scope; a
+library that answers HTTP codes it never received would drift from the spec).
+
+**Consequences.** `lineage-model`'s routes become `async def` and its
+`create_app(settings, auth=None, atlas=None, d2m=None)` injects the two clients
+(the `http=` seam becomes typed clients, DD-111). The 8.2 unit suite's
+`FakeUpstream.client()` returns an `AsyncClient`. The clients are usable by the
+dashboards' e2e and future 5.1 wiring unchanged. (The sentence moving
+`UPSTREAM_TIMEOUT_SECONDS` into the client default is superseded by DD-116 —
+the timeout lives on the externally built httpx client, which the app sets
+from settings.)
+
+### DD-116 — The client's `httpx.AsyncClient` is provided externally
+
+- **Status:** Accepted
+- **Increment:** 8.4
+- **Date:** 2026-10-23
+
+**Decision.** Each client is constructed from an externally built
+`httpx.AsyncClient` and a token source — `Client(http, token)` — replacing
+DD-115's base-URL-plus-overrides construction (`Client(base_url, token, *,
+verify, timeout, transport, http)`). The app builds the httpx client from its
+own settings (TLS material, timeout) and passes it in. The client only borrows
+the pool: it exposes **no close of its own** — no `aclose`, no context manager —
+closing belongs to whoever built the httpx client, and `with_token` shares the
+pool (`type(self)(self._http, token)`, no base-URL round-trip). The client's
+request paths are **relative to the httpx client's base URL** (httpx appends
+them), so the caller's URL works as given — pydantic's `HttpUrl` renders with a
+trailing slash, and the app no longer trims it; the URL-shape expectation lives
+in the client, where the route paths live. Tests pass an `AsyncClient` on the
+recorder's `MockTransport` and no socket opens — CL-02's injection moves from
+the transport to the whole client. The rest of DD-115 stands: async, token
+source, no env, `*ClientError` on non-2xx, `httpx` errors propagating.
+
+**Reason.** The six-parameter constructor duplicated what `httpx.AsyncClient`
+already configures — `base_url`, `verify`, `timeout`, `transport` are its
+constructor's arguments, copied through — and the copy forced an ownership
+flag (`_owns_http`), a "close only what you built" rule, and a base-URL
+round-trip in `with_token`. One dependency, injected, is the workspace's own
+convention everywhere else (`aurelius-atlas-auth` and `aurelius-atlas-otel`
+take an injectable `http`), and it makes the seam strictly wider: a caller can
+pass a client with custom event hooks, proxies, limits, or auth, none of which
+the pass-through constructor could express. The client library stays I/O-light:
+it owns the paths, the bearer, the error mapping, and the models — the
+transport stack is httpx's, configured by the app that owns its TLS and
+settings.
+
+**Alternatives.** (a) Keep the pass-through constructor (refused — six
+parameters, an ownership flag, and a base-URL round-trip to express one
+dependency; every setting it copies has an httpx-native way to be set). (b) An
+optional `http` with a self-built default (refused — keeps both lifecycle
+stories alive, the exact complexity being removed; an app that has settings
+can build an `AsyncClient` in one line). (c) Keep `base_url` positional for
+ergonomics (refused — the httpx client already carries the base URL; a second
+copy can disagree with the first). (d) The client delegates `aclose`/context-
+manager to the wrapped pool (refused — a borrower closing a pool it did not
+build is the double-close bug in waiting; with one owner there is one close,
+and the client keeps zero lifecycle surface). (e) The client rewrites the
+pool's `base_url` (refused — mutating an injected dependency; the same effect
+without side effects is relative request paths, httpx's own join semantics).
+
+**Consequences.** The four clients take `(http, token)` and expose no close;
+the `with_token` tests simplify with them (the closed-pool flag fixture is
+just `http.aclose()`, the builder's). The `lineage-model` app builds the two
+`httpx.AsyncClient`s in `create_app` when it builds the clients (CA file,
+timeout — `UPSTREAM_TIMEOUT_SECONDS` stays the app's constant, DD-111; the
+settings' URL passes through untrimmed), keeps them, and closes exactly those
+pools in the app lifespan — an injected client's pool stays its builder's.
+The app tests' fixtures build the httpx clients on the fake upstream's
+transport — one transport per upstream, as before. Spec rules CL-01/CL-02 are
+reworded in place (this increment is unmerged; the rule ids predate any
+release).
+
+**Addendum — the empty token (found by the server e2e).** The e2e suite drives
+the containers through the clients, and the server's admin routes — open until
+6.1 — are the first calls made with an empty token source (the app builds
+`AtlasClient(http, "")`, and the e2e fixture has no user token to forward).
+`f"Bearer {value}"` then sends the header value "Bearer " — with a trailing
+space — which h11 rejects as an
+illegal header value: over the recorders of the unit suites the bug was
+invisible, since `MockTransport` does not validate headers. `_bearer` now sends
+no authorization header at all for an empty token — the unauthenticated call,
+which is what an empty source means (CL-03 reworded in place, unmerged);
+auth-gated routes answer it 401/403 as any anonymous call, and 8.2's forwarding
+is unchanged — a forwarded browser token is never empty.
+
+### DD-117 — The lineage-model's upstream breakers live in the app, on pybreaker's `calling()` seam
+
+- **Status:** Accepted
+- **Increment:** 8.5
+- **Date:** 2026-10-23
+
+**Decision.** The 8.2 app guards each upstream with its own `pybreaker`
+`CircuitBreaker` (the workspace's existing breaker — `aurelius-atlas-auth`
+guards the JWKS fetch with one, AUX-02): one for the Atlas `v2/lineage` feed,
+one for the data2model `/extract`, built in `create_app` from
+`breaker_fail_max`/`breaker_reset_timeout` (LM-15) and grouped with their
+clients in the app-private `_Chain`. Each guarded call uses pybreaker's
+documented **context-manager form** — `with breaker.calling(): await
+client…` — and maps the open circuit's `CircuitBreakerError` to the 502 of
+LM-12 at the call site. The `exclude` predicate is the documented callable
+form: an upstream 4xx (the `*ClientError.status_code` of CL-04) is a fact, not
+an outage (LM-13); a 5xx and a transport failure (CL-05) count.
+
+**Reason.** A dead upstream turns every request into a full timeout on the
+app's pool (DD-111's `UPSTREAM_TIMEOUT_SECONDS`), for every caller, forever;
+LM-07's honest 502 does not protect the pool. The breaker belongs to the app
+for the same reason the OTLP pipeline does (DD-108): it is the caller's
+resilience policy, and the client libraries stay transport-only by DD-116 —
+putting a breaker in `AtlasClient` would force a policy on every caller, and
+a caller that _wants_ the timeout (the e2e suites, the 8.2 e2e chain's first
+call) could not get it. One breaker per upstream, not one for the chain: the
+204 of LM-05 must keep flowing past a dead data2model, and the extract must
+keep serving the guids the feed can answer (LM-11).
+
+**The seam.** pybreaker's async support is tornado-only (`call_async` is
+built on `tornado.gen` and raises `NameError` on this Python — verified), and
+the decorator form (`@breaker`) cannot express a per-request token-bound call.
+The context manager is the documented third form: `calling()` drives the
+generator through `call()`, so the generator opens the call (raising before it
+when the circuit is open), the body awaits inside, and its outcome counts.
+That nesting is the whole guard — one `with`, one `except CircuitBreakerError`
+per call. The earlier form of this decision wrapped it in a `_guarded(breaker,
+thunk, message)` helper with `functools.partial` thunks; that is more
+indirection than the library needs, and `calling()` at the call site reads as
+the docs read (LM-11). The breaker state is pybreaker's own — the app never
+inspects it — so the half-open transition tests drive `half_open()` (the
+documented management API) rather than sleeping through the reset timeout.
+
+**Alternatives.** (a) A breaker in each client library (refused — DD-116's
+libs are transports with models; a policy there is a policy for everyone, and
+the LM/CL rules of 8.4 state what a client owns: paths, bearer, errors,
+models). (b) One breaker for the chain (refused — couples the two upstreams'
+fates; LM-11 counts them apart). (c) Count every 4xx as an outage (refused —
+LM-05's 404 is the guid's, not the upstream's health; the auth library
+excludes the issuer's 4xx for the same reason, AUX-02). (d) `aiocache`-style
+caching of the 204 (refused — 8.2's scope note: no cache). (e) The
+`_guarded(thunk)` helper (superseded by this entry's first revision — the
+context manager at the call site is the documented, shallower form).
+
+**Consequences.** `app.state.chain` carries the two clients and their two
+breakers (the old per-upstream `app.state.atlas`/`.d2m` stay reachable through
+it); the route function keeps its shape and calls the chain, which is one
+guarded call per upstream. The chain's logic moves out of `create_app` into
+the module-level `_run_chain` (the route was pushing the factory past ruff's
+C901/PLR0915 — the same extraction DD-116's `_build_upstreams` made). The
+e2e chain never opens a circuit (healthy upstreams), so the open path is
+proven at unit level; the listener logs each state change (the AUX-02
+pattern), and a breaker metric leg rides with the otel increments, not here.
+
+### DD-118 — The lineage-model app follows the example app's provider/route layout
+
+**Date.** 2026-10-23
+**Status.** Accepted (the `chain.py`/`LineageChain` section superseded by DD-119)
+**Context.** After 8.5 the app was one 380-line `app.py`: the composition
+root, the chain (`_Chain`), the breaker factories, the httpx/auth/telemetry
+factories, the route, and the three error handlers in one module, with
+private helpers (`_build_upstreams`, `_run_chain`, `_atlas_error`) reaching
+across concerns. Every read of a request path jumped four layers down the
+file. The FastAPI example app (`aurelius-atlas-fastapi-example`) shows the
+workspace's structure for this shape: `globals.py` (name, logger,
+constants), `providers/` (one factory per collaborator, settings in and
+object out), `routes/` (APIRouter modules), and a thin `create_app` that
+composes them. ADR 049's rule that every public function is named by a test
+is what proves the split honest: each factory's tests run at its own seam.
+**Decision.** The app is split along those lines, with two additions the
+example has no need for:
+
+- `globals.py` — `NAME`, `LOGGER`, the status codes, the fast-fail messages,
+  the Atlas error code.
+- `errors.py` — `UpstreamError` and `atlas_error` (the body the handlers
+  share); `lineage.py` re-exports the class so its import path stays.
+- `chain.py` — `LineageChain`, the public use case (`run`): fetch, flatten,
+  extract, each guarded call translating the open circuit (LM-12) and the
+  client errors (LM-05/LM-07) into `UpstreamError`; the empty graph answers
+  `None` (the route's 204). This is DD-117's `_Chain` + `_run_chain`,
+  merged and given its own module: the chain is the app's one concern, and
+  the pair only existed to dodge `create_app`'s complexity limits.
+- `providers/` — `auth.py` (the verifier, the library's `http` seam open),
+  `upstreams.py` (`upstream_http`, `atlas_breaker`/`d2m_breaker`,
+  `is_upstream_fact`, `build_chain` returning the chain and the pools the
+  app owns — DD-116), `telemetry.py` (`ingest_pipeline`,
+  `configure_telemetry`).
+- `routes/` — `lineage.py` (`build_router(auth)`: the gated `GET /`, the
+  chain read from `app.state`), `health.py` (the anonymous liveness).
+- `app.py` — the composition root and nothing else: build, mount, wire the
+  exception handlers (the mapping is the app's own contract, LM-05/LM-07/
+  LM-12, so it stays at the root), telemetry.
+
+The injectable seams are unchanged (`create_app(settings, auth, atlas,
+d2m)`, DD-111), so the e2e chain and every 8.2/8.5 test ride on.
+**Reason.** Separation of concerns the file had lost: a reader of
+`chain.py` sees the use case, a reader of `providers/upstreams.py` sees the
+resilience policy, `app.py` says only which collaborators exist. Dependency
+injection, not service-locator: the factories take the settings and return
+objects, `create_app` wires them — no module reads the environment, and the
+tests replace collaborators by argument, not by monkeypatch (the pool
+factory is patched only by the two DD-116 pool-ownership tests).
+**Alternatives.** (a) Keep the single module — rejected: the nesting the
+user asked twice to remove is the layout itself, and C901 was already
+shaped by it (DD-116, DD-117's extractions). (b) FastAPI `Depends` factories
+like the example's `providers/settings.py` — rejected for this app: its
+collaborators are per-app singletons on `app.state` built once at
+composition, not per-request dependencies, and `Depends` factories read the
+environment (`get_settings`), which DD-111's injectable-settings seam
+forbids. (c) The chain as a provider — rejected: it is the app's use case,
+not one of its collaborators; `build_chain` composes it from the two
+providers.
+**Consequences.** `LineageChain` is public (ADR 049: named by
+`test__aurelius_atlas_lineage_model_chain.py`), and each provider is named
+by a test of its own; the trace inventory of the package grows, its gaps do
+not. The route is a thin adapter: chain answer → verbatim
+JSON, `None` → 204. `app.state` keeps the same shape (`chain`,
+`atlas_breaker`, `d2m_breaker`), so 8.5's breaker tests are unchanged. The example app stays
+the structural reference for the 8.x apps, not a wire contract (ADR 055).
+
+### DD-119 — The lineage flow lives in the route; the chain class is dissolved
+
+**Date.** 2026-10-23
+**Status.** accepted
+**Context.** DD-118 gave the app's use case its own module and class:
+`chain.py`'s `LineageChain.run` did fetch → flatten → extract, and the route
+called it and mapped nothing. Review found that an extra layer: the example
+app — the layout DD-118 adopted — has no use-case class. Its routes _are_ the
+use cases, composed from provider functions (`find_all` opens a session and
+builds the query; the SSE route drives the broadcaster). A class with one
+method, called from exactly one route, hides the flow's shape (the 204 path,
+the token forwarding, where each guard sits) behind a method name —
+indirection, not separation.
+**Decision.** Dissolve the class, keep DD-118's layout:
+
+- `chain.py` and `LineageChain` are deleted. `routes/lineage.py` composes the
+  flow directly — fetch, flatten, extract, answer verbatim — with the two
+  guarded calls as private module helpers (`_fetch`, `_extract`): each wraps
+  one client call in pybreaker's `calling()` seam (LM-11, DD-117 — the call
+  site is the route, so the seam sits at the route) and translates the open
+  circuit (LM-12), the lineage 404/400 and the extract failure into the
+  `UpstreamError` of the status to answer. The empty graph answers 204 in
+  place (LM-05/LM-06).
+- `providers/upstreams.py` builds data, not behaviour: `build_upstreams`
+  returns the two clients and the pools the app owns (DD-116);
+  `atlas_breaker`/`d2m_breaker` stay factories.
+- `create_app` puts `atlas`, `d2m`, `atlas_breaker`, `d2m_breaker` on
+  `app.state` — the breaker names 8.5's rules and tests use are unchanged;
+  LM-11's "exposed on `app.state`" stands.
+
+The injectable seam, the handlers, and the wire behaviour are untouched.
+**Reason.** The route is where the app's one request path is readable in one
+function, in the order LM-01 states it; the providers stay the factories that
+own _how_ a collaborator is built. DD-118's chain class solved the file-size
+problem of the old `app.py`, which the provider/route split had already
+solved — after DD-118 it solved nothing.
+**Alternatives.** (a) Keep `LineageChain` — rejected: one-method class, one
+caller; the user's read of the layout is the review. (b) Move `_fetch`/
+`_extract` into `providers/upstreams.py` — rejected: guarding a call is the
+flow's concern; the providers build collaborators, they do not serve
+requests. (c) `LineageChain` as a plain dataclass (four fields, no methods) —
+rejected: it would ride on `app.state` as one extra hop to four names.
+**Consequences.** DD-118's layout stands; its `chain.py` section is
+superseded by this entry. `app.state` gains `atlas`/`d2m` and loses `chain`.
+The chain-module test file is deleted — every fact it proved (verbatim
+answer, forwarding, 204s, failure mapping, open-circuit fast-fail) is
+proven at the app seam by `test__app.py`/`test__lineage.py` (LM-01..LM-07,
+LM-12), and the factories by `test__…_providers_upstreams.py`. The e2e chain
+is unchanged.
+
+### DD-120 — data2model and validate-entity follow the example app's provider/route layout
+
+**Context.** DD-118 and DD-119 settled the lineage-model app's shape: the
+collaborators in `providers/`, the endpoints in `routes/` with the route
+composing its own flow, a thin composition root in `app.py`. The two 8.x apps
+built on the same foundation (DD-108) before that layout existed never
+followed: both `aurelius-atlas-data2model/app.py` and
+`aurelius-atlas-validate-entity/app.py` still define their routes inside
+`create_app`, carry a private `_auth` builder, and inline the same ~35-line
+`logfire.configure` block with its conditional dict-spread — `_auth` is
+identical in all three apps, the telemetry block differs only by `NAME`.
+**Decision.** Both apps move to the DD-118/DD-119 layout, layout only:
+
+- Each app gains `globals.py` (NAME, LOGGER, its status constants) and the
+  two providers, `providers/auth.py` (`build_auth`, the library's `http` seam
+  open as lineage-model's) and `providers/telemetry.py` (`ingest_pipeline`,
+  `configure_telemetry`) — the copy lineage-model already has.
+- Each app gains `routes/health.py` (the anonymous `/liveness`, module-level
+  so ADR 049 names it) and its endpoint module: `routes/extract.py`
+  (`build_router(auth)`, the gated `POST /extract` calling the engine
+  directly — the engine stays `extract.py`, the pure DTM-02..09 parser with
+  its own tests) and `routes/validate.py` (`build_router(auth)`, the gated
+  `POST /` answering the mock constant). The routes _are_ the use cases
+  (DD-119): no new classes, no chain.
+- `app.py` becomes the composition root: `create_app` builds the verifier,
+  includes the routers, mounts the error contract, configures the telemetry.
+  data2model's 400 handler stays at the root — the mapping is the app's
+  contract, as lineage-model's handlers are (DD-118).
+- `create_app(settings, auth=None)` keeps its injectable seam (DD-111/112)
+  on both apps; the wire contract (paths, statuses, bodies, the DTM/VE rules)
+  is untouched.
+
+**Reason.** Three apps, one shape: the layout the example app proves, and a
+review of data2model/validate-entity sees the same tangle DD-118 fixed —
+routes, collaborators and telemetry in one function. Duplicating `_auth` and
+the OTLP block per app is DD-107/DD-108's deliberate decision (the app owns
+its export); duplicating them _inside_ one module, in `create_app`, is not
+that decision — the providers hold them, one copy per app.
+**Alternatives.** (a) Lift auth+telemetry into a shared lib — rejected: it
+supersedes DD-107/DD-108 (per-app ingest clients, app-owned export), and
+three copies of a 20-line factory is the accepted cost of that decision.
+(b) Refactor data2model only — rejected: validate-entity carries the same
+`create_app`-defined routes; one entry keeps the family uniform. (c) A
+use-case class per route — rejected by DD-119 already.
+**Consequences.** `test__app.py` on both apps keeps its covers targets
+(`create_app` stays canonical); new provider/route test files name the new
+public functions (ADR 049). The specs' design-log fields gain DD-120; no rule
+id changes meaning. The e2e suites are untouched — they ride the wire.

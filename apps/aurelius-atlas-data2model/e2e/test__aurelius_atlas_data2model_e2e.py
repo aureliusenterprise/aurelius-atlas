@@ -1,7 +1,14 @@
-"""E2E: the container image, Keycloak-minted tokens, real TLS (DTM-10, the 8.1 acceptance)."""
+"""E2E: the container image, Keycloak-minted tokens, real TLS (DTM-10, the 8.1 acceptance).
+
+The happy path drives the container through the client library (CL-21): the
+typed ``ExtractionRequest`` in, the typed ``ExtractionResponse`` out, over the
+same TLS and the same minted token the raw tests use — the library is proven
+against the real app, not a fake transport.
+"""
 
 import httpx
 import pytest
+from aurelius_atlas_data2model_client import Data2ModelClient, ExtractionRequest
 
 # The lineage caller's payload (8.2), the same rules the parity scenario carries.
 _LINEAGE_BODY: dict[str, object] = {
@@ -71,14 +78,16 @@ async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient)
     assert response.status_code == 401
 
 
-@pytest.mark.covers("aurelius_atlas_data2model.app.create_app", rules=["DTM-01", "DTM-10"])
-async def test__the_lineage_rules_extract_over_https(client: httpx.AsyncClient) -> None:
-    """With a real realm token, the lineage payload extracts the diagram (DTM-01, DTM-10)."""
-    response = await client.post("/extract", json=_LINEAGE_BODY)
-    assert response.status_code == 200
-    body = response.json()
-    assert set(body) == {"metadata", "model"}
-    assert [entry["id"] for entry in body["metadata"]] == ["e-in", "p-load", "rel-1", "lineage_view"]
+@pytest.mark.covers(
+    "aurelius_atlas_data2model.app.create_app",
+    "aurelius_atlas_data2model_client.client.Data2ModelClient.extract",
+    rules=["DTM-01", "DTM-10", "CL-03", "CL-21"],
+)
+async def test__the_lineage_rules_extract_over_https(api: Data2ModelClient) -> None:
+    """With a real realm token, the client library extracts the diagram from the container (DTM-01, DTM-10)."""
+    response = await api.extract(ExtractionRequest.model_validate(_LINEAGE_BODY))
+    assert [entry.id for entry in response.metadata] == ["e-in", "p-load", "rel-1", "lineage_view"]
+    assert response.model  # The ar3 JSON string the browser draws (DV-15).
 
 
 @pytest.mark.covers("aurelius_atlas_data2model.app.create_app")

@@ -1,6 +1,7 @@
 [project]
 dependencies = [
     "aurelius-atlas-auth",
+    "aurelius-atlas-data2model-client",
     "aurelius-atlas-otel",
     "fastapi>=0.141.1",
     "logfire[fastapi]>=5.2.0",
@@ -25,6 +26,9 @@ asyncio_mode = "auto"
 required_plugins = ["pytest-asyncio"]
 
 [tool.uv.sources.aurelius-atlas-auth]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-data2model-client]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-otel]

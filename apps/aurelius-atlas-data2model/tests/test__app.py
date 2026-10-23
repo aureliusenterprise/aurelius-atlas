@@ -80,12 +80,17 @@ _LINEAGE_BODY: dict[str, Any] = {
 }
 
 
-@pytest.mark.covers("aurelius_atlas_data2model.app.create_app", rules=["DTM-01"])
+@pytest.mark.covers("aurelius_atlas_data2model.app.create_app", rules=["DTM-01", "CL-07", "CL-50"])
 async def test__extract_returns_metadata_and_an_ar3_model_string(
     client: httpx.AsyncClient,
     token: Callable[..., str],
 ) -> None:
-    """200 with {metadata, model}: the model is a JSON string, content type application/json."""
+    """200 with {metadata, model}: the model is a JSON string, content type application/json.
+
+    The body is the client library's ``ExtractionResponse`` dumped whole — the app
+    imports its own contract (CL-07) and answers its bytes verbatim, no
+    ``response_model`` filtering (CL-50, the scenarios compare exact JSON).
+    """
     response = await client.post("/extract", json=_LINEAGE_BODY, headers=_bearer(token()))
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"

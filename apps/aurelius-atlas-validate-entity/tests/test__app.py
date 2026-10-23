@@ -40,9 +40,14 @@ async def test__any_body_is_accepted(client: httpx.AsyncClient, token: Callable[
     assert response.json() == MOCK_VALIDATION
 
 
-@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-02"])
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-02", "CL-07", "CL-50"])
 def test__the_mock_document_is_the_legacy_output() -> None:
-    """The legacy's ``output`` dict, key for key: four cards, one item each, canned verdicts (VE-02)."""
+    """The legacy's ``output`` dict, key for key: four cards, one item each, canned verdicts (VE-02).
+
+    The app's response is this constant validated through the client library's
+    ``ValidationResponse`` — the app imports its own contract (CL-07), and the
+    route answers its model_dump verbatim (CL-50).
+    """
     assert list(MOCK_VALIDATION) == ["dataEntity", "definition", "domainLead", "name"]
     verdicts = {
         key: (card["items"][0]["result"]["raw"], card["items"][0]["compliant"]["raw"], card["isNonCompliant"])

@@ -3,9 +3,12 @@
     "implicitDependencies": [
         "aurelius-atlas-auth",
         "aurelius-atlas-data2model",
+        "aurelius-atlas-data2model-client",
         "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
-        "aurelius-atlas-otel"
+        "aurelius-atlas-lineage-model-client",
+        "aurelius-atlas-otel",
+        "aurelius-atlas-server-client"
     ],
     "name": "aurelius-atlas-lineage-model",
     "projectType": "application",

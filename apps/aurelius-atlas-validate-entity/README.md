@@ -10,6 +10,9 @@ Introduced by increment 8.3. The legacy service **is a mock**
 and the answer is a constant — the four governance cards the editor's panel renders.
 The port keeps that browser contract verbatim, with the workspace's auth and
 observability ([spec](../../docs/architecture/conversion/increments/8-3-validate-entity-api.md)).
+The code follows the workspace's example-app layout (DD-120): the collaborators
+built by `providers/`, the endpoints in `routes/`, and a thin composition root
+in `app.py`.
 
 ## Endpoints
 

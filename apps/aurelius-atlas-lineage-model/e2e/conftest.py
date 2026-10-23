@@ -16,6 +16,7 @@ import dotenv
 import httpx
 import pytest
 import pytest_asyncio
+from aurelius_atlas_lineage_model_client import LineageModelClient
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from testcontainers.compose import DockerCompose
@@ -144,3 +145,15 @@ async def anonymous_client(app_url: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running app over HTTPS, without a token (the 401 path)."""
     async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as client:
         yield client
+
+
+@pytest_asyncio.fixture(loop_scope="function")
+async def api(app_url: str, token: str) -> AsyncIterator[LineageModelClient]:
+    """The typed lineage-model client for the running app over HTTPS (CL-30).
+
+    The fixture builds the httpx pool (the dev CA, no auth header — the client
+    adds the bearer per call, CL-03) and closes it, the owner-closes rule of
+    CL-02; the minted realm token is the client's token source.
+    """
+    async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as http:
+        yield LineageModelClient(http, token)
