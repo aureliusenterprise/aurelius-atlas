@@ -25,6 +25,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   relationships
 - `aurelius_atlas_core/transaction_view.py` — `TransactionView`: the store as a write request has changed it,
   which the delete handlers read (through `EntityView`) to delete the owned entities an update drops (DD-068)
+- `aurelius_atlas_core/entity_classifications.py` — `EntityClassifications`: the classification methods of
+  `AtlasEntityStoreV2` and `EntityGraphMapper`; `stored_classification.py` holds the stored instance (DD-070)
 - `aurelius_atlas_core/entity_documents.py` — `EntityDocuments` and its Elasticsearch implementation: the entity,
   unique value and journal indices; `stored_entity.py` (`StoredEntity`) and `unique_key.py` (`UniqueKey`)
 - `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` and `MemoryEntityDocuments` (with injected
