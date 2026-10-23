@@ -60,7 +60,8 @@ entity deletes it, listed under `DELETE` in the response (DD-068).
 Classifications are attached, read, changed and removed by `guid/{guid}/classifications`,
 `guid/{guid}/classification/{name}`, their `uniqueAttribute` forms and `bulk/classification`; entities read with
 them, and an entity create attaches those it gives (DD-070). `bulk/setClassifications` sets entities'
-classifications to those of their headers. Propagation follows in 3.4, `bulk/headers` with the audit in 3.5.
+classifications to those of their headers. Classifications propagate over relationships within the request
+(DD-077); deferred propagation tasks follow in 3.4b, `bulk/headers` with the audit in 3.5.
 
 Its deletes (`DELETE guid/{guid}`, `DELETE bulk`, `DELETE uniqueAttribute/type/{typeName}`) delete an entity
 with the entities it owns and change those referring to it; `PUT /api/atlas/admin/purge` removes deleted

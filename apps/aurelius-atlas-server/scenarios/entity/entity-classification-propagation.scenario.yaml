@@ -1,0 +1,525 @@
+name: A classification of a process's input reaches its output, and leaves with it
+source:
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#addClassifications
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#deleteClassification
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#traverseImpactedVertices
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#addTagPropagation
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#removeTagPropagation
+rules:
+    - PRO-01
+    - PRO-02
+    - PRO-03
+    - PRO-04
+covers:
+    - aurelius_atlas_server.routes.entity.add_classifications
+    - aurelius_atlas_server.routes.entity.get_classifications
+stages:
+    - name: create data and process types, related downstream, and a classification type
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_pdata_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                  - name: scenario_pproc_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+              classificationDefs:
+                  - name: scenario_ptag_{run}
+              relationshipDefs:
+                  - name: scenario_pin_{run}
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: ONE_TO_TWO
+                    endDef1:
+                        type: scenario_pdata_{run}
+                        name: consumers
+                        cardinality: SET
+                    endDef2:
+                        type: scenario_pproc_{run}
+                        name: inputs
+                        cardinality: SET
+                  - name: scenario_pout_{run}
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: ONE_TO_TWO
+                    endDef1:
+                        type: scenario_pproc_{run}
+                        name: outputs
+                        cardinality: SET
+                    endDef2:
+                        type: scenario_pdata_{run}
+                        name: producers
+                        cardinality: SET
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ptag_{run}
+                    description: scenario_ptag_{run}
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: admin
+                    updatedBy: admin
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_pdata_{run}
+                    description: scenario_pdata_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: consumers
+                          typeName: array<scenario_pproc_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_pin_{run}
+                          isLegacyAttribute: false
+                        - name: producers
+                          typeName: array<scenario_pproc_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_pout_{run}
+                          isLegacyAttribute: false
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_pproc_{run}
+                    description: scenario_pproc_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: inputs
+                          typeName: array<scenario_pdata_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_pin_{run}
+                          isLegacyAttribute: false
+                        - name: outputs
+                          typeName: array<scenario_pdata_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_pout_{run}
+                          isLegacyAttribute: false
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_pin_{run}
+                    description: scenario_pin_{run}
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: ONE_TO_TWO
+                    endDef1:
+                        type: scenario_pdata_{run}
+                        name: consumers
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    endDef2:
+                        type: scenario_pproc_{run}
+                        name: inputs
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    category: RELATIONSHIP
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_pout_{run}
+                    description: scenario_pout_{run}
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: ONE_TO_TWO
+                    endDef1:
+                        type: scenario_pproc_{run}
+                        name: outputs
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    endDef2:
+                        type: scenario_pdata_{run}
+                        name: producers
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    category: RELATIONSHIP
+                    createdBy: admin
+                    updatedBy: admin
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.entityDefs[1].guid
+              - $.entityDefs[1].createTime
+              - $.entityDefs[1].updateTime
+              - $.classificationDefs[0].guid
+              - $.classificationDefs[0].createTime
+              - $.classificationDefs[0].updateTime
+              - $.relationshipDefs[0].guid
+              - $.relationshipDefs[0].createTime
+              - $.relationshipDefs[0].updateTime
+              - $.relationshipDefs[1].guid
+              - $.relationshipDefs[1].createTime
+              - $.relationshipDefs[1].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.classificationDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.classificationDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[1].updatedBy
+                absent: true
+    - name: a process reads a and writes b
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_pdata_{run}
+                    guid: "-1"
+                    attributes:
+                        qualifiedName: a_{run}
+                  - typeName: scenario_pdata_{run}
+                    guid: "-2"
+                    attributes:
+                        qualifiedName: b_{run}
+                  - typeName: scenario_pproc_{run}
+                    guid: "-3"
+                    attributes:
+                        qualifiedName: p_{run}
+                    relationshipAttributes:
+                        inputs:
+                            - guid: "-1"
+                              typeName: scenario_pdata_{run}
+                        outputs:
+                            - guid: "-2"
+                              typeName: scenario_pdata_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_pdata_{run}
+                        attributes:
+                            qualifiedName: a_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: a_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_pdata_{run}
+                        attributes:
+                            qualifiedName: b_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: b_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_pproc_{run}
+                        attributes:
+                            qualifiedName: p_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: p_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments:
+                  "-1": a new GUID
+                  "-2": a new GUID
+                  "-3": a new GUID
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+              - $.guidAssignments['-3']
+          save:
+              a: $.guidAssignments['-1']
+              b: $.guidAssignments['-2']
+              proc: $.guidAssignments['-3']
+    - name: classify a
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{a}/classifications
+          json:
+              - typeName: scenario_ptag_{run}
+      response:
+          status: 204
+    - name: b has it, propagated from a within the request (DV-37)
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{b}/classifications
+      response:
+          status: 200
+          json:
+              list:
+                  - typeName: scenario_ptag_{run}
+                    entityGuid: "{a}"
+                    entityStatus: ACTIVE
+                    propagate: true
+                    removePropagationsOnEntityDelete: false
+              startIndex: 0
+              pageSize: 1
+              totalCount: 1
+              sortType: NONE
+    - name: "remove it from a: b loses it too"
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{a}/classification/scenario_ptag_{run}
+      response:
+          status: 204
+    - name: b has none left
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{b}/classifications
+      response:
+          status: 200
+          json:
+              list: []
+              startIndex: 0
+              pageSize: 0
+              totalCount: 0
+              sortType: NONE
+    - name: delete them
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/bulk
+          params:
+              guid:
+                  - "{a}"
+                  - "{b}"
+                  - "{proc}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_pdata_{run}
+                        attributes:
+                            qualifiedName: a_{run}
+                        guid: "{a}"
+                        status: ACTIVE
+                        displayText: a_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_pdata_{run}
+                        attributes:
+                            qualifiedName: b_{run}
+                        guid: "{b}"
+                        status: ACTIVE
+                        displayText: b_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_pproc_{run}
+                        attributes:
+                            qualifiedName: p_{run}
+                        guid: "{proc}"
+                        status: ACTIVE
+                        displayText: p_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: purge them
+      request:
+          method: PUT
+          url: /api/atlas/admin/purge
+          json:
+              - "{a}"
+              - "{b}"
+              - "{proc}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_pdata_{run}
+                        attributes:
+                            qualifiedName: a_{run}
+                        guid: "{a}"
+                        status: DELETED
+                        displayText: a_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_pdata_{run}
+                        attributes:
+                            qualifiedName: b_{run}
+                        guid: "{b}"
+                        status: DELETED
+                        displayText: b_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_pproc_{run}
+                        attributes:
+                            qualifiedName: p_{run}
+                        guid: "{proc}"
+                        status: DELETED
+                        displayText: p_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: delete type scenario_pin_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_pin_{run}
+      response:
+          status: 204
+    - name: delete type scenario_pout_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_pout_{run}
+      response:
+          status: 204
+    - name: delete type scenario_pdata_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_pdata_{run}
+      response:
+          status: 204
+    - name: delete type scenario_pproc_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_pproc_{run}
+      response:
+          status: 204
+    - name: delete type scenario_ptag_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_ptag_{run}
+      response:
+          status: 204
