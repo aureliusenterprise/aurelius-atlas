@@ -206,6 +206,7 @@ nav:
                       - 7.17 Collector ingest auth: architecture/conversion/increments/7-17-collector-ingest-auth.md
                       - 7.18 Collector ingest identity: architecture/conversion/increments/7-18-collector-ingest-identity.md
                       - 8.0 Auxiliary API foundation: architecture/conversion/increments/8-0-auxiliary-api-foundation.md
+                      - 8.1 data2model API: architecture/conversion/increments/8-1-data2model-api.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

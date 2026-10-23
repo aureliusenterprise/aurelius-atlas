@@ -11,6 +11,7 @@ name = "Aurelius Enterprise"
 dev = [
     "aurelius-atlas-auth",
     "aurelius-atlas-core",
+    "aurelius-atlas-data2model",
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
@@ -64,6 +65,9 @@ rev = "2d4ad799442f4592db8ad53b179bfb33db8c69ac"
 [tool.uv.sources.aurelius-atlas-core]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-data2model]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-example]
 workspace = true
 
@@ -105,6 +109,7 @@ workspace = true
 
 [tool.uv.workspace]
 members = [
+    "apps/aurelius-atlas-data2model",
     "apps/aurelius-atlas-fastapi-example",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",

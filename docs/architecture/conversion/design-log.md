@@ -3595,3 +3595,47 @@ lib, one `otel-<app>` client's secret in `.env.enc`, and their own rule
 ids. CSRF stays out of scope: the auxiliary APIs are bearer-first like the
 metadata API; the cookie/CSRF story is the webapp increment that serves
 them (8.4+).
+
+### DD-109 — The 8.x ports are pandas-free: pydantic rule models, plain row maps
+
+- **Status:** Proposed
+- **Increment:** 8.1
+- **Date:** 2026-10-23
+
+**Decision.** The data2model port (8.1) adds no pandas. The request's
+`rules` parse as pydantic models (the app's public request contract,
+validated at the boundary: unknown types, missing keys and dangling rule
+references are 400 at parse time, DTM-11/DTM-12); the tabular `data` is a
+plain `list[dict[str, Any]]` of row maps, and extraction, dedup, view
+selection and layout are plain Python over that list. The same rule applies
+to 8.2 (lineage-model) and 8.3 (validate-entity).
+
+**Reason.** The legacy chain reaches pandas through `m4i-analytics`:
+`DataFrame(data)` is the legacy representation of the request body, and the
+DataFrame ops (`drop_duplicates`, `isin`, boolean masks) are the extraction
+semantics the DTM rules state directly — the spec cites behaviour, not
+pandas, and the browser contract is the response JSON, not the
+representation. The workspace's spine is pydantic (FastAPI settings, model
+validation; ADR 050's "only what the catalogue needs"), the user's stated
+convention, and a pandas dependency buys nothing the DTM rules need: the
+lineage chain's row counts are a lineage neighbourhood's edges, not a data
+science corpus. One less native dependency in a dhi.io/alpine wheel set
+(pandas' `numpy`/`pyarrow` transitives), and the app's typed surface is
+the pydantic rule models, which FastAPI documents for free.
+
+**Alternatives.** Port `m4i-analytics`'s DataFrame pipeline (refused —
+DV-15 already refuses the library; its graphviz/bokeh tree arrives with
+it). Pandas inside a thin native shell (refused — every DTM rule has a
+five-line plain-Python form; pandas would be a dependency of a dozen
+`drop_duplicates` calls). pydantic row models for `data` (refused — the
+columns are the _caller's_ rule keys: a row model would be `model_config =
+ConfigDict(extra="allow")` with declared fields for nothing; a row is a map,
+the rules name its columns).
+
+**Consequences.** The NaN semantics travel as null: a pandas NaN reaches the
+legacy extractor through `read_json`-shaped payloads, and the JSON request
+body can only carry it as `null` — the DTM rules state null-drop/null-empty
+directly (the `'nan'`-string artefacts a NaN id produced in the legacy are
+a legacy accident, recorded in 8.1's deviations, not a contract). The app's
+pyproject gains `pydantic`/`fastapi` and no pandas; 8.2's flattening (12
+columns, fixed keys) is the same shape and stays plain dicts.
