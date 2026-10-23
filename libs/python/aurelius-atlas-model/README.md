@@ -82,3 +82,5 @@ workspace = true
 ::: aurelius_atlas_model.audit
 
 ::: aurelius_atlas_model.tasks
+
+::: aurelius_atlas_model.discovery

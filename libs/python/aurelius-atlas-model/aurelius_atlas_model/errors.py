@@ -70,12 +70,21 @@ class AtlasErrorCode(Enum):
         "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type",
     )
     INVALID_OBJECT_ID = (400, "ATLAS-400-00-021", "ObjectId is not valid {0}")
+    UNKNOWN_TYPENAME = (400, "ATLAS-400-00-00A", "{0}: Unknown/invalid typename")
     UNKNOWN_ATTRIBUTE = (400, "ATLAS-400-00-023", "Attribute {0} not found for type {1}")
     SYSTEM_TYPE = (400, "ATLAS-400-00-024", "{0} is a System-type")
     INVALID_STRUCT_VALUE = (400, "ATLAS-400-00-025", "not a valid struct value {0}")
     ATTRIBUTE_UPDATE_NOT_SUPPORTED = (400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported")
     INVALID_VALUE = (400, "ATLAS-400-00-028", "invalid value: {0}")
     BAD_REQUEST = (400, "ATLAS-400-00-029", "{0}")
+    INVALID_SEARCH_PARAMS = (
+        400,
+        "ATLAS-400-00-047",
+        (
+            "No search parameter was found. One of the following MUST be specified in the request; typeName, "
+            "classification, termName or queryText"
+        ),
+    )
     MISSING_MANDATORY_ATTRIBUTE = (400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value")
     RELATIONSHIPDEF_DOUBLE_CONTAINERS = (
         400,
