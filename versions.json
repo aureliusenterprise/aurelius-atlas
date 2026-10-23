@@ -128,5 +128,10 @@
     "version": "feat-aux-apis-data2model",
     "title": "feat-aux-apis-data2model",
     "aliases": []
+  },
+  {
+    "version": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
+    "title": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
+    "aliases": []
   }
 ]
