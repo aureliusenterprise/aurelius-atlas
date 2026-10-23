@@ -74,6 +74,10 @@ class TagPropagation:
         self._leaving: dict[str, StoredRelationship] = {}
         self._deferral = deferral
         self._tasks: list[StoredTask] = []
+        self.added: dict[str, list[StoredClassification]] = {}
+        """``RequestContext.addedPropagations``: per entity, the instances newly propagated to it (DD-086)."""
+        self.removed: dict[str, list[StoredClassification]] = {}
+        """``RequestContext.removedPropagations``: per entity, the propagated instances it lost (DD-086)."""
 
     @property
     def deferred(self) -> bool:
@@ -133,23 +137,27 @@ class TagPropagation:
         self._tasks.append(task)
         return task
 
-    async def propagate(self, classification: StoredClassification, guid: str, *, blocks: bool = False) -> None:
+    async def propagate(self, classification: StoredClassification, guid: str, *, blocks: bool = False) -> list[str]:
         """Propagate a classification of entity ``guid`` to what it reaches, or record an ``ADD`` task (PRO-03).
 
-        ``blocks`` counts the relationships' blocks, as ``propagate`` turned on does.
+        ``blocks`` counts the relationships' blocks, as ``propagate`` turned on does. Answers the entities it now
+        lists, none when deferred (CAU-02).
         """
         if self.deferred:
             await self.queue(ADD, guid, classification)
-            return
+            return []
         reached = await self.impacted(guid, classification=classification.guid if blocks else None)
-        await self.add(classification, reached)
+        return await self.add(classification, reached)
 
-    async def withdraw(self, classification: StoredClassification, guid: str) -> None:
-        """Remove every propagation of a classification of entity ``guid``, or record a ``DELETE`` task (PRO-03)."""
+    async def withdraw(self, classification: StoredClassification, guid: str) -> list[str]:
+        """Remove every propagation of a classification of entity ``guid``, or record a ``DELETE`` task (PRO-03).
+
+        Answers the entities that stopped listing it, none when deferred (CAU-03, CAU-04).
+        """
         if self.deferred:
             await self.queue(DELETE, guid, classification)
-            return
-        await self.remove_all(classification)
+            return []
+        return await self.remove_all(classification)
 
     def changed_entities(self) -> list[EntityChange]:
         """The documents of entities whose classification lists propagation changed, to write."""
@@ -243,23 +251,29 @@ class TagPropagation:
                 continue
             listed = [*(found.entity.classification_guids or []), classification.guid]
             self._list(found, listed)
+            self.added.setdefault(guid, []).append(classification)
             added.append(guid)
         return added
 
-    async def remove(self, classification: StoredClassification, guids: Iterable[str]) -> None:
-        """``removeTagPropagation(vertex, entities)``: these entities stop listing a propagated classification."""
+    async def remove(self, classification: StoredClassification, guids: Iterable[str]) -> list[str]:
+        """``removeTagPropagation(vertex, entities)``: these entities stop listing a propagated classification.
+
+        Answers those that did.
+        """
+        removed = []
         for guid in guids:
             found = await self._found(guid)
             if found is not None and guid != classification.entity_guid:
                 listed = found.entity.classification_guids or []
                 if classification.guid in listed:
                     self._list(found, [listed_guid for listed_guid in listed if listed_guid != classification.guid])
+                    self.removed.setdefault(guid, []).append(classification)
+                    removed.append(guid)
+        return removed
 
     async def remove_all(self, classification: StoredClassification) -> list[str]:
         """``removeTagPropagation(vertex)``: every entity the classification was propagated to stops listing it."""
-        reached = await self.propagated_to(classification)
-        await self.remove(classification, reached)
-        return reached
+        return await self.remove(classification, await self.propagated_to(classification))
 
     async def propagated_to(self, classification: StoredClassification) -> list[str]:
         """``getAllPropagatedEntityVertices``: the entities listing it other than its own (DD-076)."""
@@ -399,14 +413,17 @@ class TagPropagation:
         await self.add(classification, [guid for guid in impacted if guid not in propagated])
 
     async def _across(self, relationship: StoredRelationship, source: str, target: str) -> None:
-        """``addTagPropagation(from, to, edge)``: the source end's classifications to the target and its reach."""
-        classifications = await self.propagation_enabled(source)
+        """``addTagPropagation(from, to, edge)``: the source end's classifications to the target and its reach.
+
+        One the request attaches propagates on its own, as Atlas attaches classifications after mapping the
+        relationships (CAU-02).
+        """
+        classifications = [c for c in await self.propagation_enabled(source) if c.guid not in self._classifications]
         if not classifications:
             return
         if self.deferred:
             for classification in classifications:
-                if classification.guid not in self._classifications:  # a new one records its own task
-                    await self.queue(ADD, target, classification, relationship.guid)
+                await self.queue(ADD, target, classification, relationship.guid)
             return
         reached = await self.impacted(target, exclude=relationship.guid, include=True)
         for classification in classifications:

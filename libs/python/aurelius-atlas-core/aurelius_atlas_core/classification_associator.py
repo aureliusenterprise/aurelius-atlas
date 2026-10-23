@@ -1,6 +1,7 @@
-"""``ClassificationAssociator``: set entities' classifications to those their headers give (CLA-01 to CLA-04).
+"""``ClassificationAssociator``: set entities' classifications to their headers', list those changed.
 
-Atlas's ``ClassificationAssociator.Updater`` and ``ListOps``: each header finds its entity by unique attributes, its
+Atlas's ``ClassificationAssociator.Retriever`` lists the entities whose classifications changed (CAU-07). Its
+``Updater`` and ``ListOps`` set them (CLA-01 to CLA-04): each header finds its entity by unique attributes, its
 classifications are matched with the entity's by type name, and the differences are deleted, updated and added
 through 3.3a's operations, each changing the store at once; a summary line records each step.
 """
@@ -8,10 +9,13 @@ through 3.3a's operations, each changing the store at once; a summary line recor
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 
 from aurelius_atlas_model.errors import AtlasError, java_string
-from aurelius_atlas_model.instance import AtlasClassification, AtlasEntityHeader
+from aurelius_atlas_model.instance import AtlasClassification, AtlasEntityHeader, AtlasEntityHeaders
 from aurelius_atlas_typesystem.entity_type import EntityType
 
+from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
+from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 
 QUALIFIED_NAME = "qualifiedName"
@@ -22,12 +26,43 @@ PARTIAL = "(Partial)"
 ADD, UPDATE, DELETE = "Add", "Update", "Delete"
 
 
-class ClassificationAssociator:
-    """``Updater`` over the entities of ``store``, changing them as ``user``; ``tasks`` defers propagation (TSK-02)."""
+class ClassificationRetriever:
+    """``Retriever``: the entities of ``store`` whose classifications ``audits`` recorded changes of."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None, tasks: bool = False) -> None:
+    def __init__(self, store: EntityStore, audits: EntityAuditRepository) -> None:
         self._store = store
-        self._classifications = EntityClassifications(store, user=user, tasks=tasks)
+        self._audits = audits
+
+    async def get(self, from_timestamp: int, to_timestamp: int) -> AtlasEntityHeaders:
+        """``get``: the headers with classifications of the entities changed from the one time to the other, both
+        included; those that cannot be read are left out (CAU-07).
+        """  # noqa: D205 - one sentence
+        retriever = EntityRetriever(self._store)
+        headers: dict[str, AtlasEntityHeader] = {}
+        for guid in await self._audits.entities_with_tag_changes(from_timestamp, to_timestamp + 1):
+            try:
+                headers[guid] = await retriever.header(guid)
+            except AtlasError:
+                continue
+        return AtlasEntityHeaders(guid_header_map=headers)
+
+
+class ClassificationAssociator:
+    """``Updater`` over the entities of ``store``, changing them as ``user``; ``tasks`` defers propagation (TSK-02).
+
+    ``notifier`` is told the changes (CAU-02).
+    """
+
+    def __init__(
+        self,
+        store: EntityStore,
+        *,
+        user: str | None = None,
+        tasks: bool = False,
+        notifier: EntityChangeNotifier | None = None,
+    ) -> None:
+        self._store = store
+        self._classifications = EntityClassifications(store, user=user, tasks=tasks, notifier=notifier)
         self._summary: list[str] = []
 
     async def set_classifications(self, headers: Mapping[str, AtlasEntityHeader] | None) -> str:

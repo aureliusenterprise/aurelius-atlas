@@ -72,6 +72,7 @@ async def test__events_that_are_not_kept_fail_the_put(fake: FakeClient) -> None:
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.prepare",
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.put_events",
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.list_events",
+    "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.entities_with_tag_changes",
     "aurelius_atlas_core.testing.memory.InMemoryEntityAuditRepository.prepare",
     "aurelius_atlas_core.testing.memory.InMemoryEntityAuditRepository.put_events",
     rules=["AUD-08"],
@@ -89,3 +90,26 @@ async def test__both_implementations_are_audit_repositories(fake: FakeClient) ->
 def fake() -> FakeClient:
     """An empty fake client."""
     return FakeClient()
+
+
+@pytest.mark.covers(f"{E}.entities_with_tag_changes", rules=["CAU-07"])
+async def test__entities_with_classification_events_in_a_range_are_found(
+    fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Their own classification events from the start, before the end; each entity once; page by page."""
+    monkeypatch.setattr(entity_audit_repository, "AUDIT_PAGE", 1)
+    repository = ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t")
+    await repository.prepare()
+    add, update = EntityAuditActionV2.CLASSIFICATION_ADD, EntityAuditActionV2.CLASSIFICATION_UPDATE
+    await repository.put_events(
+        [
+            event("a", 1, add),
+            event("a", 2, update),
+            event("b", 3, EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD),
+            event("c", 4, EntityAuditActionV2.ENTITY_CREATE),
+            event("d", 5, add),
+        ]
+    )
+
+    assert sorted(await repository.entities_with_tag_changes(1, 6)) == ["a", "d"]
+    assert await repository.entities_with_tag_changes(2, 5) == ["a"]

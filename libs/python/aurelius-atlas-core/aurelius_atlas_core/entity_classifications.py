@@ -8,6 +8,7 @@ once after a lost race (DD-052).
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 from typing import Any
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
@@ -17,6 +18,7 @@ from aurelius_atlas_typesystem.classification_type import ClassificationType
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_mapper import EntityMapper
 from aurelius_atlas_core.entity_retriever import EntityRetriever
@@ -49,14 +51,28 @@ NO_CLASSIFICATION_NAME = "classifications not specified"
 NO_CLASSIFICATION = "classification not specified"
 ALREADY_ASSOCIATED = "entity: {guid}, already associated with classification: {name}"
 
+type Notes = list[Callable[[], Awaitable[None]]]
+"""What a written request tells the change notifier, in order (DD-085)."""
+
 
 class EntityClassifications:
-    """Classifications of the entities of ``store``, changed as ``user``; ``tasks`` defers propagation (TSK-02)."""
+    """Classifications of the entities of ``store``, changed as ``user``; ``tasks`` defers propagation (TSK-02).
 
-    def __init__(self, store: EntityStore, *, user: str | None = None, tasks: bool = False) -> None:
+    ``notifier`` is told each change once it is written (DD-085).
+    """
+
+    def __init__(
+        self,
+        store: EntityStore,
+        *,
+        user: str | None = None,
+        tasks: bool = False,
+        notifier: EntityChangeNotifier | None = None,
+    ) -> None:
         self._store = store
         self._user = user
         self._tasks = tasks
+        self._notifier = notifier
 
     async def get_classifications(self, guid: str) -> list[AtlasClassification]:
         """``getClassifications``: the entity's classifications (CLS-03).
@@ -95,13 +111,13 @@ class EntityClassifications:
         if not classifications:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_CLASSIFICATIONS)
 
-        async def attempt() -> None:
+        async def attempt() -> Notes:
             found = await self._entity(guid)
             given = [classification.model_copy(deep=True) for classification in classifications]
             for classification in given:
                 self._validate(classification)
             await self._check_associations(found.entity, given)
-            await self._write_added([(found, given)])
+            return await self._write_added([(found, given)])
 
         await self._run(attempt)
 
@@ -118,13 +134,13 @@ class EntityClassifications:
         checked = classification.model_copy(deep=True)
         self._validate(checked)
 
-        async def attempt() -> None:
+        async def attempt() -> Notes:
             targets: list[tuple[VersionedEntity, list[AtlasClassification]]] = []
             for guid in guids:
                 found = await self._entity(guid)
                 await self._check_associations(found.entity, [checked])
                 targets.append((found, [checked.model_copy(deep=True)]))
-            await self._write_added(targets)
+            return await self._write_added(targets)
 
         await self._run(attempt)
 
@@ -140,7 +156,7 @@ class EntityClassifications:
         if not classifications:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_CLASSIFICATIONS)
 
-        async def attempt() -> None:
+        async def attempt() -> Notes:
             found = await self._entity(guid)
             given = [classification.model_copy(deep=True) for classification in classifications]
             for classification in given:
@@ -150,21 +166,26 @@ class EntityClassifications:
             changes: dict[str, ClassificationChange] = {}
             entity = found.entity.touched(now=self._store.now(), user=self._user)
             propagation = self._propagation({guid: (entity, found.version)})
+            notified: dict[str, None] = {guid: None}
+            updates: list[StoredClassification] = []
+            withdrawn: list[tuple[list[str], StoredClassification]] = []
             for classification in given:
-                name = str(classification.type_name)
-                if not classification.entity_guid:
-                    classification.entity_guid = guid
-                elif classification.entity_guid.lower() != guid.lower():
-                    raise AtlasError(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, name)
-                current = next((c for c in instances if c.classification.type_name == name and _direct(c, guid)), None)
-                if current is None:
-                    raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
+                current = _attached(instances, classification, guid)
                 classification_type = self._validate(classification, update=True)
                 stored = changes[current.guid].classification if current.guid in changes else current.classification
                 updated = _updated(mapper, classification_type, classification, stored)
                 changes[current.guid] = ClassificationChange(updated, current.version)
-                await _propagate_change(propagation, guid, stored, updated, given=classification.propagate)
+                if _changed(classification, stored):
+                    notified.update(dict.fromkeys(await propagation.propagated_to(stored)))
+                updates.append(updated.model_copy(update={"propagate": stored.propagate}))
+                reached, lost = await _propagate_change(
+                    propagation, guid, stored, updated, given=classification.propagate
+                )
+                notified.update(dict.fromkeys(reached))
+                if lost:
+                    withdrawn.append((lost, updated))
             await self._write_propagated(propagation, [(guid, found.version)], [], list(changes.values()))
+            return await self._updated_notes(list(notified), updates, withdrawn, propagation)
 
         await self._run(attempt)
 
@@ -180,11 +201,11 @@ class EntityClassifications:
         if not name:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_CLASSIFICATION_NAME)
 
-        async def attempt() -> None:
+        async def attempt() -> Notes:
             found = await self._entity(guid)
             if associated_entity_guid and associated_entity_guid != guid:
                 await self._delete_propagated(found, name, associated_entity_guid)
-                return
+                return []  # CAU-04: Atlas records the removal and never tells it
             direct = [instance for instance in await self._instances(found.entity) if _direct(instance, guid)]
             if not direct:
                 raise AtlasError(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, guid)
@@ -192,10 +213,11 @@ class EntityClassifications:
             if current is None:
                 raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
             propagation = self._propagation({guid: (found.entity, found.version)})
+            lost: list[str] = []
             if current.classification.propagate is not False:
                 if propagation.deferred:
                     await self._check_no_pending(current.guid, guid)
-                await propagation.withdraw(current.classification, guid)
+                lost = await propagation.withdraw(current.classification, guid)
             entity = propagation.entity(guid) or found.entity
             listed = [listed for listed in entity.classification_guids or [] if listed != current.guid]
             entity = entity.model_copy(update={"classification_guids": listed or None})
@@ -203,6 +225,8 @@ class EntityClassifications:
             kept = bool(await propagation.listed_by(current.classification))
             removal = ClassificationChange(current.classification, current.version, remove=not kept)
             await self._write_propagated(propagation, [(guid, found.version)], [], [] if kept else [removal])
+            guids = [*lost, *([] if guid in lost else [guid])]
+            return self._note(self._deleted_note, guids, current.classification)
 
         await self._run(attempt)
 
@@ -297,8 +321,12 @@ class EntityClassifications:
             if classification_type is not None and not classification_type.can_apply_to_entity_type(entity_type):
                 raise AtlasError(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, entity.guid, entity.type_name, name)
 
-    async def _write_added(self, targets: Sequence[tuple[VersionedEntity, list[AtlasClassification]]]) -> None:
-        """Attach and propagate, entity after entity, as ``addClassifications`` per GUID does (CLS-05, PRO-03)."""
+    async def _write_added(self, targets: Sequence[tuple[VersionedEntity, list[AtlasClassification]]]) -> Notes:
+        """Attach and propagate, entity after entity, as ``addClassifications`` per GUID does (CLS-05, PRO-03).
+
+        Each instance is then told added to its entity and those it reached (CAU-02).
+        """
+        notes: Notes = []
         instances: list[ClassificationChange] = []
         now = self._store.now()
         propagation = self._propagation()
@@ -312,9 +340,45 @@ class EntityClassifications:
             instances += [ClassificationChange(instance) for instance in added]
             propagation.add_instances(added)
             for instance in added:
-                if instance.propagate:
-                    await propagation.propagate(instance, guid)
+                reached = await propagation.propagate(instance, guid) if instance.propagate else []
+                notes += self._note(self._added_note, [guid, *reached], instance)
         await self._write_propagated(propagation, own, [], instances)
+        return notes
+
+    def _note(self, tell: Callable[..., Awaitable[None]], *arguments: Any) -> Notes:  # noqa: ANN401 - any arguments
+        """What to tell the notifier after the write, when there is one (DD-085)."""
+        return [] if self._notifier is None else [partial(tell, *arguments)]
+
+    async def _added_note(self, guids: list[str], instance: StoredClassification) -> None:
+        if self._notifier is not None:
+            await self._notifier.on_classifications_added(guids, [instance], user=self._user)
+
+    async def _deleted_note(self, guids: list[str], instance: StoredClassification) -> None:
+        if self._notifier is not None:
+            await self._notifier.on_classifications_deleted(guids, [instance], user=self._user)
+
+    async def _updated_notes(
+        self,
+        notified: list[str],
+        updates: list[StoredClassification],
+        withdrawn: list[tuple[list[str], StoredClassification]],
+        propagation: TagPropagation,
+    ) -> Notes:
+        """``updateClassifications``' notifications: each ``ACTIVE`` entity notified, then the removals (CAU-03)."""
+        notifier = self._notifier
+        if notifier is None:
+            return []
+
+        async def tell() -> None:
+            found = await self._store.get_many(notified)
+            active = [g for g in notified if g in found and found[g].entity.state is EntityStatus.ACTIVE]
+            await notifier.on_classifications_updated(
+                active, updates, user=self._user, added=propagation.added, removed=propagation.removed
+            )
+
+        return [tell] + [
+            note for lost, instance in withdrawn for note in self._note(self._deleted_note, lost, instance)
+        ]
 
     async def _write_propagated(
         self,
@@ -370,17 +434,22 @@ class EntityClassifications:
             self._store.registry, resolve=_unresolved, guid_assignments={}, now=self._store.now(), user=self._user
         )
 
-    async def _run(self, attempt: Callable[[], Awaitable[None]]) -> None:
-        """Run once more after a lost race; a second loss or a failed write is ``INTERNAL_ERROR`` (DD-052)."""
+    async def _run(self, attempt: Callable[[], Awaitable[Notes]]) -> None:
+        """Run once more after a lost race; a second loss or a failed write is ``INTERNAL_ERROR`` (DD-052).
+
+        What the written attempt has to tell is told after it (DD-085).
+        """
         for number in range(1, ATTEMPTS + 1):
             try:
-                await attempt()
+                notes = await attempt()
             except EntityVersionConflictError as conflict:
                 if number == ATTEMPTS:
                     raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
             except (UniqueValueTakenError, EntityWriteError) as failure:
                 raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
             else:
+                for note in notes:
+                    await note()
                 return
 
 
@@ -400,21 +469,50 @@ async def _propagate_change(
     updated: StoredClassification,
     *,
     given: bool | None,
-) -> None:
+) -> tuple[list[str], list[str]]:
     """``updateClassifications`` on ``propagate``: false to true propagates, true to false removes (PRO-03).
 
-    Deferred, any ``propagate`` given records a task, ``ADD`` for true, ``DELETE`` for false (TSK-02).
+    Deferred, any ``propagate`` given records a task, ``ADD`` for true, ``DELETE`` for false (TSK-02). Answers the
+    entities it reached and those it left.
     """
     propagation.add_instances([updated])
     if propagation.deferred:
         if given is not None:
             await (propagation.propagate(updated, guid) if given else propagation.withdraw(updated, guid))
-        return
+        return [], []
     was, now = stored.propagate is not False, updated.propagate is not False
     if now and not was:
-        await propagation.propagate(updated, guid, blocks=True)
-    elif was and not now:
-        await propagation.withdraw(updated, guid)
+        return await propagation.propagate(updated, guid, blocks=True), []
+    if was and not now:
+        return [], await propagation.withdraw(updated, guid)
+    return [], []
+
+
+def _attached(instances: Sequence[_Instance], classification: AtlasClassification, guid: str) -> _Instance:
+    """The instance of the classification's type attached to entity ``guid``; the classification names the entity.
+
+    Raises:
+        AtlasError: ``CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY``, ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
+    """
+    name = str(classification.type_name)
+    if not classification.entity_guid:
+        classification.entity_guid = guid
+    elif classification.entity_guid.lower() != guid.lower():
+        raise AtlasError(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, name)
+    current = next((c for c in instances if c.classification.type_name == name and _direct(c, guid)), None)
+    if current is None:
+        raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
+    return current
+
+
+def _changed(given: AtlasClassification, stored: StoredClassification) -> bool:
+    """``isClassificationUpdated``: attributes given, other validity periods, or another removal flag (CAU-03)."""
+    removal = given.remove_propagations_on_entity_delete
+    return (
+        bool(given.attributes)
+        or given.validity_periods != stored.validity_periods
+        or (removal is not None and removal != stored.remove_propagations_on_entity_delete)
+    )
 
 
 def _direct(instance: _Instance, guid: str) -> bool:

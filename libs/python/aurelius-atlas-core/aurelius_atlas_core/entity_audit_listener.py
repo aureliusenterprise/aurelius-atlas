@@ -1,21 +1,29 @@
-"""``EntityAuditListener``: an audit event for each entity a mutation changed (AUD-03 to AUD-05).
+"""``EntityAuditListener``: an audit event for each entity and classification change (AUD-03 to AUD-05, CAU-01).
 
-Atlas's ``EntityAuditListenerV2`` for entity changes (``onEntitiesAdded``, ``onEntitiesUpdated``,
-``onEntitiesDeleted``, ``onEntitiesPurged``, ``getAuditEventDetail``); classification events follow in 3.5b.
+Atlas's ``EntityAuditListenerV2``: ``onEntitiesAdded``, ``onEntitiesUpdated``, ``onEntitiesDeleted``,
+``onEntitiesPurged``, ``getAuditEventDetail``, and the classification methods.
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
-from aurelius_atlas_model.instance import AtlasEntity
+from aurelius_atlas_model.errors import java_string
+from aurelius_atlas_model.instance import AtlasClassification, AtlasEntity
 
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository
+from aurelius_atlas_core.entity_change_notifier import Propagations
 
 MAX_DETAILS_BYTES = 1024 * 1024
 """``atlas.hbase.client.keyvalue.maxsize``'s default: details above it lose attributes (AUD-04)."""
 
 DELETED_ENTITY = "Deleted entity"
+
+ADDED = {True: "Added classification: ", False: "Added propagated classification: "}
+DELETED = {True: "Deleted classification: ", False: "Deleted propagated classification: "}
+UPDATED_OWN = "Updated classification: "
+UPDATED_PROPAGATED = "Updated propagated classification: "
+"""The details' prefixes of classification events, by whether the entity is the classification's own (CAU-01)."""
 
 _PREFIXES = {
     EntityAuditActionV2.ENTITY_CREATE: "Created: ",
@@ -59,22 +67,88 @@ class EntityAuditListener:
         """``onEntitiesPurged``: ``ENTITY_PURGE`` with the entity made from its header (AUD-03)."""
         await self._put([(entity, EntityAuditActionV2.ENTITY_PURGE, None) for entity in entities], user)
 
+    async def on_classifications_added(
+        self, guids: Sequence[str], classifications: Sequence[AtlasClassification], *, user: str | None
+    ) -> None:
+        """``onClassificationsAdded``: ``CLASSIFICATION_ADD`` on its entity, else ``PROPAGATED_`` (CAU-01)."""
+        items = []
+        for classification in classifications:
+            text = _json(classification)
+            for guid in guids:
+                own = guid == classification.entity_guid
+                action = (
+                    EntityAuditActionV2.CLASSIFICATION_ADD if own else EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD
+                )
+                items.append((guid, action, ADDED[own] + text))
+        await self._put_events(items, user)
+
+    async def on_classifications_updated(
+        self, guids: Sequence[str], classifications: Sequence[AtlasClassification], context: Propagations
+    ) -> None:
+        """``onClassificationsUpdated``: on another entity an add or delete when the request propagated or removed it
+        there, else an update (CAU-01, CAU-03).
+        """  # noqa: D205 - one sentence
+        items = []
+        for guid in guids:
+            for classification in classifications:
+                text = _json(classification)
+                if guid == classification.entity_guid:
+                    items.append((guid, EntityAuditActionV2.CLASSIFICATION_UPDATE, UPDATED_OWN + text))
+                elif _listed(context.added, guid, classification):
+                    items.append((guid, EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD, ADDED[False] + text))
+                elif _listed(context.removed, guid, classification):
+                    name = java_string(classification.type_name)
+                    items.append((guid, EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE, DELETED[False] + name))
+                else:
+                    items.append(
+                        (guid, EntityAuditActionV2.PROPAGATED_CLASSIFICATION_UPDATE, UPDATED_PROPAGATED + text)
+                    )
+        await self._put_events(items, context.user)
+
+    async def on_classifications_deleted(
+        self, guids: Sequence[str], classifications: Sequence[AtlasClassification], *, user: str | None
+    ) -> None:
+        """``onClassificationsDeleted``: ``CLASSIFICATION_DELETE`` on its entity, else ``PROPAGATED_`` (CAU-01)."""
+        items = []
+        for classification in classifications:
+            name = java_string(classification.type_name)
+            for guid in guids:
+                own = guid == classification.entity_guid
+                action = (
+                    EntityAuditActionV2.CLASSIFICATION_DELETE
+                    if own
+                    else EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE
+                )
+                items.append((guid, action, DELETED[own] + name))
+        await self._put_events(items, user)
+
     async def _put(
         self, items: Sequence[tuple[AtlasEntity, EntityAuditActionV2, str | None]], user: str | None
     ) -> None:
+        """``putEventsV2`` of entity events, the details made from the entity unless given (AUD-03)."""
+        await self._put_events(
+            [
+                (str(entity.guid), action, audit_detail(entity, action) if details is None else details)
+                for entity, action, details in items
+            ],
+            user,
+        )
+
+    async def _put_events(self, items: Sequence[tuple[str, EntityAuditActionV2, str]], user: str | None) -> None:
         """``putEventsV2`` of one batch: each event keyed by its position in the batch (AUD-05)."""
+        if not items:
+            return
         events = []
-        for index, (entity, action, details) in enumerate(items):
+        for index, (guid, action, details) in enumerate(items):
             timestamp = self._clock()
             events.append(
                 EntityAuditEventV2(
-                    entity_id=entity.guid,
+                    entity_id=guid,
                     timestamp=timestamp,
                     user=user,
                     action=action,
-                    details=audit_detail(entity, action) if details is None else details,
-                    event_key=f"{entity.guid}:{timestamp}:{index}:{self._clock()}",
-                    entity=entity,
+                    details=details,
+                    event_key=f"{guid}:{timestamp}:{index}:{self._clock()}",
                 )
             )
         await self._repository.put_events(events)
@@ -113,5 +187,15 @@ def audit_detail(entity: AtlasEntity, action: EntityAuditActionV2) -> str:
     return prefix + _json(shallow)
 
 
-def _json(entity: AtlasEntity) -> str:
-    return codec.dumps(entity.to_json()).decode()
+def _json(value: AtlasEntity | AtlasClassification) -> str:
+    return codec.dumps(value.to_json()).decode()
+
+
+def _listed(
+    propagations: Mapping[str, Sequence[AtlasClassification]], guid: str, classification: AtlasClassification
+) -> bool:
+    """``hasPropagatedEntry``: the entity has one of the classification's type and entity in the map."""
+    return any(
+        found.type_name == classification.type_name and found.entity_guid == classification.entity_guid
+        for found in propagations.get(guid, [])
+    )

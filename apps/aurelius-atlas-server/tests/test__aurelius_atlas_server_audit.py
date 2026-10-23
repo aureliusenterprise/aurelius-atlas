@@ -88,3 +88,32 @@ async def test__a_purged_entity_keeps_its_audit_and_an_unknown_one_has_none(
     assert purged.status_code == 200
     assert (status, listed[:2]) == (200, ["ENTITY_PURGE", "ENTITY_DELETE"])
     assert (await actions(client, "nope"))[1]["errorCode"] == "ATLAS-404-00-005"
+
+
+@pytest.mark.covers(f"{E}.get_entity_headers", f"{E}.classifications", rules=["CAU-02", "CAU-07", "CAU-08"])
+async def test__entities_whose_classifications_changed_are_listed_with_their_headers(
+    client: httpx.AsyncClient, table: str
+) -> None:
+    """An added classification is audited and lists its entity; a start after now or no number is a bad request."""
+    created = await client.post("/api/atlas/v2/types/typedefs", json={"classificationDefs": [{"name": "c_au"}]})
+    added = await client.post(f"{ENTITY}/guid/{table}/classifications", json=[{"typeName": "c_au"}])
+
+    audited = await actions(client, table, auditAction="CLASSIFICATION_ADD")
+    headers = await client.get(f"{ENTITY}/bulk/headers", params={"tagUpdateStartTime": "0"})
+    none = await client.get(f"{ENTITY}/bulk/headers")
+    future = await client.get(f"{ENTITY}/bulk/headers", params={"tagUpdateStartTime": str(2**62)})
+    text = await client.get(f"{ENTITY}/bulk/headers", params={"tagUpdateStartTime": "soon"})
+
+    assert (created.status_code, added.status_code) == (200, 204)
+    assert audited == (200, ["CLASSIFICATION_ADD"])
+    header = headers.json()["guidHeaderMap"][table]
+    assert [c["typeName"] for c in header["classifications"]] == ["c_au"]
+    assert none.json() == headers.json()
+    assert future.json() == {
+        "errorCode": "ATLAS-400-00-029",
+        "errorMessage": "fromTimestamp should be less than toTimestamp",
+    }
+    assert (text.status_code, text.json()["errorMessage"]) == (
+        400,
+        "Invalid value soon for query parameter tagUpdateStartTime",
+    )

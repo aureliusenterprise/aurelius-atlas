@@ -65,6 +65,13 @@ class EntityAuditRepository(Protocol):
         """
         ...
 
+    async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
+        """``getEntitiesWithTagChanges``: entities with a classification event from the one time to before the other.
+
+        Events of ``TAG_ACTIONS`` only, as HBase's prefix filter ``CLASSIFICATION_`` finds them (CAU-07).
+        """
+        ...
+
 
 class ElasticsearchEntityAuditRepository:
     """``EntityAuditRepository`` in an Elasticsearch index behind its alias (DD-082)."""
@@ -130,8 +137,42 @@ class ElasticsearchEntityAuditRepository:
             after = hits[-1]["sort"]
         return found
 
+    async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
+        """Refresh the index, then page through the classification events of the time range."""
+        await self._client.indices.refresh(index=self.alias)
+        query = {
+            "bool": {
+                "filter": [
+                    {"terms": {"action": [action.value for action in TAG_ACTIONS]}},
+                    {"range": {"timestamp": {"gte": from_timestamp, "lt": to_timestamp}}},
+                ]
+            }
+        }
+        found: dict[str, None] = {}
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=self.alias,
+                size=AUDIT_PAGE,
+                query=query,
+                sort=[{"eventKey": "desc"}, {"auditId": "desc"}],
+                search_after=after,
+            )
+            hits = response["hits"]["hits"]
+            found.update(dict.fromkeys(hit["_source"]["entityId"] for hit in hits))
+            if len(hits) < AUDIT_PAGE:
+                return list(found)
+            after = hits[-1]["sort"]
+
 
 PUT_FAILED = "The audit events could not all be written to {alias}"
+
+TAG_ACTIONS = (
+    EntityAuditActionV2.CLASSIFICATION_ADD,
+    EntityAuditActionV2.CLASSIFICATION_DELETE,
+    EntityAuditActionV2.CLASSIFICATION_UPDATE,
+)
+"""The actions whose names start with ``CLASSIFICATION_``; the propagated ones do not (CAU-07)."""
 
 
 def _document(event: EntityAuditEventV2, audit_id: str) -> dict[str, Any]:
