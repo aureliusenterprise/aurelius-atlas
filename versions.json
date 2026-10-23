@@ -115,6 +115,11 @@
     "aliases": []
   },
   {
+    "version": "feat-aux-apis-validate-entity",
+    "title": "feat-aux-apis-validate-entity",
+    "aliases": []
+  },
+  {
     "version": "feat-aux-apis-lineage-model",
     "title": "feat-aux-apis-lineage-model",
     "aliases": []
