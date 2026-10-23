@@ -1,7 +1,7 @@
 # 3.3b Bulk classifications
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#120](https://github.com/aureliusenterprise/aurelius-atlas/pull/120)
 - **Records:** DD-074, DV-36; relies on DD-070 to DD-073
 
 The second part of increment 3.3 (DD-073): `bulk/setClassifications`, Atlas's
