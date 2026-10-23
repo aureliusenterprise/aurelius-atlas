@@ -3682,7 +3682,7 @@ real `.env` on purpose: those tests talk to the real dev stack.
 `httpx.Client` the lineage fetch and the `/extract` call run on; production
 builds one (timeout, CA), tests inject a `MockTransport`. The e2e stand-in
 for the Atlas lineage feed (5.1, DV-16) is a **canned-file fixture Atlas**: a
-dhi.io Python image serving `http.server`, whose `--path` is the suite's
+dhi.io Python image serving `http.server`, whose `--directory` is the suite's
 fixture directory, answering `GET /v2/lineage/<guid>` from
 `<guid>.lineage.json` (404 for an absent file, matching Atlas).
 
@@ -3709,3 +3709,37 @@ dhi.io images plus stdlib). Pointing the suite at a real Atlas (refused —
 data2model → fixture Atlas) exercises the full browser path minus the
 metadata store. When 5.1 lands, the suite repoints `ATLAS_BASE_URL` at the
 server and keeps the canned fixtures as regression data.
+
+### DD-112 — The 8.3 mock ships as module data; the verifier is injectable
+
+- **Status:** Accepted
+- **Increment:** 8.3
+- **Date:** 2026-10-23
+
+**Decision.** `aurelius_atlas_validate_entity.mock.MOCK_VALIDATION` holds the
+legacy `output` dict verbatim, as module data — the endpoint answers
+`json` of that constant, byte-for-byte. `create_app(settings, auth=None)`
+takes the shared `KeycloakAuth` verifier; production builds one from the
+settings, tests inject one pointed at the fake issuer. No request model:
+`POST /` does not read its body (the legacy mock ignores it, and the port
+keeps that).
+
+**Reason.** The app is a constant: every rule about it is the document's
+shape (VE-02) and the auth gate (VE-03), so the document lives in one
+place as data, and the scenario/unit tests compare whole bodies with no
+volatile fields. An injectable verifier is the DD-108/8.1 pattern (the
+auth library's own test double is the reference); a request model would
+invent a contract the mock does not have (DV-14: the body is ignored,
+malformed bodies answer the document too — VE-01).
+
+**Alternatives.** Pydantic models for the mock document (refused — the
+document is a fixed literal; modelling it adds code that can drift from
+the bytes the browser contract is). A `Request`-reading handler that
+validates the entity (refused — DV-14 is the stated mock: validation is a
+future server rule, not this increment).
+
+**Consequences.** The 8.x app set is uniform (auth lib, otel lib, liveness,
+TLS, settings shape); the parity scenario is byte equality, so a change to
+the document is a visible contract change. When real validation lands
+(future server rule), this app's endpoint gains an input contract and the
+constant moves to a fallback path — a new increment, a superseded DV-14.

@@ -1,0 +1,33 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": [
+        "aurelius-atlas-auth",
+        "aurelius-atlas-dev-keycloak",
+        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-otel"
+    ],
+    "name": "aurelius-atlas-validate-entity",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_validate_entity",
+    "tags": [],
+    "targets": {
+        "serve": {
+            "continuous": true,
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                {
+                    "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
+                    "target": "serve"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Serve the validate-entity API on https://localhost:21003"
+            },
+            "options": {
+                "command": "uv run python -m aurelius_atlas_validate_entity"
+            }
+        }
+    }
+}
