@@ -1,0 +1,74 @@
+# 023\. A storage schema changes only by recorded migration
+
+- **Status:** Proposed
+- **Date:** 2026-10-07
+- **Deciders:** Aurelius Enterprise
+
+Acceptance trigger (swept 2026-10-19): the mechanism is scheduled, not missing — the first Elasticsearch mapping change that must move existing data, after increment 2.2 lays the entity index layout. The record is accepted in the pull request that lands that migration mechanism, and the drop-and-recreate shortcut stays legitimate for throwaway development databases, named as the exception wherever documented.
+
+Every change to stored structure is a recorded, ordered migration applied the same way everywhere, and a database can state how far along it has reached. Nothing evolves a schema as a side effect of starting up.
+
+## Decision
+
+**Schema change is a recorded artifact.** Every change to the structure of stored business data is an ordered migration, applied identically in every environment, and a database can always state which migrations it has applied. A release that needs a storage change ships it as a reviewable artifact; **nothing creates or evolves a schema as a side effect of starting up.**
+
+The mechanism does not exist yet — today a schema is created automatically only where none exists, and an existing database is never moved. This record is Proposed for exactly that reason: the decision is that schema change becomes a recorded artifact, and **the mechanism is the work this record commissions.**
+
+## Context
+
+Business data outlives the release that wrote it. The stored concepts keep changing — a field added, a meaning split, a table divided — and each change must meet data that already exists. That meeting is where storage differs from every other artifact: **code can be replaced, but rows persist**, and the rows in one environment are not the rows in another.
+
+The system releases as one versioned whole ([019](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-nxlv-python-23.3.0/architecture/adr/019-the-system-releases-as-one-versioned-whole/index.md>)), so every release implicitly answers "what does the database behind this version look like?" Today a startup routine answers it: create tables where missing, do nothing where they exist — an answer that is correct exactly once, on an empty database.
+
+The de-facto procedure since then is **drop and recreate**: acceptable while every database is a throwaway, unacceptable the first time a database holds anything the business wants to keep.
+
+A migration tool is wired into the build and has never been switched on, because no project has activated it. So the organisation holds the intent without the decision — whether schema change is a recorded artifact, who reviews it, how two environments running different versions reconcile — and every release re-answers by omission.
+
+## Requirements
+
+Any acceptable arrangement must deliver:
+
+|  | Requirement |
+| --- | --- |
+| **R1** | **Existing data is moved, not replaced.** A database with real data reaches the schema a release expects, without anyone deleting anything. |
+| **R2** | **One ordered path.** Every environment reaches a version's schema through the same sequence; two databases on one version are structurally identical. |
+| **R3** | **Position is knowable.** Any database can state how far along the path it has reached, without a person remembering. |
+| **R4** | **The change is reviewable.** Authored, reviewed, released like any change — it can be refused before it runs. |
+| **R5** | **Schema and concepts move together.** The stored change and the concept change land as one release, not coordinated by hand. |
+| **R6** | **Cheap for the routine case.** An optional field costs a small recorded step; a throwaway development database may be created from scratch. |
+
+## Alternatives
+
+| Alternative | Why it fails |
+| --- | --- |
+| Create-only startup (status quo) | R1 by construction: it cannot move existing data. R2: two databases dropped and recreated at different times have no guaranteed relationship. A mechanism for first runs, mistaken for a mechanism for change. |
+| Hand-run SQL per environment | R2: environments drift the first time one is patched and another is not. R3: position lives in that person's memory. R4: statements run against a live database cannot be reviewed after. |
+| Treat every database as disposable | Honest, and true of the current deployment. R1 the moment data is worth keeping. R5: "drop and recreate" is not a way of moving with a concept — it is a way of losing what the concept accumulated. |
+| Do nothing (keep dormant tooling) | The wiring suggests the decision was made when it was not; an unused tool is not an arrangement. Every requirement is left to the next incident. |
+
+## Tradeoffs
+
+### What it buys
+
+- A release carries a complete answer to "what happens to the data" (R1, R5).
+- Environments are comparable because they share one path (R2, R3).
+- Schema change becomes reviewable work, not an operational surprise (R4).
+
+### What it costs
+
+- Every storage change gains a step it does not pay today, and in a system whose databases are all disposable that step is pure overhead until a real database exists.
+- Migrations are ordered, so parallel changes must reconcile with each other — a cost the create-only approach never charges.
+- The team operates a migration mechanism, including testing it, which the startup routine got for free.
+
+### Watch
+
+- The dormant tooling is evidence of intent, not of a decision: activating it, or replacing it with a mechanism that fits the stacks actually in use, is this record's first act on acceptance.
+- Drop-and-recreate stays legitimate for throwaway development databases and must be **named as the exception wherever documented** — visibly the exception, not the mechanism.
+- Backfills, dual writes, the period where two shapes coexist: change-management questions this record makes possible but does not answer.
+- The schema this record protects is what the retention rule ([025](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-nxlv-python-23.3.0/architecture/adr/025-data-has-a-stated-lifetime/index.md>)) and recovery rule ([026](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-nxlv-python-23.3.0/architecture/adr/026-the-system-can-be-brought-back-from-a-named-snapshot/index.md>)) later land on — a recorded migration path is a precondition for both.
+
+> [!NOTE]
+>
+> **Why is this Proposed and not Accepted?**
+>
+> The decision is that schema change becomes a recorded artifact; the mechanism that makes it true — the migration tool, its convention, the startup check — does not exist yet. Accepting now would record an intent no change can honour; the record is accepted in the pull request that lands the mechanism, where the claims become testable.
