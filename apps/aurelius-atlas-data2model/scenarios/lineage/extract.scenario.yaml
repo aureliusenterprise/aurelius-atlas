@@ -1,0 +1,223 @@
+# The 8.2 caller's payload: the lineage chain's fixed rules (verbatim from
+# backend/m4i-lineage-model), over a two-relation lineage. The response is the
+# legacy contract (ADR 052 read from the Aurelius source): the {model, metadata}
+# body and the ar3 model string. The model's node coordinates are the native LR
+# layout, not graphviz positions (DV-15): the baseline masks every coordinate
+# (volatile) and the deviation carries the Aurelius model, x = rank * 320.
+name: The lineage caller's payload extracts the lineage diagram
+source:
+    - backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py (rules, fmt_lineage_relation, the POST to data2model /extract)
+    - backend/m4i-data2model/m4i_data2model/data2model.py (extract)
+    - libs/m4i-analytics/m4i_analytics/model_extractor/ExtractorLanguagePrimitives.py
+    - libs/m4i-analytics/m4i_analytics/graphs/languages/archimate/ArchimateUtils.py (to_JSON, generate_view)
+rules:
+    - DTM-01
+    - DTM-02
+    - DTM-03
+    - DTM-04
+    - DTM-06
+    - DTM-07
+    - DTM-08
+    - DTM-09
+covers:
+    - aurelius_atlas_data2model.app.create_app
+    - aurelius_atlas_data2model.extract.extract
+stages:
+    - name: The lineage chain's fixed rules over a two-relation lineage
+      request:
+          method: POST
+          url: /extract
+          json:
+              data:
+                  - id: rel-1
+                    from_entity_id: e-in
+                    from_entity_name: Ingest Topic
+                    from_entity_type: kafka_topic
+                    from_process_id: null
+                    from_process_name: null
+                    from_process_type: null
+                    to_entity_id: null
+                    to_entity_name: null
+                    to_entity_type: null
+                    to_process_id: p-load
+                    to_process_name: Load Job
+                    to_process_type: m4i_generic_process
+                  - id: rel-2
+                    from_entity_id: null
+                    from_entity_name: null
+                    from_entity_type: null
+                    from_process_id: p-load
+                    from_process_name: Load Job
+                    from_process_type: m4i_generic_process
+                    to_entity_id: e-out
+                    to_entity_name: Sales Table
+                    to_entity_type: hive_table
+              rules:
+                  elements:
+                      - id: 5e18c7eb-f4f5-4587-a159-3ac3412080cf
+                        alias: Element rule for column from_entity_id
+                        description: This rule generates a new element for every from_entity_id in the dataset
+                        concept_type: lineage_dataset
+                        id_type: dynamic
+                        id_key: from_entity_id
+                        concept_name_key: from_entity_name
+                        concept_name_prefix: null
+                        concept_label_key: null
+                        concept_label_prefix: null
+                        mapping:
+                            - key: Type name
+                              value: from_entity_type
+                        include: true
+                        type: element
+                      - id: 90903dfd-6f1e-4f5f-a174-264524d9e3cc
+                        alias: Element rule for column to_process_id
+                        description: This rule generates a new element for every to_process_id in the dataset
+                        concept_type: lineage_process
+                        id_type: dynamic
+                        id_key: to_process_id
+                        concept_name_key: to_process_name
+                        concept_name_prefix: null
+                        concept_label_key: null
+                        concept_label_prefix: null
+                        mapping:
+                            - key: Type name
+                              value: to_process_type
+                        include: true
+                        type: element
+                      - id: 457c347e-0689-4b65-92db-2f8e23c4fb5f
+                        alias: Element rule for column from_process_id
+                        description: This rule generates a new element for every from_process_id in the dataset
+                        concept_type: lineage_process
+                        id_type: dynamic
+                        id_key: from_process_id
+                        concept_name_key: from_process_name
+                        concept_name_prefix: null
+                        concept_label_key: null
+                        concept_label_prefix: null
+                        mapping:
+                            - key: Type name
+                              value: from_process_type
+                        include: true
+                        type: element
+                      - id: b85e49ca-9d5a-465b-ada2-7640f370b10a
+                        alias: Element rule for column to_entity_id
+                        description: This rule generates a new element for every to_entity_id in the dataset
+                        concept_type: lineage_dataset
+                        id_type: dynamic
+                        id_key: to_entity_id
+                        concept_name_key: to_entity_name
+                        concept_name_prefix: null
+                        concept_label_key: null
+                        concept_label_prefix: null
+                        mapping:
+                            - key: Type name
+                              value: to_entity_type
+                        include: true
+                        type: element
+                  relations:
+                      - id: 57aa2001-a458-4cb7-8460-aa4a35ea9b9a
+                        type: relation
+                        alias: Relationship rule between from_entity_id and to_process_id
+                        description: This rule generates a new relationship between from_entity_id and to_process_id
+                        include: true
+                        relationship_type: lr
+                        id_type: dynamic
+                        id_key: id
+                        id_value:
+                            - from_entity_id
+                            - to_process_id
+                        relationship_name_type: dynamic
+                        relationship_name_key: ""
+                        relationship_label_type: dynamic
+                        relationship_label_key: ""
+                        target: 90903dfd-6f1e-4f5f-a174-264524d9e3cc
+                        source: 5e18c7eb-f4f5-4587-a159-3ac3412080cf
+                      - id: 6a57fd4e-243f-4021-a8c5-9a92f212f97a
+                        type: relation
+                        alias: Relationship rule between from_process_id and to_entity_id
+                        description: This rule generates a new relationship between from_process_id and to_entity_id
+                        include: true
+                        relationship_type: lr
+                        id_type: dynamic
+                        id_key: id
+                        id_value:
+                            - from_process_id
+                            - to_entity_id
+                        relationship_name_type: dynamic
+                        relationship_name_key: ""
+                        relationship_label_type: dynamic
+                        relationship_label_key: ""
+                        target: b85e49ca-9d5a-465b-ada2-7640f370b10a
+                        source: 457c347e-0689-4b65-92db-2f8e23c4fb5f
+                  views:
+                      - id: view_6008d024-5a7b-4581-b664-f463ece7a40b
+                        type: view
+                        alias: View rule for lineage overview
+                        description: This rule generates the lineage overview
+                        include: true
+                        id_type: static
+                        id_key: null
+                        id_value: lineage_view
+                        view_name_type: static
+                        view_name_key: null
+                        view_name_value: Lineage
+                        view_layout: archimate_process
+                        view_nodes:
+                            - rule: 457c347e-0689-4b65-92db-2f8e23c4fb5f
+                            - rule: b85e49ca-9d5a-465b-ada2-7640f370b10a
+                            - rule: 5e18c7eb-f4f5-4587-a159-3ac3412080cf
+                            - rule: 90903dfd-6f1e-4f5f-a174-264524d9e3cc
+                        view_edges: []
+      response:
+          status: 200
+          headers:
+              content-type: application/json
+          json:
+              metadata:
+                  - id: e-in
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: e-in
+                        Type name: kafka_topic
+                  - id: p-load
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: p-load
+                        Type name: m4i_generic_process
+                  - id: p-load
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: p-load
+                        Type name: m4i_generic_process
+                  - id: e-out
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: e-out
+                        Type name: hive_table
+                  - id: rel-1
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: rel-1
+                  - id: rel-2
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: rel-2
+                  - id: lineage_view
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_type: static
+                        m4i_id_prefix: ""
+                        m4i_original_id: lineage_view
+              model: '{"ar3_model": {"@identifier": "Generated model", "ar3_name": [{"@xml_lang": "en", "value": "Generated model"}], "ar3_elements": {"ar3_element": [{"@identifier": "e-in", "@xsi_type": "lineage_dataset", "ar3_name": [{"@xml_lang": "en", "value": "Ingest Topic"}]}, {"@identifier": "p-load", "@xsi_type": "lineage_process", "ar3_name": [{"@xml_lang": "en", "value": "Load Job"}]}, {"@identifier": "e-out", "@xsi_type": "lineage_dataset", "ar3_name": [{"@xml_lang": "en", "value": "Sales Table"}]}]}, "ar3_relationships": {"ar3_relationship": [{"@identifier": "rel-1", "@target": "p-load", "@source": "e-in", "@xsi_type": "lineage_relation", "ar3_name": [{"@xml_lang": "en", "value": ""}]}, {"@identifier": "rel-2", "@target": "e-out", "@source": "p-load", "@xsi_type": "lineage_relation", "ar3_name": [{"@xml_lang": "en", "value": ""}]}]}, "ar3_views": {"ar3_diagrams": {"ar3_view": [{"@identifier": "lineage_view", "@xsi_type": "ar3_Diagram", "ar3_node": [{"@identifier": "lineage_view-e-in--0", "@x": 0, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "e-in", "@xsi_type": "ar3_Element"}, {"@identifier": "lineage_view-p-load--1", "@x": 0, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "p-load", "@xsi_type": "ar3_Element"}, {"@identifier": "lineage_view-e-out--2", "@x": 0, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "e-out", "@xsi_type": "ar3_Element"}], "ar3_connection": [{"@identifier": "lineage_view-rel-1--0", "@source": "lineage_view-e-in--0", "@target": "lineage_view-p-load--1", "@relationshipRef": "rel-1", "@xsi_type": "ar3_Relationship"}, {"@identifier": "lineage_view-rel-2--1", "@source": "lineage_view-p-load--1", "@target": "lineage_view-e-out--2", "@relationshipRef": "rel-2", "@xsi_type": "ar3_Relationship"}], "ar3_name": [{"@xml_lang": "en", "value": "Lineage"}]}]}}, "ar3_organizations": [{"ar3_item": [{"ar3_label": [{"@xml_lang": "en", "value": "Other"}], "ar3_item": [{"@identifierRef": "e-in"}, {"@identifierRef": "p-load"}, {"@identifierRef": "e-out"}]}, {"ar3_label": [{"@xml_lang": "en", "value": "Relations"}], "ar3_item": [{"@identifierRef": "rel-1"}, {"@identifierRef": "rel-2"}]}, {"ar3_label": [{"@xml_lang": "en", "value": "Views"}], "ar3_item": [{"@identifierRef": "lineage_view"}]}]}]}}'
+          volatile:
+              - $.model
+          deviations:
+              - id: DV-15
+                path: $.model
+                value: '{"ar3_model": {"@identifier": "Generated model", "ar3_name": [{"@xml_lang": "en", "value": "Generated model"}], "ar3_elements": {"ar3_element": [{"@identifier": "e-in", "@xsi_type": "lineage_dataset", "ar3_name": [{"@xml_lang": "en", "value": "Ingest Topic"}]}, {"@identifier": "p-load", "@xsi_type": "lineage_process", "ar3_name": [{"@xml_lang": "en", "value": "Load Job"}]}, {"@identifier": "e-out", "@xsi_type": "lineage_dataset", "ar3_name": [{"@xml_lang": "en", "value": "Sales Table"}]}]}, "ar3_relationships": {"ar3_relationship": [{"@identifier": "rel-1", "@target": "p-load", "@source": "e-in", "@xsi_type": "lineage_relation", "ar3_name": [{"@xml_lang": "en", "value": ""}]}, {"@identifier": "rel-2", "@target": "e-out", "@source": "p-load", "@xsi_type": "lineage_relation", "ar3_name": [{"@xml_lang": "en", "value": ""}]}]}, "ar3_views": {"ar3_diagrams": {"ar3_view": [{"@identifier": "lineage_view", "@xsi_type": "ar3_Diagram", "ar3_node": [{"@identifier": "lineage_view-e-in--0", "@x": 0, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "e-in", "@xsi_type": "ar3_Element"}, {"@identifier": "lineage_view-p-load--1", "@x": 320, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "p-load", "@xsi_type": "ar3_Element"}, {"@identifier": "lineage_view-e-out--2", "@x": 640, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "e-out", "@xsi_type": "ar3_Element"}], "ar3_connection": [{"@identifier": "lineage_view-rel-1--0", "@source": "lineage_view-e-in--0", "@target": "lineage_view-p-load--1", "@relationshipRef": "rel-1", "@xsi_type": "ar3_Relationship"}, {"@identifier": "lineage_view-rel-2--1", "@source": "lineage_view-p-load--1", "@target": "lineage_view-e-out--2", "@relationshipRef": "rel-2", "@xsi_type": "ar3_Relationship"}], "ar3_name": [{"@xml_lang": "en", "value": "Lineage"}]}]}}, "ar3_organizations": [{"ar3_item": [{"ar3_label": [{"@xml_lang": "en", "value": "Other"}], "ar3_item": [{"@identifierRef": "e-in"}, {"@identifierRef": "p-load"}, {"@identifierRef": "e-out"}]}, {"ar3_label": [{"@xml_lang": "en", "value": "Relations"}], "ar3_item": [{"@identifierRef": "rel-1"}, {"@identifierRef": "rel-2"}]}, {"ar3_label": [{"@xml_lang": "en", "value": "Views"}], "ar3_item": [{"@identifierRef": "lineage_view"}]}]}]}}'

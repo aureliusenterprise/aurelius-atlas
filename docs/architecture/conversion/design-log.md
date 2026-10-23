@@ -3595,3 +3595,79 @@ lib, one `otel-<app>` client's secret in `.env.enc`, and their own rule
 ids. CSRF stays out of scope: the auxiliary APIs are bearer-first like the
 metadata API; the cookie/CSRF story is the webapp increment that serves
 them (8.4+).
+
+### DD-109 — The 8.x ports are pandas-free: pydantic rule models, plain row maps
+
+- **Status:** Proposed
+- **Increment:** 8.1
+- **Date:** 2026-10-23
+
+**Decision.** The data2model port (8.1) adds no pandas. The request's
+`rules` parse as pydantic models (the app's public request contract,
+validated at the boundary: unknown types, missing keys and dangling rule
+references are 400 at parse time, DTM-11/DTM-12); the tabular `data` is a
+plain `list[dict[str, Any]]` of row maps, and extraction, dedup, view
+selection and layout are plain Python over that list. The same rule applies
+to 8.2 (lineage-model) and 8.3 (validate-entity).
+
+**Reason.** The legacy chain reaches pandas through `m4i-analytics`:
+`DataFrame(data)` is the legacy representation of the request body, and the
+DataFrame ops (`drop_duplicates`, `isin`, boolean masks) are the extraction
+semantics the DTM rules state directly — the spec cites behaviour, not
+pandas, and the browser contract is the response JSON, not the
+representation. The workspace's spine is pydantic (FastAPI settings, model
+validation; ADR 050's "only what the catalogue needs"), the user's stated
+convention, and a pandas dependency buys nothing the DTM rules need: the
+lineage chain's row counts are a lineage neighbourhood's edges, not a data
+science corpus. One less native dependency in a dhi.io/alpine wheel set
+(pandas' `numpy`/`pyarrow` transitives), and the app's typed surface is
+the pydantic rule models, which FastAPI documents for free.
+
+**Alternatives.** Port `m4i-analytics`'s DataFrame pipeline (refused —
+DV-15 already refuses the library; its graphviz/bokeh tree arrives with
+it). Pandas inside a thin native shell (refused — every DTM rule has a
+five-line plain-Python form; pandas would be a dependency of a dozen
+`drop_duplicates` calls). pydantic row models for `data` (refused — the
+columns are the _caller's_ rule keys: a row model would be `model_config =
+ConfigDict(extra="allow")` with declared fields for nothing; a row is a map,
+the rules name its columns).
+
+**Consequences.** The NaN semantics travel as null: a pandas NaN reaches the
+legacy extractor through `read_json`-shaped payloads, and the JSON request
+body can only carry it as `null` — the DTM rules state null-drop/null-empty
+directly (the `'nan'`-string artefacts a NaN id produced in the legacy are
+a legacy accident, recorded in 8.1's deviations, not a contract). The app's
+pyproject gains `pydantic`/`fastapi` and no pandas; 8.2's flattening (12
+columns, fixed keys) is the same shape and stays plain dicts.
+
+### DD-110 — App unit tests clear the injected `.env` prefix in an autouse fixture
+
+- **Status:** Accepted
+- **Increment:** 8.1
+- **Date:** 2026-10-23
+
+**Decision.** Every Python app's `tests/conftest.py` carries an autouse
+fixture that deletes every environment variable starting with the app's
+`ENV_PREFIX` before each test. Tests and fixtures then set exactly the
+variables they mean.
+
+**Reason.** Nx injects a project's `.env` into **every** task's environment
+for that project, and pydantic-settings reads the environment for every
+field a test does not pass explicitly — `model_validate` included. The dev
+`.env` stores TLS material and directories as workspace-root-relative
+paths, while `nx test` runs pytest with `cwd=projectRoot`, so the paths
+do not resolve and every `FilePath` field fails validation: under
+`nx test -c ci`, the server's suite reported 50 setup errors and
+data2model's 12 — identical for both apps, invisible to a plain
+`uv run pytest` from the workspace root, and invisible to CI, whose PR
+gate selects tasks the `test`-affecting files do not touch. Clearing the
+prefix is the smallest hermetic fix; the alternative — absolute paths in
+`.env` — breaks the containers (the compose files resolve them against
+the project dir) and `nx serve` (which runs from the workspace root, the
+one cwd where the relative paths do resolve).
+
+**Consequences.** Unit tests no longer read dev secrets, dev endpoints,
+or dev certificates, in any working directory. The settings tests keep
+testing environment reading — their `environment` fixture sets the
+variables it needs after the clear. `e2e/` conftests keep loading the
+real `.env` on purpose: those tests talk to the real dev stack.
