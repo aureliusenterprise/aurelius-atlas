@@ -7,16 +7,18 @@ Part of the template **spine**.
 
 ## Services
 
-| Service        | Image         | Host port      | Purpose                         |
-| -------------- | ------------- | -------------- | ------------------------------- |
-| otel-collector | OpenTelemetry | 4317 / 4318    | OTLP gRPC / HTTP ingest         |
-| prometheus     | Prometheus    | 9090           | Metrics (OTLP receiver)         |
-| loki           | Grafana Loki  | 3100           | Log aggregation                 |
-| tempo          | Grafana Tempo | 3200           | Distributed tracing             |
-| grafana        | Grafana       | 127.0.0.1:3000 | Dashboards for all of the above |
+| Service        | Image         | Host port                  | Purpose                                         |
+| -------------- | ------------- | -------------------------- | ----------------------------------------------- |
+| otel-collector | OpenTelemetry | 4318 · 4317/4319 · 4320/21 | OTLP ingest: browser leg · per-service · legacy |
+| prometheus     | Prometheus    | 9090                       | Metrics (OTLP receiver)                         |
+| loki           | Grafana Loki  | 3100                       | Log aggregation                                 |
+| tempo          | Grafana Tempo | 3200                       | Distributed tracing                             |
+| grafana        | Grafana       | 127.0.0.1:3000             | Dashboards for all of the above                 |
 
 All services join the `aurelius-atlas-dev-observability-network`; apps send telemetry to
-the collector (`4317` gRPC, `4318` HTTP) rather than to each backend.
+the collector (`4318` for browsers, `4317` gRPC / `4319` HTTP for services with a
+Keycloak identity, `4320` gRPC / `4321` HTTP for the shared-token legacy leg)
+rather than to each backend.
 
 ## Configuration
 
@@ -33,10 +35,20 @@ nx serve aurelius-atlas-dev-observability
 Grafana is on `http://localhost:3000`. The FastAPI example, Keycloak, the
 frontend (via its `/otel` dev proxy) all export here automatically when started
 through `nx serve`/`nx up`. Components that speak no OTLP (databases) arrive
-via a slice-owned `metrics-puller` sidecar in postgres and keycloak. The OTLP receivers
-(4317/4318) serve TLS only — exporters
-trust the local CA (each project's `certs/`, `nx certgen`); the browser-facing UI ports
-(Grafana, Prometheus) stay plaintext on a developer machine (ADR 039).
+via a slice-owned `metrics-puller` sidecar in postgres and keycloak. The OTLP
+receivers serve TLS only — exporters trust the local CA (each project's
+`certs/`, `nx certgen`) — and authenticate the writer in three credential-typed
+legs (DD-103, DD-107): the browser leg (4318) validates the signed-in user's
+Keycloak token (OIDC, audience `otel-collector`), the per-service leg
+(4317/4319) validates client-credentials JWTs from the `otel-*` realm clients
+(the pullers' `oauth2client` extension, the Atlas server's refresh shim), and
+the legacy leg (4320/4321) demands the shared ingest token
+(`OTEL_COLLECTOR_INGEST_TOKEN`, this project's `.env.enc`) for the producers
+that cannot present a Keycloak JWT (Keycloak's native OTLP, the FastAPI
+example). A bearer works on exactly one leg. The verified writer is stamped on
+the telemetry (`enduser.id` from `sub`, `otel.ingest.client` from `azp`,
+DD-105/DD-107). The browser-facing UI ports (Grafana, Prometheus) stay
+plaintext on a developer machine (ADR 039).
 
 Dashboards are file-provisioned from `config/grafana/dashboards/` — one per
 application/dev stack (FastAPI, frontend, webapp, Keycloak, Postgres, and

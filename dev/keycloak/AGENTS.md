@@ -15,8 +15,10 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 ## Wiring Checklist
 
 - `project.json` `implicitDependencies` on `aurelius-atlas-dev-observability`; the
-  `serve` target chains `decrypt` → `docker-build` → dependency `serve`, and
-  exports OTLP over TLS to `https://otel-collector:4317` (JVM truststore
+  `serve` target chains `decrypt` → `docker-build` → dependency `serve`. The
+  server's native OTLP rides the collector's **legacy leg**
+  (`https://otel-collector:4320`, shared token — the issuer cannot present a
+  Keycloak JWT at its own cold boot, DD-107; JVM truststore
   `/certs/truststore.p12` via `JAVA_OPTS`; Quarkus' gRPC sender ignores
   `OTEL_EXPORTER_OTLP_CERTIFICATE`).
 - The Keycloak **metadata Postgres** is covered by the slice's
@@ -64,7 +66,12 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
   `nx serve`), `http(s)://localhost|127.0.0.1:4300|4301` (webapp `nx serve`,
   en-US/nl-NL), `https://localhost:18443` (example e2e) and
   `https://localhost:18444` (webapp e2e's fixed host ports). Keep them in
-  sync when ports change. Two Keycloak gotchas learned the hard way:
+  sync when ports change. The client's `defaultClientScopes` include the
+  realm's `otel-ingest` scope (DD-103): its audience mapper stamps
+  `aud: otel-collector` on user tokens, which is what the OTel collector's
+  browser-leg OIDC receiver requires (`azp` stays `aurelius`, so the APIs'
+  azp-or-aud token validation is unaffected). Two Keycloak gotchas learned
+  the hard way:
   redirect URIs support port wildcards (`http://localhost:*` works), but
   CORS **web origins do not** — `originEquals` compares the port suffix
   literally, so a wildcard or `+` derived from a wildcarded redirect fails
@@ -72,6 +79,27 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
     - Re-imports do NOT overwrite an existing realm/client: delete it
       (`DELETE /admin/realms/master/clients/<id>` is too blunt — recreate the
       stack or PUT via the admin API) before a changed import takes effect.
+      Import strategy is `IGNORE_EXISTING` (`KC-SERVICES0030`): adding the
+      `otel-ingest` scope to the `aurelius` client (DD-103) applied only on
+      `docker compose down -v && up -d` (fresh DB); tokens minted before that
+      carry no `aud`, which the collector's OIDC receiver rejects — the first
+      suspect when telemetry 401s on a long-lived dev Keycloak.
+- The `otel-*` **ingest clients** (DD-107, per-service telemetry identity):
+  `otel-atlas-server`, `otel-elasticsearch`, `otel-keycloak`, `otel-postgres` —
+  confidential, service accounts only (every flow off), `defaultClientScopes:
+["basic", "otel-ingest", "roles"]` so their tokens carry `aud: otel-collector`
+  exactly like the browser leg's user tokens, `secret:
+"${OTEL_INGEST_CLIENT_SECRET}"` resolved by the same `replace-placeholders`
+  flag as the dev-user passwords. One shared dev client secret (the clients
+  differ by id; per-producer secrets are a deployment concern). The collector's
+  per-service leg (4317/4319) accepts their client-credentials JWTs and stamps
+  `azp` as `otel.ingest.client`. **Rotation**: bump
+  `OTEL_INGEST_CLIENT_SECRET` in every consumer `.env` (the three slice pullers,
+  the Atlas server — list at DD-107) **and** recreate the Keycloak stack (the
+  import applies only on a fresh DB — `docker compose down -v && up -d`, the
+  `IGNORE_EXISTING` rule above applies to client secrets too), then restart the
+  producers. Adding/renaming an `otel-*` client has the same rule: a running
+  stack will not pick up the import.
 - The frontend's `serve` target depends on this project's `serve`.
 - Realm imports can carry `${VAR}` placeholders resolved from the container
   environment; substitution needs the

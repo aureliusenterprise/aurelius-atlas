@@ -18,6 +18,17 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
 - `implicitDependencies` on `aurelius-atlas-dev-observability`, as for dev/postgres: the
   `metrics-puller` joins the external `aurelius-atlas-dev-observability-network`. Prometheus series carry
   `exported_job="dev-elasticsearch"`.
+- The puller exports on the collector's **per-service leg** with its own
+  identity (DD-107): the `oauth2client` extension mints client-credentials
+  JWTs as the `otel-elasticsearch` realm client (dev/keycloak import) and
+  attaches them per export. Env quartet in compose:
+  `OTEL_INGEST_CLIENT_ID`/`_SECRET` (from `.env.enc`) +
+  `OTEL_INGEST_TOKEN_URL`/`_CA_FILE` (defaults: the dev Keycloak's plaintext
+  `:8080` listener via `keycloak.localhost:host-gateway` — this slice has no
+  Keycloak of its own; the webapp e2e conftest flips both to its TLS `:8443`
+  issuer + CA). The puller carries `restart: on-failure:15` (the DD-106 boot
+  race, issuer-shaped: the mint needs Keycloak up). The slice no longer
+  carries the shared ingest token — its puller was the only consumer.
 - The image tag is shared with `aurelius_atlas_store_es.testing.container`; change both together.
 
 ## Hardened-image quirks (dhi.io/elasticsearch)

@@ -69,6 +69,28 @@ class ServerSettings(BaseSettings):
     elasticsearch_ca_certs: FilePath
     """PEM file with the certificate authority of the Elasticsearch server certificate."""
 
+    otel_token_url: HttpUrl | None = None
+    """The issuer's token endpoint for the OTLP ingest credential (7.18,
+    DD-107): with ``otel_client_secret`` set, the server exports OTLP through
+    the app-owned pipeline (the collector's per-service leg accepts only
+    client-credentials JWTs); unset, the server exports no OTLP (console
+    only). The OTel env vars (``OTEL_EXPORTER_OTLP_*``) are deliberately not
+    read: the 60s dev token cannot ride a static header (DD-107)."""
+
+    otel_client_id: str = "otel-atlas-server"
+    """The ingest realm client the server mints for (7.18, DD-107)."""
+
+    otel_client_secret: SecretStr | None = None
+    """The secret of ``otel_client_id``; never shown in logs."""
+
+    otel_endpoint: str = "https://localhost:4319"
+    """The collector's per-service-leg HTTP base for the OTLP export
+    (7.18, DD-107); the dev compose overrides with the service DNS name."""
+
+    otel_ca_file: FilePath | None = None
+    """PEM CA verifying the collector's TLS for the OTLP export; unset uses
+    the system trust store (the dev stack's mkcert CA is not system-wide)."""
+
     @model_validator(mode="after")
     def _tls_pair(self) -> Self:
         if (self.tls_cert_file is None) != (self.tls_key_file is None):

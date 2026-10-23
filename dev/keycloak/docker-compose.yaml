@@ -18,7 +18,7 @@ services:
                 "--tracing-enabled=true",
                 "--telemetry-metrics-enabled=true",
                 "--telemetry-logs-enabled=true",
-                "--telemetry-endpoint=https://otel-collector:4317",
+                "--telemetry-endpoint=https://otel-collector:4320",
             ]
         depends_on:
             postgres-keycloak:
@@ -30,6 +30,11 @@ services:
             # guards fail interpolation (not the import) when unset.
             DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
             DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
+            # The otel-* ingest clients' secret placeholder in
+            # import/master.json resolves from this container's env (the
+            # replace-placeholders flag, DD-107) — same mechanism as the dev
+            # user passwords above.
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.
@@ -56,8 +61,16 @@ services:
             KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/keycloak-key.pem
             # OpenTelemetry native configuration
             OTEL_SERVICE_NAME: keycloak
-            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4317
+            # The legacy leg (DD-107): Keycloak is the OIDC issuer, so it
+            # cannot present a Keycloak-minted JWT at its own cold boot
+            # (DD-103's chicken-and-egg, scoped to exactly this by DD-107).
+            # Its native OTLP (gRPC) rides the shared ingest token on the
+            # legacy leg (4320; the FastAPI example is its only other user).
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            # The collector requires the shared ingest token (DD-103, CIA-04);
+            # Quarkus' OTLP sender honours the standard headers env var.
+            OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
             OTEL_TRACES_SAMPLER: parentbased_traceidratio
             OTEL_TRACES_SAMPLER_ARG: "0.1"
         healthcheck:
@@ -132,11 +145,25 @@ services:
         # Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        # The oauth2client extension mints its ingest JWT from Keycloak at
+        # startup (DD-107): the collector's DD-106 restart pattern, applied
+        # to the pullers now that the issuer — not a static token — gates
+        # their export.
+        restart: on-failure:15
         environment:
             # Same dev defaults the keycloak service uses for KC_DB_*; the
             # collector expands ${env:...} in its config.
             KEYCLOAK_DATABASE_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
             KEYCLOAK_DATABASE_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+            # Per-service ingest identity (7.18, DD-107): the puller mints
+            # client-credentials JWTs as the otel-keycloak realm client —
+            # the oauth2client extension in config/metrics-puller.yaml
+            # (mint, cache, refresh). The secret placeholder in the realm
+            # import resolves from the same value.
+            OTEL_INGEST_CLIENT_ID: otel-keycloak
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            OTEL_INGEST_TOKEN_URL: ${OTEL_INGEST_TOKEN_URL:-http://keycloak.localhost:8080/realms/master/protocol/openid-connect/token}
+            OTEL_INGEST_CA_FILE: ${OTEL_INGEST_CA_FILE:-}
         volumes:
             - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
             - ./certs:/certs:ro

@@ -1,6 +1,11 @@
+import json
+import os
 import re
+import ssl
 from collections.abc import Generator
 from pathlib import Path
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import dotenv
 import pytest
@@ -12,9 +17,19 @@ from sqlalchemy import URL, Engine
 from sqlmodel import Session, SQLModel, create_engine
 from tenacity import RetryCallState, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from testcontainers.compose import DockerCompose
-from testcontainers.core.wait_strategies import HealthcheckWaitStrategy, HttpWaitStrategy
+from testcontainers.core.wait_strategies import HttpWaitStrategy
 
 CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
+
+# The OIDC leg's issuer (DD-103): the e2e Keycloak serves HTTPS on :8443 and
+# mints iss=.../realms/master on that listener, so the collector's browser-leg
+# OIDC receiver must validate against exactly that issuer. The oidc extension
+# (collector ≥ 0.142 schema: providers/issuer_url) fetches its JWKS through
+# OIDC discovery on that URL — over TLS pinned to the shared dev CA (mounted
+# at /dev-ca in the collector). The compose file's dev default (plaintext
+# :8080) is overridden in the observability fixture for the e2e run.
+KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
+COLLECTOR_OIDC_CA_IN_CONTAINER = "/dev-ca/ca.pem"
 
 
 class Settings(BaseSettings):
@@ -54,10 +69,25 @@ def observability() -> DockerCompose:
     """
     Return a Docker Compose instance for the observability services.
 
+    The collector's browser leg (OIDC) is pointed at the e2e Keycloak issuer
+    (CA-pinned discovery) via the ambient env the compose file interpolates
+    (DD-103): the suite's Keycloak mints :8443 tokens, which the compose dev
+    default (plaintext :8080 issuer) would not match.
+
+    The per-service leg (DD-107) flips the same way: the slice metrics-pullers
+    (this suite starts the keycloak stack) mint their client-credentials
+    JWTs from the issuer, so they inherit the suite's TLS :8443 issuer + CA
+    pin — env the keycloak compose interpolates into the puller container
+    (which mounts its slice's certs/, the same mkcert CA material).
+
     Note: This fixture starts the observability services if they're not already running, but does not stop them after
     the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
     the services are no longer needed.
     """
+    os.environ["OTEL_COLLECTOR_OIDC_ISSUER"] = KEYCLOAK_ISSUER
+    os.environ["OTEL_COLLECTOR_OIDC_CA_FILE"] = COLLECTOR_OIDC_CA_IN_CONTAINER
+    os.environ["OTEL_INGEST_TOKEN_URL"] = f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token"
+    os.environ["OTEL_INGEST_CA_FILE"] = "/certs/ca.pem"
     context = Path(__file__).parents[3].absolute() / "dev" / "observability"
     compose = DockerCompose(context=context)
 
@@ -80,13 +110,16 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
     context = Path(__file__).parents[3].absolute() / "dev" / "keycloak"
     compose = DockerCompose(context=context)
 
+    # Readiness is compose's own: start() runs ``up --wait`` and the keycloak
+    # service carries a healthcheck, so the command returns when Keycloak is
+    # ready (DD-106: this is the gate that lets the collector's
+    # ``restart: on-failure`` cover its OIDC-discovery boot race). No
+    # testcontainers HealthcheckWaitStrategy here: the strategy reads
+    # docker-py ``attrs`` the ComposeContainer wrapper does not have, and a
+    # strategy must be registered before start() to run at all.
     compose.start()
 
-    return compose.waiting_for(
-        {
-            "keycloak": HealthcheckWaitStrategy(),
-        },
-    )
+    return compose
 
 
 @pytest.fixture(scope="session")
@@ -203,3 +236,33 @@ def session(database: Engine) -> Generator[Session]:
     """Return a SQLModel session."""
     with Session(database, expire_on_commit=False) as session:
         yield session
+
+
+@pytest.fixture
+def user_token(keycloak: DockerCompose, settings: Settings) -> str:
+    """A real user access token minted by the e2e Keycloak (DD-103, CIA-01/02).
+
+    The password grant for the dev sign-in user (the same ``aurelius`` client
+    the SPA rides, ``directAccessGrantsEnabled``): the token carries the
+    ``otel-collector`` audience the realm's otel-ingest scope mints, which is
+    what the collector's browser-leg OIDC receiver requires. ``keycloak``
+    guarantees the issuer is up; the shared dev CA verifies the :8443 listener.
+
+    Function-scoped on purpose: the dev realm mints 60s tokens, and the test
+    using it runs once per browser (~7 minutes total) — a session-scoped
+    token is stale for the last browser.
+    """
+    _ = keycloak
+    body = urlencode(
+        {
+            "grant_type": "password",
+            "client_id": "aurelius",
+            "username": settings.username,
+            "password": settings.password.get_secret_value(),
+        }
+    ).encode()
+    request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # https constant issuer
+    context = ssl.create_default_context(cafile=str(CA_FILE))
+
+    with urlopen(request, context=context) as response:  # noqa: S310  # CA-verified constant issuer
+        return json.load(response)["access_token"]

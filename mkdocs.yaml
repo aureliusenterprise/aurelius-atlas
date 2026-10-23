@@ -200,6 +200,8 @@ nav:
                       - 7.14 Settings panel: architecture/conversion/increments/7-14-settings-panel.md
                       - 7.15 Alerts drawer: architecture/conversion/increments/7-15-alerts-drawer.md
                       - 7.16 UI components (details chrome): architecture/conversion/increments/7-16-ui-components-details-ii.md
+                      - 7.17 Collector ingest auth: architecture/conversion/increments/7-17-collector-ingest-auth.md
+                      - 7.18 Collector ingest identity: architecture/conversion/increments/7-18-collector-ingest-identity.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
