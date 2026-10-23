@@ -58,14 +58,16 @@ become relationships, and reads answer them in `relationshipAttributes` (DD-064)
 entity deletes it, listed under `DELETE` in the response (DD-068).
 
 Classifications are attached, read, changed and removed by `guid/{guid}/classifications`,
-`guid/{guid}/classification/{name}`, their `uniqueAttribute` forms and `bulk/classification`; entities read with
-them, and an entity create attaches those it gives (DD-070). `bulk/setClassifications` sets entities'
+`guid/{guid}/classification/{name}`, their `uniqueAttribute` forms and `bulk/classification`; entities read
+with them, and an entity create attaches those it gives (DD-070). `bulk/setClassifications` sets entities'
 classifications to those of their headers. Classifications propagate over relationships through tasks that a
-worker in every server process runs after the request (DD-079, DD-080); entities list theirs in `pendingTasks`,
-and `GET`/`DELETE /api/atlas/admin/tasks` read and remove them. With `AURELIUS_ATLAS_SERVER_TASKS_ENABLED=false`
-propagation happens within the request instead (DD-077, DD-081). `bulk/headers` follows with the audit in 3.5b.
+worker in every server process runs after the request (DD-079, DD-080); entities list theirs in
+`pendingTasks`, and `GET`/`DELETE /api/atlas/admin/tasks` read and remove them. With
+`AURELIUS_ATLAS_SERVER_TASKS_ENABLED=false` propagation happens within the request instead (DD-077, DD-081).
+`bulk/headers` lists the entities whose classifications changed since a time, from their audit events.
 
-Each entity a write, delete or purge changes gets an audit event in the index behind
+Each entity a write, delete or purge changes, and each classification attached, changed, removed or
+propagated, gets an audit event in the index behind
 `aurelius-atlas-entity-audits`, written once the change has committed (DD-082); `GET {guid}/audit` lists them
 newest first from a `startKey`, by `auditAction`, or sorted by `sortBy` and paged by `offset` and `count`, as
 the dashboards' audit tab asks.

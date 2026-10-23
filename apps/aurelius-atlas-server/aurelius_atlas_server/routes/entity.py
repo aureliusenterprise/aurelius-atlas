@@ -1,12 +1,12 @@
 """The endpoints of ``EntityREST`` under ``/api/atlas/v2/entity``: reads, writes, deletes, classifications, audit.
 
-ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09, CLA-01 to CLA-04, AUD-06 to AUD-09.
+ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09, CLA-01 to CLA-04, AUD-06 to AUD-09, CAU-07.
 """
 
 from collections.abc import Callable, Mapping
 from typing import Annotated, Any
 
-from aurelius_atlas_core.classification_associator import ClassificationAssociator
+from aurelius_atlas_core.classification_associator import ClassificationAssociator, ClassificationRetriever
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository, list_events_sorted
@@ -93,7 +93,7 @@ def writer(request: Request, store: EntityStore) -> EntityWriter:
 
 def classifications(request: Request, store: EntityStore) -> EntityClassifications:
     """Classification changes, propagation deferred as the server's ``tasks_enabled`` setting says (TSK-02)."""
-    return EntityClassifications(store, tasks=tasks_enabled(request))
+    return EntityClassifications(store, tasks=tasks_enabled(request), notifier=notifier(request, store))
 
 
 def delete_type(request: Request) -> DeleteType:
@@ -498,9 +498,8 @@ async def set_classifications(request: Request, body: Body, store: Store) -> Res
     The array is Java's text, answered as it is; no body answers ``[]`` (DV-36).
     """
     headers = model_body(AtlasEntityHeaders, body)
-    summary = await ClassificationAssociator(store, tasks=tasks_enabled(request)).set_classifications(
-        None if headers is None else headers.guid_header_map
-    )
+    associator = ClassificationAssociator(store, tasks=tasks_enabled(request), notifier=notifier(request, store))
+    summary = await associator.set_classifications(None if headers is None else headers.guid_header_map)
     return Response(content=summary, media_type="application/json")
 
 
@@ -533,6 +532,23 @@ async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJS
     return _json([event.to_json() for event in events])
 
 
+@ENTITY.get("/bulk/headers")
+async def get_entity_headers(request: Request, store: Store) -> AtlasJSONResponse:
+    """``getEntityHeaders``: the entities whose classifications changed since ``tagUpdateStartTime`` (CAU-07).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a start after now, or one that is no number (DV-41).
+    """
+    start = _java_number(request, "tagUpdateStartTime", 0, LONG_RANGE)
+    end = store.now()
+    if start > end:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, START_AFTER_END)
+    headers = await ClassificationRetriever(store, request.app.state.entity_audits).get(start, end)
+    return _json(headers.to_json())
+
+
+START_AFTER_END = "fromTimestamp should be less than toTimestamp"
+LONG_RANGE = (-(2**63), 2**63 - 1)
 AUDIT_COUNT_DEFAULT = 100
 AUDIT_OFFSET_DEFAULT = -1
 SHORT_RANGE = (-(2**15), 2**15 - 1)
