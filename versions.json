@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase3-3.4a-classification-propagation",
+    "title": "phase3-3.4a-classification-propagation",
+    "aliases": []
+  },
+  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
