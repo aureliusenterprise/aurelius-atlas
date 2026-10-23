@@ -46,8 +46,8 @@ def entity(guid: str, **attributes: object) -> StoredEntity:
     return StoredEntity(guid=guid, type_name="table", attributes=attributes)
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02"])
-async def test__five_aliases_are_created_once(fake: FakeClient) -> None:
+@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02", "TSK-02"])
+async def test__six_aliases_are_created_once(fake: FakeClient) -> None:
     """An index behind each alias; a second prepare changes nothing."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))
 
@@ -60,6 +60,7 @@ async def test__five_aliases_are_created_once(fake: FakeClient) -> None:
         "aurelius-atlas-entity-journal",
         "aurelius-atlas-relationships",
         "aurelius-atlas-classifications",
+        "aurelius-atlas-tasks",
     )
     assert fake.aliases == {alias: f"{alias}-000001" for alias in documents.aliases}
 

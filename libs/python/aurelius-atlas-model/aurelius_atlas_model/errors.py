@@ -301,6 +301,14 @@ class AtlasErrorCode(Enum):
         "ATLAS-404-00-00F",
         "Attempting to delete a relationship which is already deleted : {0}",
     )
+    DELETE_TAG_PROPAGATION_NOT_ALLOWED = (
+        406,
+        "ATLAS-406-00-001",
+        (
+            "Classification delete is not allowed; Add/Update classification propagation is in progress for "
+            "classification: {0} and entity: {1}. Please try again"
+        ),
+    )
     TYPE_ALREADY_EXISTS = (409, "ATLAS-409-00-001", "Given type {0} already exists")
     TYPE_HAS_REFERENCES = (409, "ATLAS-409-00-002", "Given type {0} has references")
     RELATIONSHIP_ALREADY_EXISTS = (

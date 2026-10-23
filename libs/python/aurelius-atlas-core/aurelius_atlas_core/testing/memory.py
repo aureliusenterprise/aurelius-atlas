@@ -3,6 +3,7 @@
 from collections.abc import Mapping, Sequence
 
 from aurelius_atlas_model import codec
+from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
 from aurelius_atlas_core.entity_documents import (
@@ -16,6 +17,7 @@ from aurelius_atlas_core.entity_documents import (
     WriteResult,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
 
 
@@ -235,6 +237,14 @@ class MemoryEntityDocuments:
             if wanted & set(source.get("classificationGuids") or [])  # type: ignore[arg-type]
         ]
         return list((await self.get(found)).values())
+
+    async def list_tasks(self, *, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]:
+        """Every task, or the open ones, oldest first."""
+        found = await self.get_linked(LinkedKind.TASK, list(self.linked[LinkedKind.TASK]))
+        tasks = [(task, version) for task, version in found.values() if isinstance(task, StoredTask)]
+        if open_only:
+            tasks = [(task, v) for task, v in tasks if task.status in {TaskStatus.PENDING, TaskStatus.IN_PROGRESS}]
+        return sorted(tasks, key=lambda item: (item[0].created_time, item[0].guid))
 
     async def count_type(self, type_name: str) -> int:
         """Entities of exactly the type."""

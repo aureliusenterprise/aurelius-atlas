@@ -11,12 +11,14 @@ from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
+from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
 INDEX_PREFIX = "aurelius-atlas"
@@ -38,14 +40,16 @@ class LinkedKind(StrEnum):
 
     RELATIONSHIP = "relationships"
     CLASSIFICATION = "classifications"
+    TASK = "tasks"
 
 
-type Linked = StoredRelationship | StoredClassification
+type Linked = StoredRelationship | StoredClassification | StoredTask
 """A document an entity lists: a relationship or a classification instance."""
 
-LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification]] = {
+LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]] = {
     LinkedKind.RELATIONSHIP: StoredRelationship,
     LinkedKind.CLASSIFICATION: StoredClassification,
+    LinkedKind.TASK: StoredTask,
 }
 
 JOURNAL_PAGE = 1000
@@ -76,6 +80,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "references": _KEYWORD,
         "relationshipGuids": _KEYWORD,
         "classificationGuids": _KEYWORD,
+        "pendingTasks": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
@@ -122,6 +127,22 @@ CLASSIFICATION_MAPPING: dict[str, Any] = {
     },
 }
 """Classification instances by type and entity; attribute values stored, not indexed (DD-070)."""
+
+TASK_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "type": _KEYWORD,
+        "status": _KEYWORD,
+        "createdTime": {"type": "long"},
+        "claimedUntil": {"type": "long"},
+        "writeId": _KEYWORD,
+    },
+}
+"""Tasks by status and creation time; parameters stored, not indexed (DD-079)."""
+
+TASK_PAGE = 1000
+"""How many tasks one search page holds."""
 
 
 @dataclass(frozen=True)
@@ -242,6 +263,10 @@ class EntityDocuments(Protocol):
         """The entities listing any of these classification instances, as of now (DD-076)."""
         ...
 
+    async def list_tasks(self, *, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]:
+        """Every task, or those ``PENDING`` or ``IN_PROGRESS``, oldest first, as of now (TSK-04, TSK-06)."""
+        ...
+
     async def restore(self, guid: str, before: StoredEntity | None) -> None:
         """Put back an entity's state before a write, or delete one the write created."""
         ...
@@ -301,6 +326,7 @@ class ElasticsearchEntityDocuments:
             self._journal: {"dynamic": False, "properties": {"leaseUntil": {"type": "long"}}},
             self._linked[LinkedKind.RELATIONSHIP]: RELATIONSHIP_MAPPING,
             self._linked[LinkedKind.CLASSIFICATION]: CLASSIFICATION_MAPPING,
+            self._linked[LinkedKind.TASK]: TASK_MAPPING,
         }
         for alias, mapping in mappings.items():
             if not await self._client.indices.exists_alias(name=alias):
@@ -409,6 +435,35 @@ class ElasticsearchEntityDocuments:
     async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """Refresh the entity index, then page through the entities whose ``classificationGuids`` hold one (DD-076)."""
         return await self._listing("classificationGuids", guids)
+
+    async def list_tasks(self, *, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]:
+        """Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06)."""
+        index = self._linked[LinkedKind.TASK]
+        await self._client.indices.refresh(index=index)
+        query: dict[str, Any] = (
+            {"terms": {"status": [TaskStatus.PENDING.value, TaskStatus.IN_PROGRESS.value]}}
+            if open_only
+            else {"match_all": {}}
+        )
+        found: list[tuple[StoredTask, DocumentVersion]] = []
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=index,
+                size=TASK_PAGE,
+                query=query,
+                sort=[{"createdTime": "asc"}, {"guid": "asc"}],
+                search_after=after,
+                seq_no_primary_term=True,
+            )
+            hits = response["hits"]["hits"]
+            found += [
+                (StoredTask.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"]))
+                for hit in hits
+            ]
+            if len(hits) < TASK_PAGE:
+                return found
+            after = hits[-1]["sort"]
 
     async def _listing(self, field: str, guids: Sequence[str]) -> list[VersionedEntity]:
         if not guids:
