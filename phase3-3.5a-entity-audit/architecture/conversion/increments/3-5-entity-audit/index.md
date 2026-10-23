@@ -1,7 +1,7 @@
 # 3.5a Entity audit
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#127](<https://github.com/aureliusenterprise/aurelius-atlas/pull/127>)
 - **Records:** DD-082 to DD-084, DV-39, DV-40; relies on DD-049, DD-059
 
 The first part of increment 3.5 (DD-082): an audit event for each entity a write, delete or purge creates, changes, deletes or purges, kept in an index of its own, and Atlas's `GET v2/entity/{guid}/audit` to read them, which is what the dashboards' audit tab calls. 3.5b adds the classification events and `bulk/headers`.
