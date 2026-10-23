@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from aurelius_atlas_model.tasks import MAX_ATTEMPT_COUNT, AtlasTask, TaskStatus
 
 from aurelius_atlas_core.classification_tasks import ClassificationTasks
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_store import (
     EntityStore,
     EntityVersionConflictError,
@@ -27,11 +28,14 @@ LEASE_MILLISECONDS = 300_000
 
 
 class TaskManagement:
-    """The tasks of ``store``; ``lease`` is how long a claim holds, in milliseconds."""
+    """The tasks of ``store``; ``lease`` is how long a claim holds (ms); ``notifier`` hears what tasks do."""
 
-    def __init__(self, store: EntityStore, *, lease: int = LEASE_MILLISECONDS) -> None:
+    def __init__(
+        self, store: EntityStore, *, lease: int = LEASE_MILLISECONDS, notifier: EntityChangeNotifier | None = None
+    ) -> None:
         self._store = store
         self._lease = lease
+        self._notifier = notifier
 
     async def get_all(self) -> list[AtlasTask]:
         """``getAll``: every task, oldest first (TSK-06)."""
@@ -86,7 +90,7 @@ class TaskManagement:
     async def _run(self, task: StoredTask, version: DocumentVersion) -> bool:
         """Run a claimed task; one that fails is ``PENDING`` again, or ``FAILED`` at the last attempt (TSK-05)."""
         try:
-            await ClassificationTasks(self._store).run(task, version)
+            await ClassificationTasks(self._store, notifier=self._notifier).run(task, version)
         except Exception as failure:  # noqa: BLE001 - AbstractTask: any failure counts as an attempt
             await self._failed(task, version, failure)
             return False

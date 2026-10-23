@@ -270,7 +270,15 @@ async def test__events_are_sorted_by_a_column_then_paged(audits: InMemoryEntityA
 @pytest.mark.covers(
     *(
         f"{N}.EntityChangeListener.{name}"
-        for name in ("on_entities_added", "on_entities_updated", "on_entities_deleted", "on_entities_purged")
+        for name in (
+            "on_entities_added",
+            "on_entities_updated",
+            "on_entities_deleted",
+            "on_entities_purged",
+            "on_classifications_added",
+            "on_classifications_updated",
+            "on_classifications_deleted",
+        )
     ),
     rules=["AUD-02"],
 )

@@ -1,21 +1,26 @@
-name: An entity's creation, update and delete are audited, newest first, by action, or sorted and paged
+name: An entity's creation, update, classification and delete are audited, newest first, by action, or sorted
 source:
     - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getAuditEvents
     - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityChangeNotifier.java#onEntitiesMutated
     - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#getV2AuditPrefix
     - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onEntitiesDeleted
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onClassificationsAdded
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onClassificationsDeleted
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#deleteClassification
     - repository/src/main/java/org/apache/atlas/repository/audit/HBaseBasedAuditRepository.java#listEventsV2
     - repository/src/main/java/org/apache/atlas/repository/audit/HBaseBasedAuditRepository.java#fromKeyV2
     - intg/src/main/java/org/apache/atlas/model/audit/EntityAuditEventV2.java (JsonSerialize.Inclusion.ALWAYS)
-rules: [AUD-01, AUD-02, AUD-03, AUD-06, AUD-07, AUD-08]
+rules: [AUD-01, AUD-02, AUD-03, AUD-06, AUD-07, AUD-08, CAU-01, CAU-02, CAU-04]
 covers:
     - aurelius_atlas_server.routes.entity.get_audit_events
 stages:
-    - name: create a table type, named for this run (DD-055)
+    - name: create a table type and a classification type, named for this run (DD-055)
       request:
           method: POST
           url: /api/atlas/v2/types/typedefs
           json:
+              classificationDefs:
+                  - name: scenario_atag_{run}
               entityDefs:
                   - name: scenario_atable_{run}
                     attributeDefs:
@@ -26,7 +31,21 @@ stages:
           json:
               enumDefs: []
               structDefs: []
-              classificationDefs: []
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_atag_{run}
+                    description: scenario_atag_{run}
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: admin
+                    updatedBy: admin
               entityDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -66,10 +85,15 @@ stages:
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
+              - $.classificationDefs[*].guid
+              - $.classificationDefs[*].createTime
+              - $.classificationDefs[*].updateTime
               - $.entityDefs[*].guid
               - $.entityDefs[*].createTime
               - $.entityDefs[*].updateTime
           deviations:
+              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
               - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
               - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
     - name: create a table
@@ -125,6 +149,17 @@ stages:
                         labels: []
               partialUpdatedEntities: [*table_header]
               guidAssignments: {}
+    - name: classify it
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{table}/classifications
+          json: [{ typeName: "scenario_atag_{run}" }]
+      response:
+          status: 204
+    - name: declassify it
+      request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{table}/classification/scenario_atag_{run}" }
+      response:
+          status: 204
     - name: delete it
       request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{table}" }
       response:
@@ -142,7 +177,7 @@ stages:
                         meanings: []
                         isIncomplete: false
                         labels: []
-    - name: its events newest first; the details of a create and an update hold the entity
+    - name: its events newest first; the details of a create, an update and an add hold the entity or classification
       request: { method: GET, url: "/api/atlas/v2/entity/{table}/audit" }
       response:
           status: 200
@@ -153,6 +188,22 @@ stages:
                 user: admin
                 action: ENTITY_DELETE
                 details: Deleted entity
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: CLASSIFICATION_DELETE
+                details: "Deleted classification: scenario_atag_{run}"
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: CLASSIFICATION_ADD
+                details: 'Added classification: {"typeName":"scenario_atag_{run}","entityGuid":"{table}", …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
                 entity: null
                 type: null
@@ -176,12 +227,15 @@ stages:
           volatile:
               - $[*].timestamp
               - $[*].eventKey
-              - $[1].details
               - $[2].details
+              - $[3].details
+              - $[4].details
           deviations:
               - { id: DV-04, path: "$[0].user", value: null }
               - { id: DV-04, path: "$[1].user", value: null }
               - { id: DV-04, path: "$[2].user", value: null }
+              - { id: DV-04, path: "$[3].user", value: null }
+              - { id: DV-04, path: "$[4].user", value: null }
     - name: only its creation, by action
       request:
           method: GET

@@ -7,6 +7,7 @@ from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
+from aurelius_atlas_core.entity_audit_repository import TAG_ACTIONS
 from aurelius_atlas_core.entity_documents import (
     LINKED_MODELS,
     JournalEntry,
@@ -279,3 +280,14 @@ class InMemoryEntityAuditRepository:
             and (start_key is None or (event.event_key or "") <= start_key)
         ]
         return found if count == -1 else found[:count]
+
+    async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
+        """The entities with a classification event in the time range, newest key first."""
+        events = sorted(self.events, key=lambda event: event.event_key or "", reverse=True)
+        return list(
+            dict.fromkeys(
+                str(event.entity_id)
+                for event in events
+                if event.action in TAG_ACTIONS and from_timestamp <= event.timestamp < to_timestamp
+            )
+        )

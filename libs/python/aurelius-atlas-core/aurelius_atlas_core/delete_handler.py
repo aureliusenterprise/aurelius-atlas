@@ -20,6 +20,7 @@ from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
 from aurelius_atlas_core.entity_store import ClassificationChange, EntityChange, RelationshipChange, TaskChange
 from aurelius_atlas_core.graph_helper import collection_elements, edge_for_label
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
 from aurelius_atlas_core.transaction_view import EntityView
@@ -39,6 +40,10 @@ class Deletion:
     relationship_changes: list[RelationshipChange] = field(default_factory=list)
     classification_changes: list[ClassificationChange] = field(default_factory=list)
     task_changes: list[TaskChange] = field(default_factory=list)
+    added: dict[str, list[StoredClassification]] = field(default_factory=dict)
+    """The propagations the delete added, per entity (DD-086)."""
+    removed: dict[str, list[StoredClassification]] = field(default_factory=dict)
+    """The propagations the delete removed, per entity (DD-086)."""
 
     def change(self, guid: str) -> int | None:
         """The index of the change of entity ``guid``, or None."""
@@ -84,6 +89,7 @@ class DeleteHandler:
         await self._classifications(deletion, propagation)
         _merge_propagation(deletion, propagation)
         deletion.task_changes += [TaskChange(task) for task in propagation.tasks()]
+        deletion.added, deletion.removed = propagation.added, propagation.removed
         return deletion
 
     async def _classifications(self, deletion: Deletion, propagation: TagPropagation) -> None:

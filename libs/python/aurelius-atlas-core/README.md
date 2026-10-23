@@ -37,7 +37,10 @@ Since [3.4b](../../../docs/architecture/conversion/increments/3-4-propagation-ta
 deferred to tasks written with the request, which task management claims and runs (DD-079, DD-080). Since
 [3.5a](../../../docs/architecture/conversion/increments/3-5-entity-audit.md): the change notifier the entity
 writer tells what it changed, and the audit listener and repository that record and list entity events
-(DD-082 to DD-084).
+(DD-082 to DD-084). Since
+[3.5b](../../../docs/architecture/conversion/increments/3-5-classification-audit.md): classification events from
+every operation that attaches or propagates classifications, recorded in Atlas's order, and the retriever behind
+`bulk/headers` (DD-085, DD-086).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))

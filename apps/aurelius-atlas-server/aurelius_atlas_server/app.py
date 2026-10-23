@@ -7,7 +7,9 @@ from importlib.metadata import version
 from pathlib import Path
 
 import logfire
+from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.model_loader import ModelLoader
@@ -81,7 +83,8 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
             await entity_store.recover()
             app.state.typedef_store = typedef_store
             app.state.entity_store = entity_store
-            app.state.task_management = TaskManagement(entity_store)
+            audit = EntityChangeNotifier(entity_store, [EntityAuditListener(entity_audits, entity_store.now)])
+            app.state.task_management = TaskManagement(entity_store, notifier=audit)
             if settings.tasks_enabled:
                 worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
                 entity_store.task_listeners.append(worker.wake)
