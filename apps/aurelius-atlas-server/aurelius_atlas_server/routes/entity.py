@@ -1,18 +1,22 @@
-"""The entity reads, writes and deletes of ``EntityREST`` under ``/api/atlas/v2/entity``, and their classifications.
+"""The endpoints of ``EntityREST`` under ``/api/atlas/v2/entity``: reads, writes, deletes, classifications, audit.
 
-ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09, CLA-01 to CLA-04.
+ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09, CLA-01 to CLA-04, AUD-06 to AUD-09.
 """
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Annotated, Any
 
 from aurelius_atlas_core.classification_associator import ClassificationAssociator
 from aurelius_atlas_core.delete_type import DeleteType
+from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
+from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository, list_events_sorted
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_model import codec
+from aurelius_atlas_model.audit import EntityAuditActionV2
 from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_model.errors import java_string
 from aurelius_atlas_model.instance import (
@@ -68,13 +72,23 @@ def tasks_enabled(request: Request) -> bool:
     return bool(request.app.state.settings.tasks_enabled)
 
 
+def notifier(request: Request, store: EntityStore) -> EntityChangeNotifier:
+    """The change notifier of a request: its changes recorded in the server's audit (DD-084)."""
+    return EntityChangeNotifier(store, [EntityAuditListener(request.app.state.entity_audits, store.now)])
+
+
 def writer(request: Request, store: EntityStore) -> EntityWriter:
     """A writer deleting as the server's ``delete_type`` setting says unless a request chooses (EDL-04).
 
-    Propagation is deferred as ``tasks_enabled`` says.
+    Propagation is deferred as ``tasks_enabled`` says; the changes are audited (DD-084).
     """
     settings = request.app.state.settings
-    return EntityWriter(store, delete_type=DeleteType.of(settings.delete_type), tasks=tasks_enabled(request))
+    return EntityWriter(
+        store,
+        delete_type=DeleteType.of(settings.delete_type),
+        tasks=tasks_enabled(request),
+        notifier=notifier(request, store),
+    )
 
 
 def classifications(request: Request, store: EntityStore) -> EntityClassifications:
@@ -288,14 +302,26 @@ async def get_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
 async def create_or_update(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``createOrUpdate``: create the entity, and the entities it names, or update them (EWR-02)."""
     entity = model_body(AtlasEntityWithExtInfo, body) or AtlasEntityWithExtInfo()
-    return _json((await EntityWriter(store, tasks=tasks_enabled(request)).create_or_update(entity)).to_json())
+    return _json(
+        (
+            await EntityWriter(store, tasks=tasks_enabled(request), notifier=notifier(request, store)).create_or_update(
+                entity
+            )
+        ).to_json()
+    )
 
 
 @ENTITY.post("/bulk")
 async def create_or_update_bulk(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``createOrUpdate`` of a bulk request: create or update every entity (EWR-02)."""
     entities = model_body(AtlasEntitiesWithExtInfo, body)
-    return _json((await EntityWriter(store, tasks=tasks_enabled(request)).create_or_update(entities)).to_json())
+    return _json(
+        (
+            await EntityWriter(store, tasks=tasks_enabled(request), notifier=notifier(request, store)).create_or_update(
+                entities
+            )
+        ).to_json()
+    )
 
 
 @ENTITY.put("/uniqueAttribute/type/{type_name}")
@@ -310,9 +336,9 @@ async def partial_update_entity_by_unique_attrs(
     entity = model_body(AtlasEntityWithExtInfo, body)
     return _json(
         (
-            await EntityWriter(store, tasks=tasks_enabled(request)).update_by_unique_attributes(
-                entity_type, attributes, entity
-            )
+            await EntityWriter(
+                store, tasks=tasks_enabled(request), notifier=notifier(request, store)
+            ).update_by_unique_attributes(entity_type, attributes, entity)
         ).to_json()
     )
 
@@ -327,7 +353,11 @@ async def partial_update_entity_attr_by_guid(
     if name is not None:
         validate_param_length("name", name)
     return _json(
-        (await EntityWriter(store, tasks=tasks_enabled(request)).update_attribute_by_guid(guid, name, body)).to_json()
+        (
+            await EntityWriter(
+                store, tasks=tasks_enabled(request), notifier=notifier(request, store)
+            ).update_attribute_by_guid(guid, name, body)
+        ).to_json()
     )
 
 
@@ -472,3 +502,67 @@ async def set_classifications(request: Request, body: Body, store: Store) -> Res
         None if headers is None else headers.guid_header_map
     )
     return Response(content=summary, media_type="application/json")
+
+
+@ENTITY.get("/{guid}/audit")
+async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getAuditEvents``: the entity's audit events, sorted and paged, or newest first from a key (AUD-06 to AUD-09).
+
+    Raises:
+        AtlasError: ``INSTANCE_GUID_NOT_FOUND`` for an entity that neither exists nor was purged, ``BAD_REQUEST`` for
+            a parameter that is no value of its type (DV-39).
+    """
+    audits: EntityAuditRepository = request.app.state.entity_audits
+    start_key = _first(request, "startKey")
+    action_name = _first(request, "auditAction")
+    action = None if action_name is None else _parsed("auditAction", action_name, EntityAuditActionV2.from_string)
+    count = _java_number(request, "count", AUDIT_COUNT_DEFAULT, SHORT_RANGE)
+    offset = _java_number(request, "offset", AUDIT_OFFSET_DEFAULT, INT_RANGE)
+    sort_by, sort_order = _first(request, "sortBy"), _first(request, "sortOrder")
+    if await store.get(guid) is None:
+        purges = await audits.list_events(guid, EntityAuditActionV2.ENTITY_PURGE, None, 1)
+        if not purges or purges[0].entity_header() is None:
+            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+    if sort_by is not None or offset > -1:
+        descending = (sort_order or "").lower() == "desc"
+        events = await list_events_sorted(
+            audits, guid, action, sort_by, descending=descending, offset=offset, limit=count
+        )
+    else:
+        events = await audits.list_events(guid, action, start_key, count)
+    return _json([event.to_json() for event in events])
+
+
+AUDIT_COUNT_DEFAULT = 100
+AUDIT_OFFSET_DEFAULT = -1
+SHORT_RANGE = (-(2**15), 2**15 - 1)
+INT_RANGE = (-(2**31), 2**31 - 1)
+INVALID_PARAMETER = "Invalid value {value} for query parameter {name}"
+
+
+def _first(request: Request, name: str) -> str | None:
+    """A query parameter's first value, as JAX-RS reads one."""
+    values = request.query_params.getlist(name)
+    return values[0] if values else None
+
+
+def _parsed[T](name: str, value: str, parse: Callable[[str], T]) -> T:
+    try:
+        return parse(value)
+    except ValueError as error:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_PARAMETER.format(value=value, name=name)) from error
+
+
+def _java_number(request: Request, name: str, default: int, bounds: tuple[int, int]) -> int:
+    """A Java ``short`` or ``int`` query parameter, its default when absent (AUD-09).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for text that is no number of the type (DV-39).
+    """
+    value = _first(request, name)
+    if value is None:
+        return default
+    number = _parsed(name, value, int)
+    if not bounds[0] <= number <= bounds[1] or not value.lstrip("-+").isdigit():
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_PARAMETER.format(value=value, name=name))
+    return number

@@ -7,6 +7,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import logfire
+from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.model_loader import ModelLoader
@@ -52,7 +53,8 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
 
     The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
     models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
-    (ENS-01, ENS-07). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
+    (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record
+    (TSK-04, DD-080).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
@@ -65,6 +67,9 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
         try:
             entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
             await entity_store.prepare()
+            entity_audits = ElasticsearchEntityAuditRepository(store.client)
+            await entity_audits.prepare()
+            app.state.entity_audits = entity_audits
             typedef_store = TypedefStore(
                 registry,
                 ElasticsearchTypedefDocument(store.client),

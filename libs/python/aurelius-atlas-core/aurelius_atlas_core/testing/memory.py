@@ -3,6 +3,7 @@
 from collections.abc import Mapping, Sequence
 
 from aurelius_atlas_model import codec
+from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
@@ -249,3 +250,32 @@ class MemoryEntityDocuments:
     async def count_type(self, type_name: str) -> int:
         """Entities of exactly the type."""
         return sum(1 for source, _ in self.entities.values() if source.get("typeName") == type_name)
+
+
+class InMemoryEntityAuditRepository:
+    """``EntityAuditRepository`` in memory: Atlas's ``InMemoryEntityAuditRepository``, ordered by event key."""
+
+    def __init__(self) -> None:
+        self.events: list[EntityAuditEventV2] = []
+
+    async def prepare(self) -> None:
+        """Nothing to create."""
+
+    async def put_events(self, events: Sequence[EntityAuditEventV2]) -> None:
+        """Keep the events without their entity definitions."""
+        self.events += [event.model_copy(update={"entity": None, "type": None}) for event in events]
+
+    async def list_events(
+        self, entity_id: str, action: EntityAuditActionV2 | None, start_key: str | None, count: int
+    ) -> list[EntityAuditEventV2]:
+        """The entity's events, newest key first, from ``start_key`` on; ``count`` as the protocol says."""
+        if count == 0 or count < -1:
+            return []
+        found = [
+            event
+            for event in sorted(self.events, key=lambda event: event.event_key or "", reverse=True)
+            if event.entity_id == entity_id
+            and (action is None or event.action is action)
+            and (start_key is None or (event.event_key or "") <= start_key)
+        ]
+        return found if count == -1 else found[:count]

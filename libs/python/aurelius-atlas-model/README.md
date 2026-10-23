@@ -78,3 +78,7 @@ workspace = true
 ::: aurelius_atlas_model.instance.term_assignment_header
 
 ::: aurelius_atlas_model.instance.term_assignment_status
+
+::: aurelius_atlas_model.audit
+
+::: aurelius_atlas_model.tasks

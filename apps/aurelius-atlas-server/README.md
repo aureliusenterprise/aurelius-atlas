@@ -63,7 +63,12 @@ them, and an entity create attaches those it gives (DD-070). `bulk/setClassifica
 classifications to those of their headers. Classifications propagate over relationships through tasks that a
 worker in every server process runs after the request (DD-079, DD-080); entities list theirs in `pendingTasks`,
 and `GET`/`DELETE /api/atlas/admin/tasks` read and remove them. With `AURELIUS_ATLAS_SERVER_TASKS_ENABLED=false`
-propagation happens within the request instead (DD-077, DD-081). `bulk/headers` follows with the audit in 3.5.
+propagation happens within the request instead (DD-077, DD-081). `bulk/headers` follows with the audit in 3.5b.
+
+Each entity a write, delete or purge changes gets an audit event in the index behind
+`aurelius-atlas-entity-audits`, written once the change has committed (DD-082); `GET {guid}/audit` lists them
+newest first from a `startKey`, by `auditAction`, or sorted by `sortBy` and paged by `offset` and `count`, as
+the dashboards' audit tab asks.
 
 Its deletes (`DELETE guid/{guid}`, `DELETE bulk`, `DELETE uniqueAttribute/type/{typeName}`) delete an entity
 with the entities it owns and change those referring to it; `PUT /api/atlas/admin/purge` removes deleted

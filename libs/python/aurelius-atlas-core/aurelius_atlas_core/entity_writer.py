@@ -30,6 +30,7 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.delete_handler import DeleteHandler
 from aurelius_atlas_core.delete_type import DeleteType
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier, prune_response
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_comparator import EntityComparator
 from aurelius_atlas_core.entity_discovery import DiscoveryContext, EntityDiscovery, EntityStream, object_id_of
@@ -107,7 +108,7 @@ type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
 class EntityWriter:
     """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
 
-    ``tasks`` defers propagation to tasks (TSK-02).
+    ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told what each request changed (DD-084).
     """
 
     def __init__(
@@ -117,11 +118,13 @@ class EntityWriter:
         user: str | None = None,
         delete_type: DeleteType = DeleteType.SOFT,
         tasks: bool = False,
+        notifier: EntityChangeNotifier | None = None,
     ) -> None:
         self._store = store
         self._user = user
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
         self._tasks = tasks
+        self._notifier = notifier
 
     async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
         """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
@@ -190,13 +193,20 @@ class EntityWriter:
                 self._store, now=self._store.now(), user=self._user, purge=purge, deferral=self._deferral()
             )
             try:
-                return await self._deleted(handler, await candidates(), purge=purge)
+                return await self._mutated(await self._deleted(handler, await candidates(), purge=purge))
             except EntityVersionConflictError as conflict:
                 if attempt == ATTEMPTS:
                     raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
             except (UniqueValueTakenError, EntityWriteError) as failure:
                 raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
         raise AssertionError  # pragma: no cover - the loop returns or raises
+
+    async def _mutated(self, response: EntityMutationResponse) -> EntityMutationResponse:
+        """``onEntitiesMutated``: the response pruned, as Atlas answers it, and told to the notifier (AUD-02)."""
+        prune_response(response)
+        if self._notifier is not None:
+            await self._notifier.on_entities_mutated(response, user=self._user)
+        return response
 
     async def _deleted(
         self, handler: DeleteHandler, candidates: list[VersionedEntity], *, purge: bool
@@ -280,7 +290,7 @@ class EntityWriter:
         """
         for attempt in range(1, ATTEMPTS + 1):
             try:
-                return await self._create_or_update(_copy(stream), partial=partial)
+                return await self._mutated(await self._create_or_update(_copy(stream), partial=partial))
             except EntityVersionConflictError as conflict:
                 if attempt == ATTEMPTS:
                     raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict

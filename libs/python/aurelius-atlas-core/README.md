@@ -34,7 +34,10 @@ associator behind `bulk/setClassifications`. Since
 [3.4a](../../../docs/architecture/conversion/increments/3-4-classification-propagation.md): classification
 propagation over relationships, computed and written within the request that causes it (DD-075 to DD-077).
 Since [3.4b](../../../docs/architecture/conversion/increments/3-4-propagation-tasks.md): that propagation
-deferred to tasks written with the request, which task management claims and runs (DD-079, DD-080).
+deferred to tasks written with the request, which task management claims and runs (DD-079, DD-080). Since
+[3.5a](../../../docs/architecture/conversion/increments/3-5-entity-audit.md): the change notifier the entity
+writer tells what it changed, and the audit listener and repository that record and list entity events
+(DD-082 to DD-084).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -113,6 +116,12 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.classification_tasks
 
 ::: aurelius_atlas_core.task_management
+
+::: aurelius_atlas_core.entity_change_notifier
+
+::: aurelius_atlas_core.entity_audit_listener
+
+::: aurelius_atlas_core.entity_audit_repository
 
 ::: aurelius_atlas_core.stored_relationship
 

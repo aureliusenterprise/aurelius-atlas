@@ -235,7 +235,7 @@ async def test__classified_entities_are_found_by_their_listed_instances(
 async def test__tasks_are_listed_oldest_first_all_or_open(
     documents: ElasticsearchEntityDocuments, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Sorted, page by page; the open ones are ``PENDING`` or ``IN_PROGRESS`` (the fake sorts by GUID)."""
+    """Oldest first, page by page; the open ones are ``PENDING`` or ``IN_PROGRESS``."""
     monkeypatch.setattr(entity_documents, "TASK_PAGE", 1)
     tasks = [
         StoredTask(guid="a", type="t", created_time=1, status=TaskStatus.IN_PROGRESS),
