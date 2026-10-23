@@ -1,0 +1,238 @@
+name: An entity's creation, update and delete are audited, newest first, by action, or sorted and paged
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getAuditEvents
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityChangeNotifier.java#onEntitiesMutated
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#getV2AuditPrefix
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onEntitiesDeleted
+    - repository/src/main/java/org/apache/atlas/repository/audit/HBaseBasedAuditRepository.java#listEventsV2
+    - repository/src/main/java/org/apache/atlas/repository/audit/HBaseBasedAuditRepository.java#fromKeyV2
+    - intg/src/main/java/org/apache/atlas/model/audit/EntityAuditEventV2.java (JsonSerialize.Inclusion.ALWAYS)
+rules: [AUD-01, AUD-02, AUD-03, AUD-06, AUD-07, AUD-08]
+covers:
+    - aurelius_atlas_server.routes.entity.get_audit_events
+stages:
+    - name: create a table type, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_atable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: size, typeName: int, isOptional: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_atable_{run}
+                    description: scenario_atable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: size
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+    - name: create a table
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity: { typeName: "scenario_atable_{run}", guid: "-1", attributes: { qualifiedName: "at_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_atable_{run}
+                        attributes: { qualifiedName: "at_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: at_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+          save:
+              table: $.guidAssignments['-1']
+    - name: set its size by GUID, a partial update
+      request:
+          method: PUT
+          url: /api/atlas/v2/entity/guid/{table}
+          params: { name: size }
+          json: 7
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PARTIAL_UPDATE:
+                      - &table_header
+                        typeName: scenario_atable_{run}
+                        attributes: { qualifiedName: "at_{run}" }
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: at_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              partialUpdatedEntities: [*table_header]
+              guidAssignments: {}
+    - name: delete it
+      request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{table}" }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_atable_{run}
+                        attributes: { qualifiedName: "at_{run}" }
+                        guid: "{table}"
+                        status: ACTIVE
+                        displayText: at_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: its events newest first; the details of a create and an update hold the entity
+      request: { method: GET, url: "/api/atlas/v2/entity/{table}/audit" }
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: ENTITY_DELETE
+                details: Deleted entity
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: ENTITY_UPDATE
+                details: 'Updated: {"typeName":"scenario_atable_{run}", … "size":7 …}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: ENTITY_CREATE
+                details: 'Created: {"typeName":"scenario_atable_{run}", …}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+          # Times, keys and the entity JSON (with its times) differ per run; the unit tests check the details.
+          volatile:
+              - $[*].timestamp
+              - $[*].eventKey
+              - $[1].details
+              - $[2].details
+          deviations:
+              - { id: DV-04, path: "$[0].user", value: null }
+              - { id: DV-04, path: "$[1].user", value: null }
+              - { id: DV-04, path: "$[2].user", value: null }
+    - name: only its creation, by action
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/{table}/audit
+          params: { auditAction: ENTITY_CREATE }
+      response:
+          status: 200
+          json:
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: ENTITY_CREATE
+                details: 'Created: {"typeName":"scenario_atable_{run}", …}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+          volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
+          deviations:
+              - { id: DV-04, path: "$[0].user", value: null }
+    - name: sorted by time, oldest first, two from the first
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/{table}/audit
+          params: { sortBy: timestamp, sortOrder: asc, offset: "0", count: "2" }
+      response:
+          status: 200
+          json:
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: ENTITY_CREATE
+                details: 'Created: {"typeName":"scenario_atable_{run}", …}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: admin
+                action: ENTITY_UPDATE
+                details: 'Updated: {"typeName":"scenario_atable_{run}", … "size":7 …}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+          volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
+          deviations:
+              - { id: DV-04, path: "$[0].user", value: null }
+              - { id: DV-04, path: "$[1].user", value: null }
+    - name: no audit for a GUID no entity had
+      request: { method: GET, url: "/api/atlas/v2/entity/no-such-guid-{run}/audit" }
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: "Given instance guid no-such-guid-{run} is invalid/not found"
