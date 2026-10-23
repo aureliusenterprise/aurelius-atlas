@@ -22,6 +22,7 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_typesystem.relationship_type import RelationshipType
 
 from aurelius_atlas_core.delete_type import DeleteType
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
@@ -48,7 +49,7 @@ _SWAPPED = {PropagateTags.ONE_TO_TWO: PropagateTags.TWO_TO_ONE, PropagateTags.TW
 class RelationshipStore:
     """Relationships between entities of ``store``, written as ``user``; ``delete_type`` is the default (EDL-04).
 
-    ``tasks`` defers propagation to tasks (TSK-02).
+    ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told the propagations each change made (CAU-05).
     """
 
     def __init__(
@@ -58,11 +59,13 @@ class RelationshipStore:
         user: str | None = None,
         delete_type: DeleteType = DeleteType.SOFT,
         tasks: bool = False,
+        notifier: EntityChangeNotifier | None = None,
     ) -> None:
         self._store = store
         self._user = user
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
         self._tasks = tasks
+        self._notifier = notifier
 
     async def create(self, relationship: AtlasRelationship) -> AtlasRelationship:
         """``create``: a new relationship between two entities, unless one with its label joins them (REL-04, REL-05).
@@ -139,6 +142,7 @@ class RelationshipStore:
             await self._store.write(
                 propagation.entity_changes(ends), [RelationshipChange(stored, found.version, remove=True)]
             )
+            await self._notify(propagation)
 
         await self._run(delete)
 
@@ -195,6 +199,7 @@ class RelationshipStore:
         stored = await propagation.handle_blocked(stored, relationship.blocked_propagated_classifications)
         await propagation.relationship_created(stored)  # PRO-04, TSK-02
         await self._store.write(propagation.entity_changes(ends), [RelationshipChange(stored)], [], _tasks(propagation))
+        await self._notify(propagation)
         return await self._answer(stored)
 
     async def _update(self, relationship: AtlasRelationship) -> AtlasRelationship:
@@ -240,7 +245,13 @@ class RelationshipStore:
         await self._store.write(
             propagation.entity_changes([]), [RelationshipChange(changed, found.version)], [], _tasks(propagation)
         )
+        await self._notify(propagation)
         return await self._answer(changed)
+
+    async def _notify(self, propagation: TagPropagation) -> None:
+        """``sendNotifications``' ``notifyPropagatedEntities``, once the change is written (CAU-05)."""
+        if self._notifier is not None:
+            await self._notifier.notify_propagated_entities(propagation.added, propagation.removed, user=self._user)
 
     def _deferral(self) -> Deferral | None:
         """Tasks for propagation, recorded by the store's user now, when they are enabled (TSK-02, TSK-08)."""

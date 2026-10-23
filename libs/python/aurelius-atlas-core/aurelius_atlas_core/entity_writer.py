@@ -30,7 +30,7 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.delete_handler import DeleteHandler
 from aurelius_atlas_core.delete_type import DeleteType
-from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier, prune_response
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier, RequestRecord, prune_response
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_comparator import EntityComparator
 from aurelius_atlas_core.entity_discovery import DiscoveryContext, EntityDiscovery, EntityStream, object_id_of
@@ -125,6 +125,7 @@ class EntityWriter:
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
         self._tasks = tasks
         self._notifier = notifier
+        self._record = RequestRecord()
 
     async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
         """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
@@ -202,16 +203,31 @@ class EntityWriter:
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
     async def _mutated(self, response: EntityMutationResponse) -> EntityMutationResponse:
-        """``onEntitiesMutated``: the response pruned, as Atlas answers it, and told to the notifier (AUD-02)."""
+        """``onEntitiesMutated``: the response pruned, as Atlas answers it, and told to the notifier (AUD-02).
+
+        The classifications created entities were given come first, the propagations after (CAU-02, CAU-05).
+        """
         prune_response(response)
-        if self._notifier is not None:
-            await self._notifier.on_entities_mutated(response, user=self._user)
+        record, self._record = self._record, RequestRecord()
+        notifier = self._notifier
+        if notifier is not None:
+            for guids, instance in record.added_classifications:
+                await notifier.on_classifications_added(guids, [instance], user=self._user)
+            await notifier.on_entities_mutated(response, user=self._user)
+            gone = [
+                str(header.guid)
+                for operation in (EntityOperation.DELETE, EntityOperation.PURGE)
+                for header in response.get_entities_by_operation(operation) or []
+            ]
+            await notifier.notify_propagated_entities(record.added, record.removed, user=self._user, deleted=gone)
         return response
 
     async def _deleted(
         self, handler: DeleteHandler, candidates: list[VersionedEntity], *, purge: bool
     ) -> EntityMutationResponse:
         deletion = await handler.delete_entities(candidates)
+        self._record = RequestRecord()
+        self._record.merge(deletion.added, deletion.removed)
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=purge) for guid in deletion.deleted]
         if deletion.changes or deletion.relationship_changes or deletion.classification_changes:
@@ -299,6 +315,7 @@ class EntityWriter:
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
     async def _create_or_update(self, stream: EntityStream, *, partial: bool) -> EntityMutationResponse:
+        self._record = RequestRecord()
         discovery = EntityDiscovery(self._store, stream)
         context = await discovery.discover()
         mutation = await self._prepare(discovery, context, partial=partial)
@@ -399,10 +416,12 @@ class EntityWriter:
         for relationship in relationships.removed():
             await propagation.relationship_removed(relationship)
         for instance in instances.values():
-            if instance.propagate and instance.entity_guid:
-                await propagation.propagate(instance, instance.entity_guid)
+            if instance.entity_guid:
+                reached = await propagation.propagate(instance, instance.entity_guid) if instance.propagate else []
+                self._record.added_classifications.append(([instance.entity_guid, *reached], instance))
         for change in propagation.entity_changes(changes):
             changes[change.entity.guid] = change
+        self._record.merge(propagation.added, propagation.removed)
         return [TaskChange(task) for task in propagation.tasks()]
 
     def _deferral(self) -> Deferral | None:
@@ -453,6 +472,7 @@ class EntityWriter:
         )
         found = await view.get_many(dropped)
         deletion = await handler.delete_entities([found[guid] for guid in dropped if guid in found])
+        self._record.merge(deletion.added, deletion.removed)
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=False) for guid in deletion.deleted]
         for change in deletion.changes:

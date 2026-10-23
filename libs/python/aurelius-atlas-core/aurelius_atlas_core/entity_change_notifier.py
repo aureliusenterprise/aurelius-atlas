@@ -1,18 +1,27 @@
-"""``EntityChangeNotifier``: the entities a mutation changed, told to its listeners (AUD-02, DD-084).
+"""``EntityChangeNotifier``: the entities and classifications a request changed, told to its listeners.
 
-Atlas's ``AtlasEntityChangeNotifier`` (``onEntitiesMutated``, ``pruneResponse``, ``toAtlasEntities``) for the
-entity change listeners of version 2, of which the audit listener is the one Aurelius Atlas has.
+Atlas's ``AtlasEntityChangeNotifier`` (``onEntitiesMutated``, ``pruneResponse``, ``toAtlasEntities``, the
+classification methods, ``notifyPropagatedEntities``) for the entity change listeners of version 2, of which the
+audit listener is the one Aurelius Atlas has (AUD-02, CAU-01 to CAU-06, DD-084, DD-085).
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
+from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from aurelius_atlas_model.errors import AtlasError
-from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityHeader, EntityMutationResponse, EntityOperation
+from aurelius_atlas_model.instance import (
+    AtlasClassification,
+    AtlasEntity,
+    AtlasEntityHeader,
+    EntityMutationResponse,
+    EntityOperation,
+)
 from aurelius_atlas_model.instance.entity_status import EntityStatus
 
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.stored_classification import StoredClassification
 
 
 @runtime_checkable
@@ -34,6 +43,54 @@ class EntityChangeListener(Protocol):
     async def on_entities_purged(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
         """``onEntitiesPurged``."""
         ...
+
+    async def on_classifications_added(
+        self, guids: Sequence[str], classifications: Sequence[AtlasClassification], *, user: str | None
+    ) -> None:
+        """``onClassificationsAdded``: the classifications added to each entity, directly or propagated."""
+        ...
+
+    async def on_classifications_updated(
+        self, guids: Sequence[str], classifications: Sequence[AtlasClassification], context: Propagations
+    ) -> None:
+        """``onClassificationsUpdated``: the classifications updated, told to each entity notified."""
+        ...
+
+    async def on_classifications_deleted(
+        self, guids: Sequence[str], classifications: Sequence[AtlasClassification], *, user: str | None
+    ) -> None:
+        """``onClassificationsDeleted``: the classifications removed from each entity, directly or propagated."""
+        ...
+
+
+@dataclass
+class RequestRecord:
+    """What a request tells the notifier after its write: classifications added directly (CAU-02), then the
+    propagations it added and removed, per entity (DD-086).
+    """  # noqa: D205 - one sentence
+
+    added_classifications: list[tuple[list[str], StoredClassification]] = field(default_factory=list)
+    added: dict[str, list[StoredClassification]] = field(default_factory=dict)
+    removed: dict[str, list[StoredClassification]] = field(default_factory=dict)
+
+    def merge(
+        self,
+        added: Mapping[str, Sequence[StoredClassification]],
+        removed: Mapping[str, Sequence[StoredClassification]],
+    ) -> None:
+        """Take another part of the request's propagations."""
+        for own, more in ((self.added, added), (self.removed, removed)):
+            for guid, classifications in more.items():
+                own.setdefault(guid, []).extend(classifications)
+
+
+@dataclass(frozen=True)
+class Propagations:
+    """A request's user and the propagations it added and removed, per entity, as read (``RequestContext``)."""
+
+    user: str | None
+    added: Mapping[str, Sequence[AtlasClassification]] = field(default_factory=dict)
+    removed: Mapping[str, Sequence[AtlasClassification]] = field(default_factory=dict)
 
 
 class EntityChangeNotifier:
@@ -61,6 +118,71 @@ class EntityChangeNotifier:
             if entities:
                 for listener in self._listeners:
                     await _notify(listener, operation, entities, user)
+
+    async def on_classifications_added(
+        self, guids: Sequence[str], classifications: Sequence[StoredClassification], *, user: str | None
+    ) -> None:
+        """``onClassificationsAddedToEntities``: the classifications added to these entities (CAU-02)."""
+        read = await self._read(classifications)
+        for listener in self._listeners:
+            await listener.on_classifications_added(guids, read, user=user)
+
+    async def on_classifications_updated(
+        self,
+        guids: Sequence[str],
+        classifications: Sequence[StoredClassification],
+        *,
+        user: str | None,
+        added: Mapping[str, Sequence[StoredClassification]],
+        removed: Mapping[str, Sequence[StoredClassification]],
+    ) -> None:
+        """``onClassificationUpdatedToEntity`` of each entity: updates, told what the request propagated (CAU-03)."""
+        read = await self._read(classifications)
+        context = Propagations(user, await self._read_map(added), await self._read_map(removed))
+        for guid in guids:
+            for listener in self._listeners:
+                await listener.on_classifications_updated([guid], read, context)
+
+    async def on_classifications_deleted(
+        self, guids: Sequence[str], classifications: Sequence[StoredClassification], *, user: str | None
+    ) -> None:
+        """``onClassificationsDeletedFromEntities``: the classifications removed from these entities (CAU-04)."""
+        read = await self._read(classifications)
+        for listener in self._listeners:
+            await listener.on_classifications_deleted(guids, read, user=user)
+
+    async def notify_propagated_entities(
+        self,
+        added: Mapping[str, Sequence[StoredClassification]],
+        removed: Mapping[str, Sequence[StoredClassification]],
+        *,
+        user: str | None,
+        deleted: Collection[str] = (),
+    ) -> None:
+        """``notifyPropagatedEntities``: each entity's added, then each one's removed propagations (CAU-05).
+
+        Entities the request deleted, and those that no longer exist, are left out.
+        """
+        if not self._listeners or not (added or removed):
+            return
+        existing = await self._store.get_many([*added, *removed])
+        for propagations, notify in (
+            (added, self.on_classifications_added),
+            (removed, self.on_classifications_deleted),
+        ):
+            for guid, classifications in propagations.items():
+                if guid not in deleted and guid in existing:
+                    await notify([guid], classifications, user=user)
+
+    async def _read(self, classifications: Sequence[StoredClassification]) -> list[AtlasClassification]:
+        """The classifications as a read answers them (DV-42)."""
+        retriever = EntityRetriever(self._store)
+        return [await retriever.classification_of(classification) for classification in classifications]
+
+    async def _read_map(
+        self, propagations: Mapping[str, Sequence[StoredClassification]]
+    ) -> dict[str, list[AtlasClassification]]:
+        return {guid: await self._read(classifications) for guid, classifications in propagations.items()}
 
     async def _entities(self, headers: Sequence[AtlasEntityHeader], operation: EntityOperation) -> list[AtlasEntity]:
         """``toAtlasEntities``: deleted and purged ones from their headers, others as read now; internal types left out.
