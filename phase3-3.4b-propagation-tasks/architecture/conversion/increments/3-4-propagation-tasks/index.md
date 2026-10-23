@@ -1,7 +1,7 @@
 # 3.4b Propagation tasks
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#125](<https://github.com/aureliusenterprise/aurelius-atlas/pull/125>)
 - **Records:** DD-079 to DD-081, DV-38; ends DV-37; relies on DD-071, DD-075 to DD-078
 
 The second part of increment 3.4 (DD-078): propagation deferred to tasks, as Atlas does by default (`atlas.tasks.enabled=true`). A request records a task with its change; a worker in every server process runs the tasks after it, each as one write (DD-080). The propagation itself is 3.4a's.
