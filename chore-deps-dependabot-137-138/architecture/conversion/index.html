@@ -6812,10 +6812,11 @@ checks a PR must pass:</p>
 </table>
 <h2 id="after-phase-0">After phase 0<a class="headerlink" href="#after-phase-0" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
-<p class="admonition-title">Two expat CVEs are accepted on a temporary basis</p>
+<p class="admonition-title">Two expat CVEs and a musl CVE are accepted on a temporary basis</p>
 <p>CVE-2026-77214 and CVE-2026-102633 (<code>expat</code>/<code>libexpat</code> 2.8.5-r1, from the server image's
 hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened
-base image carried the fix yet. The acceptance expires with the next base-image refresh —
+base image carried the fix yet; so is CVE-2026-107891 (<code>musl</code> 1.2.6-r2, from the frontend
+example image's hardened base, fixed in 1.2.6-r3). The acceptance expires with the next base-image refresh —
 the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.</p>
 </div>
 <p>To do once the last 0.x increment is done:</p>
@@ -6826,6 +6827,15 @@ the checklist below is the re-decision, and an accepted risk that nobody re-chec
       no hardened image with the fix existed yet. Before closing them:<ul>
 <li>Check that the current base image ships expat 2.9.0 or later.</li>
 <li>Check that SonarCloud has closed the four issues as fixed.</li>
+<li>If either check fails, reopen the issues and decide again.</li>
+</ul>
+</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Re-check the accepted musl vulnerability.</strong> CVE-2026-107891 in <code>musl</code> and <code>musl-utils</code> 1.2.6-r2
+      comes from the base image <code>dhi.io/nginx:1.30-alpine3.24</code> of <code>aurelius-atlas-frontend-example</code>, and is
+      fixed in 1.2.6-r3. It was accepted in SonarCloud on #139, because no hardened image with the fix
+      existed yet. Before closing it:<ul>
+<li>Check that the current base image ships musl 1.2.6-r3 or later.</li>
+<li>Check that SonarCloud has closed the two issues as fixed.</li>
 <li>If either check fails, reopen the issues and decide again.</li>
 </ul>
 </li>
