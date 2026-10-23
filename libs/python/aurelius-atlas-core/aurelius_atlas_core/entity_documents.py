@@ -238,6 +238,10 @@ class EntityDocuments(Protocol):
         """The entities whose references name any of these GUIDs, as of now (DD-057)."""
         ...
 
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities listing any of these classification instances, as of now (DD-076)."""
+        ...
+
     async def restore(self, guid: str, before: StoredEntity | None) -> None:
         """Put back an entity's state before a write, or delete one the write created."""
         ...
@@ -400,6 +404,13 @@ class ElasticsearchEntityDocuments:
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """Refresh the entity index, then page through the entities whose ``references`` hold a GUID (DD-057)."""
+        return await self._listing("references", guids)
+
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """Refresh the entity index, then page through the entities whose ``classificationGuids`` hold one (DD-076)."""
+        return await self._listing("classificationGuids", guids)
+
+    async def _listing(self, field: str, guids: Sequence[str]) -> list[VersionedEntity]:
         if not guids:
             return []
         await self._client.indices.refresh(index=self._entities)
@@ -409,7 +420,7 @@ class ElasticsearchEntityDocuments:
             response = await self._client.search(
                 index=self._entities,
                 size=REFERRING_PAGE,
-                query={"terms": {"references": list(guids)}},
+                query={"terms": {field: list(guids)}},
                 sort=[{"guid": "asc"}],
                 search_after=after,
                 seq_no_primary_term=True,

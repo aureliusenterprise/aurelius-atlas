@@ -215,9 +215,27 @@ CLASSIFICATION_TYPES: dict[str, Any] = {
         {"name": "c_tabular", "entityTypes": ["s_table"]},
         {"name": "c_owned", "attributeDefs": [{**_attribute("owner", "string"), "isOptional": False}]},
     ],
+    "entityDefs": [{"name": "p_data", "superTypes": ["s_ref"]}, {"name": "p_process", "superTypes": ["s_ref"]}],
+    "relationshipDefs": [
+        {
+            "name": "p_input",
+            "relationshipCategory": "ASSOCIATION",
+            "propagateTags": "ONE_TO_TWO",
+            "endDef1": {"type": "p_data", "name": "consumers", "cardinality": "SET"},
+            "endDef2": {"type": "p_process", "name": "inputs", "cardinality": "SET"},
+        },
+        {
+            "name": "p_output",
+            "relationshipCategory": "ASSOCIATION",
+            "propagateTags": "ONE_TO_TWO",
+            "endDef1": {"type": "p_process", "name": "outputs", "cardinality": "SET"},
+            "endDef2": {"type": "p_data", "name": "producers", "cardinality": "SET"},
+        },
+    ],
 }
 """Classification types (CLS-01 to CLS-12), on top of the others: ``c_secret`` is a ``c_pii``, ``c_tabular`` may
-classify tables only, ``c_owned`` has a mandatory attribute."""
+classify tables only, ``c_owned`` has a mandatory attribute; ``p_process`` entities read ``p_data`` and write
+others, as lineage does, ``p_input`` and ``p_output`` propagating classifications downstream (PRO-01 to PRO-10)."""
 
 
 def sample_types() -> AtlasTypesDef:

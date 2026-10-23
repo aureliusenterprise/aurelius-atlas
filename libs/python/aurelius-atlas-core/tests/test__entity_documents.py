@@ -168,6 +168,7 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "journal",
             "count_type",
             "referring",
+            "classified",
             "get_linked",
             "restore_linked",
             "count_linked_type",
@@ -208,6 +209,22 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
     assert set(await documents.get(["a", "c"])) == {"a"}
     assert "t-entities" in fake.refreshes
     assert fake.mapping_updates == ["t-entities"]
+
+
+@pytest.mark.covers(f"{E}.classified", rules=["PRO-07"])
+async def test__classified_entities_are_found_by_their_listed_instances(
+    documents: ElasticsearchEntityDocuments,
+) -> None:
+    """After a refresh, by ``classificationGuids``, as referring entities are found (DD-076)."""
+    written = [
+        entity("a").model_copy(update={"classification_guids": ["k"]}),
+        entity("b").model_copy(update={"classification_guids": ["k", "m"]}),
+        entity("c"),
+    ]
+    await documents.write([(item, None) for item in written])
+
+    assert [item.entity.guid for item in await documents.classified(["k"])] == ["a", "b"]
+    assert await documents.classified([]) == []
 
 
 @pytest.mark.covers(

@@ -36,6 +36,10 @@ class EntityView(Protocol):
         """The classification instances with these GUIDs that exist."""
         ...
 
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities listing any of these classification instances."""
+        ...
+
 
 class TransactionView:
     """``store`` with a request's changed ``entities`` and ``relationships``, without its ``removed`` ones."""
@@ -76,6 +80,13 @@ class TransactionView:
     async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
         """The classification instances with these GUIDs: a write that drops owned entities changes none (CLS-11)."""
         return await self._store.get_classifications(guids)
+
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities listing any of these instances, as the request changed them (DD-076)."""
+        wanted = set(guids)
+        candidates = {found.entity.guid: found for found in await self._store.classified(guids)}
+        candidates.update(self._entities)
+        return [found for found in candidates.values() if wanted & set(found.entity.classification_guids or [])]
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The entities whose references, as the request changed them, name any of these GUIDs (DD-057)."""

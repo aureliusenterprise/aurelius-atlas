@@ -102,6 +102,14 @@ class RelationshipMapper:
         }
         return changed, set(self._removed)
 
+    def created(self) -> list[StoredRelationship]:
+        """The relationships this request created and kept, as they are to be written."""
+        return [self._relationships[guid] for guid in self._changed if guid in self._new and guid not in self._removed]
+
+    def removed(self) -> list[StoredRelationship]:
+        """The stored relationships this request removes, as they were."""
+        return [self._relationships[guid] for guid in self._changed if guid in self._removed and guid not in self._new]
+
     def is_new(self, guid: str) -> bool:
         """Whether this request created the relationship with ``guid``."""
         return guid in self._new

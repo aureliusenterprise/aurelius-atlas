@@ -207,6 +207,11 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-06D",
         "Classification {0} is not associated with entity",
     )
+    PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED = (
+        400,
+        "ATLAS-400-00-089",
+        "Removal of classification {0}, which is propagated from entity {1}, is not supported",
+    )
     PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY = (
         400,
         "ATLAS-400-00-070",
