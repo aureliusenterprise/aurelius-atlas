@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import ssl
 from collections.abc import Generator
@@ -21,15 +20,14 @@ from testcontainers.core.wait_strategies import HttpWaitStrategy
 
 CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 
-# The OIDC leg's issuer (DD-103): the e2e Keycloak serves HTTPS on :8443 and
-# mints iss=.../realms/master on that listener, so the collector's browser-leg
-# OIDC receiver must validate against exactly that issuer. The oidc extension
-# (collector ≥ 0.142 schema: providers/issuer_url) fetches its JWKS through
-# OIDC discovery on that URL — over TLS pinned to the shared dev CA (mounted
-# at /dev-ca in the collector). The compose file's dev default (plaintext
-# :8080) is overridden in the observability fixture for the e2e run.
+# The issuer this suite mints from (DD-103, DD-113): the e2e Keycloak serves
+# HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
+# mint fixtures below and every per-service producer use it, and the
+# collector's oidc extension validates it (CA-pinned discovery, mounted at
+# /dev-ca). Standardizing the mint on :8443 is what keeps every suite in one
+# issuer world (DD-113); the plaintext :8080 listener stays validated in the
+# collector, for the human dev browser only (ADR 039).
 KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
-COLLECTOR_OIDC_CA_IN_CONTAINER = "/dev-ca/ca.pem"
 
 
 class Settings(BaseSettings):
@@ -69,25 +67,16 @@ def observability() -> DockerCompose:
     """
     Return a Docker Compose instance for the observability services.
 
-    The collector's browser leg (OIDC) is pointed at the e2e Keycloak issuer
-    (CA-pinned discovery) via the ambient env the compose file interpolates
-    (DD-103): the suite's Keycloak mints :8443 tokens, which the compose dev
-    default (plaintext :8080 issuer) would not match.
-
-    The per-service leg (DD-107) flips the same way: the slice metrics-pullers
-    (this suite starts the keycloak stack) mint their client-credentials
-    JWTs from the issuer, so they inherit the suite's TLS :8443 issuer + CA
-    pin — env the keycloak compose interpolates into the puller container
-    (which mounts its slice's certs/, the same mkcert CA material).
+    No issuer env is set here (DD-113): the collector validates both dev
+    Keycloak listeners from its own config, and every producer — this
+    suite's minted tokens included, and the keycloak stack's metrics-puller
+    it starts — presents the TLS :8443 iss, so the stack boots in exactly
+    one world no matter who started it first.
 
     Note: This fixture starts the observability services if they're not already running, but does not stop them after
     the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
     the services are no longer needed.
     """
-    os.environ["OTEL_COLLECTOR_OIDC_ISSUER"] = KEYCLOAK_ISSUER
-    os.environ["OTEL_COLLECTOR_OIDC_CA_FILE"] = COLLECTOR_OIDC_CA_IN_CONTAINER
-    os.environ["OTEL_INGEST_TOKEN_URL"] = f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token"
-    os.environ["OTEL_INGEST_CA_FILE"] = "/certs/ca.pem"
     context = Path(__file__).parents[3].absolute() / "dev" / "observability"
     compose = DockerCompose(context=context)
 

@@ -27,19 +27,11 @@ services:
             # nx decrypt) for the interpolation; a missing value fails the
             # start loudly rather than booting an open-ingest collector.
             OTEL_COLLECTOR_INGEST_TOKEN: ${OTEL_COLLECTOR_INGEST_TOKEN:?}
-            # The browser leg's token validator (DD-103): the user access
-            # token the /otel/ proxies pass through, verified against this
-            # issuer's JWKS. The dev defaults point at the dev Keycloak's
-            # plaintext listener (ADR 039's named relaxation); e2e suites
-            # override with their TLS issuer (the conftest's env), matching
-            # the iss claim each stack's Keycloak mints. The extension
-            # discovers JWKS from the issuer URL itself (collector ≥ 0.142
-            # schema: providers/issuer_url), so there is no separate JWKS URL.
-            OTEL_COLLECTOR_OIDC_ISSUER: ${OTEL_COLLECTOR_OIDC_ISSUER:-http://keycloak.localhost:8080/realms/master}
-            # Empty string = no pinned CA: the dev issuer is plaintext, so
-            # discovery/JWKS needs no trust anchor; the e2e override points
-            # this at the shared dev CA mounted below.
-            OTEL_COLLECTOR_OIDC_CA_FILE: ${OTEL_COLLECTOR_OIDC_CA_FILE:-}
+            # (DD-113) The OIDC validator's issuers are fixed in
+            # config/otel-collector.yaml — both dev Keycloak listeners, the
+            # TLS one CA-pinned — so there is no issuer env to inject here:
+            # no suite can flip the collector into a world its producers'
+            # minted iss no longer matches.
         extra_hosts:
             # The JWKS fetch target: keycloak.localhost is the dev Keycloak's
             # published listener on this machine (same host-gateway mapping
@@ -65,10 +57,9 @@ services:
             - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
             - ./certs:/certs:ro
             # The shared dev CA (every project's mkcert CA is the same root):
-            # the OIDC extension pins it when validating the e2e stack's
-            # TLS-served Keycloak JWKS; the dev issuer (plaintext) leaves
-            # the pin unset. Path is fixed so env overrides can be relative
-            # to this project.
+            # the OIDC extension pins it as issuer_ca_path when discovering
+            # JWKS from the Keycloak TLS :8443 listener (DD-113). Path is
+            # fixed so the collector config refers to it without env.
             - ../../apps/aurelius-atlas-webapp/certs:/dev-ca:ro
 
     prometheus:

@@ -28,7 +28,10 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   speaks no OTLP, so the puller complements rather than duplicates.
   Prometheus series carry `exported_job="keycloak-infra"`.
 - Dual listeners (ADR 039): `http://keycloak.localhost:8080` (dev browser) and
-  `https://keycloak.localhost:8443` (E2E/CI, certs from `nx certgen`). The
+  `https://keycloak.localhost:8443` (E2E/CI, certs from `nx certgen`). Every
+  automated mint — E2E suites, all slice pullers, the apps' OTLP ingest — uses
+  `:8443` (DD-113), so the listener a token's `iss` carries is uniform across
+  producers; the collector validates both listeners. The
   issuer each client uses must match the auth settings the FastAPI example
   validates and the frontend's `/config.json` advertises — change them
   together (`e2e/config/config.json` and the e2e compose use 8443).

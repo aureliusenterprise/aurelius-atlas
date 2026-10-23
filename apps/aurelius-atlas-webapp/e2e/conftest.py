@@ -49,15 +49,19 @@ TEMPO_PORT = 3200
 DEFAULT_INGEST_TOKEN = "otel-dev-ingest-token"  # noqa: S105  # the public dev default, not a secret (DD-103)
 DEFAULT_INGEST_CLIENT_SECRET = "kbTROtW6-P6ibQ7iAovsceJceRz39HpQ"  # noqa: S105  # the public dev default, not a secret (DD-107)
 
-# The OIDC leg's issuer (DD-103): the e2e Keycloak serves HTTPS on :8443 and
-# mints iss=.../realms/master on that listener, so the collector must validate
-# against exactly that issuer. The oidc extension (collector ≥ 0.142 schema:
-# providers/issuer_url) fetches its JWKS through OIDC discovery on that URL —
-# over TLS pinned to the shared dev CA (mounted at /dev-ca in the collector).
-# The compose file's dev default (plaintext :8080) is overridden here for the
-# e2e run.
+# The issuer this suite mints from (DD-103, DD-113): the e2e Keycloak serves
+# HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
+# mint fixtures below and every per-service producer use it, and the
+# collector's oidc extension validates it (CA-pinned discovery, mounted at
+# /dev-ca). Standardizing the mint on :8443 is what keeps every suite in one
+# issuer world (DD-113); the plaintext :8080 listener stays validated in the
+# collector, for the human dev browser only (ADR 039).
 KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
-COLLECTOR_OIDC_CA_IN_CONTAINER = "/dev-ca/ca.pem"
+
+# The dev plaintext listener (ADR 039, the collector's second provider): the
+# mint the human dev browser does, and the mint the CIA-11 fixture below
+# reproduces, to prove the collector accepts that iss too (DD-113).
+KEYCLOAK_DEV_ISSUER = "http://keycloak.localhost:8080/realms/master"
 
 
 class Settings(BaseSettings):
@@ -93,26 +97,15 @@ def observability() -> DockerCompose:
     """
     Return a Docker Compose instance for the observability services.
 
-    The collector's browser leg (OIDC) is pointed at the e2e Keycloak issuer
-    and JWKS (CA-pinned) via the ambient env the compose file interpolates
-    (DD-103): the suite's Keycloak mints :8443 tokens, which the compose dev
-    default (plaintext :8080 issuer) would not match.
-
-    The per-service leg (DD-107) flips the same way: the slice metrics-pullers
-    mint their client-credentials JWTs from the issuer, so they inherit the
-    suite's TLS :8443 issuer + CA pin (the compose dev default is the
-    plaintext :8080 listener) — env the keycloak/postgres/elasticsearch
-    compose files interpolate into the puller containers, each of which
-    mounts its slice's certs/ (the same mkcert CA material).
+    No issuer env is set here (DD-113): the collector validates both dev
+    Keycloak listeners from its own config, and every producer — this
+    suite's minted tokens included — presents the TLS :8443 iss, so the
+    stack boots in exactly one world no matter who started it first.
 
     Note: This fixture starts the observability services if they're not already running, but does not stop them after
     the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
     the services are no longer needed.
     """
-    os.environ["OTEL_COLLECTOR_OIDC_ISSUER"] = KEYCLOAK_ISSUER
-    os.environ["OTEL_COLLECTOR_OIDC_CA_FILE"] = COLLECTOR_OIDC_CA_IN_CONTAINER
-    os.environ["OTEL_INGEST_TOKEN_URL"] = f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token"
-    os.environ["OTEL_INGEST_CA_FILE"] = "/certs/ca.pem"
     context = Path(__file__).parents[3].absolute() / "dev" / "observability"
     compose = DockerCompose(context=context)
 
@@ -155,12 +148,12 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
 def elasticsearch(observability: DockerCompose) -> DockerCompose:
     """Return a Docker Compose instance for the dev Elasticsearch stack.
 
-    The e2e target's ``up`` dependency starts this stack before pytest runs,
-    with the compose dev defaults — and the slice's metrics-puller mints its
-    ingest JWT at boot (DD-107). This fixture re-runs ``up --wait`` with the
-    flipped mint env (the ``observability`` fixture sets it) so the puller
-    is recreated against this suite's TLS issuer; without it the ES puller's
-    :8080-issued tokens are 401 on the flipped per-service leg (CIA-07).
+    The e2e target's ``up`` dependency starts this stack before pytest runs;
+    this fixture guarantees it (and the observability network it attaches).
+    The slice's metrics-puller mints its ingest JWT at boot on the suite's
+    TLS :8443 issuer — the compose's literal, same issuer this suite mints
+    and the collector validates (DD-113), so no re-start with flipped env
+    is needed anymore.
 
     Note: like the observability/keycloak fixtures, this starts the stack
     and leaves it running for reuse across sessions.
@@ -338,6 +331,33 @@ def service_token(keycloak: DockerCompose) -> str:
     context = ssl.create_default_context(cafile=str(CA_FILE))
 
     with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
+        return json.load(response)["access_token"]
+
+
+@pytest.fixture
+def plaintext_service_token(keycloak: DockerCompose) -> str:
+    """A client-credentials token minted from the plaintext :8080 listener (CIA-11, DD-113).
+
+    Keycloak stamps ``iss`` from the listener that served the mint, so this
+    token carries ``iss=http://keycloak.localhost:8080/realms/master`` — the
+    issuer the human dev browser presents (ADR 039's listener), which the
+    collector's second OIDC provider must accept. The mint needs no CA pin:
+    the listener is plaintext HTTP.
+
+    Function-scoped: the dev realm mints 60s tokens (the ``service_token``
+    fixture's rule).
+    """
+    _ = keycloak
+    body = urlencode(
+        {
+            "grant_type": "client_credentials",
+            "client_id": "otel-atlas-server",
+            "client_secret": os.environ.get("OTEL_INGEST_CLIENT_SECRET", DEFAULT_INGEST_CLIENT_SECRET),
+        }
+    ).encode()
+    request = Request(f"{KEYCLOAK_DEV_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # the dev stack's plaintext listener, by design (ADR 039)
+
+    with urlopen(request) as response:  # noqa: S310  # plaintext dev issuer, mint-side by design
         return json.load(response)["access_token"]
 
 

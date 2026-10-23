@@ -25,11 +25,10 @@ services:
             # OTLP ingest identity (DD-107, DD-108): the app exports through
             # its own pipeline, minting client-credentials JWTs as
             # otel-data2model for the per-service leg (:4319). The mint rides
-            # the plaintext :8080 listener (ADR 039's relaxation): this suite
-            # leaves the collector on its dev-default :8080 issuer, and
-            # Keycloak stamps iss from the listener that served the mint —
-            # :8080 tokens verify there (as the server's suite, CIA-08).
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: http://keycloak.localhost:8080/realms/master/protocol/openid-connect/token
+            # the TLS :8443 listener (DD-113): every per-service producer
+            # mints there and the collector validates both listeners, so no
+            # suite order can split mint issuer from validator.
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_ID: otel-data2model
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET:?}
             AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319

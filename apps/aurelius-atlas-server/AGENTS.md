@@ -51,9 +51,9 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 - `Dockerfile` — installs the wheel `nx build` makes, with the workspace libraries bundled in, and copies
   the built dashboards (`aurelius-atlas-dashboard/dist`).
 - `e2e/docker-compose.yaml` — the image on the dev store's network, reached as `elasticsearch:9200`.
-  Its OTLP export uses the shim settings; the mint rides the plaintext `:8080`
-  issuer (this suite leaves the collector on its dev-default issuer, unlike the
-  webapp e2e's `:8443` flip), so the server needs `extra_hosts:
+  Its OTLP export uses the shim settings; the mint rides the TLS `:8443`
+  issuer, pinned to `/certs/ca.pem` (DD-113: every producer mints there, the
+  collector validates both listeners), so the server needs `extra_hosts:
 keycloak.localhost:host-gateway` and the `otel-atlas-server` client imported
   (a long-lived dev Keycloak needs a recreate for a new client — see
   dev/keycloak/AGENTS.md).

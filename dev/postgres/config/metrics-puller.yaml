@@ -49,10 +49,11 @@ extensions:
     # Per-service ingest identity (7.18, DD-107, CIA-07): mints
     # client-credentials JWTs as the otel-postgres realm client (aud
     # otel-collector via the otel-ingest default scope), caches and refreshes
-    # ahead of expiry. The token URL is the issuer's plaintext dev listener
-    # (ADR 039's relaxation; the e2e conftest overrides with the TLS :8443
-    # issuer + the CA pin); an empty ca_file = system trust (plaintext).
-    # keycloak.localhost resolves via extra_hosts (host-gateway) in compose.
+    # ahead of expiry. The token URL (compose) is the issuer's TLS :8443
+    # listener with the slice CA pinned (DD-113: every producer mints there,
+    # the collector validates both listeners) — read from env so the mint
+    # target lives once, in compose. keycloak.localhost resolves via
+    # extra_hosts (host-gateway).
     oauth2client:
         token_url: ${env:OTEL_INGEST_TOKEN_URL}
         client_id: ${env:OTEL_INGEST_CLIENT_ID}
