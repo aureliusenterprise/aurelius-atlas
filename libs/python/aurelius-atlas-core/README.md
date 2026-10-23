@@ -24,7 +24,9 @@ GUIDs each entity refers to (DD-056 to DD-060). Since
 documents of their own index listed by both ends and written with them (DD-061, DD-062). Since
 [3.1b](../../../docs/architecture/conversion/increments/3-1-relationship-attributes.md): the relationship
 attributes of entities, mapped onto relationships by the relationship mapper and read back through them, and
-delete cascades that follow owned relationships (DD-064 to DD-067).
+delete cascades that follow owned relationships (DD-064 to DD-067). Since
+[3.2](../../../docs/architecture/conversion/increments/3-2-ownership-cascades.md): updates delete the owned
+entities they drop, through a view of the request's changes and in the request's one write (DD-068).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -87,6 +89,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.relationship_mapper
 
 ::: aurelius_atlas_core.graph_helper
+
+::: aurelius_atlas_core.transaction_view
 
 ::: aurelius_atlas_core.stored_relationship
 

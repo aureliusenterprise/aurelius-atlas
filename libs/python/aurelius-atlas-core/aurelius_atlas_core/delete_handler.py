@@ -18,9 +18,10 @@ from aurelius_atlas_typesystem.map_type import MapType
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
-from aurelius_atlas_core.entity_store import EntityChange, EntityStore, RelationshipChange
+from aurelius_atlas_core.entity_store import EntityChange, RelationshipChange
 from aurelius_atlas_core.graph_helper import collection_elements, edge_for_label
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.transaction_view import EntityView
 
 UNSET_REQUIRED = "Cannot unset required attribute {name} on {guid} edge = {label}"
 REMOVE_ARRAY_ELEMENT = "Cannot remove array element from required attribute {name} on {guid} {label}"
@@ -46,7 +47,7 @@ class DeleteHandler:
 
     soft = True
 
-    def __init__(self, store: EntityStore, *, now: int, user: str | None, purge: bool = False) -> None:
+    def __init__(self, store: EntityView, *, now: int, user: str | None, purge: bool = False) -> None:
         self.store = store
         self.now = now
         self.user = user

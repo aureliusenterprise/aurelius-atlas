@@ -255,9 +255,9 @@ async def test__appending_keeps_relationships_and_a_legacy_array_reads_in_index_
     assert [found["guid"] for found in node["entity"]["attributes"]["members"]] == [g("-2"), g("-1")]
 
 
-@pytest.mark.covers(f"{M}.map", rules=["REL-15"])
-async def test__an_owned_relationship_an_update_drops_leaves_its_entity(store: EntityStore) -> None:
-    """Only the relationship is deleted, and the part is not updated, until 3.2 (DV-31)."""
+@pytest.mark.covers(f"{M}.map", rules=["REL-15", "OWN-01"])
+async def test__an_owned_relationship_an_update_drops_deletes_its_entity(store: EntityStore) -> None:
+    """The relationship is deleted and the part with it, reported as deleted, not as updated."""
     await write(store, entity("r_node", "-1", qualifiedName="p@cl"))
     await write(
         store,
@@ -269,9 +269,9 @@ async def test__an_owned_relationship_an_update_drops_leaves_its_entity(store: E
     dropped = await store.get(g("-3"))
     kept = await read(store, g("-2"))
 
-    assert mutated(answer, "UPDATE") == [g("-1")]
+    assert (mutated(answer, "UPDATE"), mutated(answer, "DELETE")) == ([g("-1")], [g("-3")])
     assert dropped is not None
-    assert dropped.entity.state is EntityStatus.ACTIVE
+    assert dropped.entity.state is EntityStatus.DELETED
     assert ends(await relationships(store, g("-3"))) == [(g("-1"), g("-3"), "DELETED")]
     assert kept["entity"]["relationshipAttributes"]["whole"]["guid"] == g("-1")
 
@@ -376,7 +376,7 @@ async def test__an_entity_write_reuses_a_relationship_created_over_rest(store: E
 
 @pytest.mark.covers("aurelius_atlas_core.entity_writer.EntityWriter.delete_by_id", rules=["REL-19"])
 async def test__deleting_a_whole_deletes_its_parts_through_the_composition(store: EntityStore) -> None:
-    """A soft delete reaches the parts; a purge then removes them too; a part the whole dropped is left."""
+    """A soft delete reaches the parts; a purge removes them, and the one the update deleted (OWN-01), too."""
     await write(store, entity("r_node", "-1", qualifiedName="p@cl"))
     await write(
         store,
@@ -392,6 +392,5 @@ async def test__deleting_a_whole_deletes_its_parts_through_the_composition(store
     left = await store.get(g("-4"))
 
     assert mutated(deleted, "DELETE") == [g("-1"), g("-3"), g("-2")]
-    assert mutated(purged, "PURGE") == [g("-1"), g("-3"), g("-2")]
-    assert left is not None
-    assert left.entity.state is EntityStatus.ACTIVE
+    assert mutated(purged, "PURGE") == [g("-1"), g("-3"), g("-2"), g("-4")]
+    assert left is None

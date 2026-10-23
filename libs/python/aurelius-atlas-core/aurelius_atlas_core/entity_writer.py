@@ -15,6 +15,7 @@ from aurelius_atlas_model.instance import (
     AtlasEntitiesWithExtInfo,
     AtlasEntity,
     AtlasEntityExtInfo,
+    AtlasEntityHeader,
     AtlasEntityWithExtInfo,
     AtlasObjectId,
     EntityMutationResponse,
@@ -38,12 +39,14 @@ from aurelius_atlas_core.entity_store import (
     EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
+    RelationshipChange,
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
 from aurelius_atlas_core.relationship_mapper import RelationshipMapper
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.transaction_view import TransactionView
 
 NO_ENTITY_TO_UPDATE = "no entity to update."
 NO_GUIDS = "Guid(s) not specified"
@@ -79,6 +82,14 @@ class _Mutation:
         if request_guid != guid:
             self.guid_assignments[str(request_guid)] = guid
             self.guids[request_guid] = guid
+
+
+@dataclass
+class _Dropped:
+    """The owned entities an update deleted (their headers), and the entities those deletes changed (OWN-03)."""
+
+    headers: list[AtlasEntityHeader] = field(default_factory=list)
+    updated: list[str] = field(default_factory=list)
 
 
 type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
@@ -270,6 +281,9 @@ class EntityWriter:
             guid_assignments=mutation.guid_assignments,
             now=now,
             user=self._user,
+            is_deleted=lambda guid: (
+                guid in context.stored and context.stored[guid].entity.state is EntityStatus.DELETED
+            ),
         )
         relationships = RelationshipMapper(
             self._store,
@@ -287,6 +301,7 @@ class EntityWriter:
             user=self._user,
             hard=self._delete_type is DeleteType.HARD,
             touched=mapper.touched,
+            dropped=mapper.dropped,
         )
         written: dict[str, StoredEntity] = {}
         for entity, entity_type in mutation.created:
@@ -304,14 +319,69 @@ class EntityWriter:
         for guid, listed in relationships.listings().items():
             current = written[guid] if guid in written else context.stored[guid].entity
             written[guid] = current.model_copy(update={"relationship_guids": listed or None})
-        changes: list[EntityChange] = []
+        for guid in mapper.revived:
+            current = written[guid] if guid in written else context.stored[guid].entity
+            written[guid] = current.model_copy(update={"state": EntityStatus.ACTIVE})  # OWN-04
+        changes: dict[str, EntityChange] = {}
         for guid, new in written.items():
             stored = context.stored.get(guid)
-            changes.append(EntityChange(new, None if stored is None else stored.version))
-        relationship_changes = relationships.relationship_changes()
+            changes[guid] = EntityChange(new, None if stored is None else stored.version)
+        relationship_changes = {change.relationship.guid: change for change in relationships.relationship_changes()}
+        deleted = await self._drop_owned(
+            mapper.dropped,
+            relationships,
+            changes,
+            relationship_changes,
+            now,
+        )
         if changes or relationship_changes:
-            await self._store.write(changes, relationship_changes)
-        return await self._response(mutation, skipped, reported, partial=partial)
+            await self._store.write(list(changes.values()), list(relationship_changes.values()))
+        return await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
+
+    async def _drop_owned(
+        self,
+        dropped: list[str],
+        relationships: RelationshipMapper,
+        changes: dict[str, EntityChange],
+        relationship_changes: dict[str, RelationshipChange],
+        now: int,
+    ) -> _Dropped:
+        """``deleteEdgeReference``'s ``deleteTypeVertex``: delete the owned entities the request dropped (OWN-02).
+
+        The delete handler reads through a view of the request's changes; its changes replace the request's own for
+        the same documents (DD-068). Answers the deleted entities' headers and the entities the deletes changed.
+        """
+        if not dropped:
+            return _Dropped()
+        pending, removed = relationships.pending()
+        view = TransactionView(
+            self._store,
+            entities={
+                guid: VersionedEntity(change.entity, change.expected)
+                for guid, change in changes.items()
+                if change.expected is not None
+            },
+            relationships=pending,
+            removed=removed,
+        )
+        handler: DeleteHandler = (HardDeleteHandler if self._delete_type is DeleteType.HARD else SoftDeleteHandler)(
+            view, now=now, user=self._user
+        )
+        found = await view.get_many(dropped)
+        deletion = await handler.delete_entities([found[guid] for guid in dropped if guid in found])
+        retriever = EntityRetriever(self._store)
+        headers = [await retriever.header(guid, classifications=False) for guid in deletion.deleted]
+        for change in deletion.changes:
+            changes[change.entity.guid] = change
+        for change in deletion.relationship_changes:
+            guid = change.relationship.guid
+            if not relationships.is_new(guid):
+                relationship_changes[guid] = change
+            elif change.remove:
+                relationship_changes.pop(guid, None)
+            else:
+                relationship_changes[guid] = RelationshipChange(change.relationship)
+        return _Dropped(headers, [guid for guid in deletion.updated if guid not in deletion.deleted])
 
     async def _prepare(self, discovery: EntityDiscovery, context: DiscoveryContext, *, partial: bool) -> _Mutation:
         """``preCreateOrUpdate``: each request entity among the references, to update or to create (EWR-06)."""
@@ -409,9 +479,12 @@ class EntityWriter:
         return [guid for guid in mapper.touched if guid not in skipped and guid in written]
 
     async def _response(
-        self, mutation: _Mutation, skipped: set[str], reported: list[str], *, partial: bool
+        self, mutation: _Mutation, skipped: set[str], reported: list[str], *, partial: bool, deleted: _Dropped
     ) -> EntityMutationResponse:
-        """``mapAttributesAndClassifications``' response: headers by operation, and the GUID assignments (EWR-13)."""
+        """``mapAttributesAndClassifications``' response: headers by operation, and the GUID assignments.
+
+        Created and updated entities, then deleted ones, then those the request made updated (EWR-13, OWN-03).
+        """
         retriever = EntityRetriever(self._store)
         response = EntityMutationResponse()
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
@@ -420,8 +493,12 @@ class EntityWriter:
         for entity, _, _ in mutation.updated:
             if entity.guid not in skipped:
                 response.add_entity(operation, await retriever.header(str(entity.guid)))
-        for guid in reported:
-            response.add_entity(operation, await retriever.header(guid, classifications=False))
+        taken = {str(header.guid): header for header in deleted.headers}
+        for header in deleted.headers:
+            response.add_entity(EntityOperation.DELETE, header)
+        for guid in dict.fromkeys(reported):
+            header = taken.get(guid) or await retriever.header(guid, classifications=False)  # as recorded before
+            response.add_entity(operation, header)
         response.guid_assignments = mutation.guid_assignments
         return response
 

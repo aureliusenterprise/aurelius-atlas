@@ -131,10 +131,16 @@ RELATIONSHIP_TYPES: dict[str, Any] = {
             "attributeDefs": [
                 _attribute("keeper", "s_database"),
                 _attribute("members", "array<s_column>", cardinality="SET", options=APPEND),
+                _attribute("owns", "array<s_column>", cardinality="SET", options=APPEND, constraints=OWNED),
                 _attribute("lead", "r_tag", constraints=[{"type": "inverseRef", "params": {"attribute": "follower"}}]),
             ],
         },
         {"name": "r_part", "superTypes": ["s_ref"]},
+        {
+            "name": "r_pin",
+            "superTypes": ["s_ref"],
+            "attributeDefs": [{**_attribute("pinned", "s_column"), "isOptional": False}],
+        },
         {
             "name": "r_tag",
             "superTypes": ["s_ref"],
@@ -190,7 +196,8 @@ relates nodes both ways (``BOTH``); ``r_keeper``'s legacy end is end 2 (``keeper
 ``members`` is a legacy array end that appends on a partial update; ``badgeOf`` is a legacy end ``s_column`` has
 no attribute for (``badge`` is ``IN``); ``r_lead``'s ends, ``r_node.lead`` and
 ``r_tag.follower``, are legacy attributes, each the other's ``inverseRef``.
-``friends`` keeps its relationships on any update (``appendRelationshipsOnPartialUpdate``).
+``friends`` keeps its relationships on any update (``appendRelationshipsOnPartialUpdate``). ``owns`` is a plain
+owned array that appends on a partial update; ``r_pin.pinned`` is a mandatory plain reference (OWN-01, OWN-02).
 """
 
 

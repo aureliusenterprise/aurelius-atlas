@@ -35,9 +35,13 @@ type Resolve = Callable[[Any], str]
 
 
 class EntityMapper:
-    """Maps entities of one request at ``now``; ``touched`` lists the entities new references reached (EWR-12)."""
+    """Maps entities of one request at ``now``; ``touched`` lists the entities new references reached (EWR-12).
 
-    def __init__(
+    ``dropped`` lists the owned entities updates no longer name (OWN-01), ``revived`` the ``DELETED`` ones owned map
+    entries keep naming (OWN-04); ``is_deleted`` tells whether an entity is ``DELETED``.
+    """
+
+    def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext``
         self,
         registry: TypeRegistry,
         *,
@@ -45,13 +49,17 @@ class EntityMapper:
         guid_assignments: Mapping[str, str],
         now: int,
         user: str | None,
+        is_deleted: Callable[[str], bool] = lambda _: False,
     ) -> None:
         self._registry = registry
         self._resolve = resolve
         self._guid_assignments = guid_assignments
         self._now = now
         self._user = user
+        self._is_deleted = is_deleted
         self.touched: list[str] = []
+        self.dropped: list[str] = []
+        self.revived: list[str] = []
 
     def create(self, entity: AtlasEntity, entity_type: EntityType, guid: str) -> StoredEntity:
         """``createVertexWithGuid`` and ``mapAttributes(CREATE)``: a new entity as stored (EWR-09)."""
@@ -84,6 +92,8 @@ class EntityMapper:
             attribute = entity_type.attribute(name)
             if attribute is not None:
                 self._set(attributes, attribute, value, operation)
+                if _plainly_owned(attribute):
+                    self._owned(attribute, stored.attributes.get(attribute.qualified_name), attributes)
             changed = True
         update: dict[str, Any] = {"attributes": attributes}
         if entity.custom_attributes is not None:
@@ -91,6 +101,20 @@ class EntityMapper:
         if changed:
             update.update(update_time=self._now, updated_by=self._user)
         return stored.model_copy(update=update)
+
+    def _owned(self, attribute: AtlasAttribute, before: object, attributes: Mapping[str, Any]) -> None:
+        """``deleteEdgeReference`` and ``updateInConsistentOwnedMapVertices`` of a plain owned reference.
+
+        An entity the stored value named and the new one does not is dropped (OWN-01); a ``DELETED`` one a map entry
+        keeps naming is revived (OWN-04).
+        """
+        after = attributes.get(attribute.qualified_name)
+        kept = set(_guids(after))
+        self.dropped += [guid for guid in _guids(before) if guid not in kept and guid not in self.dropped]
+        if isinstance(before, Mapping) and isinstance(after, Mapping):
+            for key, guid in after.items():
+                if before.get(key) == guid and self._is_deleted(str(guid)) and guid not in self.revived:
+                    self.revived.append(str(guid))
 
     def touch(self, stored: StoredEntity) -> StoredEntity:
         """``updateModificationMetadata``: the entity, changed by this request (EWR-12)."""
@@ -247,6 +271,22 @@ class EntityMapper:
         if guid and not is_assigned_guid(guid):
             guid = self._guid_assignments.get(guid)
         return f"{java_string(value.type_name)}{SOFT_REFERENCE_SEPARATOR}{java_string(guid)}"
+
+
+def _plainly_owned(attribute: AtlasAttribute) -> bool:
+    """An owned attribute holding references as values: not soft, not a relationship end (DD-064)."""
+    return (
+        attribute.is_owned_ref
+        and attribute.is_object_ref
+        and not attribute.attribute_def.is_soft_referenced()
+        and attribute.relationship_name is None
+    )
+
+
+def _guids(value: object) -> list[str]:
+    """The GUIDs a stored reference value names: a single one, an array's elements or a map's values."""
+    items = list(value.values()) if isinstance(value, Mapping) else value if isinstance(value, list) else [value]
+    return [str(item) for item in items if item is not None]
 
 
 def _default(attribute: AtlasAttribute) -> Any:  # noqa: ANN401 - a Java value

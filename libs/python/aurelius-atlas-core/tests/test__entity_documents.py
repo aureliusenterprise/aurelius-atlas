@@ -220,7 +220,9 @@ async def test__relationships_are_written_with_entities_in_one_bulk_request(
 
     results = await documents.write([(entity("a"), None)], [], [(link, None)])
     found = await documents.get_relationships(["r", "nope"])
-    removed = await documents.write([], [], [], [("r", found["r"].version)])
+    version = found["r"].version
+    assert version is not None
+    removed = await documents.write([], [], [], [("r", version)])
     await documents.restore_relationship("r", link)
     await documents.restore_relationship("s", None)
 

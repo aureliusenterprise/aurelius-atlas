@@ -91,10 +91,13 @@ RELATIONSHIP_MAPPING: dict[str, Any] = {
 
 @dataclass(frozen=True)
 class VersionedRelationship:
-    """A stored relationship and the version it was read in (DD-047, DD-061)."""
+    """A stored relationship and the version it was read in (DD-047, DD-061).
+
+    None for one a write request creates and has not written yet (DD-068).
+    """
 
     relationship: StoredRelationship
-    version: DocumentVersion
+    version: DocumentVersion | None
 
 
 @dataclass(frozen=True)

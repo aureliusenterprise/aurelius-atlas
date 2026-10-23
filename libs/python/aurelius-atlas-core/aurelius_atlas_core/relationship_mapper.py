@@ -24,7 +24,7 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.struct_type import struct_attributes
 from aurelius_atlas_typesystem.values import java_distinct, relationship_type_of
 
-from aurelius_atlas_core.entity_documents import DocumentVersion, VersionedEntity
+from aurelius_atlas_core.entity_documents import DocumentVersion, VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.entity_store import EntityStore, RelationshipChange
 from aurelius_atlas_core.graph_helper import (
     collection_elements,
@@ -49,7 +49,8 @@ class RelationshipMapper:
 
     ``known`` holds the entities the request read, and gains those the mapper reads; ``created`` the entities it
     creates. Entities a relationship change makes updated are added to ``touched``; ``hard`` deletes replaced
-    relationships rather than marking them ``DELETED`` (REL-15).
+    relationships rather than marking them ``DELETED`` (REL-15); owned entities whose relationships were deleted
+    are added to ``dropped`` (OWN-01).
     """
 
     def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext`` and ``RequestContext``
@@ -63,6 +64,7 @@ class RelationshipMapper:
         user: str | None,
         hard: bool,
         touched: list[str],
+        dropped: list[str],
     ) -> None:
         self._store = store
         self._resolve = resolve
@@ -73,11 +75,12 @@ class RelationshipMapper:
         self._hard = hard
         self._touched = touched
         self._relationships: dict[str, StoredRelationship] = {}
-        self._versions: dict[str, DocumentVersion] = {}
+        self._versions: dict[str, DocumentVersion | None] = {}
         self._changed: dict[str, None] = {}
         self._new: set[str] = set()
         self._removed: set[str] = set()
         self._listed: dict[str, list[str]] = {}
+        self.dropped = dropped
 
     def relationship_changes(self) -> list[RelationshipChange]:
         """The relationships created, changed and removed, in the order first changed."""
@@ -89,6 +92,19 @@ class RelationshipMapper:
                 RelationshipChange(self._relationships[guid], self._versions.get(guid), remove=guid in self._removed)
             )
         return changes
+
+    def pending(self) -> tuple[dict[str, VersionedRelationship], set[str]]:
+        """The relationships this request changed or created, as changed, and those it removed (DD-068)."""
+        changed = {
+            guid: VersionedRelationship(self._relationships[guid], self._versions.get(guid))
+            for guid in self._changed
+            if guid not in self._removed
+        }
+        return changed, set(self._removed)
+
+    def is_new(self, guid: str) -> bool:
+        """Whether this request created the relationship with ``guid``."""
+        return guid in self._new
 
     def listings(self) -> dict[str, list[str]]:
         """The entities whose lists of relationships changed, and their new lists (DD-061)."""
@@ -290,11 +306,13 @@ class RelationshipMapper:
     ) -> bool:
         """``deleteEdgeReference``: delete a relationship an update replaced or dropped (REL-15).
 
-        Answers whether it was removed. An owned entity is not deleted with it until 3.2 (DV-31).
+        Answers whether it was removed. An owned one drops its end 2, which the writer deletes (OWN-01).
         """
         relationship = self._relationships.get(relationship.guid, relationship)
         if attribute.is_owned_ref:
             await self._delete(relationship)
+            if relationship.end2_guid not in self.dropped:
+                self.dropped.append(relationship.end2_guid)
             return self._hard
         if not self._hard and relationship.state is RelationshipStatus.DELETED:
             return False

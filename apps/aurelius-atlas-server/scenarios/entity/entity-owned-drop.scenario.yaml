@@ -1,0 +1,361 @@
+name: An update that drops an owned entity deletes it, in the same write, and lists it as deleted
+source:
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#mapArrayValue
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#removeUnusedArrayEntries
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#mapAttributesAndClassifications
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteEdgeReference
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteTypeVertex
+rules:
+    - OWN-01
+    - OWN-02
+    - OWN-03
+covers:
+    - aurelius_atlas_server.routes.entity.create_or_update
+    - aurelius_atlas_server.routes.entity.get_header_by_id
+stages:
+    - name: create a column type and an owner type that owns an array of columns
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_ocol_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                  - name: scenario_owner_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                        - name: cols
+                          typeName: array<scenario_ocol_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          constraints:
+                              - type: ownedRef
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ocol_{run}
+                    description: scenario_ocol_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_owner_{run}
+                    description: scenario_owner_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: cols
+                          typeName: array<scenario_ocol_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: 0
+                          valuesMaxCount: 2147483647
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          constraints:
+                              - type: ownedRef
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.entityDefs[1].guid
+              - $.entityDefs[1].createTime
+              - $.entityDefs[1].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].updatedBy
+                absent: true
+    - name: create two columns and the owner of both
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_ocol_{run}
+                    guid: "-1"
+                    attributes:
+                        qualifiedName: c1_{run}
+                  - typeName: scenario_ocol_{run}
+                    guid: "-2"
+                    attributes:
+                        qualifiedName: c2_{run}
+                  - typeName: scenario_owner_{run}
+                    guid: "-3"
+                    attributes:
+                        qualifiedName: o_{run}
+                        cols:
+                            - guid: "-1"
+                              typeName: scenario_ocol_{run}
+                            - guid: "-2"
+                              typeName: scenario_ocol_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_ocol_{run}
+                        attributes:
+                            qualifiedName: c1_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: c1_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_ocol_{run}
+                        attributes:
+                            qualifiedName: c2_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: c2_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_owner_{run}
+                        attributes:
+                            qualifiedName: o_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: o_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments:
+                  "-1": a new GUID
+                  "-2": a new GUID
+                  "-3": a new GUID
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+              - $.guidAssignments['-3']
+          save:
+              c1: $.guidAssignments['-1']
+              c2: $.guidAssignments['-2']
+              owner: $.guidAssignments['-3']
+    - name: an update that drops the second column deletes it, listed after the update
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity:
+                  typeName: scenario_owner_{run}
+                  guid: "{owner}"
+                  attributes:
+                      qualifiedName: o_{run}
+                      cols:
+                          - guid: "{c1}"
+                            typeName: scenario_ocol_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  UPDATE:
+                      - typeName: scenario_owner_{run}
+                        attributes:
+                            qualifiedName: o_{run}
+                        guid: "{owner}"
+                        status: ACTIVE
+                        displayText: o_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                  DELETE:
+                      - typeName: scenario_ocol_{run}
+                        attributes:
+                            qualifiedName: c2_{run}
+                        guid: "{c2}"
+                        status: ACTIVE
+                        displayText: c2_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: {}
+    - name: the dropped column is DELETED
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{c2}/header
+      response:
+          status: 200
+          json:
+              typeName: scenario_ocol_{run}
+              attributes:
+                  qualifiedName: c2_{run}
+              guid: "{c2}"
+              status: DELETED
+              displayText: c2_{run}
+              classificationNames: []
+              classifications: []
+              meaningNames: []
+              meanings: []
+              isIncomplete: false
+              labels: []
+    - name: delete the owner, and the column it still owns with it
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{owner}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_owner_{run}
+                        attributes:
+                            qualifiedName: o_{run}
+                        guid: "{owner}"
+                        status: ACTIVE
+                        displayText: o_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_ocol_{run}
+                        attributes:
+                            qualifiedName: c1_{run}
+                        guid: "{c1}"
+                        status: ACTIVE
+                        displayText: c1_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: purge them all
+      request:
+          method: PUT
+          url: /api/atlas/admin/purge
+          json:
+              - "{owner}"
+              - "{c1}"
+              - "{c2}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_owner_{run}
+                        attributes:
+                            qualifiedName: o_{run}
+                        guid: "{owner}"
+                        status: DELETED
+                        displayText: o_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_ocol_{run}
+                        attributes:
+                            qualifiedName: c1_{run}
+                        guid: "{c1}"
+                        status: DELETED
+                        displayText: c1_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_ocol_{run}
+                        attributes:
+                            qualifiedName: c2_{run}
+                        guid: "{c2}"
+                        status: DELETED
+                        displayText: c2_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: delete type scenario_owner_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_owner_{run}
+      response:
+          status: 204
+    - name: delete type scenario_ocol_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_ocol_{run}
+      response:
+          status: 204

@@ -23,6 +23,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   and creation an entity write shares; `relationship_mapper.py` (`RelationshipMapper`) maps relationship
   attributes onto relationships in memory; `graph_helper.py` holds `GraphHelper`'s edge lookups over an entity's
   relationships
+- `aurelius_atlas_core/transaction_view.py` — `TransactionView`: the store as a write request has changed it,
+  which the delete handlers read (through `EntityView`) to delete the owned entities an update drops (DD-068)
 - `aurelius_atlas_core/entity_documents.py` — `EntityDocuments` and its Elasticsearch implementation: the entity,
   unique value and journal indices; `stored_entity.py` (`StoredEntity`) and `unique_key.py` (`UniqueKey`)
 - `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` and `MemoryEntityDocuments` (with injected

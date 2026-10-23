@@ -77,7 +77,8 @@ Apache Atlas `release-2.4.0`:
 ## Deviations
 
 DV-31: a relationship of an owned attribute that an update replaces or drops deletes, in Atlas, the owned entity
-with it (`deleteEdgeReference` then `deleteTypeVertex`); until 3.2 Aurelius Atlas deletes only the relationship.
+with it (`deleteEdgeReference` then `deleteTypeVertex`); until 3.2 Aurelius Atlas deletes only the relationship
+(ended by 3.2, OWN-01).
 DV-32: an inverse reference whose inverse attribute is not a relationship attribute is kept by Atlas as a legacy
 edge; Aurelius Atlas does not maintain it. DV-21 now also covers the order of an array's relationships: Atlas
 indexes them in the hash order of a union of edges, Aurelius Atlas keeps the ones that stay first, then the
