@@ -1,0 +1,317 @@
+name: A classification is attached to an entity, read, changed and removed
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#addClassifications
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getClassifications
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#updateClassifications
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#deleteClassification
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#validateEntityAssociations
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#addClassifications
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#updateClassifications
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#deleteClassification
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#toAtlasClassification
+rules:
+    - CLS-02
+    - CLS-03
+    - CLS-04
+    - CLS-05
+    - CLS-08
+    - CLS-09
+covers:
+    - aurelius_atlas_server.routes.entity.add_classifications
+    - aurelius_atlas_server.routes.entity.get_classifications
+    - aurelius_atlas_server.routes.entity.update_classifications
+    - aurelius_atlas_server.routes.entity.get_classification
+    - aurelius_atlas_server.routes.entity.delete_classification
+stages:
+    - name: create an entity type and a classification type with an attribute
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_ctable_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+              classificationDefs:
+                  - name: scenario_ctag_{run}
+                    attributeDefs:
+                        - name: level
+                          typeName: int
+                          isOptional: true
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ctag_{run}
+                    description: scenario_ctag_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: level
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: admin
+                    updatedBy: admin
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ctable_{run}
+                    description: scenario_ctable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[0].guid
+              - $.entityDefs[0].createTime
+              - $.entityDefs[0].updateTime
+              - $.classificationDefs[0].guid
+              - $.classificationDefs[0].createTime
+              - $.classificationDefs[0].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.classificationDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.classificationDefs[0].updatedBy
+                absent: true
+    - name: create a table
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_ctable_{run}
+                    guid: "-1"
+                    attributes:
+                        qualifiedName: t_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_ctable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: t_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments:
+                  "-1": a new GUID
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+          save:
+              owner: $.guidAssignments['-1']
+    - name: classify it; the answer has no body
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{owner}/classifications
+          json:
+              - typeName: scenario_ctag_{run}
+                attributes:
+                    level: 2
+      response:
+          status: 204
+    - name: classifying it again with the same classification is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{owner}/classifications
+          json:
+              - typeName: scenario_ctag_{run}
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-01A
+              errorMessage: "invalid parameters: entity: {owner}, already associated with classification: scenario_ctag_{run}"
+    - name: its classifications, as a list with Atlas's defaults
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{owner}/classifications
+      response:
+          status: 200
+          json:
+              list:
+                  - typeName: scenario_ctag_{run}
+                    attributes:
+                        level: 2
+                    entityGuid: "{owner}"
+                    entityStatus: ACTIVE
+                    propagate: true
+                    removePropagationsOnEntityDelete: false
+              startIndex: 0
+              pageSize: 1
+              totalCount: 1
+              sortType: NONE
+    - name: change the attribute and stop propagation
+      request:
+          method: PUT
+          url: /api/atlas/v2/entity/guid/{owner}/classifications
+          json:
+              - typeName: scenario_ctag_{run}
+                attributes:
+                    level: 3
+                propagate: false
+      response:
+          status: 204
+    - name: the classification by name
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{owner}/classification/scenario_ctag_{run}
+      response:
+          status: 200
+          json:
+              typeName: scenario_ctag_{run}
+              attributes:
+                  level: 3
+              entityGuid: "{owner}"
+              entityStatus: ACTIVE
+              propagate: false
+              removePropagationsOnEntityDelete: false
+    - name: the header names it
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{owner}/header
+      response:
+          status: 200
+          json:
+              typeName: scenario_ctable_{run}
+              attributes:
+                  qualifiedName: t_{run}
+              guid: "{owner}"
+              status: ACTIVE
+              displayText: t_{run}
+              classificationNames:
+                  - scenario_ctag_{run}
+              classifications:
+                  - typeName: scenario_ctag_{run}
+                    attributes:
+                        level: 3
+                    entityGuid: "{owner}"
+                    entityStatus: ACTIVE
+                    propagate: false
+                    removePropagationsOnEntityDelete: false
+              meaningNames: []
+              meanings: []
+              isIncomplete: false
+              labels: []
+    - name: remove it
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{owner}/classification/scenario_ctag_{run}
+      response:
+          status: 204
+    - name: with none left, removing it again is refused
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{owner}/classification/scenario_ctag_{run}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-003
+              errorMessage: "No classifications associated with entity: {owner}"
+    - name: delete the table
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{owner}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_ctable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: "{owner}"
+                        status: ACTIVE
+                        displayText: t_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: purge it
+      request:
+          method: PUT
+          url: /api/atlas/admin/purge
+          json:
+              - "{owner}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_ctable_{run}
+                        attributes:
+                            qualifiedName: t_{run}
+                        guid: "{owner}"
+                        status: DELETED
+                        displayText: t_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: delete type scenario_ctable_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_ctable_{run}
+      response:
+          status: 204
+    - name: delete type scenario_ctag_{run}
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_ctag_{run}
+      response:
+          status: 204

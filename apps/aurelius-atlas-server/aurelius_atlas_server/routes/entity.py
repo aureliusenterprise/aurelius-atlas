@@ -1,22 +1,30 @@
-"""The entity reads, writes and deletes of ``EntityREST`` under ``/api/atlas/v2/entity``.
+"""The entity reads, writes and deletes of ``EntityREST`` under ``/api/atlas/v2/entity``, and their classifications.
 
-ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08.
+ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09.
 """
 
 from collections.abc import Mapping
 from typing import Annotated, Any
 
 from aurelius_atlas_core.delete_type import DeleteType
+from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.base import AtlasModel
-from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo
+from aurelius_atlas_model.errors import java_string
+from aurelius_atlas_model.instance import (
+    AtlasClassification,
+    AtlasClassifications,
+    AtlasEntitiesWithExtInfo,
+    AtlasEntityWithExtInfo,
+    ClassificationAssociateRequest,
+)
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.entity_type import EntityType
-from fastapi import APIRouter, Depends, Request
-from pydantic import ValidationError
+from fastapi import APIRouter, Depends, Request, Response
+from pydantic import TypeAdapter, ValidationError
 
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.types import validate_param_length
@@ -153,6 +161,53 @@ def model_body[T: AtlasModel](model: type[T], body: Any) -> T | None:  # noqa: A
 
 type Body = Annotated[Any, Depends(json_body)]
 
+_CLASSIFICATIONS = TypeAdapter(list[AtlasClassification])
+NO_CONTENT = 204
+NO_CLASSIFICATION = "no classification"
+NO_TARGETS = "Need either list of GUIDs or entity type and list of qualified Names"
+NO_GUID_FOUND = "No guid found for given entity Type Name and list of attributes"
+
+
+def classifications_body(body: Any) -> list[AtlasClassification] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a list of classifications, or None for no body (CLS-04).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is no such list (DV-10).
+    """
+    if body is None:
+        return None
+    try:
+        return _CLASSIFICATIONS.validate_python(body)
+    except ValidationError as error:
+        raise AtlasError(
+            AtlasErrorCode.BAD_REQUEST, f"Invalid list of AtlasClassification: {error.errors()[0]['msg']}"
+        ) from error
+
+
+def ensure_classification_type(store: EntityStore, name: str) -> None:
+    """``ensureClassificationType``: a classification type is named ``name`` (CLS-03, CLS-09).
+
+    Raises:
+        AtlasError: ``TYPE_NAME_INVALID`` (``CLASSIFICATION``) when there is none.
+    """
+    if store.registry.classification_type(name) is None:
+        raise AtlasError(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.CLASSIFICATION.value, name)
+
+
+async def guid_by_unique_attributes(store: EntityStore, type_name: str, request: Request) -> str:
+    """``getGuidByUniqueAttributes`` of the ``attr:`` values (CLS-06).
+
+    Raises:
+        AtlasError: ``TYPE_NAME_INVALID``, ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``.
+    """
+    validate_param_length("typeName", type_name)
+    entity_type = ensure_entity_type(store, type_name)
+    attributes = unique_attributes(request)
+    found = await store.find_by_unique_attributes(entity_type, attributes)
+    if found is None:
+        raise AtlasError(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, type_name, java_string(attributes))
+    return found.entity.guid
+
 
 @ENTITY.get("/guid/{guid}")
 async def get_by_id(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
@@ -277,3 +332,107 @@ async def delete_by_unique_attribute(type_name: str, request: Request, store: St
     entity_type = ensure_entity_type(store, type_name)
     deleted = await writer(request, store).delete_by_unique_attributes(entity_type, attributes, delete_type(request))
     return _json(deleted.to_json())
+
+
+@ENTITY.get("/guid/{guid}/classification/{classification_name}")
+async def get_classification(guid: str, classification_name: str, store: Store) -> AtlasJSONResponse:
+    """``getClassification``: the entity's classification of the name (CLS-03)."""
+    validate_param_length("guid", guid)
+    validate_param_length("classificationName", classification_name)
+    ensure_classification_type(store, classification_name)
+    return _json((await EntityClassifications(store).get_classification(guid, classification_name)).to_json())
+
+
+@ENTITY.get("/guid/{guid}/classifications")
+async def get_classifications(guid: str, store: Store) -> AtlasJSONResponse:
+    """``getClassifications``: the entity's classifications as a ``PList`` (CLS-03)."""
+    validate_param_length("guid", guid)
+    found = await EntityClassifications(store).get_classifications(guid)
+    return _json(AtlasClassifications.of(found).to_json())
+
+
+@ENTITY.post("/uniqueAttribute/type/{type_name}/classifications")
+async def add_classifications_by_unique_attribute(
+    type_name: str, request: Request, body: Body, store: Store
+) -> Response:
+    """``addClassificationsByUniqueAttribute`` (CLS-04 to CLS-06)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await EntityClassifications(store).add_classifications(guid, classifications_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/guid/{guid}/classifications")
+async def add_classifications(guid: str, body: Body, store: Store) -> Response:
+    """``addClassifications``: attach the classifications to the entity (CLS-04, CLS-05)."""
+    validate_param_length("guid", guid)
+    await EntityClassifications(store).add_classifications(guid, classifications_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.put("/uniqueAttribute/type/{type_name}/classifications")
+async def update_classifications_by_unique_attribute(
+    type_name: str, request: Request, body: Body, store: Store
+) -> Response:
+    """``updateClassificationsByUniqueAttribute`` (CLS-06, CLS-08)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await EntityClassifications(store).update_classifications(guid, classifications_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.put("/guid/{guid}/classifications")
+async def update_classifications(guid: str, body: Body, store: Store) -> Response:
+    """``updateClassifications``: change the entity's classifications (CLS-08)."""
+    validate_param_length("guid", guid)
+    await EntityClassifications(store).update_classifications(guid, classifications_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/uniqueAttribute/type/{type_name}/classification/{classification_name}")
+async def delete_classification_by_unique_attribute(
+    type_name: str, classification_name: str, request: Request, store: Store
+) -> Response:
+    """``deleteClassificationByUniqueAttribute`` (CLS-06, CLS-09)."""
+    validate_param_length("classificationName", classification_name)
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await EntityClassifications(store).delete_classification(guid, classification_name)
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/classification/{classification_name}")
+async def delete_classification(guid: str, classification_name: str, request: Request, store: Store) -> Response:
+    """``deleteClassification``: remove the entity's classification of the name (CLS-09)."""
+    associated = request.query_params.get("associatedEntityGuid")
+    validate_param_length("guid", guid)
+    validate_param_length("classificationName", classification_name)
+    if associated is not None:
+        validate_param_length("associatedEntityGuid", associated)
+    ensure_classification_type(store, classification_name)
+    await EntityClassifications(store).delete_classification(guid, classification_name, associated)
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/bulk/classification")
+async def add_classification(body: Body, store: Store) -> Response:
+    """``addClassification``: attach one classification to entities by GUID or by unique attributes (CLS-07).
+
+    Raises:
+        AtlasError: ``INVALID_PARAMETERS`` without a classification or entities, or when no entity is found.
+    """
+    associate = model_body(ClassificationAssociateRequest, body) or ClassificationAssociateRequest()
+    classification = associate.classification
+    if classification is None or not classification.type_name:
+        raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_CLASSIFICATION)
+    guids = list(associate.entity_guids or [])
+    sets = associate.entities_unique_attributes or []
+    if not guids and (not sets or associate.entity_type_name is None):
+        raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_TARGETS)
+    if sets and associate.entity_type_name is not None:
+        entity_type = ensure_entity_type(store, associate.entity_type_name)
+        for attributes in sets:
+            found = await store.find_by_unique_attributes(entity_type, attributes)
+            if found is not None:
+                guids.append(found.entity.guid)
+        if not guids:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOUND)
+    await EntityClassifications(store).add_classification(guids, classification)
+    return Response(status_code=NO_CONTENT)
