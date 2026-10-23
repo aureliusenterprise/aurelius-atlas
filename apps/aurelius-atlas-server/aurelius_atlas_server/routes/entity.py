@@ -1,11 +1,12 @@
 """The entity reads, writes and deletes of ``EntityREST`` under ``/api/atlas/v2/entity``, and their classifications.
 
-ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09.
+ERD-01 to ERD-10, EWR-01 to EWR-16, EDL-01 to EDL-08, CLS-03 to CLS-09, CLA-01 to CLA-04.
 """
 
 from collections.abc import Mapping
 from typing import Annotated, Any
 
+from aurelius_atlas_core.classification_associator import ClassificationAssociator
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_retriever import EntityRetriever
@@ -18,6 +19,7 @@ from aurelius_atlas_model.instance import (
     AtlasClassification,
     AtlasClassifications,
     AtlasEntitiesWithExtInfo,
+    AtlasEntityHeaders,
     AtlasEntityWithExtInfo,
     ClassificationAssociateRequest,
 )
@@ -436,3 +438,16 @@ async def add_classification(body: Body, store: Store) -> Response:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOUND)
     await EntityClassifications(store).add_classification(guids, classification)
     return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/bulk/setClassifications")
+async def set_classifications(body: Body, store: Store) -> Response:
+    """``setClassifications``: each header's entity gets its classifications; a JSON array of summaries (CLA-04).
+
+    The array is Java's text, answered as it is; no body answers ``[]`` (DV-36).
+    """
+    headers = model_body(AtlasEntityHeaders, body)
+    summary = await ClassificationAssociator(store).set_classifications(
+        None if headers is None else headers.guid_header_map
+    )
+    return Response(content=summary, media_type="application/json")

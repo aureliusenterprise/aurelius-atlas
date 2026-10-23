@@ -109,6 +109,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-071](#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing)                      | An entity write also writes classification instances, all or nothing                       | 3.3       | Proposed             |
 | [DD-072](#dd-072-the-propagation-defaults-are-atlass-defaults)                                             | The propagation defaults are Atlas's defaults                                              | 3.3       | Proposed             |
 | [DD-073](#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator)                          | 3.3 is split into direct classifications and the bulk associator                           | 3.3       | Proposed             |
+| [DD-074](#dd-074-bulkheaders-moves-to-35)                                                                  | `bulk/headers` moves to 3.5                                                                | 3.3       | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -1691,3 +1692,20 @@ operations.
 **Alternatives.** One increment: one pull request far above the limit.
 
 **Consequences.** Until 3.3b, `bulk/setClassifications` and `bulk/headers` answer `404`.
+
+### DD-074. `bulk/headers` moves to 3.5
+
+- **Status:** Proposed
+- **Increment:** 3.3
+- **Date:** 2026-10-23
+
+**Decision.** `GET bulk/headers?tagUpdateStartTime` (`ClassificationAssociator.Retriever`) is ported with the
+entity audit in 3.5 rather than in 3.3b.
+
+**Reason.** It lists the entities whose classifications changed in a time window by asking the audit
+repository (`getEntitiesWithTagChanges`); without audit events it could only answer an empty list, or keep a
+second record of classification changes that 3.5 would replace.
+
+**Alternatives.** An index of classification change times now: a record 3.5's audit events supersede.
+
+**Consequences.** Until 3.5 the endpoint answers `404`. 3.3b ports `bulk/setClassifications` alone.

@@ -29,6 +29,8 @@ delete cascades that follow owned relationships (DD-064 to DD-067). Since
 entities they drop, through a view of the request's changes and in the request's one write (DD-068). Since
 [3.3a](../../../docs/architecture/conversion/increments/3-3-direct-classifications.md): classifications
 attached to entities, instances of their own index listed by their entity and written with it (DD-070, DD-071).
+Since [3.3b](../../../docs/architecture/conversion/increments/3-3-bulk-classifications.md): the classification
+associator behind `bulk/setClassifications`.
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -97,6 +99,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.entity_classifications
 
 ::: aurelius_atlas_core.stored_classification
+
+::: aurelius_atlas_core.classification_associator
 
 ::: aurelius_atlas_core.stored_relationship
 
