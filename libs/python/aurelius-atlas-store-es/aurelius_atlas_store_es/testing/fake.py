@@ -299,7 +299,9 @@ def _value(source: dict[str, Any], field: str) -> Any:  # noqa: ANN401 - any fie
 def _held(source: dict[str, Any], field: str) -> list[Any]:
     """The values a field holds: none, one, or an array's."""
     value = _value(source, field)
-    return [] if value is None else value if isinstance(value, list) else [value]
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
 
 
 def _wildcard(pattern: str) -> re.Pattern[str]:
@@ -312,8 +314,11 @@ def _wildcard(pattern: str) -> re.Pattern[str]:
         elif character == "\\":
             escaped = True
         else:
-            parts.append(".*" if character == "*" else "." if character == "?" else re.escape(character))
+            parts.append(_WILDCARDS.get(character) or re.escape(character))
     return re.compile("".join(parts), re.DOTALL)
+
+
+_WILDCARDS = {"*": ".*", "?": "."}
 
 
 def _sort_clause(clause: Any) -> tuple[str, dict[str, Any]]:  # noqa: ANN401 - a sort clause
