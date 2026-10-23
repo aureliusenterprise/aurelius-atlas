@@ -25,14 +25,14 @@ query) and `discovery_service` (`EntityDiscoveryService.searchWithParameters`). 
 
 Not in scope:
 
-| Not delivered here                                                                                                    | Delivered by |
-| --------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `classification`, `tagFilters`, `includeClassificationAttributes`, `__classificationNames` filters (DV-46 until then) | 4.1b         |
-| `query` (free text), `search/fulltext`, `search/quick`, `search/suggestions`                                          | 4.2          |
-| `search/dsl`                                                                                                          | 4.4          |
-| `search/saved`                                                                                                        | 4.5          |
-| `termName`                                                                                                            | 5.2          |
-| `relationshipName`, `relationshipFilters`, `search/relationship`, `search/relations`, search downloads                | –            |
+| Not delivered here                                                                                     | Delivered by |
+| ------------------------------------------------------------------------------------------------------ | ------------ |
+| `classification`, `tagFilters`, `__classificationNames` filters (DV-46 until then)                     | 4.1b         |
+| `query` (free text), `search/fulltext`, `search/quick`, `search/suggestions`                           | 4.2          |
+| `search/dsl`                                                                                           | 4.4          |
+| `search/saved`                                                                                         | 4.5          |
+| `termName`                                                                                             | 5.2          |
+| `relationshipName`, `relationshipFilters`, `search/relationship`, `search/relations`, search downloads | –            |
 
 ## Semantics
 
@@ -46,7 +46,7 @@ Not in scope:
 | SRC-06 | `TIME_RANGE` on a date or long takes `<start>,<end>` in epoch milliseconds, both included, or `TODAY`, `YESTERDAY`, `LAST_7_DAYS`, `LAST_30_DAYS`, `THIS_MONTH`, `LAST_MONTH`, `THIS_QUARTER`, `LAST_QUARTER`, `LAST_3_MONTHS`, `LAST_6_MONTHS`, `LAST_12_MONTHS`, `THIS_YEAR`, `LAST_YEAR`, computed as `processDateRange` does in UTC (DV-44). `__isIncomplete` `EQ` 0 or false, and `NEQ` 1, match complete entities; `__labels` and `__customAttributes` `EQ`, `NEQ`, `STARTS_WITH` and `ENDS_WITH` match one element (`key=value` for custom attributes)                                                                                                                                                    |
 | SRC-07 | With `excludeDeletedEntities` only `ACTIVE` entities match. Matching entities are ordered by `sortBy` of the first type given (`sortOrder` `ASCENDING` by default, entities without a value last), else by creation time and GUID (DD-089); `limit` is 1 to 10,000, else 100, `offset` at least 0, and the answer's `searchParameters` show them so                                                                                                                                                                                                                                                                                                                                                              |
 | SRC-08 | `marker` pages instead of `offset`: `*` starts, and `nextMarker` is the marker of the next page, `-1` after the last. A marker with an `offset` above 0 fails with `BAD_REQUEST` `Marker can be used only if offset=0.`, a marker that is not one of this search's with `Invalid marker!` (DV-45)                                                                                                                                                                                                                                                                                                                                                                                                                |
-| SRC-09 | The answer is `queryType` `BASIC`, the `searchParameters`, the entities' headers, their attributes being the header attributes, the requested `attributes` and the attributes the entity filters name, and `approximateCount`, the number of matching entities. A requested attribute that refers to entities adds their headers to `referredEntities`. No match leaves `entities` out                                                                                                                                                                                                                                                                                                                           |
+| SRC-09 | The answer is `queryType` `BASIC`, the `searchParameters`, the entities' headers, their attributes being the header attributes, the requested `attributes` and the attributes the entity filters name, with their classifications when `includeClassificationAttributes`, and `approximateCount`, the number of matching entities. A requested attribute that refers to entities adds their headers to `referredEntities`. No match leaves `entities` out                                                                                                                                                                                                                                                        |
 | SRC-10 | With `excludeHeaderAttributes`, `attributes` given and none of them a relationship attribute, the answer has, instead of entities, `attributes`: their `name`s and, per entity, the `values` of the first type's attributes, `""` for none                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | SRC-11 | `GET basic` searches with its query parameters, unvalidated; `excludeDeletedEntities` is true only for `true` in any case. `GET attribute` fails with `INVALID_PARAMETERS` `attrName : <name>, attrValue: <value> for attribute search.` without both, and searches for `attrValuePrefix` with `STARTS_WITH` on `attrName`, by default `qualifiedName`, or `name` where the type has no `qualifiedName`, validated as `POST basic`. A `limit`, `offset` or `sortOrder` that is no value of its type fails with `BAD_REQUEST` (DV-39)                                                                                                                                                                             |
 
@@ -54,13 +54,13 @@ Not in scope:
 
 Apache Atlas `release-2.4.0`:
 
-- `webapp/.../web/rest/DiscoveryREST.java`: `searchUsingBasic`, `searchUsingAttribute`,
-  `searchWithParameters`, `validateBasicSearchParameters` -
-  `repository/.../discovery/EntityDiscoveryService.java`: `searchWithParameters`, `searchWithSearchContext` -
-  `repository/.../discovery/SearchContext.java` (with `MarkerUtil`), `EntitySearchProcessor.java`,
-  `SearchProcessor.java` (`processDateRange`, `processPipeSeperatedSystemAttribute`, `toInMemoryPredicate`) -
-  `repository/.../util/SearchPredicateUtil.java`; `repository/.../query/QueryParams.java` -
-  `intg/.../model/discovery/SearchParameters.java`, `AtlasSearchResult.java`
+- `webapp/.../web/rest/DiscoveryREST.java`: `searchUsingBasic`, `searchUsingAttribute`, `searchWithParameters`,
+  `validateBasicSearchParameters`
+- `repository/.../discovery/EntityDiscoveryService.java`: `searchWithParameters`, `searchWithSearchContext`
+- `repository/.../discovery/SearchContext.java` (with `MarkerUtil`), `EntitySearchProcessor.java`,
+  `SearchProcessor.java` (`processDateRange`, `processPipeSeperatedSystemAttribute`, `toInMemoryPredicate`)
+- `repository/.../util/SearchPredicateUtil.java`; `repository/.../query/QueryParams.java`
+- `intg/.../model/discovery/SearchParameters.java`, `AtlasSearchResult.java`
 
 ## Deviations
 
@@ -75,8 +75,9 @@ Atlas fails with a `NumberFormatException` (both DV-46).
 
 ## Acceptance
 
-- `libs/python/aurelius-atlas-model/tests/` — SRC-01. - `libs/python/aurelius-atlas-core/tests/` — SRC-03 to
-  SRC-10 on the in-memory documents and the fake client. - `libs/python/aurelius-atlas-core/e2e/` — the search
-  fields and the queries on the dev store. - `apps/aurelius-atlas-server/tests/`,
-  `apps/aurelius-atlas-server/scenarios/search/` — SRC-02, SRC-09, SRC-11 over HTTP. - `uv run
-aurelius-atlas-trace check`.
+- `libs/python/aurelius-atlas-model/tests/` — SRC-01.
+- `libs/python/aurelius-atlas-core/tests/` — SRC-03 to SRC-10 on the in-memory documents and the fake client.
+- `libs/python/aurelius-atlas-core/e2e/` — the search fields and the queries on the dev store.
+- `apps/aurelius-atlas-server/tests/`, `apps/aurelius-atlas-server/scenarios/search/` — SRC-02, SRC-09, SRC-11
+  over HTTP.
+- `uv run aurelius-atlas-trace check`.
