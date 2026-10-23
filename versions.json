@@ -173,5 +173,10 @@
     "version": "dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1",
     "title": "dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1",
     "aliases": []
+  },
+  {
+    "version": "chore-deps-dependabot-137-138",
+    "title": "chore-deps-dependabot-137-138",
+    "aliases": []
   }
 ]
