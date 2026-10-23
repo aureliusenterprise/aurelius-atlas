@@ -2,6 +2,7 @@
 
 import json
 from decimal import Decimal
+from functools import cmp_to_key
 from typing import Any
 
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
@@ -194,22 +195,25 @@ class FakeClient:
         search_after: list[Any] | None = None,
         seq_no_primary_term: bool = False,
     ) -> dict[str, Any]:
-        """Answer like ``_search`` with the documents matching a ``match_all`` or ``term`` query.
+        """Answer like ``_search`` with the documents matching the query.
 
-        With ``sort``, hits are ordered by their id and carry it as their sort value, after ``search_after``.
+        With ``sort``, hits are ordered by the sort fields, a document without one standing in with its id, and
+        carry their sort values; only those after ``search_after`` are answered.
         """
+        order = [next(iter(clause.items())) for clause in sort or []]
         hits = []
-        for document_id, (source, seq_no) in (
-            sorted(self._index_of(index).items()) if sort else self._index_of(index).items()
-        ):
-            if not _matches(source, query) or (search_after is not None and document_id <= search_after[0]):
+        for document_id, (source, seq_no) in self._index_of(index).items():
+            values = [source.get(field, document_id) for field, _ in order]
+            if not _matches(source, query) or (search_after is not None and _compare(values, search_after, order) <= 0):
                 continue
             hit: dict[str, Any] = {"_id": document_id, "_source": source}
             if seq_no_primary_term:
                 hit |= {"_seq_no": seq_no, "_primary_term": self.primary_term}
             if sort:
-                hit["sort"] = [document_id]
+                hit["sort"] = values
             hits.append(hit)
+        if sort:
+            hits.sort(key=cmp_to_key(lambda a, b: _compare(a["sort"], b["sort"], order)))
         return {"hits": {"total": {"value": len(hits)}, "hits": hits[:size]}}
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -233,9 +237,16 @@ def _read(body: bytes) -> dict[str, Any]:
 
 
 def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
-    """Whether ``source`` matches a ``match_all``, or a single-field ``term`` or ``terms`` query."""
+    """Whether ``source`` matches a ``match_all``, a single-field ``term``, ``terms`` or ``range`` query, or a
+    ``bool`` query's ``filter`` clauses, all of them.
+    """  # noqa: D205 - one sentence
     if query is None or "match_all" in query:
         return True
+    if "bool" in query:
+        return all(_matches(source, clause) for clause in query["bool"].get("filter", []))
+    if "range" in query:
+        ((field, bounds),) = query["range"].items()
+        return _in_range(source.get(field), bounds)
     if "terms" in query:
         ((field, values),) = query["terms"].items()
         found = source.get(field)
@@ -244,3 +255,25 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
     ((field, value),) = query["term"].items()
     found = source.get(field)
     return value in found if isinstance(found, list) else found == value
+
+
+_BOUNDS = {
+    "gt": lambda value, bound: value > bound,
+    "gte": lambda value, bound: value >= bound,
+    "lt": lambda value, bound: value < bound,
+    "lte": lambda value, bound: value <= bound,
+}
+
+
+def _in_range(value: Any, bounds: dict[str, Any]) -> bool:  # noqa: ANN401 - any field value
+    """Whether a present value meets every bound of a ``range`` query."""
+    return value is not None and all(_BOUNDS[name](value, bound) for name, bound in bounds.items())
+
+
+def _compare(left: list[Any], right: list[Any], order: list[tuple[str, str]]) -> int:
+    """Compare two hits' sort values field by field, each ascending or descending."""
+    for a, b, (_, direction) in zip(left, right, order, strict=False):
+        if a != b:
+            smaller = -1 if a < b else 1
+            return -smaller if direction == "desc" else smaller
+    return 0

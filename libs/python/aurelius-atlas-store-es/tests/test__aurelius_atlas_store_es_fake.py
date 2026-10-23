@@ -173,3 +173,34 @@ async def test__a_mapping_update_is_recorded() -> None:
 
     assert (await fake.indices.put_mapping(index="docs", properties={}))["acknowledged"]
     assert fake.mapping_updates == ["docs"]
+
+
+async def test__bool_filters_and_ranges_match() -> None:
+    """Every ``filter`` clause of a ``bool`` query must match; a ``range`` bounds a present value."""
+    fake = FakeClient()
+    for document_id, key in (("a", "k1"), ("b", "k2"), ("c", "k3"), ("d", None)):
+        await fake.index(index="docs", id=document_id, document={"tag": "x", "key": key})
+
+    found = await fake.search(
+        index="docs",
+        query={"bool": {"filter": [{"term": {"tag": "x"}}, {"range": {"key": {"lte": "k2", "gt": "k1"}}}]}},
+    )
+    above = await fake.search(index="docs", query={"range": {"key": {"gte": "k2", "lt": "k3"}}})
+
+    assert [hit["_id"] for hit in found["hits"]["hits"]] == ["b"]
+    assert [hit["_id"] for hit in above["hits"]["hits"]] == ["b"]
+
+
+async def test__search_sorts_by_fields_in_either_direction() -> None:
+    """Hits come by the sort fields, descending where asked, ties by the next field; ``search_after`` continues."""
+    fake = FakeClient()
+    for document_id, key, tie in (("a", "k1", "x"), ("b", "k3", "y"), ("c", "k2", "z"), ("d", "k3", "w")):
+        await fake.index(index="docs", id=document_id, document={"key": key, "tie": tie})
+    sort = [{"key": "desc"}, {"tie": "asc"}]
+
+    first = await fake.search(index="docs", size=2, query={"match_all": {}}, sort=sort)
+    rest = await fake.search(index="docs", size=5, query={"match_all": {}}, sort=sort, search_after=["k3", "y"])
+
+    assert [hit["_id"] for hit in first["hits"]["hits"]] == ["d", "b"]
+    assert first["hits"]["hits"][1]["sort"] == ["k3", "y"]
+    assert [hit["_id"] for hit in rest["hits"]["hits"]] == ["c", "a"]
