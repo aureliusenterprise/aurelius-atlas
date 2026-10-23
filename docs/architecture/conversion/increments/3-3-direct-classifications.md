@@ -1,7 +1,7 @@
 # 3.3a Direct classifications
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#118](https://github.com/aureliusenterprise/aurelius-atlas/pull/118)
 - **Records:** DD-070 to DD-073, DV-34, DV-35; relies on DD-043 to DD-049, DD-052, DD-056, DD-061, DD-062
 
 The first part of increment 3.3 (DD-073; 3.3b brings `bulk/setClassifications` and `bulk/headers`):
