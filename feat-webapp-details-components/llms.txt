@@ -122,6 +122,8 @@
 - [7.14 Settings panel](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-14-settings-panel/index.md>)
 - [7.15 Alerts drawer](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-15-alerts-drawer/index.md>)
 - [7.16 UI components (details chrome)](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-16-ui-components-details-ii/index.md>)
+- [7.17 Collector ingest auth](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-17-collector-ingest-auth/index.md>)
+- [7.18 Collector ingest identity](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-18-collector-ingest-identity/index.md>)
 - [7.2 Design system](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-2-design-system/index.md>)
 - [7.3 API client and auth wiring](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-3-api-client-auth/index.md>)
 - [7.5 Landing page (browse)](<https://aureliusenterprise.github.io/feat-webapp-details-components/architecture/conversion/increments/7-5-browse-landing/index.md>)

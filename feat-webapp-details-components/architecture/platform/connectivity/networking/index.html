@@ -3712,6 +3712,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -4428,6 +4432,60 @@
     
   
   7.16 UI components (details chrome)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/7-17-collector-ingest-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.17 Collector ingest auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/7-18-collector-ingest-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.18 Collector ingest identity
 
     
   </span>
@@ -6513,7 +6571,9 @@ development topology that satisfies them, slice by slice, is the contributor gui
 <li><strong>The catalogue service reaches the store and the signal collector; browsers reach the
   catalogue service</strong> for the API and the UI, <strong>and the identity provider</strong> for sign-in. Nothing
   else needs a path: the store serves only the catalogue service, and the collector receives
-  signals without the system calling back through it.</li>
+  signals without the system calling back through it. Reaching the collector's ingest ports is
+  not enough to write to them — the browser leg accepts only Keycloak user tokens, the service
+  leg only the shared ingest token (DD-103).</li>
 </ul>
 <h2 id="development-and-ci">Development and CI<a class="headerlink" href="#development-and-ci" title="Permanent link">&para;</a></h2>
 <p>The development arrangement is one compose project per infrastructure slice, each on its own

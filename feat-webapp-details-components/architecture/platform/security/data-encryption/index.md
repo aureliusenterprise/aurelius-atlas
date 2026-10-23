@@ -11,7 +11,7 @@ Every path data travels on inside the system is TLS with certificate verificatio
 | Browser → catalogue service | TLS with the deployment's own certificate; the E2E suite proves the served image over TLS |
 | Service → search store | TLS only — plain endpoints are rejected by settings validation, before connecting |
 | Service → relational store (examples only) | TLS with full verification; the catalogue spine has no relational store (ADR 047) |
-| Service → signal collector | TLS; exporters trust the deployment's CA |
+| Service → signal collector | TLS; exporters trust the deployment's CA; the service leg (gRPC/HTTP) demands the shared ingest token (bearer), the browser leg demands the user's own Keycloak token, passed through the proxy untouched (DD-103) |
 | Service → identity provider (token verify) | TLS issuer with CA trust in CI/E2E; the local browser path is the named relaxation below |
 
 The knobs that make each row true — the setting names, verification flags, and trust material per component — live in the components' design documentation ([server](<https://aureliusenterprise.github.io/feat-webapp-details-components/api-reference/apps/aurelius-atlas-server/index.md>), [store](<https://aureliusenterprise.github.io/feat-webapp-details-components/api-reference/libs/python/aurelius-atlas-store-es/index.md>)).

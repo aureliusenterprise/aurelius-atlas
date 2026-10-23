@@ -3854,6 +3854,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -4570,6 +4574,60 @@
     
   
   7.16 UI components (details chrome)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/conversion/increments/7-17-collector-ingest-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.17 Collector ingest auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/conversion/increments/7-18-collector-ingest-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.18 Collector ingest identity
 
     
   </span>
@@ -6703,9 +6761,9 @@ is in <a href="../tls-certificates/">TLS Certificates</a>.</p>
 </tr>
 <tr>
 <td>OTel collector</td>
-<td>4317 / 4318</td>
+<td>127.0.0.1:4317 / 4318 / 4319</td>
 <td><code>observability</code></td>
-<td>OTLP gRPC / HTTP, TLS only</td>
+<td>OTLP: 4318 browser leg (user JWT), 4317/4319 service leg (shared token); TLS (DD-103), loopback-pinned</td>
 </tr>
 <tr>
 <td>Prometheus / Loki / Tempo</td>

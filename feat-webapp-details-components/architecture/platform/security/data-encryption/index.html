@@ -3712,6 +3712,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -4428,6 +4432,60 @@
     
   
   7.16 UI components (details chrome)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/7-17-collector-ingest-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.17 Collector ingest auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/7-18-collector-ingest-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.18 Collector ingest identity
 
     
   </span>
@@ -6573,7 +6631,7 @@ verification, by role:</p>
 </tr>
 <tr>
 <td>Service → signal collector</td>
-<td>TLS; exporters trust the deployment's CA</td>
+<td>TLS; exporters trust the deployment's CA; the service leg (gRPC/HTTP) demands the shared ingest token (bearer), the browser leg demands the user's own Keycloak token, passed through the proxy untouched (DD-103)</td>
 </tr>
 <tr>
 <td>Service → identity provider (token verify)</td>

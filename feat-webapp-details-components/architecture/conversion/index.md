@@ -89,6 +89,8 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 7.14 | Settings panel | Drawer with theme, language, time zone, page size, telemetry; header gear (SPL-01..13, DD-069..073) | – (new feature, DV-12) | in progress |
 | 7.15 | Alerts drawer | Bell with severity badge, routed drawer, grouped alert feed, inbox bar with read tracking, runtime/HTTP error capture (ALR-01..12, DD-083..095) | – (new feature, DV-13) | in progress |
 | 7.16 | UI components: details chrome | classification-chip, type-name, details-navigation, section-stats as dumb components (UIC-16..20, DD-099..102) | Aurelius `search/components/classification`, `type-name`, `details/components/navigation` | in progress |
+| 7.17 | Collector ingest auth | Two-leg OTLP ingest: user JWTs on the browser leg (OIDC), shared token on the service leg, loopback-pinned publishes (CIA-01..05, DD-103) | – (platform-side, extends ADR 039) | in progress |
+| 7.18 | Collector ingest identity | Per-service ingest identity: client-credentials JWTs on the per-service leg (OIDC), azp-stamped writes, shared-token legacy leg (CIA-06..10, DD-107) | – (platform-side, extends ADR 039) | in progress |
 
 ## After phase 0
 

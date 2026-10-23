@@ -3714,6 +3714,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -4430,6 +4434,60 @@
     
   
   7.16 UI components (details chrome)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/7-17-collector-ingest-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.17 Collector ingest auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/7-18-collector-ingest-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.18 Collector ingest identity
 
     
   </span>
@@ -6825,6 +6883,20 @@ checks a PR must pass:</p>
 <td>UI components: details chrome</td>
 <td>classification-chip, type-name, details-navigation, section-stats as dumb components (UIC-16..20, DD-099..102)</td>
 <td>Aurelius <code>search/components/classification</code>, <code>type-name</code>, <code>details/components/navigation</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.17</td>
+<td>Collector ingest auth</td>
+<td>Two-leg OTLP ingest: user JWTs on the browser leg (OIDC), shared token on the service leg, loopback-pinned publishes (CIA-01..05, DD-103)</td>
+<td>– (platform-side, extends ADR 039)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.18</td>
+<td>Collector ingest identity</td>
+<td>Per-service ingest identity: client-credentials JWTs on the per-service leg (OIDC), azp-stamped writes, shared-token legacy leg (CIA-06..10, DD-107)</td>
+<td>– (platform-side, extends ADR 039)</td>
 <td>in progress</td>
 </tr>
 </tbody>

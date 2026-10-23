@@ -142,6 +142,58 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "format": "file-path",
 >       "title": "Elasticsearch Ca Certs",
 >       "type": "string"
+>     },
+>     "otel_token_url": {
+>       "anyOf": [
+>         {
+>           "format": "uri",
+>           "maxLength": 2083,
+>           "minLength": 1,
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Otel Token Url"
+>     },
+>     "otel_client_id": {
+>       "default": "otel-atlas-server",
+>       "title": "Otel Client Id",
+>       "type": "string"
+>     },
+>     "otel_client_secret": {
+>       "anyOf": [
+>         {
+>           "format": "password",
+>           "type": "string",
+>           "writeOnly": true
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Otel Client Secret"
+>     },
+>     "otel_endpoint": {
+>       "default": "https://localhost:4319",
+>       "title": "Otel Endpoint",
+>       "type": "string"
+>     },
+>     "otel_ca_file": {
+>       "anyOf": [
+>         {
+>           "format": "file-path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Otel Ca File"
 >     }
 >   },
 >   "required": [
@@ -175,6 +227,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `elasticsearch_username` (`str`)
 > - `elasticsearch_password` (`SecretStr`)
 > - `elasticsearch_ca_certs` (`FilePath`)
+> - `otel_token_url` (`HttpUrl | None`)
+> - `otel_client_id` (`str`)
+> - `otel_client_secret` (`SecretStr | None`)
+> - `otel_endpoint` (`str`)
+> - `otel_ca_file` (`FilePath | None`)
 >
 > Validators:
 >
@@ -249,6 +306,46 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The models loaded at start-up: by default `addons/models` of Apache Atlas 2.4.0; a missing directory loads none (MDL-01, MDL-16, DD-032).
+>
+> ### otel\_ca\_file
+>
+> ```
+> otel_ca_file: FilePath | None = None
+> ```
+>
+> PEM CA verifying the collector's TLS for the OTLP export; unset uses the system trust store (the dev stack's mkcert CA is not system-wide).
+>
+> ### otel\_client\_id
+>
+> ```
+> otel_client_id: str = 'otel-atlas-server'
+> ```
+>
+> The ingest realm client the server mints for (7.18, DD-107).
+>
+> ### otel\_client\_secret
+>
+> ```
+> otel_client_secret: SecretStr | None = None
+> ```
+>
+> The secret of `otel_client_id`; never shown in logs.
+>
+> ### otel\_endpoint
+>
+> ```
+> otel_endpoint: str = 'https://localhost:4319'
+> ```
+>
+> The collector's per-service-leg HTTP base for the OTLP export (7.18, DD-107); the dev compose overrides with the service DNS name.
+>
+> ### otel\_token\_url
+>
+> ```
+> otel_token_url: HttpUrl | None = None
+> ```
+>
+> The issuer's token endpoint for the OTLP ingest credential (7.18, DD-107): with `otel_client_secret` set, the server exports OTLP through the app-owned pipeline (the collector's per-service leg accepts only client-credentials JWTs); unset, the server exports no OTLP (console only). The OTel env vars (`OTEL_EXPORTER_OTLP_*`) are deliberately not read: the 60s dev token cannot ride a static header (DD-107).
 >
 > ### port
 >
