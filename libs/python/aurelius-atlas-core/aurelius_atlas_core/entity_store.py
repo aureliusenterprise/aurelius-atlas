@@ -172,6 +172,10 @@ class EntityStore:
         """The entities whose references name any of these GUIDs (EDL-10, DD-057)."""
         return await self._documents.referring(list(dict.fromkeys(guids)))
 
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities listing any of these classification instances, attached or propagated (DD-075, DD-076)."""
+        return await self._documents.classified(list(dict.fromkeys(guids)))
+
     async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
         """The relationships with these GUIDs that exist, as last written (REL-06, DD-061)."""
         found = await self._documents.get_linked(LinkedKind.RELATIONSHIP, list(dict.fromkeys(guids)))

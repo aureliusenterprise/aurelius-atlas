@@ -50,6 +50,7 @@ from aurelius_atlas_core.relationship_mapper import RelationshipMapper
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.tag_propagation import TagPropagation
 from aurelius_atlas_core.transaction_view import TransactionView
 
 NO_ENTITY_TO_UPDATE = "no entity to update."
@@ -335,6 +336,7 @@ class EntityWriter:
         for guid, new in written.items():
             stored = context.stored.get(guid)
             changes[guid] = EntityChange(new, None if stored is None else stored.version)
+        await self._propagate(relationships, changes, classified)
         relationship_changes = {change.relationship.guid: change for change in relationships.relationship_changes()}
         deleted = await self._drop_owned(
             mapper.dropped,
@@ -347,6 +349,35 @@ class EntityWriter:
         if changes or relationship_changes or classified:
             await self._store.write(list(changes.values()), list(relationship_changes.values()), classified)
         return await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
+
+    async def _propagate(
+        self,
+        relationships: RelationshipMapper,
+        changes: dict[str, EntityChange],
+        classified: list[ClassificationChange],
+    ) -> None:
+        """Propagation by the relationships the request created or removed, and by its new entities' classifications.
+
+        PRO-04, PRO-06, PRO-03; written with the request (PRO-10).
+        """
+        pending, removed = relationships.pending()
+        instances = {change.classification.guid: change.classification for change in classified}
+        propagation = TagPropagation(
+            self._store,
+            entities={guid: (change.entity, change.expected) for guid, change in changes.items()},
+            relationships={guid: found.relationship for guid, found in pending.items()},
+            removed=removed,
+            classifications=instances,
+        )
+        for relationship in relationships.created():
+            await propagation.relationship_created(relationship)
+        for relationship in relationships.removed():
+            await propagation.relationship_removed(relationship)
+        for instance in instances.values():
+            if instance.propagate and instance.entity_guid:
+                await propagation.add(instance, await propagation.impacted(instance.entity_guid))
+        for change in propagation.entity_changes(changes):
+            changes[change.entity.guid] = change
 
     def _classified(
         self, entity: StoredEntity, classifications: list[AtlasClassification]

@@ -131,6 +131,10 @@ class EntityRetriever:
         """
         return await self._reading(AtlasEntityExtInfo()).classifications(await self._found(guid))
 
+    async def classification_of(self, stored: StoredClassification) -> AtlasClassification:
+        """``toAtlasClassification``: a stored instance as Atlas answers it, every attribute of its type (CLS-02)."""
+        return await self._reading(AtlasEntityExtInfo())._classification(stored)  # noqa: SLF001 - same module
+
     async def object_id_of(self, stored: StoredEntity) -> AtlasObjectId | None:
         """The entity as a relationship's end: GUID, type and unique values, none when it has none (REL-06).
 

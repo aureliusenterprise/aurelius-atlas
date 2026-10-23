@@ -21,6 +21,7 @@ from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
 from aurelius_atlas_core.entity_store import ClassificationChange, EntityChange, RelationshipChange
 from aurelius_atlas_core.graph_helper import collection_elements, edge_for_label
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.tag_propagation import TagPropagation
 from aurelius_atlas_core.transaction_view import EntityView
 
 UNSET_REQUIRED = "Cannot unset required attribute {name} on {guid} edge = {label}"
@@ -73,32 +74,45 @@ class DeleteHandler:
             entity_type = self._entity_type(found.entity)
             after = None if entity_type.is_internal else self._delete_vertex(found.entity)
             deletion.changes.append(EntityChange(after or found.entity, found.version, remove=after is None))
-        await self._relationships(deletion)
-        await self._classifications(deletion)
+        propagation = TagPropagation(self.store)
+        await self._relationships(deletion, propagation)
+        await self._classifications(deletion, propagation)
+        _merge_propagation(deletion, propagation)
         return deletion
 
-    async def _classifications(self, deletion: Deletion) -> None:
-        """``deleteAllClassifications``: a kept entity's are ``DELETED``, a removed one's go with it (CLS-11)."""
+    async def _classifications(self, deletion: Deletion, propagation: TagPropagation) -> None:
+        """``deleteAllClassifications``: the attached classifications of each deleted entity (CLS-11, PRO-07).
+
+        Each removes its propagations first when it says so; a kept entity's are then ``DELETED``; a removed one's go
+        with it, unless other entities still list them, which keep them ``PURGED``. Propagated ones stay listed.
+        """
         removed = {change.entity.guid for change in deletion.changes if change.remove}
         for found in deletion.deleted.values():
             listed = found.entity.classification_guids or []
             instances = await self.store.get_classifications(listed)
             for guid in listed:
                 instance = instances.get(guid)
-                if instance is None:
+                if instance is None or instance.classification.entity_guid != found.entity.guid:
                     continue
-                if found.entity.guid in removed:
-                    change = ClassificationChange(instance.classification, instance.version, remove=True)
-                else:
-                    deleted = instance.classification.model_copy(update={"entity_status": EntityStatus.DELETED})
+                classification = instance.classification
+                if classification.remove_propagations_on_entity_delete is not False:
+                    await propagation.remove_all(classification)
+                if found.entity.guid not in removed:
+                    deleted = classification.model_copy(update={"entity_status": EntityStatus.DELETED})
                     change = ClassificationChange(deleted, instance.version)
+                elif [g for g in await propagation.listed_by(classification) if g not in removed]:
+                    purged = classification.model_copy(update={"entity_status": EntityStatus.PURGED})
+                    change = ClassificationChange(purged, instance.version)
+                else:
+                    change = ClassificationChange(classification, instance.version, remove=True)
                 deletion.classification_changes.append(change)
 
-    async def _relationships(self, deletion: Deletion) -> None:
-        """``deleteVertex`` for relationship edges (REL-09).
+    async def _relationships(self, deletion: Deletion, propagation: TagPropagation) -> None:
+        """``deleteVertex`` for relationship edges (REL-09, PRO-06).
 
-        A removed entity takes all its relationships with it, and the other ends stop listing them; a soft delete
-        marks ``DELETED`` the ``ACTIVE`` ones whose end 2 it deletes, Atlas's incoming edges.
+        A removed entity takes all its relationships with it, each removing what it propagated as PRO-06 says, and
+        the other ends stop listing them; a soft delete marks ``DELETED`` the ``ACTIVE`` ones whose end 2 it
+        deletes, Atlas's incoming edges.
         """
         removed = {change.entity.guid for change in deletion.changes if change.remove}
         listed = [guid for found in deletion.deleted.values() for guid in found.entity.relationship_guids or []]
@@ -107,6 +121,7 @@ class DeleteHandler:
         for found in relationships.values():
             relationship = found.relationship
             if removed & set(relationship.ends()):
+                await propagation.relationship_removed(relationship)
                 deletion.relationship_changes.append(RelationshipChange(relationship, found.version, remove=True))
                 for end in relationship.ends():
                     dropped.setdefault(end, set()).add(relationship.guid)
@@ -239,3 +254,19 @@ def owned_guids(stored: StoredEntity, entity_type: EntityType) -> list[str]:
             else:
                 guids.append(str(item))
     return guids
+
+
+def _merge_propagation(deletion: Deletion, propagation: TagPropagation) -> None:
+    """The classification lists propagation changed, merged into the deletion's changes of the same entities."""
+    for change in propagation.changed_entities():
+        guid = change.entity.guid
+        index = deletion.change(guid)
+        if index is None:
+            deletion.changes.append(change)
+            continue
+        own = deletion.changes[index]
+        if not own.remove:
+            listed = change.entity.classification_guids
+            deletion.changes[index] = EntityChange(
+                own.entity.model_copy(update={"classification_guids": listed}), own.expected, own.remove
+            )

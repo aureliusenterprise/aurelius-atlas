@@ -29,6 +29,7 @@ from aurelius_atlas_core.entity_store import (
 )
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.tag_propagation import TagPropagation
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
 ATTEMPTS = 2
@@ -144,6 +145,8 @@ class EntityClassifications:
             instances = await self._instances(found.entity)
             mapper = self._mapper()
             changes: dict[str, ClassificationChange] = {}
+            entity = found.entity.touched(now=self._store.now(), user=self._user)
+            propagation = TagPropagation(self._store, entities={guid: (entity, found.version)})
             for classification in given:
                 name = str(classification.type_name)
                 if not classification.entity_guid:
@@ -155,11 +158,10 @@ class EntityClassifications:
                     raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
                 classification_type = self._validate(classification, update=True)
                 stored = changes[current.guid].classification if current.guid in changes else current.classification
-                changes[current.guid] = ClassificationChange(
-                    _updated(mapper, classification_type, classification, stored), current.version
-                )
-            entity = found.entity.touched(now=self._store.now(), user=self._user)
-            await self._store.write([EntityChange(entity, found.version)], [], list(changes.values()))
+                updated = _updated(mapper, classification_type, classification, stored)
+                changes[current.guid] = ClassificationChange(updated, current.version)
+                await _propagate_change(propagation, guid, stored, updated)
+            await self._write_propagated(propagation, [(guid, found.version)], [], list(changes.values()))
 
         await self._run(attempt)
 
@@ -178,28 +180,57 @@ class EntityClassifications:
         async def attempt() -> None:
             found = await self._entity(guid)
             if associated_entity_guid and associated_entity_guid != guid:
-                raise AtlasError(
-                    AtlasErrorCode.PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY,
-                    name,
-                    associated_entity_guid,
-                    guid,
-                )
+                await self._delete_propagated(found, name, associated_entity_guid)
+                return
             direct = [instance for instance in await self._instances(found.entity) if _direct(instance, guid)]
             if not direct:
                 raise AtlasError(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, guid)
             current = next((c for c in direct if c.classification.type_name == name), None)
             if current is None:
                 raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
-            listed = [listed for listed in found.entity.classification_guids or [] if listed != current.guid]
-            entity = found.entity.model_copy(update={"classification_guids": listed or None})
-            entity = entity.touched(now=self._store.now(), user=self._user)
-            await self._store.write(
-                [EntityChange(entity, found.version)],
-                [],
-                [ClassificationChange(current.classification, current.version, remove=True)],
-            )
+            propagation = TagPropagation(self._store, entities={guid: (found.entity, found.version)})
+            if current.classification.propagate is not False:
+                await propagation.remove_all(current.classification)
+            entity = propagation.entity(guid) or found.entity
+            listed = [listed for listed in entity.classification_guids or [] if listed != current.guid]
+            entity = entity.model_copy(update={"classification_guids": listed or None})
+            propagation.put_entity(entity.touched(now=self._store.now(), user=self._user))
+            kept = bool(await propagation.listed_by(current.classification))
+            removal = ClassificationChange(current.classification, current.version, remove=not kept)
+            await self._write_propagated(propagation, [(guid, found.version)], [], [] if kept else [removal])
 
         await self._run(attempt)
+
+    async def _delete_propagated(self, found: VersionedEntity, name: str, associated: str) -> None:
+        """``deletePropagatedClassification``: one propagated from a deleted entity stops being listed (PRO-08).
+
+        Raises:
+            AtlasError: ``PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``,
+                ``PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED``.
+        """
+        guid = found.entity.guid
+        current = next(
+            (
+                c
+                for c in await self._instances(found.entity)
+                if c.classification.type_name == name
+                and c.classification.entity_guid == associated
+                and not _direct(c, guid)
+            ),
+            None,
+        )
+        if current is None:
+            raise AtlasError(
+                AtlasErrorCode.PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name, associated, guid
+            )
+        if current.classification.entity_status is EntityStatus.ACTIVE:
+            raise AtlasError(AtlasErrorCode.PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED, name, associated)
+        listed = [listed for listed in found.entity.classification_guids or [] if listed != current.guid]
+        entity = found.entity.model_copy(update={"classification_guids": listed or None})
+        propagation = TagPropagation(self._store, entities={guid: (entity, found.version)})
+        kept = bool(await propagation.listed_by(current.classification))
+        removal = ClassificationChange(current.classification, current.version, remove=True)
+        await self._store.write([EntityChange(entity, found.version)], [], [] if kept else [removal])
 
     def attached(
         self, entity: StoredEntity, classifications: Sequence[AtlasClassification]
@@ -262,14 +293,35 @@ class EntityClassifications:
                 raise AtlasError(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, entity.guid, entity.type_name, name)
 
     async def _write_added(self, targets: Sequence[tuple[VersionedEntity, list[AtlasClassification]]]) -> None:
-        changes: list[EntityChange] = []
+        """Attach and propagate, entity after entity, as ``addClassifications`` per GUID does (CLS-05, PRO-03)."""
         instances: list[ClassificationChange] = []
         now = self._store.now()
+        propagation = TagPropagation(self._store)
+        own: list[tuple[str, DocumentVersion | None]] = []
         for found, classifications in targets:
-            entity, added = self.attached(found.entity, classifications)
-            changes.append(EntityChange(entity.touched(now=now, user=self._user), found.version))
+            guid = found.entity.guid
+            current = propagation.entity(guid) or found.entity
+            entity, added = self.attached(current, classifications)
+            propagation.put_entity(entity.touched(now=now, user=self._user), found.version)
+            own.append((guid, found.version))
             instances += [ClassificationChange(instance) for instance in added]
-        await self._store.write(changes, [], instances)
+            propagation.add_instances(added)
+            propagating = [instance for instance in added if instance.propagate]
+            if propagating:
+                reached = await propagation.impacted(guid)
+                for instance in propagating:
+                    await propagation.add(instance, reached)
+        await self._write_propagated(propagation, own, [], instances)
+
+    async def _write_propagated(
+        self,
+        propagation: TagPropagation,
+        own: Sequence[tuple[str, DocumentVersion | None]],
+        relationships: Sequence[Any],
+        instances: Sequence[ClassificationChange],
+    ) -> None:
+        """Write the request's own entities as propagation left them, and the others it changed (PRO-10)."""
+        await self._store.write(propagation.entity_changes(guid for guid, _ in own), relationships, instances)
 
     async def _entity(self, guid: str) -> VersionedEntity:
         found = await self._store.get(guid)
@@ -309,6 +361,18 @@ class _Instance:
     guid: str
     classification: StoredClassification
     version: DocumentVersion
+
+
+async def _propagate_change(
+    propagation: TagPropagation, guid: str, stored: StoredClassification, updated: StoredClassification
+) -> None:
+    """``updateClassifications`` on ``propagate``: false to true propagates, true to false removes (PRO-03)."""
+    propagation.add_instances([updated])
+    was, now = stored.propagate is not False, updated.propagate is not False
+    if now and not was:
+        await propagation.add(updated, await propagation.impacted(guid, classification=updated.guid))
+    elif was and not now:
+        await propagation.remove_all(updated)
 
 
 def _direct(instance: _Instance, guid: str) -> bool:

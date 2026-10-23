@@ -25,7 +25,6 @@ from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_documents import VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
-    EntityChange,
     EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
@@ -34,6 +33,7 @@ from aurelius_atlas_core.entity_store import (
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
+from aurelius_atlas_core.tag_propagation import TagPropagation
 
 ATTEMPTS = 2
 """A request that loses a race is run once more (DD-052)."""
@@ -89,7 +89,8 @@ class RelationshipStore:
         stored = (await self._found(guid)).relationship
         result = AtlasRelationshipWithExtInfo(relationship=await self._answer(stored))
         retriever = EntityRetriever(self._store)
-        for end in stored.ends():
+        classified = [c.entity_guid for c in await TagPropagation(self._store).propagatable(stored) if c.entity_guid]
+        for end in [*stored.ends(), *classified]:
             if not result.referred_entities_contains(end):
                 result.add_referred_entity(end, await retriever.header(end, classifications=False))
         return result
@@ -121,8 +122,13 @@ class RelationshipStore:
                 await self._store.write([], [RelationshipChange(deleted, found.version)])
                 return
             ends = await self._store.get_many(list(stored.ends()))
-            changes = [EntityChange(end.entity.unlisting({guid}), end.version) for end in ends.values()]
-            await self._store.write(changes, [RelationshipChange(stored, found.version, remove=True)])
+            propagation = TagPropagation(
+                self._store, entities={g: (end.entity.unlisting({guid}), end.version) for g, end in ends.items()}
+            )
+            await propagation.relationship_removed(stored)  # PRO-06
+            await self._store.write(
+                propagation.entity_changes(ends), [RelationshipChange(stored, found.version, remove=True)]
+            )
 
         await self._run(delete)
 
@@ -171,8 +177,12 @@ class RelationshipStore:
             user=self._user,
         )
         ends = {end1.entity.guid: end1, end2.entity.guid: end2}
-        changes = [EntityChange(end.entity.listing(stored.guid), end.version) for end in ends.values()]
-        await self._store.write(changes, [RelationshipChange(stored)])
+        propagation = TagPropagation(
+            self._store, entities={guid: (end.entity.listing(stored.guid), end.version) for guid, end in ends.items()}
+        )
+        stored = await propagation.handle_blocked(stored, relationship.blocked_propagated_classifications)
+        await propagation.relationship_created(stored)  # PRO-04
+        await self._store.write(propagation.entity_changes(ends), [RelationshipChange(stored)])
         return await self._answer(stored)
 
     async def _update(self, relationship: AtlasRelationship) -> AtlasRelationship:
@@ -206,8 +216,11 @@ class RelationshipStore:
         update: dict[str, Any] = {"attributes": _updated_attributes(relationship_type, relationship, stored)}
         if relationship.propagate_tags is not None:
             update["propagate_tags"] = relationship.propagate_tags  # DV-29: none given keeps the stored one
-        changed = stored.model_copy(update=update)
-        await self._store.write([], [RelationshipChange(changed, found.version)])
+        propagation = TagPropagation(self._store)
+        changed = await propagation.relationship_updated(  # PRO-05
+            stored, stored.model_copy(update=update), relationship.blocked_propagated_classifications
+        )
+        await self._store.write(propagation.entity_changes([]), [RelationshipChange(changed, found.version)])
         return await self._answer(changed)
 
     async def _check_end_unchanged(self, given: AtlasObjectId | None, current: str, stored: StoredRelationship) -> None:
@@ -255,7 +268,13 @@ class RelationshipStore:
             object_ids.append(object_id or AtlasObjectId(guid=guid))
         relationship_type = self._store.registry.relationship_type(stored.type_name)
         names = [] if relationship_type is None else [str(name) for name in relationship_type.all_attributes]
-        return stored.to_relationship(object_ids[0], object_ids[1], names)
+        answer = stored.to_relationship(object_ids[0], object_ids[1], names)
+        propagated, blocked = [], []
+        for classification in {c.guid: c for c in await TagPropagation(self._store).propagatable(stored)}.values():
+            read = await retriever.classification_of(classification)
+            (blocked if classification.guid in (stored.blocked_classification_guids or []) else propagated).append(read)
+        answer.propagated_classifications, answer.blocked_propagated_classifications = propagated, blocked  # PRO-09
+        return answer
 
 
 def validate_relationship(
