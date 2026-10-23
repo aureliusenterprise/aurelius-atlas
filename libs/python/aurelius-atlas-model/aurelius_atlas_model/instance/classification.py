@@ -3,6 +3,7 @@
 from aurelius_atlas_model.instance.entity_status import EntityStatus
 from aurelius_atlas_model.instance.struct import AtlasStruct
 from aurelius_atlas_model.instance.time_boundary import TimeBoundary
+from aurelius_atlas_model.plist import PList
 
 
 class AtlasClassification(AtlasStruct):
@@ -20,3 +21,7 @@ class AtlasClassification(AtlasStruct):
     def add_validity_period(self, validity_period: TimeBoundary) -> None:
         """Append a validity period, creating the list (``addValityPeriod``)."""
         self.validity_periods = [*(self.validity_periods or []), validity_period]
+
+
+class AtlasClassifications(PList[AtlasClassification]):
+    """``AtlasClassification.AtlasClassifications``: a ``PList`` of classifications (CLS-01)."""
