@@ -1,7 +1,7 @@
 # 3.5b Classification audit
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#136](<https://github.com/aureliusenterprise/aurelius-atlas/pull/136>)
 - **Records:** DD-085, DD-086, DV-41, DV-42; relies on DD-074, DD-077, DD-079, DD-082 to DD-084
 
 The second part of increment 3.5 (DD-082): audit events for classifications attached, changed and removed, and for those propagated or no longer propagated, recorded after the change as 3.5a's entity events are; and `GET v2/entity/bulk/headers`, which lists the entities whose classifications changed since a time (DD-074).
