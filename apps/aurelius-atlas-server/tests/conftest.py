@@ -19,7 +19,10 @@ def ca_file(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def settings(ca_file: Path, tmp_path: Path) -> ServerSettings:
-    """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16)."""
+    """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16).
+
+    Propagation happens in the request (TSK-08), so responses show it at once; the task tests turn tasks on.
+    """
     return ServerSettings.model_validate(
         {
             "elasticsearch_hosts": ["https://localhost:9200"],
@@ -27,6 +30,7 @@ def settings(ca_file: Path, tmp_path: Path) -> ServerSettings:
             "elasticsearch_ca_certs": ca_file,
             "revision": "abc123",
             "models_dir": tmp_path / "no-models",
+            "tasks_enabled": False,
         }
     )
 

@@ -4,6 +4,7 @@ source:
     - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#AdminResource (session defaults)
     - webapp/src/main/java/org/apache/atlas/web/filters/AtlasCSRFPreventionFilter.java (CSRF defaults)
     - intg/src/main/java/org/apache/atlas/AtlasConfiguration.java (feature switch defaults)
+    - intg/src/main/java/org/apache/atlas/AtlasConfiguration.java#TASKS_USE_ENABLED (scenarios run with it false, DD-081)
     - distro/src/conf/users-credentials.properties (user admin in group ADMIN)
     - webapp/src/main/java/org/apache/atlas/web/dao/UserDao.java#loadUserByUsername (the group is the authority)
 rules: [ADM-05, SRV-05]
@@ -29,7 +30,8 @@ stages:
               atlas.ui.date.timezone.format.enabled: true
               atlas.ui.date.format: "MM/DD/YYYY hh:mm:ss A"
               atlas.debug.metrics.enabled: false
-              atlas.tasks.enabled: true
+              # The scenarios run against an installation with atlas.tasks.enabled=false (DD-081).
+              atlas.tasks.enabled: false
               atlas.tasks.ui.tab.enabled: false
               atlas.lineage.on.demand.enabled: false
               atlas.lineage.on.demand.default.node.count: 3

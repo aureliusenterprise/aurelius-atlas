@@ -10,6 +10,7 @@ import logfire
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.model_loader import ModelLoader
+from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_store_es import ElasticsearchStore
@@ -20,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.routes import ADMIN, ENTITY, RELATIONSHIP, TYPES
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.task_worker import TaskWorker
 
 NAME = "aurelius-atlas-server"
 LOGGER = logging.getLogger(NAME)
@@ -50,7 +52,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
 
     The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
     models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
-    (ENS-01, ENS-07).
+    (ENS-01, ENS-07). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
@@ -58,6 +60,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         LOGGER.info("Starting %s %s", app.title, app.version)
+        worker: TaskWorker | None = None
         await store.open()
         try:
             entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
@@ -73,8 +76,16 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
             await entity_store.recover()
             app.state.typedef_store = typedef_store
             app.state.entity_store = entity_store
+            app.state.task_management = TaskManagement(entity_store)
+            if settings.tasks_enabled:
+                worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
+                entity_store.task_listeners.append(worker.wake)
+                worker.start()
+                app.state.task_worker = worker
             yield
         finally:
+            if worker is not None:
+                await worker.stop()
             await store.close()
             LOGGER.info("Stopped %s", app.title)
 

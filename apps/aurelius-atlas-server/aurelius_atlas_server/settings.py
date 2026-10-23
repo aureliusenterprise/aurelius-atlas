@@ -60,6 +60,13 @@ class ServerSettings(BaseSettings):
     delete_type_override: bool = False
     """Whether a request's ``deleteType`` chooses: ``atlas.rest.enable.delete.type.override`` (EDL-04, DD-059)."""
 
+    tasks_enabled: bool = True
+    """Whether propagation is deferred to tasks a worker runs after the request: ``atlas.tasks.enabled`` (TSK-02,
+    DD-081)."""
+
+    task_poll_seconds: float = Field(default=10.0, gt=0)
+    """How often the worker looks for tasks other processes recorded or left behind (DD-080)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
 
