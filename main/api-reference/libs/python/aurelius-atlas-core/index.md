@@ -495,6 +495,9 @@ The storage side of `AtlasEntityStoreV2` and `EntityGraphMapper`: what a graph t
 
 Classes:
 
+- **`ClassificationChange`** –
+
+  One classification instance of a write: its new state and the version it was read in, or None for a new one.
 - **`EntityChange`** –
 
   One entity of a write: its new state, and the version it was read in, or None for a new entity.
@@ -570,6 +573,42 @@ VERSION_CONFLICT_ERROR = 'entity {guid} was changed by another write'
 WRITE_FAILED_ERROR = 'entity {guid} could not be written'
 ```
 
+### ClassificationChange
+
+```
+ClassificationChange(
+    classification: StoredClassification, expected: DocumentVersion | None = None, remove: bool = False
+)
+```
+
+One classification instance of a write: its new state and the version it was read in, or None for a new one.
+
+With `remove`, the write removes the instance, which must have been read (DD-071).
+
+Attributes:
+
+- **`classification`** (`StoredClassification`) –
+- **`expected`** (`DocumentVersion | None`) –
+- **`remove`** (`bool`) –
+
+#### classification
+
+```
+classification: StoredClassification
+```
+
+#### expected
+
+```
+expected: DocumentVersion | None = None
+```
+
+#### remove
+
+```
+remove: bool = False
+```
+
 ### EntityChange
 
 ```
@@ -626,6 +665,9 @@ Methods:
 - **`get`** –
 
   The entity with `guid` as last written, or None (ENS-04).
+- **`get_classifications`** –
+
+  The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070).
 - **`get_many`** –
 
   The entities with these GUIDs that exist (ENS-04).
@@ -649,10 +691,10 @@ Methods:
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
 - **`type_in_use`** –
 
-  Whether an entity or relationship of exactly this type exists, in any state (ENS-09, REL-10, DD-048).
+  Whether an entity, relationship or classification of exactly this type exists, in any state.
 - **`write`** –
 
-  Write new, changed and removed entities and relationships, all or nothing, through the journal.
+  Write new, changed and removed entities and the documents they list, all or nothing, through the journal.
 
 Attributes:
 
@@ -681,6 +723,14 @@ get(guid: str) -> VersionedEntity | None
 ```
 
 The entity with `guid` as last written, or None (ENS-04).
+
+#### get\_classifications
+
+```
+get_classifications(guids: Sequence[str]) -> dict[str, VersionedClassification]
+```
+
+The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070).
 
 #### get\_many
 
@@ -746,19 +796,25 @@ The entities whose references name any of these GUIDs (EDL-10, DD-057).
 type_in_use(type_name: str) -> bool
 ```
 
-Whether an entity or relationship of exactly this type exists, in any state (ENS-09, REL-10, DD-048).
+Whether an entity, relationship or classification of exactly this type exists, in any state.
+
+ENS-09, REL-10, CLS-12, DD-048.
 
 The typedef store's check.
 
 #### write
 
 ```
-write(changes: Sequence[EntityChange], relationship_changes: Sequence[RelationshipChange] = ()) -> None
+write(
+    changes: Sequence[EntityChange],
+    relationship_changes: Sequence[RelationshipChange] = (),
+    classification_changes: Sequence[ClassificationChange] = (),
+) -> None
 ```
 
-Write new, changed and removed entities and relationships, all or nothing, through the journal.
+Write new, changed and removed entities and the documents they list, all or nothing, through the journal.
 
-ENS-05, ENS-07, ENS-08. Each written entity carries the GUIDs its references name (DD-057); removals and relationships are journaled too (DD-056, DD-062).
+ENS-05, ENS-07, ENS-08. Each written entity carries the GUIDs its references name (DD-057); removals, relationships and classification instances are journaled too (DD-056, DD-062, DD-071).
 
 Raises:
 
@@ -865,6 +921,12 @@ The entities' documents in Elasticsearch: entities, unique value reservations an
 
 The I/O behind `EntityStore`: reads in real time, conditional writes, create-only reservations (DD-043 to DD-047). Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep their digits (DD-039).
 
+Type Aliases:
+
+- **`Linked`** –
+
+  A document an entity lists: a relationship or a classification instance.
+
 Classes:
 
 - **`ElasticsearchEntityDocuments`** –
@@ -876,9 +938,18 @@ Classes:
 - **`JournalEntry`** –
 
   A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
+- **`LinkedKind`** –
+
+  The documents an entity lists besides itself, each in an index of its own (DD-061, DD-070).
+- **`LinkedWrite`** –
+
+  What a write does to the documents of one `LinkedKind`: written ones at a version or new, removed ones.
 - **`Reservation`** –
 
   A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+- **`VersionedClassification`** –
+
+  A stored classification instance and the version it was read in (DD-047, DD-070).
 - **`VersionedEntity`** –
 
   A stored entity and the version it was read in (DD-047).
@@ -891,6 +962,12 @@ Classes:
 
 Attributes:
 
+- **`CLASSIFICATION_INDEX`** –
+
+  The alias of the classification index (DD-070).
+- **`CLASSIFICATION_MAPPING`** (`dict[str, Any]`) –
+
+  Classification instances by type and entity; attribute values stored, not indexed (DD-070).
 - **`ENTITY_INDEX`** –
 
   The alias of the entity index (DD-043).
@@ -906,6 +983,7 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification]]`) –
 - **`REFERRING_PAGE`** –
 
   How many referring entities one search page holds (DD-057).
@@ -918,6 +996,33 @@ Attributes:
 - **`UNIQUE_VALUE_INDEX`** –
 
   The alias of the unique value reservations (DD-045).
+
+### CLASSIFICATION\_INDEX
+
+```
+CLASSIFICATION_INDEX = f'{INDEX_PREFIX}-classifications'
+```
+
+The alias of the classification index (DD-070).
+
+### CLASSIFICATION\_MAPPING
+
+```
+CLASSIFICATION_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "typeName": _KEYWORD,
+        "superTypeNames": _KEYWORD,
+        "entityGuid": _KEYWORD,
+        "entityStatus": _KEYWORD,
+        "writeId": _KEYWORD,
+        "attributes": {"type": "object", "dynamic": False},
+    },
+}
+```
+
+Classification instances by type and entity; attribute values stored, not indexed (DD-070).
 
 ### ENTITY\_INDEX
 
@@ -950,6 +1055,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "writeId": _KEYWORD,
         "references": _KEYWORD,
         "relationshipGuids": _KEYWORD,
+        "classificationGuids": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
@@ -983,6 +1089,15 @@ JOURNAL_PAGE = 1000
 ```
 
 How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+
+### LINKED\_MODELS
+
+```
+LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification]] = {
+    LinkedKind.RELATIONSHIP: StoredRelationship,
+    LinkedKind.CLASSIFICATION: StoredClassification,
+}
+```
 
 ### REFERRING\_PAGE
 
@@ -1028,6 +1143,14 @@ UNIQUE_VALUE_INDEX = f'{INDEX_PREFIX}-unique-values'
 
 The alias of the unique value reservations (DD-045).
 
+### Linked
+
+```
+Linked = StoredRelationship | StoredClassification
+```
+
+A document an entity lists: a relationship or a classification instance.
+
 ### ElasticsearchEntityDocuments
 
 ```
@@ -1038,9 +1161,9 @@ ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PRE
 
 Methods:
 
-- **`count_relationship_type`** –
+- **`count_linked_type`** –
 
-  Refresh the relationship index, then count the relationships of the type (REL-10).
+  Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
 - **`count_type`** –
 
   Refresh the entity index, then count the entities of the type (DD-048).
@@ -1050,9 +1173,9 @@ Methods:
 - **`get`** –
 
   `mget` of the entity index: real time, as a get by id is (ENS-04).
-- **`get_relationships`** –
+- **`get_linked`** –
 
-  `mget` of the relationship index: real time (DD-061).
+  `mget` of the kind's index: real time (DD-061, DD-070).
 - **`journal`** –
 
   The entries of the journal, refreshed first so none written a moment ago is missed.
@@ -1077,34 +1200,34 @@ Methods:
 - **`restore`** –
 
   Index the state before, or delete an entity that did not exist before (DD-046).
-- **`restore_relationship`** –
+- **`restore_linked`** –
 
-  Index the relationship's state before, or delete one that did not exist before (DD-062).
+  Index the document's state before, or delete one that did not exist before (DD-062).
 - **`write`** –
 
-  One bulk request over both indices: `create` a new document, `index` or `delete` with `if_seq_no`.
+  One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
 
 Attributes:
 
-- **`aliases`** (`tuple[str, str, str, str]`) –
+- **`aliases`** (`tuple[str, ...]`) –
 
-  The aliases of the entity index, the reservations, the journal and the relationship index.
+  The aliases of the entity index, the reservations, the journal and the linked documents' indices.
 
 #### aliases
 
 ```
-aliases: tuple[str, str, str, str]
+aliases: tuple[str, ...]
 ```
 
-The aliases of the entity index, the reservations, the journal and the relationship index.
+The aliases of the entity index, the reservations, the journal and the linked documents' indices.
 
-#### count\_relationship\_type
+#### count\_linked\_type
 
 ```
-count_relationship_type(type_name: str) -> int
+count_linked_type(kind: LinkedKind, type_name: str) -> int
 ```
 
-Refresh the relationship index, then count the relationships of the type (REL-10).
+Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
 
 #### count\_type
 
@@ -1130,13 +1253,13 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 
 `mget` of the entity index: real time, as a get by id is (ENS-04).
 
-#### get\_relationships
+#### get\_linked
 
 ```
-get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]
 ```
 
-`mget` of the relationship index: real time (DD-061).
+`mget` of the kind's index: real time (DD-061, DD-070).
 
 #### journal
 
@@ -1204,13 +1327,13 @@ restore(guid: str, before: StoredEntity | None) -> None
 
 Index the state before, or delete an entity that did not exist before (DD-046).
 
-#### restore\_relationship
+#### restore\_linked
 
 ```
-restore_relationship(guid: str, before: StoredRelationship | None) -> None
+restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
-Index the relationship's state before, or delete one that did not exist before (DD-062).
+Index the document's state before, or delete one that did not exist before (DD-062).
 
 #### write
 
@@ -1218,14 +1341,13 @@ Index the relationship's state before, or delete one that did not exist before (
 write(
     items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
     removed: Sequence[tuple[str, DocumentVersion]] = (),
-    relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
-    removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
+    linked: Mapping[LinkedKind, LinkedWrite] | None = None,
 ) -> list[WriteResult]
 ```
 
-One bulk request over both indices: `create` a new document, `index` or `delete` with `if_seq_no`.
+One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
 
-DD-047, DD-056, DD-062.
+DD-047, DD-056, DD-062, DD-071.
 
 ### EntityDocuments
 
@@ -1235,9 +1357,9 @@ Where `EntityStore` keeps entities, reservations and its journal.
 
 Methods:
 
-- **`count_relationship_type`** –
+- **`count_linked_type`** –
 
-  How many relationships of the type exist, in any state, as of now (REL-10).
+  How many documents of the kind and type exist, in any state, as of now (REL-10, CLS-12).
 - **`count_type`** –
 
   How many entities of exactly this type exist, in any state, as of now.
@@ -1247,9 +1369,9 @@ Methods:
 - **`get`** –
 
   The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
-- **`get_relationships`** –
+- **`get_linked`** –
 
-  The stored relationships with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
+  The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 - **`journal`** –
 
   Every journal entry.
@@ -1274,20 +1396,20 @@ Methods:
 - **`restore`** –
 
   Put back an entity's state before a write, or delete one the write created.
-- **`restore_relationship`** –
+- **`restore_linked`** –
 
-  Put back a relationship's state before a write, or delete one the write created (DD-062).
+  Put back a linked document's state before a write, or delete one the write created (DD-062).
 - **`write`** –
 
-  Write and remove entities and relationships, new (no version) or at the version given.
+  Write and remove entities and linked documents, new (no version) or at the version given.
 
-#### count\_relationship\_type
+#### count\_linked\_type
 
 ```
-count_relationship_type(type_name: str) -> int
+count_linked_type(kind: LinkedKind, type_name: str) -> int
 ```
 
-How many relationships of the type exist, in any state, as of now (REL-10).
+How many documents of the kind and type exist, in any state, as of now (REL-10, CLS-12).
 
 #### count\_type
 
@@ -1313,13 +1435,13 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 
 The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
 
-#### get\_relationships
+#### get\_linked
 
 ```
-get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]
 ```
 
-The stored relationships with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
+The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 
 #### journal
 
@@ -1385,13 +1507,13 @@ restore(guid: str, before: StoredEntity | None) -> None
 
 Put back an entity's state before a write, or delete one the write created.
 
-#### restore\_relationship
+#### restore\_linked
 
 ```
-restore_relationship(guid: str, before: StoredRelationship | None) -> None
+restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
-Put back a relationship's state before a write, or delete one the write created (DD-062).
+Put back a linked document's state before a write, or delete one the write created (DD-062).
 
 #### write
 
@@ -1399,14 +1521,13 @@ Put back a relationship's state before a write, or delete one the write created 
 write(
     items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
     removed: Sequence[tuple[str, DocumentVersion]] = (),
-    relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
-    removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
+    linked: Mapping[LinkedKind, LinkedWrite] | None = None,
 ) -> list[WriteResult]
 ```
 
-Write and remove entities and relationships, new (no version) or at the version given.
+Write and remove entities and linked documents, new (no version) or at the version given.
 
-One bulk request; the results are in order: entities written, removed, relationships written, removed (DD-056, DD-062).
+One bulk request; the results are in order: entities written, removed, then each kind's written, removed (DD-056, DD-062, DD-071).
 
 ### JournalEntry
 
@@ -1421,19 +1542,19 @@ Methods:
 - **`before_entity`** –
 
   The state of `guid` before the write, or None for an entity the write created.
-- **`before_relationship`** –
+- **`before_linked`** –
 
-  The state of relationship `guid` before the write, or None for one the write created (DD-062).
+  The state of a linked document before the write, or None for one the write created (DD-062, DD-071).
 
 Attributes:
 
 - **`before`** (`dict[str, dict[str, Any] | None]`) –
 - **`committed`** (`bool`) –
 - **`lease_until`** (`int`) –
-- **`relationships_before`** (`dict[str, dict[str, Any] | None]`) –
+- **`linked_before`** (`dict[str, dict[str, dict[str, Any] | None]]`) –
 - **`released`** (`list[str]`) –
 - **`removed`** (`list[str]`) –
-- **`removed_relationships`** (`list[str]`) –
+- **`removed_linked`** (`dict[str, list[str]]`) –
 - **`reserved`** (`list[str]`) –
 - **`write_id`** (`str`) –
 
@@ -1455,10 +1576,10 @@ committed: bool = False
 lease_until: int
 ```
 
-#### relationships\_before
+#### linked\_before
 
 ```
-relationships_before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
+linked_before: dict[str, dict[str, dict[str, Any] | None]] = Field(default_factory=dict)
 ```
 
 #### released
@@ -1473,10 +1594,10 @@ released: list[str] = Field(default_factory=list)
 removed: list[str] = Field(default_factory=list)
 ```
 
-#### removed\_relationships
+#### removed\_linked
 
 ```
-removed_relationships: list[str] = Field(default_factory=list)
+removed_linked: dict[str, list[str]] = Field(default_factory=dict)
 ```
 
 #### reserved
@@ -1499,13 +1620,63 @@ before_entity(guid: str) -> StoredEntity | None
 
 The state of `guid` before the write, or None for an entity the write created.
 
-#### before\_relationship
+#### before\_linked
 
 ```
-before_relationship(guid: str) -> StoredRelationship | None
+before_linked(kind: LinkedKind, guid: str) -> Linked | None
 ```
 
-The state of relationship `guid` before the write, or None for one the write created (DD-062).
+The state of a linked document before the write, or None for one the write created (DD-062, DD-071).
+
+### LinkedKind
+
+Bases: `StrEnum`
+
+The documents an entity lists besides itself, each in an index of its own (DD-061, DD-070).
+
+Attributes:
+
+- **`CLASSIFICATION`** –
+- **`RELATIONSHIP`** –
+
+#### CLASSIFICATION
+
+```
+CLASSIFICATION = 'classifications'
+```
+
+#### RELATIONSHIP
+
+```
+RELATIONSHIP = 'relationships'
+```
+
+### LinkedWrite
+
+```
+LinkedWrite(
+    written: Sequence[tuple[Linked, DocumentVersion | None]] = (), removed: Sequence[tuple[str, DocumentVersion]] = ()
+)
+```
+
+What a write does to the documents of one `LinkedKind`: written ones at a version or new, removed ones.
+
+Attributes:
+
+- **`removed`** (`Sequence[tuple[str, DocumentVersion]]`) –
+- **`written`** (`Sequence[tuple[Linked, DocumentVersion | None]]`) –
+
+#### removed
+
+```
+removed: Sequence[tuple[str, DocumentVersion]] = ()
+```
+
+#### written
+
+```
+written: Sequence[tuple[Linked, DocumentVersion | None]] = ()
+```
 
 ### Reservation
 
@@ -1537,6 +1708,31 @@ key: str
 
 ```
 write_id: str
+```
+
+### VersionedClassification
+
+```
+VersionedClassification(classification: StoredClassification, version: DocumentVersion)
+```
+
+A stored classification instance and the version it was read in (DD-047, DD-070).
+
+Attributes:
+
+- **`classification`** (`StoredClassification`) –
+- **`version`** (`DocumentVersion`) –
+
+#### classification
+
+```
+classification: StoredClassification
+```
+
+#### version
+
+```
+version: DocumentVersion
 ```
 
 ### VersionedEntity
@@ -1594,7 +1790,7 @@ version: DocumentVersion | None
 ### WriteResult
 
 ```
-WriteResult(guid: str, written: bool, conflict: bool = False, relationship: bool = False)
+WriteResult(guid: str, written: bool, conflict: bool = False, kind: LinkedKind | None = None)
 ```
 
 How one entity of a bulk write ended: written, or failed by a version conflict or another error.
@@ -1603,7 +1799,7 @@ Attributes:
 
 - **`conflict`** (`bool`) –
 - **`guid`** (`str`) –
-- **`relationship`** (`bool`) –
+- **`kind`** (`LinkedKind | None`) –
 - **`written`** (`bool`) –
 
 #### conflict
@@ -1618,10 +1814,10 @@ conflict: bool = False
 guid: str
 ```
 
-#### relationship
+#### kind
 
 ```
-relationship: bool = False
+kind: LinkedKind | None = None
 ```
 
 #### written
@@ -1681,6 +1877,7 @@ Methods:
 Attributes:
 
 - **`attributes`** (`dict[str, Any]`) –
+- **`classification_guids`** (`list[str] | None`) –
 - **`create_time`** (`int`) –
 - **`created_by`** (`str | None`) –
 - **`custom_attributes`** (`dict[str, str] | None`) –
@@ -1704,6 +1901,12 @@ Attributes:
 
 ```
 attributes: dict[str, Any] = Field(default_factory=dict)
+```
+
+#### classification\_guids
+
+```
+classification_guids: list[str] | None = None
 ```
 
 #### create\_time

@@ -3664,6 +3664,8 @@
       
         
       
+        
+      
     
     
     
@@ -4326,6 +4328,33 @@
     
   
   3.2 Ownership cascades
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-3-direct-classifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.3a Direct classifications
 
     
   </span>
@@ -6514,6 +6543,22 @@ Atlas clients expect when it lands).</p>
 <td>Dropped</td>
 <td>A plain reference keeps no state of its own (DD-049, DD-058)</td>
 <td>2.4</td>
+</tr>
+<tr>
+<td>DV-34</td>
+<td>Classifications</td>
+<td>A classification with <code>propagate</code> true reaches the entities related to its entity; <code>associatedEntityGuid</code> deletes a propagated one</td>
+<td>Until 3.4, nothing is propagated, so a delete naming another entity finds nothing to delete</td>
+<td>Propagation arrives in 3.4</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>DV-35</td>
+<td>Classifications</td>
+<td>An entity create with a classification of an unknown type fails with a <code>NullPointerException</code>, an internal error</td>
+<td><code>CLASSIFICATION_NOT_FOUND</code></td>
+<td>The failure is an unchecked exception, not a decision</td>
+<td>3.3</td>
 </tr>
 </tbody>
 </table>

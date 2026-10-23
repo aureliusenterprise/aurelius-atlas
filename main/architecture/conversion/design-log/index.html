@@ -4372,6 +4372,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-070. Classification instances are documents of their own index, listed by their entity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-071. An entity write also writes classification instances, all or nothing
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-072-the-propagation-defaults-are-atlass-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-072. The propagation defaults are Atlas's defaults
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-073. 3.3 is split into direct classifications and the bulk associator
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4451,6 +4495,8 @@
       
         
           
+        
+      
         
       
         
@@ -5161,6 +5207,33 @@
     
   
   3.2 Ownership cascades
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-3-direct-classifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.3a Direct classifications
 
     
   </span>
@@ -7758,6 +7831,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-070. Classification instances are documents of their own index, listed by their entity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-071. An entity write also writes classification instances, all or nothing
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-072-the-propagation-defaults-are-atlass-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-072. The propagation defaults are Atlas's defaults
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-073. 3.3 is split into direct classifications and the bulk associator
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8342,6 +8459,30 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving">DD-069</a></td>
 <td>A reference to a deleted entity stands for a deleted edge when reviving</td>
 <td>3.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity">DD-070</a></td>
+<td>Classification instances are documents of their own index, listed by their entity</td>
+<td>3.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing">DD-071</a></td>
+<td>An entity write also writes classification instances, all or nothing</td>
+<td>3.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-072-the-propagation-defaults-are-atlass-defaults">DD-072</a></td>
+<td>The propagation defaults are Atlas's defaults</td>
+<td>3.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator">DD-073</a></td>
+<td>3.3 is split into direct classifications and the bulk associator</td>
+<td>3.3</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -9577,6 +9718,65 @@ edge is deleted too.</p>
 <p><strong>Alternatives.</strong> A state per stored reference: rejected with DD-058.</p>
 <p><strong>Consequences.</strong> An entity deleted without its owner, its owner's entry kept by the soft delete, is revived by
 the owner's next update that keeps the entry, as in Atlas.</p>
+<h3 id="dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity">DD-070. Classification instances are documents of their own index, listed by their entity<a class="headerlink" href="#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.3</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> A classification instance is one document of the index behind <code>aurelius-atlas-classifications</code>,
+keyed by a GUID of its own: type name, the GUID and status of the entity it is attached to, <code>propagate</code>,
+<code>removePropagationsOnEntityDelete</code>, validity periods and attribute values (as DD-049 stores values). The
+entity's document lists the GUIDs of its classifications (<code>classificationGuids</code>), in the order they were
+attached. Reading an entity's classifications is a get of the listed documents, in real time.</p>
+<p><strong>Reason.</strong> Atlas keeps a classification as a vertex the entity reaches by an edge, and a propagated one is
+the same vertex reached by many entities. A document per instance keeps that: 3.4 lists a propagated instance
+on every entity it reaches, and an update of it changes one document. Listing GUIDs keeps reads to gets by id,
+as DD-061 does for relationships.</p>
+<p><strong>Alternatives.</strong> Classifications embedded in the entity document: no second read, but 3.4 would copy a
+propagated classification into every entity it reaches and rewrite every copy on each change.</p>
+<p><strong>Consequences.</strong> An entity read with classifications costs one more <code>mget</code>. The GUID of an instance is
+internal: Atlas's classifications have none in their JSON.</p>
+<h3 id="dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing">DD-071. An entity write also writes classification instances, all or nothing<a class="headerlink" href="#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.3</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> <code>EntityStore.write</code> also writes, changes and removes classification instances, in the same bulk
+request and journal entry as the entities, as DD-062 does for relationships; recovery restores them too.</p>
+<p><strong>Reason.</strong> Attaching a classification changes the entity's list and the instance together; Atlas does both in
+one graph transaction.</p>
+<p><strong>Alternatives.</strong> Writing the instance first and the entity after: a failure between leaves an instance no
+entity lists.</p>
+<p><strong>Consequences.</strong> The journal entry holds the classifications' states before the write, as it does for
+entities and relationships.</p>
+<h3 id="dd-072-the-propagation-defaults-are-atlass-defaults">DD-072. The propagation defaults are Atlas's defaults<a class="headerlink" href="#dd-072-the-propagation-defaults-are-atlass-defaults" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.3</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> A classification attached without <code>propagate</code> gets <code>true</code>
+(<code>atlas.classification.propagation.default</code>), without <code>removePropagationsOnEntityDelete</code> gets <code>false</code>
+(<code>atlas.classification.propagation.remove.on.entity.delete</code>); both are Atlas 2.4.0's defaults, fixed in code.</p>
+<p><strong>Reason.</strong> No deployment changes them yet, and both decide 3.4's propagation, which will read the stored
+values.</p>
+<p><strong>Alternatives.</strong> Server settings now: two settings with no effect until 3.4.</p>
+<p><strong>Consequences.</strong> 3.4 may turn them into server settings.</p>
+<h3 id="dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator">DD-073. 3.3 is split into direct classifications and the bulk associator<a class="headerlink" href="#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.3</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> 3.3a ports classifications attached directly: storage, reads, the per-entity and
+<code>bulk/classification</code> endpoints, classifications of created entities and of deleted ones. 3.3b ports
+<code>bulk/setClassifications</code> (<code>ClassificationAssociator</code>) and <code>bulk/headers?tagUpdateStartTime</code>.</p>
+<p><strong>Reason.</strong> Together they are above the size an increment may have (ADR 051); the associator builds on 3.3a's
+operations.</p>
+<p><strong>Alternatives.</strong> One increment: one pull request far above the limit.</p>
+<p><strong>Consequences.</strong> Until 3.3b, <code>bulk/setClassifications</code> and <code>bulk/headers</code> answer <code>404</code>.</p>
 
 
 

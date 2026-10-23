@@ -11843,6 +11843,9 @@ Classes:
 - **`AtlasClassification`** –
 
   An instance of a classification type attached to an entity.
+- **`AtlasClassifications`** –
+
+  `AtlasClassification.AtlasClassifications`: a `PList` of classifications (CLS-01).
 
 ### AtlasClassification
 
@@ -12127,6 +12130,321 @@ set_attribute(name: str, value: Any) -> None
 ```
 
 Set attribute `name`, creating the attributes when there are none.
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
+### AtlasClassifications
+
+Bases: `PList[AtlasClassification]`
+
+`AtlasClassification.AtlasClassifications`: a `PList` of classifications (CLS-01).
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasClassification": {
+      "description": "An instance of a classification type attached to an entity.\n\n``propagate`` is written once: Java's ``getPropagate`` and ``isPropagate`` name the same property.",
+      "properties": {
+        "typeName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typename"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        },
+        "entityGuid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityguid"
+        },
+        "entityStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "ACTIVE"
+        },
+        "propagate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propagate"
+        },
+        "validityPeriods": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TimeBoundary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validityperiods"
+        },
+        "removePropagationsOnEntityDelete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removepropagationsonentitydelete"
+        }
+      },
+      "title": "AtlasClassification",
+      "type": "object"
+    },
+    "Elements_AtlasClassification_": {
+      "items": {
+        "$ref": "#/$defs/AtlasClassification"
+      },
+      "type": "array"
+    },
+    "EntityStatus": {
+      "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
+      "enum": [
+        "ACTIVE",
+        "DELETED",
+        "PURGED"
+      ],
+      "title": "EntityStatus",
+      "type": "string"
+    },
+    "JavaInt": {
+      "type": "integer"
+    },
+    "SortType": {
+      "description": "``SearchFilter.SortType``: the order of a list.",
+      "enum": [
+        "NONE",
+        "ASC",
+        "DESC"
+      ],
+      "title": "SortType",
+      "type": "string"
+    },
+    "TimeBoundary": {
+      "description": "A period in which a classification applies; the times are strings in ``TIME_FORMAT``.\n\n``timeZone`` is a Java time zone id, or null for the server's local time.",
+      "properties": {
+        "startTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starttime"
+        },
+        "endTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endtime"
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timezone"
+        }
+      },
+      "title": "TimeBoundary",
+      "type": "object"
+    }
+  },
+  "description": "``AtlasClassification.AtlasClassifications``: a ``PList`` of classifications (CLS-01).",
+  "properties": {
+    "list": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Elements_AtlasClassification_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "startIndex": {
+      "$ref": "#/$defs/JavaInt",
+      "default": 0
+    },
+    "pageSize": {
+      "$ref": "#/$defs/JavaInt",
+      "default": 0
+    },
+    "totalCount": {
+      "$ref": "#/$defs/JavaInt",
+      "default": 0
+    },
+    "sortBy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sortby"
+    },
+    "sortType": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SortType"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "AtlasClassifications",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `list` (`Elements[T] | None`)
+- `start_index` (`JavaInt`)
+- `page_size` (`JavaInt`)
+- `total_count` (`JavaInt`)
+- `sort_by` (`str | None`)
+- `sort_type` (`SortType | None`)
+
+#### list
+
+```
+list: Elements[T] | None = None
+```
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### page\_size
+
+```
+page_size: JavaInt = 0
+```
+
+#### sort\_by
+
+```
+sort_by: str | None = None
+```
+
+#### sort\_type
+
+```
+sort_type: SortType | None = None
+```
+
+#### start\_index
+
+```
+start_index: JavaInt = 0
+```
+
+#### total\_count
+
+```
+total_count: JavaInt = 0
+```
+
+#### of
+
+```
+of(elements: Elements[T]) -> Self
+```
+
+`PList(List)`: the whole list as one page, not sorted.
 
 #### to\_json
 
