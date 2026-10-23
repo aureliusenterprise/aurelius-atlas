@@ -23,11 +23,11 @@ ADD, UPDATE, DELETE = "Add", "Update", "Delete"
 
 
 class ClassificationAssociator:
-    """``Updater`` over the entities of ``store``, changing them as ``user``."""
+    """``Updater`` over the entities of ``store``, changing them as ``user``; ``tasks`` defers propagation (TSK-02)."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
+    def __init__(self, store: EntityStore, *, user: str | None = None, tasks: bool = False) -> None:
         self._store = store
-        self._classifications = EntityClassifications(store, user=user)
+        self._classifications = EntityClassifications(store, user=user, tasks=tasks)
         self._summary: list[str] = []
 
     async def set_classifications(self, headers: Mapping[str, AtlasEntityHeader] | None) -> str:
