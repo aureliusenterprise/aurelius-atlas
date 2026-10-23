@@ -126,6 +126,7 @@
 - [3.3a Direct classifications](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/3-3-direct-classifications/index.md>)
 - [3.4a Classification propagation](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/3-4-classification-propagation/index.md>)
 - [3.4b Propagation tasks](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/3-4-propagation-tasks/index.md>)
+- [3.5b Classification audit](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/3-5-classification-audit/index.md>)
 - [3.5a Entity audit](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/3-5-entity-audit/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/chore-deps-dependabot-137-138/architecture/conversion/increments/template/index.md>)

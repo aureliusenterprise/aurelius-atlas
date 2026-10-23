@@ -4537,6 +4537,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-085. Classification events are collected in the request and recorded after its write
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-086. Tag propagation records the propagations a request added and removed
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4616,6 +4638,8 @@
       
         
           
+        
+      
         
       
         
@@ -5471,6 +5495,33 @@
     
   
   3.5a Entity audit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-5-classification-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.5b Classification audit
 
     
   </span>
@@ -8233,6 +8284,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-085. Classification events are collected in the request and recorded after its write
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-086. Tag propagation records the propagations a request added and removed
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8906,6 +8979,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed">DD-084</a></td>
 <td>The entity writer tells a change notifier what it changed</td>
+<td>3.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write">DD-085</a></td>
+<td>Classification events are collected in the request and recorded after its write</td>
+<td>3.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed">DD-086</a></td>
+<td>Tag propagation records the propagations a request added and removed</td>
 <td>3.5</td>
 <td>Proposed</td>
 </tr>
@@ -10358,6 +10443,36 @@ would record nothing.</p>
 <p><strong>Consequences.</strong> 3.5b gives the classification operations the same notifier. The writer prunes every response
 as <code>pruneResponse</code> does, also without a notifier, since Atlas answers the response it pruned: an entity listed
 as deleted is no longer also listed as updated (OWN-03).</p>
+<h3 id="dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write">DD-085. Classification events are collected in the request and recorded after its write<a class="headerlink" href="#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.5</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> The classification operations, the entity writer, the relationship store and the propagation
+tasks take the change notifier, as the entity writer does (DD-084), and tell it, once their write has
+committed, what Atlas's would have told it during the request, in Atlas's order: the notifier's classification
+methods, then <code>notifyPropagatedEntities</code> where Atlas calls it.</p>
+<p><strong>Reason.</strong> The events are recorded after the change, as entity events are (DD-082); keeping Atlas's order
+keeps the events' keys, and so the order in which <code>{guid}/audit</code> lists them.</p>
+<p><strong>Alternatives.</strong> Events derived from the stored differences after the write: Atlas's quirks, such as one
+update event per updated classification on each entity notified, would be lost.</p>
+<p><strong>Consequences.</strong> Every propagating operation answers what it propagated, to whom; 3.5b adds that to
+<code>TagPropagation</code>'s results (DD-086).</p>
+<h3 id="dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed">DD-086. Tag propagation records the propagations a request added and removed<a class="headerlink" href="#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.5</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> <code>TagPropagation</code> keeps, per entity, the classification instances it newly listed and those it
+stopped listing, in the order it changed them, as <code>RequestContext</code> keeps added and removed propagations. The
+callers give them to the notifier after their write (CAU-05).</p>
+<p><strong>Reason.</strong> The propagation is computed in one place (DD-075); recording there covers every caller, including
+the delete handlers and the tasks.</p>
+<p><strong>Alternatives.</strong> Comparing the entities' classification lists before and after the write: a classification
+added and removed again within a request would be missed, and the order lost.</p>
+<p><strong>Consequences.</strong> <code>propagate</code> answers the entities it propagated to, which the add events need (CAU-02).</p>
 
 
 

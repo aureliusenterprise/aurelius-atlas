@@ -3674,6 +3674,8 @@
       
         
       
+        
+      
     
     
     
@@ -4471,6 +4473,33 @@
     
   
   3.5a Entity audit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-5-classification-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.5b Classification audit
 
     
   </span>
@@ -6698,6 +6727,22 @@ Atlas clients expect when it lands).</p>
 <td>Audit events are written in the request before the graph commits; a failed commit leaves events of a change not made</td>
 <td>Events are written after the change committed; a process stopping in between loses them</td>
 <td>The audit has its own index, written from the committed entities (DD-082)</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td>DV-41</td>
+<td>Audit</td>
+<td>A <code>tagUpdateStartTime</code> of <code>bulk/headers</code> that is not a number fails with Jersey's parameter error, answered as a <code>500</code> with a text body</td>
+<td>It fails with <code>BAD_REQUEST</code></td>
+<td>A malformed parameter is the client's error, as DV-39</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td>DV-42</td>
+<td>Audit</td>
+<td>Classification add and update events write the request's classification object, normalised</td>
+<td>They write the instance as a read answers it</td>
+<td>Events are recorded after the write, from what is stored (DD-085)</td>
 <td>3.5</td>
 </tr>
 </tbody>
