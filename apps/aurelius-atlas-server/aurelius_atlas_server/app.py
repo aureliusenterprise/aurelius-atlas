@@ -10,13 +10,13 @@ import logfire
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
-from aurelius_atlas_server.otel_ingest import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline
 from aurelius_atlas_server.routes import ADMIN, TYPES
 from aurelius_atlas_server.settings import ServerSettings
 

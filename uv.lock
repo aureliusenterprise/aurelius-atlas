@@ -5,11 +5,13 @@ requires-python = ">=3.14"
 [manifest]
 members = [
     "aurelius-atlas",
+    "aurelius-atlas-auth",
     "aurelius-atlas-core",
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
     "aurelius-atlas-model",
+    "aurelius-atlas-otel",
     "aurelius-atlas-parity",
     "aurelius-atlas-sdk",
     "aurelius-atlas-server",
@@ -220,11 +222,13 @@ source = { virtual = "." }
 [package.dev-dependencies]
 dev = [
     { name = "alembic" },
+    { name = "aurelius-atlas-auth" },
     { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report" },
     { name = "aurelius-atlas-model" },
+    { name = "aurelius-atlas-otel" },
     { name = "aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extra = ["full"] },
     { name = "aurelius-atlas-server" },
@@ -267,11 +271,13 @@ dev = [
 [package.metadata.requires-dev]
 dev = [
     { name = "alembic", specifier = ">=1.18" },
+    { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
     { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-example", editable = "libs/python/aurelius-atlas-example" },
     { name = "aurelius-atlas-fastapi-example", editable = "apps/aurelius-atlas-fastapi-example" },
     { name = "aurelius-atlas-license-report", editable = "reports/aurelius-atlas-license-report" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
+    { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "aurelius-atlas-parity", editable = "libs/python/aurelius-atlas-parity" },
     { name = "aurelius-atlas-sdk", extras = ["full"], editable = "libs/python/aurelius-atlas-sdk" },
     { name = "aurelius-atlas-server", editable = "apps/aurelius-atlas-server" },
@@ -307,6 +313,29 @@ dev = [
     { name = "timeout-decorator", specifier = ">=0.5.0" },
     { name = "trustme", specifier = ">=1.1" },
     { name = "zensical", specifier = ">=0.0.70" },
+]
+
+[[package]]
+name = "aurelius-atlas-auth"
+version = "0.6.1"
+source = { editable = "libs/python/aurelius-atlas-auth" }
+dependencies = [
+    { name = "cachetools" },
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pybreaker" },
+    { name = "pyjwt", extra = ["crypto"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cachetools", specifier = ">=7.2.1" },
+    { name = "cryptography", specifier = ">=50.0.1" },
+    { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pybreaker", specifier = ">=1.4.1" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15.1" },
 ]
 
 [[package]]
@@ -411,6 +440,23 @@ dependencies = [
 requires-dist = [{ name = "pydantic", specifier = ">=2.14.1" }]
 
 [[package]]
+name = "aurelius-atlas-otel"
+version = "0.6.1"
+source = { editable = "libs/python/aurelius-atlas-otel" }
+dependencies = [
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
+    { name = "requests" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.44.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.44.0" },
+    { name = "requests", specifier = ">=2.34.2" },
+]
+
+[[package]]
 name = "aurelius-atlas-parity"
 version = "0.6.1"
 source = { editable = "libs/python/aurelius-atlas-parity" }
@@ -492,6 +538,7 @@ source = { editable = "apps/aurelius-atlas-server" }
 dependencies = [
     { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-model" },
+    { name = "aurelius-atlas-otel" },
     { name = "aurelius-atlas-store-es" },
     { name = "fastapi" },
     { name = "logfire", extra = ["fastapi"] },
@@ -505,6 +552,7 @@ dependencies = [
 requires-dist = [
     { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
+    { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "logfire", extras = ["fastapi"], specifier = ">=5.2.0" },

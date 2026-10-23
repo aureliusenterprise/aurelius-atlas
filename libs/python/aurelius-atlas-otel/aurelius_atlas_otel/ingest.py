@@ -1,8 +1,8 @@
-"""The server's OTLP ingest credential (7.18, DD-107, CIA-07).
+"""The OTLP ingest credential for the collector's per-service leg (7.18, DD-107, CIA-07).
 
 The collector's per-service leg (4317 gRPC / 4319 HTTP) accepts only Keycloak
-client-credentials JWTs minted for the server's realm client
-``otel-atlas-server`` (audience ``otel-collector``, the ``otel-ingest``
+client-credentials JWTs minted for the service's realm client
+``otel-<service>`` (audience ``otel-collector``, the ``otel-ingest``
 scope). The OTel Python SDK reads ``OTEL_EXPORTER_OTLP_HEADERS`` statically,
 and the dev realm's access token lives 60s — a bearer JWT in a static header
 expires a minute in. So the app owns the OTLP export: a refresh-ahead token
@@ -10,6 +10,10 @@ source feeds a ``requests.Session`` that injects a fresh bearer header on
 every OTLP request, handed to app-built exporters wired into logfire through
 its ``additional_span_processors`` / ``MetricsOptions.additional_readers``
 seams (logfire's env-driven OTLP export is not used when this is on).
+
+Extracted from the Atlas server's ``otel_ingest`` module so every service on
+the leg shares one credential (8.0, DD-108); the server keeps the settings
+mapping, this library owns the mechanism.
 
 No new dependency: the session rides the ``requests`` the OTLP exporter
 already uses, and the mint is stdlib urllib. The dev realm's 60s token is

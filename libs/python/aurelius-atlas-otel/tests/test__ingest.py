@@ -14,7 +14,7 @@ import pytest
 import requests
 import requests.adapters
 from _pytest.monkeypatch import MonkeyPatch
-from aurelius_atlas_server.otel_ingest import (
+from aurelius_atlas_otel.ingest import (
     REFRESH_AHEAD_SECONDS,
     ClientCredentialsTokenSource,
     _IngestSession,
@@ -61,11 +61,11 @@ def _install_mint(monkeypatch: MonkeyPatch, payload: dict) -> list[Request]:
         requests_made.append(request)
         return _FakeResponse(payload)
 
-    monkeypatch.setattr("aurelius_atlas_server.otel_ingest.urlopen", fake_urlopen)
+    monkeypatch.setattr("aurelius_atlas_otel.ingest.urlopen", fake_urlopen)
     return requests_made
 
 
-@pytest.mark.covers("aurelius_atlas_server.otel_ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
+@pytest.mark.covers("aurelius_atlas_otel.ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
 def test__bearer_mints_client_secret_basic_and_caches(monkeypatch: MonkeyPatch) -> None:
     """The first call mints with the basic credential; later calls reuse the cache."""
     source = _source()
@@ -82,7 +82,7 @@ def test__bearer_mints_client_secret_basic_and_caches(monkeypatch: MonkeyPatch) 
     assert parse_qs(request.data.decode()) == {"grant_type": ["client_credentials"]}
 
 
-@pytest.mark.covers("aurelius_atlas_server.otel_ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
+@pytest.mark.covers("aurelius_atlas_otel.ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
 def test__bearer_refreshes_inside_the_refresh_ahead_window(monkeypatch: MonkeyPatch) -> None:
     """A token expiring within REFRESH_AHEAD_SECONDS is replaced, not served."""
     source = _source()
@@ -92,7 +92,7 @@ def test__bearer_refreshes_inside_the_refresh_ahead_window(monkeypatch: MonkeyPa
         mints.append(len(mints) + 1)
         return _FakeResponse({"access_token": f"tok-{len(mints)}", "expires_in": 60})
 
-    monkeypatch.setattr("aurelius_atlas_server.otel_ingest.urlopen", minting_urlopen)
+    monkeypatch.setattr("aurelius_atlas_otel.ingest.urlopen", minting_urlopen)
     assert source.bearer() == "tok-1"
 
     # Simulate the clock reaching the refresh-ahead window.
@@ -102,7 +102,7 @@ def test__bearer_refreshes_inside_the_refresh_ahead_window(monkeypatch: MonkeyPa
     assert len(mints) == 2  # a second mint happened
 
 
-@pytest.mark.covers("aurelius_atlas_server.otel_ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
+@pytest.mark.covers("aurelius_atlas_otel.ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
 def test__bearer_failure_without_a_cache_is_none(monkeypatch: MonkeyPatch) -> None:
     """A failed mint with nothing cached yields None — the export goes header-less."""
 
@@ -110,12 +110,12 @@ def test__bearer_failure_without_a_cache_is_none(monkeypatch: MonkeyPatch) -> No
         msg = "connection refused"
         raise URLError(msg)
 
-    monkeypatch.setattr("aurelius_atlas_server.otel_ingest.urlopen", failing_urlopen)
+    monkeypatch.setattr("aurelius_atlas_otel.ingest.urlopen", failing_urlopen)
 
     assert _source().bearer() is None
 
 
-@pytest.mark.covers("aurelius_atlas_server.otel_ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
+@pytest.mark.covers("aurelius_atlas_otel.ingest.ClientCredentialsTokenSource.bearer", rules=["CIA-07"])
 def test__bearer_failure_serves_the_still_valid_cache(monkeypatch: MonkeyPatch) -> None:
     """After a good mint, a failed refresh keeps serving the cached token."""
     source = _source()
@@ -129,12 +129,12 @@ def test__bearer_failure_serves_the_still_valid_cache(monkeypatch: MonkeyPatch) 
     # Inside the refresh-ahead window (so a refresh is attempted) but before
     # real expiry (so the cache is still serveable).
     source._expires_at = time.time() + REFRESH_AHEAD_SECONDS - 1  # noqa: SLF001  # the cache seam under test
-    monkeypatch.setattr("aurelius_atlas_server.otel_ingest.urlopen", failing_urlopen)
+    monkeypatch.setattr("aurelius_atlas_otel.ingest.urlopen", failing_urlopen)
 
     assert source.bearer() == "tok-1"
 
 
-@pytest.mark.covers("aurelius_atlas_server.otel_ingest._IngestSession.request", rules=["CIA-07"])
+@pytest.mark.covers("aurelius_atlas_otel.ingest._IngestSession.request", rules=["CIA-07"])
 def test__ingest_session_stamps_a_fresh_bearer_per_request(monkeypatch: MonkeyPatch) -> None:
     """Every request carries the current bearer; a None token ships header-less."""
     _install_mint(monkeypatch, {"access_token": "tok-1", "expires_in": 60})
@@ -172,12 +172,12 @@ def test__ingest_session_stamps_a_fresh_bearer_per_request(monkeypatch: MonkeyPa
         msg = "down"
         raise URLError(msg)
 
-    monkeypatch.setattr("aurelius_atlas_server.otel_ingest.urlopen", down_urlopen)
+    monkeypatch.setattr("aurelius_atlas_otel.ingest.urlopen", down_urlopen)
     session.get("https://otel-collector:4319/v1/traces")
     assert "Authorization" not in sent[1].headers
 
 
-@pytest.mark.covers("aurelius_atlas_server.otel_ingest.build_otlp_pipeline", rules=["CIA-07"])
+@pytest.mark.covers("aurelius_atlas_otel.ingest.build_otlp_pipeline", rules=["CIA-07"])
 def test__build_otlp_pipeline_wires_the_ingest_session_into_both_exporters(monkeypatch: MonkeyPatch) -> None:
     """The pipeline's exporters ride one ingest session to the traces/metrics endpoints."""
     _install_mint(monkeypatch, {"access_token": "tok-1", "expires_in": 60})

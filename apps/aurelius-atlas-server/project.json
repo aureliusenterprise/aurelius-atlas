@@ -7,6 +7,7 @@
         "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-model",
+        "aurelius-atlas-otel",
         "aurelius-atlas-store-es"
     ],
     "name": "aurelius-atlas-server",

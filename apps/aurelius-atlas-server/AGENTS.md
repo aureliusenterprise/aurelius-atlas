@@ -13,10 +13,10 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   `app.state.typedef_store` hold them. Tests set `models_dir` to an empty directory (`tests/conftest.py`),
   since Atlas's models take seconds to load; only the MDL-16 test loads them
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
-- `aurelius_atlas_server/otel_ingest.py` — the OTLP ingest credential (DD-107): a
-  client-credentials token source (mint/cache/refresh-ahead) feeding a
-  `requests.Session` that stamps a fresh bearer per OTLP export, wired into
-  logfire's `additional_span_processors`/`additional_readers` (the app owns its
+- OTLP ingest (DD-107) lives in the shared `aurelius-atlas-otel` lib (DD-108):
+  `app.py::_ingest_pipeline` maps `ServerSettings.otel_*` into
+  `build_otlp_pipeline`, wired into logfire's
+  `additional_span_processors`/`additional_readers` (the app owns its
   export; the static env headers cannot carry a 60s JWT)
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
