@@ -1,19 +1,21 @@
 """``TypedefDocument`` and ``EntityDocuments`` in memory, for unit tests that need no Elasticsearch."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
 from aurelius_atlas_core.entity_documents import (
+    LINKED_MODELS,
     JournalEntry,
+    Linked,
+    LinkedKind,
+    LinkedWrite,
     Reservation,
     VersionedEntity,
-    VersionedRelationship,
     WriteResult,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
 
 
@@ -76,7 +78,7 @@ class SimulatedCrashError(RuntimeError):
 
 
 class MemoryEntityDocuments:
-    """``EntityDocuments`` in memory, entities and relationships kept as JSON with a version per document.
+    """``EntityDocuments`` in memory, entities and linked documents kept as JSON with a version per document.
 
     ``fail`` maps a GUID to ``"conflict"`` or ``"error"`` for the next bulk write of it; ``crash_after_write`` makes
     the next bulk write raise ``SimulatedCrashError`` after writing, as if the process died.
@@ -84,7 +86,9 @@ class MemoryEntityDocuments:
 
     def __init__(self) -> None:
         self.entities: dict[str, tuple[dict[str, object], DocumentVersion]] = {}
-        self.relationships: dict[str, tuple[dict[str, object], DocumentVersion]] = {}
+        self.linked: dict[LinkedKind, dict[str, tuple[dict[str, object], DocumentVersion]]] = {
+            kind: {} for kind in LinkedKind
+        }
         self.unique_values: dict[str, Reservation] = {}
         self.journal_entries: dict[str, dict[str, object]] = {}
         self.prepared = False
@@ -113,19 +117,24 @@ class MemoryEntityDocuments:
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
-        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
-        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
+        linked: Mapping[LinkedKind, LinkedWrite] | None = None,
     ) -> list[WriteResult]:
-        """Write and remove entities, then relationships, unless they conflict or ``fail`` names them."""
+        """Write and remove entities, then each kind's documents, unless they conflict or ``fail`` names them."""
         results: list[WriteResult] = []
-        for documents, written, gone, kind in (
-            (self.entities, items, removed, False),
-            (self.relationships, relationships, removed_relationships, True),
-        ):
+        groups: list[
+            tuple[
+                dict[str, tuple[dict[str, object], DocumentVersion]],
+                Sequence[tuple[StoredEntity | Linked, DocumentVersion | None]],
+                Sequence[tuple[str, DocumentVersion]],
+                LinkedKind | None,
+            ]
+        ] = [(self.entities, items, removed, None)]
+        groups += [(self.linked[kind], write.written, write.removed, kind) for kind, write in (linked or {}).items()]
+        for documents, written, gone, kind in groups:
             for document, version in written:
-                results.append(self._put(documents, document.guid, document.to_json(), version, relationship=kind))
+                results.append(self._put(documents, document.guid, document.to_json(), version, kind=kind))
             for guid, version in gone:
-                results.append(self._put(documents, guid, None, version, relationship=kind))
+                results.append(self._put(documents, guid, None, version, kind=kind))
         if self.crash_after_write:
             self.crash_after_write = False
             raise SimulatedCrashError
@@ -138,7 +147,7 @@ class MemoryEntityDocuments:
         source: dict[str, object] | None,
         version: DocumentVersion | None,
         *,
-        relationship: bool,
+        kind: LinkedKind | None,
     ) -> WriteResult:
         """Write ``source`` (None removes) unless the version is not the current one or ``fail`` names it."""
         current = documents.get(guid)
@@ -147,34 +156,34 @@ class MemoryEntityDocuments:
             version is not None and (current is None or current[1] != version)
         )
         if stale or failure == "conflict":
-            return WriteResult(guid, written=False, conflict=True, relationship=relationship)
+            return WriteResult(guid, written=False, conflict=True, kind=kind)
         if failure == "error":
-            return WriteResult(guid, written=False, relationship=relationship)
+            return WriteResult(guid, written=False, kind=kind)
         if source is None:
             del documents[guid]
         else:
             documents[guid] = (codec.loads(codec.dumps(source)), self._next_version())
-        return WriteResult(guid, written=True, relationship=relationship)
+        return WriteResult(guid, written=True, kind=kind)
 
-    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
-        """The stored relationships with these GUIDs."""
+    async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
+        """The stored documents of the kind with these GUIDs."""
         return {
-            guid: VersionedRelationship(StoredRelationship.model_validate(codec.loads(codec.dumps(source))), version)
+            guid: (LINKED_MODELS[kind].model_validate(codec.loads(codec.dumps(source))), version)
             for guid in guids
-            if (found := self.relationships.get(guid)) is not None
+            if (found := self.linked[kind].get(guid)) is not None
             for source, version in [found]
         }
 
-    async def restore_relationship(self, guid: str, before: StoredRelationship | None) -> None:
-        """Put back the relationship's state before, or delete it."""
+    async def restore_linked(self, kind: LinkedKind, guid: str, before: Linked | None) -> None:
+        """Put back the document's state before, or delete it."""
         if before is None:
-            self.relationships.pop(guid, None)
+            self.linked[kind].pop(guid, None)
         else:
-            self.relationships[guid] = (codec.loads(codec.dumps(before.to_json())), self._next_version())
+            self.linked[kind][guid] = (codec.loads(codec.dumps(before.to_json())), self._next_version())
 
-    async def count_relationship_type(self, type_name: str) -> int:
-        """Relationships of the type."""
-        return sum(1 for source, _ in self.relationships.values() if source.get("typeName") == type_name)
+    async def count_linked_type(self, kind: LinkedKind, type_name: str) -> int:
+        """Documents of the kind and type."""
+        return sum(1 for source, _ in self.linked[kind].values() if source.get("typeName") == type_name)
 
     async def restore(self, guid: str, before: StoredEntity | None) -> None:
         """Put back the state before, or delete."""

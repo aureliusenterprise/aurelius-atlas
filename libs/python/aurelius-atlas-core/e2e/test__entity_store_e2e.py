@@ -1,11 +1,11 @@
 """The entity store against the dev Elasticsearch (ENS-01, ENS-05, ENS-07, ENS-08, ENS-09)."""
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from decimal import Decimal
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, WriteResult
+from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, LinkedKind, LinkedWrite, WriteResult
 from aurelius_atlas_core.entity_store import (
     LEASE_MILLISECONDS,
     EntityChange,
@@ -13,7 +13,6 @@ from aurelius_atlas_core.entity_store import (
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_model.instance import AtlasEntity
 from aurelius_atlas_model.typedef import AtlasAttributeDef, AtlasEntityDef, AtlasTypesDef
@@ -33,11 +32,10 @@ class CrashingDocuments(ElasticsearchEntityDocuments):
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
-        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
-        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
+        linked: Mapping[LinkedKind, LinkedWrite] | None = None,
     ) -> list[WriteResult]:
         """Write, then crash."""
-        await super().write(items, removed, relationships, removed_relationships)
+        await super().write(items, removed, linked)
         raise RuntimeError(CRASH)
 
 

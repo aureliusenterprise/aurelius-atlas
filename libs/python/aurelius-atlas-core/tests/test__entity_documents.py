@@ -9,8 +9,12 @@ from aurelius_atlas_core.entity_documents import (
     ElasticsearchEntityDocuments,
     EntityDocuments,
     JournalEntry,
+    Linked,
+    LinkedKind,
+    LinkedWrite,
     Reservation,
 )
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
@@ -42,8 +46,8 @@ def entity(guid: str, **attributes: object) -> StoredEntity:
     return StoredEntity(guid=guid, type_name="table", attributes=attributes)
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05"])
-async def test__four_aliases_are_created_once(fake: FakeClient) -> None:
+@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02"])
+async def test__five_aliases_are_created_once(fake: FakeClient) -> None:
     """An index behind each alias; a second prepare changes nothing."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))
 
@@ -55,6 +59,7 @@ async def test__four_aliases_are_created_once(fake: FakeClient) -> None:
         "aurelius-atlas-unique-values",
         "aurelius-atlas-entity-journal",
         "aurelius-atlas-relationships",
+        "aurelius-atlas-classifications",
     )
     assert fake.aliases == {alias: f"{alias}-000001" for alias in documents.aliases}
 
@@ -163,9 +168,9 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "journal",
             "count_type",
             "referring",
-            "get_relationships",
-            "restore_relationship",
-            "count_relationship_type",
+            "get_linked",
+            "restore_linked",
+            "count_linked_type",
         )
     ),
     rules=["ENS-07"],
@@ -207,30 +212,33 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
 
 @pytest.mark.covers(
     f"{E}.write",
-    f"{E}.get_relationships",
-    f"{E}.restore_relationship",
-    f"{E}.count_relationship_type",
-    rules=["REL-05", "REL-08", "REL-10"],
+    f"{E}.get_linked",
+    f"{E}.restore_linked",
+    f"{E}.count_linked_type",
+    rules=["REL-05", "REL-08", "REL-10", "CLS-12"],
 )
-async def test__relationships_are_written_with_entities_in_one_bulk_request(
-    documents: ElasticsearchEntityDocuments, fake: FakeClient
+@pytest.mark.parametrize(
+    ("kind", "document"),
+    [
+        (LinkedKind.RELATIONSHIP, StoredRelationship(guid="r", type_name="link", end1_guid="a", end2_guid="b")),
+        (LinkedKind.CLASSIFICATION, StoredClassification(guid="r", type_name="link", entity_guid="a")),
+    ],
+)
+async def test__linked_documents_are_written_with_entities_in_one_bulk_request(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient, kind: LinkedKind, document: Linked
 ) -> None:
-    """Both indices in one request, each result marked by kind; relationships are read, restored and counted."""
-    link = StoredRelationship(guid="r", type_name="link", end1_guid="a", end2_guid="b")
+    """All indices in one request, each result marked by kind; the documents are read, restored and counted."""
+    results = await documents.write([(entity("a"), None)], [], {kind: LinkedWrite([(document, None)])})
+    found = await documents.get_linked(kind, ["r", "nope"])
+    removed = await documents.write([], [], {kind: LinkedWrite(removed=[("r", found["r"][1])])})
+    await documents.restore_linked(kind, "r", document)
+    await documents.restore_linked(kind, "s", None)
 
-    results = await documents.write([(entity("a"), None)], [], [(link, None)])
-    found = await documents.get_relationships(["r", "nope"])
-    version = found["r"].version
-    assert version is not None
-    removed = await documents.write([], [], [], [("r", version)])
-    await documents.restore_relationship("r", link)
-    await documents.restore_relationship("s", None)
-
-    assert [(result.guid, result.relationship) for result in results] == [("a", False), ("r", True)]
+    assert [(result.guid, result.kind) for result in results] == [("a", None), ("r", kind)]
     assert list(found) == ["r"]
     assert [(result.guid, result.written) for result in removed] == [("r", True)]
-    assert await documents.count_relationship_type("link") == 1
-    assert await documents.get_relationships([]) == {}
-    await documents.restore_relationship("r", None)
-    assert await documents.count_relationship_type("link") == 0
-    assert "t-relationships" in fake.refreshes
+    assert await documents.count_linked_type(kind, "link") == 1
+    assert await documents.get_linked(kind, []) == {}
+    await documents.restore_linked(kind, "r", None)
+    assert await documents.count_linked_type(kind, "link") == 0
+    assert f"t-{kind.value}" in fake.refreshes

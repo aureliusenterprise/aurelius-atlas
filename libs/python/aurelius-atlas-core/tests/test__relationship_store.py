@@ -275,7 +275,7 @@ async def test__deleting_an_entity_deletes_its_relationships(store: EntityStore)
     "aurelius_atlas_core.entity_store.EntityStore.write",
     "aurelius_atlas_core.entity_store.EntityStore.get_relationships",
     "aurelius_atlas_core.entity_store.EntityStore.recover",
-    "aurelius_atlas_core.entity_documents.JournalEntry.before_relationship",
+    "aurelius_atlas_core.entity_documents.JournalEntry.before_linked",
     "aurelius_atlas_core.stored_entity.StoredEntity.listing",
     "aurelius_atlas_core.stored_entity.StoredEntity.unlisting",
     "aurelius_atlas_core.stored_relationship.StoredRelationship.ends",
