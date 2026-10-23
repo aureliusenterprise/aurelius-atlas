@@ -7,6 +7,7 @@ duplicate here (AUX-01..05 are tested at home, in ``aurelius-atlas-auth``).
 from __future__ import annotations
 
 import json
+import os
 import time
 from collections.abc import AsyncIterator, Callable, Iterator
 from typing import Any
@@ -16,6 +17,7 @@ import jwt
 import pytest
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_data2model import Data2ModelSettings, create_app
+from aurelius_atlas_data2model.settings import ENV_PREFIX
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import FastAPI
 from jwt.algorithms import RSAAlgorithm
@@ -29,6 +31,21 @@ AUDIENCE = "aurelius-atlas-data2model"
 
 private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 public_key = private_key.public_key()
+
+
+@pytest.fixture(autouse=True)
+def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Start every test from a clean environment (DD-110).
+
+    ``nx test`` injects the project's ``.env`` into the task's environment, and
+    pydantic-settings reads it: the dev values — TLS material as
+    workspace-root-relative paths, the dev issuer — would leak into the
+    settings the fixtures and tests build, and the paths do not resolve at
+    the test's working directory. Tests set exactly the variables they mean.
+    """
+    for name in list(os.environ):
+        if name.startswith(ENV_PREFIX):
+            monkeypatch.delenv(name, raising=False)
 
 
 def _jwk() -> dict[str, Any]:

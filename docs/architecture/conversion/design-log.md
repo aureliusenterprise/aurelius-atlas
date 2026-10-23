@@ -3639,3 +3639,35 @@ directly (the `'nan'`-string artefacts a NaN id produced in the legacy are
 a legacy accident, recorded in 8.1's deviations, not a contract). The app's
 pyproject gains `pydantic`/`fastapi` and no pandas; 8.2's flattening (12
 columns, fixed keys) is the same shape and stays plain dicts.
+
+### DD-110 — App unit tests clear the injected `.env` prefix in an autouse fixture
+
+- **Status:** Accepted
+- **Increment:** 8.1
+- **Date:** 2026-10-23
+
+**Decision.** Every Python app's `tests/conftest.py` carries an autouse
+fixture that deletes every environment variable starting with the app's
+`ENV_PREFIX` before each test. Tests and fixtures then set exactly the
+variables they mean.
+
+**Reason.** Nx injects a project's `.env` into **every** task's environment
+for that project, and pydantic-settings reads the environment for every
+field a test does not pass explicitly — `model_validate` included. The dev
+`.env` stores TLS material and directories as workspace-root-relative
+paths, while `nx test` runs pytest with `cwd=projectRoot`, so the paths
+do not resolve and every `FilePath` field fails validation: under
+`nx test -c ci`, the server's suite reported 50 setup errors and
+data2model's 12 — identical for both apps, invisible to a plain
+`uv run pytest` from the workspace root, and invisible to CI, whose PR
+gate selects tasks the `test`-affecting files do not touch. Clearing the
+prefix is the smallest hermetic fix; the alternative — absolute paths in
+`.env` — breaks the containers (the compose files resolve them against
+the project dir) and `nx serve` (which runs from the workspace root, the
+one cwd where the relative paths do resolve).
+
+**Consequences.** Unit tests no longer read dev secrets, dev endpoints,
+or dev certificates, in any working directory. The settings tests keep
+testing environment reading — their `environment` fixture sets the
+variables it needs after the clear. `e2e/` conftests keep loading the
+real `.env` on purpose: those tests talk to the real dev stack.
