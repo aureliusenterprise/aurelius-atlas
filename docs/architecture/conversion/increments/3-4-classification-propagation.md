@@ -1,7 +1,7 @@
 # 3.4a Classification propagation
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#122](https://github.com/aureliusenterprise/aurelius-atlas/pull/122)
 - **Records:** DD-075 to DD-078, DV-37; ends DV-34; relies on DD-061, DD-062, DD-066, DD-068, DD-070, DD-071
 
 The first part of increment 3.4 (DD-078; 3.4b defers propagation to tasks, as Atlas does by default):
