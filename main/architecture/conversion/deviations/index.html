@@ -3672,6 +3672,8 @@
       
         
       
+        
+      
     
     
     
@@ -4442,6 +4444,33 @@
     
   
   3.4b Propagation tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-5-entity-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.5a Entity audit
 
     
   </span>
@@ -6654,6 +6683,22 @@ Atlas clients expect when it lands).</p>
 <td>Every server process runs tasks, each claimed by one, so tasks may run side by side</td>
 <td>Several processes share the store without a leader (DD-080)</td>
 <td>3.4</td>
+</tr>
+<tr>
+<td>DV-39</td>
+<td>Audit</td>
+<td>A <code>count</code>, <code>offset</code> or <code>auditAction</code> of <code>{guid}/audit</code> that is not one fails with Jersey's parameter error, answered as a <code>500</code> with a text body</td>
+<td>It fails with <code>BAD_REQUEST</code></td>
+<td>A malformed parameter is the client's error; Atlas's answer is its generic mapper, not a decision</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td>DV-40</td>
+<td>Audit</td>
+<td>Audit events are written in the request before the graph commits; a failed commit leaves events of a change not made</td>
+<td>Events are written after the change committed; a process stopping in between loses them</td>
+<td>The audit has its own index, written from the committed entities (DD-082)</td>
+<td>3.5</td>
 </tr>
 </tbody>
 </table>

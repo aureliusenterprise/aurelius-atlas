@@ -3662,6 +3662,8 @@
       
         
       
+        
+      
     
     
     
@@ -4536,6 +4538,33 @@
     
   
   3.4b Propagation tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../3-5-entity-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.5a Entity audit
 
     
   </span>
@@ -6573,6 +6602,8 @@
       
         
       
+        
+      
     
     
     
@@ -6674,7 +6705,7 @@ it, DD-068), and changes to <code>entity_mapper</code>, <code>relationship_mappe
 </tr>
 <tr>
 <td>OWN-03</td>
-<td>The response lists the deleted entities under <code>DELETE</code>, after the created and updated ones and before those the request made updated (EWR-13); the entities the deletes changed are among the latter, under the request's operation. A deleted entity the request also made updated is listed under both, with the header taken before it was deleted</td>
+<td>The response lists the deleted entities under <code>DELETE</code>, after the created and updated ones and before those the request made updated (EWR-13); the entities the deletes changed are among the latter, under the request's operation. A deleted entity the request also made updated is listed under both, with the header taken before it was deleted; since 3.5a the response is pruned as Atlas prunes it, which lists it under <code>DELETE</code> only (AUD-02)</td>
 </tr>
 <tr>
 <td>OWN-04</td>

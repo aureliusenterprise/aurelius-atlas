@@ -4504,6 +4504,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-082. Audit events are documents of their own index, written after the change
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-083-audit-events-keep-atlass-event-keys-and-their-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-083. Audit events keep Atlas's event keys and their order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-084. The entity writer tells a change notifier what it changed
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4583,6 +4616,8 @@
       
         
           
+        
+      
         
       
         
@@ -5409,6 +5444,33 @@
     
   
   3.4b Propagation tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-5-entity-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.5a Entity audit
 
     
   </span>
@@ -8138,6 +8200,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-082. Audit events are documents of their own index, written after the change
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-083-audit-events-keep-atlass-event-keys-and-their-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-083. Audit events keep Atlas's event keys and their order
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-084. The entity writer tells a change notifier what it changed
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8794,6 +8889,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default">DD-081</a></td>
 <td>Tasks are enabled by a server setting, on by default</td>
 <td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change">DD-082</a></td>
+<td>Audit events are documents of their own index, written after the change</td>
+<td>3.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-083-audit-events-keep-atlass-event-keys-and-their-order">DD-083</a></td>
+<td>Audit events keep Atlas's event keys and their order</td>
+<td>3.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed">DD-084</a></td>
+<td>The entity writer tells a change notifier what it changed</td>
+<td>3.5</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -10198,6 +10311,53 @@ want a write to be complete when it answers.</p>
 <p><strong>Consequences.</strong> The core takes the choice as a parameter of the writers and stores that propagate. The parity
 scenarios run against a server with tasks disabled, as against an Atlas with <code>atlas.tasks.enabled=false</code>: they
 check what propagation produces, not when, and <code>admin/session</code> reports the setting.</p>
+<h3 id="dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change">DD-082. Audit events are documents of their own index, written after the change<a class="headerlink" href="#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.5</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> Increment 3.5 is split: 3.5a records the events of entity writes, deletes and purges and answers
+<code>{guid}/audit</code>; 3.5b adds the classification events and <code>bulk/headers</code>. An audit event is one document of the
+index behind <code>aurelius-atlas-entity-audits</code>. The events of a change are written once the change has committed,
+from the entities read back, in one bulk request; they are not part of the change's journaled write.</p>
+<p><strong>Reason.</strong> Atlas keeps its audit in HBase, apart from the graph, and writes it in the request before the
+graph commits; neither store's write includes the other's. Reading the committed entities gives the details
+exactly as a later read answers them, without computing them from a request's view in every writer.</p>
+<p><strong>Alternatives.</strong> Events as a further kind of document in the journaled write (DD-079): no event lost, but
+each writer would compute the details before its write.</p>
+<p><strong>Consequences.</strong> A process that stops between the write and its events loses them (DV-40).</p>
+<h3 id="dd-083-audit-events-keep-atlass-event-keys-and-their-order">DD-083. Audit events keep Atlas's event keys and their order<a class="headerlink" href="#dd-083-audit-events-keep-atlass-event-keys-and-their-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.5</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> An event's <code>eventKey</code> is the HBase row key Atlas writes, <code>&lt;entityId&gt;:&lt;timestamp&gt;:&lt;index&gt;:&lt;now&gt;</code>,
+a keyword of the event's document. Events are read newest first by sorting on it descending, as Atlas's
+reversed HBase scan reads them; <code>startKey</code> is a bound on it. The document's id is a new GUID, so two events
+with one key are both kept.</p>
+<p><strong>Reason.</strong> Keyword order is the byte order HBase sorts row keys in, so the order and the <code>startKey</code> paging
+the dashboards and clients rely on stay Atlas's, quirks included.</p>
+<p><strong>Alternatives.</strong> Sorting by timestamp: events of one millisecond would come in another order, and <code>startKey</code>
+would need a translation.</p>
+<p><strong>Consequences.</strong> Where HBase would overwrite an event whose key repeats, both events are listed.</p>
+<h3 id="dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed">DD-084. The entity writer tells a change notifier what it changed<a class="headerlink" href="#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.5</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> <code>EntityWriter</code> takes an optional <code>EntityChangeNotifier</code>, Atlas's <code>AtlasEntityChangeNotifier</code>,
+and gives it each committed response with the request's user. The notifier prunes the response and calls its
+listeners; the audit listener is the only one. Without a notifier nothing is recorded.</p>
+<p><strong>Reason.</strong> Atlas's entity store notifies after every mutation; one hook in the writer covers creates,
+updates, deletes and purges, and tests of the writer need no audit.</p>
+<p><strong>Alternatives.</strong> The server recording events after each route: every route would repeat it, and core callers
+would record nothing.</p>
+<p><strong>Consequences.</strong> 3.5b gives the classification operations the same notifier. The writer prunes every response
+as <code>pruneResponse</code> does, also without a notifier, since Atlas answers the response it pruned: an entity listed
+as deleted is no longer also listed as updated (OWN-03).</p>
 
 
 
