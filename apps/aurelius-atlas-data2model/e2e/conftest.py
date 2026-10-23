@@ -8,6 +8,7 @@ from pathlib import Path
 import dotenv
 import httpx
 import pytest
+import pytest_asyncio
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from testcontainers.compose import DockerCompose
@@ -115,7 +116,11 @@ def app_url(keycloak: DockerCompose) -> Iterator[str]:
         yield f"https://localhost:{port}"
 
 
-@pytest.fixture
+# The function loop (pytest-asyncio 1.x): the root config gives async fixtures
+# a module loop, which here outlives the test loops its TLS connections were
+# opened on — aclose then schedules on a closed loop ("Event loop is closed").
+# On the function loop, client, requests, and aclose share one loop per test.
+@pytest_asyncio.fixture(loop_scope="function")
 async def client(app_url: str, token: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running app over HTTPS, verifying it against the dev CA, carrying the token."""
     async with httpx.AsyncClient(
@@ -126,7 +131,7 @@ async def client(app_url: str, token: str) -> AsyncIterator[httpx.AsyncClient]:
         yield client
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def anonymous_client(app_url: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running app over HTTPS, without a token (the 401 path)."""
     async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as client:
