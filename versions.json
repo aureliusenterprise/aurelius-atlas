@@ -113,5 +113,10 @@
     "version": "feat-dashboard-nginx-serving",
     "title": "feat-dashboard-nginx-serving",
     "aliases": []
+  },
+  {
+    "version": "feat-aux-apis-data2model",
+    "title": "feat-aux-apis-data2model",
+    "aliases": []
   }
 ]
