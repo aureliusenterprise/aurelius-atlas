@@ -1900,4 +1900,6 @@ updates, deletes and purges, and tests of the writer need no audit.
 **Alternatives.** The server recording events after each route: every route would repeat it, and core callers
 would record nothing.
 
-**Consequences.** 3.5b gives the classification operations the same notifier.
+**Consequences.** 3.5b gives the classification operations the same notifier. The writer prunes every response
+as `pruneResponse` does, also without a notifier, since Atlas answers the response it pruned: an entity listed
+as deleted is no longer also listed as updated (OWN-03).
