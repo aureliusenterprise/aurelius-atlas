@@ -133,5 +133,10 @@
     "version": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
     "title": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
     "aliases": []
+  },
+  {
+    "version": "dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1",
+    "title": "dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1",
+    "aliases": []
   }
 ]
