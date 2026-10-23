@@ -121,11 +121,10 @@ its user interfaces are served unchanged at the paths Atlas uses: `dashboardv2` 
 `dashboardv3` at `/n/`. End-to-end tests cover `dashboardv3` in depth and `dashboardv2` with a smoke
 test.
 
-**Reason.** Parity tests need one fixed reference ([ADR
-048](../adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted.md)), and 2.4.0 is the latest
-Apache Atlas release. Atlas 2.4.0 serves the classic interface at the root and the newer one under `/n/`, and
-each links to the other; serving both keeps every bookmark and link working at the cost of one more static
-build, whereas dropping one would be a visible deviation.
+**Reason.** Parity tests need one fixed reference ([ADR 048](../adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted.md)),
+and 2.4.0 is the latest Apache Atlas release. Atlas 2.4.0 serves the classic interface at the root and
+the newer one under `/n/`, and each links to the other; serving both keeps every bookmark and link
+working at the cost of one more static build, whereas dropping one would be a visible deviation.
 
 **Alternatives.** Track Atlas `master`: unstable fixtures, no released artefact to compare against.
 Serve only `dashboardv3` and redirect `/` to `/n/`: one build less, but breaks the switch-back link and
@@ -398,10 +397,10 @@ scenario format is ours to keep stable; it is versioned by its rules SCN-01 to S
 booleans and null distinct from numbers. Only `volatile` paths (generated GUIDs, timestamps) skip the
 value, and only `deviations` entries change the expectation, each naming its `DV-NN`.
 
-**Reason.** The dashboard and existing clients read fields the scenarios might not think of; an extra, missing
-or `null` field is a visible difference ([ADR 046](../adr/046-the-catalogue-keeps-its-public-contract.md)).
-Atlas serialises its models with Jackson `NON_NULL` inclusion, so "absent" and `null` differ there and must
-differ here.
+**Reason.** The dashboard and existing clients read fields the scenarios might not think of; an extra,
+missing or `null` field is a visible difference ([ADR 046](../adr/046-the-catalogue-keeps-its-public-contract.md)).
+Atlas serialises its models with Jackson `NON_NULL` inclusion, so "absent" and `null` differ there and
+must differ here.
 
 **Alternatives.** Subset matching: short scenarios, but an extra or misnamed field passes. Snapshot
 files written from our own responses: exact, but the expectation would come from the implementation,
@@ -466,11 +465,10 @@ increments add routers and error codes; the error handler and media type stay.
 store cannot be opened (unreachable, rejected, or not Elasticsearch 9). Once running, `readiness`
 reports the store's health on every call, and `liveness` and `status` do not depend on it.
 
-**Reason.** The store is the only system of record ([ADR
-047](../adr/047-one-search-store-is-the-system-of-record.md)); a server without it cannot answer anything but
-the admin endpoints. Failing at start-up shows a wrong setting at once ([ADR
-018](../adr/018-settings-arrive-at-startup-through-one-channel.md)) and lets an orchestrator restart the
-container, while readiness covers a store that goes away later.
+**Reason.** The store is the only system of record ([ADR 047](../adr/047-one-search-store-is-the-system-of-record.md));
+a server without it cannot answer anything but the admin endpoints. Failing at start-up shows a wrong
+setting at once ([ADR 018](../adr/018-settings-arrive-at-startup-through-one-channel.md)) and lets an
+orchestrator restart the container, while readiness covers a store that goes away later.
 
 **Alternatives.** Start without the store and retry in the background: a misconfigured server would run
 and only its readiness would say so. Make liveness depend on the store: an outage of Elasticsearch would
@@ -862,10 +860,10 @@ new. Two processes starting together may each retry once per change.
 **Decision.** `GET /v2/types/typedefs` and `GET /v2/types/typedefs/headers` list the definitions of each kind
 sorted by name, compared as Java's `String.compareTo`.
 
-**Reason.** Atlas lists them in the iteration order of the `ConcurrentHashMap`s of its registry:
-deterministic, but a function of Java's string hashes and the maps' resize history, which no client can rely
-on and no scenario can state without computing it. A sorted list is stable across restarts, processes and
-updates, which the order of the stored document is not: an update moves a definition to its end.
+**Reason.** Atlas lists them in the iteration order of the `ConcurrentHashMap`s of its registry: deterministic,
+but a function of Java's string hashes and the maps' resize history, which no client can rely on and no
+scenario can state without computing it. A sorted list is stable across restarts, processes and updates, which
+the order of the stored document is not: an update moves a definition to its end.
 
 **Alternatives.** The order of the stored document: changes with every update. Emulating Java's hash order:
 costly, and still not something a client could use.
@@ -878,9 +876,9 @@ costly, and still not something a client could use.
 - **Increment:** 1.6
 - **Date:** 2026-10-18
 
-**Decision.** Each types scenario creates the definitions it needs, all named `scenario_…`, and deletes them
-in its last stage. Before the server e2e runs its scenarios, it deletes any `scenario_…` definition left in
-the store by an earlier run that stopped half-way.
+**Decision.** Each types scenario creates the definitions it needs, all named `scenario_…`, and deletes them in
+its last stage. Before the server e2e runs its scenarios, it deletes any `scenario_…` definition left in the
+store by an earlier run that stopped half-way.
 
 **Reason.** The in-process scenarios start each from an empty store, but the e2e runs them all against one
 server on the persistent dev store, which `nx serve` uses too. Self-contained scenarios pass on both, in any
@@ -899,10 +897,9 @@ types another scenario creates.
 - **Increment:** 1.6 (a fix to 1.5's MDL-15)
 - **Date:** 2026-10-19
 
-**Decision.** When the typedef store gives up on a model file or patch with
-`FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` (two lost conditional writes, DD-029), the model loader makes the change
-again, up to ten times, before it treats the file as failed or the patch as `FAILED`. The REST endpoints keep
-DD-029's single retry.
+**Decision.** When the typedef store gives up on a model file or patch with `FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK`
+(two lost conditional writes, DD-029), the model loader makes the change again, up to ten times, before it
+treats the file as failed or the patch as `FAILED`. The REST endpoints keep DD-029's single retry.
 
 **Reason.** DD-033 assumed a process starting next to another loses at most once per change. CI showed
 otherwise: two processes write a few hundred changes in near lockstep, and between one's reload and its retry
@@ -1080,10 +1077,10 @@ types cannot share one mapping. An index per entity type: thousands of small ind
 and queries across a super type touch them all.
 
 **Consequences.** The store's client reads floats as decimals and is given documents as the codec's bytes
-(DD-039), so values keep their digits through Elasticsearch. 4.1 adds attribute mappings and indexes the
-existing documents again (an `update_by_query`), the first change ADR 023 records as a migration if data
-exists by then. Reading an entity back maps qualified names to attribute names through the type registry
-(2.3).
+(DD-039), so values keep their digits through Elasticsearch. 4.1 adds attribute mappings and indexes the existing
+documents again (an `update_by_query`),
+the first change ADR 023 records as a migration if data exists by then. Reading an entity back maps qualified
+names to attribute names through the type registry (2.3).
 
 ### DD-044. A GUID is a random UUID
 
@@ -1380,17 +1377,17 @@ a GUID is removed once, so this does not arise.
 - **Date:** 2026-10-22
 
 **Decision.** Every entity document holds `references`, a keyword field of the GUIDs its references name (its
-own object id attributes and the elements and values of its arrays and maps of object ids; not soft
-references, not references in structs), set by `EntityStore` on every write. Deleting an entity refreshes the
-entity index, then searches `references` for its GUID, in pages. Preparing the store adds the field's mapping
-to an existing entity index; documents written before it have no `references` until they are written again.
+own object id attributes and the elements and values of its arrays and maps of object ids; not soft references,
+not references in structs), set by `EntityStore` on every write. Deleting an entity refreshes the entity index,
+then searches `references` for its GUID, in pages. Preparing the store adds the field's mapping to an existing
+entity index; documents written before it have no `references` until they are written again.
 
 **Reason.** Atlas follows an entity's incoming edges; documents have none. Of the alternatives offered, the
 indexed field keeps writes to the entities written (DD-052), and the refresh makes every write finished before
 the delete visible.
 
-**Alternatives.** A reverse list on each referenced entity, kept by the same write: exact, but every write
-that adds or drops a reference rewrites the entities it names, and popular entities become write hot spots.
+**Alternatives.** A reverse list on each referenced entity, kept by the same write: exact, but every write that
+adds or drops a reference rewrites the entities it names, and popular entities become write hot spots.
 
 **Consequences.** A referrer written while the delete runs may be missed (DV-27). Lineage (5.1) and
 relationships (3.1) can use the same field.
@@ -1405,11 +1402,11 @@ relationships (3.1) can use the same field.
 deletes, and those of an `ACTIVE` owner to its owned entities, as active edges; a purge treats them as deleted
 edges, which a soft delete left behind.
 
-**Reason.** Atlas soft-deletes an entity's edges with it: the edges a purge finds deleted are those of
-entities a delete made `DELETED`, which is what this rule reads from the entities' states.
+**Reason.** Atlas soft-deletes an entity's edges with it: the edges a purge finds deleted are those of entities
+a delete made `DELETED`, which is what this rule reads from the entities' states.
 
-**Alternatives.** A state per reference in the stored form (DD-049): an exact copy of the edges' states, at
-the cost of a second representation of every reference until 3.1 stores relationships.
+**Alternatives.** A state per reference in the stored form (DD-049): an exact copy of the edges' states, at the
+cost of a second representation of every reference until 3.1 stores relationships.
 
 **Consequences.** A reference written to an entity after it was deleted counts as deleted for a purge, where
 Atlas would hold an active edge and leave it.
@@ -1437,14 +1434,13 @@ Atlas would hold an active edge and leave it.
 - **Date:** 2026-10-22
 
 **Decision.** Deleting an entity deletes the entities its owned reference attributes name (`ownedRef`), as
-`DeleteHandlerV1.getOwnedVertices` does, from 2.5. Composition through `relationshipDefs` and deleting an
-owned entity whose reference an update drops stay with 3.2.
+`DeleteHandlerV1.getOwnedVertices` does, from 2.5. Composition through `relationshipDefs` and deleting an owned
+entity whose reference an update drops stay with 3.2.
 
 **Reason.** Owned references are stored as GUIDs (DD-049); following them needs no relationships, and without
 them a delete would leave owned entities `ACTIVE`, unlike Atlas.
 
-**Alternatives.** All cascades in 3.2, as the roadmap first had it: deletes would differ from Atlas until
-then.
+**Alternatives.** All cascades in 3.2, as the roadmap first had it: deletes would differ from Atlas until then.
 
 **Consequences.** The roadmap's 2.5 and 3.2 rows change accordingly.
 
@@ -1454,23 +1450,22 @@ then.
 - **Increment:** 3.1
 - **Date:** 2026-10-22
 
-**Decision.** A relationship instance is one document of the index behind `aurelius-atlas-relationships`,
-keyed by its GUID: type name, label, end 1 and end 2 GUIDs, status, times, users, version, provenance type,
-home id, tag propagation and attribute values (as DD-049 stores values). Each end entity's document lists the
-GUIDs of the relationships it is an end of (`relationshipGuids`), written with the relationship. Reading an
-entity's relationships is a get of its document and of the listed relationships, in real time.
+**Decision.** A relationship instance is one document of the index behind `aurelius-atlas-relationships`, keyed
+by its GUID: type name, label, end 1 and end 2 GUIDs, status, times, users, version, provenance type, home id,
+tag propagation and attribute values (as DD-049 stores values). Each end entity's document lists the GUIDs of
+the relationships it is an end of (`relationshipGuids`), written with the relationship. Reading an entity's
+relationships is a get of its document and of the listed relationships, in real time.
 
 **Reason.** Atlas keeps a relationship as an edge both vertices reach. Listing the GUIDs on both ends keeps
 entity reads to gets by id, never a search that waits for a refresh, at the cost of writing the ends with the
 relationship.
 
-**Alternatives.** Relationship documents found by searching their end GUIDs: writes touch only the
-relationship, but every entity read with relationships pays a refresh and a search, and may miss one just
-written.
+**Alternatives.** Relationship documents found by searching their end GUIDs: writes touch only the relationship,
+but every entity read with relationships pays a refresh and a search, and may miss one just written.
 
-**Consequences.** An entity at the centre of many relationships (a database with thousands of tables) has a
-long list in its document, and writers relating entities to it conflict on it and retry (DD-052, DV-30). Ten
-thousand GUIDs are about 400 KB, well inside Elasticsearch's document size.
+**Consequences.** An entity at the centre of many relationships (a database with thousands of tables) has a long
+list in its document, and writers relating entities to it conflict on it and retry (DD-052, DV-30). Ten thousand
+GUIDs are about 400 KB, well inside Elasticsearch's document size.
 
 ### DD-062. An entity write also writes relationships, all or nothing
 
@@ -1482,8 +1477,8 @@ thousand GUIDs are about 400 KB, well inside Elasticsearch's document size.
 relationships, conditional on the version read, in the same bulk request and the same journal entry as the
 entities (DD-046, DD-056). Recovery restores relationships as it restores entities.
 
-**Reason.** Creating a relationship changes three documents, deleting an entity may change many; a partial
-write would leave a relationship its ends do not list, or a list naming a relationship that does not exist.
+**Reason.** Creating a relationship changes three documents, deleting an entity may change many; a partial write
+would leave a relationship its ends do not list, or a list naming a relationship that does not exist.
 
 **Alternatives.** A separate relationship store with its own journal: two writes per request, with a window in
 which one is done and the other not.
@@ -1497,16 +1492,16 @@ which one is done and the other not.
 - **Date:** 2026-10-22
 
 **Decision.** 3.1a ports relationship instances: models, the relationship type's value side, storage and
-`RelationshipREST`, and the deletion of an entity's relationships. 3.1b ports relationship attributes of
-entities: `relationshipAttributes` in reads, relationships created, changed and deleted by entity writes,
-legacy ends read through relationships, and inverse references; it replaces DD-053.
+`RelationshipREST`, and the deletion of an entity's relationships. 3.1b ports relationship attributes of entities:
+`relationshipAttributes` in reads, relationships created, changed and deleted by entity writes, legacy ends read
+through relationships, and inverse references; it replaces DD-053.
 
 **Reason.** Together they are two to three times the size an increment may have (ADR 051).
 
 **Alternatives.** One increment: one pull request far above the limit.
 
-**Consequences.** Until 3.1b, entities read with empty relationship attributes (DD-050) even when
-relationships created over `RelationshipREST` name them.
+**Consequences.** Until 3.1b, entities read with empty relationship attributes (DD-050) even when relationships
+created over `RelationshipREST` name them.
 
 ### DD-064. Relationship attribute values are relationships
 
@@ -1526,8 +1521,8 @@ written through an entity and one written through `RelationshipREST` the same.
 **Alternatives.** Keeping legacy ends as attribute values as well: two copies of every such reference, which
 every relationship write would have to keep equal.
 
-**Consequences.** DV-18 and DV-22 end. Plain references, those of attributes that are no relationship end,
-stay attribute values (DD-049).
+**Consequences.** DV-18 and DV-22 end. Plain references, those of attributes that are no relationship end, stay
+attribute values (DD-049).
 
 ### DD-065. A relationship keeps one array index, the last writer's
 
@@ -1539,13 +1534,13 @@ stay attribute values (DD-049).
 write of an array relationship attribute gave it, at either end. An array of relationships reads in the order
 of their indices when the first has one, else in the order the entity lists them.
 
-**Reason.** Atlas stores the position on the edge, so both ends of a `LIST`-to-`LIST` relationship share it;
-one field reproduces what Atlas reads, its quirks included.
+**Reason.** Atlas stores the position on the edge, so both ends of a `LIST`-to-`LIST` relationship share it; one
+field reproduces what Atlas reads, its quirks included.
 
 **Alternatives.** A position per end: an order Atlas does not keep.
 
-**Consequences.** An array whose elements are also in an array at the other end may read in another order
-after the other end is written, as in Atlas.
+**Consequences.** An array whose elements are also in an array at the other end may read in another order after
+the other end is written, as in Atlas.
 
 ### DD-066. Relationship attributes are mapped in memory and written with the entities
 
@@ -1558,8 +1553,8 @@ discovered: it reads the relationships the entities list as it needs them, keeps
 and removes, and the changes to the ends' lists, and the writer writes them with the entities in the one write
 of DD-052 and DD-062. A relationship between two entities is looked for among the relationships both list.
 
-**Reason.** A request is all or nothing (DD-052), and the lists on both ends (DD-061) make the relationships
-of an entity, and those between two, readable by id without a search.
+**Reason.** A request is all or nothing (DD-052), and the lists on both ends (DD-061) make the relationships of
+an entity, and those between two, readable by id without a search.
 
 **Alternatives.** Writing each relationship as it is mapped: a failing request would leave some behind.
 
@@ -1589,12 +1584,11 @@ deleted.
 - **Increment:** 3.2
 - **Date:** 2026-10-22
 
-**Decision.** After a write request is mapped (DD-052, DD-066), the owned entities it dropped are deleted by
-the delete handlers of 2.5, reading through `TransactionView`: the entity store as the request has changed it,
-its changed entities and relationships read as changed, the relationships it removed gone, and the entities
-referring to a deleted one found by the search of DD-057 and checked against their changed references. The
-deletes' changes replace the request's own for the same documents, and everything is written in the request's
-one write.
+**Decision.** After a write request is mapped (DD-052, DD-066), the owned entities it dropped are deleted by the
+delete handlers of 2.5, reading through `TransactionView`: the entity store as the request has changed it, its
+changed entities and relationships read as changed, the relationships it removed gone, and the entities referring
+to a deleted one found by the search of DD-057 and checked against their changed references. The deletes' changes
+replace the request's own for the same documents, and everything is written in the request's one write.
 
 **Reason.** Atlas deletes them inside the update's transaction, after the update's own edge changes; the view
 gives the handlers that state without a second write, so the request stays all or nothing.
@@ -1620,8 +1614,8 @@ edge is deleted too.
 
 **Alternatives.** A state per stored reference: rejected with DD-058.
 
-**Consequences.** An entity deleted without its owner, its owner's entry kept by the soft delete, is revived
-by the owner's next update that keeps the entry, as in Atlas.
+**Consequences.** An entity deleted without its owner, its owner's entry kept by the soft delete, is revived by
+the owner's next update that keeps the entry, as in Atlas.
 
 ### DD-070. Classification instances are documents of their own index, listed by their entity
 
