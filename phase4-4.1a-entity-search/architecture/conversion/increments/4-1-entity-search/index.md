@@ -1,7 +1,7 @@
 # 4.1a Entity search
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#140](<https://github.com/aureliusenterprise/aurelius-atlas/pull/140>)
 - **Records:** DD-087 to DD-089, DV-43 to DV-46; relies on DD-043, DD-055
 
 The first part of increment 4.1 (DD-087): basic search for entities by type, attribute filters, state, sort and paging, as Atlas's `EntityDiscoveryService.searchWithParameters` answers it with an `EntitySearchProcessor`. Entity attributes are indexed for it in typed search fields named after the type that defines them (DD-088). 4.1b adds classification search.
