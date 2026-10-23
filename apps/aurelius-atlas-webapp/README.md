@@ -34,7 +34,9 @@ The increment ledger for this track is the 7.x series:
   `otelExporterUrl` (`/otel/v1/traces`), uncaught errors recorded as span
   events, and `traceparent` propagated on HTTP calls — all through
   `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
-  clickstream paths (DD-040)
+  clickstream paths (DD-040). Exports carry the signed-in user's Keycloak
+  token (DD-103): the collector's browser leg validates it via OIDC, so
+  telemetry is attributed; logged-out pushes are rejected (accepted loss)
 
 Not wired yet by design: the navbar's search bar and nav buttons (7.4, DD-051),
 and server-side token verification (6.1 — the bearer token rides from day one

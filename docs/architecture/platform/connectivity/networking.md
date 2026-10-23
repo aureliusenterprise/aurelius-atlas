@@ -18,7 +18,9 @@ The production topology is the deployment arrangement's subject —
 - **The catalogue service reaches the store and the signal collector; browsers reach the
   catalogue service** for the API and the UI, **and the identity provider** for sign-in. Nothing
   else needs a path: the store serves only the catalogue service, and the collector receives
-  signals without the system calling back through it.
+  signals without the system calling back through it. Reaching the collector's ingest ports is
+  not enough to write to them — the browser leg accepts only Keycloak user tokens, the service
+  leg only the shared ingest token (DD-103).
 
 ## Development and CI
 

@@ -1,0 +1,38 @@
+<!--
+    The sticky up-dropdown shell (UIC-18): Bulma's CSS opens the menu on
+    `is-active`, the toggle owns the state. Items are projected — the
+    app's directive wires their anchors (DD-101). The legacy menu-label
+    was a scroll-to-top anchor under that same directive; the shell
+    renders the label as text, and the app adds its own anchors as items.
+-->
+<div class="details-navigation">
+    <div class="box is-paddingless">
+        <div class="dropdown is-up is-right" [class.is-active]="isOpen()">
+            <div class="dropdown-trigger">
+                <button
+                    class="button is-text is-large"
+                    type="button"
+                    [attr.aria-label]="toggleLabel()"
+                    [attr.aria-expanded]="isOpen()"
+                    (click)="onToggleClick($event)"
+                >
+                    <span class="icon has-text-link">
+                        <fa-icon [icon]="toggleIcon()"></fa-icon>
+                    </span>
+                </button>
+            </div>
+            <div class="dropdown-menu" role="menu">
+                <div class="dropdown-content">
+                    <div class="dropdown-item">
+                        <nav class="menu">
+                            <p class="menu-label">{{ label() }}</p>
+                            <ul class="menu-list">
+                                <ng-content></ng-content>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

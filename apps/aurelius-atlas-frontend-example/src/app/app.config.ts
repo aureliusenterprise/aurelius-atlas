@@ -2,6 +2,8 @@ import { provideHttpClient, withInterceptors, withXhr } from "@angular/common/ht
 import {
     ApplicationConfig,
     ErrorHandler,
+    inject,
+    provideAppInitializer,
     provideBrowserGlobalErrorListeners,
     provideZonelessChangeDetection,
 } from "@angular/core";
@@ -12,6 +14,7 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import {
     AureliusTraceErrorHandler,
     aureliusOpenTelemetryHttpInterceptor,
+    createAureliusOtelIngestAuth,
     createAureliusSessionResource,
     provideAureliusOpenTelemetry,
     provideAureliusOpenTelemetryMetrics,
@@ -21,6 +24,7 @@ import {
     includeBearerTokenInterceptor,
     provideKeycloak,
 } from "keycloak-angular";
+import Keycloak from "keycloak-js";
 import { AppConfig, parseAppConfig } from "./config";
 import { routes } from "./routes";
 
@@ -58,6 +62,12 @@ export function metricsUrl(config: AppConfig): string {
 export async function initialize(): Promise<ApplicationConfig> {
     const config = await loadConfig();
     const sessionResource = createAureliusSessionResource();
+    // The OTLP credential seam (DD-103, aurelius-atlas-observability): the
+    // exporters read the user's token through its headers factory, lazily —
+    // per export, from the live Keycloak client the initializer below
+    // attaches. No ordering is read into that attach: the factory resolves
+    // the token at export time, when check-sso has long settled.
+    const ingestAuth = createAureliusOtelIngestAuth();
 
     return {
         providers: [
@@ -69,6 +79,10 @@ export async function initialize(): Promise<ApplicationConfig> {
             provideAureliusOpenTelemetry({
                 exporter: new OTLPTraceExporter({
                     url: config.otelExporterUrl,
+                    // The user token rides every push (DD-103): the OTLP
+                    // leg is outside HttpClient, so the bearer interceptor
+                    // below cannot cover it.
+                    headers: ingestAuth.headers,
                 }),
                 name: "aurelius-atlas-frontend-example",
                 resource: sessionResource,
@@ -76,6 +90,7 @@ export async function initialize(): Promise<ApplicationConfig> {
             provideAureliusOpenTelemetryMetrics({
                 exporter: new OTLPMetricExporter({
                     url: metricsUrl(config),
+                    headers: ingestAuth.headers,
                 }),
                 name: "aurelius-atlas-frontend-example",
                 resource: sessionResource,
@@ -88,6 +103,10 @@ export async function initialize(): Promise<ApplicationConfig> {
                     silentCheckSsoRedirectUri: globalThis.location.origin + "/silent-check-sso.html",
                 },
             }),
+            // The seam's other end (DD-103, CIA-02): the live Keycloak
+            // client — the same DI instance the bearer interceptor reads —
+            // into the headers factory.
+            provideAppInitializer(() => ingestAuth.attach(inject(Keycloak))),
             {
                 provide: INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
                 useValue: [{ urlPattern: /^.*\/api\/.*$/ }],

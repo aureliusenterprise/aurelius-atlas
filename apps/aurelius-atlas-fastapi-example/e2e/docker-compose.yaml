@@ -32,8 +32,14 @@ services:
             AURELIUS_ATLAS_FASTAPI_DATABASE_SSLMODE: verify-full
             AURELIUS_ATLAS_FASTAPI_DATABASE_SSLROOTCERT: /certs/ca.pem
             AURELIUS_ATLAS_FASTAPI_LOG_LEVEL: ${AURELIUS_ATLAS_FASTAPI_LOG_LEVEL:?}
-            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
+            # The legacy leg (DD-107, CIA-10): the logfire SDK attaches its
+            # bearer statically from OTEL_EXPORTER_OTLP_HEADERS and cannot
+            # refresh (the dev realm's tokens live 60s), so this producer
+            # keeps the shared ingest token — and the per-service leg (4319)
+            # is OIDC-only now and would answer it 401 (CIA-08).
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4321
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
             # Same reasoning as the app .env: the 60s default push means a
             # ~35s e2e run flushes once (on shutdown), so the counters enter
             # Prometheus already-final and the RED panels stay flat. Pushing
@@ -44,11 +50,13 @@ services:
             # Healthcheck CA for verifying the served certificate (dev CA).
             AURELIUS_ATLAS_FASTAPI_TLS_CA_FILE: /certs/ca.pem
         networks:
+            # The collector answers as `otel-collector` on this network — the
+            # name in its certificate. Its publishes are loopback-pinned
+            # (CIA-03), so a host-gateway extra_host would not reach it.
             - aurelius-atlas-dev-observability-network
             - aurelius-atlas-dev-postgres-network
         extra_hosts:
             - keycloak.localhost:host-gateway
-            - otel-collector:host-gateway
         ports:
             - 8000
         volumes:

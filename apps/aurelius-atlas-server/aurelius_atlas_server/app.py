@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
+from aurelius_atlas_server.otel_ingest import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline
 from aurelius_atlas_server.routes import ADMIN, TYPES
 from aurelius_atlas_server.settings import ServerSettings
 
@@ -88,13 +89,50 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
 
+    # Telemetry (SHL-14, DD-107): the console is logfire's; the OTLP export
+    # is the app's own pipeline when the ingest credential is configured —
+    # exporters whose session injects a fresh client-credentials JWT per
+    # export (the collector's per-service leg, CIA-07). Unset settings mean
+    # console-only: logfire's env-driven OTLP export is not used, so a
+    # server without an ingest identity exports nothing (DD-107).
+    ingest = _ingest_pipeline(settings)
     logfire.configure(
         send_to_logfire=False,
         service_name=NAME,
         service_version=app.version,
         min_level=settings.log_level,
         console=logfire.ConsoleOptions(min_log_level=settings.log_level),
+        **(
+            {
+                "additional_span_processors": [ingest[0]],
+                "metrics": logfire.MetricsOptions(
+                    additional_readers=[ingest[1]],
+                ),
+            }
+            if ingest is not None
+            else {}
+        ),
     )
     logfire.instrument_fastapi(app)
     LOGGER.setLevel(settings.log_level.upper())
     return app
+
+
+def _ingest_pipeline(settings: ServerSettings) -> IngestPipeline | None:
+    """The app-owned OTLP export for the per-service ingest leg (7.18, DD-107).
+
+    None when the ingest credential is not configured (console-only telemetry).
+
+    :param settings: the server settings
+    :returns: (span processor, metric reader) or None
+    """
+    if settings.otel_token_url is None or settings.otel_client_secret is None:
+        return None
+    source = ClientCredentialsTokenSource(
+        token_url=str(settings.otel_token_url),
+        client_id=settings.otel_client_id,
+        client_secret=settings.otel_client_secret.get_secret_value(),
+        ca_file=str(settings.otel_ca_file) if settings.otel_ca_file else None,
+    )
+    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
+    return build_otlp_pipeline(settings.otel_endpoint, ca_file, source)

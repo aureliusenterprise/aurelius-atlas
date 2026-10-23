@@ -28,10 +28,32 @@ processors:
 exporters:
     otlp:
         endpoint: https://otel-collector:4317
+        # The per-service leg (DD-107, CIA-06): the oidc receiver accepts
+        # only client-credentials JWTs; the oauth2client extension mints
+        # and attaches the bearer per export (the shared-token header of
+        # 7.17 is answered 401 on this leg, CIA-08).
+        auth:
+            authenticator: oauth2client
         tls:
             ca_file: /certs/ca.pem
 
+extensions:
+    # Per-service ingest identity (7.18, DD-107, CIA-07): mints
+    # client-credentials JWTs as the otel-elasticsearch realm client (aud
+    # otel-collector via the otel-ingest default scope), caches and refreshes
+    # ahead of expiry. The token URL is the issuer's plaintext dev listener
+    # (ADR 039's relaxation; the e2e conftest overrides with the TLS :8443
+    # issuer + the CA pin); an empty ca_file = system trust (plaintext).
+    # keycloak.localhost resolves via extra_hosts (host-gateway) in compose.
+    oauth2client:
+        token_url: ${env:OTEL_INGEST_TOKEN_URL}
+        client_id: ${env:OTEL_INGEST_CLIENT_ID}
+        client_secret: ${env:OTEL_INGEST_CLIENT_SECRET}
+        tls:
+            ca_file: ${env:OTEL_INGEST_CA_FILE}
+
 service:
+    extensions: [oauth2client]
     pipelines:
         metrics:
             receivers: [elasticsearch]

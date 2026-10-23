@@ -1,10 +1,25 @@
+import base64
+import json
 import re
+import secrets
 import socket
 import ssl
+import time
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urljoin, urlsplit
 
 import pytest
-from conftest import CA_FILE, Settings
+from conftest import (
+    CA_FILE,
+    COLLECTOR_HOST,
+    COLLECTOR_PORT,
+    LEGACY_PORT,
+    SERVICE_PORT,
+    TEMPO_HOST,
+    TEMPO_PORT,
+    Settings,
+)
+from docker.models.containers import Container
 from playwright.sync_api import Browser, Page, expect
 
 EN_PLACEHOLDER = (
@@ -133,12 +148,32 @@ def test__unauthenticated_visit_redirects_to_keycloak(page: Page, base_url: str)
     expect(page.locator("#username")).to_be_visible()
 
 
-def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str) -> None:
-    """The nginx /otel/ proxy forwards to the collector with the prefix stripped (SHL-11).
+def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_token: str) -> None:
+    """The nginx /otel/ proxy forwards to the collector with the prefix stripped (SHL-11, CIA-02).
 
     An OTLP/HTTP POST to the collector answers at /v1/traces with a
     protobuf-level status; if the proxy did not forward, nginx would answer
-    502 (unresolvable upstream) or 404 (no location).
+    502 (unresolvable upstream) or 404 (no location). The collector's browser
+    leg demands the signed-in user's token (DD-103) and the proxy passes the
+    Authorization header through untouched — reaching the collector (any of
+    those statuses, never 401) proves the passthrough.
+    """
+    response = page.request.post(
+        urljoin(root_url, "/otel/v1/traces"),
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {user_token}"},
+    )
+
+    assert response.status in (200, 202, 400, 415)
+
+
+def test__otel_proxy_passes_authorization_through(page: Page, root_url: str) -> None:
+    """The /otel/ proxy injects nothing: a token-less push is the collector's 401 (CIA-01, CIA-02).
+
+    The browser leg authenticates the user (DD-103), so a push without a
+    bearer rides the proxy all the way to the OIDC receiver and comes back
+    401 — the proxy is a pipe, not a credential. (The signed-in SPA attaches
+    the user token itself, app.config.ts.)
     """
     response = page.request.post(
         urljoin(root_url, "/otel/v1/traces"),
@@ -146,7 +181,301 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str) -> Non
         headers={"content-type": "application/x-protobuf"},
     )
 
+    assert response.status == 401
+
+
+def test__collector_rejects_unauthenticated_ingest(page: Page) -> None:
+    """The collector's browser leg (OIDC) demands the user's token (CIA-01).
+
+    The direct POST rides the loopback publish (127.0.0.1:4318, the pin CIA-03
+    proves). The CA is the shared dev CA; the context relaxes browser
+    verification (conftest, ADR 039's named relaxation) — the token, not the
+    transport, is what this scenario measures.
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{COLLECTOR_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf"},
+    )
+
+    assert response.status == 401
+
+
+def test__collector_accepts_a_user_token_on_the_browser_leg(page: Page, user_token: str) -> None:
+    """A Keycloak-minted user token authenticates the browser leg (CIA-01, positive control).
+
+    The token carries the otel-collector audience (the realm's otel-ingest
+    scope) and the issuer the receiver validates — an empty protobuf body
+    answers 200 once the OIDC checks pass: "not 401" is the point.
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{COLLECTOR_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {user_token}"},
+    )
+
     assert response.status in (200, 202, 400, 415)
+
+
+def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: str) -> None:
+    """A browser-leg push carries the token's `sub` onto the telemetry (CIA-05, DD-105).
+
+    The collector's OIDC receiver keeps the verified claims in the request
+    context and the resource processor copies ``auth.claims.sub`` to the
+    ``enduser.id`` resource attribute. The probe: mint a user token, decode
+    its ``sub``, push a uniquely-identified span (OTLP/HTTP JSON) through the
+    browser leg, then read the trace back from Tempo and assert its resource
+    carries the ``sub`` — the identity rode the data all the way into the
+    queryable backend (and a forged push is attributable to the minting
+    account, CIA-05's second clause).
+    """
+    claims = json.loads(base64.urlsafe_b64decode(user_token.split(".")[1] + "=="))
+    sub = claims["sub"]
+    trace_id = secrets.token_hex(16)
+    now_ns = time.time_ns()
+    probe = {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [{"key": "service.name", "value": {"stringValue": "e2e-attribution-probe"}}]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {"name": "e2e-attribution-probe"},
+                        "spans": [
+                            {
+                                "traceId": trace_id,
+                                "spanId": secrets.token_hex(8),
+                                "name": "cia-05-attribution-probe",
+                                "kind": 1,
+                                "startTimeUnixNano": str(now_ns - 10**8),
+                                "endTimeUnixNano": str(now_ns),
+                                "attributes": [],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    push = page.request.post(
+        f"https://{COLLECTOR_HOST}:{COLLECTOR_PORT}/v1/traces",
+        data=json.dumps(probe),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert push.status == 200
+
+    # Tempo flushes the live store continuously; poll trace-by-id (the
+    # deterministic read-back: Tempo 3.1's live-store search indexes span
+    # attributes, resource-scope predicates need backend blocks, and the
+    # route is the plural api/traces/ — singular api/trace/ 404s). The
+    # resource attribute is what proves the identity rode the data all the
+    # way into storage.
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
+        fetched = page.request.get(
+            f"http://{TEMPO_HOST}:{TEMPO_PORT}/api/traces/{trace_id}",
+            params={"encoding": "json"},
+        )
+        if fetched.status == 200:
+            attrs: dict[str, str] = {}
+            for line in fetched.text().strip().splitlines():
+                for batch in json.loads(line).get("batches", []):
+                    for attr in batch.get("resource", {}).get("attributes", []):
+                        value = attr.get("value", {})
+                        attrs[attr["key"]] = value.get("stringValue", value.get("intValue", ""))
+            assert attrs.get("enduser.id") == sub, f"probe resource: {attrs}"
+            return
+        time.sleep(3)
+
+    pytest.fail(f"Tempo never returned the probe trace attributed to {sub} — the sub claim was not stamped")
+
+
+def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, ingest_token: str) -> None:
+    """The service credential does not open the browser leg (CIA-01).
+
+    The legs are distinct proofs (DD-103): the shared ingest token is not a
+    JWT the OIDC receiver can verify, so the push is 401 — attribution comes
+    from user tokens only, and a leaked service secret cannot forge
+    user-attributed telemetry.
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{COLLECTOR_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {ingest_token}"},
+    )
+
+    assert response.status == 401
+
+
+def test__collector_rejects_the_shared_token_on_the_service_leg(page: Page, ingest_token: str) -> None:
+    """The shared token does not open the per-service leg (CIA-06, CIA-08).
+
+    The per-service leg (4319) is an OIDC receiver now (DD-107): the shared
+    ingest token is not a JWT the extension can verify, so the push is 401 —
+    the legs are credential-typed, and a leaked shared secret can no longer
+    write anonymous telemetry.
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{SERVICE_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {ingest_token}"},
+    )
+
+    assert response.status == 401
+
+
+def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: str) -> None:
+    """A Keycloak JWT does not open the legacy leg (CIA-08).
+
+    The legacy leg (4321) is bearertokenauth: a service JWT is not the
+    shared token it compares against, so the push is 401. Credential-typed
+    in both directions — no bearer works on both legs.
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{LEGACY_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {service_token}"},
+    )
+
+    assert response.status == 401
+
+
+def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> None:
+    """A client-credentials JWT authenticates the per-service leg, stamped by client (CIA-06, CIA-07, CIA-09).
+
+    The probe mirrors the browser-leg stamping test with the machine
+    credential: mint a client-credentials token for the otel-atlas-server
+    realm client (the grant the graduated producers present), push a
+    uniquely-identified span to 4319 (200 — the OIDC receiver accepts
+    service accounts on the same issuer/audience as users), then read the
+    trace back from Tempo. The resource must carry
+    ``otel.ingest.client=otel-atlas-server`` (the azp claim, CIA-09) and an
+    empty ``enduser.id`` (transform/identity clears the service-account
+    sub — machine pushes do not wear a user identity).
+    """
+    trace_id = secrets.token_hex(16)
+    now_ns = time.time_ns()
+    probe = {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [{"key": "service.name", "value": {"stringValue": "e2e-service-identity-probe"}}]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {"name": "e2e-service-identity-probe"},
+                        "spans": [
+                            {
+                                "traceId": trace_id,
+                                "spanId": secrets.token_hex(8),
+                                "name": "cia-09-service-identity-probe",
+                                "kind": 1,
+                                "startTimeUnixNano": str(now_ns - 10**8),
+                                "endTimeUnixNano": str(now_ns),
+                                "attributes": [],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    push = page.request.post(
+        f"https://{COLLECTOR_HOST}:{SERVICE_PORT}/v1/traces",
+        data=json.dumps(probe),
+        headers={"content-type": "application/json", "authorization": f"Bearer {service_token}"},
+    )
+    assert push.status == 200
+
+    # Tempo read-back by trace id (the deterministic route; see the user
+    # stamping test for the api/traces/ + encoding=json pattern). The
+    # resource attributes prove both halves of CIA-09: the client stamp
+    # rode the verified azp, the human-identity slot stays empty.
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
+        fetched = page.request.get(
+            f"http://{TEMPO_HOST}:{TEMPO_PORT}/api/traces/{trace_id}",
+            params={"encoding": "json"},
+        )
+        if fetched.status == 200:
+            attrs: dict[str, str] = {}
+            for line in fetched.text().strip().splitlines():
+                for batch in json.loads(line).get("batches", []):
+                    for attr in batch.get("resource", {}).get("attributes", []):
+                        value = attr.get("value", {})
+                        attrs[attr["key"]] = value.get("stringValue", value.get("intValue", ""))
+            assert attrs.get("otel.ingest.client") == "otel-atlas-server", f"probe resource: {attrs}"
+            assert attrs.get("enduser.id") == "", f"probe resource: {attrs}"
+            return
+        time.sleep(3)
+
+    pytest.fail(
+        f"Tempo never returned the probe trace stamped for otel-atlas-server (trace {trace_id}) — azp not stamped"
+    )
+
+
+def test__collector_accepts_the_shared_ingest_token(page: Page, ingest_token: str) -> None:
+    """The legacy leg (4321) accepts the shared ingest token (CIA-10, CIA-04's surviving half).
+
+    The producers that cannot present a Keycloak JWT — Keycloak's native
+    OTLP, the FastAPI example (static-header SDK, 60s tokens) — keep 7.17's
+    shared-token mechanism here (DD-107); an empty protobuf body answers 200
+    once authenticated. (The 7.17 form of this test rode 4319, which is
+    OIDC-only now — CIA-08 moves the shared token off it, proved by
+    test__collector_rejects_the_shared_token_on_the_service_leg.)
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{LEGACY_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {ingest_token}"},
+    )
+
+    assert response.status in (200, 202, 400, 415)
+
+
+def test__collector_publishes_are_loopback_pinned(collector_container: Container) -> None:
+    """The collector's host publishes bind 127.0.0.1, and the exporter has none (CIA-03).
+
+    Reading the running container's port bindings (not the compose file) is
+    what proves the deployed posture: the OTLP ports — the browser leg, the
+    per-service leg, and 7.18's legacy leg (4317-4321, CIA-10) — are
+    reachable from this machine only, and the prometheus exporter (:9464) is
+    not published at all — Prometheus scrapes it inside the compose network.
+    """
+    collector_container.reload()
+    ports = collector_container.attrs["NetworkSettings"]["Ports"]
+
+    published = {port: bindings for port, bindings in ports.items() if bindings}
+    assert set(published) == {"4317/tcp", "4318/tcp", "4319/tcp", "4320/tcp", "4321/tcp"}
+    assert all(binding["HostIp"] == "127.0.0.1" for bindings in published.values() for binding in bindings)
+
+
+def test__producers_keep_flowing_with_the_token(collector_container: Container) -> None:
+    """Every producer keeps exporting on its leg (CIA-07, CIA-10).
+
+    The collector's debug exporter logs every accepted push (verbosity basic:
+    one ``Traces``/``Metrics`` info line per export, ``otelcol.component.kind``
+    exporter). The e2e stack runs the graduated producers (the pullers on
+    their oauth2client JWTs, the atlas-server through its refresh shim) on
+    the per-service leg and the legacy producers (Keycloak-native, the
+    FastAPI example) on the shared-token leg, so accepted exports within the
+    last two minutes prove both credential kinds are presented correctly:
+    the ingest is all-or-nothing, a producer with a broken credential lands
+    in the receiver's rejected 401/Unauthenticated path and exports nothing.
+    """
+    since = datetime.now(UTC) - timedelta(seconds=120)
+
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        logs = collector_container.logs(since=since, tail=2000).decode()
+        if '"otelcol.component.kind": "exporter"' in logs:
+            return
+        time.sleep(3)
+
+    pytest.fail("no accepted OTLP export reached the collector — a producer lost the ingest token")
 
 
 def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
@@ -219,19 +548,29 @@ def test__navbar_greets_the_signed_in_user(authenticated: Page) -> None:
     expect(welcome).to_have_text("Logged in as aurelius-writer")
 
 
-def test__language_dropdown_navigates_to_the_dutch_build(authenticated: Page) -> None:
-    """Choosing nl-NL in the language dropdown lands on the Dutch bundle (SHC-04, SHC-09).
+def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Page) -> None:
+    """Choosing nl-NL in the settings panel lands on the Dutch bundle (SHC-04, SPL-06, SHC-09).
 
-    A real click on the dropdown item, not a hand-written URL: the href the
-    header computes (locale prefix swap) and the nginx locale tree are
-    exercised together.
+    The navbar's language dropdown moved into the settings panel (7.14,
+    SPL-06): the gear opens the drawer, the panel's link is a full-page
+    navigation. A real click, not a hand-written URL: the href the panel
+    computes (locale prefix swap) and the nginx locale tree are exercised
+    together.
     """
-    dropdown = authenticated.locator(".navbar-item.has-dropdown").filter(has_text="Your language is")
-    dropdown.hover()
-    dropdown.locator('a[hreflang="nl-NL"]').click()
+    gear = authenticated.locator('a.navbar-item[aria-label="Settings"]')
+    gear.click()
+    # The panel host's box is zero — the drawer's plate is position:fixed
+    # inside it — so visibility is asserted on the plate, the visible part.
+    panel = authenticated.locator(".aurelius-drawer-panel")
+    expect(panel).to_be_visible()
 
-    authenticated.wait_for_url(re.compile(r"/nl-NL/search/browse$"))
-    expect(authenticated.locator("#browse-placeholder")).to_have_text(NL_PLACEHOLDER)
+    panel.locator('a[hreflang="nl-NL"]').click()
+
+    # The drawer segment rides the URL through the locale reload (DD-078's
+    # URL-borne open state): match the locale tree prefix, not the tail.
+    authenticated.wait_for_url(re.compile(r"/nl-NL/search/browse"))
+    card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
+    expect(card_titles).to_have_text(["Business context", "Technische context", "Data governance organisatie"])
 
 
 def test__footer_shows_the_runtime_config_values(authenticated: Page) -> None:
@@ -311,13 +650,17 @@ def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
     assert authenticated.locator("p.title.is-4").first.evaluate(css) == "24px 27px 600 rgb(54, 54, 54)"
     assert authenticated.locator("h6.title.is-6").first.evaluate(css) == "16px 18px 600 rgb(54, 54, 54)"
 
-    # The navbar chrome: links in the body ink, the locale <strong> bold in
-    # the same ink, dropdown items at Bulma's 14px, buttons at weight 400.
+    # The navbar chrome: links in the body ink, the dropdown items at
+    # Bulma's 14px, buttons at weight 400. The locale <strong> the demo
+    # measured (700/#4a4a4a) left the navbar with the language dropdown
+    # (7.14); its DD-062 pin — the legacy strong weight — is asserted on
+    # the :root token the ramp rides.
     assert authenticated.locator(".navbar-link").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
-    strong = authenticated.locator(".navbar strong").first
+    strong_weight = authenticated.evaluate(
+        "() => getComputedStyle(document.documentElement).getPropertyValue('--bulma-strong-weight').trim()"
+    )
 
-    assert strong.evaluate("el => getComputedStyle(el).fontWeight") == "700"
-    assert strong.evaluate("el => getComputedStyle(el).color") == "rgb(74, 74, 74)"
+    assert strong_weight == "700"
     assert authenticated.locator(".navbar-end .button").first.evaluate(css) == "16px 24px 400 rgb(54, 54, 54)"
     assert authenticated.locator(".navbar-dropdown .navbar-item").first.evaluate(css).startswith("14px ")
 
@@ -486,14 +829,19 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
         band = page.locator(".is-tall-container")
         footer = page.locator("footer.footer")
 
+        # The band is the scheme-following surface (DD-079, `.has-background`):
+        # under the light pin it is Bulma 1's light scheme-bis — the legacy
+        # #f5f5f5 band is the navbar's (SHM-04), the content band follows the
+        # scheme (rgb(243, 244, 246) = hsl(221, 14%, 96%)).
         band_bg = band.evaluate("el => getComputedStyle(el).backgroundColor")
         band_tokens = band.evaluate(
             "el => { const cs = getComputedStyle(el);"
-            "return ['--bulma-light-h', '--bulma-light-s', '--bulma-light-l', '--bulma-scheme-main']"
-            ".map(t => t + '=' + cs.getPropertyValue(t)).join(' | '); }"
+            "const get = (t) => t === 'data-theme' ? document.documentElement.dataset.theme : cs.getPropertyValue(t);"
+            "return ['data-theme', '--bulma-scheme-main', '--bulma-scheme-main-bis']"
+            ".map(t => t + '=' + get(t)).join(' | '); }"
         )
 
-        assert band_bg == "rgb(245, 245, 245)", f"band bg {band_bg}; tokens: {band_tokens}"
+        assert band_bg == "rgb(243, 244, 246)", f"band bg {band_bg}; tokens: {band_tokens}"
         assert footer.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(0, 115, 221)"
     finally:
         context.close()
