@@ -18,10 +18,10 @@ from aurelius_atlas_typesystem.map_type import MapType
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_retriever import SOFT_REFERENCE_SEPARATOR
-from aurelius_atlas_core.entity_store import ClassificationChange, EntityChange, RelationshipChange
+from aurelius_atlas_core.entity_store import ClassificationChange, EntityChange, RelationshipChange, TaskChange
 from aurelius_atlas_core.graph_helper import collection_elements, edge_for_label
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.tag_propagation import TagPropagation
+from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
 from aurelius_atlas_core.transaction_view import EntityView
 
 UNSET_REQUIRED = "Cannot unset required attribute {name} on {guid} edge = {label}"
@@ -38,6 +38,7 @@ class Deletion:
     changes: list[EntityChange] = field(default_factory=list)
     relationship_changes: list[RelationshipChange] = field(default_factory=list)
     classification_changes: list[ClassificationChange] = field(default_factory=list)
+    task_changes: list[TaskChange] = field(default_factory=list)
 
     def change(self, guid: str) -> int | None:
         """The index of the change of entity ``guid``, or None."""
@@ -49,11 +50,15 @@ class DeleteHandler:
 
     soft = True
 
-    def __init__(self, store: EntityView, *, now: int, user: str | None, purge: bool = False) -> None:
+    def __init__(
+        self, store: EntityView, *, now: int, user: str | None, purge: bool = False, deferral: Deferral | None = None
+    ) -> None:
         self.store = store
         self.now = now
         self.user = user
         self.purge = purge
+        self.deferral = deferral
+        """Propagation deferred to tasks, recorded in the deletion (TSK-02)."""
 
     def _delete_vertex(self, stored: StoredEntity) -> StoredEntity | None:
         """``_deleteVertex``: the entity's state after the delete, or None when it is removed."""
@@ -74,10 +79,11 @@ class DeleteHandler:
             entity_type = self._entity_type(found.entity)
             after = None if entity_type.is_internal else self._delete_vertex(found.entity)
             deletion.changes.append(EntityChange(after or found.entity, found.version, remove=after is None))
-        propagation = TagPropagation(self.store)
+        propagation = TagPropagation(self.store, deferral=self.deferral)
         await self._relationships(deletion, propagation)
         await self._classifications(deletion, propagation)
         _merge_propagation(deletion, propagation)
+        deletion.task_changes += [TaskChange(task) for task in propagation.tasks()]
         return deletion
 
     async def _classifications(self, deletion: Deletion, propagation: TagPropagation) -> None:
@@ -96,7 +102,7 @@ class DeleteHandler:
                     continue
                 classification = instance.classification
                 if classification.remove_propagations_on_entity_delete is not False:
-                    await propagation.remove_all(classification)
+                    await propagation.withdraw(classification, found.entity.guid)
                 if found.entity.guid not in removed:
                     deleted = classification.model_copy(update={"entity_status": EntityStatus.DELETED})
                     change = ClassificationChange(deleted, instance.version)
@@ -257,7 +263,7 @@ def owned_guids(stored: StoredEntity, entity_type: EntityType) -> list[str]:
 
 
 def _merge_propagation(deletion: Deletion, propagation: TagPropagation) -> None:
-    """The classification lists propagation changed, merged into the deletion's changes of the same entities."""
+    """The classification lists and pending tasks propagation changed, merged into the deletion's own changes."""
     for change in propagation.changed_entities():
         guid = change.entity.guid
         index = deletion.change(guid)
@@ -266,7 +272,6 @@ def _merge_propagation(deletion: Deletion, propagation: TagPropagation) -> None:
             continue
         own = deletion.changes[index]
         if not own.remove:
-            listed = change.entity.classification_guids
-            deletion.changes[index] = EntityChange(
-                own.entity.model_copy(update={"classification_guids": listed}), own.expected, own.remove
-            )
+            update = {"classification_guids": change.entity.classification_guids}
+            update["pending_tasks"] = change.entity.pending_tasks
+            deletion.changes[index] = EntityChange(own.entity.model_copy(update=update), own.expected, own.remove)

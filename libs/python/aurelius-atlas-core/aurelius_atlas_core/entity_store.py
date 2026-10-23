@@ -28,6 +28,7 @@ from aurelius_atlas_core.entity_documents import (
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
+from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_core.unique_key import UniqueKey
 
@@ -101,6 +102,18 @@ class ClassificationChange:
     remove: bool = False
 
 
+@dataclass(frozen=True)
+class TaskChange:
+    """One task of a write: its new state and the version it was read in, or None for a new one (DD-079).
+
+    With ``remove``, the write removes the task, which must have been read.
+    """
+
+    task: StoredTask
+    expected: DocumentVersion | None = None
+    remove: bool = False
+
+
 type _LinkedChanges = dict[LinkedKind, list[tuple[Linked, DocumentVersion | None, bool]]]
 """A write's linked documents by kind: each one's new state, the version it was read in, and whether it goes."""
 
@@ -120,6 +133,8 @@ class EntityStore:
         self._documents = documents
         self._clock = clock
         self._new_id = new_id
+        self.task_listeners: list[Callable[[], None]] = []
+        """Called after a write that recorded tasks, to wake a worker (DD-080)."""
 
     async def prepare(self) -> None:
         """Create the indices that are missing (ENS-01)."""
@@ -185,6 +200,15 @@ class EntityStore:
             if isinstance(document, StoredRelationship)
         }
 
+    async def get_tasks(self, guids: Sequence[str]) -> dict[str, tuple[StoredTask, DocumentVersion]]:
+        """The tasks with these GUIDs that exist, as last written (TSK-06, DD-079)."""
+        found = await self._documents.get_linked(LinkedKind.TASK, list(dict.fromkeys(guids)))
+        return {guid: (task, version) for guid, (task, version) in found.items() if isinstance(task, StoredTask)}
+
+    async def list_tasks(self, *, open_only: bool = False) -> list[tuple[StoredTask, DocumentVersion]]:
+        """Every task, or those ``PENDING`` or ``IN_PROGRESS``, oldest first (TSK-04, TSK-06)."""
+        return await self._documents.list_tasks(open_only=open_only)
+
     async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
         """The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070)."""
         found = await self._documents.get_linked(LinkedKind.CLASSIFICATION, list(dict.fromkeys(guids)))
@@ -199,6 +223,7 @@ class EntityStore:
         changes: Sequence[EntityChange],
         relationship_changes: Sequence[RelationshipChange] = (),
         classification_changes: Sequence[ClassificationChange] = (),
+        task_changes: Sequence[TaskChange] = (),
     ) -> None:
         """Write new, changed and removed entities and the documents they list, all or nothing, through the journal.
 
@@ -211,7 +236,7 @@ class EntityStore:
             EntityWriteError: An entity could not be written; the write was undone.
         """
         write_id = self._new_id()
-        linked = _linked_changes(relationship_changes, classification_changes)
+        linked = _linked_changes(relationship_changes, classification_changes, task_changes)
         _check_removals(changes, linked)
         kept = [change for change in changes if not change.remove]
         removed = [change for change in changes if change.remove]
@@ -261,6 +286,13 @@ class EntityStore:
         for key, guid in released:
             await self._documents.release(key.id, guid)
         await self._documents.delete_journal(write_id)
+        self._notify(task_changes)
+
+    def _notify(self, task_changes: Sequence[TaskChange]) -> None:
+        """Wake the task listeners after a write that recorded new tasks (DD-080)."""
+        if any(change.expected is None and not change.remove for change in task_changes):
+            for listener in self.task_listeners:
+                listener()
 
     async def recover(self) -> int:
         """Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
@@ -408,14 +440,18 @@ def _json_of(found: VersionedEntity | None) -> dict[str, Any] | None:
 
 
 def _linked_changes(
-    relationship_changes: Sequence[RelationshipChange], classification_changes: Sequence[ClassificationChange]
+    relationship_changes: Sequence[RelationshipChange],
+    classification_changes: Sequence[ClassificationChange],
+    task_changes: Sequence[TaskChange],
 ) -> _LinkedChanges:
-    """A write's relationships and classification instances, by kind; kinds without any are left out."""
+    """A write's relationships, classification instances and tasks, by kind; kinds without any are left out."""
     linked: _LinkedChanges = {}
     if relationship_changes:
         linked[LinkedKind.RELATIONSHIP] = [(c.relationship, c.expected, c.remove) for c in relationship_changes]
     if classification_changes:
         linked[LinkedKind.CLASSIFICATION] = [(c.classification, c.expected, c.remove) for c in classification_changes]
+    if task_changes:
+        linked[LinkedKind.TASK] = [(c.task, c.expected, c.remove) for c in task_changes]
     return linked
 
 

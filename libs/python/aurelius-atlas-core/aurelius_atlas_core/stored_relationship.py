@@ -37,6 +37,7 @@ class StoredRelationship(AtlasModel):
     attributes: dict[str, Any] = Field(default_factory=dict)
     index: int | None = None
     blocked_classification_guids: list[str] | None = None
+    pending_tasks: list[str] | None = None
     write_id: str | None = None
 
     def ends(self) -> tuple[str, str]:

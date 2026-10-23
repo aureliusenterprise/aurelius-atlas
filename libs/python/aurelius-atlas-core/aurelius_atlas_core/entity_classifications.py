@@ -6,12 +6,13 @@ does for them, on classification instances of their own index (DD-070), each req
 once after a lost race (DD-052).
 """
 
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasClassification, EntityOperation, EntityStatus
+from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_typesystem.classification_type import ClassificationType
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -25,11 +26,12 @@ from aurelius_atlas_core.entity_store import (
     EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
+    TaskChange,
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.tag_propagation import TagPropagation
+from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
 ATTEMPTS = 2
@@ -49,11 +51,12 @@ ALREADY_ASSOCIATED = "entity: {guid}, already associated with classification: {n
 
 
 class EntityClassifications:
-    """Classifications of the entities of ``store``, changed as ``user``."""
+    """Classifications of the entities of ``store``, changed as ``user``; ``tasks`` defers propagation (TSK-02)."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
+    def __init__(self, store: EntityStore, *, user: str | None = None, tasks: bool = False) -> None:
         self._store = store
         self._user = user
+        self._tasks = tasks
 
     async def get_classifications(self, guid: str) -> list[AtlasClassification]:
         """``getClassifications``: the entity's classifications (CLS-03).
@@ -146,7 +149,7 @@ class EntityClassifications:
             mapper = self._mapper()
             changes: dict[str, ClassificationChange] = {}
             entity = found.entity.touched(now=self._store.now(), user=self._user)
-            propagation = TagPropagation(self._store, entities={guid: (entity, found.version)})
+            propagation = self._propagation({guid: (entity, found.version)})
             for classification in given:
                 name = str(classification.type_name)
                 if not classification.entity_guid:
@@ -160,7 +163,7 @@ class EntityClassifications:
                 stored = changes[current.guid].classification if current.guid in changes else current.classification
                 updated = _updated(mapper, classification_type, classification, stored)
                 changes[current.guid] = ClassificationChange(updated, current.version)
-                await _propagate_change(propagation, guid, stored, updated)
+                await _propagate_change(propagation, guid, stored, updated, given=classification.propagate)
             await self._write_propagated(propagation, [(guid, found.version)], [], list(changes.values()))
 
         await self._run(attempt)
@@ -188,9 +191,11 @@ class EntityClassifications:
             current = next((c for c in direct if c.classification.type_name == name), None)
             if current is None:
                 raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
-            propagation = TagPropagation(self._store, entities={guid: (found.entity, found.version)})
+            propagation = self._propagation({guid: (found.entity, found.version)})
             if current.classification.propagate is not False:
-                await propagation.remove_all(current.classification)
+                if propagation.deferred:
+                    await self._check_no_pending(current.guid, guid)
+                await propagation.withdraw(current.classification, guid)
             entity = propagation.entity(guid) or found.entity
             listed = [listed for listed in entity.classification_guids or [] if listed != current.guid]
             entity = entity.model_copy(update={"classification_guids": listed or None})
@@ -296,7 +301,7 @@ class EntityClassifications:
         """Attach and propagate, entity after entity, as ``addClassifications`` per GUID does (CLS-05, PRO-03)."""
         instances: list[ClassificationChange] = []
         now = self._store.now()
-        propagation = TagPropagation(self._store)
+        propagation = self._propagation()
         own: list[tuple[str, DocumentVersion | None]] = []
         for found, classifications in targets:
             guid = found.entity.guid
@@ -306,11 +311,9 @@ class EntityClassifications:
             own.append((guid, found.version))
             instances += [ClassificationChange(instance) for instance in added]
             propagation.add_instances(added)
-            propagating = [instance for instance in added if instance.propagate]
-            if propagating:
-                reached = await propagation.impacted(guid)
-                for instance in propagating:
-                    await propagation.add(instance, reached)
+            for instance in added:
+                if instance.propagate:
+                    await propagation.propagate(instance, guid)
         await self._write_propagated(propagation, own, [], instances)
 
     async def _write_propagated(
@@ -320,8 +323,35 @@ class EntityClassifications:
         relationships: Sequence[Any],
         instances: Sequence[ClassificationChange],
     ) -> None:
-        """Write the request's own entities as propagation left them, and the others it changed (PRO-10)."""
-        await self._store.write(propagation.entity_changes(guid for guid, _ in own), relationships, instances)
+        """Write the request's own entities as propagation left them, the others it changed and its tasks (PRO-10)."""
+        await self._store.write(
+            propagation.entity_changes(guid for guid, _ in own),
+            relationships,
+            instances,
+            [TaskChange(task) for task in propagation.tasks()],
+        )
+
+    def _propagation(
+        self, entities: Mapping[str, tuple[StoredEntity, DocumentVersion | None]] | None = None
+    ) -> TagPropagation:
+        """Propagation over the request's entities, deferred to tasks when they are enabled (TSK-02, TSK-08)."""
+        deferral = Deferral(self._user, self._store.now(), self._store.new_guid) if self._tasks else None
+        return TagPropagation(self._store, entities=entities, deferral=deferral)
+
+    async def _check_no_pending(self, instance_guid: str, guid: str) -> None:
+        """No ``PENDING`` task names the classification instance and the entity (TSK-03).
+
+        Raises:
+            AtlasError: ``DELETE_TAG_PROPAGATION_NOT_ALLOWED``.
+        """
+        for task, _ in await self._store.list_tasks(open_only=True):
+            parameters = task.parameters or {}
+            if (
+                task.status is TaskStatus.PENDING
+                and parameters.get("classificationVertexId") == instance_guid
+                and parameters.get("entityGuid") == guid
+            ):
+                raise AtlasError(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, instance_guid, guid)
 
     async def _entity(self, guid: str) -> VersionedEntity:
         found = await self._store.get(guid)
@@ -364,15 +394,27 @@ class _Instance:
 
 
 async def _propagate_change(
-    propagation: TagPropagation, guid: str, stored: StoredClassification, updated: StoredClassification
+    propagation: TagPropagation,
+    guid: str,
+    stored: StoredClassification,
+    updated: StoredClassification,
+    *,
+    given: bool | None,
 ) -> None:
-    """``updateClassifications`` on ``propagate``: false to true propagates, true to false removes (PRO-03)."""
+    """``updateClassifications`` on ``propagate``: false to true propagates, true to false removes (PRO-03).
+
+    Deferred, any ``propagate`` given records a task, ``ADD`` for true, ``DELETE`` for false (TSK-02).
+    """
     propagation.add_instances([updated])
+    if propagation.deferred:
+        if given is not None:
+            await (propagation.propagate(updated, guid) if given else propagation.withdraw(updated, guid))
+        return
     was, now = stored.propagate is not False, updated.propagate is not False
     if now and not was:
-        await propagation.add(updated, await propagation.impacted(guid, classification=updated.guid))
+        await propagation.propagate(updated, guid, blocks=True)
     elif was and not now:
-        await propagation.remove_all(updated)
+        await propagation.withdraw(updated, guid)
 
 
 def _direct(instance: _Instance, guid: str) -> bool:

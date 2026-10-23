@@ -63,10 +63,23 @@ def retriever(request: Request, store: EntityStore) -> EntityRetriever:
     )
 
 
+def tasks_enabled(request: Request) -> bool:
+    """Whether propagation is deferred to tasks: the server's ``tasks_enabled`` setting (TSK-02, DD-081)."""
+    return bool(request.app.state.settings.tasks_enabled)
+
+
 def writer(request: Request, store: EntityStore) -> EntityWriter:
-    """A writer deleting as the server's ``delete_type`` setting says unless a request chooses (EDL-04)."""
+    """A writer deleting as the server's ``delete_type`` setting says unless a request chooses (EDL-04).
+
+    Propagation is deferred as ``tasks_enabled`` says.
+    """
     settings = request.app.state.settings
-    return EntityWriter(store, delete_type=DeleteType.of(settings.delete_type))
+    return EntityWriter(store, delete_type=DeleteType.of(settings.delete_type), tasks=tasks_enabled(request))
+
+
+def classifications(request: Request, store: EntityStore) -> EntityClassifications:
+    """Classification changes, propagation deferred as the server's ``tasks_enabled`` setting says (TSK-02)."""
+    return EntityClassifications(store, tasks=tasks_enabled(request))
 
 
 def delete_type(request: Request) -> DeleteType:
@@ -272,17 +285,17 @@ async def get_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
 
 
 @ENTITY.post("")
-async def create_or_update(body: Body, store: Store) -> AtlasJSONResponse:
+async def create_or_update(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``createOrUpdate``: create the entity, and the entities it names, or update them (EWR-02)."""
     entity = model_body(AtlasEntityWithExtInfo, body) or AtlasEntityWithExtInfo()
-    return _json((await EntityWriter(store).create_or_update(entity)).to_json())
+    return _json((await EntityWriter(store, tasks=tasks_enabled(request)).create_or_update(entity)).to_json())
 
 
 @ENTITY.post("/bulk")
-async def create_or_update_bulk(body: Body, store: Store) -> AtlasJSONResponse:
+async def create_or_update_bulk(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``createOrUpdate`` of a bulk request: create or update every entity (EWR-02)."""
     entities = model_body(AtlasEntitiesWithExtInfo, body)
-    return _json((await EntityWriter(store).create_or_update(entities)).to_json())
+    return _json((await EntityWriter(store, tasks=tasks_enabled(request)).create_or_update(entities)).to_json())
 
 
 @ENTITY.put("/uniqueAttribute/type/{type_name}")
@@ -295,7 +308,13 @@ async def partial_update_entity_by_unique_attrs(
     entity_type = ensure_entity_type(store, type_name)
     validate_unique_attributes(entity_type, attributes)
     entity = model_body(AtlasEntityWithExtInfo, body)
-    return _json((await EntityWriter(store).update_by_unique_attributes(entity_type, attributes, entity)).to_json())
+    return _json(
+        (
+            await EntityWriter(store, tasks=tasks_enabled(request)).update_by_unique_attributes(
+                entity_type, attributes, entity
+            )
+        ).to_json()
+    )
 
 
 @ENTITY.put("/guid/{guid}")
@@ -307,7 +326,9 @@ async def partial_update_entity_attr_by_guid(
     name = request.query_params.get("name")
     if name is not None:
         validate_param_length("name", name)
-    return _json((await EntityWriter(store).update_attribute_by_guid(guid, name, body)).to_json())
+    return _json(
+        (await EntityWriter(store, tasks=tasks_enabled(request)).update_attribute_by_guid(guid, name, body)).to_json()
+    )
 
 
 @ENTITY.delete("/guid/{guid}")
@@ -359,15 +380,15 @@ async def add_classifications_by_unique_attribute(
 ) -> Response:
     """``addClassificationsByUniqueAttribute`` (CLS-04 to CLS-06)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await EntityClassifications(store).add_classifications(guid, classifications_body(body))
+    await classifications(request, store).add_classifications(guid, classifications_body(body))
     return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.post("/guid/{guid}/classifications")
-async def add_classifications(guid: str, body: Body, store: Store) -> Response:
+async def add_classifications(guid: str, request: Request, body: Body, store: Store) -> Response:
     """``addClassifications``: attach the classifications to the entity (CLS-04, CLS-05)."""
     validate_param_length("guid", guid)
-    await EntityClassifications(store).add_classifications(guid, classifications_body(body))
+    await classifications(request, store).add_classifications(guid, classifications_body(body))
     return Response(status_code=NO_CONTENT)
 
 
@@ -377,15 +398,15 @@ async def update_classifications_by_unique_attribute(
 ) -> Response:
     """``updateClassificationsByUniqueAttribute`` (CLS-06, CLS-08)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await EntityClassifications(store).update_classifications(guid, classifications_body(body))
+    await classifications(request, store).update_classifications(guid, classifications_body(body))
     return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.put("/guid/{guid}/classifications")
-async def update_classifications(guid: str, body: Body, store: Store) -> Response:
+async def update_classifications(guid: str, request: Request, body: Body, store: Store) -> Response:
     """``updateClassifications``: change the entity's classifications (CLS-08)."""
     validate_param_length("guid", guid)
-    await EntityClassifications(store).update_classifications(guid, classifications_body(body))
+    await classifications(request, store).update_classifications(guid, classifications_body(body))
     return Response(status_code=NO_CONTENT)
 
 
@@ -396,7 +417,7 @@ async def delete_classification_by_unique_attribute(
     """``deleteClassificationByUniqueAttribute`` (CLS-06, CLS-09)."""
     validate_param_length("classificationName", classification_name)
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await EntityClassifications(store).delete_classification(guid, classification_name)
+    await classifications(request, store).delete_classification(guid, classification_name)
     return Response(status_code=NO_CONTENT)
 
 
@@ -409,12 +430,12 @@ async def delete_classification(guid: str, classification_name: str, request: Re
     if associated is not None:
         validate_param_length("associatedEntityGuid", associated)
     ensure_classification_type(store, classification_name)
-    await EntityClassifications(store).delete_classification(guid, classification_name, associated)
+    await classifications(request, store).delete_classification(guid, classification_name, associated)
     return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.post("/bulk/classification")
-async def add_classification(body: Body, store: Store) -> Response:
+async def add_classification(request: Request, body: Body, store: Store) -> Response:
     """``addClassification``: attach one classification to entities by GUID or by unique attributes (CLS-07).
 
     Raises:
@@ -436,18 +457,18 @@ async def add_classification(body: Body, store: Store) -> Response:
                 guids.append(found.entity.guid)
         if not guids:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOUND)
-    await EntityClassifications(store).add_classification(guids, classification)
+    await classifications(request, store).add_classification(guids, classification)
     return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.post("/bulk/setClassifications")
-async def set_classifications(body: Body, store: Store) -> Response:
+async def set_classifications(request: Request, body: Body, store: Store) -> Response:
     """``setClassifications``: each header's entity gets its classifications; a JSON array of summaries (CLA-04).
 
     The array is Java's text, answered as it is; no body answers ``[]`` (DV-36).
     """
     headers = model_body(AtlasEntityHeaders, body)
-    summary = await ClassificationAssociator(store).set_classifications(
+    summary = await ClassificationAssociator(store, tasks=tasks_enabled(request)).set_classifications(
         None if headers is None else headers.guid_header_map
     )
     return Response(content=summary, media_type="application/json")

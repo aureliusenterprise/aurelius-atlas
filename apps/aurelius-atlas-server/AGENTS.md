@@ -12,6 +12,10 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   the models of `models_dir` through `ModelLoader` (MDL-16); `app.state.type_registry` and
   `app.state.typedef_store` hold them. Tests set `models_dir` to an empty directory (`tests/conftest.py`),
   since Atlas's models take seconds to load; only the MDL-16 test loads them
+- `aurelius_atlas_server/task_worker.py` — `TaskWorker`: started by the lifespan when `tasks_enabled`, woken
+  by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
+  server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
+  turns them on and runs on the module loop, where the lifespan started the worker
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point

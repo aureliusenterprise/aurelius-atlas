@@ -33,6 +33,8 @@ Since [3.3b](../../../docs/architecture/conversion/increments/3-3-bulk-classific
 associator behind `bulk/setClassifications`. Since
 [3.4a](../../../docs/architecture/conversion/increments/3-4-classification-propagation.md): classification
 propagation over relationships, computed and written within the request that causes it (DD-075 to DD-077).
+Since [3.4b](../../../docs/architecture/conversion/increments/3-4-propagation-tasks.md): that propagation
+deferred to tasks written with the request, which task management claims and runs (DD-079, DD-080).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -105,6 +107,12 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.classification_associator
 
 ::: aurelius_atlas_core.tag_propagation
+
+::: aurelius_atlas_core.stored_task
+
+::: aurelius_atlas_core.classification_tasks
+
+::: aurelius_atlas_core.task_management
 
 ::: aurelius_atlas_core.stored_relationship
 

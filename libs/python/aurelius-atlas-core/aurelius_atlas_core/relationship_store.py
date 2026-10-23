@@ -29,11 +29,12 @@ from aurelius_atlas_core.entity_store import (
     EntityVersionConflictError,
     EntityWriteError,
     RelationshipChange,
+    TaskChange,
     UniqueValueTakenError,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
-from aurelius_atlas_core.tag_propagation import TagPropagation
+from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
 
 ATTEMPTS = 2
 """A request that loses a race is run once more (DD-052)."""
@@ -45,14 +46,23 @@ _SWAPPED = {PropagateTags.ONE_TO_TWO: PropagateTags.TWO_TO_ONE, PropagateTags.TW
 
 
 class RelationshipStore:
-    """Relationships between entities of ``store``, written as ``user``; ``delete_type`` is the default (EDL-04)."""
+    """Relationships between entities of ``store``, written as ``user``; ``delete_type`` is the default (EDL-04).
+
+    ``tasks`` defers propagation to tasks (TSK-02).
+    """
 
     def __init__(
-        self, store: EntityStore, *, user: str | None = None, delete_type: DeleteType = DeleteType.SOFT
+        self,
+        store: EntityStore,
+        *,
+        user: str | None = None,
+        delete_type: DeleteType = DeleteType.SOFT,
+        tasks: bool = False,
     ) -> None:
         self._store = store
         self._user = user
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
+        self._tasks = tasks
 
     async def create(self, relationship: AtlasRelationship) -> AtlasRelationship:
         """``create``: a new relationship between two entities, unless one with its label joins them (REL-04, REL-05).
@@ -178,11 +188,13 @@ class RelationshipStore:
         )
         ends = {end1.entity.guid: end1, end2.entity.guid: end2}
         propagation = TagPropagation(
-            self._store, entities={guid: (end.entity.listing(stored.guid), end.version) for guid, end in ends.items()}
+            self._store,
+            entities={guid: (end.entity.listing(stored.guid), end.version) for guid, end in ends.items()},
+            deferral=self._deferral(),
         )
         stored = await propagation.handle_blocked(stored, relationship.blocked_propagated_classifications)
-        await propagation.relationship_created(stored)  # PRO-04
-        await self._store.write(propagation.entity_changes(ends), [RelationshipChange(stored)])
+        await propagation.relationship_created(stored)  # PRO-04, TSK-02
+        await self._store.write(propagation.entity_changes(ends), [RelationshipChange(stored)], [], _tasks(propagation))
         return await self._answer(stored)
 
     async def _update(self, relationship: AtlasRelationship) -> AtlasRelationship:
@@ -216,12 +228,23 @@ class RelationshipStore:
         update: dict[str, Any] = {"attributes": _updated_attributes(relationship_type, relationship, stored)}
         if relationship.propagate_tags is not None:
             update["propagate_tags"] = relationship.propagate_tags  # DV-29: none given keeps the stored one
-        propagation = TagPropagation(self._store)
-        changed = await propagation.relationship_updated(  # PRO-05
-            stored, stored.model_copy(update=update), relationship.blocked_propagated_classifications
+        deferral = self._deferral()
+        propagation = TagPropagation(self._store, deferral=deferral)
+        if deferral is None:
+            changed = await propagation.relationship_updated(  # PRO-05
+                stored, stored.model_copy(update=update), relationship.blocked_propagated_classifications
+            )
+        else:
+            given = codec.dumps(relationship).decode()
+            changed = propagation.defer_update(stored, stored.model_copy(update=update), given)  # TSK-02
+        await self._store.write(
+            propagation.entity_changes([]), [RelationshipChange(changed, found.version)], [], _tasks(propagation)
         )
-        await self._store.write(propagation.entity_changes([]), [RelationshipChange(changed, found.version)])
         return await self._answer(changed)
+
+    def _deferral(self) -> Deferral | None:
+        """Tasks for propagation, recorded by the store's user now, when they are enabled (TSK-02, TSK-08)."""
+        return Deferral(self._user, self._store.now(), self._store.new_guid) if self._tasks else None
 
     async def _check_end_unchanged(self, given: AtlasObjectId | None, current: str, stored: StoredRelationship) -> None:
         """An end may not change; one given by unique attributes alone always fails, as Atlas compares GUIDs."""
@@ -275,6 +298,10 @@ class RelationshipStore:
             (blocked if classification.guid in (stored.blocked_classification_guids or []) else propagated).append(read)
         answer.propagated_classifications, answer.blocked_propagated_classifications = propagated, blocked  # PRO-09
         return answer
+
+
+def _tasks(propagation: TagPropagation) -> list[TaskChange]:
+    return [TaskChange(task) for task in propagation.tasks()]
 
 
 def validate_relationship(

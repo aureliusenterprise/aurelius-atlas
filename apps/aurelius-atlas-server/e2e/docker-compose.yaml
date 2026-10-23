@@ -7,6 +7,8 @@ services:
             # ${VAR:?} guards: Nx injects the project .env into the task environment; a missing value
             # would otherwise only show as a settings error inside the started container.
             AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            # The scenarios check what propagation produces, so it happens in the request (DD-081).
+            AURELIUS_ATLAS_SERVER_TASKS_ENABLED: "false"
             # The dev store, reached on its network by its service name (in its certificate).
             AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
             AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}

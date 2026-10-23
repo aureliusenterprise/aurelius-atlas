@@ -44,6 +44,7 @@ class StoredEntity(AtlasModel):
     references: list[str] | None = None
     relationship_guids: list[str] | None = None
     classification_guids: list[str] | None = None
+    pending_tasks: list[str] | None = None
     write_id: str | None = None
 
     @classmethod
@@ -145,6 +146,7 @@ class StoredEntity(AtlasModel):
             labels=self.labels or [],
             custom_attributes=self.custom_attributes,
             attributes=attributes,
+            pending_tasks=self.pending_tasks,
         )
 
 

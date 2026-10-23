@@ -7,15 +7,20 @@ from aurelius_atlas_model.instance import AtlasRelationship, AtlasRelationshipWi
 from fastapi import APIRouter, Request, Response
 
 from aurelius_atlas_server.errors import AtlasJSONResponse
-from aurelius_atlas_server.routes.entity import Body, Store, delete_type, flag, model_body
+from aurelius_atlas_server.routes.entity import Body, Store, delete_type, flag, model_body, tasks_enabled
 from aurelius_atlas_server.routes.types import validate_param_length
 
 RELATIONSHIP = APIRouter(prefix="/api/atlas/v2/relationship", tags=["Relationship"])
 
 
 def relationships(request: Request, store: EntityStore) -> RelationshipStore:
-    """A relationship store deleting as the server's ``delete_type`` setting says (EDL-04)."""
-    return RelationshipStore(store, delete_type=DeleteType.of(request.app.state.settings.delete_type))
+    """A relationship store deleting as the server's ``delete_type`` setting says (EDL-04).
+
+    Propagation is deferred as ``tasks_enabled`` says (TSK-02).
+    """
+    return RelationshipStore(
+        store, delete_type=DeleteType.of(request.app.state.settings.delete_type), tasks=tasks_enabled(request)
+    )
 
 
 def relationship_body(body: object) -> AtlasRelationship:
