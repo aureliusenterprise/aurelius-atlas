@@ -4350,6 +4350,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-068. Owned entities an update drops are deleted through a view of the request
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-069. A reference to a deleted entity stands for a deleted edge when reviving
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4429,6 +4451,8 @@
       
         
           
+        
+      
         
       
         
@@ -5110,6 +5134,33 @@
     
   
   3.1b Relationship attributes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-2-ownership-cascades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.2 Ownership cascades
 
     
   </span>
@@ -7685,6 +7736,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-068. Owned entities an update drops are deleted through a view of the request
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-069. A reference to a deleted entity stands for a deleted edge when reviving
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8257,6 +8330,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-067-delete-cascades-follow-owned-relationships-from-31b">DD-067</a></td>
 <td>Delete cascades follow owned relationships from 3.1b</td>
 <td>3.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request">DD-068</a></td>
+<td>Owned entities an update drops are deleted through a view of the request</td>
+<td>3.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving">DD-069</a></td>
+<td>A reference to a deleted entity stands for a deleted edge when reviving</td>
+<td>3.2</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -9461,6 +9546,37 @@ relationship attributes, from 3.1b rather than 3.2. 3.2 keeps the owned entities
 <p><strong>Alternatives.</strong> Leaving it to 3.2: deletes between 3.1b and 3.2 would leave owned entities behind that 2.5
 deleted.</p>
 <p><strong>Consequences.</strong> 3.2's roadmap row narrows to the owned entities an update drops (DV-31).</p>
+<h3 id="dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request">DD-068. Owned entities an update drops are deleted through a view of the request<a class="headerlink" href="#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.2</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> After a write request is mapped (DD-052, DD-066), the owned entities it dropped are deleted by the
+delete handlers of 2.5, reading through <code>TransactionView</code>: the entity store as the request has changed it, its
+changed entities and relationships read as changed, the relationships it removed gone, and the entities referring
+to a deleted one found by the search of DD-057 and checked against their changed references. The deletes' changes
+replace the request's own for the same documents, and everything is written in the request's one write.</p>
+<p><strong>Reason.</strong> Atlas deletes them inside the update's transaction, after the update's own edge changes; the view
+gives the handlers that state without a second write, so the request stays all or nothing.</p>
+<p><strong>Alternatives.</strong> Deleting them in a second write after the update: simpler, but an update could then succeed
+while the deletes fail, which Atlas never shows.</p>
+<p><strong>Consequences.</strong> The delete handlers read the store through a protocol (<code>EntityView</code>) that both <code>EntityStore</code>
+and <code>TransactionView</code> answer.</p>
+<h3 id="dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving">DD-069. A reference to a deleted entity stands for a deleted edge when reviving<a class="headerlink" href="#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.2</li>
+<li><strong>Date:</strong> 2026-10-22</li>
+</ul>
+<p><strong>Decision.</strong> <code>updateInConsistentOwnedMapVertices</code> revives an owned map entry whose edge and entity are both
+<code>DELETED</code>; a stored plain reference has no state (DD-058), so an entry that keeps naming a <code>DELETED</code> entity is
+taken as one with a deleted edge, and the entity becomes <code>ACTIVE</code> again.</p>
+<p><strong>Reason.</strong> Atlas soft-deletes the edges to an entity with it, so a <code>DELETED</code> entity is the case in which its
+edge is deleted too.</p>
+<p><strong>Alternatives.</strong> A state per stored reference: rejected with DD-058.</p>
+<p><strong>Consequences.</strong> An entity deleted without its owner, its owner's entry kept by the soft delete, is revived by
+the owner's next update that keeps the entry, as in Atlas.</p>
 
 
 

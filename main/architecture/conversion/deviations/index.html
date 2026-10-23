@@ -3662,6 +3662,8 @@
       
         
       
+        
+      
     
     
     
@@ -4297,6 +4299,33 @@
     
   
   3.1b Relationship attributes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-2-ownership-cascades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.2 Ownership cascades
 
     
   </span>
@@ -6471,20 +6500,20 @@ Atlas clients expect when it lands).</p>
 <td>3.1</td>
 </tr>
 <tr>
-<td>DV-31</td>
-<td>Relationships</td>
-<td>An update that replaces or drops a relationship of an owned attribute deletes the owned entity</td>
-<td>Until 3.2, only the relationship is deleted</td>
-<td>Owned entities an update drops arrive in 3.2 (DD-067)</td>
-<td>3.1</td>
-</tr>
-<tr>
 <td>DV-32</td>
 <td>Relationships</td>
 <td>An <code>inverseRef</code> whose inverse attribute is no relationship attribute is kept as a legacy edge</td>
 <td>Not maintained</td>
 <td>Plain references are attribute values (DD-049), and Atlas types since 1.0 use relationships instead</td>
 <td>3.1</td>
+</tr>
+<tr>
+<td>DV-33</td>
+<td>Entities</td>
+<td>A reference an update drops from an array or map of plain references stays, its edge soft-deleted, and reads back after a soft delete</td>
+<td>Dropped</td>
+<td>A plain reference keeps no state of its own (DD-049, DD-058)</td>
+<td>2.4</td>
 </tr>
 </tbody>
 </table>

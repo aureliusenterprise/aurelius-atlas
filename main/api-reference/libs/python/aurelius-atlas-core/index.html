@@ -6831,6 +6831,8 @@
       
         
       
+        
+      
     
     
     
@@ -7466,6 +7468,33 @@
     
   
   3.1b Relationship attributes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/3-2-ownership-cascades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.2 Ownership cascades
 
     
   </span>
@@ -18236,7 +18265,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
 
   
       dataclass
-   (aurelius_atlas_core.typedef_document.DocumentVersion)" href="./#aurelius_atlas_core.typedef_document.DocumentVersion">DocumentVersion</a></span><span class="p">)</span>
+   (aurelius_atlas_core.typedef_document.DocumentVersion)" href="./#aurelius_atlas_core.typedef_document.DocumentVersion">DocumentVersion</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -18244,6 +18273,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
 
 
         <p>A stored relationship and the version it was read in (DD-047, DD-061).</p>
+<p>None for one a write request creates and has not written yet (DD-068).</p>
 
 
 
@@ -18285,7 +18315,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
 
   
       dataclass
-   (aurelius_atlas_core.typedef_document.DocumentVersion)" href="./#aurelius_atlas_core.typedef_document.DocumentVersion">DocumentVersion</a></code>)
+   (aurelius_atlas_core.typedef_document.DocumentVersion)" href="./#aurelius_atlas_core.typedef_document.DocumentVersion">DocumentVersion</a> | None</code>)
           –
           <div class="doc-md-description">
             
@@ -18344,7 +18374,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
 
   
       dataclass
-   (aurelius_atlas_core.typedef_document.DocumentVersion)" href="./#aurelius_atlas_core.typedef_document.DocumentVersion">DocumentVersion</a></span>
+   (aurelius_atlas_core.typedef_document.DocumentVersion)" href="./#aurelius_atlas_core.typedef_document.DocumentVersion">DocumentVersion</a></span> <span class="o">|</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

@@ -59,7 +59,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 2.5 | Delete semantics | Soft and hard delete, purge, owned-reference cascades (DD-060) | `DeleteHandlerV1`, `SoftDeleteHandlerV1` | in progress |
 | 3.1a | Relationship instances | Relationship CRUD, relationship storage, entity deletes removing relationships | `RelationshipREST`, `AtlasRelationshipStoreV2` | in progress |
 | 3.1b | Relationship attributes | `relationshipAttributes` in entity reads and writes, legacy ends and inverse references through relationships | `EntityGraphMapper`, `EntityGraphRetriever` | in progress |
-| 3.2 | Ownership cascades | Owned entities an update replaces or drops (composition through relationships in deletes: 3.1b, DD-067) | `DeleteHandlerV1` | planned |
+| 3.2 | Ownership cascades | Owned entities an update replaces or drops, and their revival (composition through relationships in deletes: 3.1b, DD-067) | `DeleteHandlerV1`, `EntityGraphMapper` | in progress |
 | 3.3 | Direct classifications | Add, update, remove, validity periods | `EntityREST` | planned |
 | 3.4 | Classification propagation | Propagation, blocked propagation, removal | `ClassificationPropagateTaskFactory` | planned |
 | 3.5 | Entity audit | Audit events and audit REST | `EntityAuditRepository` | planned |

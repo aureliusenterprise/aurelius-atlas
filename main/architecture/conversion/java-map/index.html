@@ -3721,6 +3721,8 @@
       
         
       
+        
+      
     
     
     
@@ -4356,6 +4358,33 @@
     
   
   3.1b Relationship attributes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-2-ownership-cascades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.2 Ownership cascades
 
     
   </span>
@@ -6499,6 +6528,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>EntityGraphMapper</code> (relationship attributes, inverse references), <code>EntityGraphRetriever</code> (relationship attributes, legacy ends), <code>GraphHelper</code> (edge lookups), <code>DeleteHandlerV1#getOwnedVertices</code>, <code>#deleteEdgeReference</code></td>
 <td><code>aurelius_atlas_core.relationship_mapper</code>, <code>aurelius_atlas_core.graph_helper</code>, <code>aurelius_atlas_core.entity_retriever</code>, <code>aurelius_atlas_core.delete_handler</code></td>
 <td>3.1b</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>DeleteHandlerV1#deleteEdgeReference</code> and <code>#deleteTypeVertex</code> for owned entities, <code>EntityGraphMapper#updateInConsistentOwnedMapVertices</code>, <code>removeUnusedArrayEntries</code>, <code>removeUnusedMapEntries</code></td>
+<td><code>aurelius_atlas_core.transaction_view</code>, <code>aurelius_atlas_core.entity_writer</code>, <code>aurelius_atlas_core.entity_mapper</code></td>
+<td>3.2</td>
 <td>in progress</td>
 </tr>
 <tr>
