@@ -125,6 +125,17 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Delete Type Override",
 >       "type": "boolean"
 >     },
+>     "tasks_enabled": {
+>       "default": true,
+>       "title": "Tasks Enabled",
+>       "type": "boolean"
+>     },
+>     "task_poll_seconds": {
+>       "default": 10.0,
+>       "exclusiveMinimum": 0,
+>       "title": "Task Poll Seconds",
+>       "type": "number"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
@@ -186,6 +197,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `typedef_refresh_seconds` (`float`)
 > - `delete_type` (`Literal['soft', 'hard']`)
 > - `delete_type_override` (`bool`)
+> - `tasks_enabled` (`bool`)
+> - `task_poll_seconds` (`float`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
 > - `elasticsearch_username` (`str`)
@@ -297,6 +310,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The source revision the server was built from, reported by `admin/version` (ADM-01).
+>
+> ### task\_poll\_seconds
+>
+> ```
+> task_poll_seconds: float = 10.0
+> ```
+>
+> How often the worker looks for tasks other processes recorded or left behind (DD-080).
+>
+> ### tasks\_enabled
+>
+> ```
+> tasks_enabled: bool = True
+> ```
+>
+> Whether propagation is deferred to tasks a worker runs after the request: `atlas.tasks.enabled` (TSK-02, DD-081).
 >
 > ### tls
 >
@@ -427,7 +456,7 @@ Parameters:
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
 
-The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07).
+The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
 
 ### mount\_dashboards
 
@@ -523,15 +552,18 @@ Answer an `AtlasError` with its status and `{"errorCode", "errorMessage"[, "erro
 
 ## aurelius\_atlas\_server.routes.admin
 
-The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches and purge.
+The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, purge, tasks.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
 
 Functions:
 
 - **`csrf_token`** –
 
   A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
+- **`delete_task`** –
+
+  `deleteTask`: remove the tasks of the `guids` given (TSK-06).
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
@@ -547,6 +579,9 @@ Functions:
 - **`get_status`** –
 
   The service state, which is always `ACTIVE` while the server runs (ADM-02).
+- **`get_task_status`** –
+
+  `getTaskStatus`: the tasks of the `guids` given that exist, in their order, else every task (TSK-06).
 - **`get_version`** –
 
   The server's name, release and revision (ADM-01, DV-03).
@@ -570,6 +605,7 @@ Attributes:
 - **`LIVE`** –
 - **`NAME`** –
 - **`NOT_READY`** –
+- **`NO_CONTENT`** –
 - **`READY`** –
 - **`UI_SETTINGS`** (`dict[str, Any]`) –
 
@@ -621,6 +657,12 @@ NAME = 'aurelius-atlas'
 NOT_READY = 'Service not ready to accept client requests'
 ```
 
+### NO\_CONTENT
+
+```
+NO_CONTENT = 204
+```
+
 ### READY
 
 ```
@@ -658,6 +700,14 @@ csrf_token() -> str
 
 A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
 
+### delete\_task
+
+```
+delete_task(request: Request) -> Response
+```
+
+`deleteTask`: remove the tasks of the `guids` given (TSK-06).
+
 ### get\_liveness
 
 ```
@@ -691,10 +741,12 @@ Raises:
 ### get\_session
 
 ```
-get_session() -> dict[str, Any]
+get_session(request: Request) -> dict[str, Any]
 ```
 
 The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+
+`atlas.tasks.enabled` is the server's `tasks_enabled` setting (DD-081).
 
 ### get\_status
 
@@ -703,6 +755,14 @@ get_status() -> dict[str, str]
 ```
 
 The service state, which is always `ACTIVE` while the server runs (ADM-02).
+
+### get\_task\_status
+
+```
+get_task_status(request: Request) -> AtlasJSONResponse
+```
+
+`getTaskStatus`: the tasks of the `guids` given that exist, in their order, else every task (TSK-06).
 
 ### get\_version
 

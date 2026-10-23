@@ -513,6 +513,9 @@ Classes:
 - **`RelationshipChange`** –
 
   One relationship of a write: its new state and the version it was read in, or None for a new one.
+- **`TaskChange`** –
+
+  One task of a write: its new state and the version it was read in, or None for a new one (DD-079).
 - **`UniqueValueTakenError`** –
 
   A write needs a unique value another entity holds (ENS-05); nothing was written.
@@ -677,6 +680,12 @@ Methods:
 - **`get_relationships`** –
 
   The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
+- **`get_tasks`** –
+
+  The tasks with these GUIDs that exist, as last written (TSK-06, DD-079).
+- **`list_tasks`** –
+
+  Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
 - **`new_guid`** –
 
   A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044).
@@ -702,12 +711,23 @@ Methods:
 Attributes:
 
 - **`registry`** –
+- **`task_listeners`** (`list[Callable[[], None]]`) –
+
+  Called after a write that recorded tasks, to wake a worker (DD-080).
 
 #### registry
 
 ```
 registry = registry
 ```
+
+#### task\_listeners
+
+```
+task_listeners: list[Callable[[], None]] = []
+```
+
+Called after a write that recorded tasks, to wake a worker (DD-080).
 
 #### classified
 
@@ -758,6 +778,22 @@ get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
 ```
 
 The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
+
+#### get\_tasks
+
+```
+get_tasks(guids: Sequence[str]) -> dict[str, tuple[StoredTask, DocumentVersion]]
+```
+
+The tasks with these GUIDs that exist, as last written (TSK-06, DD-079).
+
+#### list\_tasks
+
+```
+list_tasks(*, open_only: bool = False) -> list[tuple[StoredTask, DocumentVersion]]
+```
+
+Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
 
 #### new\_guid
 
@@ -820,6 +856,7 @@ write(
     changes: Sequence[EntityChange],
     relationship_changes: Sequence[RelationshipChange] = (),
     classification_changes: Sequence[ClassificationChange] = (),
+    task_changes: Sequence[TaskChange] = (),
 ) -> None
 ```
 
@@ -897,6 +934,40 @@ relationship: StoredRelationship
 
 ```
 remove: bool = False
+```
+
+### TaskChange
+
+```
+TaskChange(task: StoredTask, expected: DocumentVersion | None = None, remove: bool = False)
+```
+
+One task of a write: its new state and the version it was read in, or None for a new one (DD-079).
+
+With `remove`, the write removes the task, which must have been read.
+
+Attributes:
+
+- **`expected`** (`DocumentVersion | None`) –
+- **`remove`** (`bool`) –
+- **`task`** (`StoredTask`) –
+
+#### expected
+
+```
+expected: DocumentVersion | None = None
+```
+
+#### remove
+
+```
+remove: bool = False
+```
+
+#### task
+
+```
+task: StoredTask
 ```
 
 ### UniqueValueTakenError
@@ -994,7 +1065,7 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
-- **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification]]`) –
+- **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]]`) –
 - **`REFERRING_PAGE`** –
 
   How many referring entities one search page holds (DD-057).
@@ -1004,6 +1075,12 @@ Attributes:
 - **`RELATIONSHIP_MAPPING`** (`dict[str, Any]`) –
 
   Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
+- **`TASK_MAPPING`** (`dict[str, Any]`) –
+
+  Tasks by status and creation time; parameters stored, not indexed (DD-079).
+- **`TASK_PAGE`** –
+
+  How many tasks one search page holds.
 - **`UNIQUE_VALUE_INDEX`** –
 
   The alias of the unique value reservations (DD-045).
@@ -1067,6 +1144,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "references": _KEYWORD,
         "relationshipGuids": _KEYWORD,
         "classificationGuids": _KEYWORD,
+        "pendingTasks": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
@@ -1104,9 +1182,10 @@ How many journal entries recovery reads at once; a live journal holds one entry 
 ### LINKED\_MODELS
 
 ```
-LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification]] = {
+LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]] = {
     LinkedKind.RELATIONSHIP: StoredRelationship,
     LinkedKind.CLASSIFICATION: StoredClassification,
+    LinkedKind.TASK: StoredTask,
 }
 ```
 
@@ -1146,6 +1225,32 @@ RELATIONSHIP_MAPPING: dict[str, Any] = {
 
 Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
 
+### TASK\_MAPPING
+
+```
+TASK_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "type": _KEYWORD,
+        "status": _KEYWORD,
+        "createdTime": {"type": "long"},
+        "claimedUntil": {"type": "long"},
+        "writeId": _KEYWORD,
+    },
+}
+```
+
+Tasks by status and creation time; parameters stored, not indexed (DD-079).
+
+### TASK\_PAGE
+
+```
+TASK_PAGE = 1000
+```
+
+How many tasks one search page holds.
+
 ### UNIQUE\_VALUE\_INDEX
 
 ```
@@ -1157,7 +1262,7 @@ The alias of the unique value reservations (DD-045).
 ### Linked
 
 ```
-Linked = StoredRelationship | StoredClassification
+Linked = StoredRelationship | StoredClassification | StoredTask
 ```
 
 A document an entity lists: a relationship or a classification instance.
@@ -1193,6 +1298,9 @@ Methods:
 - **`journal`** –
 
   The entries of the journal, refreshed first so none written a moment ago is missed.
+- **`list_tasks`** –
+
+  Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).
 - **`prepare`** –
 
   Create each index behind its alias unless it exists (ENS-01).
@@ -1290,6 +1398,14 @@ journal() -> list[JournalEntry]
 ```
 
 The entries of the journal, refreshed first so none written a moment ago is missed.
+
+#### list\_tasks
+
+```
+list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
+```
+
+Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).
 
 #### prepare
 
@@ -1400,6 +1516,9 @@ Methods:
 - **`journal`** –
 
   Every journal entry.
+- **`list_tasks`** –
+
+  Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
 - **`prepare`** –
 
   Create the indices that are missing.
@@ -1483,6 +1602,14 @@ journal() -> list[JournalEntry]
 ```
 
 Every journal entry.
+
+#### list\_tasks
+
+```
+list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
+```
+
+Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
 
 #### prepare
 
@@ -1671,6 +1798,7 @@ Attributes:
 
 - **`CLASSIFICATION`** –
 - **`RELATIONSHIP`** –
+- **`TASK`** –
 
 #### CLASSIFICATION
 
@@ -1682,6 +1810,12 @@ CLASSIFICATION = 'classifications'
 
 ```
 RELATIONSHIP = 'relationships'
+```
+
+#### TASK
+
+```
+TASK = 'tasks'
 ```
 
 ### LinkedWrite
@@ -1919,6 +2053,7 @@ Attributes:
 - **`is_incomplete`** (`bool`) –
 - **`is_proxy`** (`bool | None`) –
 - **`labels`** (`list[str] | None`) –
+- **`pending_tasks`** (`list[str] | None`) –
 - **`provenance_type`** (`int`) –
 - **`references`** (`list[str] | None`) –
 - **`relationship_guids`** (`list[str] | None`) –
@@ -1988,6 +2123,12 @@ is_proxy: bool | None = None
 
 ```
 labels: list[str] | None = None
+```
+
+#### pending\_tasks
+
+```
+pending_tasks: list[str] | None = None
 ```
 
 #### provenance\_type

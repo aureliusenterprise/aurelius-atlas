@@ -4471,6 +4471,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-079. Tasks are documents of their own index, written with the change that records them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-080. Every server process runs tasks, each claimed with a lease
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-081. Tasks are enabled by a server setting, on by default
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4550,6 +4583,8 @@
       
         
           
+        
+      
         
       
         
@@ -5347,6 +5382,33 @@
     
   
   3.4a Classification propagation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-4-propagation-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.4b Propagation tasks
 
     
   </span>
@@ -8043,6 +8105,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-079. Tasks are documents of their own index, written with the change that records them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-080. Every server process runs tasks, each claimed with a lease
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-081. Tasks are enabled by a server setting, on by default
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8680,6 +8775,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-078-34-is-split-into-propagation-and-propagation-tasks">DD-078</a></td>
 <td>3.4 is split into propagation and propagation tasks</td>
+<td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them">DD-079</a></td>
+<td>Tasks are documents of their own index, written with the change that records them</td>
+<td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease">DD-080</a></td>
+<td>Every server process runs tasks, each claimed with a lease</td>
+<td>3.4</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default">DD-081</a></td>
+<td>Tasks are enabled by a server setting, on by default</td>
 <td>3.4</td>
 <td>Proposed</td>
 </tr>
@@ -10041,6 +10154,50 @@ deferred tasks: the task index and worker, <code>pendingTasks</code>, <code>admi
 <p><strong>Reason.</strong> Together they are above the size an increment may have (ADR 051).</p>
 <p><strong>Alternatives.</strong> One increment.</p>
 <p><strong>Consequences.</strong> 3.4b changes when propagation runs, not what it does.</p>
+<h3 id="dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them">DD-079. Tasks are documents of their own index, written with the change that records them<a class="headerlink" href="#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> A task is one document of the index behind <code>aurelius-atlas-tasks</code>, keyed by its GUID: Atlas's
+task fields and the claim of DD-080. The entity it is queued on lists its GUID in <code>pendingTasks</code> (a
+relationship update's task, the relationship). A task is written in the write of the change that records it,
+as relationships and classification instances are (DD-062, DD-071), and journaled with it.</p>
+<p><strong>Reason.</strong> Atlas creates the task vertex in the request's graph transaction: a change and its task commit
+together or not at all.</p>
+<p><strong>Alternatives.</strong> Queuing tasks after the write: a crash in between loses the propagation.</p>
+<p><strong>Consequences.</strong> <code>EntityStore.write</code> takes task changes as a third kind of listed document.</p>
+<h3 id="dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease">DD-080. Every server process runs tasks, each claimed with a lease<a class="headerlink" href="#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> Each server process runs a worker that takes <code>PENDING</code> tasks oldest first. It claims one by
+writing it <code>IN_PROGRESS</code>, with its start time and a claim lease, conditionally on the version it read; a claim
+another process won is skipped. A task claimed by a process that stopped is taken over once its lease has
+passed. A request that records tasks wakes its own process's worker; the workers also look for tasks at an
+interval.</p>
+<p><strong>Reason.</strong> Several processes may share one store; the conditional claim lets any run any task exactly once at
+a time, without electing a leader, and a stopped process's tasks are resumed.</p>
+<p><strong>Alternatives.</strong> One worker on an elected leader, as Atlas's active instance: leader election and takeover to
+build for no gain in correctness.</p>
+<p><strong>Consequences.</strong> Tasks of different entities may run side by side in different processes (DV-38).</p>
+<h3 id="dd-081-tasks-are-enabled-by-a-server-setting-on-by-default">DD-081. Tasks are enabled by a server setting, on by default<a class="headerlink" href="#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.4</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> <code>AURELIUS_ATLAS_SERVER_TASKS_ENABLED</code> (default <code>true</code>, Atlas's <code>atlas.tasks.enabled</code>) chooses
+whether propagation is deferred to tasks; <code>false</code> keeps 3.4a's propagation within the request.</p>
+<p><strong>Reason.</strong> Atlas's default defers it; the setting keeps the synchronous form for deployments and tests that
+want a write to be complete when it answers.</p>
+<p><strong>Alternatives.</strong> Always deferred: no way to have a propagation done when its request answers.</p>
+<p><strong>Consequences.</strong> The core takes the choice as a parameter of the writers and stores that propagate. The parity
+scenarios run against a server with tasks disabled, as against an Atlas with <code>atlas.tasks.enabled=false</code>: they
+check what propagation produces, not when, and <code>admin/session</code> reports the setting.</p>
 
 
 

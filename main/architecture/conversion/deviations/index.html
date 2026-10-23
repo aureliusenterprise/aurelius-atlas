@@ -3670,6 +3670,8 @@
       
         
       
+        
+      
     
     
     
@@ -4413,6 +4415,33 @@
     
   
   3.4a Classification propagation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-4-propagation-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.4b Propagation tasks
 
     
   </span>
@@ -6619,11 +6648,11 @@ Atlas clients expect when it lands).</p>
 <td>3.3</td>
 </tr>
 <tr>
-<td>DV-37</td>
+<td>DV-38</td>
 <td>Classifications</td>
-<td>Propagation runs as deferred tasks by default (<code>atlas.tasks.enabled</code>); entities show <code>pendingTasks</code> meanwhile</td>
-<td>Until 3.4b, propagation runs within the request, as with <code>atlas.tasks.enabled=false</code></td>
-<td>Tasks arrive in 3.4b (DD-077)</td>
+<td>Tasks run one at a time on the active instance, in creation order</td>
+<td>Every server process runs tasks, each claimed by one, so tasks may run side by side</td>
+<td>Several processes share the store without a leader (DD-080)</td>
 <td>3.4</td>
 </tr>
 </tbody>

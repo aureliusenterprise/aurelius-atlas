@@ -63,7 +63,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 3.3a | Direct classifications | Add, update, remove, validity periods; classifications read with entities | `EntityREST`, `AtlasEntityStoreV2`, `EntityGraphMapper` | in progress |
 | 3.3b | Bulk classifications | `bulk/setClassifications` | `ClassificationAssociator` | in progress |
 | 3.4a | Classification propagation | Propagation within the request, blocked propagation, removal | `DeleteHandlerV1`, `EntityGraphRetriever` | in progress |
-| 3.4b | Propagation tasks | Deferred propagation tasks, `pendingTasks`, `admin/tasks` | `ClassificationPropagateTaskFactory`, `TaskManagement` | planned |
+| 3.4b | Propagation tasks | Deferred propagation tasks, `pendingTasks`, `admin/tasks` | `ClassificationPropagateTaskFactory`, `TaskManagement` | in progress |
 | 3.5 | Entity audit | Audit events and audit REST, `bulk/headers` (DD-074) | `EntityAuditRepository` | planned |
 | 4.1 | Basic search | `SearchParameters`, filters, operators, sort, paging | `EntitySearchProcessor`, `SearchContext` | planned |
 | 4.2 | Quick search and suggestions | Free text, facets, suggestions | `AtlasDiscoveryService` | planned |
