@@ -1,7 +1,7 @@
 # 7.18 Collector ingest identity
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#119](https://github.com/aureliusenterprise/aurelius-atlas/pull/119)
 - **Records:** DD-107 (per-service ingest identity: Keycloak client-credentials
   JWTs on the service leg, azp-stamped); supersedes the service-leg half of
   DD-103 (user JWTs on the browser leg, the loopback pinning, and the

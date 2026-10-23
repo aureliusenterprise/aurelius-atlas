@@ -1,7 +1,7 @@
 # 7.17 Collector ingest auth
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#119](https://github.com/aureliusenterprise/aurelius-atlas/pull/119)
 - **Records:** DD-103 (the two-leg ingest proof: user JWTs for browsers, a
   shared token for services); extends ADR 039 (TLS proves the channel, the
   credential proves the writer) and ADR 034 (the one collection point); relies
