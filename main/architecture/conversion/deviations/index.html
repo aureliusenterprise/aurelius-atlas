@@ -3666,6 +3666,8 @@
       
         
       
+        
+      
     
     
     
@@ -4355,6 +4357,33 @@
     
   
   3.3a Direct classifications
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-3-bulk-classifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.3b Bulk classifications
 
     
   </span>
@@ -6558,6 +6587,14 @@ Atlas clients expect when it lands).</p>
 <td>An entity create with a classification of an unknown type fails with a <code>NullPointerException</code>, an internal error</td>
 <td><code>CLASSIFICATION_NOT_FOUND</code></td>
 <td>The failure is an unchecked exception, not a decision</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>DV-36</td>
+<td>Classifications</td>
+<td><code>bulk/setClassifications</code> with a header without <code>attributes</code>, a type without unique attributes, or no body fails with a <code>NullPointerException</code> or <code>NoSuchElementException</code></td>
+<td>The header is skipped as not found, <code>&lt;no unique name&gt;</code> named; no body answers <code>[]</code></td>
+<td>The failures are unchecked exceptions, not decisions</td>
 <td>3.3</td>
 </tr>
 </tbody>

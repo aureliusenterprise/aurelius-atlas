@@ -122,6 +122,7 @@
 - [3.1b Relationship attributes](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-1-relationship-attributes/index.md>)
 - [3.1a Relationship instances](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-1-relationship-instances/index.md>)
 - [3.2 Ownership cascades](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-2-ownership-cascades/index.md>)
+- [3.3b Bulk classifications](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-3-bulk-classifications/index.md>)
 - [3.3a Direct classifications](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-3-direct-classifications/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)

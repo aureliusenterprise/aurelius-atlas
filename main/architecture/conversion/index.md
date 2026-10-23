@@ -61,9 +61,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 3.1b | Relationship attributes | `relationshipAttributes` in entity reads and writes, legacy ends and inverse references through relationships | `EntityGraphMapper`, `EntityGraphRetriever` | in progress |
 | 3.2 | Ownership cascades | Owned entities an update replaces or drops, and their revival (composition through relationships in deletes: 3.1b, DD-067) | `DeleteHandlerV1`, `EntityGraphMapper` | in progress |
 | 3.3a | Direct classifications | Add, update, remove, validity periods; classifications read with entities | `EntityREST`, `AtlasEntityStoreV2`, `EntityGraphMapper` | in progress |
-| 3.3b | Bulk classifications | `bulk/setClassifications`, `bulk/headers` | `ClassificationAssociator` | planned |
+| 3.3b | Bulk classifications | `bulk/setClassifications` | `ClassificationAssociator` | in progress |
 | 3.4 | Classification propagation | Propagation, blocked propagation, removal | `ClassificationPropagateTaskFactory` | planned |
-| 3.5 | Entity audit | Audit events and audit REST | `EntityAuditRepository` | planned |
+| 3.5 | Entity audit | Audit events and audit REST, `bulk/headers` (DD-074) | `EntityAuditRepository` | planned |
 | 4.1 | Basic search | `SearchParameters`, filters, operators, sort, paging | `EntitySearchProcessor`, `SearchContext` | planned |
 | 4.2 | Quick search and suggestions | Free text, facets, suggestions | `AtlasDiscoveryService` | planned |
 | 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | planned |

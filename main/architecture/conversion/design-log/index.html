@@ -4416,6 +4416,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-074-bulkheaders-moves-to-35" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-074. <code>bulk/headers</code> moves to 3.5
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4495,6 +4506,8 @@
       
         
           
+        
+      
         
       
         
@@ -5234,6 +5247,33 @@
     
   
   3.3a Direct classifications
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/3-3-bulk-classifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  3.3b Bulk classifications
 
     
   </span>
@@ -7875,6 +7915,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-074-bulkheaders-moves-to-35" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-074. <code>bulk/headers</code> moves to 3.5
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8482,6 +8533,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator">DD-073</a></td>
 <td>3.3 is split into direct classifications and the bulk associator</td>
+<td>3.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-074-bulkheaders-moves-to-35">DD-074</a></td>
+<td><code>bulk/headers</code> moves to 3.5</td>
 <td>3.3</td>
 <td>Proposed</td>
 </tr>
@@ -9777,6 +9834,19 @@ values.</p>
 operations.</p>
 <p><strong>Alternatives.</strong> One increment: one pull request far above the limit.</p>
 <p><strong>Consequences.</strong> Until 3.3b, <code>bulk/setClassifications</code> and <code>bulk/headers</code> answer <code>404</code>.</p>
+<h3 id="dd-074-bulkheaders-moves-to-35">DD-074. <code>bulk/headers</code> moves to 3.5<a class="headerlink" href="#dd-074-bulkheaders-moves-to-35" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 3.3</li>
+<li><strong>Date:</strong> 2026-10-23</li>
+</ul>
+<p><strong>Decision.</strong> <code>GET bulk/headers?tagUpdateStartTime</code> (<code>ClassificationAssociator.Retriever</code>) is ported with the
+entity audit in 3.5 rather than in 3.3b.</p>
+<p><strong>Reason.</strong> It lists the entities whose classifications changed in a time window by asking the audit
+repository (<code>getEntitiesWithTagChanges</code>); without audit events it could only answer an empty list, or keep a
+second record of classification changes that 3.5 would replace.</p>
+<p><strong>Alternatives.</strong> An index of classification change times now: a record 3.5's audit events supersede.</p>
+<p><strong>Consequences.</strong> Until 3.5 the endpoint answers <code>404</code>. 3.3b ports <code>bulk/setClassifications</code> alone.</p>
 
 
 
