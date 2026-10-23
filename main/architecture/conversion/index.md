@@ -83,9 +83,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 
 > [!WARNING]
 >
-> **Two expat CVEs are accepted on a temporary basis**
+> **Two expat CVEs and a musl CVE are accepted on a temporary basis**
 >
-> CVE-2026-77214 and CVE-2026-102633 (`expat`/`libexpat` 2.8.5-r1, from the server image's hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened base image carried the fix yet. The acceptance expires with the next base-image refresh — the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.
+> CVE-2026-77214 and CVE-2026-102633 (`expat`/`libexpat` 2.8.5-r1, from the server image's hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened base image carried the fix yet; so is CVE-2026-107891 (`musl` 1.2.6-r2, from the frontend example image's hardened base, fixed in 1.2.6-r3). The acceptance expires with the next base-image refresh — the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.
 
 To do once the last 0.x increment is done:
 
@@ -93,6 +93,11 @@ To do once the last 0.x increment is done:
 
   - Check that the current base image ships expat 2.9.0 or later.
   - Check that SonarCloud has closed the four issues as fixed.
+  - If either check fails, reopen the issues and decide again.
+- [ ] **Re-check the accepted musl vulnerability.** CVE-2026-107891 in `musl` and `musl-utils` 1.2.6-r2 comes from the base image `dhi.io/nginx:1.30-alpine3.24` of `aurelius-atlas-frontend-example`, and is fixed in 1.2.6-r3. It was accepted in SonarCloud on \#139, because no hardened image with the fix existed yet. Before closing it:
+
+  - Check that the current base image ships musl 1.2.6-r3 or later.
+  - Check that SonarCloud has closed the two issues as fixed.
   - If either check fails, reopen the issues and decide again.
 
 ## After the plan
