@@ -16,11 +16,16 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_core.entity_documents import (
     EntityDocuments,
     JournalEntry,
+    Linked,
+    LinkedKind,
+    LinkedWrite,
     Reservation,
+    VersionedClassification,
     VersionedEntity,
     VersionedRelationship,
     WriteResult,
 )
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion
@@ -82,6 +87,22 @@ class RelationshipChange:
     relationship: StoredRelationship
     expected: DocumentVersion | None = None
     remove: bool = False
+
+
+@dataclass(frozen=True)
+class ClassificationChange:
+    """One classification instance of a write: its new state and the version it was read in, or None for a new one.
+
+    With ``remove``, the write removes the instance, which must have been read (DD-071).
+    """
+
+    classification: StoredClassification
+    expected: DocumentVersion | None = None
+    remove: bool = False
+
+
+type _LinkedChanges = dict[LinkedKind, list[tuple[Linked, DocumentVersion | None, bool]]]
+"""A write's linked documents by kind: each one's new state, the version it was read in, and whether it goes."""
 
 
 class EntityStore:
@@ -153,15 +174,32 @@ class EntityStore:
 
     async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
         """The relationships with these GUIDs that exist, as last written (REL-06, DD-061)."""
-        return await self._documents.get_relationships(list(dict.fromkeys(guids)))
+        found = await self._documents.get_linked(LinkedKind.RELATIONSHIP, list(dict.fromkeys(guids)))
+        return {
+            guid: VersionedRelationship(document, version)
+            for guid, (document, version) in found.items()
+            if isinstance(document, StoredRelationship)
+        }
+
+    async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
+        """The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070)."""
+        found = await self._documents.get_linked(LinkedKind.CLASSIFICATION, list(dict.fromkeys(guids)))
+        return {
+            guid: VersionedClassification(document, version)
+            for guid, (document, version) in found.items()
+            if isinstance(document, StoredClassification)
+        }
 
     async def write(
-        self, changes: Sequence[EntityChange], relationship_changes: Sequence[RelationshipChange] = ()
+        self,
+        changes: Sequence[EntityChange],
+        relationship_changes: Sequence[RelationshipChange] = (),
+        classification_changes: Sequence[ClassificationChange] = (),
     ) -> None:
-        """Write new, changed and removed entities and relationships, all or nothing, through the journal.
+        """Write new, changed and removed entities and the documents they list, all or nothing, through the journal.
 
-        ENS-05, ENS-07, ENS-08. Each written entity carries the GUIDs its references name (DD-057); removals and
-        relationships are journaled too (DD-056, DD-062).
+        ENS-05, ENS-07, ENS-08. Each written entity carries the GUIDs its references name (DD-057); removals,
+        relationships and classification instances are journaled too (DD-056, DD-062, DD-071).
 
         Raises:
             UniqueValueTakenError: A unique value is held by another entity.
@@ -169,11 +207,8 @@ class EntityStore:
             EntityWriteError: An entity could not be written; the write was undone.
         """
         write_id = self._new_id()
-        for guid, change in [(change.entity.guid, change) for change in changes] + [
-            (change.relationship.guid, change) for change in relationship_changes
-        ]:
-            if change.remove and change.expected is None:
-                raise EntityWriteError(REMOVE_UNREAD_ERROR.format(guid=guid))
+        linked = _linked_changes(relationship_changes, classification_changes)
+        _check_removals(changes, linked)
         kept = [change for change in changes if not change.remove]
         removed = [change for change in changes if change.remove]
         entities = [self._stamped(change.entity, write_id) for change in kept]
@@ -182,7 +217,7 @@ class EntityStore:
             current = before.get(change.entity.guid)
             if change.expected is not None and (current is None or current.version != change.expected):
                 raise EntityVersionConflictError(change.entity.guid)
-        relationships_before = await self._relationships_before(relationship_changes)
+        linked_before = {kind: await self._linked_before(kind, items) for kind, items in linked.items()}
         needed, released = self._key_changes(entities, before, [change.entity.guid for change in removed])
         entry = JournalEntry(
             write_id=write_id,
@@ -191,11 +226,13 @@ class EntityStore:
             reserved=[key.id for key, _ in needed],
             released=[key.id for key, _ in released],
             removed=[change.entity.guid for change in removed],
-            relationships_before={
-                change.relationship.guid: _relationship_json_of(relationships_before.get(change.relationship.guid))
-                for change in relationship_changes
+            linked_before={
+                kind.value: {document.guid: linked_before[kind].get(document.guid) for document, _, _ in items}
+                for kind, items in linked.items()
             },
-            removed_relationships=[change.relationship.guid for change in relationship_changes if change.remove],
+            removed_linked={
+                kind.value: [document.guid for document, _, remove in items if remove] for kind, items in linked.items()
+            },
         )
         await self._documents.put_journal(entry)
         reserved = await self._reserve(needed, write_id)
@@ -208,16 +245,7 @@ class EntityStore:
         results = await self._documents.write(
             [(entity, change.expected) for entity, change in zip(entities, kept, strict=True)],
             [(change.entity.guid, change.expected) for change in removed if change.expected is not None],
-            [
-                (change.relationship.model_copy(update={"write_id": write_id}), change.expected)
-                for change in relationship_changes
-                if not change.remove
-            ],
-            [
-                (change.relationship.guid, change.expected)
-                for change in relationship_changes
-                if change.remove and change.expected is not None
-            ],
+            _linked_writes(linked, write_id),
         )
         failed = next((result for result in results if not result.written), None)
         if failed is not None:
@@ -249,23 +277,30 @@ class EntityStore:
         return handled
 
     async def type_in_use(self, type_name: str) -> bool:
-        """Whether an entity or relationship of exactly this type exists, in any state (ENS-09, REL-10, DD-048).
+        """Whether an entity, relationship or classification of exactly this type exists, in any state.
+
+        ENS-09, REL-10, CLS-12, DD-048.
 
         The typedef store's check.
         """
         if await self._documents.count_type(type_name) > 0:
             return True
-        return await self._documents.count_relationship_type(type_name) > 0
+        for kind in LinkedKind:
+            if await self._documents.count_linked_type(kind, type_name) > 0:
+                return True
+        return False
 
-    async def _relationships_before(self, changes: Sequence[RelationshipChange]) -> dict[str, VersionedRelationship]:
-        """The relationships' states before, each written only over the version it was read in (ENS-08)."""
-        read = [change.relationship.guid for change in changes if change.expected is not None]
-        before = await self._documents.get_relationships(read)
-        for change in changes:
-            current = before.get(change.relationship.guid)
-            if change.expected is not None and (current is None or current.version != change.expected):
-                raise EntityVersionConflictError(change.relationship.guid)
-        return before
+    async def _linked_before(
+        self, kind: LinkedKind, items: Sequence[tuple[Linked, DocumentVersion | None, bool]]
+    ) -> dict[str, dict[str, Any]]:
+        """The documents' states before, as JSON; each written only over the version it was read in (ENS-08)."""
+        read = [document.guid for document, expected, _ in items if expected is not None]
+        before = await self._documents.get_linked(kind, read)
+        for document, expected, _ in items:
+            current = before.get(document.guid)
+            if expected is not None and (current is None or current[1] != expected):
+                raise EntityVersionConflictError(document.guid)
+        return {guid: document.to_json() for guid, (document, _) in before.items()}
 
     def _entity_type(self, entity: StoredEntity) -> EntityType:
         entity_type = self.registry.entity_type(entity.type_name)
@@ -315,8 +350,10 @@ class EntityStore:
     ) -> None:
         """Undo a write that failed: restore what it wrote, release what it reserved, drop its entry."""
         for result in results:
-            if result.written and result.relationship:
-                await self._documents.restore_relationship(result.guid, entry.before_relationship(result.guid))
+            if result.written and result.kind is not None:
+                await self._documents.restore_linked(
+                    result.kind, result.guid, entry.before_linked(result.kind, result.guid)
+                )
             elif result.written:
                 await self._documents.restore(result.guid, entry.before_entity(result.guid))
         held = await self._documents.reservations([key.id for key, _ in needed])
@@ -334,12 +371,14 @@ class EntityStore:
             written = found is not None and found.entity.write_id == entry.write_id
             if written or (found is None and guid in entry.removed):
                 await self._documents.restore(guid, entry.before_entity(guid))
-        relationships = await self._documents.get_relationships(list(entry.relationships_before))
-        for guid in entry.relationships_before:
-            found_relationship = relationships.get(guid)
-            written = found_relationship is not None and found_relationship.relationship.write_id == entry.write_id
-            if written or (found_relationship is None and guid in entry.removed_relationships):
-                await self._documents.restore_relationship(guid, entry.before_relationship(guid))
+        for name, befores in entry.linked_before.items():
+            kind = LinkedKind(name)
+            current_linked = await self._documents.get_linked(kind, list(befores))
+            for guid in befores:
+                found_linked = current_linked.get(guid)
+                written = found_linked is not None and found_linked[0].write_id == entry.write_id
+                if written or (found_linked is None and guid in entry.removed_linked.get(name, [])):
+                    await self._documents.restore_linked(kind, guid, entry.before_linked(kind, guid))
         held = await self._documents.reservations(entry.reserved)
         for reservation in held.values():
             if reservation.write_id == entry.write_id:
@@ -364,5 +403,41 @@ def _json_of(found: VersionedEntity | None) -> dict[str, Any] | None:
     return None if found is None else found.entity.to_json()
 
 
-def _relationship_json_of(found: VersionedRelationship | None) -> dict[str, Any] | None:
-    return None if found is None else found.relationship.to_json()
+def _linked_changes(
+    relationship_changes: Sequence[RelationshipChange], classification_changes: Sequence[ClassificationChange]
+) -> _LinkedChanges:
+    """A write's relationships and classification instances, by kind; kinds without any are left out."""
+    linked: _LinkedChanges = {}
+    if relationship_changes:
+        linked[LinkedKind.RELATIONSHIP] = [(c.relationship, c.expected, c.remove) for c in relationship_changes]
+    if classification_changes:
+        linked[LinkedKind.CLASSIFICATION] = [(c.classification, c.expected, c.remove) for c in classification_changes]
+    return linked
+
+
+def _check_removals(changes: Sequence[EntityChange], linked: _LinkedChanges) -> None:
+    """A document is removed only over the version it was read in (DD-056).
+
+    Raises:
+        EntityWriteError: A removal without a version.
+    """
+    unread = [(change.entity.guid, change.remove, change.expected) for change in changes]
+    unread += [(document.guid, remove, expected) for items in linked.values() for document, expected, remove in items]
+    for guid, remove, expected in unread:
+        if remove and expected is None:
+            raise EntityWriteError(REMOVE_UNREAD_ERROR.format(guid=guid))
+
+
+def _linked_writes(linked: _LinkedChanges, write_id: str) -> dict[LinkedKind, LinkedWrite]:
+    """What the bulk request writes and removes of each kind, the written ones marked with the write's id."""
+    return {
+        kind: LinkedWrite(
+            [
+                (document.model_copy(update={"write_id": write_id}), expected)
+                for document, expected, remove in items
+                if not remove
+            ],
+            [(document.guid, expected) for document, expected, remove in items if remove and expected is not None],
+        )
+        for kind, items in linked.items()
+    }

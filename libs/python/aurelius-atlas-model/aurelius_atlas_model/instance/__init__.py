@@ -4,7 +4,8 @@ Ported from Apache Atlas 2.4.0. The models read and write Atlas's REST JSON as t
 validating their values against the types is 2.1b.
 """
 
-from aurelius_atlas_model.instance.classification import AtlasClassification
+from aurelius_atlas_model.instance.classification import AtlasClassification, AtlasClassifications
+from aurelius_atlas_model.instance.classification_associate_request import ClassificationAssociateRequest
 from aurelius_atlas_model.instance.entities_with_ext_info import AtlasEntitiesWithExtInfo
 from aurelius_atlas_model.instance.entity import AtlasEntity, next_internal_id
 from aurelius_atlas_model.instance.entity_ext_info import AtlasEntityExtInfo
@@ -26,6 +27,7 @@ from aurelius_atlas_model.instance.time_boundary import TimeBoundary
 
 __all__ = [
     "AtlasClassification",
+    "AtlasClassifications",
     "AtlasEntitiesWithExtInfo",
     "AtlasEntity",
     "AtlasEntityExtInfo",
@@ -39,6 +41,7 @@ __all__ = [
     "AtlasStruct",
     "AtlasTermAssignmentHeader",
     "AtlasTermAssignmentStatus",
+    "ClassificationAssociateRequest",
     "EntityMutationResponse",
     "EntityOperation",
     "EntityStatus",

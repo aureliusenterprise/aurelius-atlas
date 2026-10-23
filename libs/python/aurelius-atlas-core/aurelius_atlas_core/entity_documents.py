@@ -4,8 +4,9 @@ The I/O behind ``EntityStore``: reads in real time, conditional writes, create-o
 Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep their digits (DD-039).
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_model import codec
@@ -13,6 +14,7 @@ from aurelius_atlas_model.base import AtlasModel
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.typedef_document import DocumentVersion
@@ -27,6 +29,24 @@ JOURNAL_INDEX = f"{INDEX_PREFIX}-entity-journal"
 """The alias of the write journal (DD-046)."""
 RELATIONSHIP_INDEX = f"{INDEX_PREFIX}-relationships"
 """The alias of the relationship index (DD-061)."""
+CLASSIFICATION_INDEX = f"{INDEX_PREFIX}-classifications"
+"""The alias of the classification index (DD-070)."""
+
+
+class LinkedKind(StrEnum):
+    """The documents an entity lists besides itself, each in an index of its own (DD-061, DD-070)."""
+
+    RELATIONSHIP = "relationships"
+    CLASSIFICATION = "classifications"
+
+
+type Linked = StoredRelationship | StoredClassification
+"""A document an entity lists: a relationship or a classification instance."""
+
+LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification]] = {
+    LinkedKind.RELATIONSHIP: StoredRelationship,
+    LinkedKind.CLASSIFICATION: StoredClassification,
+}
 
 JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
@@ -55,6 +75,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "writeId": _KEYWORD,
         "references": _KEYWORD,
         "relationshipGuids": _KEYWORD,
+        "classificationGuids": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
     },
@@ -88,6 +109,20 @@ RELATIONSHIP_MAPPING: dict[str, Any] = {
 }
 """Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061)."""
 
+CLASSIFICATION_MAPPING: dict[str, Any] = {
+    "dynamic": False,
+    "properties": {
+        "guid": _KEYWORD,
+        "typeName": _KEYWORD,
+        "superTypeNames": _KEYWORD,
+        "entityGuid": _KEYWORD,
+        "entityStatus": _KEYWORD,
+        "writeId": _KEYWORD,
+        "attributes": {"type": "object", "dynamic": False},
+    },
+}
+"""Classification instances by type and entity; attribute values stored, not indexed (DD-070)."""
+
 
 @dataclass(frozen=True)
 class VersionedRelationship:
@@ -98,6 +133,14 @@ class VersionedRelationship:
 
     relationship: StoredRelationship
     version: DocumentVersion | None
+
+
+@dataclass(frozen=True)
+class VersionedClassification:
+    """A stored classification instance and the version it was read in (DD-047, DD-070)."""
+
+    classification: StoredClassification
+    version: DocumentVersion
 
 
 @dataclass(frozen=True)
@@ -116,7 +159,15 @@ class WriteResult:
     guid: str
     written: bool
     conflict: bool = False
-    relationship: bool = False
+    kind: LinkedKind | None = None
+
+
+@dataclass(frozen=True)
+class LinkedWrite:
+    """What a write does to the documents of one ``LinkedKind``: written ones at a version or new, removed ones."""
+
+    written: Sequence[tuple[Linked, DocumentVersion | None]] = ()
+    removed: Sequence[tuple[str, DocumentVersion]] = ()
 
 
 class JournalEntry(AtlasModel):
@@ -131,8 +182,8 @@ class JournalEntry(AtlasModel):
     reserved: list[str] = Field(default_factory=list)
     released: list[str] = Field(default_factory=list)
     removed: list[str] = Field(default_factory=list)
-    relationships_before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
-    removed_relationships: list[str] = Field(default_factory=list)
+    linked_before: dict[str, dict[str, dict[str, Any] | None]] = Field(default_factory=dict)
+    removed_linked: dict[str, list[str]] = Field(default_factory=dict)
     committed: bool = False
 
     def before_entity(self, guid: str) -> StoredEntity | None:
@@ -140,10 +191,10 @@ class JournalEntry(AtlasModel):
         source = self.before.get(guid)
         return None if source is None else StoredEntity.model_validate(source)
 
-    def before_relationship(self, guid: str) -> StoredRelationship | None:
-        """The state of relationship ``guid`` before the write, or None for one the write created (DD-062)."""
-        source = self.relationships_before.get(guid)
-        return None if source is None else StoredRelationship.model_validate(source)
+    def before_linked(self, kind: LinkedKind, guid: str) -> Linked | None:
+        """The state of a linked document before the write, or None for one the write created (DD-062, DD-071)."""
+        source = self.linked_before.get(kind, {}).get(guid)
+        return None if source is None else LINKED_MODELS[kind].model_validate(source)
 
 
 @runtime_checkable
@@ -162,26 +213,25 @@ class EntityDocuments(Protocol):
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
-        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
-        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
+        linked: Mapping[LinkedKind, LinkedWrite] | None = None,
     ) -> list[WriteResult]:
-        """Write and remove entities and relationships, new (no version) or at the version given.
+        """Write and remove entities and linked documents, new (no version) or at the version given.
 
-        One bulk request; the results are in order: entities written, removed, relationships written, removed
-        (DD-056, DD-062).
+        One bulk request; the results are in order: entities written, removed, then each kind's written, removed
+        (DD-056, DD-062, DD-071).
         """
         ...
 
-    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
-        """The stored relationships with these GUIDs, in real time; unknown GUIDs are left out (DD-061)."""
+    async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
+        """The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061)."""
         ...
 
-    async def restore_relationship(self, guid: str, before: StoredRelationship | None) -> None:
-        """Put back a relationship's state before a write, or delete one the write created (DD-062)."""
+    async def restore_linked(self, kind: LinkedKind, guid: str, before: Linked | None) -> None:
+        """Put back a linked document's state before a write, or delete one the write created (DD-062)."""
         ...
 
-    async def count_relationship_type(self, type_name: str) -> int:
-        """How many relationships of the type exist, in any state, as of now (REL-10)."""
+    async def count_linked_type(self, kind: LinkedKind, type_name: str) -> int:
+        """How many documents of the kind and type exist, in any state, as of now (REL-10, CLS-12)."""
         ...
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
@@ -229,12 +279,12 @@ class ElasticsearchEntityDocuments:
         self._entities = f"{prefix}-entities"
         self._unique_values = f"{prefix}-unique-values"
         self._journal = f"{prefix}-entity-journal"
-        self._relationships = f"{prefix}-relationships"
+        self._linked = {kind: f"{prefix}-{kind.value}" for kind in LinkedKind}
 
     @property
-    def aliases(self) -> tuple[str, str, str, str]:
-        """The aliases of the entity index, the reservations, the journal and the relationship index."""
-        return self._entities, self._unique_values, self._journal, self._relationships
+    def aliases(self) -> tuple[str, ...]:
+        """The aliases of the entity index, the reservations, the journal and the linked documents' indices."""
+        return self._entities, self._unique_values, self._journal, *self._linked.values()
 
     async def prepare(self) -> None:
         """Create each index behind its alias unless it exists (ENS-01).
@@ -245,7 +295,8 @@ class ElasticsearchEntityDocuments:
             self._entities: ENTITY_MAPPING,
             self._unique_values: {"dynamic": False, "properties": {"guid": _KEYWORD, "writeId": _KEYWORD}},
             self._journal: {"dynamic": False, "properties": {"leaseUntil": {"type": "long"}}},
-            self._relationships: RELATIONSHIP_MAPPING,
+            self._linked[LinkedKind.RELATIONSHIP]: RELATIONSHIP_MAPPING,
+            self._linked[LinkedKind.CLASSIFICATION]: CLASSIFICATION_MAPPING,
         }
         for alias, mapping in mappings.items():
             if not await self._client.indices.exists_alias(name=alias):
@@ -272,19 +323,19 @@ class ElasticsearchEntityDocuments:
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
         removed: Sequence[tuple[str, DocumentVersion]] = (),
-        relationships: Sequence[tuple[StoredRelationship, DocumentVersion | None]] = (),
-        removed_relationships: Sequence[tuple[str, DocumentVersion]] = (),
+        linked: Mapping[LinkedKind, LinkedWrite] | None = None,
     ) -> list[WriteResult]:
-        """One bulk request over both indices: ``create`` a new document, ``index`` or ``delete`` with ``if_seq_no``.
+        """One bulk request over the indices: ``create`` a new document, ``index`` or ``delete`` with ``if_seq_no``.
 
-        DD-047, DD-056, DD-062.
+        DD-047, DD-056, DD-062, DD-071.
         """
         lines: list[bytes] = []
-        kinds: list[bool] = []
-        for index, documents, removals, is_relationship in (
-            (self._entities, items, removed, False),
-            (self._relationships, relationships, removed_relationships, True),
-        ):
+        kinds: list[LinkedKind | None] = []
+        groups: list[tuple[str, Sequence[tuple[Any, DocumentVersion | None]], Sequence[Any], LinkedKind | None]] = [
+            (self._entities, items, removed, None)
+        ]
+        groups += [(self._linked[kind], write.written, write.removed, kind) for kind, write in (linked or {}).items()]
+        for index, documents, removals, group_kind in groups:
             for document, version in documents:
                 action: dict[str, Any] = {"_index": index, "_id": document.guid}
                 if version is None:
@@ -293,16 +344,16 @@ class ElasticsearchEntityDocuments:
                     action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
                     lines.append(codec.dumps({"index": action}))
                 lines.append(codec.dumps(document.to_json()))
-                kinds.append(is_relationship)
+                kinds.append(group_kind)
             for guid, version in removals:
                 action = {"_index": index, "_id": guid}
                 action |= {"if_seq_no": version.seq_no, "if_primary_term": version.primary_term}
                 lines.append(codec.dumps({"delete": action}))
-                kinds.append(is_relationship)
+                kinds.append(group_kind)
         body = b"\n".join(lines) + b"\n"  # NDJSON bytes: the transport sends them as they are
         response = await self._client.bulk(operations=body)  # pyright: ignore[reportArgumentType]
         results = []
-        for item, is_relationship in zip(response["items"], kinds, strict=True):
+        for item, kind in zip(response["items"], kinds, strict=True):
             outcome = next(iter(item.values()))
             status = int(outcome["status"])
             results.append(
@@ -310,39 +361,41 @@ class ElasticsearchEntityDocuments:
                     outcome["_id"],
                     written=status < 300,  # noqa: PLR2004
                     conflict=status == 409,  # noqa: PLR2004
-                    relationship=is_relationship,
+                    kind=kind,
                 )
             )
         return results
 
-    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
-        """``mget`` of the relationship index: real time (DD-061)."""
+    async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
+        """``mget`` of the kind's index: real time (DD-061, DD-070)."""
         if not guids:
             return {}
-        response = await self._client.mget(index=self._relationships, ids=list(guids))
+        response = await self._client.mget(index=self._linked[kind], ids=list(guids))
         return {
-            doc["_id"]: VersionedRelationship(
-                StoredRelationship.model_validate(doc["_source"]),
+            doc["_id"]: (
+                LINKED_MODELS[kind].model_validate(doc["_source"]),
                 DocumentVersion(doc["_seq_no"], doc["_primary_term"]),
             )
             for doc in response["docs"]
             if doc.get("found")
         }
 
-    async def restore_relationship(self, guid: str, before: StoredRelationship | None) -> None:
-        """Index the relationship's state before, or delete one that did not exist before (DD-062)."""
+    async def restore_linked(self, kind: LinkedKind, guid: str, before: Linked | None) -> None:
+        """Index the document's state before, or delete one that did not exist before (DD-062)."""
+        index = self._linked[kind]
         if before is None:
             try:
-                await self._client.delete(index=self._relationships, id=guid)
+                await self._client.delete(index=index, id=guid)
             except NotFoundError:
                 return
         else:
-            await self._client.index(index=self._relationships, id=guid, document=codec.dumps(before.to_json()))  # type: ignore[arg-type]
+            await self._client.index(index=index, id=guid, document=codec.dumps(before.to_json()))  # type: ignore[arg-type]
 
-    async def count_relationship_type(self, type_name: str) -> int:
-        """Refresh the relationship index, then count the relationships of the type (REL-10)."""
-        await self._client.indices.refresh(index=self._relationships)
-        response = await self._client.count(index=self._relationships, query={"term": {"typeName": type_name}})
+    async def count_linked_type(self, kind: LinkedKind, type_name: str) -> int:
+        """Refresh the kind's index, then count its documents of the type (REL-10, CLS-12)."""
+        index = self._linked[kind]
+        await self._client.indices.refresh(index=index)
+        response = await self._client.count(index=index, query={"term": {"typeName": type_name}})
         return int(response["count"])
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:

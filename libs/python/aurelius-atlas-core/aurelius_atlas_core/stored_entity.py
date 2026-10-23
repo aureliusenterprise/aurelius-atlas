@@ -43,6 +43,7 @@ class StoredEntity(AtlasModel):
     attributes: dict[str, Any] = Field(default_factory=dict)
     references: list[str] | None = None
     relationship_guids: list[str] | None = None
+    classification_guids: list[str] | None = None
     write_id: str | None = None
 
     @classmethod

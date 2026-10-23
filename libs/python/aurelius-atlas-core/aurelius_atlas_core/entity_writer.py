@@ -12,6 +12,7 @@ from typing import Any
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
 from aurelius_atlas_model.instance import (
+    AtlasClassification,
     AtlasEntitiesWithExtInfo,
     AtlasEntity,
     AtlasEntityExtInfo,
@@ -29,12 +30,14 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.delete_handler import DeleteHandler
 from aurelius_atlas_core.delete_type import DeleteType
+from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_comparator import EntityComparator
 from aurelius_atlas_core.entity_discovery import DiscoveryContext, EntityDiscovery, EntityStream, object_id_of
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_mapper import EntityMapper
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
+    ClassificationChange,
     EntityChange,
     EntityStore,
     EntityVersionConflictError,
@@ -45,6 +48,7 @@ from aurelius_atlas_core.entity_store import (
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
 from aurelius_atlas_core.relationship_mapper import RelationshipMapper
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.transaction_view import TransactionView
 
@@ -90,6 +94,7 @@ class _Dropped:
 
     headers: list[AtlasEntityHeader] = field(default_factory=list)
     updated: list[str] = field(default_factory=list)
+    classification_changes: list[ClassificationChange] = field(default_factory=list)
 
 
 type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
@@ -187,8 +192,8 @@ class EntityWriter:
         deletion = await handler.delete_entities(candidates)
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=purge) for guid in deletion.deleted]
-        if deletion.changes or deletion.relationship_changes:
-            await self._store.write(deletion.changes, deletion.relationship_changes)
+        if deletion.changes or deletion.relationship_changes or deletion.classification_changes:
+            await self._store.write(deletion.changes, deletion.relationship_changes, deletion.classification_changes)
         response = EntityMutationResponse()
         for header in headers:
             response.add_entity(EntityOperation.PURGE if purge else EntityOperation.DELETE, header)
@@ -304,9 +309,13 @@ class EntityWriter:
             dropped=mapper.dropped,
         )
         written: dict[str, StoredEntity] = {}
+        classified: list[ClassificationChange] = []
         for entity, entity_type in mutation.created:
             await relationships.map(entity, entity_type, str(entity.guid), EntityOperation.CREATE)
             written[str(entity.guid)] = mapper.create(entity, entity_type, str(entity.guid))
+            if entity.classifications:
+                written[str(entity.guid)], added = self._classified(written[str(entity.guid)], entity.classifications)
+                classified += [ClassificationChange(instance) for instance in added]
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         for entity, entity_type, stored in mutation.updated:
             if entity.guid not in skipped:
@@ -334,9 +343,23 @@ class EntityWriter:
             relationship_changes,
             now,
         )
-        if changes or relationship_changes:
-            await self._store.write(list(changes.values()), list(relationship_changes.values()))
+        classified += deleted.classification_changes
+        if changes or relationship_changes or classified:
+            await self._store.write(list(changes.values()), list(relationship_changes.values()), classified)
         return await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
+
+    def _classified(
+        self, entity: StoredEntity, classifications: list[AtlasClassification]
+    ) -> tuple[StoredEntity, list[StoredClassification]]:
+        """``addClassifications`` of a created entity: no association checks, an unknown type fails (CLS-10).
+
+        Raises:
+            AtlasError: ``CLASSIFICATION_NOT_FOUND`` (DV-35).
+        """
+        for classification in classifications:
+            if self._store.registry.classification_type(classification.type_name) is None:
+                raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.type_name)
+        return EntityClassifications(self._store, user=self._user).attached(entity, classifications)
 
     async def _drop_owned(
         self,
@@ -381,7 +404,11 @@ class EntityWriter:
                 relationship_changes.pop(guid, None)
             else:
                 relationship_changes[guid] = RelationshipChange(change.relationship)
-        return _Dropped(headers, [guid for guid in deletion.updated if guid not in deletion.deleted])
+        return _Dropped(
+            headers,
+            [guid for guid in deletion.updated if guid not in deletion.deleted],
+            deletion.classification_changes,
+        )
 
     async def _prepare(self, discovery: EntityDiscovery, context: DiscoveryContext, *, partial: bool) -> _Mutation:
         """``preCreateOrUpdate``: each request entity among the references, to update or to create (EWR-06)."""
@@ -489,7 +516,9 @@ class EntityWriter:
         response = EntityMutationResponse()
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         for entity, _ in mutation.created:
-            response.add_entity(EntityOperation.CREATE, await retriever.header(str(entity.guid)))
+            header = await retriever.header(str(entity.guid))
+            header.classifications, header.classification_names = [], []  # constructHeader runs before they attach
+            response.add_entity(EntityOperation.CREATE, header)
         for entity, _, _ in mutation.updated:
             if entity.guid not in skipped:
                 response.add_entity(operation, await retriever.header(str(entity.guid)))

@@ -169,7 +169,7 @@ class EntityMapper:
             _, given = _struct_of(type_, value)
             attributes = dict(current.get("attributes") or {})
             struct_type = self._registry.struct_type(str(current.get("typeName"))) or type_
-            self._struct_attributes(struct_type, given, attributes, EntityOperation.UPDATE)
+            self.struct_attributes(struct_type, given, attributes, EntityOperation.UPDATE)
             return {"typeName": current.get("typeName"), "attributes": attributes}
         if value is None:
             return None
@@ -178,13 +178,16 @@ class EntityMapper:
         if struct_type is None:
             raise AtlasError(AtlasErrorCode.TYPE_NAME_INVALID, type_name)
         attributes: dict[str, Any] = {}
-        self._struct_attributes(struct_type, given, attributes, operation)
+        self.struct_attributes(struct_type, given, attributes, operation)
         return {"typeName": type_name, "attributes": attributes}
 
-    def _struct_attributes(
+    def struct_attributes(
         self, struct_type: StructType, given: Mapping[str, Any], target: dict[str, Any], operation: EntityOperation
     ) -> None:
-        """``mapAttributes`` of a struct: every attribute on create, the given ones on update, by name."""
+        """``mapAttributes`` of a struct or classification: every attribute on create, the given ones on update.
+
+        Values go into ``target`` by name (EWR-10, CLS-05, CLS-08).
+        """
         if not given:
             return
         if operation is EntityOperation.CREATE:

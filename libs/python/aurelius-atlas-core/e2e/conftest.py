@@ -55,5 +55,5 @@ async def entity_prefix(dev_store: ElasticsearchStore) -> AsyncGenerator[str]:
     """An alias prefix of its own for one test's entity indices, deleted with them afterwards."""
     prefix = f"aurelius-atlas-e2e-{uuid4().hex[:12]}"
     yield prefix
-    for name in ("entities", "unique-values", "entity-journal", "relationships"):
+    for name in ("entities", "unique-values", "entity-journal", "relationships", "classifications"):
         await dev_store.client.indices.delete(index=f"{prefix}-{name}-000001", ignore_unavailable=True)

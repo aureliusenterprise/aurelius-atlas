@@ -162,6 +162,14 @@ class AtlasErrorCode(Enum):
         ),
     )
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
+    INVALID_ENTITY_FOR_CLASSIFICATION = (
+        400,
+        "ATLAS-400-00-055",
+        (
+            "Entity (guid=\u2018{0}\u2018,typename=\u2018{1}\u2018) cannot be classified by Classification "
+            "\u2018{2}\u2018, because \u2018{1}\u2018 is not in the ClassificationDef's restrictions."
+        ),
+    )
     ATTRIBUTE_TYPE_INVALID = (
         400,
         "ATLAS-400-00-081",
@@ -189,6 +197,26 @@ class AtlasErrorCode(Enum):
         "change of relationship type is not permitted. relationship-guid={0}, current-type={1}, new-type={2}",
     )
     RELATIONSHIP_END_IS_NULL = (400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL")
+    CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY = (
+        400,
+        "ATLAS-400-00-06B",
+        "Update to classification {0} is not allowed from propagated entity",
+    )
+    CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY = (
+        400,
+        "ATLAS-400-00-06D",
+        "Classification {0} is not associated with entity",
+    )
+    PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY = (
+        400,
+        "ATLAS-400-00-070",
+        "Propagated classification {0} is not associated with entity {2}, it is associated with entity {1}",
+    )
+    INVALID_CLASSIFICATION_PARAMS = (
+        400,
+        "ATLAS-400-00-06F",
+        "Invalid classification parameters passed for {0} operation for entity: {1}",
+    )
     PATCH_MISSING_RELATIONSHIP_LABEL = (
         400,
         "ATLAS-400-00-08B",
@@ -243,7 +271,9 @@ class AtlasErrorCode(Enum):
     )
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     TYPE_GUID_NOT_FOUND = (404, "ATLAS-404-00-002", "Given type guid {0} was invalid")
+    NO_CLASSIFICATIONS_FOUND_FOR_ENTITY = (404, "ATLAS-404-00-003", "No classifications associated with entity: {0}")
     INSTANCE_GUID_NOT_FOUND = (404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found")
+    CLASSIFICATION_NOT_FOUND = (404, "ATLAS-404-00-008", "Given classification {0} was invalid")
     INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND = (
         404,
         "ATLAS-404-00-009",

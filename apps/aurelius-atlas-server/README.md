@@ -57,6 +57,10 @@ are ignored until their increments. Relationship attribute values, legacy ends a
 become relationships, and reads answer them in `relationshipAttributes` (DD-064). An update that drops an owned
 entity deletes it, listed under `DELETE` in the response (DD-068).
 
+Classifications are attached, read, changed and removed by `guid/{guid}/classifications`,
+`guid/{guid}/classification/{name}`, their `uniqueAttribute` forms and `bulk/classification`; entities read with
+them, and an entity create attaches those it gives (DD-070). Propagation follows in 3.4.
+
 Its deletes (`DELETE guid/{guid}`, `DELETE bulk`, `DELETE uniqueAttribute/type/{typeName}`) delete an entity
 with the entities it owns and change those referring to it; `PUT /api/atlas/admin/purge` removes deleted
 entities for good. Deletes are soft unless `AURELIUS_ATLAS_SERVER_DELETE_TYPE` is `hard`; with

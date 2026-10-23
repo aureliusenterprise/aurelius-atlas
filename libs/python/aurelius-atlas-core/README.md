@@ -26,7 +26,9 @@ documents of their own index listed by both ends and written with them (DD-061, 
 attributes of entities, mapped onto relationships by the relationship mapper and read back through them, and
 delete cascades that follow owned relationships (DD-064 to DD-067). Since
 [3.2](../../../docs/architecture/conversion/increments/3-2-ownership-cascades.md): updates delete the owned
-entities they drop, through a view of the request's changes and in the request's one write (DD-068).
+entities they drop, through a view of the request's changes and in the request's one write (DD-068). Since
+[3.3a](../../../docs/architecture/conversion/increments/3-3-direct-classifications.md): classifications
+attached to entities, instances of their own index listed by their entity and written with it (DD-070, DD-071).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -91,6 +93,10 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.graph_helper
 
 ::: aurelius_atlas_core.transaction_view
+
+::: aurelius_atlas_core.entity_classifications
+
+::: aurelius_atlas_core.stored_classification
 
 ::: aurelius_atlas_core.stored_relationship
 
