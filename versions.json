@@ -1,10 +1,5 @@
 [
   {
-    "version": "phase3-3.2-ownership-cascades",
-    "title": "phase3-3.2-ownership-cascades",
-    "aliases": []
-  },
-  {
     "version": "phase0-0.5-server-skeleton",
     "title": "phase0-0.5-server-skeleton",
     "aliases": []
