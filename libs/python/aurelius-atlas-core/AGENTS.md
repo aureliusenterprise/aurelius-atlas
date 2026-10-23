@@ -29,6 +29,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   `AtlasEntityStoreV2` and `EntityGraphMapper`; `stored_classification.py` holds the stored instance (DD-070)
 - `aurelius_atlas_core/tag_propagation.py` — `TagPropagation`: classification propagation over a request's view,
   whose entity changes the caller writes with the request (DD-075, DD-077), or the tasks it defers them to
+- `aurelius_atlas_core/entity_change_notifier.py` — `EntityChangeNotifier`: prunes a writer's response and tells
+  its listeners; `entity_audit_listener.py` records audit events, `entity_audit_repository.py` keeps and lists
+  them (DD-082 to DD-084); `testing/memory.py` has `InMemoryEntityAuditRepository`
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task

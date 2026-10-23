@@ -190,14 +190,14 @@ async def test__an_owned_map_entry_that_keeps_a_deleted_entity_revives_it(store:
     assert await state(store, "-1") is EntityStatus.ACTIVE
 
 
-@pytest.mark.covers(f"{W}.create_or_update", rules=["OWN-02"])
+@pytest.mark.covers(f"{W}.create_or_update", rules=["OWN-02", "AUD-02"])
 @pytest.mark.parametrize("delete_type", [DeleteType.SOFT, DeleteType.HARD])
 async def test__a_part_moved_and_dropped_in_one_request_is_deleted_with_its_new_relationship(
     store: EntityStore, delete_type: DeleteType
 ) -> None:
     """B takes the part, A drops it: the delete still reaches it, and the relationship B just got with it.
 
-    The part is also reported as updated, by B's new relationship, with the header taken before it was deleted.
+    The part, made updated by B's new relationship, is listed as deleted only, as ``pruneResponse`` leaves it.
     """
     await write(store, entity("r_node", "-1", qualifiedName="a@cl"), entity("r_node", "-2", qualifiedName="b@cl"))
     part = {**entity("r_part", "-3", qualifiedName="p@cl"), "relationshipAttributes": {"whole": ref("-1", "r_node")}}
@@ -212,8 +212,7 @@ async def test__a_part_moved_and_dropped_in_one_request_is_deleted_with_its_new_
     taker = await store.get(g("-2"))
     listed = await store.get_relationships((taker.entity.relationship_guids or []) if taker else [])
 
-    assert mutated(answer) == {"UPDATE": [g("-2"), g("-1"), g("-3")], "DELETE": [g("-3")]}
-    assert answer["mutatedEntities"]["UPDATE"][2]["status"] == "ACTIVE"
+    assert mutated(answer) == {"UPDATE": [g("-2"), g("-1")], "DELETE": [g("-3")]}
     if delete_type is DeleteType.SOFT:
         assert await state(store, "-3") is EntityStatus.DELETED
         assert [found.relationship.state.value for found in listed.values()] == ["DELETED"]
