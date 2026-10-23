@@ -140,3 +140,25 @@ async def test__one_classification_is_added_to_entities_by_guid_or_unique_attrib
     )
     names = (await send(client, "GET", f"{ENTITY}/guid/{table}/header"))[1]["classificationNames"]
     assert names == ["c_pii", "c_secret"]
+
+
+@pytest.mark.covers(f"{E}.set_classifications", rules=["CLA-01", "CLA-02", "CLA-03", "CLA-04"])
+async def test__set_classifications_answers_the_summary_array(client: httpx.AsyncClient, table: str) -> None:
+    """The entity found by ``qualifiedName`` gets the header's classification; no body answers ``[]``."""
+    body = {
+        "guidHeaderMap": {
+            "remote": {
+                "guid": "remote",
+                "typeName": "s_table",
+                "attributes": {"qualifiedName": "t@cl"},
+                "classifications": [{"typeName": "c_pii"}],
+            }
+        }
+    }
+
+    answer = await client.post(f"{ENTITY}/bulk/setClassifications", json=body)
+    empty = await client.post(f"{ENTITY}/bulk/setClassifications", content=b"")
+
+    assert (answer.status_code, answer.headers["content-type"]) == (200, "application/json")
+    assert answer.json() == [f"Add:{table}:s_table:qualifiedName -> c_pii:(Done)"]
+    assert (empty.status_code, empty.text) == (200, "[]")
