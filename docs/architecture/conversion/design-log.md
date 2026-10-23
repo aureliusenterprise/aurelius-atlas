@@ -120,6 +120,8 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-082](#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change)                   | Audit events are documents of their own index, written after the change                    | 3.5       | Proposed             |
 | [DD-083](#dd-083-audit-events-keep-atlass-event-keys-and-their-order)                                      | Audit events keep Atlas's event keys and their order                                       | 3.5       | Proposed             |
 | [DD-084](#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed)                                | The entity writer tells a change notifier what it changed                                  | 3.5       | Proposed             |
+| [DD-085](#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write)          | Classification events are collected in the request and recorded after its write            | 3.5       | Proposed             |
+| [DD-086](#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed)                     | Tag propagation records the propagations a request added and removed                       | 3.5       | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -1903,3 +1905,41 @@ would record nothing.
 **Consequences.** 3.5b gives the classification operations the same notifier. The writer prunes every response
 as `pruneResponse` does, also without a notifier, since Atlas answers the response it pruned: an entity listed
 as deleted is no longer also listed as updated (OWN-03).
+
+### DD-085. Classification events are collected in the request and recorded after its write
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** The classification operations, the entity writer, the relationship store and the propagation
+tasks take the change notifier, as the entity writer does (DD-084), and tell it, once their write has
+committed, what Atlas's would have told it during the request, in Atlas's order: the notifier's classification
+methods, then `notifyPropagatedEntities` where Atlas calls it.
+
+**Reason.** The events are recorded after the change, as entity events are (DD-082); keeping Atlas's order
+keeps the events' keys, and so the order in which `{guid}/audit` lists them.
+
+**Alternatives.** Events derived from the stored differences after the write: Atlas's quirks, such as one
+update event per updated classification on each entity notified, would be lost.
+
+**Consequences.** Every propagating operation answers what it propagated, to whom; 3.5b adds that to
+`TagPropagation`'s results (DD-086).
+
+### DD-086. Tag propagation records the propagations a request added and removed
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** `TagPropagation` keeps, per entity, the classification instances it newly listed and those it
+stopped listing, in the order it changed them, as `RequestContext` keeps added and removed propagations. The
+callers give them to the notifier after their write (CAU-05).
+
+**Reason.** The propagation is computed in one place (DD-075); recording there covers every caller, including
+the delete handlers and the tasks.
+
+**Alternatives.** Comparing the entities' classification lists before and after the write: a classification
+added and removed again within a request would be missed, and the order lost.
+
+**Consequences.** `propagate` answers the entities it propagated to, which the add events need (CAU-02).
