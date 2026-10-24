@@ -128,6 +128,7 @@
 - [3.4b Propagation tasks](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-4-propagation-tasks/index.md>)
 - [3.5b Classification audit](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-5-classification-audit/index.md>)
 - [3.5a Entity audit](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/3-5-entity-audit/index.md>)
+- [4.1a Entity search](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-1-entity-search/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)
 - [Conversion](<https://aureliusenterprise.github.io/main/architecture/conversion/index.md>)

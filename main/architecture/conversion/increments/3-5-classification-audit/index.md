@@ -43,4 +43,7 @@ DV-41: a `tagUpdateStartTime` that is not a number fails in Atlas with Jersey's 
 
 ## Acceptance
 
-- `libs/python/aurelius-atlas-core/tests/` — CAU-01 to CAU-07 on the in-memory documents and repository. - `libs/python/aurelius-atlas-core/e2e/` — classification events and their entities found on the dev store. - `apps/aurelius-atlas-server/tests/`, `apps/aurelius-atlas-server/scenarios/entity/` — CAU-02, CAU-04, CAU-07, CAU-08 over HTTP. - `uv run aurelius-atlas-trace check`.
+- `libs/python/aurelius-atlas-core/tests/` — CAU-01 to CAU-07 on the in-memory documents and repository.
+- `libs/python/aurelius-atlas-core/e2e/` — classification events and their entities found on the dev store.
+- `apps/aurelius-atlas-server/tests/`, `apps/aurelius-atlas-server/scenarios/entity/` — CAU-02, CAU-04, CAU-07, CAU-08 over HTTP.
+- `uv run aurelius-atlas-trace check`.

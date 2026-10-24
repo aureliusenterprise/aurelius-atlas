@@ -3676,6 +3676,8 @@
       
         
       
+        
+      
     
     
     
@@ -4500,6 +4502,33 @@
     
   
   3.5b Classification audit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-1-entity-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.1a Entity search
 
     
   </span>
@@ -6744,6 +6773,38 @@ Atlas clients expect when it lands).</p>
 <td>They write the instance as a read answers it</td>
 <td>Events are recorded after the write, from what is stored (DD-085)</td>
 <td>3.5</td>
+</tr>
+<tr>
+<td>DV-43</td>
+<td>Search</td>
+<td><code>LIKE</code> is its in-memory <code>contains</code> and, besides, a pattern of the index or graph query</td>
+<td><code>LIKE</code> is <code>contains</code> alone</td>
+<td>The search is one query (DD-089); the in-memory predicate is the one Atlas applies in every case</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td>DV-44</td>
+<td>Search</td>
+<td>Named <code>TIME_RANGE</code>s are computed in the server's time zone</td>
+<td>They are computed in UTC</td>
+<td>A server's zone should not change what a search finds</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td>DV-45</td>
+<td>Search</td>
+<td>A marker encodes the hash Java computes of the search parameters</td>
+<td>It encodes a hash of Aurelius Atlas's own; Atlas's markers are invalid here</td>
+<td>Java's <code>hashCode</code> is not reproduced</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td>DV-46</td>
+<td>Search</td>
+<td><code>classification</code>, <code>query</code>, <code>termName</code> are searched; no parameters or a filter value of another type fail with Java exceptions</td>
+<td>Until 4.1b, 4.2, 5.2 these fail with <code>BAD_REQUEST</code>; no parameters is <code>INVALID_SEARCH_PARAMS</code></td>
+<td>Refusing beats a wrong answer; Java's exceptions are not decisions</td>
+<td>4.1</td>
 </tr>
 </tbody>
 </table>

@@ -701,6 +701,9 @@ Methods:
 - **`referring`** –
 
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
+- **`search`** –
+
+  The entities of a search query's page, and how many match it in all (DD-089).
 - **`type_in_use`** –
 
   Whether an entity, relationship or classification of exactly this type exists, in any state.
@@ -836,6 +839,14 @@ referring(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
 The entities whose references name any of these GUIDs (EDL-10, DD-057).
+
+#### search
+
+```
+search(query: SearchQuery) -> tuple[list[StoredEntity], int]
+```
+
+The entities of a search query's page, and how many match it in all (DD-089).
 
 #### type\_in\_use
 
@@ -1050,12 +1061,15 @@ Attributes:
 - **`CLASSIFICATION_MAPPING`** (`dict[str, Any]`) –
 
   Classification instances by type and entity; attribute values stored, not indexed (DD-070).
+- **`ENTITY_FIELD_LIMIT`** –
+
+  `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
 - **`ENTITY_INDEX`** –
 
   The alias of the entity index (DD-043).
 - **`ENTITY_MAPPING`** (`dict[str, Any]`) –
 
-  System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
+  System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
 - **`INDEX_PREFIX`** –
 
   The prefix of the three aliases; tests give their own.
@@ -1112,6 +1126,14 @@ CLASSIFICATION_MAPPING: dict[str, Any] = {
 
 Classification instances by type and entity; attribute values stored, not indexed (DD-070).
 
+### ENTITY\_FIELD\_LIMIT
+
+```
+ENTITY_FIELD_LIMIT = 100000
+```
+
+`index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
+
 ### ENTITY\_INDEX
 
 ```
@@ -1147,13 +1169,15 @@ ENTITY_MAPPING: dict[str, Any] = {
         "pendingTasks": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
+        "search": {"type": "object", "dynamic": True, "subobjects": False},
     },
+    "dynamic_templates": [
+        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": {"type": kind}}} for kind in KINDS
+    ],
 }
 ```
 
-System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
-
-DD-043, DD-057.
+System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088).
 
 ### INDEX\_PREFIX
 
@@ -1325,6 +1349,9 @@ Methods:
 - **`restore_linked`** –
 
   Index the document's state before, or delete one that did not exist before (DD-062).
+- **`search`** –
+
+  Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1473,6 +1500,14 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 
 Index the document's state before, or delete one that did not exist before (DD-062).
 
+#### search
+
+```
+search(query: SearchQuery) -> tuple[list[StoredEntity], int]
+```
+
+Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+
 #### write
 
 ```
@@ -1543,6 +1578,9 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`search`** –
+
+  The entities of the query's page, as of now, and how many match it in all (DD-089).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1674,6 +1712,14 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
+
+#### search
+
+```
+search(query: SearchQuery) -> tuple[list[StoredEntity], int]
+```
+
+The entities of the query's page, as of now, and how many match it in all (DD-089).
 
 #### write
 
@@ -2057,6 +2103,9 @@ Attributes:
 - **`provenance_type`** (`int`) –
 - **`references`** (`list[str] | None`) –
 - **`relationship_guids`** (`list[str] | None`) –
+- **`search`** (`dict[str, Any] | None`) –
+
+  The search fields, written by the store (DD-088).
 - **`state`** (`EntityStatus`) –
 - **`super_type_names`** (`list[str]`) –
 - **`type_name`** (`str`) –
@@ -2148,6 +2197,14 @@ references: list[str] | None = None
 ```
 relationship_guids: list[str] | None = None
 ```
+
+#### search
+
+```
+search: dict[str, Any] | None = None
+```
+
+The search fields, written by the store (DD-088).
 
 #### state
 

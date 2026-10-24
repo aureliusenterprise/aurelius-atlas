@@ -4559,6 +4559,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-087-basic-search-is-split-into-entity-and-classification-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-087. Basic search is split into entity and classification search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-088. Entity attributes are searched in typed search fields named after their defining type
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-089. A search is a query of the entity documents, ordered by creation when no sort is given
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4638,6 +4671,8 @@
       
         
           
+        
+      
         
       
         
@@ -5522,6 +5557,33 @@
     
   
   3.5b Classification audit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-1-entity-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.1a Entity search
 
     
   </span>
@@ -8306,6 +8368,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-087-basic-search-is-split-into-entity-and-classification-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-087. Basic search is split into entity and classification search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-088. Entity attributes are searched in typed search fields named after their defining type
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-089. A search is a query of the entity documents, ordered by creation when no sort is given
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8992,6 +9087,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed">DD-086</a></td>
 <td>Tag propagation records the propagations a request added and removed</td>
 <td>3.5</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-087-basic-search-is-split-into-entity-and-classification-search">DD-087</a></td>
+<td>Basic search is split into entity and classification search</td>
+<td>4.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type">DD-088</a></td>
+<td>Entity attributes are searched in typed search fields named after their defining type</td>
+<td>4.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given">DD-089</a></td>
+<td>A search is a query of the entity documents, ordered by creation when no sort is given</td>
+<td>4.1</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -10473,6 +10586,54 @@ the delete handlers and the tasks.</p>
 <p><strong>Alternatives.</strong> Comparing the entities' classification lists before and after the write: a classification
 added and removed again within a request would be missed, and the order lost.</p>
 <p><strong>Consequences.</strong> <code>propagate</code> answers the entities it propagated to, which the add events need (CAU-02).</p>
+<h3 id="dd-087-basic-search-is-split-into-entity-and-classification-search">DD-087. Basic search is split into entity and classification search<a class="headerlink" href="#dd-087-basic-search-is-split-into-entity-and-classification-search" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.1</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> Increment 4.1 is split: 4.1a searches entities by type, entity filters, state, sort and paging,
+with the search fields it needs (DD-088); 4.1b adds the classification search of
+<code>ClassificationSearchProcessor</code>. The free-text <code>query</code> of basic search goes with quick search to 4.2.</p>
+<p><strong>Reason.</strong> Atlas's two processors are separate, and each is as large as one increment.</p>
+<p><strong>Alternatives.</strong> One increment of about twice the size; the free text with 4.1, where it would need the full
+text index 4.2 builds anyway.</p>
+<p><strong>Consequences.</strong> Until 4.1b a search naming a classification is refused (DV-46).</p>
+<h3 id="dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type">DD-088. Entity attributes are searched in typed search fields named after their defining type<a class="headerlink" href="#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.1</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> An entity document carries <code>search</code>, a flat object (<code>subobjects: false</code>) of its searchable
+values: each primitive, enum or array-of-primitive attribute under <code>&lt;kind&gt;.&lt;qualified name&gt;</code>, the qualified
+name being Atlas's vertex property key (<code>hive_table.name</code>, <code>Referenceable.qualifiedName</code>, <code>__guid</code>), and
+<code>&lt;kind&gt;</code> the Elasticsearch type its Atlas type maps to: <code>keyword</code> for strings and enums, <code>long</code> for the
+integer types and dates, <code>double</code> for <code>float</code>, <code>double</code> and the big number types, <code>boolean</code>. Dynamic templates
+on the kind map each new field. The system attributes of the entity root are filled from the document's own
+fields. The entity store computes <code>search</code> with the registry when it writes an entity.</p>
+<p><strong>Reason.</strong> Atlas's index keys a property by its defining type, so one attribute is one field across sub
+types, and its type decides how it compares. A kind in the field's name lets Elasticsearch map a field the
+first time it is written, in any process, without a mapping kept in step with the type definitions.</p>
+<p><strong>Alternatives.</strong> Mapping each field from the type definitions when they change: the same fields, but every
+process and every type change would update the mapping. One <code>flattened</code> field: no range or numeric sort.
+Filtering in memory: every search reads every entity of its types.</p>
+<p><strong>Consequences.</strong> Entities written before 4.1a have no <code>search</code> until written again. The field limit of the
+entity index is raised to 100,000. The big number types compare as doubles.</p>
+<h3 id="dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given">DD-089. A search is a query of the entity documents, ordered by creation when no sort is given<a class="headerlink" href="#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.1</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> <code>EntitySearchProcessor</code> builds a search query of its own: the types, the state, the filter tree
+over search fields with Atlas's operators, the sort, offset and size. The entity documents answer it with the
+matching entities and their total, which is <code>approximateCount</code>; Elasticsearch as a <code>bool</code> query, the in-memory
+documents by evaluating it. Without <code>sortBy</code> entities come by creation time, then GUID.</p>
+<p><strong>Reason.</strong> One query instead of Atlas's index query, graph query and in-memory predicates, whose combination
+the rules of SRC-05 state; Atlas's order without a sort is the index's and has nothing to keep.</p>
+<p><strong>Alternatives.</strong> Elasticsearch's query language in the core: the in-memory documents could not answer it.</p>
+<p><strong>Consequences.</strong> <code>approximateCount</code> is exact.</p>
 
 
 
