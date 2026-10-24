@@ -19,8 +19,8 @@ from aurelius_atlas_core.entity_documents import (
     VersionedEntity,
     WriteResult,
 )
-from aurelius_atlas_core.free_text import text_matches
-from aurelius_atlas_core.search_query import SearchHits, SearchQuery, selects
+from aurelius_atlas_core.free_text import field_terms, text_matches
+from aurelius_atlas_core.search_query import SearchHits, SearchQuery, facet_counts, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_task import StoredTask
@@ -269,6 +269,7 @@ class MemoryEntityDocuments:
         """The query evaluated over every entity's search fields; free text as ``text_matches`` reads it (DD-089)."""
         scores: dict[str, float] = {}
         found = []
+        matching: list[dict[str, object]] = []
         for source, _ in self.entities.values():
             fields: dict[str, object] = source.get("search") or {}  # type: ignore[assignment]
             if not selects(query, fields):
@@ -279,6 +280,7 @@ class MemoryEntityDocuments:
                 if not scores[entity.guid]:
                     continue
             found.append(entity)
+            matching.append(fields)
         for name in reversed(query.tie_break):
             found.sort(key=lambda entity, field=name: _sort_key(entity, field))
         if query.sort_field is not None:
@@ -292,7 +294,13 @@ class MemoryEntityDocuments:
         elif query.text is not None:
             found.sort(key=lambda entity: scores[entity.guid], reverse=True)
         page = found[query.offset : query.offset + query.size]
-        return SearchHits(page, len(found), [scores.get(entity.guid, 0.0) for entity in page])
+        facets = facet_counts(matching, query.facets)
+        return SearchHits(page, len(found), [scores.get(entity.guid, 0.0) for entity in page], facets)
+
+    async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
+        """Each field's words as ``field_terms`` reads them over every entity (DD-094)."""
+        every: list[dict[str, object]] = [source.get("search") or {} for source, _ in self.entities.values()]  # type: ignore[misc]
+        return {name: field_terms(every, name, prefix) for name in fields}
 
 
 class InMemoryEntityAuditRepository:
