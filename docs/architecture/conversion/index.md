@@ -35,7 +35,6 @@ checks a PR must pass:
 - [ ] Parity scenarios for the endpoints in scope pass, each citing its Atlas source (ADR 052)
 - [ ] `nx affected -t lint typecheck test e2e -c ci` is green and the coverage gate holds
 - [ ] Design log, Java map and deviations updated; ADR written if a business-level decision was made
-- [ ] The test report shows the increment's rules and endpoints as green
 - [ ] Conventional-commit title and two human approvals
 
 ## Roadmap
@@ -46,7 +45,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | ---- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------- |
 | 0.1  | Adopt the template              | Remove unused slices, rename, ADRs 046–051, this ledger                                                                                                                                                    | –                                                                                         | done        |
 | 0.2  | Elasticsearch infrastructure    | `dev/elasticsearch`, store library skeleton, health check                                                                                                                                                  | –                                                                                         | done        |
-| 0.3  | Test report and traceability    | `covers` marker, function-to-test checker, HTML test report in CI                                                                                                                                          | –                                                                                         | in progress |
+| 0.3  | Test report and traceability    | `covers` marker, function-to-test checker, HTML test report (local tools; CI gates dropped, DD-215)                                                                                                        | –                                                                                         | done        |
 | 0.4  | Parity harness                  | Scenario format, runner, comparison, deviations, report section                                                                                                                                            | –                                                                                         | in progress |
 | 0.5  | Server skeleton                 | `apps/aurelius-atlas-server`; admin version, status, session, liveness and readiness                                                                                                                       | `AdminResource` (part)                                                                    | in progress |
 | 0.6  | Dashboards served               | `dashboardv2` at `/` and `dashboardv3` at `/n/`, built from the vendored 2.4.0 source                                                                                                                      | `dashboardv2`, `dashboardv3`                                                              | in progress |

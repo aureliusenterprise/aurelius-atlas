@@ -40,7 +40,7 @@ auth=None)` builds the verifier, mounts the routers and the 400 handler (the app
 
 The DTM rules live in
 `docs/architecture/conversion/increments/8-1-data2model-api.md`; tests cite them with
-`@pytest.mark.covers(..., rules=["DTM-NN"])` (ADR 049). The legacy reference is
+`@pytest.mark.covers(..., rules=["DTM-NN"])` (ADR 056). The legacy reference is
 `.scratch/aurelius` (`backend/m4i-data2model`, `libs/m4i-analytics`): cite the file in
 any behaviour change — the browser contract (`{model, metadata}`, the ar3 shape) is
 the webapp's parser's input.

@@ -215,6 +215,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-212](#dd-212--the-8x-apps-appscenario-test-modules-carry-their-package-name)                                    | The 8.x apps' app/scenario test modules carry their package name                                     | 8.5           | Accepted         |
 | [DD-213](#dd-213--the-lineage-guid-is-a-uuid-on-every-typed-surface)                                                | The lineage guid is a UUID on every typed surface                                                    | 8.5           | Accepted         |
 | [DD-214](#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)                              | The test suite review of 2026-10-24 scopes the hardening increments                                  | cross-cutting | Accepted         |
+| [DD-215](#dd-215--the-ci-pipeline-drops-the-traceability-check-and-report)                                          | The CI pipeline drops the traceability check and report; the tools stay as local aids                | cross-cutting | Accepted         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -5948,3 +5949,46 @@ already-specified behaviour would fork the ledger. The fastapi-example, `sdk`'s
 aws/msal/logger, aurelius-atlas-example, and the dashboard are exempted from
 hardening (matching the trace check's `exclude-projects` and DD-017).
 Phase ordering: 8.6 and 8.7 parallel, 7.19 parallel, 9.1 after 8.6 and 7.19.
+
+### DD-215 — The CI pipeline drops the traceability check and report
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (rides the CI pipeline; no roadmap row)
+- **Date:** 2026-10-24
+
+**Context.** Increment 0.3 wired [ADR 049](../../adr/049-every-function-and-rule-is-traceable-to-a-test.md)
+into the pipeline: the `validate` job runs `aurelius-atlas-trace check` (collection only, no test
+runs) and the `test` job builds an HTML trace report from the JUnit, coverage, and trace files. The
+check proves that a test _names_ a function or rule id; it never runs anything. The desired
+behaviour of every increment is already encoded in its unit tests, which the pipeline runs, so the
+gate restates what the suites prove. Keeping the declarations true across the whole surface —
+TypeScript citations, end-to-end claims, rules whose proof lives in another repo — turned into
+bookkeeping that fails CI without indicating a missing test.
+
+**Decision.** `.github/workflows/ci.yaml` drops both steps: the `validate` job no longer runs
+`aurelius-atlas-trace check`, and the `test` job no longer runs `aurelius-atlas-trace report` or
+uploads the `test-report` artifact. What blocks a merge is a failing test. The trace lib, the
+`covers` marker, and the `--trace-json` plumbing stay in the repo as local tools and a code-review
+convention — `nx test`/`nx e2e` keep writing the files, and anyone can run `check` or `report`
+themselves. Coverage enforcement is unchanged: the SonarQube quality gate
+([DD-214](#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)). Parity
+scenarios keep their citation discipline ([ADR 052](../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md))
+and the parity lib keeps its own checks — that is how expected behaviour is justified, not a
+trace gate. The business-level decision is
+[ADR 056](../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md), which
+supersedes ADR 049; [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run),
+[DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on), and
+[DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files) describe the
+tools, which remain, so they stand as written.
+
+**Alternatives.** (a) Widen the gate to prove the gaps away (TypeScript citations, end-to-end
+markers, seams for cross-repo rules) — refused: more mechanism proving declarations, no executed
+behaviour. (b) Keep the check as a non-blocking warning — refused: an unenforced gate is
+documentation nobody reads, and the noise stays. (c) Delete the trace lib as a slice now —
+refused: the marker is a useful review pointer and removing it would rewrite every test's
+metadata for no gain; it is removable later as one slice.
+
+**Consequences.** The pipeline is smaller and says only what it can prove. The per-change
+published trace report is gone; reviewers read the tests and the coverage report. Increment specs
+that list `aurelius-atlas-trace check` in their "gates" describe the verification the increment
+was accepted with — they are dated records, not promises about current CI, and are not edited.

@@ -175,6 +175,7 @@ nav:
                 - 053. The webapp is rewritten in Angular idiom, slice by slice: architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice.md
                 - 054. The server API is the webapp's one data plane: architecture/adr/054-the-server-api-is-the-webapps-one-data-plane.md
                 - 055. The lineage chain is a named data surface: architecture/adr/055-the-lineage-chain-is-a-named-data-surface.md
+                - 056. Behaviour is proven by executed tests: architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md

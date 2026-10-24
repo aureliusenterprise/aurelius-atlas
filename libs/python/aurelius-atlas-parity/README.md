@@ -68,5 +68,5 @@ async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
 ```
 
 Each scenario is one test, named by its path below the directory. Its `rules` and `covers` become a
-`covers` marker, and the plugin records its endpoints and deviations, so the traceability check and the
-test report of [aurelius-atlas-trace](../aurelius-atlas-trace/README.md) see it.
+`covers` marker, and the plugin records its endpoints and deviations, so the check and the
+test report of [aurelius-atlas-trace](../aurelius-atlas-trace/README.md) see them when run locally.

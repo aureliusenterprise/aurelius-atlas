@@ -37,7 +37,7 @@ auth=None)` builds the verifier, mounts the routers, and configures the telemetr
 
 The VE rules live in
 `docs/architecture/conversion/increments/8-3-validate-entity-api.md`; tests cite them
-with `@pytest.mark.covers(..., rules=["VE-NN"])` (ADR 049). The legacy reference is
+with `@pytest.mark.covers(..., rules=["VE-NN"])` (ADR 056). The legacy reference is
 `.scratch/aurelius` (`backend/m4i-validate-entity/m4i_validate_entity/m4i_validate_entity.py`):
 cite the file in any behaviour change — the `output` dict's keys, `doc-…` ids,
 `Attribute - <key>` names and string `compliant` flags are what the webapp's

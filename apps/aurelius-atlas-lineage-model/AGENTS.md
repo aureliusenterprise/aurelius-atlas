@@ -42,7 +42,7 @@ collaborators, routes serve, `app.py` composes.
   are generated (scratch tool, not CI) and committed: `graph.lineage.json` (the canned
   Atlas answer), `graph.extract.json` (the 8.1 engine's bytes for the same rows). The
   graph is the 8.1 scenario's rows inverted: a dataset → process → dataset lineage.
-- `tests/` — unit tests, one file per module (ADR 049 names every public
+- `tests/` — unit tests, one file per module (ADR 056 names every public
   function): the flattener, the chain, the providers, the routes, the app
   wiring and breakers — all on a fake issuer and a recording fake upstream
   (`tests/fake_upstream.py`); `e2e/` — the chain: this image + the real
@@ -54,7 +54,7 @@ The LM rules live in
 `docs/architecture/conversion/increments/8-2-lineage-model-api.md`; the circuit-breaker
 rules (LM-11..LM-15) in
 `docs/architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md`; tests cite
-them with `@pytest.mark.covers(..., rules=["LM-NN"])` (ADR 049). The legacy reference is
+them with `@pytest.mark.covers(..., rules=["LM-NN"])` (ADR 056). The legacy reference is
 `.scratch/aurelius` (`backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py`):
 cite the file in any behaviour change — the 12 column names (`m4i_*_process`, LM-03)
 and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's input.
