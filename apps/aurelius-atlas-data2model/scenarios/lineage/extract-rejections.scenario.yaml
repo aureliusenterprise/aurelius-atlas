@@ -1,0 +1,63 @@
+# Malformed extraction requests (8.6, DD-214): the legacy answers a body its
+# parser rejects with a Flask ValueError — a 500 (DV-79). Aurelius Atlas
+# validates at the boundary and answers 400 with the Atlas error body
+# (DTM-11); the messages are pydantic's, joined under the fixed prefix.
+# The two bodies below are pydantic's own rejections: the list-typed `data`
+# column and the `concept_type` Literal, captured from the app.
+name: "Malformed extraction bodies are 400, not the legacy's 500 crash"
+source:
+    - .scratch/aurelius/backend/m4i-data2model/m4i_data2model/data2model.py::extract
+    - .scratch/aurelius/libs/m4i-analytics/m4i_analytics/model_extractor/ExtractorLanguagePrimitives.py
+rules:
+    - DTM-11
+covers:
+    - aurelius_atlas_data2model.app.create_app
+stages:
+    - name: A data column that is not a list of rows is 400
+      request:
+          method: POST
+          url: /extract
+          json:
+              data: not rows
+              rules:
+                  elements: []
+                  relations: []
+                  views: []
+      response:
+          status: 400
+          headers:
+              content-type: application/json
+          json: {}
+          deviations:
+              - id: DV-79
+                path: $.errorCode
+                value: ATLAS-400-00-029
+              - id: DV-79
+                path: $.errorMessage
+                value: "invalid extraction request: Input should be a valid list"
+    - name: An element rule with an unknown concept type is 400
+      request:
+          method: POST
+          url: /extract
+          json:
+              data:
+                  - eid: a
+              rules:
+                  elements:
+                      - id: e1
+                        concept_type: nope
+                        id_key: eid
+                  relations: []
+                  views: []
+      response:
+          status: 400
+          headers:
+              content-type: application/json
+          json: {}
+          deviations:
+              - id: DV-79
+                path: $.errorCode
+                value: ATLAS-400-00-029
+              - id: DV-79
+                path: $.errorMessage
+                value: "invalid extraction request: Value error, unknown concept type: 'nope'"

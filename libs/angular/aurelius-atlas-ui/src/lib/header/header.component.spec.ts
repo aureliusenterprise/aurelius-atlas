@@ -18,4 +18,57 @@ describe("Header", () => {
     it("should create", () => {
         expect(component).toBeTruthy();
     });
+
+    it("renders the brand as a logo image when one is given", () => {
+        fixture.componentRef.setInput("logo", "assets/aurelius-atlas-logo.png");
+        fixture.componentRef.setInput("name", "Aurelius Atlas Data Governance");
+        fixture.detectChanges();
+
+        const link = fixture.nativeElement.querySelector(".navbar-brand a.navbar-item");
+        const img = link?.querySelector("img");
+
+        expect(link.getAttribute("routerLink")).toBe("/");
+        expect(img.getAttribute("src")).toBe("assets/aurelius-atlas-logo.png");
+        expect(img.getAttribute("alt")).toBe("Aurelius Atlas Data Governance");
+    });
+
+    it("puts the logo css class on the brand image (SHM-02)", () => {
+        // The Aurelius chrome sizes the mark through the `.logo` rule; the
+        // ui-lib applies it by default and forwards a custom class.
+        fixture.componentRef.setInput("logo", "assets/aurelius-atlas-logo.png");
+        fixture.detectChanges();
+
+        const img = fixture.nativeElement.querySelector(".navbar-brand img");
+
+        expect(img.getAttribute("class")).toBe("logo");
+    });
+
+    it("forwards a custom logo css class (SHM-02)", () => {
+        fixture.componentRef.setInput("logo", "assets/aurelius-atlas-logo.png");
+        fixture.componentRef.setInput("logoCssClass", "my-logo");
+        fixture.detectChanges();
+
+        const img = fixture.nativeElement.querySelector(".navbar-brand img");
+
+        expect(img.getAttribute("class")).toBe("my-logo");
+    });
+
+    it("pins the navbar when fixed (SHM-05)", () => {
+        fixture.componentRef.setInput("fixed", true);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector("nav.navbar").classList.contains("is-fixed-top")).toBe(true);
+    });
+
+    it("wraps the navbar content in a container (SHM-05)", () => {
+        // The legacy navbar anatomy: `navbar > container > navbar-brand`,
+        // so the chrome aligns with the page's container below.
+        fixture.detectChanges();
+
+        const container = fixture.nativeElement.querySelector("nav.navbar > div.container");
+
+        expect(container).toBeTruthy();
+        expect(container.querySelector(".navbar-brand")).toBeTruthy();
+        expect(container.querySelector("nav.navbar-menu")).toBeTruthy();
+    });
 });

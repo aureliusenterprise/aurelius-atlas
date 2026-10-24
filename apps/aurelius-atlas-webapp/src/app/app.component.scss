@@ -1,0 +1,21 @@
+/*
+ * The shell frame (SHC-01, SHM-05, SHM-07, DD-150): the root is the flex
+ * column between body and chrome (body is the viewport-height column,
+ * styles.scss); the outlet band is the legacy `.is-tall-container` verbatim —
+ * the Aurelius `shell.component.scss` rule (`flex: 1 1 auto` AND
+ * `min-height: 100vh`) — so the band is a full viewport and the footer
+ * starts below the fold, as on the demo (the footer is never on the first
+ * screen). The `has-background` band is the legacy shell's content
+ * background — Bulma's scheme-following surface (DD-167): the legacy light
+ * in light mode, the dark ramp's surface in dark mode, matching the body.
+ */
+:host {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+.is-tall-container {
+    flex: 1 1 auto;
+    min-height: 100vh;
+}

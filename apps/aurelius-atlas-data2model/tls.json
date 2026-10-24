@@ -1,0 +1,5 @@
+{
+    "services": {
+        "aurelius-atlas-data2model": ["aurelius-atlas-data2model", "localhost", "127.0.0.1"]
+    }
+}

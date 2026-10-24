@@ -391,7 +391,7 @@
         },
         {
             "collapsed": false,
-            "description": "FastAPI request traces in Tempo (logfire instrumentation). Open a row for the span waterfall; search covers the recent ingest window.",
+            "description": "FastAPI request traces in Tempo (OTel instrumentation). Open a row for the span waterfall; search covers the recent ingest window.",
             "gridPos": {
                 "h": 1,
                 "w": 24,

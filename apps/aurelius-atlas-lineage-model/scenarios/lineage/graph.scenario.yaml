@@ -1,0 +1,67 @@
+name: "The lineage graph of a dataset: flatten, extract, answer verbatim"
+source:
+    - .scratch/aurelius/backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py::lineage_model
+    - .scratch/aurelius/backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py::fmt_lineage_relation
+    - .scratch/aurelius/backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py::rules
+    - .scratch/aurelius/libs/m4i-atlas-core/m4i_atlas_core/api/atlas/get_lineage_by_guid.py
+rules:
+    - LM-01
+    - LM-02
+    - LM-04
+covers:
+    - aurelius_atlas_lineage_model.app.create_app
+    - aurelius_atlas_lineage_model.lineage.flatten_relations
+stages:
+    - name: GET / for the lineage root answers the extracted model
+      request:
+          method: GET
+          url: /
+          params:
+              guid: 00000000-0000-4000-8000-000000000001
+      response:
+          status: 200
+          headers:
+              content-type: application/json
+          json:
+              metadata:
+                  - id: 00000000-0000-4000-8000-000000000001
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: 00000000-0000-4000-8000-000000000001
+                        Type name: kafka_topic
+                  - id: 00000000-0000-4000-8000-000000000002
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: 00000000-0000-4000-8000-000000000002
+                        Type name: m4i_generic_process
+                  - id: 00000000-0000-4000-8000-000000000002
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: 00000000-0000-4000-8000-000000000002
+                        Type name: m4i_generic_process
+                  - id: 00000000-0000-4000-8000-000000000003
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: 00000000-0000-4000-8000-000000000003
+                        Type name: hive_table
+                  - id: rel-1
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: rel-1
+                  - id: rel-2
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_prefix: ""
+                        m4i_original_id: rel-2
+                  - id: lineage_view
+                    data:
+                        created_by: Model Extractor API
+                        m4i_id_type: static
+                        m4i_id_prefix: ""
+                        m4i_original_id: lineage_view
+              model: '{{"ar3_model": {{"@identifier": "Generated model", "ar3_name": [{{"@xml_lang": "en", "value": "Generated model"}}], "ar3_elements": {{"ar3_element": [{{"@identifier": "00000000-0000-4000-8000-000000000001", "@xsi_type": "lineage_dataset", "ar3_name": [{{"@xml_lang": "en", "value": "Ingest Topic"}}]}}, {{"@identifier": "00000000-0000-4000-8000-000000000002", "@xsi_type": "lineage_process", "ar3_name": [{{"@xml_lang": "en", "value": "Load Job"}}]}}, {{"@identifier": "00000000-0000-4000-8000-000000000003", "@xsi_type": "lineage_dataset", "ar3_name": [{{"@xml_lang": "en", "value": "Sales Table"}}]}}]}}, "ar3_relationships": {{"ar3_relationship": [{{"@identifier": "rel-1", "@target": "00000000-0000-4000-8000-000000000002", "@source": "00000000-0000-4000-8000-000000000001", "@xsi_type": "lineage_relation", "ar3_name": [{{"@xml_lang": "en", "value": ""}}]}}, {{"@identifier": "rel-2", "@target": "00000000-0000-4000-8000-000000000003", "@source": "00000000-0000-4000-8000-000000000002", "@xsi_type": "lineage_relation", "ar3_name": [{{"@xml_lang": "en", "value": ""}}]}}]}}, "ar3_views": {{"ar3_diagrams": {{"ar3_view": [{{"@identifier": "lineage_view", "@xsi_type": "ar3_Diagram", "ar3_node": [{{"@identifier": "lineage_view-00000000-0000-4000-8000-000000000001--0", "@x": 0, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "00000000-0000-4000-8000-000000000001", "@xsi_type": "ar3_Element"}}, {{"@identifier": "lineage_view-00000000-0000-4000-8000-000000000002--1", "@x": 320, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "00000000-0000-4000-8000-000000000002", "@xsi_type": "ar3_Element"}}, {{"@identifier": "lineage_view-00000000-0000-4000-8000-000000000003--2", "@x": 640, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "00000000-0000-4000-8000-000000000003", "@xsi_type": "ar3_Element"}}], "ar3_connection": [{{"@identifier": "lineage_view-rel-1--0", "@source": "lineage_view-00000000-0000-4000-8000-000000000001--0", "@target": "lineage_view-00000000-0000-4000-8000-000000000002--1", "@relationshipRef": "rel-1", "@xsi_type": "ar3_Relationship"}}, {{"@identifier": "lineage_view-rel-2--1", "@source": "lineage_view-00000000-0000-4000-8000-000000000002--1", "@target": "lineage_view-00000000-0000-4000-8000-000000000003--2", "@relationshipRef": "rel-2", "@xsi_type": "ar3_Relationship"}}], "ar3_name": [{{"@xml_lang": "en", "value": "Lineage"}}]}}]}}}}, "ar3_organizations": [{{"ar3_item": [{{"ar3_label": [{{"@xml_lang": "en", "value": "Other"}}], "ar3_item": [{{"@identifierRef": "00000000-0000-4000-8000-000000000001"}}, {{"@identifierRef": "00000000-0000-4000-8000-000000000002"}}, {{"@identifierRef": "00000000-0000-4000-8000-000000000003"}}]}}, {{"ar3_label": [{{"@xml_lang": "en", "value": "Relations"}}], "ar3_item": [{{"@identifierRef": "rel-1"}}, {{"@identifierRef": "rel-2"}}]}}, {{"ar3_label": [{{"@xml_lang": "en", "value": "Views"}}], "ar3_item": [{{"@identifierRef": "lineage_view"}}]}}]}}]}}}}'

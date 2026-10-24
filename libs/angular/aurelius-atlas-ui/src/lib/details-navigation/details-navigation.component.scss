@@ -1,0 +1,21 @@
+/* The legacy navigation shell (the Aurelius .details-navigation): the
+   sticky circular toggle at the bottom-right of the screen, the up-dropdown
+   opening above it. Ported as-is; the scroll behaviour it anchors is
+   app-side (DD-191). */
+.details-navigation {
+    position: sticky;
+    bottom: 6rem;
+    z-index: 4;
+
+    .box {
+        float: right;
+        height: auto;
+        border-radius: 100%;
+    }
+
+    .button:focus,
+    .button:hover {
+        outline: none;
+        background-color: transparent;
+    }
+}

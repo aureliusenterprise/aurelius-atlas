@@ -24,6 +24,10 @@ rules live in the root `AGENTS.md`.
   and `otelExporterUrl` — never hard-code them. Production deployments must serve their
   own `config.json`; a missing or malformed file throws at bootstrap (fail loudly).
 - The bearer token is attached to `/api/*` requests via `includeBearerTokenInterceptor`.
+- The OTLP exporters attach the user's own token through the
+  `createAureliusOtelIngestAuth` headers factory (aurelius-atlas-observability,
+  DD-193); `/otel` passes `Authorization` through and the
+  collector validates it via OIDC — logged-out pushes 401 by design.
 
 ## Wiring Checklist
 

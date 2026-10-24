@@ -1,0 +1,8 @@
+{
+    "apiBaseUrl": "/api",
+    "appCopyright": 2022,
+    "appName": "Aurelius Atlas Data Governance",
+    "appVersion": "0.0.0",
+    "keycloak": { "clientId": "aurelius", "realm": "master", "url": "http://keycloak.localhost:8080/" },
+    "otelExporterUrl": "/otel/v1/traces"
+}

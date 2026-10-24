@@ -11,7 +11,7 @@ rules — including the scaffold recipe for Python libs — live in the root
   always import from submodules (`from aurelius_atlas_sdk.logger import setup_logger`)
 - `tests/test__*.py` — pytest suite
 - `pyproject.toml` — extras: `logging`, `postgresql`, `aws`, `azure`, `testing`,
-  `full` (base depends only on `httpx`)
+  `full` (base depends only on `httpx2`)
 
 ## Wiring Checklist
 

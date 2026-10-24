@@ -17,13 +17,33 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
-            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4318
-            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            # OTLP ingest identity (7.18, DD-196): the server exports through
+            # its own pipeline (aurelius-atlas-otel), minting client-credentials
+            # JWTs as otel-atlas-server for the per-service leg — the OIDC
+            # receiver on :4319 answers the shared token 401 (CIA-08), so the
+            # 7.17 static OTEL_EXPORTER_* pair is gone. The mint rides the TLS
+            # :8443 listener (DD-202): every per-service producer mints there,
+            # the collector validates both listeners, so no suite order can
+            # split mint issuer from validator. Nx injects the project .env, a
+            # missing secret fails the start.
+            AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
+            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            # The mint target: the e2e Keycloak's :8443 listener, published
+            # loopback-wide on this machine (as the webapp stack's nginx uses
+            # for /api/). The collector is reached by service DNS — its
+            # publishes are loopback-pinned (CIA-03), host-gateway would not
+            # answer for it.
+            - keycloak.localhost:host-gateway
         networks:
             - aurelius-atlas-dev-elasticsearch-network
+            # The collector answers as `otel-collector` on this network — the
+            # name in its certificate. Its publishes are loopback-pinned
+            # (CIA-03), so a host-gateway extra_host would not reach it.
             - aurelius-atlas-dev-observability-network
-        extra_hosts:
-            - otel-collector:host-gateway
         ports:
             - 21000
         volumes:

@@ -1,7 +1,7 @@
 # 049. Every function and every specified rule is traceable to a test, and the trace is published
 
-- **Status:** Accepted
-- **Date:** 2026-10-09
+- **Status:** Superseded by [056](./056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md)
+- **Date:** 2026-10-24
 - **Deciders:** Aurelius Enterprise
 
 Every public function and every specified rule must be named by a test, and

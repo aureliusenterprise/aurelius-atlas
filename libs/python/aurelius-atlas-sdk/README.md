@@ -7,7 +7,7 @@ Part of the template **spine**.
 
 ## Optional extras
 
-The base package depends only on `httpx`. Everything else is an extra, and each
+The base package depends only on `httpx2`. Everything else is an extra, and each
 submodule raises a clear error at import time if its extra is missing:
 
 | Extra        | Enables                                           |

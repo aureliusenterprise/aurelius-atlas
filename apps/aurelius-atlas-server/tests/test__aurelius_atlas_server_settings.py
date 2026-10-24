@@ -30,7 +30,10 @@ def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPa
     assert store.host_urls == ["https://es:9200"]
     assert store.password.get_secret_value() == "secret"
     assert store.ca_certs_path == ca_file
-    assert "secret" not in repr(settings)
+    # The password's value never appears in the repr (SecretStr masks; the
+    # quoted form is what a leaked value would look like — the bare token
+    # would also match field names like otel_client_secret, DD-196).
+    assert "'secret'" not in repr(settings)
 
 
 @pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.store_settings", rules=["SRV-01"])

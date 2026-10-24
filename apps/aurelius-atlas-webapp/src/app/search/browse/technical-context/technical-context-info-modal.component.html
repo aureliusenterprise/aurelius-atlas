@@ -1,0 +1,43 @@
+<!--
+    The technical-context info modal (BRW-03): the ui-lib modal in card
+    anatomy with the legacy description paragraph (its two sentences are
+    separated by a literal blank line, as the Aurelius string carries —
+    `white-space: pre-line` renders it) and the static type-name table. The
+    card component two-way binds `active`.
+-->
+<aurelius-atlas-ui-modal [(active)]="active" [title]="title" [ariaLabel]="closeLabel">
+    <div class="content">
+        <p i18n="@@search.browse.technicalContext.infoModal.description">
+            The technical part of the data governance model captures the technical implementation of data, such as where
+            data is stored and the level of data quality. The technical data governance model consists of the following
+            types of entities:
+        </p>
+        <div class="block">
+            <aurelius-atlas-ui-sortable-table [rows]="rows" [rowsSelectable]="false">
+                <ng-template aurelius-atlas-ui-table-column [isNarrow]="true" [title]="iconHint">
+                    {{ iconTitle }}
+                </ng-template>
+                <ng-template
+                    aurelius-atlas-ui-table-column
+                    [isNarrow]="true"
+                    [sortBy]="'typeName'"
+                    [title]="typeNameHint"
+                >
+                    {{ typeNameTitle }}
+                </ng-template>
+                <ng-template aurelius-atlas-ui-table-column [sortBy]="'description'" [title]="descriptionHint">
+                    {{ descriptionTitle }}
+                </ng-template>
+                <ng-template aurelius-atlas-ui-table-row let-row>
+                    <td>
+                        <span class="icon is-small technical" [title]="row.typeName">
+                            <fa-icon [icon]="row.icon"></fa-icon>
+                        </span>
+                    </td>
+                    <th scope="row">{{ row.typeName }}</th>
+                    <td>{{ row.description }}</td>
+                </ng-template>
+            </aurelius-atlas-ui-sortable-table>
+        </div>
+    </div>
+</aurelius-atlas-ui-modal>

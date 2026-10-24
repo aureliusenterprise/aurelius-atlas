@@ -1,0 +1,7 @@
+/* The native WebKit search field draws its own cancel button; the Bulma
+   delete affordance above replaces it (as the Aurelius component's style
+   did). */
+input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}

@@ -1,0 +1,12 @@
+<span class="aurelius-badge">
+    <ng-content></ng-content>
+    @if (visible()) {
+        <!--
+            Decorative by intent (ALR-02): the dot's meaning is the bell's
+            to say — a labelled element inside the link would join the
+            link's accessible name. The title carries the text for pointer
+            users; the severity itself is spelled out in the drawer's rows.
+        -->
+        <span class="aurelius-badge-dot" [class]="severityClass()" aria-hidden="true" [attr.title]="label()"></span>
+    }
+</span>

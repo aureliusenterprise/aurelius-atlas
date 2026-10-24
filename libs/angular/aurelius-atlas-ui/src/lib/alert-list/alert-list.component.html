@@ -1,0 +1,50 @@
+@if (alerts().length > 0) {
+    <div class="aurelius-alert-list" role="log" aria-live="polite" [attr.aria-label]="ariaLabel()">
+        @for (group of alerts(); track group.id) {
+            <!--
+                The Bulma notification is dismissable markup (a `delete`
+                button in the corner); the severity picks the colour
+                (ALR-07): error rides danger, warning and info their
+                ramp entries (DD-152). The binding replaces the class
+                attribute, so `notification` rides in it.
+            -->
+            <div
+                [class]="
+                    'notification is-' +
+                    (group.severity === 'error' ? 'danger' : group.severity) +
+                    (group.read ? '' : ' aurelius-alert-unread')
+                "
+            >
+                <button
+                    type="button"
+                    class="delete"
+                    [attr.aria-label]="dismissLabel()"
+                    (click)="dismiss.emit(group.id)"
+                ></button>
+                <p class="aurelius-alert-message">{{ group.message }}</p>
+                <p class="aurelius-alert-meta">
+                    <time [attr.datetime]="group.lastSeen">{{ group.lastSeen | date: "medium" }}</time>
+                    @if (!group.read) {
+                        <!--
+                            The unread marker (ALR-12): a ring dot, the
+                            badge's idiom, with the label for screen
+                            readers — the dot itself is decorative.
+                        -->
+                        <span class="aurelius-alert-unread-dot" aria-hidden="true"></span>
+                        <span class="is-sr-only">{{ unreadLabel() }}</span>
+                    }
+                    @if (group.count > 1) {
+                        <!--
+                            The chip's pair is pinned in the scss, not
+                            Bulma's `is-light` — a scheme trap here
+                            (ALR-07, DD-176).
+                        -->
+                        <span class="tag aurelius-alert-count">{{ timesPrefix() }}{{ group.count }}</span>
+                    }
+                </p>
+            </div>
+        }
+    </div>
+} @else {
+    <p class="has-text-centered has-text-grey aurelius-alert-empty">{{ emptyLabel() }}</p>
+}

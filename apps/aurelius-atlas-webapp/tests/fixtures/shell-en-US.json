@@ -1,0 +1,61 @@
+{
+  "shell": {
+    "footer": {
+      "copyright": "Copyright"
+    },
+    "header": {
+      "documentation": "Documentation",
+      "install": "Install app",
+      "language": "Your language is",
+      "login": "Login",
+      "logout": "Logout",
+      "security": "Account security",
+      "services": "Models4Insight services",
+      "update": "Update available",
+      "welcome": "Logged in as",
+      "settings": "Settings",
+      "alerts": "Alerts"
+    },
+    "pipeline": {
+      "error": "Something went wrong while",
+      "oops": "Oops!",
+      "report": "Report this error",
+      "thanks": "Thank you!"
+    },
+    "settings": {
+      "title": "Settings",
+      "close": "Close",
+      "appearance": "Appearance",
+      "theme": {
+        "auto": "Auto",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "language": "Language",
+      "languageHint": "Switching language reloads the page in that language.",
+      "timezone": "Time zone",
+      "timezoneBrowser": "Browser default",
+      "pageSize": "Default table page size",
+      "telemetry": "Usage telemetry",
+      "telemetryHint": "Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.",
+      "about": "About",
+      "version": "Version"
+    },
+    "alerts": {
+      "title": "Alerts",
+      "close": "Close",
+      "feed": "Alerts",
+      "empty": "No alerts",
+      "dismiss": "Dismiss",
+      "clear": "Clear all",
+      "times": "\u00d7",
+      "inbox": "Alert filters",
+      "unread": "Unread",
+      "severity": {
+        "error": "Errors",
+        "warning": "Warnings",
+        "info": "Info"
+      }
+    }
+  }
+}

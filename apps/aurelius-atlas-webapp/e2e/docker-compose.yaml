@@ -1,0 +1,98 @@
+name: aurelius-atlas-webapp-e2e
+
+services:
+    aurelius-atlas-webapp:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
+        configs:
+            - source: webapp_config
+              target: /usr/share/nginx/html/config.json
+            - source: webapp_nginx_config
+              target: /etc/nginx/conf.d/default.conf
+        volumes:
+            - ../certs:/certs:ro
+        extra_hosts:
+            # The resolved e2e nginx config proxies /api/ to the Atlas server
+            # (this compose) and /otel/ to the collector (SHL-11); Keycloak is
+            # reached on the host, the collector over the observability network
+            # — its publishes are loopback-pinned (CIA-03), so the host gateway
+            # address would not answer for it.
+            - keycloak.localhost:host-gateway
+        ports:
+            # Fixed host port, mirroring the example app's e2e stack.
+            - 18444:8080
+        networks:
+            - default
+            - atlas
+            - observability
+
+    # The real Atlas server behind the nginx /api/ proxy (DD-142): the chain
+    # nginx -> TLS -> server -> Elasticsearch answers /api/atlas/admin/version,
+    # so the proxy test proves the whole data path, not just nginx config.
+    # Mirrors apps/aurelius-atlas-server/e2e/docker-compose.yaml; the certs are
+    # the server project's (its certificate carries the aurelius-atlas-server
+    # SAN nginx verifies against), and the store is reached on the dev
+    # Elasticsearch network.
+    atlas-server:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        networks:
+            atlas:
+                # The alias is the name in the server certificate and the nginx
+                # proxy_ssl_name; the compose service name stays atlas-server.
+                aliases:
+                    - aurelius-atlas-server
+            # The dev telemetry stack (started by conftest first): the collector
+            # answers as `otel-collector` here — the name in its certificate.
+            # Its publishes are loopback-pinned (CIA-03), so service DNS is the
+            # only path (as in the fastapi example's e2e stack).
+            observability: {}
+        ports:
+            # Fixed host port, mirroring the webapp's 18444: the conftest's
+            # readiness strategy probes the server's version endpoint directly.
+            - 18445:21000
+        environment:
+            # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
+            # environment; a missing value fails the compose start loudly.
+            AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # OTLP ingest identity (7.18, DD-196): the server exports through
+            # its own pipeline (aurelius-atlas-otel), minting client-credentials
+            # JWTs as otel-atlas-server for the per-service leg — the OIDC
+            # receiver on :4319 answers the shared token 401 (CIA-08), so the
+            # 7.17 static OTEL_EXPORTER_* trio is gone. The mint goes to the
+            # e2e Keycloak's TLS listener (the conftest's issuer flip); the
+            # secret is Nx-injected from the webapp .env (mirrored there).
+            AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
+            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            # The mint target: the e2e Keycloak's :8443 listener, published
+            # loopback-wide on this machine (the webapp service maps it for
+            # /api/ too; per-service it is the issuer, not a proxy upstream).
+            - keycloak.localhost:host-gateway
+        volumes:
+            - ../../aurelius-atlas-server/certs:/certs:ro
+
+networks:
+    # The dev Elasticsearch stack (started by the e2e target); the server
+    # reaches the store as `elasticsearch` on this network.
+    atlas:
+        name: aurelius-atlas-dev-elasticsearch-network
+        external: true
+    # The dev telemetry stack (dev/observability); both the server's OTLP
+    # export and the nginx /otel/ proxy reach the collector on it (SHL-11).
+    observability:
+        name: aurelius-atlas-dev-observability-network
+        external: true
+
+configs:
+    webapp_config:
+        file: ./config/config.json
+    webapp_nginx_config:
+        file: ./config/nginx.conf

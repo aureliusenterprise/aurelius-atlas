@@ -1,0 +1,9 @@
+/* The Aurelius landing grid: the cards stretch to equal height, and the
+ * columns keep their three-up width before wrapping. */
+.hints {
+    height: 100%;
+}
+
+.column {
+    min-width: max(400px, 33%);
+}

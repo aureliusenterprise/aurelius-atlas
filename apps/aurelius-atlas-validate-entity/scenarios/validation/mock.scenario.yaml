@@ -1,0 +1,109 @@
+name: "The editor's entity in, the fixed governance-quality cards out"
+source:
+    - .scratch/aurelius/backend/m4i-validate-entity/m4i_validate_entity/m4i_validate_entity.py::output
+    - .scratch/aurelius/backend/m4i-validate-entity/m4i_validate_entity/m4i_validate_entity.py::mock_response
+    - .scratch/aurelius/libs/atlas/api/src/lib/gov-quality/gov-quality-api.service.ts::GovQualityApi.validateEntity
+rules:
+    - VE-01
+    - VE-02
+covers:
+    - aurelius_atlas_validate_entity.app.create_app
+stages:
+    - name: POST / with the caller's entity answers the mock document
+      request:
+          method: POST
+          url: /
+          json:
+              guid: 6f1a2c34-0000-4000-8000-aureliusatlas0
+              typeName: m4i_data_table
+              status: ACTIVE
+              attributes:
+                  name: Sales Orders
+                  qualifiedName: kafka.topic.sales_orders
+                  description: Daily sales orders, ordered by region
+                  version: 2
+      response:
+          status: 200
+          headers:
+              content-type: application/json
+          json:
+              dataEntity:
+                  items:
+                      - result:
+                            raw: This entity is missing a dataEntity
+                        dataqualitytype:
+                            raw: attribute
+                        usedattributes:
+                            raw:
+                                - dataEntity
+                        name:
+                            raw: Attribute - dataEntity
+                        compliant:
+                            raw: "0"
+                        _meta:
+                            engine: atlas-dev-gov-quality
+                            score: 1
+                            id: doc-6290d9e0dd895e02b897451f
+                        id:
+                            raw: doc-6290d9e0dd895e02b897451f
+                  isNonCompliant: true
+              definition:
+                  items:
+                      - result:
+                            raw: This entity has a definition
+                        dataqualitytype:
+                            raw: attribute
+                        usedattributes:
+                            raw:
+                                - definition
+                        name:
+                            raw: Attribute - definition
+                        compliant:
+                            raw: "1"
+                        _meta:
+                            engine: atlas-dev-gov-quality
+                            score: 1
+                            id: doc-6290d9dedd895e197b974510
+                        id:
+                            raw: doc-6290d9dedd895e197b974510
+                  isNonCompliant: false
+              domainLead:
+                  items:
+                      - result:
+                            raw: This entity is missing a domainLead
+                        dataqualitytype:
+                            raw: attribute
+                        usedattributes:
+                            raw:
+                                - domainLead
+                        name:
+                            raw: Attribute - domainLead
+                        compliant:
+                            raw: "0"
+                        _meta:
+                            engine: atlas-dev-gov-quality
+                            score: 1
+                            id: doc-6290d9e0dd895e02b8974528
+                        id:
+                            raw: doc-6290d9e0dd895e02b8974528
+                  isNonCompliant: true
+              name:
+                  items:
+                      - result:
+                            raw: This entity has a name
+                        dataqualitytype:
+                            raw: attribute
+                        usedattributes:
+                            raw:
+                                - name
+                        name:
+                            raw: Attribute - name
+                        compliant:
+                            raw: "1"
+                        _meta:
+                            engine: atlas-dev-gov-quality
+                            score: 1
+                            id: doc-6290d9dedd895e197b974507
+                        id:
+                            raw: doc-6290d9dedd895e197b974507
+                  isNonCompliant: false

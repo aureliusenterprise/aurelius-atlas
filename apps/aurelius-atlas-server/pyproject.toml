@@ -2,9 +2,10 @@
 dependencies = [
     "aurelius-atlas-core",
     "aurelius-atlas-model",
+    "aurelius-atlas-otel",
     "aurelius-atlas-store-es",
-    "fastapi>=0.141.1",
-    "logfire[fastapi]>=5.2.0",
+    "fastapi>=0.162.0",
+    "opentelemetry-instrumentation-fastapi>=0.65b0",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.1",
     "tzdata>=2025.2",
@@ -30,6 +31,9 @@ required_plugins = ["pytest-asyncio"]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-model]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-otel]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-store-es]

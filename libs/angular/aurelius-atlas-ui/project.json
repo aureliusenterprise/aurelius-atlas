@@ -45,6 +45,9 @@
             },
             "outputs": ["{options.outputDir}"]
         },
+        "check-purity": {
+            "command": "bash apps/aurelius-atlas-webapp/scripts/check-webapp-purity.sh"
+        },
         "chromatic": {
             "dependsOn": ["build-storybook", "decrypt"],
             "executor": "nx:run-commands",
@@ -100,6 +103,7 @@
                     "watch": false
                 }
             },
+            "dependsOn": ["check-purity"],
             "executor": "@nx/angular:unit-test"
         },
         "test-storybook": {

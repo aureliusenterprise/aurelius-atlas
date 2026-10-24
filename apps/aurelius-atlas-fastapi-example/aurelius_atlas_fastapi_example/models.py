@@ -3,13 +3,15 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
 
-import logfire
 from aurelius_atlas_sdk.postgresql import sanitize_tsquery
 from pydantic import BaseModel, Field, HttpUrl, NonNegativeInt, PositiveInt, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 DEVELOPMENT = "development"
+
+type LogLevel = Literal["trace", "debug", "info", "notice", "warn", "warning", "error", "fatal"]
+"""The lowest level of log record the app emits (the set the logfire shell accepted, DD-210)."""
 
 # libpq sslmode values that do not verify the server certificate; unusable outside development.
 _UNVERIFIED_SSLMODES = ("disable", "allow", "prefer")
@@ -208,7 +210,7 @@ class Settings(BaseSettings, Hashable):
         description="The host to bind the server to.",
     )
 
-    log_level: logfire.LevelName = Field(
+    log_level: LogLevel = Field(
         default="info",
         description="The logging level for the application.",
     )

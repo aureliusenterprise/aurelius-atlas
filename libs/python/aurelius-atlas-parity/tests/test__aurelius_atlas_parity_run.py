@@ -2,7 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_parity import Scenario, ScenarioError, ScenarioFailedError, load_scenarios, run_scenario
 from aurelius_atlas_parity.run import check_response, substitute

@@ -1,12 +1,30 @@
+import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings, create_app
+from aurelius_atlas_server.settings import ENV_PREFIX
 from aurelius_atlas_store_es import store
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from fastapi import FastAPI
+
+
+@pytest.fixture(autouse=True)
+def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Start every test from a clean environment (DD-199).
+
+    ``nx test`` injects the project's ``.env`` into the task's environment, and
+    pydantic-settings reads it: the dev values — TLS material and the
+    dashboard dir as workspace-root-relative paths, the dev store password —
+    would leak into the settings the fixtures and tests build, and the paths
+    do not resolve at the test's working directory. Tests set exactly the
+    variables they mean.
+    """
+    for name in list(os.environ):
+        if name.startswith(ENV_PREFIX):
+            monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture

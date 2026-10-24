@@ -1,6 +1,7 @@
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { EntitiesService, Entity, Envelope, FindAllQueryParams, PaginatedResponse } from "./entities.service";
+import { atlasErrorFrom } from "./atlas-error";
 
 describe("EntitiesService", () => {
     let service: EntitiesService;
@@ -254,6 +255,90 @@ describe("EntitiesService", () => {
             expect(req.request.method).toBe("GET");
 
             req.flush(entity);
+        }));
+
+    it("surfaces the Atlas error body when a save fails (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            const entity: Entity = { name: "Test", description: "Desc" };
+
+            service.createOrUpdate(entity).subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(500);
+                    expect(atlasErrorFrom(error)).toEqual({
+                        errorCode: "ATLAS-500-00-001",
+                        errorMessage: "failed to persist entity",
+                    });
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne("/api/entities/");
+            req.flush(
+                { errorCode: "ATLAS-500-00-001", errorMessage: "failed to persist entity" },
+                { status: 500, statusText: "Internal Server Error" },
+            );
+        }));
+
+    it("surfaces the Atlas error body when a delete fails (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            const guid = "missing-guid";
+
+            service.delete(guid).subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(404);
+                    expect(atlasErrorFrom(error)).toEqual({
+                        errorCode: "ATLAS-404-00-002",
+                        errorMessage: `entity with guid ${guid} does not exist`,
+                    });
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne(`/api/entities/${guid}`);
+            req.flush(
+                { errorCode: "ATLAS-404-00-002", errorMessage: `entity with guid ${guid} does not exist` },
+                { status: 404, statusText: "Not Found" },
+            );
+        }));
+
+    it("surfaces the Atlas error body when a search fails (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            service.findAll({ limit: 10 }).subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(503);
+                    expect(atlasErrorFrom(error)).toEqual({
+                        errorCode: "ATLAS-500-00-002",
+                        errorMessage: "elasticsearch cluster is unavailable",
+                    });
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne((r) => r.url === "/api/entities/");
+            req.flush(
+                { errorCode: "ATLAS-500-00-002", errorMessage: "elasticsearch cluster is unavailable" },
+                { status: 503, statusText: "Service Unavailable" },
+            );
+        }));
+
+    it("yields no Atlas body for a network failure (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            const guid = "abc-123";
+
+            service.findOne(guid).subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(0);
+                    expect(atlasErrorFrom(error)).toBeNull();
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne(`/api/entities/${guid}`);
+            req.flush(null, { status: 0, statusText: "Unknown Error" });
         }));
 
     it("should receive entity updates", () =>

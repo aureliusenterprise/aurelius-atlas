@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-import httpx
+import httpx2 as httpx
 import jwt
 import pytest
 from aurelius_atlas_fastapi_example.models import Settings

@@ -1,0 +1,16 @@
+@let _stringLike = isStringLike();
+@let _links = isLinkArray();
+
+@if (_stringLike !== null) {
+    {{ _stringLike | titlecase }}
+}
+@if (_links && _links.length > 0) {
+    @for (item of _links; track item.guid) {
+        <!-- The href is the keyboard path; the click handler cancels the
+             fragment navigation and emits (UIC-13). -->
+        <a href="#" (click)="onItemClick($event, item)">{{ item.displayText }}</a>
+    }
+}
+@if (_links && _links.length === 0) {
+    <div>{{ emptyLabel() }}</div>
+}

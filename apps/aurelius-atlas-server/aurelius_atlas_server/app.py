@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
 
-import logfire
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
@@ -16,10 +15,12 @@ from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline, setup_telemetry
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, RELATIONSHIP, TYPES
@@ -118,13 +119,40 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
 
-    logfire.configure(
-        send_to_logfire=False,
-        service_name=NAME,
-        service_version=app.version,
-        min_level=settings.log_level,
-        console=logfire.ConsoleOptions(min_log_level=settings.log_level),
+    # Telemetry (SHL-14, DD-196, DD-210): the OTLP export is the app's own
+    # pipeline when the ingest credential is configured — exporters whose
+    # session injects a fresh client-credentials JWT per export (the
+    # collector's per-service leg, CIA-07). Unset settings mean no OTLP at
+    # all: the env-driven leg is off for this server, so a server without an
+    # ingest identity exports nothing (DD-196). Debug runs also print spans
+    # to stdout (the dev console, DD-210).
+    ingest = _ingest_pipeline(settings)
+    setup_telemetry(
+        NAME,
+        app.version,
+        pipeline=ingest,
+        console=settings.log_level in {"trace", "debug"},
     )
-    logfire.instrument_fastapi(app)
+    FastAPIInstrumentor.instrument_app(app)
     LOGGER.setLevel(settings.log_level.upper())
     return app
+
+
+def _ingest_pipeline(settings: ServerSettings) -> IngestPipeline | None:
+    """The app-owned OTLP export for the per-service ingest leg (7.18, DD-196).
+
+    None when the ingest credential is not configured (console-only telemetry).
+
+    :param settings: the server settings
+    :returns: (span processor, metric reader) or None
+    """
+    if settings.otel_token_url is None or settings.otel_client_secret is None:
+        return None
+    source = ClientCredentialsTokenSource(
+        token_url=str(settings.otel_token_url),
+        client_id=settings.otel_client_id,
+        client_secret=settings.otel_client_secret.get_secret_value(),
+        ca_file=str(settings.otel_ca_file) if settings.otel_ca_file else None,
+    )
+    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
+    return build_otlp_pipeline(settings.otel_endpoint, ca_file, source)

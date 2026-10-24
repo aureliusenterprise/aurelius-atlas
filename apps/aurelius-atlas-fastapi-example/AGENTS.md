@@ -51,12 +51,12 @@ Needs Docker: `serve` (Keycloak/Postgres/observability), `e2e`.
 
 - Routers stay thin; logic goes in `providers/`. Raise `HTTPException` in routes only.
 - All DB access goes through `aurelius_atlas_sdk.postgresql` / SQLModel, never raw connections.
-- Outbound calls use `pybreaker` circuit breakers (see `globals.py`) and `httpx`.
+- Outbound calls use `pybreaker` circuit breakers (see `globals.py`) and `httpx2`.
 - Responses use the generic `Envelope`/`PaginatedResponse` models in `models.py`.
 - New routes need both a unit test in `tests/routes/` and coverage in `e2e/`.
-- Custom OTel metrics go in `providers/metrics.py` and register through
-  `logfire.metric_*` / callback gauges after `logfire.configure()` in `app.py`
-  (`register_sse_metric()`). The SSE gauge exists because FastAPI's
+- Custom OTel metrics go in `providers/metrics.py` and register through the
+  native `metrics.get_meter()` (observable gauges) after `setup_telemetry()`
+  in `app.py` (`register_sse_metric()`, DD-210). The SSE gauge exists because FastAPI's
   auto-instrumentation has no route label on `http_server.active_requests` and
   counts whole SSE stream lifetimes in the duration histogram; the FastAPI
   dashboard therefore excludes `/sse` from Request Duration and In-Flight

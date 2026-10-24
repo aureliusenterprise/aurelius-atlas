@@ -1,0 +1,50 @@
+<!--
+    The layer renders while open and while sliding out (DD-162): the
+    animationend handler on the panel removes it once the exit is done.
+-->
+@if (active() || closing()) {
+    <div class="aurelius-drawer" [class.is-closing]="closing()">
+        <!--
+            Scrim dismissal is a pointer affordance; the keyboard path is
+            the Escape handler on the dialog (the Modal's S1077 precedent —
+            Bulma's overlay layers have no focusable scrim element).
+        -->
+        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
+        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
+        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- NOSONAR S6851: Bulma's drawer layer (DD-162) — the native <dialog> renders in the top layer, bypassing the scrim stacking the slide-out animation needs. -->
+        <div
+            #panel
+            class="aurelius-drawer-panel"
+            role="dialog"
+            aria-modal="true"
+            [attr.aria-label]="label()"
+            tabindex="-1"
+            (keydown.escape)="onEscape()"
+            (animationend)="onAnimationEnd($event)"
+        >
+            <header class="aurelius-drawer-head">
+                <p class="aurelius-drawer-title">{{ title() }}</p>
+                <!--
+                    The head's action slot (DD-176): content actions with the
+                    `drawer-actions` attribute sit between the title and the
+                    close button, so they never scroll away with a long body.
+                -->
+                <ng-content select="[drawer-actions]"></ng-content>
+                <button type="button" class="delete" [attr.aria-label]="ariaLabel()" (click)="dismiss()"></button>
+            </header>
+            <!--
+                The subhead slot (DD-180): content carrying the
+                `drawer-subhead` attribute sits below the head and above
+                the body — a full-width strip the scrolling body cannot
+                push away (the alerts inbox bar).
+            -->
+            <ng-content select="[drawer-subhead]"></ng-content>
+            <div class="aurelius-drawer-body">
+                <ng-content select="[drawer-content]"></ng-content>
+                <ng-content></ng-content>
+            </div>
+        </div>
+    </div>
+}

@@ -2,7 +2,7 @@ import re
 import zoneinfo
 from typing import cast
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument, StoredTypedefs
 from aurelius_atlas_model.patches import TYPEDEF_PATCH_TYPE, AtlasPatch, PatchStatus

@@ -9,14 +9,14 @@ Definition of Done in the [conversion roadmap](../../conversion/index.md).
 
 ## The layers
 
-| Layer            | What it proves                                                                                                                                                                                |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit             | Functions and modules in isolation, milliseconds-fast, offline; the store is a stand-in client                                                                                                |
-| Parity scenarios | REST behaviour equals Apache Atlas 2.4.0 — expectations read from its source and its own tests, each citing where (ADR 052)                                                                   |
-| Traceability     | Every public function and every specified rule id is named by a test ([ADR 049](../../adr/049-every-function-and-rule-is-traceable-to-a-test.md))                                             |
-| E2E (backend)    | The **built image** against real services over TLS ([ADR 010](../../adr/010-the-unit-validated-is-the-unit-that-ships.md), [ADR 012](../../adr/012-validation-runs-against-real-services.md)) |
-| E2E (frontend)   | Critical user flows through the real browser stack                                                                                                                                            |
-| Visual           | Visual regressions of the shared UI library — template slice, leaves with it (DD-019)                                                                                                         |
+| Layer             | What it proves                                                                                                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit              | Functions and modules in isolation, milliseconds-fast, offline; the store is a stand-in client                                                                                                        |
+| Parity scenarios  | REST behaviour equals Apache Atlas 2.4.0 — expectations read from its source and its own tests, each citing where (ADR 052)                                                                           |
+| Naming convention | Every public function and every specified rule id is named by a test marker, as a review pointer — not a gate ([ADR 056](../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md)) |
+| E2E (backend)     | The **built image** against real services over TLS ([ADR 010](../../adr/010-the-unit-validated-is-the-unit-that-ships.md), [ADR 012](../../adr/012-validation-runs-against-real-services.md))         |
+| E2E (frontend)    | Critical user flows through the real browser stack                                                                                                                                                    |
+| Visual            | Visual regressions of the shared UI library — template slice, leaves with it (DD-019)                                                                                                                 |
 
 Python units are milliseconds and offline-safe; e2e is the shipped artifact against real
 services — never mocks of the things being shipped. Parity is the layer the conversion adds: a
@@ -50,18 +50,23 @@ The gate is what protects production: no change reaches `main` — and nothing i
 it. The stages, in the order they run:
 
 1. **Quality** — formatting, linting, markdown, secret scanning.
-2. **Traceability** — every function and rule named by a test, from collected markers, no run.
-3. **Test + E2E** — the affected projects, secrets decrypted first, images built, real services
-   started.
-4. **Evidence** — one report page per change with results, coverage, and the rule/function trace
-   ([ADR 049](../../adr/049-every-function-and-rule-is-traceable-to-a-test.md)).
-5. **Artifact + inventory + scan** — the image, its contents inventory
+2. **Test + E2E** — the affected projects, secrets decrypted first, images built, real services
+   started. The executed results are the evidence: a change merges when its tests pass
+   ([ADR 056](../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md)).
+3. **Artifact + inventory + scan** — the image, its contents inventory
    ([ADR 033](../../adr/033-shipped-artifacts-carry-a-contents-inventory.md)), a vulnerability
    scan.
-6. **Analysis** — code quality and security of the affected projects.
+4. **Analysis** — code quality and security of the affected projects.
 
-Merge requires all affected stages green; the evidence report is what reviewers read. The
-pipeline definition is in the repository's CI configuration.
+Merge requires all affected stages green; the test results and coverage are what reviewers read.
+The pipeline definition is in the repository's CI configuration.
+
+Coverage is measured in every `-c ci` test run and uploaded to the analysis stage:
+SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **quality gate is the
+coverage gate** — there is deliberately no second coverage flag in the pipeline.
+The last full review of what the suites prove — coverage baselines and non-happy-flow
+representativeness per project — is the [Test Suite Review](./testing-review.md)
+([DD-214](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
 
 ## Indicators
 
@@ -91,9 +96,10 @@ carry test updates.
 ## Pointers
 
 - Commands, conventions, flaky triage: [Testing guide](../../../contributor-guide/testing.md)
+- Coverage baselines and the hardening plan: [Test Suite Review](./testing-review.md)
 - Gates and evidence: [ADR 014](../../adr/014-the-gate-is-defined-once-and-runs-everywhere.md),
   [ADR 015](../../adr/015-a-change-answers-for-what-it-caused.md),
-  [ADR 049](../../adr/049-every-function-and-rule-is-traceable-to-a-test.md)
+  [ADR 056](../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md)
 - Realism: [ADR 010](../../adr/010-the-unit-validated-is-the-unit-that-ships.md),
   [ADR 012](../../adr/012-validation-runs-against-real-services.md)
 - Parity method: [ADR 052](../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md),

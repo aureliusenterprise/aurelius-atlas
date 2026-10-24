@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { TestBed } from "@angular/core/testing";
 import { AggregationTemporality, InMemoryMetricExporter, MeterProvider } from "@opentelemetry/sdk-metrics";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import {
+    AURELIUS_METER,
+    AURELIUS_METER_PROVIDER,
     createAureliusMeterProvider,
     instrumentAureliusWebVitals,
     provideAureliusOpenTelemetryMetrics,
@@ -98,11 +102,58 @@ describe("opentelemetry-metrics.provider", () => {
         expect(JSON.stringify(scopes)).toContain('"web.vital.rating":"good"');
     });
 
+    it("records a vital reported without a rating as unknown", async () => {
+        const provider = createAureliusMeterProvider({ exporter, name: "test-app" });
+        instrumentAureliusWebVitals(provider.getMeter("t"));
+        handlers.current.LCP({ ...metric("LCP", 1.2), rating: undefined } as never);
+
+        const scopes = await flush(exporter, provider);
+        expect(JSON.stringify(scopes)).toContain('"web.vital.rating":"unknown"');
+    });
+
     it("provides a meter through DI", async () => {
         const providers = provideAureliusOpenTelemetryMetrics({ exporter, webVitals: false });
         // The provider bag is opaque here; only assert construction succeeds
         // (the functional paths are covered above and in the app spec).
         expect(providers).toBeTruthy();
+    });
+
+    it("resolves the meter provider and meter once, through app init", () => {
+        TestBed.configureTestingModule({
+            providers: [provideAureliusOpenTelemetryMetrics({ exporter, name: "di-app", webVitals: false })],
+        });
+
+        const provider = TestBed.inject(AURELIUS_METER_PROVIDER);
+        const meter = TestBed.inject(AURELIUS_METER);
+
+        expect(provider).toBeInstanceOf(MeterProvider);
+        expect(TestBed.inject(AURELIUS_METER_PROVIDER)).toBe(provider); // singleton
+        expect(() => meter.createCounter("through-di").add(1)).not.toThrow();
+        TestBed.resetTestingModule();
+    });
+
+    it("merges the resource option into the meter provider resource", async () => {
+        const provider = createAureliusMeterProvider({
+            exporter,
+            name: "test-app",
+            resource: resourceFromAttributes({ "deployment.environment.name": "stag" }),
+        });
+        provider.getMeter("t").createCounter("c").add(1);
+        const scopes = await flush(exporter, provider);
+
+        expect(JSON.stringify(scopes.map((s) => s.resource))).toContain("stag");
+    });
+
+    it("applies serviceVersion and exportIntervalMillis options", async () => {
+        const provider = createAureliusMeterProvider({
+            exporter,
+            name: "test-app",
+            serviceVersion: "9.9.9",
+            exportIntervalMillis: 60_000,
+        });
+        provider.getMeter("t").createCounter("c").add(1);
+        await provider.forceFlush();
+        expect(JSON.stringify(exporter.getMetrics())).toContain("9.9.9");
     });
 
     it("carries a service.instance.id so the collector emits target_info", async () => {
@@ -130,5 +181,13 @@ describe("opentelemetry-metrics.provider", () => {
         Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
         document.dispatchEvent(new Event("visibilitychange"));
         expect(forceFlush).toHaveBeenCalledTimes(2);
+    });
+
+    it("survives a flush that fails (pagehide must not throw)", () => {
+        const provider = createAureliusMeterProvider({ exporter, name: "test-app" });
+        vi.spyOn(provider, "forceFlush").mockRejectedValue(new Error("exporter down"));
+        flushMetricsOnPageHide(provider);
+
+        expect(() => window.dispatchEvent(new PageTransitionEvent("pagehide"))).not.toThrow();
     });
 });

@@ -2,42 +2,47 @@
 @let _logo = logo();
 @let _name = name();
 
-<nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar-brand">
-        @if (_logo) {
-            <a class="navbar-item" routerLink="/">
-                <img [attr.src]="_logo" [attr.alt]="_name || 'Logo'" />
-            </a>
-        } @else if (_name) {
-            <a class="navbar-item" routerLink="/">
-                <span class="title is-4">{{ _name }}</span>
-            </a>
-        }
+<nav class="navbar" role="navigation" aria-label="main navigation" [class.is-fixed-top]="fixed()">
+    <!-- The legacy navbar wraps its content in a Bulma `container` (SHM-05,
+         `navbar > container > navbar-brand/navbar-menu`), so the chrome
+         aligns with the page's container below. -->
+    <div class="container">
+        <div class="navbar-brand">
+            @if (_logo) {
+                <a class="navbar-item" routerLink="/">
+                    <img [attr.src]="_logo" [attr.alt]="_name || 'Logo'" [attr.class]="logoCssClass() || null" />
+                </a>
+            } @else if (_name) {
+                <a class="navbar-item" routerLink="/">
+                    <span class="title is-4">{{ _name }}</span>
+                </a>
+            }
 
-        @if (navbarStart.children.length || navbarEnd.children.length) {
-            <button
-                class="navbar-burger"
-                aria-label="menu"
-                data-target="navbar-content"
-                [attr.aria-expanded]="_expanded"
-                [class.is-active]="_expanded"
-                (click)="toggle()"
-            >
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-            </button>
-        }
+            @if (navbarStart.children.length || navbarEnd.children.length) {
+                <button
+                    class="navbar-burger"
+                    aria-label="menu"
+                    data-target="navbar-content"
+                    [attr.aria-expanded]="_expanded"
+                    [class.is-active]="_expanded"
+                    (click)="toggle()"
+                >
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </button>
+            }
+        </div>
+
+        <nav id="navbar-content" class="navbar-menu" aria-label="navigation content" [class.is-active]="_expanded">
+            <div #navbarStart class="navbar-start">
+                <ng-content select="[navbar-start]"></ng-content>
+            </div>
+
+            <div #navbarEnd class="navbar-end">
+                <ng-content select="[navbar-end]"></ng-content>
+            </div>
+        </nav>
     </div>
-
-    <nav id="navbar-content" class="navbar-menu" aria-label="navigation content" [class.is-active]="_expanded">
-        <div #navbarStart class="navbar-start">
-            <ng-content select="[navbar-start]"></ng-content>
-        </div>
-
-        <div #navbarEnd class="navbar-end">
-            <ng-content select="[navbar-end]"></ng-content>
-        </div>
-    </nav>
 </nav>
