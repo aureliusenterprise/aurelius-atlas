@@ -1,0 +1,1392 @@
+# Design Log
+
+Technical decisions made during the conversion that are too implementation-specific for an ADR but must not be lost: storage layout, identifiers, query translation, test tooling. Business-level decisions are ADRs in [Architecture Decisions](<https://aureliusenterprise.github.io/phase4-4.1b-classification-search/architecture/adr/index.md>).
+
+## Rules
+
+- Entries are numbered `DD-NNN`, consecutively; numbers are never reused.
+- Statuses: **Proposed** → **Accepted**, then optionally **Superseded by DD-NNN**.
+- An accepted entry is never edited except its status line. A changed decision is a new entry that supersedes the old one.
+- Every entry names the increment that introduced it, so the reasoning can be found next to the code and the specification it belongs to.
+- An increment that makes a decision adds its entry in the same pull request.
+
+## Entry template
+
+```
+### DD-NNN. Decision as a statement
+
+- **Status:** Proposed | Accepted | Superseded by DD-NNN
+- **Increment:** N.N
+- **Date:** YYYY-MM-DD
+
+**Decision.** What we do, in one or two sentences.
+
+**Reason.** Why, in terms of the requirements of the increment.
+
+**Alternatives.** What else was considered and why it lost.
+
+**Consequences.** What follows, including what must be revisited and when.
+```
+
+## Log
+
+| \# | Decision | Increment | Status |
+| --- | --- | --- | --- |
+| [DD-001](<#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served>) | The reference is Apache Atlas 2.4.0; both dashboards are served unchanged | 0.1 | Accepted |
+| [DD-002](<#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>) | Atlas code lives in `aurelius-atlas-*` projects split by layer | 0.1 | Accepted |
+| [DD-003](<#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix>) | All template projects carry the `aurelius-atlas-` prefix | 0.1 | Accepted |
+| [DD-004](<#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently>) | The SPA keeps tokens in memory and renews them silently | 0.1 | Accepted |
+| [DD-005](<#dd-005-the-store-uses-the-official-async-elasticsearch-client>) | The store uses the official async Elasticsearch client, one per store | 0.2 | Proposed |
+| [DD-006](<#dd-006-development-and-tests-run-elasticsearch-with-security-on>) | Development and tests run Elasticsearch with TLS and authentication on | 0.2 | Proposed |
+| [DD-007](<#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library>) | The Elasticsearch test fixture ships with the store library | 0.2 | Proposed |
+| [DD-008](<#dd-008-a-yellow-cluster-is-healthy>) | A yellow cluster is healthy | 0.2 | Proposed |
+| [DD-009](<#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run>) | Traceability is checked from collected markers, not from a test run | 0.3 | Proposed |
+| [DD-010](<#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on>) | The traceability check covers Atlas code from increment 0.2 on | 0.3 | Proposed |
+| [DD-011](<#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files>) | The test report is generated from JUnit, coverage and trace files | 0.3 | Proposed |
+| [DD-012](<#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests>) | Parity scenarios are YAML files run as parametrised pytest tests | 0.4 | Proposed |
+| [DD-013](<#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths>) | A scenario response is compared exactly, except at declared paths | 0.4 | Proposed |
+| [DD-014](<#dd-014-scenario-facts-reach-the-report-as-test-properties>) | Scenario facts reach the report as test properties | 0.4 | Proposed |
+| [DD-015](<#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource>) | The server is a FastAPI application with one router per Atlas resource | 0.5 | Proposed |
+| [DD-016](<#dd-016-the-server-does-not-start-without-its-store>) | The server does not start without its store | 0.5 | Proposed |
+| [DD-017](<#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24>) | The dashboards are vendored unchanged and built with dart-sass on Node 24 | 0.6 | Proposed |
+| [DD-018](<#dd-018-the-server-serves-the-dashboards-from-the-apis-origin>) | The server serves the dashboards from the API's origin | 0.6 | Proposed |
+| [DD-019](<#dd-019-the-template-examples-stay-until-the-plan-is-done>) | The template examples stay until the plan is done | 0.6 | Proposed |
+| [DD-020](<#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json>) | Typedef models are Pydantic models that read and write Atlas's JSON | 1.1 | Proposed |
+| [DD-021](<#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order>) | Set-valued fields keep each name once, in first-seen order | 1.1 | Proposed |
+| [DD-022](<#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds>) | Typedef timestamps are aware datetimes, written as epoch milliseconds | 1.1 | Proposed |
+| [DD-023](<#dd-023-atlas-errors-live-in-the-model-library>) | Atlas errors live in the model library | 1.2 | Proposed |
+| [DD-024](<#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock>) | The registry is updated on a transient copy under a re-entrant lock | 1.2 | Proposed |
+| [DD-025](<#dd-025-the-type-system-ports-the-definition-side-only>) | The type system ports the definition side only | 1.2 | Proposed |
+| [DD-026](<#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments>) | Dynamic attributes and search lookups wait for their increments | 1.3 | Proposed |
+| [DD-027](<#dd-027-derived-type-sets-keep-first-seen-order>) | Derived type sets keep first-seen order | 1.3 | Proposed |
+| [DD-028](<#dd-028-the-type-definitions-are-one-elasticsearch-document>) | The type definitions are one Elasticsearch document | 1.4 | Proposed |
+| [DD-029](<#dd-029-server-processes-share-the-type-definitions-through-the-documents-version>) | Server processes share the type definitions through the document's version | 1.4 | Proposed |
+| [DD-030](<#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use>) | The store asks the entity store whether a type is in use | 1.4 | Proposed |
+| [DD-031](<#dd-031-the-patch-records-live-in-the-typedef-document>) | The patch records live in the typedef document | 1.5 | Proposed |
+| [DD-032](<#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory>) | The built-in models are vendored unchanged and read from a directory | 1.5 | Proposed |
+| [DD-033](<#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch>) | Start-up loading is one change per model file and per patch | 1.5 | Proposed |
+| [DD-034](<#dd-034-lists-of-type-definitions-are-sorted-by-name>) | Lists of type definitions are sorted by name | 1.6 | Proposed |
+| [DD-035](<#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end>) | Type scenarios create what they read and delete it at their end | 1.6 | Proposed |
+| [DD-036](<#dd-036-start-up-loading-tries-a-raced-change-again>) | Start-up loading tries a raced change again | 1.6 | Proposed |
+| [DD-037](<#dd-037-instance-models-are-one-module-per-java-class>) | Instance models are one module per Java class | 2.1 | Proposed |
+| [DD-038](<#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them>) | Attribute values stay plain JSON values until their types read them | 2.1 | Proposed |
+| [DD-039](<#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits>) | One Atlas JSON codec reads floats as decimals and writes them with their digits | 2.1 | Proposed |
+| [DD-040](<#dd-040-java-values-are-held-as-the-python-values-closest-to-them>) | Java values are held as the Python values closest to them | 2.1 | Proposed |
+| [DD-041](<#dd-041-the-type-system-is-one-module-per-java-type-class-too>) | The type system is one module per Java type class too | 2.1 | Proposed |
+| [DD-042](<#dd-042-a-validity-period-without-a-time-zone-is-in-utc>) | A validity period without a time zone is in UTC | 2.1 | Proposed |
+| [DD-043](<#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names>) | Entities are documents of one index, their attributes under qualified names | 2.2 | Proposed |
+| [DD-044](<#dd-044-a-guid-is-a-random-uuid>) | A GUID is a random UUID | 2.2 | Proposed |
+| [DD-045](<#dd-045-unique-values-are-reserved-by-create-only-documents>) | Unique values are reserved by create-only documents | 2.2 | Proposed |
+| [DD-046](<#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal>) | A multi-entity write is all or nothing, through a journal | 2.2 | Proposed |
+| [DD-047](<#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version>) | Entities are written conditionally on their Elasticsearch version | 2.2 | Proposed |
+| [DD-048](<#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it>) | A type is in use while the entity index holds one of it | 2.2 | Proposed |
+| [DD-049](<#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid>) | Attribute values are stored normalised; a struct inline, a reference as a GUID | 2.3 | Proposed |
+| [DD-050](<#dd-050-relationship-attributes-read-empty-until-relationships-are-stored>) | Relationship attributes read empty until relationships are stored | 2.3 | Superseded by DD-064 |
+| [DD-051](<#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24>) | Entity reads are tested on entities written through the store until 2.4 | 2.3 | Proposed |
+| [DD-052](<#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again>) | A request is mapped in memory and written once; a lost race runs it again | 2.4 | Proposed |
+| [DD-053](<#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31>) | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1 | 2.4 | Superseded by DD-064 |
+| [DD-054](<#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order>) | Dynamic attributes are evaluated in first-seen dependency order | 2.4 | Proposed |
+| [DD-055](<#dd-055-scenarios-name-what-they-create-with-a-per-run-value>) | Scenarios name what they create with a per-run value | 2.4 | Proposed |
+| [DD-056](<#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others>) | An entity write also removes documents, journaled like the others | 2.5 | Proposed |
+| [DD-057](<#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids>) | Entities referring to one are found through an indexed field of GUIDs | 2.5 | Proposed |
+| [DD-058](<#dd-058-a-stored-reference-stands-for-an-edge-active-for-a-delete-deleted-for-a-purge>) | A stored reference stands for an edge: active for a delete, deleted for a purge | 2.5 | Proposed |
+| [DD-059](<#dd-059-the-delete-type-and-its-override-are-server-settings>) | The delete type and its override are server settings | 2.5 | Proposed |
+| [DD-060](<#dd-060-the-owned-reference-cascade-moves-from-32-to-25>) | The owned-reference cascade moves from 3.2 to 2.5 | 2.5 | Proposed |
+| [DD-061](<#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends>) | Relationships are documents of their own index, listed by both ends | 3.1 | Proposed |
+| [DD-062](<#dd-062-an-entity-write-also-writes-relationships-all-or-nothing>) | An entity write also writes relationships, all or nothing | 3.1 | Proposed |
+| [DD-063](<#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes>) | 3.1 is split into relationship instances and relationship attributes | 3.1 | Proposed |
+| [DD-064](<#dd-064-relationship-attribute-values-are-relationships>) | Relationship attribute values are relationships | 3.1 | Proposed |
+| [DD-065](<#dd-065-a-relationship-keeps-one-array-index-the-last-writers>) | A relationship keeps one array index, the last writer's | 3.1 | Proposed |
+| [DD-066](<#dd-066-relationship-attributes-are-mapped-in-memory-and-written-with-the-entities>) | Relationship attributes are mapped in memory and written with the entities | 3.1 | Proposed |
+| [DD-067](<#dd-067-delete-cascades-follow-owned-relationships-from-31b>) | Delete cascades follow owned relationships from 3.1b | 3.1 | Proposed |
+| [DD-068](<#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request>) | Owned entities an update drops are deleted through a view of the request | 3.2 | Proposed |
+| [DD-069](<#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving>) | A reference to a deleted entity stands for a deleted edge when reviving | 3.2 | Proposed |
+| [DD-070](<#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity>) | Classification instances are documents of their own index, listed by their entity | 3.3 | Proposed |
+| [DD-071](<#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing>) | An entity write also writes classification instances, all or nothing | 3.3 | Proposed |
+| [DD-072](<#dd-072-the-propagation-defaults-are-atlass-defaults>) | The propagation defaults are Atlas's defaults | 3.3 | Proposed |
+| [DD-073](<#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator>) | 3.3 is split into direct classifications and the bulk associator | 3.3 | Proposed |
+| [DD-074](<#dd-074-bulkheaders-moves-to-35>) | `bulk/headers` moves to 3.5 | 3.3 | Proposed |
+| [DD-075](<#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches>) | A propagated classification is listed by the entities it reaches | 3.4 | Proposed |
+| [DD-076](<#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field>) | The entities a classification reached are found through an indexed field | 3.4 | Proposed |
+| [DD-077](<#dd-077-propagation-runs-within-the-request-until-34b>) | Propagation runs within the request until 3.4b | 3.4 | Proposed |
+| [DD-078](<#dd-078-34-is-split-into-propagation-and-propagation-tasks>) | 3.4 is split into propagation and propagation tasks | 3.4 | Proposed |
+| [DD-079](<#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them>) | Tasks are documents of their own index, written with the change that records them | 3.4 | Proposed |
+| [DD-080](<#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease>) | Every server process runs tasks, each claimed with a lease | 3.4 | Proposed |
+| [DD-081](<#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default>) | Tasks are enabled by a server setting, on by default | 3.4 | Proposed |
+| [DD-082](<#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change>) | Audit events are documents of their own index, written after the change | 3.5 | Proposed |
+| [DD-083](<#dd-083-audit-events-keep-atlass-event-keys-and-their-order>) | Audit events keep Atlas's event keys and their order | 3.5 | Proposed |
+| [DD-084](<#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed>) | The entity writer tells a change notifier what it changed | 3.5 | Proposed |
+| [DD-085](<#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write>) | Classification events are collected in the request and recorded after its write | 3.5 | Proposed |
+| [DD-086](<#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed>) | Tag propagation records the propagations a request added and removed | 3.5 | Proposed |
+| [DD-087](<#dd-087-basic-search-is-split-into-entity-and-classification-search>) | Basic search is split into entity and classification search | 4.1 | Proposed |
+| [DD-088](<#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type>) | Entity attributes are searched in typed search fields named after their defining type | 4.1 | Proposed |
+| [DD-089](<#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given>) | A search is a query of the entity documents, ordered by creation when no sort is given | 4.1 | Proposed |
+| [DD-090](<#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them>) | A classification search finds instances first, then the entities listing them | 4.1 | Proposed |
+
+### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-09
+
+**Decision.** The behaviour to reproduce is that of the `release-2.4.0` tag of Apache Atlas. Both of its user interfaces are served unchanged at the paths Atlas uses: `dashboardv2` at `/` and `dashboardv3` at `/n/`. End-to-end tests cover `dashboardv3` in depth and `dashboardv2` with a smoke test.
+
+**Reason.** Parity tests need one fixed reference ([ADR 048](<https://aureliusenterprise.github.io/phase4-4.1b-classification-search/architecture/adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted/index.md>)), and 2.4.0 is the latest Apache Atlas release. Atlas 2.4.0 serves the classic interface at the root and the newer one under `/n/`, and each links to the other; serving both keeps every bookmark and link working at the cost of one more static build, whereas dropping one would be a visible deviation.
+
+**Alternatives.** Track Atlas `master`: unstable fixtures, no released artefact to compare against. Serve only `dashboardv3` and redirect `/` to `/n/`: one build less, but breaks the switch-back link and existing bookmarks, and would need a deviation entry.
+
+**Consequences.** A move to a later Atlas release is a new entry plus a re-recording of all fixtures. Features used only by `dashboardv2` still need backend support; they are found by its smoke test.
+
+### DD-002. Atlas code lives in aurelius-atlas projects split by layer
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-09
+
+**Decision.** Atlas code is split into workspace projects by layer, all prefixed `aurelius-atlas-` (Python packages `aurelius_atlas_*`): `-model` (data shapes, no I/O), `-typesystem` (type registry and validation), `-store-es` (Elasticsearch access), `-core` (stores and services), `-dsl` (query language), `apps/aurelius-atlas-server` (REST), `apps/aurelius-atlas-dashboard` (UI), `reports/aurelius-atlas-test-report`, plus `dev/elasticsearch` and `dev/atlas-reference`.
+
+**Reason.** Layers that do not do I/O can be unit-tested without infrastructure; the dependency direction (model ← typesystem ← core → store-es; server → core) keeps each increment's change local, and each project follows an existing template recipe. The `aurelius` prefix keeps the organisation's naming convention.
+
+**Alternatives.** One large package mirroring the Java module tree: simpler imports, but every change touches the same project and nothing can be tested in isolation. A package per Java module (`intg`, `repository`, `webapp`): mirrors history rather than the dependency structure we want.
+
+**Consequences.** Projects are created by the increment that first needs them, not up front.
+
+### DD-003. Template projects are renamed to the aurelius-atlas prefix
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-17
+
+**Decision.** All workspace projects inherited from the template carry the `aurelius-atlas-` prefix (directories, Nx names, uv/npm package names, Python import packages, env-var prefixes, Sonar keys, compose project and network names, Grafana dashboards). The org handle `aureliusenterprise`, the npm scope `@aurelius`, the Keycloak client/realm ids (`aurelius`, `master`), and the DB name (`aurelius`) are identities of the organisation/Keycloak and stay unchanged.
+
+**Reason.** DD-002 fixes the `aurelius-atlas-` prefix for the Atlas projects; renaming the template examples now, while they are the only content, avoids two naming generations in one repo and the churn of renaming them piecemeal once Atlas code lands beside them.
+
+**Alternatives.** Rename only new Atlas projects: leaves `aurelius-*` and `aurelius-atlas-*` side by side, which reads as two projects with different ownership. Keep the template names entirely: makes the eventual atlas-vs-template distinction implicit rather than visible in the project graph.
+
+**Consequences.** Docker image names change (`ghcr.io/aureliusenterprise/aurelius-atlas-*`); Sonar projects, Chromatic, and any external CI references must be created/renamed to match. `.env.enc` files were re-encrypted with the new prefixed keys. Old locally built images are stale and should be pruned (`docker image prune` / rebuild via `nx e2e`).
+
+### DD-004. The SPA keeps tokens in memory and renews them silently
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-17
+
+**Decision.** The Angular SPA uses Keycloak's default in-memory token store (`tokenStore: "default"` in `provideKeycloak`, `apps/aurelius-atlas-frontend-example/src/app/app.config.ts`) with `onLoad: "check-sso"` and a silent-SSO redirect (`/silent-check-sso.html`). Access and refresh tokens never touch `localStorage` or any other persistent browser storage.
+
+**Reason.** `localStorage` is readable by any script that achieves XSS on the origin, and is also exposed to browser extensions with host permissions; a stolen refresh token there is a durable session hijack. With the in-memory store, injected script can read the current access token but the attacker's code dies with the page, and a reload forces a fresh authentication check against Keycloak rather than replaying stored secrets.
+
+**Alternatives.** `tokenStore: "sessionStorage"`: survives reload in the tab, but every XSS or extension read is still one `getItem` away — same theft surface, no meaningful gain. `tokenStore: "localStorage"`: survives tab close; strongest theft value, rejected. A confidential client with a BFF holding tokens server-side: the right answer at scale, deferred as its own increment — it changes the auth topology (new service, cookie session) rather than a setting.
+
+**Consequences.** A page reload re-mints tokens via silent SSO; the user sees no login unless the Keycloak SSO session itself has ended. Silent SSO relies on a third-party-cookie-acceptable (or same-site) Keycloak deployment: where browsers block the framing cookie, `check-sso` degrades to a not-signed-in state and the app falls back to a full redirect login (`login()`), which still works. If per-tab token durability becomes a product requirement, supersede this entry by adding the BFF — not by moving the tokens to storage.
+
+### DD-005. The store uses the official async Elasticsearch client
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** `aurelius-atlas-store-es` talks to Elasticsearch through `AsyncElasticsearch` from the official `elasticsearch` Python client, version 9.5 or later within major 9, matching the 9.5 server (`dhi.io/elasticsearch:9.5-debian13`; minor upgrades are deliberate, patch releases follow the tag). A store instance owns exactly one client, opened and closed with the store (`async with`).
+
+**Reason.** The server is FastAPI and asynchronous; a blocking client would tie up the event loop or need a thread pool. The official client tracks the server's API and versioning, ships typed request helpers, and includes the query DSL module that search (4.x) will need.
+
+**Alternatives.** `httpx` against the REST API directly: no extra dependency, but every API, retry and error type would be rebuilt by hand. `opensearch-py`: a different server; ADR 047 names Elasticsearch. One client per request: simple, but loses connection pooling.
+
+**Consequences.** The client's major version moves with the server's (STO-04 guards it). Connection pooling and retries are the client's; tuning them is part of 6.4.
+
+### DD-006. Development and tests run Elasticsearch with security on
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** `dev/elasticsearch` and the test fixture run with `xpack.security` enabled: TLS on the HTTP layer with a certificate from the workspace CA (dev) or an ephemeral CA (tests), and basic authentication for the built-in `elastic` user. The store library has no option to skip certificate verification.
+
+**Reason.** It is the posture production needs, and the one `dev/postgres` already has; a store that only ever ran without security would meet TLS and authentication for the first time in production.
+
+**Alternatives.** Security disabled in development: faster start-up and simpler `curl`, but a different code path (plain HTTP, no credentials) from production, and a verification switch in the library that someone eventually leaves off.
+
+**Consequences.** Dev tools need the CA file and the password (`curl --cacert dev/elasticsearch/certs/ca.pem -u elastic:…`). A dedicated application user with least privilege replaces `elastic` when authorization arrives (6.2).
+
+### DD-007. The Elasticsearch test fixture ships with the store library
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** The testcontainers helper that starts a TLS-enabled Elasticsearch lives in `aurelius_atlas_store_es.testing`, behind the library's `testing` extra, next to the code it serves.
+
+**Reason.** Every later project with a store (`-core`, the server, the parity harness) needs the same container; the library that defines the settings is the one that knows how to build them for a test server, and keeping both together means a settings change cannot break the fixture unnoticed.
+
+**Alternatives.** `aurelius-atlas-sdk.testing`, where the Postgres helper lives: would make the generic SDK depend on Elasticsearch. A copy per project: drifts.
+
+**Consequences.** Test-only dependencies (`testcontainers`, `trustme`) stay out of the runtime install; consuming projects add `aurelius-atlas-store-es[testing]` to their dev dependencies.
+
+### DD-008. A yellow cluster is healthy
+
+- **Status:** Proposed
+- **Increment:** 0.2
+- **Date:** 2026-10-17
+
+**Decision.** The store's health check reports up for cluster status green or yellow and down for red (STO-05).
+
+**Reason.** Yellow means every primary shard is assigned and all data is readable and writable; only replicas are missing. A single-node cluster, the development and small-installation case ([ADR 006](<https://aureliusenterprise.github.io/phase4-4.1b-classification-search/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)), is yellow as soon as an index has a replica. Reporting it down would make every single-node deployment permanently unready.
+
+**Alternatives.** Green only: correct for multi-node clusters, unusable for single-node ones unless every index is created with zero replicas. A configurable threshold: one more setting nobody sets.
+
+**Consequences.** Lost redundancy is not visible as a health failure; it is visible in the cluster metrics (ESD-06) and should be alerted on there.
+
+### DD-009. Traceability is checked from collected markers, not from a test run
+
+- **Status:** Proposed
+- **Increment:** 0.3
+- **Date:** 2026-10-17
+
+**Decision.** `aurelius-atlas-trace check` runs `pytest --collect-only` over the unit and end-to-end tests of every Atlas project and reads the `covers` markers from the collected items. Whether the naming tests pass is the test job's concern, not the check's.
+
+**Reason.** CI runs `nx affected -t test e2e`, so the results of one run contain only the affected projects' tests; a check over them would report every unaffected function as uncovered (TRC-10). Collection imports the tests but starts no containers, so it is cheap enough to run on every change.
+
+**Alternatives.** Merge the trace files of the run with those of the last run on `main`: needs artifact plumbing between workflows and still goes stale when a run on `main` fails. Run every test on every change: correct, but turns a one-minute check into the full end-to-end suite. Parse the test sources with `ast`: misses markers applied through `pytestmark`, classes and parametrisation.
+
+**Consequences.** A test module that fails to import fails the check, which is the right answer: its markers are unknown. A test that names a function but is skipped still counts as naming it; the report shows it as skipped.
+
+### DD-010. The traceability check covers Atlas code from increment 0.2 on
+
+- **Status:** Proposed
+- **Increment:** 0.3
+- **Date:** 2026-10-17
+
+**Decision.** R1 applies to the public functions, methods and properties of every uv workspace member that the configuration does not exclude; the template projects (examples, SDK, reports) are excluded, and so are `testing` subpackages, which are test infrastructure. R2 applies to the rules of every specification from increment 0.2 on. The configuration is the `[tool.aurelius-atlas-trace]` table of the root `pyproject.toml`.
+
+**Reason.** Template code is removed or replaced by the conversion (0.5 removes the examples), so markers on it would be written to be deleted. Excluding instead of listing makes a new Atlas project checked by default. Increment 0.1's rules (ADO-01 to ADO-03) describe the adoption of the template and were verified when it merged; 0.2 is the first increment with code, and its manual checks of ESD-01 to ESD-06 are replaced by tests in this increment.
+
+**Alternatives.** Check every workspace member: retrofits markers onto code about to be deleted. List the Atlas projects explicitly: a new project is silently unchecked until someone adds it.
+
+**Consequences.** A project that leaves the template set (the SDK, if it is kept) is removed from the exclusion list and gets its markers in the same change.
+
+### DD-011. The test report is generated from JUnit, coverage and trace files
+
+- **Status:** Proposed
+- **Increment:** 0.3
+- **Date:** 2026-10-17
+
+**Decision.** `aurelius-atlas-trace report` turns JUnit XML (`pytest --junitxml`), Cobertura XML (`pytest-cov`) and the plugin's trace JSON into one static HTML page and a Markdown summary. CI uploads the page as the `test-report` artifact and appends the summary to the run page.
+
+**Reason.** ADR 045's ladder: the input formats are the ecosystem's own, and no framework or community tool joins test results to specification rules and to a function inventory, which is the view ADR 049 R3 asks for. The generator is a few hundred lines with the standard library only.
+
+**Alternatives.** Allure Report: a polished viewer, but it needs its Java CLI, and the per-rule and per-function gap view would still be ours to build as labels and post-processing. `pytest-html`: one page of test results, nothing about rules or functions. SonarCloud: shows coverage, not traceability.
+
+**Consequences.** The page is an artifact of the CI run, not a published site; 0.4 adds the parity results to it. If a later need (history, trends) outgrows a static page, a viewer is chosen then.
+
+### DD-012. Parity scenarios are YAML files run as parametrised pytest tests
+
+- **Status:** Proposed
+- **Increment:** 0.4
+- **Date:** 2026-10-17
+
+**Decision.** A scenario is a `*.scenario.yaml` file in the stage shape of Tavern (`request`, `response`, `save`), validated with pydantic. A project's test module turns a directory of them into one parametrised test, `load_scenarios(directory)`, whose body is `await run_scenario(scenario, client)`; the project's fixture decides whether `client` talks to the application in-process (`httpx.ASGITransport`) or over HTTP to a running server.
+
+**Reason.** ADR 045's ladder: the request/response/save stage is the community's shape for declarative API tests, so reviewers who know Tavern read our scenarios at once. Running scenarios as ordinary pytest parameters puts them in JUnit, in the trace file and under `covers` (SCN-04) with public pytest API only.
+
+**Alternatives.** Tavern itself: speaks HTTP through `requests` only, so the in-process unit level is lost, and the exact comparison, volatile paths and deviations (DD-013) would be hooks around it. A custom collector for `*.scenario.yaml`: shorter test modules, but it needs pytest's private fixture API to give the items a client. Schemathesis: generates requests from an OpenAPI document, which Atlas 2.4.0 does not ship and which states types, not Atlas's answers.
+
+**Consequences.** Every project with scenarios has one small test module and a `client` fixture. The scenario format is ours to keep stable; it is versioned by its rules SCN-01 to SCN-03.
+
+### DD-013. A scenario response is compared exactly, except at declared paths
+
+- **Status:** Proposed
+- **Increment:** 0.4
+- **Date:** 2026-10-17
+
+**Decision.** The expected body must equal the actual body: the same keys, arrays in the same order, booleans and null distinct from numbers. Only `volatile` paths (generated GUIDs, timestamps) skip the value, and only `deviations` entries change the expectation, each naming its `DV-NN`.
+
+**Reason.** The dashboard and existing clients read fields the scenarios might not think of; an extra, missing or `null` field is a visible difference ([ADR 046](<https://aureliusenterprise.github.io/phase4-4.1b-classification-search/architecture/adr/046-the-catalogue-keeps-its-public-contract/index.md>)). Atlas serialises its models with Jackson `NON_NULL` inclusion, so "absent" and `null` differ there and must differ here.
+
+**Alternatives.** Subset matching: short scenarios, but an extra or misnamed field passes. Snapshot files written from our own responses: exact, but the expectation would come from the implementation, not from Atlas (ADR 052 R1).
+
+**Consequences.** Expectations for large responses are long; scenarios borrow Atlas's own test fixtures for request bodies to keep writing them cheap. Arrays whose order Atlas does not define get an explicit order-insensitive option when the first increment needs one.
+
+### DD-014. Scenario facts reach the report as test properties
+
+- **Status:** Proposed
+- **Increment:** 0.4
+- **Date:** 2026-10-17
+
+**Decision.** The parity plugin adds each scenario's endpoints and deviation ids to the test item's `user_properties` at collection. The trace plugin writes every test's properties to the trace file, so `check` (unknown deviations) and `report` (one row per endpoint) read them from the collection they already do.
+
+**Reason.** `user_properties` is pytest's own channel for facts about a test, and JUnit carries it too. Reading it at collection keeps the report's rule of DD-009: an endpoint whose scenarios did not run in this change is *not run*, not missing.
+
+**Alternatives.** A separate `--parity-json` file: a second format next to the trace file for the same tests. Make the trace library know scenarios: couples the traceability tool to one kind of test.
+
+**Consequences.** The trace file format gains a `properties` field per test; readers of version 1 files without it see no properties. Property names are prefixed with the plugin that sets them (`parity.`).
+
+### DD-015. The server is a FastAPI application with one router per Atlas resource
+
+- **Status:** Proposed
+- **Increment:** 0.5
+- **Date:** 2026-10-17
+
+**Decision.** `apps/aurelius-atlas-server` is a FastAPI application built like the template's example service (settings, uvicorn entry point, logfire, hardened image), with one router module per Atlas REST resource class (`AdminResource` → `routes/admin.py`, later `EntityREST` → `routes/entity.py`). Atlas errors are raised as `AtlasError` and turned into the Atlas error body by one exception handler, as `AtlasBaseExceptionMapper` does; JSON goes out as `application/json; charset=UTF-8`.
+
+**Reason.** ADR 045's ladder: FastAPI and the example's wiring are the workspace's convention, already gated, observed and packaged. Mirroring the Java resource classes keeps the Java map one row per class and lets a reviewer put a router next to its Java resource.
+
+**Alternatives.** Starlette without FastAPI: no validation or OpenAPI for the request models later increments need. Routers per URL prefix rather than per Java class: `admin` would still be one, but `/v2/entity` and `/v2/entity/bulk` belong to one Java class and would split.
+
+**Consequences.** The example service is no longer the only FastAPI app; it stays until the plan is done (DD-019). Later increments add routers and error codes; the error handler and media type stay.
+
+### DD-016. The server does not start without its store
+
+- **Status:** Proposed
+- **Increment:** 0.5
+- **Date:** 2026-10-17
+
+**Decision.** The server opens the Elasticsearch store in its start-up and stops with an error when the store cannot be opened (unreachable, rejected, or not Elasticsearch 9). Once running, `readiness` reports the store's health on every call, and `liveness` and `status` do not depend on it.
+
+**Reason.** The store is the only system of record ([ADR 047](<https://aureliusenterprise.github.io/phase4-4.1b-classification-search/architecture/adr/047-one-search-store-is-the-system-of-record/index.md>)); a server without it cannot answer anything but the admin endpoints. Failing at start-up shows a wrong setting at once ([ADR 018](<https://aureliusenterprise.github.io/phase4-4.1b-classification-search/architecture/adr/018-settings-arrive-at-startup-through-one-channel/index.md>)) and lets an orchestrator restart the container, while readiness covers a store that goes away later.
+
+**Alternatives.** Start without the store and retry in the background: a misconfigured server would run and only its readiness would say so. Make liveness depend on the store: an outage of Elasticsearch would make an orchestrator restart every server, which does not help.
+
+**Consequences.** Start-up order matters: `nx serve` and the end-to-end tests start the dev store first.
+
+### DD-017. The dashboards are vendored unchanged and built with dart-sass on Node 24
+
+- **Status:** Proposed
+- **Increment:** 0.6
+- **Date:** 2026-10-17
+
+**Decision.** `apps/aurelius-atlas-dashboard/dashboardv2` and `dashboardv3` are copies of the `release-2.4.0` tag, byte for byte, with Atlas's `LICENSE` and `NOTICE`. Every change is a patch listed in `PATCHES.md` and made in its own commit. The first patch replaces `node-sass` with `sass` (dart-sass) in both `gruntfile.js` files and `package.json` files. Both dashboards are built with `grunt build-minify`, as Atlas's Maven build does, in the hardened Node 24 image; only the built files leave the build. The workspace's formatters, linters and hooks skip the vendored directories.
+
+**Reason.** DD-001 asks for the dashboards unchanged; a vendored copy lets a reviewer prove that with a diff against the tag. `node-sass` 9 is a native module with builds for Node 16 to 20 only, and Node 20 is past its end of life; dart-sass is pure JavaScript, the maintained Sass compiler, and `grunt-sass` supports it. A trial build on Node 24 gave the same files as Atlas's toolchain on Node 20, with identical JavaScript; only the two compiled stylesheets differ.
+
+**Alternatives.** Build unchanged on Node 20: no patch, but an unsupported Node and a native compile in every build. Download the tag at build time and apply patch files: a smaller repository, but the source the build uses is not in review. Commit the built files: no legacy toolchain at all, but the shipped files cannot be reviewed or rebuilt.
+
+**Consequences.** The vendored `package-lock.json` files keep their 2020-era dependencies; they only run inside the build container and are not part of the server image, so Dependabot does not watch them. Moving to another Atlas release replaces both directories and re-applies `PATCHES.md`.
+
+### DD-018. The server serves the dashboards from the API's origin
+
+- **Status:** Proposed
+- **Increment:** 0.6
+- **Date:** 2026-10-17
+
+**Decision.** The server mounts the built `dashboardv3` at `/n/` and `dashboardv2` at `/` as static files, after the API routes, when `AURELIUS_ATLAS_SERVER_DASHBOARD_DIR` names their directory. The server image contains the built dashboards and sets that setting.
+
+**Reason.** The dashboards call `api/atlas/...` with relative URLs and rely on the session cookie of the same origin, as in Atlas's web application. Serving them from the server keeps that without a proxy or cross-origin configuration, and one image is the whole product.
+
+**Alternatives.** A separate static file server or the template's Angular serving: a second container and a proxy to keep one origin. Serving through a CDN: possible later in front of the server; nothing here prevents it.
+
+**Consequences.** API paths must never collide with dashboard files; the API is matched first. Unit tests build their settings without the environment and serve no dashboards unless a test sets the directory; `nx serve` builds the dashboards first and its `.env` points at `dist/`.
+
+### DD-019. The template examples stay until the plan is done
+
+- **Status:** Proposed
+- **Increment:** 0.6
+- **Date:** 2026-10-17
+
+**Decision.** The removal of the template's examples, planned as increment 0.7, moves to a to-do after 6.4. Until then, the FastAPI example service, the Angular example screen and its libraries, `aurelius-atlas-example`, `aurelius-atlas-sdk` and `dev/postgres` stay in the workspace. They remain the named deviation of ADR 050.
+
+**Reason.** The project's second phase needs these components again. Removing them now and restoring them from the template later would cost more than keeping them.
+
+**Alternatives.** Remove them now, as ADR 050 plans once the server and the dashboards replace them: this fulfils ADR 050's R1 sooner, but the components would have to be restored for the second phase.
+
+**Consequences.** CI keeps building, testing and scanning the examples. 1.1 follows 0.6 directly. The to-do in the roadmap records the scope already agreed for the removal: everything the catalogue does not use, apart from `dev/keycloak`.
+
+### DD-020. Typedef models are Pydantic models that read and write Atlas's JSON
+
+- **Status:** Proposed
+- **Increment:** 1.1
+- **Date:** 2026-10-17
+
+**Decision.** Each Atlas typedef class is a Pydantic model in `aurelius_atlas_model.typedef` with snake\_case attributes and the Java getter names as aliases. `model_validate` reads a request body and `to_json` writes a response body: aliases, null fields left out, empty collections kept. Unknown fields are ignored. The Java setters' normalisations run as `_`-prefixed validators, so they apply when a body is read and when a model is built in code, as the Java constructors and setters do.
+
+**Reason.** Pydantic is already the workspace's modelling library (settings, store) and FastAPI reads and writes it natively, so 1.6 needs no mapping layer. Atlas writes with Jackson `NON_NULL`, which is Pydantic's `exclude_none`; empty collections stay because Jackson keeps them (DD-013 compares exactly).
+
+**Alternatives.** Dataclasses with a hand-written JSON codec: no dependency, but every rule of TDM-01 to TDM-15 would be custom code. Generating models from Atlas's JSON schema: Atlas publishes none, and the normalisations live in Java setters a schema cannot express.
+
+**Consequences.** Response bodies must be written with `to_json` (or its `exclude_none`, `by_alias` dump), never with FastAPI's default response model serialisation. Later model packages (entities in 2.1) follow the same pattern.
+
+### DD-021. Set-valued fields keep each name once, in first-seen order
+
+- **Status:** Proposed
+- **Increment:** 1.1
+- **Date:** 2026-10-17
+
+**Decision.** `superTypes`, `subTypes` and `entityTypes` are lists without duplicates, kept in the order the names were first given.
+
+**Reason.** Java holds them in a `HashSet` and writes them in hash order, which Atlas does not define and no client can rely on. A Python `set` would make our order vary from run to run; first-seen order is stable and keeps what the client sent.
+
+**Alternatives.** Reproduce Java's `HashSet` iteration order: possible from `String.hashCode` and the table size, but it would copy an accident of the implementation. Sorted order: stable, but reorders what clients send.
+
+**Consequences.** The JSON order of these arrays can differ from Atlas's. Parity scenarios compare them without order, through the option DD-013 foresees, which 1.6 adds with the first scenario that needs it.
+
+### DD-022. Typedef timestamps are aware datetimes, written as epoch milliseconds
+
+- **Status:** Proposed
+- **Increment:** 1.1
+- **Date:** 2026-10-17
+
+**Decision.** `createTime` and `updateTime` are timezone-aware UTC `datetime`s. They are written as integer milliseconds since the epoch and read from a number, a string of digits or an ISO-8601 date-time string.
+
+**Reason.** Atlas's REST mapper has no date serialiser, so Jackson writes `java.util.Date` as epoch milliseconds and its `StdDateFormat` reads numbers, digit strings and ISO-8601. Pydantic would read a bare integer as seconds or milliseconds depending on its size, so the conversion is explicit.
+
+**Alternatives.** Keep the raw integer: exact, but every caller would convert. Write ISO-8601 strings: readable, but a visible difference from Atlas.
+
+**Consequences.** Jackson's RFC 1123 form (`Tue, 17 Oct 2026 10:00:00 GMT`) is not read. No Atlas client is known to send it; if one does, it becomes a deviation.
+
+### DD-023. Atlas errors live in the model library
+
+- **Status:** Proposed
+- **Increment:** 1.2
+- **Date:** 2026-10-17
+
+**Decision.** `AtlasErrorCode` and `AtlasError` move from `aurelius_atlas_server.errors` to `aurelius_atlas_model.errors`. Each code keeps Atlas's HTTP status, error code and message template. The server keeps the error handler and the response class and imports the errors from there.
+
+**Reason.** The type system (1.2) and the stores raise Atlas errors, and they may not depend on the server (DD-002: model ← typesystem ← core; server → core). In Java, too, `AtlasErrorCode` sits in `intg`, below everything else.
+
+**Alternatives.** A separate errors library: one more project for two classes. Each layer with its own exception, mapped in the server: the mapping would repeat Atlas's error table.
+
+**Consequences.** New error codes are added to `aurelius_atlas_model.errors` as each increment needs them, copied from `AtlasErrorCode`.
+
+### DD-024. The registry is updated on a transient copy under a re-entrant lock
+
+- **Status:** Proposed
+- **Increment:** 1.2
+- **Date:** 2026-10-17
+
+**Decision.** `TypeRegistry.lock_for_update(timeout)` returns a `TransientTypeRegistry` built from the registry's definitions, under a re-entrant `threading.RLock`. Changes resolve every type on the copy; `release(transient, commit=...)` swaps the copy's types into the registry or drops them. A context manager wraps the pair.
+
+**Reason.** It is Atlas's `TypeRegistryUpdateSynchronizer`: readers never see a half-resolved registry, and a failed change leaves the registry as it was (TRG-05, TRG-09). A thread lock also protects FastAPI's thread-pool handlers; async handlers hold it only around synchronous code.
+
+**Alternatives.** An `asyncio.Lock`: does not protect code run in threads. Copy-on-write without a lock: two concurrent updates would each start from the same registry and one would be lost.
+
+**Consequences.** The lock is per process. Several server processes keep their registries in step through the store (1.4).
+
+### DD-025. The type system ports the definition side only
+
+- **Status:** Proposed
+- **Increment:** 1.2
+- **Date:** 2026-10-17
+
+**Decision.** The ported types resolve definitions: names, attribute types, cardinalities, constraints and later the hierarchies (1.3). Their value side (`isValidValue`, `getNormalizedValue`, `validateValue`, `createDefaultValue`, `areEqualValues`) is ported with entity validation in 2.1. Their JanusGraph side (vertex property names, unique property names, index field names, index-query escaping) is not ported.
+
+**Reason.** Types REST (1.6) needs only the definition side; values first matter for entities (2.1), which is where Atlas's tests for them can be run. The JanusGraph names have no meaning in Elasticsearch: the index mapping is designed in 2.2.
+
+**Alternatives.** Port each class whole: one increment several times the size limit, with value code untested by any endpoint until 2.x.
+
+**Consequences.** The type classes grow in 2.1. Atlas behaviour that depends on vertex property names is designed again for Elasticsearch in 2.2 and recorded there.
+
+### DD-026. Dynamic attributes and search lookups wait for their increments
+
+- **Status:** Proposed
+- **Increment:** 1.3
+- **Date:** 2026-10-18
+
+**Decision.** The entity type's dynamic attributes (`dynAttribute:` templates, their parsing and evaluation order) are ported with entity writes in 2.4. The root entity type's lookup of business attributes for search is ported with basic search in 4.1. Both resolve nothing a type definition is checked against.
+
+**Reason.** They are used only when entities are written or searched, and can only be tested there; porting them now would leave them untested by any endpoint until then (as DD-025 argues for values).
+
+**Alternatives.** Port them with the rest of `AtlasEntityType` now: a larger increment whose extra code no rule of 1.3 can exercise.
+
+**Consequences.** 2.4 adds the template parsing to `EntityType`; 4.1 adds the lookup to the root type.
+
+### DD-027. Derived type sets keep first-seen order
+
+- **Status:** Proposed
+- **Increment:** 1.3
+- **Date:** 2026-10-18
+
+**Decision.** All super types are listed in the order the depth-first walk of the super types first reaches them; sub types and relationship attributes in the order the registry resolves its types, which is the order the definitions were added in.
+
+**Reason.** Java keeps them in `HashSet`s and `HashMap`s, whose order Atlas does not define; first-seen order is stable, as for the definitions' own sets (DD-021). Where the order picks a winner, as for inherited relationship attributes, Java's winner is equally arbitrary.
+
+**Alternatives.** Sort them by name: stable too, but unrelated to how the hierarchy was declared.
+
+**Consequences.** `subTypes` in responses may be ordered differently from Atlas's; parity scenarios compare them without order (DD-021, from 1.6).
+
+### DD-028. The type definitions are one Elasticsearch document
+
+- **Status:** Proposed
+- **Increment:** 1.4
+- **Date:** 2026-10-18
+
+**Decision.** All stored type definitions are one document, `typedefs`, in the index `aurelius-atlas-typedefs` (through an alias, so a reindex can swap it). The document holds the definitions in their stored form (TDS-05, TDS-06), grouped by kind as in `AtlasTypesDef`. Every change replaces the whole document, guarded by `if_seq_no` and `if_primary_term`.
+
+**Reason.** Atlas changes several definitions in one graph transaction: `createTypesDef` stores all of a request or none (TDS-10). Elasticsearch has no transaction across documents, but writes one document atomically, so one document makes every typedef change atomic and its sequence number a single version of all types (DD-029). The registry, not Elasticsearch, answers every query over types; the document is read whole at start-up and on change. Atlas's built-in models with all patches are about 1 MB of JSON, well inside Elasticsearch's limits.
+
+**Alternatives.** One document per definition, keyed by name: queryable, and a create can use `op_type=create` for uniqueness, but a request touching several definitions needs a hand-written rollback when one write fails, and other processes see half a change. A changes log of operations, replayed at start-up: atomic per entry, but every process replays the whole history and compaction is extra work.
+
+**Consequences.** The document's size grows with the number of types; a deployment with tens of thousands of custom types would revisit this. Type changes are serialised across the cluster, as Atlas serialises them with its update lock.
+
+### DD-029. Server processes share the type definitions through the document's version
+
+- **Status:** Proposed
+- **Increment:** 1.4
+- **Date:** 2026-10-18
+
+**Decision.** Each process remembers the `_seq_no` and `_primary_term` of the `typedefs` document its registry was built from. Before a type change it reloads when the stored document is newer; it then writes conditionally on what it read. A conflict means another process changed types first: the process reloads, applies the change again on the new definitions, and gives up with `FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` after a second conflict. Readers reload when the document changed, checked at most every `AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS` (default 5).
+
+**Reason.** Atlas runs one active server and keeps its registry in memory (DD-024 is per process). Several processes behind a load balancer must not lose each other's changes, and a change must reach the others without a restart. Optimistic concurrency on one document gives both with one cheap `GET` of the document's version.
+
+**Alternatives.** A lock document: needs expiry and recovery when its holder dies. Change notification through a message bus: a component the system does not have (ADR 050).
+
+**Consequences.** For up to the refresh interval, a process may answer from older types than another; a type change is visible at once only on the process that made it. 6.4 measures whether the interval needs tuning.
+
+### DD-030. The store asks the entity store whether a type is in use
+
+- **Status:** Proposed
+- **Increment:** 1.4
+- **Date:** 2026-10-18
+
+**Decision.** The typedef store takes a `TypeUsage` callback that answers whether entities, classifications or relationships of a type exist; deleting a type that is in use fails with `TYPE_HAS_REFERENCES`. Until the entity store exists (2.2) the callback answers "not in use".
+
+**Reason.** Atlas checks `typeHasInstanceVertex` before deleting a type. The instances live in the entity store, which the typedef store must not depend on; a callback keeps the dependency pointing from core's entity store to the typedef store.
+
+**Alternatives.** Query the entity index from the typedef store: couples it to an index that does not exist yet.
+
+**Consequences.** 2.2 passes its own check when it builds the stores.
+
+### DD-031. The patch records live in the typedef document
+
+- **Status:** Proposed
+- **Increment:** 1.5
+- **Date:** 2026-10-18
+
+**Decision.** The `typedefs` document of DD-028 holds, next to `typesDef`, a list `patches` of `AtlasPatch` records: one per typedef patch id, with its description, type, action, status and times. A patch's record is written in the same document write as the type change it makes.
+
+**Reason.** Atlas keeps patch records as graph vertices and commits them after the type change, so a crash between the two applies a patch twice, which the `typeVersion` check mostly hides. One document makes the change and its record atomic, and gives both the single version of DD-029: a process that loses a race reloads the records with the types, and sees the patch as already applied (MDL-15).
+
+**Alternatives.** A second document, or an index of patch records: queryable by `admin/patches`, but two writes per patch, and a race between processes needs its own conditional write.
+
+**Consequences.** `admin/patches` (2.2) reads the records from the document. The Java patches of 2.2, which change entities rather than types, may keep their records elsewhere; 2.2 decides.
+
+### DD-032. The built-in models are vendored unchanged and read from a directory
+
+- **Status:** Proposed
+- **Increment:** 1.5
+- **Date:** 2026-10-18
+
+**Decision.** `addons/models` of Apache Atlas `release-2.4.0` is copied byte for byte into the package `aurelius_atlas_core.models`, and kept out of the formatting hooks. The server loads models from `AURELIUS_ATLAS_SERVER_MODELS_DIR`, which defaults to that package directory.
+
+**Reason.** Atlas reads its models from `$ATLAS_HOME/models`, so operators add their own model files and patches there; a directory setting keeps that. Unchanged copies let a reviewer prove them unchanged with a diff against the tag, as for the dashboards (DD-017), and ship in the wheel without a build step. The line endings are kept too: one patch file has CRLF, so the directory is `-text` in `.gitattributes`.
+
+**Alternatives.** Converting the models to Python data: no diff against Atlas, and no way to add models without a release. Reading them from a checkout of Atlas at build time: the build would depend on a second repository.
+
+**Consequences.** A newer Atlas version's models are a new copy and a check of the new patches against the nine actions.
+
+### DD-033. Start-up loading is one change per model file and per patch
+
+- **Status:** Proposed
+- **Increment:** 1.5
+- **Date:** 2026-10-18
+
+**Decision.** Each model file and each patch is one change of the typedef store (DD-029): what to create, update or patch is decided inside the change, on the definitions and patch records just read, and decided again when a conditional write loses to another process.
+
+**Reason.** Atlas loads models only on its one active server. Here every process starts the same way, possibly at the same moment; deciding inside the change makes a second process see the first one's types and records, so it creates, updates and patches nothing twice. One change per file and per patch keeps Atlas's isolation: a failing file or patch leaves the others applied (MDL-04, MDL-06).
+
+**Alternatives.** All files and patches in one change: one write, but a failure would need the transient registry to roll back part of a change. A lock document held while loading: needs expiry when its holder dies (as in DD-029).
+
+**Consequences.** The first start against an empty store writes the document once per model file and patch, a few hundred writes of the whole document; later starts write nothing unless a model or patch is new. Two processes starting together may each retry once per change.
+
+### DD-034. Lists of type definitions are sorted by name
+
+- **Status:** Proposed
+- **Increment:** 1.6
+- **Date:** 2026-10-18
+
+**Decision.** `GET /v2/types/typedefs` and `GET /v2/types/typedefs/headers` list the definitions of each kind sorted by name, compared as Java's `String.compareTo`.
+
+**Reason.** Atlas lists them in the iteration order of the `ConcurrentHashMap`s of its registry: deterministic, but a function of Java's string hashes and the maps' resize history, which no client can rely on and no scenario can state without computing it. A sorted list is stable across restarts, processes and updates, which the order of the stored document is not: an update moves a definition to its end.
+
+**Alternatives.** The order of the stored document: changes with every update. Emulating Java's hash order: costly, and still not something a client could use.
+
+**Consequences.** DV-09. A scenario that lists several definitions of a kind states them sorted by name.
+
+### DD-035. Type scenarios create what they read and delete it at their end
+
+- **Status:** Proposed
+- **Increment:** 1.6
+- **Date:** 2026-10-18
+
+**Decision.** Each types scenario creates the definitions it needs, all named `scenario_…`, and deletes them in its last stage. Before the server e2e runs its scenarios, it deletes any `scenario_…` definition left in the store by an earlier run that stopped half-way.
+
+**Reason.** The in-process scenarios start each from an empty store, but the e2e runs them all against one server on the persistent dev store, which `nx serve` uses too. Self-contained scenarios pass on both, in any order, and a run never touches a developer's own types.
+
+**Alternatives.** Deleting the typedef index before the e2e: also deletes the developer's types and makes the server load the models again. A separate index per e2e run: needs an index-name setting that nothing else needs.
+
+**Consequences.** Scenario names must be unique across scenarios; a scenario's expectations cannot depend on types another scenario creates.
+
+### DD-036. Start-up loading tries a raced change again
+
+- **Status:** Proposed
+- **Increment:** 1.6 (a fix to 1.5's MDL-15)
+- **Date:** 2026-10-19
+
+**Decision.** When the typedef store gives up on a model file or patch with `FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` (two lost conditional writes, DD-029), the model loader makes the change again, up to ten times, before it treats the file as failed or the patch as `FAILED`. The REST endpoints keep DD-029's single retry.
+
+**Reason.** DD-033 assumed a process starting next to another loses at most once per change. CI showed otherwise: two processes write a few hundred changes in near lockstep, and between one's reload and its retry the other may write its next file, so it loses twice and skipped a model file. Every lost race is another process's write, so trying again always makes progress, and a file or patch is never skipped for a race.
+
+**Alternatives.** More retries in the store itself: also lengthens a REST request's wait under contention, where Atlas answers `FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` at once. No limit: a store that never stops changing would hang start-up.
+
+**Consequences.** DD-033's "may each retry once per change" becomes "until it wins, up to ten times". A process that loses ten times in a row still reports the file or patch as failed, as Atlas does on a lock failure.
+
+### DD-037. Instance models are one module per Java class
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-20
+
+**Decision.** The entity models live in the package `aurelius_atlas_model.instance`, one module per Java class, nested classes and enums included (`entity`, `entity_status`, `entity_with_ext_info`, …). The package re-exports every model. The JSON conventions all models share (`AtlasModel`, the timestamp, Java boolean, int and set types) move from `typedef` to `aurelius_atlas_model.base`; `typedef` imports them from there.
+
+**Reason.** Atlas organises its models as one class per file; a reader who knows a Java class finds its port by name, and each module stays small enough to read whole. The typedef models were ported into one module (1.1); the instance models are more numerous and depend on each other in one direction only (struct, then entity, header, ext info), which modules make visible.
+
+**Alternatives.** One `instance.py`, as `typedef.py`: about as long as all of `typedef.py` again, mixing seventeen classes. Importing the shared conventions from `typedef`: makes the instance models depend on the typedef module for reasons unrelated to type definitions.
+
+**Consequences.** Tests follow the layout, one file per module under `tests/instance/`; the four enums, which have no behaviour of their own, share one. Splitting `typedef.py` the same way is possible later without changing its imports, through its re-exports.
+
+### DD-038. Attribute values stay plain JSON values until their types read them
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-20
+
+**Decision.** The models of 2.1a keep attribute values (`attributes`, `relationshipAttributes`, `uniqueAttributes`, business attributes) as the JSON values Python reads: objects, arrays, strings, integers, floats, booleans and null. Atlas's REST mapper reads floats as `BigDecimal` (`USE_BIG_DECIMAL_FOR_FLOATS`) and writes them back with their digits (`1.10`, `1E+3`); that is designed with the `bigdecimal`, `float` and `double` types in 2.1b.
+
+**Reason.** An untyped value reaches a response only after its attribute's type normalised it (2.1b, then the stores), so the digits of a float matter only where a type keeps them. Keeping them in 2.1a would need a JSON reader and writer of its own for every model before any type needs it.
+
+**Alternatives.** Read every float as `Decimal` now: Pydantic writes a `Decimal` as a JSON string, so every writer would need a custom encoder, designed without the type that motivates it.
+
+**Consequences.** 2.1b decides how a `bigdecimal` value is read from a body and written back exactly, and applies it to these models.
+
+### DD-039. One Atlas JSON codec reads floats as decimals and writes them with their digits
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-21
+
+**Decision.** `aurelius_atlas_model.codec` holds Atlas's JSON reading and writing. `loads` reads every number with a fraction or exponent as a `Decimal`, as Jackson's `USE_BIG_DECIMAL_FOR_FLOATS` does. `dumps` writes a `Decimal` with its digits, a `datetime` as epoch milliseconds, NaN as the string `"NaN"`, and map keys as Java's text of the key. `AtlasModel.to_json` dumps in Pydantic's Python mode, so attribute values keep these types for the codec; typed timestamps are written as epoch milliseconds in both modes. The server's `AtlasJSONResponse` writes its content with `dumps`. This settles DD-038.
+
+**Reason.** A `bigdecimal` attribute keeps the digits it was given (`1.10`), and normalised dates are Java `Date` values that Jackson writes as numbers, even inside untyped attribute maps. Python's `json` turns a `Decimal` into a float, and Pydantic's JSON mode turns it, and a `datetime`, into a string.
+
+**Alternatives.** A custom Pydantic serializer per field: values inside `dict[str, Any]` have no field of their own. Converting decimals to floats: loses digits a client sent.
+
+**Consequences.** A double is written with Python's shortest form (`10000000.0`), where Jackson writes `Double.toString` (`1.0E7`): the same number in another notation, equal for every JSON reader and for the parity comparison. Request bodies with entity values are read with `loads` from 2.3 on.
+
+### DD-040. Java values are held as the Python values closest to them
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-21
+
+**Decision.** A Java `Integer`, `Long`, `BigInteger`, `Byte` or `Short` is a Python `int`; which of them it was follows from its size, as Jackson chooses by size (`Integer` within 32 bits, `Long` within 64, `BigInteger` beyond). A `BigDecimal` is a `Decimal`, a `Double` a `float`, and a `Float` a `float` holding the shortest decimal of the 32-bit value. A `Boolean` is a `bool`, never a number. A `Date` is an aware UTC `datetime` with millisecond precision. The conversions Java applies between them (`longValue`, `intValue`, `floatValue`, `toBigInteger`, `BigDecimal.valueOf(double)`, `valueOf(String)`, `String.valueOf`) are functions of `aurelius_atlas_typesystem.java`, each named after its Java original.
+
+**Reason.** The types branch on the Java class of a value (`instanceof Long`, `instanceof BigDecimal`), and their results depend on Java's arithmetic: truncation, saturation, 32-bit rounding. Values from a JSON body can only be integers, decimals, strings, booleans, lists and maps, so the Python types need only tell those apart; Java `Float` and `Double` arise from Atlas's own code and from Atlas's tests.
+
+**Alternatives.** Wrapper classes for every Java number type: every value would need wrapping on reading and unwrapping on writing, for distinctions JSON cannot express.
+
+**Consequences.** A `float` value written and read back is the same 32-bit value. An `Integer` and a `Long` of equal value cannot be told apart, and give the same result in every type. A `BigInteger` within 64 bits cannot be told apart from a `Long` either; `bigdecimal` treats them differently (`1` against `1.0`), but JSON never yields one, because Jackson reads such integers as `Integer` or `Long`.
+
+### DD-041. The type system is one module per Java type class too
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-21
+
+**Decision.** As DD-037 for the models: the types the value side adds or changes get one module each, `atlas_type`, `enum_type`, `array_type`, `map_type`, and `builtin/<name>_type` for each nested class of `AtlasBuiltInTypes`. `types.py` keeps the struct, classification, entity, relationship and business metadata types, which 2.1c moves the same way, and re-exports the moved classes.
+
+**Reason.** The value side roughly doubles the type classes; one file of all of them would pass two thousand lines. A reader who knows Atlas's `AtlasArrayType` finds `array_type`.
+
+**Alternatives.** Adding the value side to `types.py`: one module far beyond what anyone reads whole.
+
+**Consequences.** `from aurelius_atlas_typesystem.types import ArrayType` keeps working; new code imports from the class's own module.
+
+### DD-042. A validity period without a time zone is in UTC
+
+- **Status:** Proposed
+- **Increment:** 2.1
+- **Date:** 2026-10-22
+
+**Decision.** A classification's validity period without a `timeZone` is read in UTC, where Atlas reads it in its JVM's default time zone (`TimeZone.getDefault()`). Java's time zone ids are matched with Python's tz database (`zoneinfo`), Java's legacy three-letter ids (`ZoneId.SHORT_IDS`, such as `PST` and `IST`) and its custom `GMT±h[h][[:]mm]` offsets.
+
+**Reason.** Atlas's default zone is whatever its host is set to; the server image runs in UTC, so UTC is the same answer for a container deployment, and it does not change with where the code happens to run. The tz database holds every zone Java's `TimeZone` resolves except the legacy short ids, which Java maps to tz ids.
+
+**Alternatives.** The local zone of the Python process: makes validation depend on the developer's machine. A setting for the default zone: nothing asks for one yet.
+
+**Consequences.** A validity period of `2026/01/01 00:00:00` without a zone means midnight UTC. The time zone list must stay in step with Java's; the tz database of the image (the `tzdata` package) supplies it.
+
+### DD-043. Entities are documents of one index, their attributes under qualified names
+
+- **Status:** Proposed
+- **Increment:** 2.2
+- **Date:** 2026-10-22
+
+**Decision.** Every entity, of every type, is one document of the index behind the alias `aurelius-atlas-entities`, with its GUID as the document id. The document holds the system properties Atlas keeps on a vertex (GUID, type name, super type names, state, times, users, version, labels, custom attributes) as top-level fields, mapped for exact lookup, and the attribute values in an `attributes` object keyed by each attribute's qualified name (`Referenceable.qualifiedName`, `hive_table.createTime`), as the vertex properties are named. The `attributes` object is stored but not indexed (`dynamic: false`) until 4.1 designs the search mapping.
+
+**Reason.** A GUID is how Atlas reads, writes and refers to an entity, and a get by id is Elasticsearch's only real-time read. One index serves every type, as one graph holds every vertex; per-type indices would multiply shards with the number of types. A qualified name is defined by one attribute definition, whose type may not change (TDS-08), so one field never holds two value types, which Elasticsearch could not map. Leaving attributes unindexed until search needs them keeps 2.2 from deciding analysis and field types it cannot yet test.
+
+**Alternatives.** Attributes keyed by their plain names: the same name with different types in two entity types cannot share one mapping. An index per entity type: thousands of small indices for Atlas's models alone, and queries across a super type touch them all.
+
+**Consequences.** The store's client reads floats as decimals and is given documents as the codec's bytes (DD-039), so values keep their digits through Elasticsearch. 4.1 adds attribute mappings and indexes the existing documents again (an `update_by_query`), the first change ADR 023 records as a migration if data exists by then. Reading an entity back maps qualified names to attribute names through the type registry (2.3).
+
+### DD-044. A GUID is a random UUID
+
+- **Status:** Proposed
+- **Increment:** 2.2
+- **Date:** 2026-10-22
+
+**Decision.** The store gives a new entity a random (version 4) UUID in canonical lower-case text, as Atlas's `UUID.randomUUID().toString()`.
+
+**Reason.** Atlas's clients see and keep GUIDs of this form; any process can make one without coordination, and the chance of two equal ones is negligible.
+
+**Alternatives.** Time-ordered UUIDs (version 7): better index locality, but a GUID would reveal its creation time and differ in form from Atlas's.
+
+**Consequences.** None beyond Atlas's.
+
+### DD-045. Unique values are reserved by create-only documents
+
+- **Status:** Proposed
+- **Increment:** 2.2
+- **Date:** 2026-10-22
+
+**Decision.** For each unique attribute value an `ACTIVE` entity has, the store keeps a reservation document in `aurelius-atlas-unique-values`, whose id is a SHA-256 of the entity type name, the attribute's qualified name and the value as the codec writes it, and which names the GUID holding it. A reservation is made with `op_type=create`, so of two processes reserving the same value one fails, and is deleted when the entity changes the value or leaves `ACTIVE`. A lookup by unique attributes reads the reservations by id, in real time.
+
+**Reason.** Atlas enforces unique attributes with a JanusGraph unique index on a shadow property (`__u_Referenceable.qualifiedName`), composite with the type name (`PER_TYPE_UNIQUE`), removed when an entity is deleted. Elasticsearch has no unique constraint except the document id, and a search would see neither a value written a moment ago nor one being written concurrently. A create-only document with a deterministic id is atomic across processes.
+
+**Alternatives.** Search the entity index before writing: races between processes, and misses unrefreshed writes. The value itself as the document id: limited to 512 bytes, while a `qualifiedName` may be longer.
+
+**Consequences.** Every write of an entity with unique attributes writes one more document per changed value. Reservations belong to the write that made them until it ends (DD-046), so recovery can release those of a write that never finished.
+
+### DD-046. A multi-entity write is all or nothing, through a journal
+
+- **Status:** Proposed
+- **Increment:** 2.2
+- **Date:** 2026-10-22
+
+**Decision.** A write of several entities runs in steps:
+
+1. a journal entry in `aurelius-atlas-entity-journal` records the write's id, a lease time and the state of every entity before it (or that it is new);
+2. every unique value the write needs is reserved; a value held by another entity ends the write, before any entity is written, with an error 2.4 turns into an answer;
+3. all entities are written in one bulk request, each conditionally (DD-047) and marked with the write's id;
+4. if any entity fails, every entity written is restored to its state before, and the write's reservations are released;
+5. the journal entry is marked committed; values no longer held are released and the entry is deleted.
+
+Recovery, at start-up, finds journal entries whose lease has passed. A committed entry only has its releases finished; any other is undone as in step 4: it restores an entity only while it still carries that write's id, and releases only reservations made by that write.
+
+**Reason.** Atlas commits all entities of a request in one graph transaction (`GraphTransactionInterceptor`). Elasticsearch writes one document atomically but no more (ADR 047). The user chose an all-or-nothing outcome, also after a crash, over per-entity writes or full isolation (2026-10-22): the journal makes the outcome recoverable at the cost of one document per write, while isolation would make every read look up write states.
+
+**Alternatives.** Per-entity atomicity: a failed batch leaves part of it written. Isolation through pending versions and a committed flag: no reader sees a partial write, but every read pays for it.
+
+**Consequences.** Between steps 3 and 4 another reader may see part of a write (DV-16). A write must finish within its lease (60 seconds) or recovery may undo it; a write that finds its lease passed before step 3 gives up. Recovery runs at start-up, so a crash's leftovers stay until a process starts.
+
+### DD-047. Entities are written conditionally on their Elasticsearch version
+
+- **Status:** Proposed
+- **Increment:** 2.2
+- **Date:** 2026-10-22
+
+**Decision.** A changed entity is written with the `if_seq_no` and `if_primary_term` it was read with, and a new one with `op_type=create`. A conflict fails the write (DD-046 restores the rest) with a version conflict the caller handles by reading again. Atlas's `version` field is stored as the entity has it and plays no part.
+
+**Reason.** Atlas serialises writes inside one JanusGraph transaction per request; several server processes writing to one Elasticsearch need optimistic concurrency, as the type definitions do (DD-029). Atlas never increments an entity's `version` itself (`getEntityVersion` takes the entity's or 0), so it cannot serve as a concurrency token without changing what clients see.
+
+**Alternatives.** A lock document per entity: needs expiry when its holder dies. Incrementing `version`: changes Atlas's responses.
+
+**Consequences.** 2.4 decides how a write request retries after a conflict and what it answers when it gives up.
+
+### DD-048. A type is in use while the entity index holds one of it
+
+- **Status:** Proposed
+- **Increment:** 2.2
+- **Date:** 2026-10-22
+
+**Decision.** The typedef store's usage check (DD-030) refreshes the entity index and counts the documents whose type name is the type, in any state, as Atlas's `typeHasInstanceVertex` counts vertices of the type. Classification and relationship types join the check when their instances are stored (3.1, 3.3).
+
+**Reason.** A count is near real time; the refresh makes an entity written a moment ago count. Deleting a type is rare, so the refresh's cost does not matter.
+
+**Alternatives.** Keeping a counter per type: one more document to update atomically with every write.
+
+**Consequences.** Until 3.1 and 3.3, a classification or relationship type is never in use.
+
+### DD-049. Attribute values are stored normalised; a struct inline, a reference as a GUID
+
+- **Status:** Proposed
+- **Increment:** 2.3
+- **Date:** 2026-10-22
+
+**Decision.** An entity document holds each attribute value as its attribute's type normalises it (`getNormalizedValue`), in the codec's JSON (DD-039): a date as epoch milliseconds, an enum as its value's name, numbers with their digits. A struct value is held inline as `{"typeName": …, "attributes": {…}}`, its attributes by name and normalised the same way. A reference to an entity, whether an `objectid` attribute, an element of an array or a value of a map, is held as the referenced entity's GUID; a soft reference (`isSoftReference`) is held as Atlas holds it, `typeName:guid`. Reading an entity gets the entities its attributes refer to by GUID, in one request, to build their object ids and owned entities; a GUID that finds no entity reads as nothing, as an edge to a removed vertex does.
+
+**Reason.** Atlas keeps a struct in a vertex of its own and a reference as an edge; Elasticsearch has neither, and one document per entity is what DD-043 decided. A struct belongs to its entity alone, so it stays inside it. A reference's GUID never changes, where the referenced entity's unique attributes and type may, so the GUID is the only stable thing to store; everything else the object id shows is read from the referenced entity, as `toAtlasObjectId` reads it from the vertex.
+
+**Alternatives.** Storing the object id with its unique attributes: stale once the referenced entity changes. Structs as documents of their own: a second read per struct, and nothing ever refers to one.
+
+**Consequences.** 2.4 writes values in this form, resolving every object id it is given, by GUID or by unique attributes, to a GUID first. A reference read needs a second `mget` per nesting level of owned entities. 3.1 decides how relationship attributes are stored; references that are also relationship ends (legacy attributes) move there then.
+
+### DD-050. Relationship attributes read empty until relationships are stored
+
+- **Status:** Superseded by DD-064
+- **Increment:** 2.3
+- **Date:** 2026-10-22
+
+**Decision.** Until 3.1 stores relationships, an entity reads as Atlas reads one without relationship edges: `relationshipAttributes` names every relationship attribute of its type, null for a `SINGLE` end and `[]` for a `LIST` or `SET` end, the end chosen as Atlas chooses it without edges (the attribute's first relationship type). `ignoreRelationships=true` leaves `relationshipAttributes` out.
+
+**Reason.** The keys and the empty values are what Atlas answers for an entity no relationship has reached yet; answering them now keeps the response's shape, and 3.1 only fills values in.
+
+**Alternatives.** Leaving `relationshipAttributes` out until 3.1: a different shape for every entity, which clients that read the keys would notice.
+
+**Consequences.** Until 3.1, a reference given as a legacy relationship attribute (DD-049) reads in `attributes` but not in `relationshipAttributes` (DV-18).
+
+### DD-051. Entity reads are tested on entities written through the store until 2.4
+
+- **Status:** Proposed
+- **Increment:** 2.3
+- **Date:** 2026-10-22
+
+**Decision.** 2.3's HTTP tests write the entities they read through `EntityStore` (2.2), in the stored form of DD-049, and check every read rule on them. Its parity scenarios cover what needs no entity: unknown GUIDs and types, invalid and missing unique attributes, values that find nothing. 2.4 adds scenarios that create entities over REST and read them back.
+
+**Reason.** A parity scenario only reaches the server over REST, and entities can be created over REST from 2.4 on. Seeding through the store tests the read path now without porting the write path early.
+
+**Alternatives.** Merging 2.3 into 2.4: one pull request far above the size limit. Moving 2.4 before 2.3: a write increment whose responses could not be read back.
+
+**Consequences.** Until 2.4, the stored form the tests write is checked against Atlas's responses only by the expectations read from the Java source; 2.4's scenarios check both directions.
+
+### DD-052. A request is mapped in memory and written once; a lost race runs it again
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** `EntityWriter` reads every stored entity a create or update request names, discovers and resolves its references, and maps its entities to their new stored form in memory, together with the entities EWR-12 touches. The response's headers are built from that form. The result is one `EntityStore.write` (ENS-07), each changed entity conditional on the version it was read in (ENS-08). When the write loses a race, the whole request is read, mapped and written again, once; a second loss, or a unique value another entity holds, is answered with `INTERNAL_ERROR` naming the cause (DV-20).
+
+**Reason.** Atlas maps a request onto vertices inside one graph transaction and commits at the end; mapping onto documents in memory and writing them in one all-or-nothing write is the same shape on Elasticsearch (DD-046). Running the request again on the newer state is what a client would do, as DD-029 does for types.
+
+**Alternatives.** Writing each entity as it is mapped: a failure part-way would leave a half-written request for recovery to undo, and headers would be read from the index. Answering a lost race with an error at once: two clients updating different attributes of an entity would fail where Atlas, serialising them, succeeds.
+
+**Consequences.** A request's memory grows with its entities, as Atlas's transaction does. A unique value clash is no `400`: Atlas resolves an entity by its unique values before writing, so a clash needs an update that moves a value onto another entity, or two new entities with the same value in one request.
+
+### DD-053. Relationship attribute values are resolved, but stored only as legacy attributes until 3.1
+
+- **Status:** Superseded by DD-064
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** Until 3.1 stores relationships, a relationship attribute's value in a write is discovered, resolved, checked and normalised as Atlas does, so its errors are Atlas's. It is stored only when the entity's type has an attribute of the same name (a legacy relationship end, such as `hive_table.db`), as that attribute's value (DD-049); a relationship attribute without such an attribute is not stored (DV-22).
+
+**Reason.** A legacy end is read from `attributes` (DD-050, DV-18); storing it there keeps what clients write readable. Storing other relationship values needs relationship instances, their GUIDs and both ends, which is 3.1's.
+
+**Alternatives.** Rejecting relationship attributes until 3.1: requests Atlas accepts, such as the hook models', would fail. Storing them as plain references on one end: 3.1 would have to migrate them.
+
+**Consequences.** 3.1 replaces this: relationship values become relationships, and the legacy attributes' values move to them.
+
+### DD-054. Dynamic attributes are evaluated in first-seen dependency order
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** An entity type's dynamic attributes are ordered by a depth-first topological sort over their templates, visiting them in the order their `dynAttribute:` options appear, so that an attribute another template names is evaluated first.
+
+**Reason.** Java sorts the same graph but starts from the keys of a `HashMap`; where the dependencies leave the order open, first-seen order is stable, as DD-027 chooses for derived type sets.
+
+**Alternatives.** Sorting by name: stable too, but unrelated to the definition.
+
+**Consequences.** Independent dynamic attributes may be evaluated in another order than Atlas's; their values do not depend on it.
+
+### DD-055. Scenarios name what they create with a per-run value
+
+- **Status:** Proposed
+- **Increment:** 2.4
+- **Date:** 2026-10-22
+
+**Decision.** The parity harness provides `{run}`, a value unique to each run of a scenario, in letters and digits, before any stage has saved a value. Entity scenarios name their types and entities with it, and leave them in the store until 2.5 lets them delete what they created (DD-035).
+
+**Reason.** The dev store keeps its contents between runs. A scenario that creates an entity again on a second run would find it, update it and get a different answer; a type in use cannot be deleted.
+
+**Alternatives.** Deleting the entity index before scenarios: other tests and a developer's data share the dev store. Waiting for 2.5: 2.4's writes would have no parity check (DD-051).
+
+**Consequences.** Each run of the entity scenarios leaves a few types and entities in the dev store until 2.5; CI starts from an empty store.
+
+### DD-056. An entity write also removes documents, journaled like the others
+
+- **Status:** Proposed
+- **Increment:** 2.5
+- **Date:** 2026-10-22
+
+**Decision.** An `EntityChange` may remove its entity instead of writing a new state. The removal is a `delete` action of the same bulk request, conditional on the version read (DD-047); the journal entry records the entity's state before and lists the removed GUIDs. A failed write restores a removed entity; recovery restores a removed entity of an unfinished write when no document has its GUID. A removed entity holds no unique value: its reservations are released as for one that left `ACTIVE`.
+
+**Reason.** A hard delete or a purge removes entities and changes those referring to them in one request; the all-or-nothing write of DD-046 already covers the changes, and removals need the same guarantee.
+
+**Alternatives.** Marking removed entities and deleting them in a second step: a reader would see them in between, and a crash would leave them. Removing them after the write commits: a crash in between leaves entities the response called purged.
+
+**Consequences.** Recovery cannot tell a removal undone by it from a later write's removal of the same GUID; a GUID is removed once, so this does not arise.
+
+### DD-057. Entities referring to one are found through an indexed field of GUIDs
+
+- **Status:** Proposed
+- **Increment:** 2.5
+- **Date:** 2026-10-22
+
+**Decision.** Every entity document holds `references`, a keyword field of the GUIDs its references name (its own object id attributes and the elements and values of its arrays and maps of object ids; not soft references, not references in structs), set by `EntityStore` on every write. Deleting an entity refreshes the entity index, then searches `references` for its GUID, in pages. Preparing the store adds the field's mapping to an existing entity index; documents written before it have no `references` until they are written again.
+
+**Reason.** Atlas follows an entity's incoming edges; documents have none. Of the alternatives offered, the indexed field keeps writes to the entities written (DD-052), and the refresh makes every write finished before the delete visible.
+
+**Alternatives.** A reverse list on each referenced entity, kept by the same write: exact, but every write that adds or drops a reference rewrites the entities it names, and popular entities become write hot spots.
+
+**Consequences.** A referrer written while the delete runs may be missed (DV-27). Lineage (5.1) and relationships (3.1) can use the same field.
+
+### DD-058. A stored reference stands for an edge: active for a delete, deleted for a purge
+
+- **Status:** Proposed
+- **Increment:** 2.5
+- **Date:** 2026-10-22
+
+**Decision.** A stored reference has no state of its own. A delete treats the references to the entities it deletes, and those of an `ACTIVE` owner to its owned entities, as active edges; a purge treats them as deleted edges, which a soft delete left behind.
+
+**Reason.** Atlas soft-deletes an entity's edges with it: the edges a purge finds deleted are those of entities a delete made `DELETED`, which is what this rule reads from the entities' states.
+
+**Alternatives.** A state per reference in the stored form (DD-049): an exact copy of the edges' states, at the cost of a second representation of every reference until 3.1 stores relationships.
+
+**Consequences.** A reference written to an entity after it was deleted counts as deleted for a purge, where Atlas would hold an active edge and leave it.
+
+### DD-059. The delete type and its override are server settings
+
+- **Status:** Proposed
+- **Increment:** 2.5
+- **Date:** 2026-10-22
+
+**Decision.** `AURELIUS_ATLAS_SERVER_DELETE_TYPE` (`soft` by default, or `hard`) stands for `atlas.DeleteHandlerV1.impl`; `AURELIUS_ATLAS_SERVER_DELETE_TYPE_OVERRIDE` (`false` by default) for `atlas.rest.enable.delete.type.override`, which lets a request's `deleteType` choose.
+
+**Reason.** Atlas configures both in `atlas-application.properties`; the server's settings are its equivalent.
+
+**Alternatives.** Soft deletes only: deployments that configure Atlas for hard deletes could not move.
+
+**Consequences.** None beyond two settings with Atlas's defaults.
+
+### DD-060. The owned-reference cascade moves from 3.2 to 2.5
+
+- **Status:** Proposed
+- **Increment:** 2.5
+- **Date:** 2026-10-22
+
+**Decision.** Deleting an entity deletes the entities its owned reference attributes name (`ownedRef`), as `DeleteHandlerV1.getOwnedVertices` does, from 2.5. Composition through `relationshipDefs` and deleting an owned entity whose reference an update drops stay with 3.2.
+
+**Reason.** Owned references are stored as GUIDs (DD-049); following them needs no relationships, and without them a delete would leave owned entities `ACTIVE`, unlike Atlas.
+
+**Alternatives.** All cascades in 3.2, as the roadmap first had it: deletes would differ from Atlas until then.
+
+**Consequences.** The roadmap's 2.5 and 3.2 rows change accordingly.
+
+### DD-061. Relationships are documents of their own index, listed by both ends
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** A relationship instance is one document of the index behind `aurelius-atlas-relationships`, keyed by its GUID: type name, label, end 1 and end 2 GUIDs, status, times, users, version, provenance type, home id, tag propagation and attribute values (as DD-049 stores values). Each end entity's document lists the GUIDs of the relationships it is an end of (`relationshipGuids`), written with the relationship. Reading an entity's relationships is a get of its document and of the listed relationships, in real time.
+
+**Reason.** Atlas keeps a relationship as an edge both vertices reach. Listing the GUIDs on both ends keeps entity reads to gets by id, never a search that waits for a refresh, at the cost of writing the ends with the relationship.
+
+**Alternatives.** Relationship documents found by searching their end GUIDs: writes touch only the relationship, but every entity read with relationships pays a refresh and a search, and may miss one just written.
+
+**Consequences.** An entity at the centre of many relationships (a database with thousands of tables) has a long list in its document, and writers relating entities to it conflict on it and retry (DD-052, DV-30). Ten thousand GUIDs are about 400 KB, well inside Elasticsearch's document size.
+
+### DD-062. An entity write also writes relationships, all or nothing
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** `EntityStore.write` takes relationship changes next to entity changes: new, changed and removed relationships, conditional on the version read, in the same bulk request and the same journal entry as the entities (DD-046, DD-056). Recovery restores relationships as it restores entities.
+
+**Reason.** Creating a relationship changes three documents, deleting an entity may change many; a partial write would leave a relationship its ends do not list, or a list naming a relationship that does not exist.
+
+**Alternatives.** A separate relationship store with its own journal: two writes per request, with a window in which one is done and the other not.
+
+**Consequences.** The journal entry holds the relationships' states before the write too.
+
+### DD-063. 3.1 is split into relationship instances and relationship attributes
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** 3.1a ports relationship instances: models, the relationship type's value side, storage and `RelationshipREST`, and the deletion of an entity's relationships. 3.1b ports relationship attributes of entities: `relationshipAttributes` in reads, relationships created, changed and deleted by entity writes, legacy ends read through relationships, and inverse references; it replaces DD-053.
+
+**Reason.** Together they are two to three times the size an increment may have (ADR 051).
+
+**Alternatives.** One increment: one pull request far above the limit.
+
+**Consequences.** Until 3.1b, entities read with empty relationship attributes (DD-050) even when relationships created over `RelationshipREST` name them.
+
+### DD-064. Relationship attribute values are relationships
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** From 3.1b an entity write maps the values of relationship attributes, legacy ends included, to relationship instances (DD-061) as `EntityGraphMapper` maps them to edges, and stores none of them as an attribute value. Reads answer `relationshipAttributes`, and the legacy ends in `attributes`, from the entity's relationships. It supersedes DD-050 and DD-053. Entity documents written before 3.1b keep the legacy ends 2.4 stored as attribute values; they are not migrated, since no deployment holds entities yet.
+
+**Reason.** Atlas keeps a relationship attribute's value only as the edge; one place for it keeps a value written through an entity and one written through `RelationshipREST` the same.
+
+**Alternatives.** Keeping legacy ends as attribute values as well: two copies of every such reference, which every relationship write would have to keep equal.
+
+**Consequences.** DV-18 and DV-22 end. Plain references, those of attributes that are no relationship end, stay attribute values (DD-049).
+
+### DD-065. A relationship keeps one array index, the last writer's
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** A relationship document holds `index`, Atlas's `__index` edge property: the position the last write of an array relationship attribute gave it, at either end. An array of relationships reads in the order of their indices when the first has one, else in the order the entity lists them.
+
+**Reason.** Atlas stores the position on the edge, so both ends of a `LIST`-to-`LIST` relationship share it; one field reproduces what Atlas reads, its quirks included.
+
+**Alternatives.** A position per end: an order Atlas does not keep.
+
+**Consequences.** An array whose elements are also in an array at the other end may read in another order after the other end is written, as in Atlas.
+
+### DD-066. Relationship attributes are mapped in memory and written with the entities
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** `RelationshipMapper` maps a request's relationship attributes in memory, after its entities are discovered: it reads the relationships the entities list as it needs them, keeps the ones it creates, changes and removes, and the changes to the ends' lists, and the writer writes them with the entities in the one write of DD-052 and DD-062. A relationship between two entities is looked for among the relationships both list.
+
+**Reason.** A request is all or nothing (DD-052), and the lists on both ends (DD-061) make the relationships of an entity, and those between two, readable by id without a search.
+
+**Alternatives.** Writing each relationship as it is mapped: a failing request would leave some behind.
+
+**Consequences.** A write reads every relationship of the entities whose relationship attributes it maps; an entity at the centre of many is costly to update through them, as Atlas iterating its edges is.
+
+### DD-067. Delete cascades follow owned relationships from 3.1b
+
+- **Status:** Proposed
+- **Increment:** 3.1
+- **Date:** 2026-10-22
+
+**Decision.** The owned-reference cascade of a delete (DD-060) also follows the relationships of owned relationship attributes, from 3.1b rather than 3.2. 3.2 keeps the owned entities an update replaces or drops.
+
+**Reason.** From 3.1b a legacy end such as `hive_table.columns` is no longer stored as an attribute value (DD-064), so a cascade that read only attribute values would stop at it until 3.2.
+
+**Alternatives.** Leaving it to 3.2: deletes between 3.1b and 3.2 would leave owned entities behind that 2.5 deleted.
+
+**Consequences.** 3.2's roadmap row narrows to the owned entities an update drops (DV-31).
+
+### DD-068. Owned entities an update drops are deleted through a view of the request
+
+- **Status:** Proposed
+- **Increment:** 3.2
+- **Date:** 2026-10-22
+
+**Decision.** After a write request is mapped (DD-052, DD-066), the owned entities it dropped are deleted by the delete handlers of 2.5, reading through `TransactionView`: the entity store as the request has changed it, its changed entities and relationships read as changed, the relationships it removed gone, and the entities referring to a deleted one found by the search of DD-057 and checked against their changed references. The deletes' changes replace the request's own for the same documents, and everything is written in the request's one write.
+
+**Reason.** Atlas deletes them inside the update's transaction, after the update's own edge changes; the view gives the handlers that state without a second write, so the request stays all or nothing.
+
+**Alternatives.** Deleting them in a second write after the update: simpler, but an update could then succeed while the deletes fail, which Atlas never shows.
+
+**Consequences.** The delete handlers read the store through a protocol (`EntityView`) that both `EntityStore` and `TransactionView` answer.
+
+### DD-069. A reference to a deleted entity stands for a deleted edge when reviving
+
+- **Status:** Proposed
+- **Increment:** 3.2
+- **Date:** 2026-10-22
+
+**Decision.** `updateInConsistentOwnedMapVertices` revives an owned map entry whose edge and entity are both `DELETED`; a stored plain reference has no state (DD-058), so an entry that keeps naming a `DELETED` entity is taken as one with a deleted edge, and the entity becomes `ACTIVE` again.
+
+**Reason.** Atlas soft-deletes the edges to an entity with it, so a `DELETED` entity is the case in which its edge is deleted too.
+
+**Alternatives.** A state per stored reference: rejected with DD-058.
+
+**Consequences.** An entity deleted without its owner, its owner's entry kept by the soft delete, is revived by the owner's next update that keeps the entry, as in Atlas.
+
+### DD-070. Classification instances are documents of their own index, listed by their entity
+
+- **Status:** Proposed
+- **Increment:** 3.3
+- **Date:** 2026-10-23
+
+**Decision.** A classification instance is one document of the index behind `aurelius-atlas-classifications`, keyed by a GUID of its own: type name, the GUID and status of the entity it is attached to, `propagate`, `removePropagationsOnEntityDelete`, validity periods and attribute values (as DD-049 stores values). The entity's document lists the GUIDs of its classifications (`classificationGuids`), in the order they were attached. Reading an entity's classifications is a get of the listed documents, in real time.
+
+**Reason.** Atlas keeps a classification as a vertex the entity reaches by an edge, and a propagated one is the same vertex reached by many entities. A document per instance keeps that: 3.4 lists a propagated instance on every entity it reaches, and an update of it changes one document. Listing GUIDs keeps reads to gets by id, as DD-061 does for relationships.
+
+**Alternatives.** Classifications embedded in the entity document: no second read, but 3.4 would copy a propagated classification into every entity it reaches and rewrite every copy on each change.
+
+**Consequences.** An entity read with classifications costs one more `mget`. The GUID of an instance is internal: Atlas's classifications have none in their JSON.
+
+### DD-071. An entity write also writes classification instances, all or nothing
+
+- **Status:** Proposed
+- **Increment:** 3.3
+- **Date:** 2026-10-23
+
+**Decision.** `EntityStore.write` also writes, changes and removes classification instances, in the same bulk request and journal entry as the entities, as DD-062 does for relationships; recovery restores them too.
+
+**Reason.** Attaching a classification changes the entity's list and the instance together; Atlas does both in one graph transaction.
+
+**Alternatives.** Writing the instance first and the entity after: a failure between leaves an instance no entity lists.
+
+**Consequences.** The journal entry holds the classifications' states before the write, as it does for entities and relationships.
+
+### DD-072. The propagation defaults are Atlas's defaults
+
+- **Status:** Proposed
+- **Increment:** 3.3
+- **Date:** 2026-10-23
+
+**Decision.** A classification attached without `propagate` gets `true` (`atlas.classification.propagation.default`), without `removePropagationsOnEntityDelete` gets `false` (`atlas.classification.propagation.remove.on.entity.delete`); both are Atlas 2.4.0's defaults, fixed in code.
+
+**Reason.** No deployment changes them yet, and both decide 3.4's propagation, which will read the stored values.
+
+**Alternatives.** Server settings now: two settings with no effect until 3.4.
+
+**Consequences.** 3.4 may turn them into server settings.
+
+### DD-073. 3.3 is split into direct classifications and the bulk associator
+
+- **Status:** Proposed
+- **Increment:** 3.3
+- **Date:** 2026-10-23
+
+**Decision.** 3.3a ports classifications attached directly: storage, reads, the per-entity and `bulk/classification` endpoints, classifications of created entities and of deleted ones. 3.3b ports `bulk/setClassifications` (`ClassificationAssociator`) and `bulk/headers?tagUpdateStartTime`.
+
+**Reason.** Together they are above the size an increment may have (ADR 051); the associator builds on 3.3a's operations.
+
+**Alternatives.** One increment: one pull request far above the limit.
+
+**Consequences.** Until 3.3b, `bulk/setClassifications` and `bulk/headers` answer `404`.
+
+### DD-074. `bulk/headers` moves to 3.5
+
+- **Status:** Proposed
+- **Increment:** 3.3
+- **Date:** 2026-10-23
+
+**Decision.** `GET bulk/headers?tagUpdateStartTime` (`ClassificationAssociator.Retriever`) is ported with the entity audit in 3.5 rather than in 3.3b.
+
+**Reason.** It lists the entities whose classifications changed in a time window by asking the audit repository (`getEntitiesWithTagChanges`); without audit events it could only answer an empty list, or keep a second record of classification changes that 3.5 would replace.
+
+**Alternatives.** An index of classification change times now: a record 3.5's audit events supersede.
+
+**Consequences.** Until 3.5 the endpoint answers `404`. 3.3b ports `bulk/setClassifications` alone.
+
+### DD-075. A propagated classification is listed by the entities it reaches
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** An entity a classification is propagated to lists the instance's GUID in its `classificationGuids`, after its own, as its entity does; an instance listed by an entity other than its `entityGuid` is propagated to it. Atlas's propagated `classifiedAs` edge is this listing.
+
+**Reason.** One instance stays one document (DD-070): an update of it reaches every entity listing it at once, as in Atlas, and an entity's reads stay gets by id.
+
+**Alternatives.** A copy of the classification per entity reached: every change rewrites every copy.
+
+**Consequences.** A classification propagated far makes many entity documents change in one write (DD-071), and writers relating those entities conflict more (DV-30).
+
+### DD-076. The entities a classification reached are found through an indexed field
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** `classificationGuids` is indexed; the entities listing an instance are found by searching it after a refresh, page by page, as DD-057 finds referring entities, and checked against the request's own changes.
+
+**Reason.** Removing a propagation needs the entities a classification reached (`getPropagatedEdges`); a search keeps the classification's document small however far it propagates.
+
+**Alternatives.** The instance listing the entities it reached: exact and real time, but as large as its reach, and rewritten on every change of it.
+
+**Consequences.** A search may miss an entity a concurrent write has just made list the instance, as DV-27 says for references.
+
+### DD-077. Propagation runs within the request until 3.4b
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** In 3.4a, the request that causes a propagation computes and writes it, as Atlas does with `atlas.tasks.enabled=false`; 3.4b defers it to tasks, Atlas's default.
+
+**Reason.** The propagation itself is the same either way; deferring it is a second, separable concern with its own queue, worker and endpoints.
+
+**Alternatives.** Tasks from the start: one increment far above the size limit.
+
+**Consequences.** Until 3.4b a request that propagates far takes as long as its propagation, and entities have no `pendingTasks`.
+
+### DD-078. 3.4 is split into propagation and propagation tasks
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** 3.4a ports propagation and its triggers, run within the request (DD-077); 3.4b ports the deferred tasks: the task index and worker, `pendingTasks`, `admin/tasks` and the checks of pending tasks.
+
+**Reason.** Together they are above the size an increment may have (ADR 051).
+
+**Alternatives.** One increment.
+
+**Consequences.** 3.4b changes when propagation runs, not what it does.
+
+### DD-079. Tasks are documents of their own index, written with the change that records them
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** A task is one document of the index behind `aurelius-atlas-tasks`, keyed by its GUID: Atlas's task fields and the claim of DD-080. The entity it is queued on lists its GUID in `pendingTasks` (a relationship update's task, the relationship). A task is written in the write of the change that records it, as relationships and classification instances are (DD-062, DD-071), and journaled with it.
+
+**Reason.** Atlas creates the task vertex in the request's graph transaction: a change and its task commit together or not at all.
+
+**Alternatives.** Queuing tasks after the write: a crash in between loses the propagation.
+
+**Consequences.** `EntityStore.write` takes task changes as a third kind of listed document.
+
+### DD-080. Every server process runs tasks, each claimed with a lease
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** Each server process runs a worker that takes `PENDING` tasks oldest first. It claims one by writing it `IN_PROGRESS`, with its start time and a claim lease, conditionally on the version it read; a claim another process won is skipped. A task claimed by a process that stopped is taken over once its lease has passed. A request that records tasks wakes its own process's worker; the workers also look for tasks at an interval.
+
+**Reason.** Several processes may share one store; the conditional claim lets any run any task exactly once at a time, without electing a leader, and a stopped process's tasks are resumed.
+
+**Alternatives.** One worker on an elected leader, as Atlas's active instance: leader election and takeover to build for no gain in correctness.
+
+**Consequences.** Tasks of different entities may run side by side in different processes (DV-38).
+
+### DD-081. Tasks are enabled by a server setting, on by default
+
+- **Status:** Proposed
+- **Increment:** 3.4
+- **Date:** 2026-10-23
+
+**Decision.** `AURELIUS_ATLAS_SERVER_TASKS_ENABLED` (default `true`, Atlas's `atlas.tasks.enabled`) chooses whether propagation is deferred to tasks; `false` keeps 3.4a's propagation within the request.
+
+**Reason.** Atlas's default defers it; the setting keeps the synchronous form for deployments and tests that want a write to be complete when it answers.
+
+**Alternatives.** Always deferred: no way to have a propagation done when its request answers.
+
+**Consequences.** The core takes the choice as a parameter of the writers and stores that propagate. The parity scenarios run against a server with tasks disabled, as against an Atlas with `atlas.tasks.enabled=false`: they check what propagation produces, not when, and `admin/session` reports the setting.
+
+### DD-082. Audit events are documents of their own index, written after the change
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** Increment 3.5 is split: 3.5a records the events of entity writes, deletes and purges and answers `{guid}/audit`; 3.5b adds the classification events and `bulk/headers`. An audit event is one document of the index behind `aurelius-atlas-entity-audits`. The events of a change are written once the change has committed, from the entities read back, in one bulk request; they are not part of the change's journaled write.
+
+**Reason.** Atlas keeps its audit in HBase, apart from the graph, and writes it in the request before the graph commits; neither store's write includes the other's. Reading the committed entities gives the details exactly as a later read answers them, without computing them from a request's view in every writer.
+
+**Alternatives.** Events as a further kind of document in the journaled write (DD-079): no event lost, but each writer would compute the details before its write.
+
+**Consequences.** A process that stops between the write and its events loses them (DV-40).
+
+### DD-083. Audit events keep Atlas's event keys and their order
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** An event's `eventKey` is the HBase row key Atlas writes, `<entityId>:<timestamp>:<index>:<now>`, a keyword of the event's document. Events are read newest first by sorting on it descending, as Atlas's reversed HBase scan reads them; `startKey` is a bound on it. The document's id is a new GUID, so two events with one key are both kept.
+
+**Reason.** Keyword order is the byte order HBase sorts row keys in, so the order and the `startKey` paging the dashboards and clients rely on stay Atlas's, quirks included.
+
+**Alternatives.** Sorting by timestamp: events of one millisecond would come in another order, and `startKey` would need a translation.
+
+**Consequences.** Where HBase would overwrite an event whose key repeats, both events are listed.
+
+### DD-084. The entity writer tells a change notifier what it changed
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** `EntityWriter` takes an optional `EntityChangeNotifier`, Atlas's `AtlasEntityChangeNotifier`, and gives it each committed response with the request's user. The notifier prunes the response and calls its listeners; the audit listener is the only one. Without a notifier nothing is recorded.
+
+**Reason.** Atlas's entity store notifies after every mutation; one hook in the writer covers creates, updates, deletes and purges, and tests of the writer need no audit.
+
+**Alternatives.** The server recording events after each route: every route would repeat it, and core callers would record nothing.
+
+**Consequences.** 3.5b gives the classification operations the same notifier. The writer prunes every response as `pruneResponse` does, also without a notifier, since Atlas answers the response it pruned: an entity listed as deleted is no longer also listed as updated (OWN-03).
+
+### DD-085. Classification events are collected in the request and recorded after its write
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** The classification operations, the entity writer, the relationship store and the propagation tasks take the change notifier, as the entity writer does (DD-084), and tell it, once their write has committed, what Atlas's would have told it during the request, in Atlas's order: the notifier's classification methods, then `notifyPropagatedEntities` where Atlas calls it.
+
+**Reason.** The events are recorded after the change, as entity events are (DD-082); keeping Atlas's order keeps the events' keys, and so the order in which `{guid}/audit` lists them.
+
+**Alternatives.** Events derived from the stored differences after the write: Atlas's quirks, such as one update event per updated classification on each entity notified, would be lost.
+
+**Consequences.** Every propagating operation answers what it propagated, to whom; 3.5b adds that to `TagPropagation`'s results (DD-086).
+
+### DD-086. Tag propagation records the propagations a request added and removed
+
+- **Status:** Proposed
+- **Increment:** 3.5
+- **Date:** 2026-10-23
+
+**Decision.** `TagPropagation` keeps, per entity, the classification instances it newly listed and those it stopped listing, in the order it changed them, as `RequestContext` keeps added and removed propagations. The callers give them to the notifier after their write (CAU-05).
+
+**Reason.** The propagation is computed in one place (DD-075); recording there covers every caller, including the delete handlers and the tasks.
+
+**Alternatives.** Comparing the entities' classification lists before and after the write: a classification added and removed again within a request would be missed, and the order lost.
+
+**Consequences.** `propagate` answers the entities it propagated to, which the add events need (CAU-02).
+
+### DD-087. Basic search is split into entity and classification search
+
+- **Status:** Proposed
+- **Increment:** 4.1
+- **Date:** 2026-10-24
+
+**Decision.** Increment 4.1 is split: 4.1a searches entities by type, entity filters, state, sort and paging, with the search fields it needs (DD-088); 4.1b adds the classification search of `ClassificationSearchProcessor`. The free-text `query` of basic search goes with quick search to 4.2.
+
+**Reason.** Atlas's two processors are separate, and each is as large as one increment.
+
+**Alternatives.** One increment of about twice the size; the free text with 4.1, where it would need the full text index 4.2 builds anyway.
+
+**Consequences.** Until 4.1b a search naming a classification is refused (DV-46).
+
+### DD-088. Entity attributes are searched in typed search fields named after their defining type
+
+- **Status:** Proposed
+- **Increment:** 4.1
+- **Date:** 2026-10-24
+
+**Decision.** An entity document carries `search`, a flat object (`subobjects: false`) of its searchable values: each primitive, enum or array-of-primitive attribute under `<kind>.<qualified name>`, the qualified name being Atlas's vertex property key (`hive_table.name`, `Referenceable.qualifiedName`, `__guid`), and `<kind>` the Elasticsearch type its Atlas type maps to: `keyword` for strings and enums, `long` for the integer types and dates, `double` for `float`, `double` and the big number types, `boolean`. Dynamic templates on the kind map each new field. The system attributes of the entity root are filled from the document's own fields. The entity store computes `search` with the registry when it writes an entity.
+
+**Reason.** Atlas's index keys a property by its defining type, so one attribute is one field across sub types, and its type decides how it compares. A kind in the field's name lets Elasticsearch map a field the first time it is written, in any process, without a mapping kept in step with the type definitions.
+
+**Alternatives.** Mapping each field from the type definitions when they change: the same fields, but every process and every type change would update the mapping. One `flattened` field: no range or numeric sort. Filtering in memory: every search reads every entity of its types.
+
+**Consequences.** Entities written before 4.1a have no `search` until written again. The field limit of the entity index is raised to 100,000. The big number types compare as doubles.
+
+### DD-089. A search is a query of the entity documents, ordered by creation when no sort is given
+
+- **Status:** Proposed
+- **Increment:** 4.1
+- **Date:** 2026-10-24
+
+**Decision.** `EntitySearchProcessor` builds a search query of its own: the types, the state, the filter tree over search fields with Atlas's operators, the sort, offset and size. The entity documents answer it with the matching entities and their total, which is `approximateCount`; Elasticsearch as a `bool` query, the in-memory documents by evaluating it. Without `sortBy` entities come by creation time, then GUID.
+
+**Reason.** One query instead of Atlas's index query, graph query and in-memory predicates, whose combination the rules of SRC-05 state; Atlas's order without a sort is the index's and has nothing to keep.
+
+**Alternatives.** Elasticsearch's query language in the core: the in-memory documents could not answer it.
+
+**Consequences.** `approximateCount` is exact.
+
+### DD-090. A classification search finds instances first, then the entities listing them
+
+- **Status:** Proposed
+- **Increment:** 4.1
+- **Date:** 2026-10-24
+
+**Decision.** The entity documents gain what Atlas keeps on an entity vertex of its classifications, computed when an entity is written from the instances it lists: `__traitNames` and `__propagatedTraitNames`, the type names of those attached and propagated, `__classificationNames` and `__propagatedClassificationNames` as `|a|b|`, and the GUIDs of the instances. A search naming classifications without tag filters tests the type names, as Atlas's `buildTraitPredict` does; with tag filters it reads the instances of the types named from the classification index, keeps those that match, evaluated with the search query's predicates over their attribute values, and adds to the entity query that the entity lists one of them.
+
+**Reason.** An entity already lists every classification it carries, propagated ones included (DD-070, DD-075), and tag filters are what classification instances are searched by; no mapping of classification attributes is needed, and the filter semantics are the ones entity filters have.
+
+**Alternatives.** Search fields on classification documents: the same answers, with a second set of mappings. Classification type names on the entity only: tag filters could not be answered.
+
+**Consequences.** A search reads every instance of the types it names; an entity query names at most 65,536 instances, Elasticsearch's `terms` limit, beyond which the search fails.
