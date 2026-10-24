@@ -37,19 +37,34 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-auth/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-core/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-data2model-client/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-lineage-model-client/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-model/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-otel/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-parity/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-sdk/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-server-client/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-store-es/</loc>
@@ -59,6 +74,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-typesystem/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-validate-entity-client/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/styles/</loc>
@@ -229,6 +247,18 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/054-the-server-api-is-the-webapps-one-data-plane/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/055-the-lineage-chain-is-a-named-data-surface/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/template/</loc>
       </url>
       <url>
@@ -337,6 +367,78 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-2-free-text/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-0-webapp-foundation/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-1-webapp-shell/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-11-shell-chrome/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-12-theme-branding-layout/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-13-ui-components-details/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-14-settings-panel/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-15-alerts-drawer/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-16-ui-components-details-ii/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-17-collector-ingest-auth/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-18-collector-ingest-identity/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-19-frontend-failure-ux/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-2-design-system/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-3-api-client-auth/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-5-browse-landing/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-6-entity-details/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-0-auxiliary-api-foundation/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-1-data2model-api/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-2-lineage-model-api/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-3-validate-entity-api/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-4-api-client-libraries/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-5-lineage-model-circuit-breakers/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-6-aux-failure-hardening/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-7-client-failure-contract/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/9-1-targeted-resilience-e2e/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/</loc>
       </url>
       <url>
@@ -413,6 +515,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/platform/delivery/release-management/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/platform/delivery/testing-review/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/platform/delivery/testing/</loc>

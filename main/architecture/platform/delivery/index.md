@@ -7,5 +7,6 @@ How changes reach production: configuration, change control, testing, release, a
 | [Configuration Management](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/configuration-management/index.md>) | Production env-var contract (ADR 018); dev/CI secrets and prefixes | written (0.5) |
 | [Change Management](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/change-management/index.md>) | Release → acceptance/production hand-over (ADR 024); dev + pipeline after | — |
 | [Testing](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/testing/index.md>) | Layer map, CI gate (production bar); developer-side conventions after | — |
+| [Test Suite Review](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/testing-review/index.md>) | Dated review of every suite: coverage + non-happy-flow representativeness, hardening increments (DD-214) | written (2026-10) |
 | [Release Management](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/release-management/index.md>) | One versioned whole (ADR 019): version, inventory, signing, promotion | written (0.1) |
 | [Deployment](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/deployment/index.md>) | Image-per-service, compose layouts, promote-by-declared-path (ADR 024) | 6.4 |
