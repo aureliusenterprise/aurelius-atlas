@@ -16,6 +16,7 @@ import dotenv
 import httpx2 as httpx
 import pytest
 import pytest_asyncio
+from aurelius_atlas_lineage_model.globals import UPSTREAM_TIMEOUT_SECONDS
 from aurelius_atlas_lineage_model_client import LineageModelClient
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,17 @@ CA_FILE = PROJECT / "certs" / "ca.pem"
 """The dev CA (`nx certgen`) that signed the apps' and the issuer's certificates."""
 
 SERVICE = "aurelius-atlas-lineage-model"
+
+CLIENT_TIMEOUT_SECONDS = 2 * UPSTREAM_TIMEOUT_SECONDS
+"""The e2e clients' request budget — above the app's own upstream budget.
+
+The app may spend its full ``UPSTREAM_TIMEOUT_SECONDS`` before it answers the
+LM-12 502 (RSL-02's outage: on shared CI runners a stopped container drops
+packets instead of refusing them, so the app's upstream call rides its read
+timeout). httpx's 5 s default would kill the request before that 502 arrives
+— the client would raise its own ``ReadTimeout`` where the scenario expects
+the app's Atlas-shaped 502.
+"""
 
 MINT_TIMEOUT_SECONDS = 120.0
 """How long to wait for the dev realm to serve tokens (a reused stack may be warming up)."""
@@ -139,6 +151,7 @@ async def client(app_url: str, token: str) -> AsyncIterator[httpx.AsyncClient]:
         base_url=app_url,
         verify=ssl.create_default_context(cafile=str(CA_FILE)),
         headers={"authorization": f"Bearer {token}"},
+        timeout=CLIENT_TIMEOUT_SECONDS,
     ) as client:
         yield client
 
@@ -146,7 +159,11 @@ async def client(app_url: str, token: str) -> AsyncIterator[httpx.AsyncClient]:
 @pytest_asyncio.fixture(loop_scope="function")
 async def anonymous_client(app_url: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running app over HTTPS, without a token (the 401 path)."""
-    async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as client:
+    async with httpx.AsyncClient(
+        base_url=app_url,
+        verify=ssl.create_default_context(cafile=str(CA_FILE)),
+        timeout=CLIENT_TIMEOUT_SECONDS,
+    ) as client:
         yield client
 
 
@@ -158,5 +175,9 @@ async def api(app_url: str, token: str) -> AsyncIterator[LineageModelClient]:
     adds the bearer per call, CL-03) and closes it, the owner-closes rule of
     CL-02; the minted realm token is the client's token source.
     """
-    async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as http:
+    async with httpx.AsyncClient(
+        base_url=app_url,
+        verify=ssl.create_default_context(cafile=str(CA_FILE)),
+        timeout=CLIENT_TIMEOUT_SECONDS,
+    ) as http:
         yield LineageModelClient(http, token)
