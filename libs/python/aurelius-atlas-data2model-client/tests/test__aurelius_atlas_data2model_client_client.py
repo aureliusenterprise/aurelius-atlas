@@ -8,11 +8,12 @@ it exercises (ADR 049) and the rules it enforces.
 import json
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_data2model_client.client import Data2ModelClient, Data2ModelClientError
 from aurelius_atlas_data2model_client.models import ExtractionRequest, RulesDef
 from d2m_recorder import Recorder
+from pydantic import ValidationError
 
 ANSWER: dict[str, Any] = {"metadata": [{"id": "n-1", "data": {"created_by": "dataset"}}], "model": '{"ar3_model": {}}'}
 ERROR_BODY: dict[str, Any] = {"errorCode": "ATLAS-400-00-029", "errorMessage": "unknown concept type: 'x'"}
@@ -129,3 +130,75 @@ async def test__an_unreachable_service_propagates_httpxs_own_error(recorder: Rec
 
     with pytest.raises(httpx.ConnectError):
         await _client(recorder).extract(REQUEST)
+
+
+# ---------------------------------------------------------------------------
+# 8.7 — the failure contract: malformed successes, outage bodies, raising sources
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.covers("aurelius_atlas_data2model_client.client.Data2ModelClient.extract", rules=["CL-08"])
+async def test__a_200_with_a_body_of_the_wrong_shape_is_the_contract_failing(recorder: Recorder) -> None:
+    """A success that is not the contract: the model rejects the body, pydantic's error travels (CL-08)."""
+    recorder.answer(200, {"nope": True})
+
+    with pytest.raises(ValidationError):
+        await _client(recorder).extract(REQUEST)
+
+
+@pytest.mark.covers("aurelius_atlas_data2model_client.client.Data2ModelClient.extract", rules=["CL-08"])
+async def test__a_200_of_plain_text_is_the_contract_failing(recorder: Recorder) -> None:
+    """A 200 that is not JSON: the client parses through its model and never swallows (CL-08)."""
+    recorder.answer(200, text="I am not an extraction body")
+
+    with pytest.raises(ValidationError):
+        await _client(recorder).extract(REQUEST)
+
+
+@pytest.mark.covers("aurelius_atlas_data2model_client.client.Data2ModelClient.extract", rules=["CL-04"])
+async def test__a_server_outage_answer_carries_the_status_and_the_fields(recorder: Recorder) -> None:
+    """The 5xx with an Atlas body — the shape the 8.2 chain's breakers ride (CL-04)."""
+    recorder.answer(502, ERROR_BODY)
+
+    with pytest.raises(Data2ModelClientError) as raised:
+        await _client(recorder).extract(REQUEST)
+
+    assert raised.value.status_code == 502
+    assert raised.value.error_code == "ATLAS-400-00-029"
+
+
+@pytest.mark.covers("aurelius_atlas_data2model_client.client.Data2ModelClient.extract", rules=["CL-05"])
+async def test__a_timeout_propagates_as_httpxs_own_error(recorder: Recorder) -> None:
+    """The pool's timeout is a RequestError too: httpx's own, unmapped (CL-05).
+
+    The MockTransport does not enforce the bound, so the handler raises what
+    the bound raises at a real socket.
+    """
+    timed_out = "read timed out"
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout(timed_out)
+
+    recorder.handler = handler
+
+    with pytest.raises(httpx.TimeoutException):
+        await _client(recorder).extract(REQUEST)
+
+
+@pytest.mark.covers("aurelius_atlas_data2model_client.client.Data2ModelClient.extract", rules=["CL-03"])
+async def test__a_token_source_that_raises_travels_out_unsent(recorder: Recorder) -> None:
+    """A credential fetch that fails is the caller's error, and nothing reaches the wire (CL-03).
+
+    The bearer is read before the request, so a failing source never speaks.
+    """
+    broken = "the credential store is down"
+
+    def token_source() -> str:
+        raise RuntimeError(broken)
+
+    http = httpx.AsyncClient(base_url="https://data2model.test", transport=recorder.transport())
+    with pytest.raises(RuntimeError, match="credential store"):
+        await Data2ModelClient(http, token_source).extract(REQUEST)
+    await http.aclose()
+
+    assert recorder.requests == []  # no bearer, no request

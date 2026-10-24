@@ -5,11 +5,13 @@ its transport is a recorder, no socket opens (CL-02); each test names the method
 it exercises (ADR 049) and the rules it enforces.
 """
 
+import asyncio
 import json
 from collections.abc import Callable
 from typing import Any
+from uuid import UUID
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
@@ -24,12 +26,15 @@ from aurelius_atlas_model.typedef import (
     TypeCategory,
 )
 from aurelius_atlas_server_client.client import AtlasClient, AtlasClientError
+from pydantic import ValidationError
 from server_recorder import Recorder
 
 VERSION: dict[str, Any] = {"Version": "4.1.0", "Revision": "abc1234", "Name": "Aurelius Atlas", "Description": "d"}
 TYPES_DEF: dict[str, Any] = {"enumDefs": [{"name": "e1", "category": "ENUM"}]}
+E_1 = UUID("00000000-0000-4000-8000-000000000001")
+"""A fixed entity guid, the shape every lineage call carries (DV-27)."""
 LINEAGE: dict[str, Any] = {
-    "guidEntityMap": {"e-1": {"guid": "e-1", "typeName": "hive_table", "displayText": "T"}},
+    "guidEntityMap": {str(E_1): {"guid": str(E_1), "typeName": "hive_table", "displayText": "T"}},
     "relations": [],
 }
 ERROR_BODY: dict[str, Any] = {"errorCode": "ATLAS-400-00-00A", "errorMessage": "no such typedef"}
@@ -52,9 +57,9 @@ async def test__with_token_shares_the_pool_and_speaks_with_the_new_token(
     owner = AtlasClient(tracked_client_http, "service-token")
     recorder.answer(200, LINEAGE)
 
-    info = await owner.with_token("browser-token").get_lineage("e-1")
+    info = await owner.with_token("browser-token").get_lineage(E_1)
 
-    assert info.guid_entity_map["e-1"].type_name == "hive_table"
+    assert info.guid_entity_map[E_1].type_name == "hive_table"
     assert recorder.sent().headers["authorization"] == "Bearer browser-token"
     await tracked_client_http.aclose()  # the pool's builder closes it — the client never does (CL-02)
 
@@ -68,7 +73,7 @@ async def test__an_empty_token_travels_unauthenticated(recorder: Recorder) -> No
     recorder.answer(200, LINEAGE)
     client = _client(recorder, "")
 
-    await client.get_lineage("e-1")
+    await client.get_lineage(E_1)
 
     assert "authorization" not in recorder.sent().headers
 
@@ -81,11 +86,11 @@ async def test__get_lineage_reads_the_feed_with_depth_and_direction(recorder: Re
     """``GET /v2/lineage/{guid}?depth&direction`` (the feed 5.1 serves; 8.2 is its first caller)."""
     recorder.answer(200, LINEAGE)
 
-    await _client(recorder).get_lineage("e-1", depth=5, direction="INPUT")
+    await _client(recorder).get_lineage(E_1, depth=5, direction="INPUT")
 
     sent = recorder.sent()
     assert sent.method == "GET"
-    assert sent.url.path == "/v2/lineage/e-1"
+    assert sent.url.path == f"/v2/lineage/{E_1}"
     assert dict(sent.url.params) == {"depth": "5", "direction": "INPUT"}
 
 
@@ -98,9 +103,9 @@ async def test__the_base_url_passes_through_as_given(recorder: Recorder) -> None
     recorder.answer(200, LINEAGE)
     http = httpx.AsyncClient(base_url="https://atlas.test/", transport=recorder.transport())
 
-    await AtlasClient(http, "tok").get_lineage("e-1")
+    await AtlasClient(http, "tok").get_lineage(E_1)
 
-    assert recorder.sent().url.path == "/v2/lineage/e-1"
+    assert recorder.sent().url.path == f"/v2/lineage/{E_1}"
 
 
 @pytest.mark.covers("aurelius_atlas_server_client.client.AtlasClient.get_lineage", rules=["CL-04"])
@@ -109,7 +114,7 @@ async def test__get_lineage_raises_with_the_status_of_the_answer(recorder: Recor
     recorder.answer(404, ERROR_BODY)
 
     with pytest.raises(AtlasClientError) as raised:
-        await _client(recorder).get_lineage("missing")
+        await _client(recorder).get_lineage(UUID(int=9))
 
     assert raised.value.status_code == 404
     assert raised.value.info is not None
@@ -323,7 +328,7 @@ async def test__the_client_is_built_from_its_arguments_and_bears_its_token(recor
 
     http = httpx.AsyncClient(
         base_url="https://atlas.test",
-        verify=False,  # noqa: S501 - a mock transport answers, no TLS to verify
+        verify=False,
         timeout=1.0,
         transport=recorder.transport(),
     )
@@ -332,7 +337,7 @@ async def test__the_client_is_built_from_its_arguments_and_bears_its_token(recor
     recorder.answer(200, LINEAGE)
 
     await client.admin.status()
-    await client.get_lineage("e-1")
+    await client.get_lineage(E_1)
 
     assert recorder.sent(0).url.path == "/api/atlas/admin/status"
     assert calls == ["called", "called"]
@@ -360,3 +365,96 @@ async def test__an_unreachable_server_propagates_httpxs_own_error(recorder: Reco
 
     with pytest.raises(httpx.ConnectError):
         await _client(recorder).admin.version()
+
+
+# ---------------------------------------------------------------------------
+# 8.7 — the failure contract: malformed successes, timeouts, raising sources
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.version", rules=["CL-08"])
+async def test__a_200_with_a_body_of_the_wrong_shape_is_the_contract_failing(recorder: Recorder) -> None:
+    """A success that is not the contract: the model rejects the body, pydantic's error travels (CL-08)."""
+    recorder.answer(200, {"nope": True})
+
+    with pytest.raises(ValidationError):
+        await _client(recorder).admin.version()
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AtlasClient.get_lineage", rules=["CL-08"])
+async def test__a_200_of_plain_text_is_the_contract_failing(recorder: Recorder) -> None:
+    """A 200 that is not JSON fails at the decoder: the client answers through its model, never swallows (CL-08)."""
+    recorder.answer(200, text="I am not a lineage body")
+
+    with pytest.raises(json.JSONDecodeError):
+        await _client(recorder).get_lineage(E_1)
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.TypesApi.typedefs", rules=["CL-08"])
+async def test__a_typedefs_answer_of_the_wrong_shape_is_the_contract_failing(recorder: Recorder) -> None:
+    """The list where the contract is a map: the typedefs search answer fails its model (CL-08)."""
+    recorder.answer(200, ["not", "a", "typedefs", "body"])
+
+    with pytest.raises(ValidationError):
+        await _client(recorder).types.typedefs()
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.status", rules=["CL-05"])
+async def test__a_timeout_propagates_as_httpxs_own_error(recorder: Recorder) -> None:
+    """The pool's timeout is a RequestError too: httpx's own, unmapped (CL-05).
+
+    The MockTransport does not enforce the bound, so the handler raises what
+    the bound raises at a real socket.
+    """
+    timed_out = "read timed out"
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout(timed_out)
+
+    recorder.handler = handler
+
+    with pytest.raises(httpx.TimeoutException):
+        await _client(recorder).admin.status()
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AtlasClient.get_lineage", rules=["CL-03"])
+async def test__a_token_source_that_raises_travels_out_unsent(recorder: Recorder) -> None:
+    """A credential fetch that fails is the caller's error, and nothing reaches the wire (CL-03).
+
+    The bearer is read before the request, so a failing source never speaks.
+    """
+    broken = "the credential store is down"
+
+    def token_source() -> str:
+        raise RuntimeError(broken)
+
+    with pytest.raises(RuntimeError, match="credential store"):
+        await _client(recorder, token_source).get_lineage(E_1)
+
+    assert recorder.requests == []  # no bearer, no request
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server_client.client.AtlasClient.with_token",
+    "aurelius_atlas_server_client.client.AtlasClient.get_lineage",
+    rules=["CL-03", "CL-02"],
+)
+async def test__with_token_wrappers_serve_concurrent_callers(
+    recorder: Recorder, tracked_client_http: httpx.AsyncClient
+) -> None:
+    """Two wrappers answer two callers at once: each bearer rides its own request, one pool below (CL-03, CL-02)."""
+    recorder.answer(200, LINEAGE)
+    recorder.answer(200, LINEAGE)
+    owner = AtlasClient(tracked_client_http, "service-token")
+
+    infos = await asyncio.gather(
+        owner.with_token("caller-a").get_lineage(E_1),
+        owner.with_token("caller-b").get_lineage(E_1),
+    )
+
+    assert [info.guid_entity_map[E_1].type_name for info in infos] == ["hive_table", "hive_table"]
+    assert [request.headers["authorization"] for request in recorder.requests] == [
+        "Bearer caller-a",
+        "Bearer caller-b",
+    ]
+    await tracked_client_http.aclose()
