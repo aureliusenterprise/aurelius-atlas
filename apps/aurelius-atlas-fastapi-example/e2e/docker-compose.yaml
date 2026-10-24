@@ -32,7 +32,7 @@ services:
             AURELIUS_ATLAS_FASTAPI_DATABASE_SSLMODE: verify-full
             AURELIUS_ATLAS_FASTAPI_DATABASE_SSLROOTCERT: /certs/ca.pem
             AURELIUS_ATLAS_FASTAPI_LOG_LEVEL: ${AURELIUS_ATLAS_FASTAPI_LOG_LEVEL:?}
-            # The legacy leg (DD-107, CIA-10): the logfire SDK attaches its
+            # The legacy leg (DD-107, CIA-10): the OTel SDK attaches its
             # bearer statically from OTEL_EXPORTER_OTLP_HEADERS and cannot
             # refresh (the dev realm's tokens live 60s), so this producer
             # keeps the shared ingest token — and the per-service leg (4319)

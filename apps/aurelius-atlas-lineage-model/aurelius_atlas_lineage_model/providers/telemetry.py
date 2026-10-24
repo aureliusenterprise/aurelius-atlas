@@ -1,13 +1,19 @@
-"""The telemetry factories: logfire, the OTLP ingest leg (DD-107, DD-108).
+"""The telemetry factories: the native OTel providers and the OTLP ingest leg (DD-107, DD-108, DD-121).
 
 The app owns its export through the shared ``aurelius-atlas-otel`` pipeline —
 a client-credentials JWT as ``otel-lineage-model``, refreshed per export; unset
-settings mean console-only telemetry (AUX-03).
+settings mean no OTLP export at all (AUX-03).
 """
 
-import logfire
-from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline
+from aurelius_atlas_otel import (
+    ClientCredentialsTokenSource,
+    IngestPipeline,
+    build_otlp_pipeline,
+    setup_telemetry,
+)
 from fastapi import FastAPI
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPX2ClientInstrumentor
 
 from aurelius_atlas_lineage_model.globals import LOGGER, NAME
 from aurelius_atlas_lineage_model.settings import LineageModelSettings
@@ -31,26 +37,24 @@ def ingest_pipeline(settings: LineageModelSettings) -> IngestPipeline | None:
 
 
 def configure_telemetry(app: FastAPI, settings: LineageModelSettings) -> None:
-    """Wire the app's telemetry: logfire's export, the FastAPI instrumentor, the log level.
+    """Wire the app's telemetry: the native providers, the instrumentors, the log level.
 
-    The ingest leg rides only when it is configured (AUX-03); ``logfire.configure``
-    is process-global, as the other 8.x apps call it (DD-108).
+    The ingest leg rides only when it is configured (AUX-03); ``setup_telemetry``
+    is process-global, as the other 8.x apps call it (DD-108, DD-121). Debug
+    runs also print spans to stdout (the dev console, DD-121).
+
+    The httpx instrumentor stitches the chain (DD-121): the caller's W3C
+    ``traceparent`` rides the app's upstream calls (the Atlas fetch, the
+    data2model extract), so the whole 8.2 chain is one trace in Tempo — the
+    instrumentor is global, the pools it wraps are the app's (DD-116).
     """
     ingest = ingest_pipeline(settings)
-    logfire.configure(
-        send_to_logfire=False,
-        service_name=NAME,
-        service_version=app.version,
-        min_level=settings.log_level,
-        console=logfire.ConsoleOptions(min_log_level=settings.log_level),
-        **(
-            {
-                "additional_span_processors": [ingest[0]],
-                "metrics": logfire.MetricsOptions(additional_readers=[ingest[1]]),
-            }
-            if ingest is not None
-            else {}
-        ),
+    setup_telemetry(
+        NAME,
+        app.version,
+        pipeline=ingest,
+        console=settings.log_level in {"trace", "debug"},
     )
-    logfire.instrument_fastapi(app)
+    FastAPIInstrumentor.instrument_app(app)
+    HTTPX2ClientInstrumentor().instrument()
     LOGGER.setLevel(settings.log_level.upper())

@@ -1,10 +1,10 @@
 import threading
 from collections.abc import Iterable
 
-import logfire
+from opentelemetry import metrics
 from opentelemetry.metrics import CallbackOptions, Observation
 
-from aurelius_atlas_fastapi_example.globals import LOGGER
+from aurelius_atlas_fastapi_example.globals import LOGGER, NAME
 
 
 class ConnectionCounter:
@@ -51,7 +51,7 @@ def register_sse_metric() -> None:
     if _registered:
         return
 
-    logfire.metric_gauge_callback(
+    metrics.get_meter(NAME).create_observable_gauge(
         "aurelius.sse.connections",
         callbacks=[SSE_CONNECTIONS.observation],
         unit="",

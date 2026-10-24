@@ -15,9 +15,9 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
 - OTLP ingest (DD-107) lives in the shared `aurelius-atlas-otel` lib (DD-108):
   `app.py::_ingest_pipeline` maps `ServerSettings.otel_*` into
-  `build_otlp_pipeline`, wired into logfire's
-  `additional_span_processors`/`additional_readers` (the app owns its
-  export; the static env headers cannot carry a 60s JWT)
+  `build_otlp_pipeline`, installed by the lib's `setup_telemetry` on the
+  native OTel providers (DD-121: the app owns its export; the static env
+  headers cannot carry a 60s JWT)
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`

@@ -64,7 +64,7 @@ services:
             # export to the same collector the browser's /otel/ proxy feeds —
             # otherwise the frontend trace has no server span to join (same
             # wiring as aurelius-atlas-fastapi-example/e2e/docker-compose.yaml).
-            # The legacy leg (DD-107, CIA-10): the logfire SDK attaches its
+            # The legacy leg (DD-107, CIA-10): the OTel SDK attaches its
             # bearer statically from OTEL_EXPORTER_OTLP_HEADERS and cannot
             # refresh (the dev realm's tokens live 60s), so this producer
             # keeps the shared ingest token — and the per-service leg (4319)
@@ -97,13 +97,7 @@ services:
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                install -m 600 /certs/postgres.pem /tmp/server.pem &&
-                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
-                exec docker-entrypoint.sh
-                -c ssl=on
-                -c ssl_cert_file=/tmp/server.pem
-                -c ssl_key_file=/tmp/server-key.pem
-                -c hba_file=/conf/pg_hba.conf
+                install -m 600 /certs/postgres.pem /tmp/server.pem && install -m 600 /certs/postgres-key.pem /tmp/server-key.pem && exec docker-entrypoint.sh -c ssl=on -c ssl_cert_file=/tmp/server.pem -c ssl_key_file=/tmp/server-key.pem -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
         healthcheck:
             test:

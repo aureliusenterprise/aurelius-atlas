@@ -15,7 +15,7 @@ DEFAULT_PORT = 21000
 """The port Apache Atlas listens on."""
 
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
-"""Levels both logfire and uvicorn know."""
+"""Levels both uvicorn and the OTel console accept."""
 
 TLS_PAIR_ERROR = (
     f"{ENV_PREFIX}TLS_CERT_FILE and {ENV_PREFIX}TLS_KEY_FILE must both be set, or both be unset, to configure TLS"

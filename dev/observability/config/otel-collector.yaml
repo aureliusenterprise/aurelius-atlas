@@ -137,7 +137,7 @@ exporters:
         endpoint: http://tempo:4318
     prometheus:
         endpoint: 0.0.0.0:9464
-        # OTel SDKs like logfire aggregate histograms exponentially; the
+        # OTel SDKs aggregate histograms exponentially; the
         # classic text format would flatten them to a lone +Inf bucket
         # (histogram_quantile then always NaN). Emit them as Prometheus
         # native histograms so p95 panels work for every producer.

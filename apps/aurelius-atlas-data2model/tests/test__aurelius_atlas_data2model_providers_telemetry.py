@@ -1,6 +1,7 @@
-"""Unit tests for the telemetry factories: the ingest leg, the logfire wiring (DD-107, DD-108, AUX-03)."""
+"""Unit tests for the telemetry factories: the ingest leg, the native wiring (DD-107, DD-108, DD-121, AUX-03)."""
 
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 from aurelius_atlas_data2model.globals import LOGGER, NAME
@@ -22,7 +23,7 @@ def _otel_settings(**overrides: Any) -> Data2ModelSettings:  # noqa: ANN401  # t
 
 @pytest.mark.covers("aurelius_atlas_data2model.providers.telemetry.ingest_pipeline", rules=["AUX-03"])
 def test__no_ingest_credential_means_console_only(settings: Data2ModelSettings) -> None:
-    """Without the ingest secret there is no OTLP leg: the app exports to the console (AUX-03)."""
+    """Without the ingest secret there is no OTLP leg: the app exports no OTLP (AUX-03, DD-121)."""
     assert ingest_pipeline(settings) is None
 
 
@@ -34,7 +35,7 @@ def test__one_half_of_the_credential_is_no_credential() -> None:
 
 @pytest.mark.covers("aurelius_atlas_data2model.providers.telemetry.ingest_pipeline", rules=["AUX-01"])
 def test__the_credential_builds_the_export_leg() -> None:
-    """With the pair set, the pipeline is the (span processor, metric reader) pair for logfire (DD-107)."""
+    """With the pair set, the pipeline is the (span processor, metric reader) pair for the providers (DD-107)."""
     pipeline = ingest_pipeline(_otel_settings())
 
     assert pipeline is not None
@@ -46,39 +47,57 @@ def test__the_credential_builds_the_export_leg() -> None:
 
 
 @pytest.mark.covers("aurelius_atlas_data2model.providers.telemetry.configure_telemetry", rules=["AUX-01"])
-def test__the_leg_rides_the_logfire_configuration(
+def test__the_leg_rides_the_provider_configuration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The configured leg travels to logfire as the extra processor and reader (DD-108)."""
-    calls: list[dict[str, Any]] = []
+    """The configured leg travels to the providers as the span processor and metric reader (DD-108, DD-121)."""
+    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
     monkeypatch.setattr(
-        "aurelius_atlas_data2model.providers.telemetry.logfire.configure",
-        lambda **kwargs: calls.append(kwargs),
+        "aurelius_atlas_data2model.providers.telemetry.setup_telemetry",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
     )
-    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.logfire.instrument_fastapi", lambda _a: None)
+    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.FastAPIInstrumentor", Mock())
+    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.HTTPX2ClientInstrumentor", Mock())
 
     configure_telemetry(FastAPI(title=NAME, version="0"), _otel_settings())
 
     assert len(calls) == 1
-    assert calls[0]["service_name"] == NAME
-    assert "additional_span_processors" in calls[0]
-    assert "metrics" in calls[0]
+    (service_name, _version), kwargs = calls[0]
+    assert service_name == NAME
+    assert kwargs["pipeline"] is not None
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.providers.telemetry.configure_telemetry", rules=["AUX-01"])
+def test__the_issuer_calls_are_instrumented(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The httpx instrumentor is wired, so the auth library's issuer calls carry spans (DD-121)."""
+    httpx_instrumentor = Mock()
+    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.setup_telemetry", Mock())
+    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.FastAPIInstrumentor", Mock())
+    monkeypatch.setattr(
+        "aurelius_atlas_data2model.providers.telemetry.HTTPX2ClientInstrumentor",
+        httpx_instrumentor,
+    )
+
+    configure_telemetry(FastAPI(title=NAME, version="0"), _otel_settings())
+
+    httpx_instrumentor.return_value.instrument.assert_called_once()
 
 
 @pytest.mark.covers("aurelius_atlas_data2model.providers.telemetry.configure_telemetry", rules=["AUX-03"])
 def test__console_only_configures_no_leg(monkeypatch: pytest.MonkeyPatch, settings: Data2ModelSettings) -> None:
-    """Without the leg, logfire is configured plainly — and the app's log level is applied (AUX-03)."""
-    calls: list[dict[str, Any]] = []
+    """Without the leg, the providers get no exporters — and the app's log level is applied (AUX-03)."""
+    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
     monkeypatch.setattr(
-        "aurelius_atlas_data2model.providers.telemetry.logfire.configure",
-        lambda **kwargs: calls.append(kwargs),
+        "aurelius_atlas_data2model.providers.telemetry.setup_telemetry",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
     )
-    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.logfire.instrument_fastapi", lambda _a: None)
+    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.FastAPIInstrumentor", Mock())
+    monkeypatch.setattr("aurelius_atlas_data2model.providers.telemetry.HTTPX2ClientInstrumentor", Mock())
     level = LOGGER.level
     try:
         configure_telemetry(FastAPI(title=NAME, version="0"), settings.model_copy(update={"log_level": "warning"}))
 
-        assert "additional_span_processors" not in calls[0]
+        assert calls[0][1]["pipeline"] is None
         assert LOGGER.level == 30  # logging.WARNING: the settings' level reaches the app's logger
     finally:
         LOGGER.setLevel(level)

@@ -7,9 +7,8 @@ scope). The OTel Python SDK reads ``OTEL_EXPORTER_OTLP_HEADERS`` statically,
 and the dev realm's access token lives 60s — a bearer JWT in a static header
 expires a minute in. So the app owns the OTLP export: a refresh-ahead token
 source feeds a ``requests.Session`` that injects a fresh bearer header on
-every OTLP request, handed to app-built exporters wired into logfire through
-its ``additional_span_processors`` / ``MetricsOptions.additional_readers``
-seams (logfire's env-driven OTLP export is not used when this is on).
+every OTLP request, handed to app-built exporters whose processor/reader
+``setup_telemetry`` installs on the process's providers (DD-121).
 
 Extracted from the Atlas server's ``otel_ingest`` module so every service on
 the leg shares one credential (8.0, DD-108); the server keeps the settings
@@ -27,24 +26,24 @@ import json
 import ssl
 import threading
 import time
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import requests
-
-if TYPE_CHECKING:
-    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-    from opentelemetry.sdk.trace import SpanProcessor
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 REFRESH_AHEAD_SECONDS = 20
 """Refresh when the token expires within this window (the dev realm's token
 lives 60s, so a 20s margin keeps every export inside validity)."""
 
-IngestPipeline = tuple["SpanProcessor", "PeriodicExportingMetricReader"]
+IngestPipeline = tuple[BatchSpanProcessor, PeriodicExportingMetricReader]
 """The (span processor, metric reader) pair ``build_otlp_pipeline`` returns,
-for logfire's ``additional_span_processors`` / ``additional_readers``."""
+for ``setup_telemetry``'s ``span_processors`` / ``metric_readers``."""
 
 
 class ClientCredentialsTokenSource:
@@ -132,16 +131,8 @@ def build_otlp_pipeline(
     :param endpoint: the collector's service-leg base (``https://host:4319``)
     :param ca_file: PEM CA verifying the collector's TLS
     :param token_source: the ingest credential source
-    :returns: a span processor and a metric reader for logfire to adopt
+    :returns: a span processor and a metric reader for ``setup_telemetry``
     """
-    # Lazy: the OTel exporter/SDK modules arrive transitively via logfire
-    # (not a direct dependency of this wheel), and importing them at module
-    # load would tie every import of this module to them.
-    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter  # noqa: PLC0415
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter  # noqa: PLC0415
-    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader  # noqa: PLC0415
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: PLC0415
-
     session = _IngestSession(token_source)
     span_exporter = OTLPSpanExporter(
         endpoint=f"{endpoint}/v1/traces",

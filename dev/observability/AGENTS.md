@@ -9,7 +9,7 @@ rules live in the root `AGENTS.md`.
 - `docker-compose.yaml` — the five services, all on
   `aurelius-atlas-dev-observability-network`
 - `config/` — collector pipelines and Prometheus/Loki/Tempo configs.
-  Histograms pushed over OTLP may aggregate exponentially (logfire,
+  Histograms pushed over OTLP may aggregate exponentially (OTel SDKs,
   Keycloak/micrometer); the collector's prometheus exporter converts those
   to Prometheus native histograms, which exist only in the protobuf format
   — the `otel-collector` scrape job negotiates `PrometheusProto` with
