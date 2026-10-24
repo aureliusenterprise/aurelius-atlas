@@ -379,15 +379,12 @@ async def test__headers_carry_requested_and_filtered_attributes_and_referred_ent
 
 @pytest.mark.covers(f"{S}", rules=["SRC-03"])
 async def test__parameters_not_supported_yet_and_no_type_are_refused(store: EntityStore) -> None:
-    """``query`` and ``termName`` until 4.2 and 5.2; no type at all (DV-46)."""
+    """``termName`` until 5.2; no type, classification or query at all (DV-46)."""
     messages = []
-    for body in ({"query": "x"}, {"termName": "t"}, {}):
+    for body in ({"termName": "t"}, {}):
         with pytest.raises(AtlasError) as failed:
             await search(store, **body)
         messages.append((failed.value.code, failed.value.message))
 
-    assert messages[:2] == [
-        (AtlasErrorCode.BAD_REQUEST, "Search by query is not supported yet"),
-        (AtlasErrorCode.BAD_REQUEST, "Search by termName is not supported yet"),
-    ]
-    assert messages[2][0] is AtlasErrorCode.INVALID_SEARCH_PARAMS
+    assert messages[0] == (AtlasErrorCode.BAD_REQUEST, "Search by termName is not supported yet")
+    assert messages[1][0] is AtlasErrorCode.INVALID_SEARCH_PARAMS

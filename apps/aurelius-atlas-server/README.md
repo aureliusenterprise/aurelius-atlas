@@ -23,6 +23,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | `DELETE /api/atlas/v2/entity/...` | Entities deleted by GUID, in bulk or by unique attributes             |
 | `PUT /api/atlas/admin/purge`      | Deleted entities removed for good                                     |
 | `/api/atlas/v2/search/basic`      | Entities by type, attribute filters, sort and paging                  |
+| `/api/atlas/v2/search/fulltext`   | Entities by free text, best first, with their scores                  |
 
 ## Dashboards
 
@@ -92,7 +93,8 @@ entities by type, with sub types or of every type (`_ALL_ENTITY_TYPES`), by attr
 operators, by state, sorted and paged by offset or marker: `POST` and `GET search/basic` and `GET
 search/attribute`. Entity attributes are searched in typed fields named after the type that defines them
 (DD-088). `classification` and `tagFilters` find entities by their attached or propagated classifications and
-their attributes (DD-090); free text follows in 4.2.
+their attributes (DD-090). `query` and `GET search/fulltext` find entities by free text, weighted by the
+attributes' search weights (DD-092); quick search follows in 4.2b.
 
 ## Running it
 

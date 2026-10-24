@@ -15,6 +15,7 @@ from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_model.discovery import SearchParameters
 from aurelius_atlas_model.instance import AtlasClassification, AtlasEntitiesWithExtInfo
+from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_store_es import ElasticsearchStore
 
 # The async fixtures run on the module loop (asyncio_default_fixture_loop_scope); so must async tests.
@@ -122,3 +123,68 @@ async def test__entities_are_searched_by_classification_on_elasticsearch(
     assert await names(classification="c_pii", tagFilters=level) == ["a@cs", "b@cs", "p@cs"]
     assert await names(classification="_NOT_CLASSIFIED", typeName="p_data") == ["c@cs"]
     assert await names(typeName="p_data", entityFilters=where("__classificationNames", "=", "c_pii")) == ["a@cs"]
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
+    "aurelius_atlas_core.discovery_service.EntityDiscoveryService.search_using_full_text",
+    rules=["FTX-02", "FTX-03", "FTX-04", "FTX-05"],
+)
+async def test__entities_are_found_by_free_text_on_elasticsearch(
+    dev_store: ElasticsearchStore, entity_prefix: str
+) -> None:
+    """The analysed text sub-fields match words in any case and by prefix, the heavier field first."""
+    registry = sample_registry(classifications=True)
+    with registry.update() as transient:
+        transient.add_types(
+            AtlasTypesDef.model_validate(
+                {
+                    "entityDefs": [
+                        {
+                            "name": "f_doc",
+                            "superTypes": ["s_ref"],
+                            "attributeDefs": [
+                                {"name": "title", "typeName": "string", "isOptional": True, "searchWeight": 9},
+                                {"name": "body", "typeName": "string", "isOptional": True},
+                            ],
+                        }
+                    ]
+                }
+            )
+        )
+    store = EntityStore(registry, ElasticsearchEntityDocuments(dev_store.client, prefix=entity_prefix))
+    await store.prepare()
+
+    def doc(name: str, title: str, body: str) -> dict[str, Any]:
+        return {
+            "typeName": "f_doc",
+            "guid": f"-{name}",
+            "attributes": {"qualifiedName": name, "title": title, "body": body},
+        }
+
+    created = await EntityWriter(store).create_or_update(
+        AtlasEntitiesWithExtInfo.model_validate(
+            {"entities": [doc("d1", "Quarterly Sales", "numbers"), doc("d2", "Customers", "sales contacts")]}
+        )
+    )
+    guids = created.guid_assignments or {}
+    await EntityClassifications(store).add_classifications(
+        guids["-d2"], [AtlasClassification.model_validate({"typeName": "c_pii", "attributes": {"level": 4}})]
+    )
+    service = EntityDiscoveryService(store)
+
+    async def names(**body: Any) -> list[str]:  # noqa: ANN401 - Atlas JSON
+        found = (await service.search_with_parameters(SearchParameters.model_validate(body))).to_json()
+        return [entity["attributes"]["qualifiedName"] for entity in found.get("entities", [])]
+
+    full_text = (
+        await service.search_using_full_text("SALES", exclude_deleted_entities=True, limit=10, offset=0)
+    ).to_json()
+
+    assert await names(query="sales") == ["d1", "d2"]
+    assert await names(query="CUSTOM*", typeName="f_doc") == ["d2"]
+    assert await names(query="c_pii") == ["d2"]
+    assert await names(query="numbers", classification="c_pii") == []
+    assert [found["entity"]["attributes"]["qualifiedName"] for found in full_text["fullTextResult"]] == ["d1", "d2"]
+    assert full_text["approximateCount"] == 2
+    assert full_text["fullTextResult"][0]["score"] > full_text["fullTextResult"][1]["score"] > 0

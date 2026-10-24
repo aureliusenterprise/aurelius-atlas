@@ -14,7 +14,9 @@ from typing import Any
 
 from aurelius_atlas_model.discovery import Condition
 
+from aurelius_atlas_core.free_text import TextQuery
 from aurelius_atlas_core.search_fields import KEYWORD, LONG
+from aurelius_atlas_core.stored_entity import StoredEntity
 
 TYPE_NAME_FIELD = f"{KEYWORD}.__typeName"
 STATE_FIELD = f"{KEYWORD}.__state"
@@ -80,8 +82,8 @@ type Filter = Criterion | Group
 class SearchQuery:
     """The entities of ``type_names`` (all for None), only ``ACTIVE`` ones with ``active_only``, matching ``filter``.
 
-    Sorted by ``sort_field`` (descending with ``descending``, entities without a value last), then by creation
-    time and GUID; ``size`` of them from ``offset``.
+    Sorted by ``sort_field`` (descending with ``descending``, entities without a value last), or by how well they
+    match ``text``, then by creation time and GUID; ``size`` of them from ``offset``.
     """
 
     type_names: frozenset[str] | None
@@ -92,6 +94,17 @@ class SearchQuery:
     offset: int = 0
     size: int = 100
     tie_break: tuple[str, ...] = field(default=(CREATE_TIME_FIELD, GUID_FIELD))
+    text: TextQuery | None = None
+    """Free text the entities must match, the best match first when no sort field is given (FTX-02, FTX-04)."""
+
+
+@dataclass(frozen=True)
+class SearchHits:
+    """A page of a search: its entities, how many match in all, and each entity's score, 0 without free text."""
+
+    entities: list[StoredEntity]
+    total: int
+    scores: list[float] = field(default_factory=list)
 
 
 def selects(query: SearchQuery, fields: Mapping[str, Any]) -> bool:

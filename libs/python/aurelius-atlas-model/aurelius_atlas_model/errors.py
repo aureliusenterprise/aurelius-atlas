@@ -172,6 +172,7 @@ class AtlasErrorCode(Enum):
         ),
     )
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
+    INVALID_QUERY_LENGTH = (400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit")
     INVALID_ENTITY_FOR_CLASSIFICATION = (
         400,
         "ATLAS-400-00-055",

@@ -204,6 +204,7 @@ nav:
                       - 3.5b Classification audit: architecture/conversion/increments/3-5-classification-audit.md
                       - 4.1a Entity search: architecture/conversion/increments/4-1-entity-search.md
                       - 4.1b Classification search: architecture/conversion/increments/4-1-classification-search.md
+                      - 4.2a Free text: architecture/conversion/increments/4-2-free-text.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

@@ -257,3 +257,29 @@ async def test__search_sorts_with_options_and_pages_from_an_offset() -> None:
     assert await order("desc", 1) == ["b", "c"]
     assert fake_settings["acknowledged"]
     assert fake.settings_updates == ["docs"]
+
+
+async def test__simple_query_strings_score_and_sort_by_boosted_words() -> None:
+    """Words in any case, ``*`` prefixes, ``^`` boosts (1 without) on ``.text`` sub-fields; ``_score`` sorts."""
+    fake = FakeClient()
+    documents = {
+        "a": {"s": {"t.name": "Sales report", "t.tags": ["x"]}},
+        "b": {"s": {"t.name": "x", "t.tags": "other"}},
+    }
+    for document_id, document in documents.items():
+        await fake.index(index="docs", id=document_id, document=document)
+    text = {"simple_query_string": {"query": "SALES x*", "fields": ["s.t.name.text^5", "s.t.tags.text"]}}
+
+    scored = await fake.search(
+        index="docs", query={"bool": {"filter": [], "must": [text]}}, sort=[{"_score": {"order": "desc"}}]
+    )
+    alone = await fake.search(index="docs", query=text, track_scores=True)
+    none = await fake.search(
+        index="docs", query={"simple_query_string": {"query": "nothing", "fields": ["s.t.name.text"]}}
+    )
+    plain = await fake.search(index="docs")
+
+    assert [(hit["_id"], hit["_score"]) for hit in scored["hits"]["hits"]] == [("a", 6.0), ("b", 5.0)]
+    assert sorted(hit["_score"] for hit in alone["hits"]["hits"]) == [5.0, 6.0]
+    assert none["hits"]["hits"] == []
+    assert [hit["_score"] for hit in plain["hits"]["hits"]] == [0.0, 0.0]
