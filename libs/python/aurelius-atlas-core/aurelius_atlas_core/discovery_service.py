@@ -1,13 +1,20 @@
 """``EntityDiscoveryService``: a basic search and its answer (SRC-07 to SRC-10).
 
 Atlas's ``EntityDiscoveryService.searchWithParameters`` and ``searchWithSearchContext`` with
-``QueryParams.getNormalizedParams``, for the entity search of 4.1a (DD-087).
+``QueryParams.getNormalizedParams``, for the entity search of 4.1a (DD-087), with the free text of 4.2a and
+``searchUsingFullTextQuery`` (DD-091).
 """
 
 from collections.abc import Iterable
 from typing import Any
 
-from aurelius_atlas_model.discovery import AtlasQueryType, AtlasSearchResult, AttributeSearchResult, SearchParameters
+from aurelius_atlas_model.discovery import (
+    AtlasFullTextResult,
+    AtlasQueryType,
+    AtlasSearchResult,
+    AttributeSearchResult,
+    SearchParameters,
+)
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasEntityHeader, AtlasObjectId
 from aurelius_atlas_model.typedef import TypeCategory
@@ -19,8 +26,10 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_search_processor import EntitySearchProcessor
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.free_text import TextQuery, basic_query, weighted_fields
 from aurelius_atlas_core.search_context import SearchContext, encode_marker
 from aurelius_atlas_core.search_fields import field_name
+from aurelius_atlas_core.search_query import SearchQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 DEFAULT_LIMIT = 100
@@ -46,11 +55,14 @@ class EntityDiscoveryService:
         The answer shows the parameters with their limit and offset as used (SRC-07).
 
         Raises:
-            AtlasError: As ``SearchContext`` checks; ``INVALID_SEARCH_PARAMS`` for a search of no type (DV-46).
+            AtlasError: As ``SearchContext`` checks; ``INVALID_SEARCH_PARAMS`` for a search of no type,
+                classification or query (DV-46).
         """
         parameters = parameters.model_copy(deep=True)
+        if parameters.query:
+            parameters.query = basic_query(parameters.query)
         context = SearchContext(parameters, self._store.registry)
-        if not context.entity_types and context.classification_mode is None:
+        if not context.entity_types and context.classification_mode is None and context.text is None:
             raise AtlasError(AtlasErrorCode.INVALID_SEARCH_PARAMS)
         result = AtlasSearchResult(
             query_type=AtlasQueryType.BASIC, query_text=parameters.query, search_parameters=parameters
@@ -65,6 +77,31 @@ class EntityDiscoveryService:
             return result
         await self._headers(context, found, result)
         return result
+
+    async def search_using_full_text(
+        self, query: str, *, exclude_deleted_entities: bool, limit: int, offset: int
+    ) -> AtlasSearchResult:
+        """``searchUsingFullTextQuery``: each entity matching ``query``, best first, with its score (FTX-05).
+
+        At most ``limit`` of them, normalised; ``offset`` is not used, as in Atlas. The count is of every entity
+        matching, deleted ones too (DV-49).
+        """
+        limit, _ = normalized(limit, offset)
+        text = TextQuery(query, weighted_fields(self._store.registry))
+        hits = await self._store.search(
+            SearchQuery(type_names=None, active_only=exclude_deleted_entities, size=limit, text=text)
+        )
+        total = hits.total
+        if exclude_deleted_entities:
+            total = (await self._store.search(SearchQuery(type_names=None, size=0, text=text))).total
+        retriever = EntityRetriever(self._store)
+        found = [
+            AtlasFullTextResult(entity=await retriever.header_with_attributes(stored, []), score=score)
+            for stored, score in zip(hits.entities, hits.scores, strict=True)
+        ]
+        return AtlasSearchResult(
+            query_type=AtlasQueryType.FULL_TEXT, query_text=query, full_text_result=found, approximate_count=total
+        )
 
     async def _headers(self, context: SearchContext, found: list[StoredEntity], result: AtlasSearchResult) -> None:
         """Each entity's header with the result attributes, and the headers of the entities they refer to (SRC-09)."""

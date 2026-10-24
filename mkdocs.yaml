@@ -214,6 +214,7 @@ nav:
                       - 3.5b Classification audit: architecture/conversion/increments/3-5-classification-audit.md
                       - 4.1a Entity search: architecture/conversion/increments/4-1-entity-search.md
                       - 4.1b Classification search: architecture/conversion/increments/4-1-classification-search.md
+                      - 4.2a Free text: architecture/conversion/increments/4-2-free-text.md
                       - 7.0 Webapp foundation (umbrella): architecture/conversion/increments/7-0-webapp-foundation.md
                       - 7.1 Webapp shell and localisation: architecture/conversion/increments/7-1-webapp-shell.md
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md

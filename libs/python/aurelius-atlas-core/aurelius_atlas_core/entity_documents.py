@@ -16,13 +16,15 @@ from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
-from aurelius_atlas_core.search_fields import KEYWORD, KINDS
+from aurelius_atlas_core.free_text import TextQuery
+from aurelius_atlas_core.search_fields import KEYWORD, KINDS, TEXT
 from aurelius_atlas_core.search_query import (
     ACTIVE,
     STATE_FIELD,
     TYPE_NAME_FIELD,
     Filter,
     Group,
+    SearchHits,
     SearchQuery,
     Test,
 )
@@ -70,6 +72,17 @@ REFERRING_PAGE = 1000
 """How many referring entities one search page holds (DD-057)."""
 
 _KEYWORD = {"type": "keyword"}
+KEYWORD_LIMIT = 8191
+"""``ignore_above`` of keyword search fields: the longest value a keyword holds, in characters (DD-092)."""
+
+
+def _search_mapping(kind: str) -> dict[str, Any]:
+    """A search field's mapping: a keyword also has an analysed ``text`` sub-field for free text (DD-092)."""
+    if kind != KEYWORD:
+        return {"type": kind}
+    return {"type": kind, "ignore_above": KEYWORD_LIMIT, "fields": {TEXT: {"type": "text"}}}
+
+
 ENTITY_MAPPING: dict[str, Any] = {
     "dynamic": False,
     "properties": {
@@ -97,7 +110,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "search": {"type": "object", "dynamic": True, "subobjects": False},
     },
     "dynamic_templates": [
-        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": {"type": kind}}} for kind in KINDS
+        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
     ],
 }
 """System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
@@ -319,8 +332,8 @@ class EntityDocuments(Protocol):
         """How many entities of exactly this type exist, in any state, as of now."""
         ...
 
-    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
-        """The entities of the query's page, as of now, and how many match it in all (DD-089)."""
+    async def search(self, query: SearchQuery) -> SearchHits:
+        """The entities of the query's page, as of now, how many match it in all, and their scores (DD-089)."""
         ...
 
     async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
@@ -612,8 +625,11 @@ class ElasticsearchEntityDocuments:
                 return found
             after = hits[-1]["sort"]
 
-    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
-        """Refresh the entity index, then answer the query as a ``bool`` query of the search fields (DD-089)."""
+    async def search(self, query: SearchQuery) -> SearchHits:
+        """Refresh the entity index, then answer the query as a ``bool`` query of the search fields (DD-089).
+
+        Free text is a scored ``simple_query_string`` over the text sub-fields (DD-092).
+        """
         await self._client.indices.refresh(index=self._entities)
         clauses: list[dict[str, Any]] = []
         if query.type_names is not None:
@@ -622,22 +638,46 @@ class ElasticsearchEntityDocuments:
             clauses.append({"term": {_search_path(STATE_FIELD): ACTIVE}})
         if query.filter is not None:
             clauses.append(_es_filter(query.filter))
-        sort = [] if query.sort_field is None else [_es_sort(query.sort_field, descending=query.descending)]
+        must = [] if query.text is None else [_es_text(query.text)]
+        sort: list[dict[str, Any]] = []
+        if query.sort_field is not None:
+            sort.append(_es_sort(query.sort_field, descending=query.descending))
+        elif query.text is not None:
+            sort.append({"_score": {"order": "desc"}})
         sort += [_es_sort(name, descending=False) for name in query.tie_break]
         response = await self._client.search(
             index=self._entities,
-            query={"bool": {"filter": clauses}},
+            query={"bool": {"filter": clauses, "must": must}},
             sort=sort,
             from_=query.offset,
             size=query.size,
             track_total_hits=True,
+            track_scores=True,
         )
         hits = response["hits"]
-        return [StoredEntity.model_validate(hit["_source"]) for hit in hits["hits"]], int(hits["total"]["value"])
+        return SearchHits(
+            [StoredEntity.model_validate(hit["_source"]) for hit in hits["hits"]],
+            int(hits["total"]["value"]),
+            [float(hit.get("_score") or 0) for hit in hits["hits"]],
+        )
 
 
 def _search_path(name: str) -> str:
     return f"search.{name}"
+
+
+def _es_text(text: TextQuery) -> dict[str, Any]:
+    """Free text: ``simple_query_string`` over the text sub-fields, each boosted by its weight (DD-092)."""
+    fields = [f"{_search_path(name)}.{TEXT}^{weight}" for name, weight in text.fields.items()]
+    return {
+        "simple_query_string": {
+            "query": text.text,
+            "fields": fields,
+            "default_operator": "or",
+            "analyze_wildcard": True,
+            "lenient": True,
+        }
+    }
 
 
 def _es_sort(name: str, *, descending: bool) -> dict[str, Any]:

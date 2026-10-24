@@ -16,6 +16,8 @@ from aurelius_atlas_typesystem.classification_type import CLASSIFICATION_ROOT, C
 from aurelius_atlas_typesystem.entity_type import ENTITY_ROOT, EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
+from aurelius_atlas_core.free_text import TextQuery, weighted_fields
+
 ALL_ENTITY_TYPES = "_ALL_ENTITY_TYPES"
 TYPENAME_DELIMITER = ","
 MARKER_START = "*"
@@ -31,8 +33,8 @@ ALL_CLASSIFICATION_TYPES = "_ALL_CLASSIFICATION_TYPES"
 _ANY_CLASSIFICATION = (WILDCARD_CLASSIFICATIONS, ALL_CLASSIFICATIONS, ALL_CLASSIFICATION_TYPES)
 WILDCARD_TAG_FILTERS = "TagFilters specified with wildcard tag name"
 
-_NOT_YET = (("query", "query"), ("term_name", "termName"))
-"""The parameters 4.2 and 5.2 add (DV-46)."""
+_NOT_YET = (("term_name", "termName"),)
+"""The parameters 5.2 adds (DV-46)."""
 
 
 class ClassificationMode(StrEnum):
@@ -91,6 +93,8 @@ class SearchContext:
         self.has_relationship_attributes = self._check_requested_attributes()
         self.type_names = self._type_names(include_sub_types=parameters.include_sub_types)
         self._classifications(parameters, registry)
+        self.text = None if not parameters.query else TextQuery(parameters.query, weighted_fields(registry))
+        """The free text entities must match, over the registry's searchable fields (FTX-02)."""
         self.entity_attributes = [
             name
             for name in dict.fromkeys(_filter_attributes(parameters.entity_filters))

@@ -1,10 +1,11 @@
-"""The basic search endpoints of ``DiscoveryREST`` under ``/api/atlas/v2/search`` (SRC-02, SRC-09, SRC-11).
+"""The basic and full-text search endpoints of ``DiscoveryREST`` under ``/api/atlas/v2/search`` (SRC-02, FTX-05).
 
-``searchUsingBasic``, ``searchWithParameters`` and ``searchUsingAttribute``; the other searches follow in later
-increments (4.1b, 4.2, 4.4, 4.5).
+``searchUsingBasic``, ``searchWithParameters``, ``searchUsingAttribute`` and ``searchUsingFullText``; the other
+searches follow in later increments (4.2b, 4.4, 4.5).
 """
 
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
+from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
 from aurelius_atlas_model.discovery import FilterCriteria, Operator, SearchParameters, SortOrder
 from aurelius_atlas_model.errors import java_string
 from fastapi import APIRouter, Request
@@ -30,6 +31,7 @@ NEGATIVE_PAGE = "Limit/offset should be non-negative"
 FILTERS_WITHOUT_TYPE = "EntityFilters specified without Type name"
 FILTERS_WITHOUT_TAG = "TagFilters specified without tag name"
 NO_ATTRIBUTE_SEARCH = "attrName : {name}, attrValue: {value} for attribute search."
+MAX_FULLTEXT_QUERY_STR_LENGTH = "atlas.graph.fulltext-max-query-str-length"
 
 
 def _empty(criteria: FilterCriteria | None) -> bool:
@@ -55,7 +57,9 @@ def validate_basic_search_parameters(parameters: SearchParameters) -> None:
 
 
 def _validate_lengths(parameters: SearchParameters) -> None:
-    """``validateSearchParameters``: ``typeName``, ``classification`` and ``sortBy`` at most 4,096 characters."""
+    """``validateSearchParameters``: ``typeName``, ``classification``, ``sortBy`` and ``query`` at most 4,096
+    characters (FTX-01).
+    """  # noqa: D205 - one sentence
     for name, value in (
         ("typeName", parameters.type_name),
         ("classification", parameters.classification),
@@ -63,6 +67,17 @@ def _validate_lengths(parameters: SearchParameters) -> None:
     ):
         if value is not None:
             validate_param_length(name, value)
+    validate_query_length(parameters.query)
+
+
+def validate_query_length(query: str | None) -> None:
+    """A free-text query of at most ``atlas.graph.fulltext-max-query-str-length`` characters (FTX-01).
+
+    Raises:
+        AtlasError: ``INVALID_QUERY_LENGTH``.
+    """
+    if query and len(query) > MAX_QUERY_LENGTH:
+        raise AtlasError(AtlasErrorCode.INVALID_QUERY_LENGTH, MAX_FULLTEXT_QUERY_STR_LENGTH)
 
 
 async def _search(store: Store, parameters: SearchParameters) -> AtlasJSONResponse:
@@ -95,6 +110,20 @@ async def search_using_basic(request: Request, store: Store) -> AtlasJSONRespons
     )
     _validate_lengths(parameters)
     return await _search(store, parameters)
+
+
+@DISCOVERY.get("/fulltext")
+async def search_using_full_text(request: Request, store: Store) -> AtlasJSONResponse:
+    """``searchUsingFullText``: the entities matching ``query``, best first, with their scores (FTX-05)."""
+    query = first_value(request, "query") or ""
+    validate_query_length(query)
+    result = await EntityDiscoveryService(store).search_using_full_text(
+        query,
+        exclude_deleted_entities=flag(request, "excludeDeletedEntities"),
+        limit=java_number(request, "limit", 0, INT_RANGE),
+        offset=java_number(request, "offset", 0, INT_RANGE),
+    )
+    return AtlasJSONResponse(content=result.to_json())
 
 
 @DISCOVERY.get("/attribute")

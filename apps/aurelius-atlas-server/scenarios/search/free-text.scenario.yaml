@@ -1,0 +1,223 @@
+name: Entities are found by free text, weighted by their attributes' search weights
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchUsingFullText
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchUsingBasic
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#validateSearchParameters
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#searchWithParameters
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#searchUsingFullTextQuery
+    - repository/src/main/java/org/apache/atlas/discovery/FreeTextSearchProcessor.java
+    - repository/src/main/java/org/apache/atlas/repository/graph/SolrIndexHelper.java
+    - intg/src/main/java/org/apache/atlas/type/AtlasStructType.java#hastokenizeChar
+rules: [FTX-01, FTX-04, FTX-05]
+covers:
+    - aurelius_atlas_server.routes.discovery.search_using_full_text
+    - aurelius_atlas_server.routes.discovery.search_with_parameters
+    - aurelius_atlas_server.routes.discovery.search_using_basic
+stages:
+    - name: create a table type whose name weighs 9, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_ftable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: name, typeName: string, isOptional: true, searchWeight: 9 }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ftable_{run}
+                    description: scenario_ftable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: name
+                          typeName: string
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: 9
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+    - name: create two tables
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_ftable_{run}
+                    guid: "-1"
+                    attributes: { qualifiedName: "ft1_{run}", name: "apple_{run} red" }
+                  - typeName: scenario_ftable_{run}
+                    guid: "-2"
+                    attributes: { qualifiedName: "ft2_{run}", name: "pear_{run} green" }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_ftable_{run}
+                        attributes: { qualifiedName: "ft1_{run}", name: "apple_{run} red" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: "apple_{run} red"
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_ftable_{run}
+                        attributes: { qualifiedName: "ft2_{run}", name: "pear_{run} green" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: "pear_{run} green"
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID, "-2": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+          save:
+              first: $.guidAssignments['-1']
+              second: $.guidAssignments['-2']
+    - name: the table whose name holds a word, in any case
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json: { typeName: "scenario_ftable_{run}", query: "APPLE_{run}" }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  query: "APPLE_{run}"
+                  typeName: scenario_ftable_{run}
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+              queryText: "APPLE_{run}"
+              entities:
+                  - typeName: scenario_ftable_{run}
+                    attributes: { qualifiedName: "ft1_{run}", name: "apple_{run} red" }
+                    guid: "{first}"
+                    status: ACTIVE
+                    displayText: "apple_{run} red"
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 1
+    - name: stars stripped from a query with a space; the name, weighing 9, before the qualified name, weighing 3
+      request:
+          method: GET
+          url: /api/atlas/v2/search/basic
+          params: { query: "*pear_{run} ft1_{run}*" }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  query: "pear_{run} ft1_{run}"
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+              queryText: "pear_{run} ft1_{run}"
+              entities:
+                  - typeName: scenario_ftable_{run}
+                    attributes: { qualifiedName: "ft2_{run}", name: "pear_{run} green" }
+                    guid: "{second}"
+                    status: ACTIVE
+                    displayText: "pear_{run} green"
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+                  - typeName: scenario_ftable_{run}
+                    attributes: { qualifiedName: "ft1_{run}", name: "apple_{run} red" }
+                    guid: "{first}"
+                    status: ACTIVE
+                    displayText: "apple_{run} red"
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 2
+    - name: a full-text search answers the header and its score; the offset is not used
+      request:
+          method: GET
+          url: /api/atlas/v2/search/fulltext
+          params: { query: "pear_{run}", limit: "5", offset: "3" }
+      response:
+          status: 200
+          json:
+              queryType: FULL_TEXT
+              queryText: "pear_{run}"
+              fullTextResult:
+                  - entity:
+                        typeName: scenario_ftable_{run}
+                        attributes: { qualifiedName: "ft2_{run}", name: "pear_{run} green" }
+                        guid: "{second}"
+                        status: ACTIVE
+                        displayText: "pear_{run} green"
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                    score: 9.0
+              approximateCount: 1
+          volatile:
+              - $.fullTextResult[*].score

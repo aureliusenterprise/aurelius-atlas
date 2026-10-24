@@ -34,6 +34,8 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 KEYWORD, LONG, DOUBLE, BOOLEAN = "keyword", "long", "double", "boolean"
+TEXT = "text"
+"""The analysed sub-field of a keyword search field, which free text searches (DD-092)."""
 KINDS = (KEYWORD, LONG, DOUBLE, BOOLEAN)
 """The Elasticsearch types of search fields, each the first part of its fields' names."""
 
@@ -121,6 +123,7 @@ def search_fields(
     attached = [found.type_name for found in listed if found.entity_guid == entity.guid]
     propagated = [found.type_name for found in listed if found.entity_guid != entity.guid]
     _put(fields, ENTITY_ROOT.all_attributes["__classificationNames"], labels_value(attached))
+    _put(fields, ENTITY_ROOT.all_attributes["__classificationsText"], classifications_text(listed))
     _put(fields, ENTITY_ROOT.all_attributes["__propagatedClassificationNames"], labels_value(propagated))
     for name, values in (
         (TRAIT_NAMES, attached),
@@ -130,6 +133,19 @@ def search_fields(
         if values:
             fields[name] = list(values)
     return fields
+
+
+def classifications_text(instances: list[StoredClassification]) -> str | None:
+    """``getClassificationTextForEntity``: each classification's type name and attribute values (FTX-03)."""
+    words: list[str] = []
+    for instance in instances:
+        words.append(instance.type_name)
+        for value in instance.attributes.values():
+            items = value if isinstance(value, list) else [value]
+            words.extend(
+                search_value(KEYWORD, item) for item in items if item is not None and not isinstance(item, Mapping)
+            )
+    return " ".join(words) if words else None
 
 
 def classification_fields(instance: StoredClassification, classification_type: ClassificationType) -> dict[str, Any]:
