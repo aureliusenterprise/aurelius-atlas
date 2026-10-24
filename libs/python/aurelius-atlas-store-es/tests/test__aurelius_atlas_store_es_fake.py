@@ -233,6 +233,8 @@ async def test__bool_queries_exclude_require_any_and_test_presence() -> None:
     assert await found({"prefix": {name: "al"}}) == ["a"]
     assert await found({"wildcard": {name: {"value": "*\\*b\\?*"}}}) == ["b"]
     assert await found({"wildcard": {name: "?amm?"}}) == ["c"]
+    assert await found({"wildcard": {name: {"value": "GAM*", "case_insensitive": True}}}) == ["c"]
+    assert await found({"wildcard": {name: {"value": "GAM*"}}}) == []
     assert await found({"term": {"nested.x.y": "z"}}) == ["c"]
     assert await found({"term": {"nested.x.q": "z"}}) == []
 

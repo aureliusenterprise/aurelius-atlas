@@ -275,7 +275,8 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # n
     if kind == "prefix":
         return any(isinstance(value, str) and value.startswith(operand) for value in held)
     if kind == "wildcard":
-        pattern = _wildcard(operand["value"] if isinstance(operand, dict) else operand)
+        options = operand if isinstance(operand, dict) else {"value": operand}
+        pattern = _wildcard(options["value"], ignore_case=bool(options.get("case_insensitive")))
         return any(isinstance(value, str) and pattern.fullmatch(value) is not None for value in held)
     return operand in held
 
@@ -304,7 +305,7 @@ def _held(source: dict[str, Any], field: str) -> list[Any]:
     return value if isinstance(value, list) else [value]
 
 
-def _wildcard(pattern: str) -> re.Pattern[str]:
+def _wildcard(pattern: str, *, ignore_case: bool = False) -> re.Pattern[str]:
     """An Elasticsearch wildcard pattern as a regular expression: ``*``, ``?``, and backslash escaping."""
     parts, escaped = [], False
     for character in pattern:
@@ -315,7 +316,7 @@ def _wildcard(pattern: str) -> re.Pattern[str]:
             escaped = True
         else:
             parts.append(_WILDCARDS.get(character) or re.escape(character))
-    return re.compile("".join(parts), re.DOTALL)
+    return re.compile("".join(parts), re.DOTALL | (re.IGNORECASE if ignore_case else 0))
 
 
 _WILDCARDS = {"*": ".*", "?": "."}
