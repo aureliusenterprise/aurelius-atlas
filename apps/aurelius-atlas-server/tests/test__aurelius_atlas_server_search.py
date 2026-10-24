@@ -137,3 +137,37 @@ async def test__an_attribute_search_finds_values_by_prefix(client: httpx.AsyncCl
     )
     assert untyped[1]["errorMessage"] == "EntityFilters specified without Type name"
     assert tables
+
+
+@pytest.mark.covers(f"{D}.search_using_full_text", f"{D}.validate_query_length", rules=["FTX-01", "FTX-05"])
+async def test__a_full_text_search_answers_scored_headers(client: httpx.AsyncClient, tables: list[str]) -> None:
+    """Each table matching, with its score; a query over 4,096 characters fails here and in basic search."""
+    status, found = await send(client, "GET", f"{SEARCH}/fulltext", params={"query": "two three", "limit": "5"})
+    too_long = await send(client, "GET", f"{SEARCH}/fulltext", params={"query": "x" * 4097})
+    basic_get = await send(client, "GET", f"{SEARCH}/basic", params={"query": "x" * 4097})
+    basic_post = await send(client, "POST", f"{SEARCH}/basic", json={"query": "x" * 4097})
+
+    assert (status, found["queryType"], found["queryText"], found["approximateCount"]) == (
+        200,
+        "FULL_TEXT",
+        "two three",
+        2,
+    )
+    assert {result["entity"]["guid"] for result in found["fullTextResult"]} == {tables[1], tables[2]}
+    assert all(result["score"] > 0 for result in found["fullTextResult"])
+    expected = {
+        "errorCode": "ATLAS-400-00-058",
+        "errorMessage": "Invalid query length, update atlas.graph.fulltext-max-query-str-length to change the limit",
+    }
+    assert too_long == basic_get == basic_post == (400, expected)
+
+
+@pytest.mark.covers(f"{D}.search_using_basic", f"{D}.search_with_parameters", rules=["FTX-04"])
+async def test__a_basic_search_takes_a_query(client: httpx.AsyncClient, tables: list[str]) -> None:
+    """By query parameter and body, with or without a type."""
+    _, by_parameter = await send(client, "GET", f"{SEARCH}/basic", params={"query": "three"})
+    _, by_body = await send(client, "POST", f"{SEARCH}/basic", json={"query": "ONE", "typeName": "s_table"})
+
+    assert names(by_parameter) == ["three"]
+    assert names(by_body) == ["one"]
+    assert by_body["entities"][0]["guid"] == tables[0]
