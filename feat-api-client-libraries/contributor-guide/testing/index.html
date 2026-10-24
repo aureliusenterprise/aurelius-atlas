@@ -2227,6 +2227,8 @@
       
         
       
+        
+      
     
     
     
@@ -3780,6 +3782,33 @@
     
   
   055. The lineage chain is a named data surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  056. Behaviour is proven by executed tests
 
     
   </span>
@@ -7598,7 +7627,6 @@ This page is the commands and conventions.</p>
 <div class="highlight"><pre><span></span><code>npx<span class="w"> </span>nx<span class="w"> </span><span class="nb">test</span><span class="w"> </span>&lt;project&gt;<span class="w"> </span>-c<span class="w"> </span>ci
 npx<span class="w"> </span>nx<span class="w"> </span>e2e<span class="w"> </span>&lt;project&gt;<span class="w"> </span>-c<span class="w"> </span>ci
 npx<span class="w"> </span>nx<span class="w"> </span>affected<span class="w"> </span>-t<span class="w"> </span><span class="nb">test</span><span class="w"> </span>e2e<span class="w"> </span>-c<span class="w"> </span>ci
-uv<span class="w"> </span>run<span class="w"> </span>aurelius-atlas-trace<span class="w"> </span>check
 </code></pre></div>
 <p>Always <code>-c ci</code> for test targets — the default is watch mode, which never exits.</p>
 <div class="admonition warning">
@@ -7608,9 +7636,10 @@ every later step that waits for it. The symptom — a "hung" build that is reall
 watcher — is expected, not a broken setup: add <code>-c ci</code> and it runs to completion with
 coverage.</p>
 </div>
-<p>The traceability check runs collection only, no tests, and prints the functions and rule ids that
-no test names. Fix a gap by writing the test, not by editing the check
-(<a href="../../architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/">ADR 049</a>).</p>
+<p>The trace tool is a local aid, not a gate: <code>uv run aurelius-atlas-trace check</code> runs collection
+only, no tests, and prints the functions and rule ids that no test names. CI proves behaviour by
+running the suites (<a href="../../architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">ADR 056</a>);
+if you use the check and it finds a gap, fix it by writing the test, not by editing the check.</p>
 <h2 id="writing-tests">Writing tests<a class="headerlink" href="#writing-tests" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Python</strong>: test files <code>test__*.py</code> under <code>tests/</code>, functions <code>test__&lt;function_name&gt;_&lt;scenario&gt;</code>.
@@ -7625,23 +7654,24 @@ no test names. Fix a gap by writing the test, not by editing the check
 </ul>
 <h3 id="naming-what-a-test-proves">Naming what a test proves<a class="headerlink" href="#naming-what-a-test-proves" title="Permanent link">&para;</a></h3>
 <p><code>@pytest.mark.covers("&lt;dotted.path&gt;", rules=["ENT-07"])</code> names the function under test and the
-specification rules it checks. CI fails on gaps; <code>uv run aurelius-atlas-trace check</code> shows them
-locally first.</p>
+specification rules it checks. It is a review convention
+(<a href="../../architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">ADR 056</a>):
+the marker points a reviewer from a rule id to the test that proves it.</p>
 <ul>
-<li><strong>Every new public function gets a test that names it</strong> — the trace check enforces it, so writing
-  the test is not optional bookkeeping.</li>
+<li><strong>Every new public function gets a test that names it</strong> — the test is the proof of behaviour;
+  the marker is how a reviewer finds it.</li>
 <li>Every rule id in an increment's spec gets a test that names it the same way.</li>
 </ul>
 <h2 id="flaky-tests">Flaky tests<a class="headerlink" href="#flaky-tests" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Record the recurring failure pattern from CI (the test report keeps the evidence per change).</li>
+<li>Record the recurring failure pattern from CI (the job logs keep the evidence per change).</li>
 <li>Find the root cause — timing, isolation, shared environment — before any retry is considered.</li>
 <li>Fix the test or the product; do not skip. A test that cannot be made deterministic is removed
    with a note naming why, not annotated away.</li>
 </ol>
 <div class="admonition important">
 <p class="admonition-title">Flaky tests are fixed, never skipped</p>
-<p>A skipped test silently deletes the evidence the gate is made of: the test report reads as
+<p>A skipped test silently deletes the evidence the gate is made of: the run reads as
 green while the behaviour it stood for goes unproven. Retrying a flaky test hides its root
 cause — timing, isolation, shared environment — which is the bug worth fixing.</p>
 </div>

@@ -1,7 +1,7 @@
 # 049\. Every function and every specified rule is traceable to a test, and the trace is published
 
-- **Status:** Accepted
-- **Date:** 2026-10-09
+- **Status:** Superseded by [056](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)
+- **Date:** 2026-10-24
 - **Deciders:** Aurelius Enterprise
 
 Every public function and every specified rule must be named by a test, and the pipeline refuses a change that leaves either uncovered. Each change publishes one report showing, per rule and per function, which tests cover it and whether they passed.

@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/055-the-lineage-chain-is-a-named-data-surface/">
+        <link rel="prev" href="../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">
       
       
         <link rel="next" href="./design-log/">
@@ -2117,6 +2117,8 @@
       
         
       
+        
+      
     
     
     
@@ -3673,6 +3675,33 @@
     
   
   055. The lineage chain is a named data surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  056. Behaviour is proven by executed tests
 
     
   </span>
@@ -7556,7 +7585,6 @@ checks a PR must pass:</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> Parity scenarios for the endpoints in scope pass, each citing its Atlas source (ADR 052)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <code>nx affected -t lint typecheck test e2e -c ci</code> is green and the coverage gate holds</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> Design log, Java map and deviations updated; ADR written if a business-level decision was made</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> The test report shows the increment's rules and endpoints as green</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> Conventional-commit title and two human approvals</li>
 </ul>
 <h2 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h2>
@@ -7589,9 +7617,9 @@ checks a PR must pass:</p>
 <tr>
 <td>0.3</td>
 <td>Test report and traceability</td>
-<td><code>covers</code> marker, function-to-test checker, HTML test report in CI</td>
+<td><code>covers</code> marker, function-to-test checker, HTML test report (local tools; CI gates dropped, DD-215)</td>
 <td>–</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>0.4</td>

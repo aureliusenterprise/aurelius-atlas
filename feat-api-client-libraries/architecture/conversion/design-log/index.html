@@ -2117,6 +2117,8 @@
       
         
       
+        
+      
     
     
     
@@ -3673,6 +3675,33 @@
     
   
   055. The lineage chain is a named data surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  056. Behaviour is proven by executed tests
 
     
   </span>
@@ -5837,6 +5866,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         DD-214 — The test suite review of 2026-10-24 scopes the hardening increments
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-215-the-ci-pipeline-drops-the-traceability-check-and-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-215 — The CI pipeline drops the traceability check and report
       </span>
     </span>
   </a>
@@ -11396,6 +11436,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-215-the-ci-pipeline-drops-the-traceability-check-and-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-215 — The CI pipeline drops the traceability check and report
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12639,6 +12690,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments">DD-214</a></td>
 <td>The test suite review of 2026-10-24 scopes the hardening increments</td>
+<td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-215--the-ci-pipeline-drops-the-traceability-check-and-report">DD-215</a></td>
+<td>The CI pipeline drops the traceability check and report; the tools stay as local aids</td>
 <td>cross-cutting</td>
 <td>Accepted</td>
 </tr>
@@ -18037,6 +18094,45 @@ already-specified behaviour would fork the ledger. The fastapi-example, <code>sd
 aws/msal/logger, aurelius-atlas-example, and the dashboard are exempted from
 hardening (matching the trace check's <code>exclude-projects</code> and DD-017).
 Phase ordering: 8.6 and 8.7 parallel, 7.19 parallel, 9.1 after 8.6 and 7.19.</p>
+<h3 id="dd-215-the-ci-pipeline-drops-the-traceability-check-and-report">DD-215 — The CI pipeline drops the traceability check and report<a class="headerlink" href="#dd-215-the-ci-pipeline-drops-the-traceability-check-and-report" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (rides the CI pipeline; no roadmap row)</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Context.</strong> Increment 0.3 wired <a href="../../../adr/049-every-function-and-rule-is-traceable-to-a-test/">ADR 049</a>
+into the pipeline: the <code>validate</code> job runs <code>aurelius-atlas-trace check</code> (collection only, no test
+runs) and the <code>test</code> job builds an HTML trace report from the JUnit, coverage, and trace files. The
+check proves that a test <em>names</em> a function or rule id; it never runs anything. The desired
+behaviour of every increment is already encoded in its unit tests, which the pipeline runs, so the
+gate restates what the suites prove. Keeping the declarations true across the whole surface —
+TypeScript citations, end-to-end claims, rules whose proof lives in another repo — turned into
+bookkeeping that fails CI without indicating a missing test.</p>
+<p><strong>Decision.</strong> <code>.github/workflows/ci.yaml</code> drops both steps: the <code>validate</code> job no longer runs
+<code>aurelius-atlas-trace check</code>, and the <code>test</code> job no longer runs <code>aurelius-atlas-trace report</code> or
+uploads the <code>test-report</code> artifact. What blocks a merge is a failing test. The trace lib, the
+<code>covers</code> marker, and the <code>--trace-json</code> plumbing stay in the repo as local tools and a code-review
+convention — <code>nx test</code>/<code>nx e2e</code> keep writing the files, and anyone can run <code>check</code> or <code>report</code>
+themselves. Coverage enforcement is unchanged: the SonarQube quality gate
+(<a href="#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments">DD-214</a>). Parity
+scenarios keep their citation discipline (<a href="../../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">ADR 052</a>)
+and the parity lib keeps its own checks — that is how expected behaviour is justified, not a
+trace gate. The business-level decision is
+<a href="../../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">ADR 056</a>, which
+supersedes ADR 049; <a href="#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run">DD-009</a>,
+<a href="#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on">DD-010</a>, and
+<a href="#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files">DD-011</a> describe the
+tools, which remain, so they stand as written.</p>
+<p><strong>Alternatives.</strong> (a) Widen the gate to prove the gaps away (TypeScript citations, end-to-end
+markers, seams for cross-repo rules) — refused: more mechanism proving declarations, no executed
+behaviour. (b) Keep the check as a non-blocking warning — refused: an unenforced gate is
+documentation nobody reads, and the noise stays. (c) Delete the trace lib as a slice now —
+refused: the marker is a useful review pointer and removing it would rewrite every test's
+metadata for no gain; it is removable later as one slice.</p>
+<p><strong>Consequences.</strong> The pipeline is smaller and says only what it can prove. The per-change
+published trace report is gone; reviewers read the tests and the coverage report. Increment specs
+that list <code>aurelius-atlas-trace check</code> in their "gates" describe the verification the increment
+was accepted with — they are dated records, not promises about current CI, and are not edited.</p>
 
 
 

@@ -2117,6 +2117,8 @@
       
         
       
+        
+      
     
     
     
@@ -3673,6 +3675,33 @@
     
   
   055. The lineage chain is a named data surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  056. Behaviour is proven by executed tests
 
     
   </span>
@@ -7673,8 +7702,8 @@ Definition of Done in the <a href="../../../conversion/">conversion roadmap</a>.
 <td>REST behaviour equals Apache Atlas 2.4.0 — expectations read from its source and its own tests, each citing where (ADR 052)</td>
 </tr>
 <tr>
-<td>Traceability</td>
-<td>Every public function and every specified rule id is named by a test (<a href="../../../adr/049-every-function-and-rule-is-traceable-to-a-test/">ADR 049</a>)</td>
+<td>Naming convention</td>
+<td>Every public function and every specified rule id is named by a test marker, as a review pointer — not a gate (<a href="../../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">ADR 056</a>)</td>
 </tr>
 <tr>
 <td>E2E (backend)</td>
@@ -7719,18 +7748,16 @@ that ships: the built image against real services over TLS
 it. The stages, in the order they run:</p>
 <ol>
 <li><strong>Quality</strong> — formatting, linting, markdown, secret scanning.</li>
-<li><strong>Traceability</strong> — every function and rule named by a test, from collected markers, no run.</li>
 <li><strong>Test + E2E</strong> — the affected projects, secrets decrypted first, images built, real services
-   started.</li>
-<li><strong>Evidence</strong> — one report page per change with results, coverage, and the rule/function trace
-   (<a href="../../../adr/049-every-function-and-rule-is-traceable-to-a-test/">ADR 049</a>).</li>
+   started. The executed results are the evidence: a change merges when its tests pass
+   (<a href="../../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">ADR 056</a>).</li>
 <li><strong>Artifact + inventory + scan</strong> — the image, its contents inventory
    (<a href="../../../adr/033-shipped-artifacts-carry-a-contents-inventory/">ADR 033</a>), a vulnerability
    scan.</li>
 <li><strong>Analysis</strong> — code quality and security of the affected projects.</li>
 </ol>
-<p>Merge requires all affected stages green; the evidence report is what reviewers read. The
-pipeline definition is in the repository's CI configuration.</p>
+<p>Merge requires all affected stages green; the test results and coverage are what reviewers read.
+The pipeline definition is in the repository's CI configuration.</p>
 <p>Coverage is measured in every <code>-c ci</code> test run and uploaded to the analysis stage:
 SonarQube receives each project's <code>coverage.xml</code> / <code>lcov.info</code>, and its <strong>quality gate is the
 coverage gate</strong> — there is deliberately no second coverage flag in the pipeline.
@@ -7789,7 +7816,7 @@ timing, isolation, shared environment — which is the bug worth fixing.</p>
 <li>Coverage baselines and the hardening plan: <a href=".././testing-review/">Test Suite Review</a></li>
 <li>Gates and evidence: <a href="../../../adr/014-the-gate-is-defined-once-and-runs-everywhere/">ADR 014</a>,
   <a href="../../../adr/015-a-change-answers-for-what-it-caused/">ADR 015</a>,
-  <a href="../../../adr/049-every-function-and-rule-is-traceable-to-a-test/">ADR 049</a></li>
+  <a href="../../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/">ADR 056</a></li>
 <li>Realism: <a href="../../../adr/010-the-unit-validated-is-the-unit-that-ships/">ADR 010</a>,
   <a href="../../../adr/012-validation-runs-against-real-services/">ADR 012</a></li>
 <li>Parity method: <a href="../../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/">ADR 052</a>,

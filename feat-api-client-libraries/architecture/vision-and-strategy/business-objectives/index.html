@@ -2117,6 +2117,8 @@
       
         
       
+        
+      
     
     
     
@@ -3673,6 +3675,33 @@
     
   
   055. The lineage chain is a named data surface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  056. Behaviour is proven by executed tests
 
     
   </span>
@@ -7492,12 +7521,12 @@ measured.</p>
 <tr>
 <td>Confidence in every delivery</td>
 <td>Every increment is specified before built, proven before accepted (ADR 051, ADR 052)</td>
-<td>Definition of Done in the <a href="../../conversion/">roadmap</a>; green test report per change</td>
+<td>Definition of Done in the <a href="../../conversion/">roadmap</a>; green tests per change</td>
 </tr>
 <tr>
 <td>Quality you can audit</td>
-<td>Every public function and rule named by a test (ADR 049)</td>
-<td>The traceability check in CI; the per-change HTML report</td>
+<td>Behaviour lives in executed tests; every rule and function is named by one (ADR 056)</td>
+<td>The CI suites: unit, parity scenarios, end-to-end; the SonarQube coverage gate</td>
 </tr>
 <tr>
 <td>Fast, dependable development</td>

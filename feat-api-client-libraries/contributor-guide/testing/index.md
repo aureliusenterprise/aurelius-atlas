@@ -10,7 +10,6 @@ The same checks CI runs, available before you push:
 npx nx test <project> -c ci
 npx nx e2e <project> -c ci
 npx nx affected -t test e2e -c ci
-uv run aurelius-atlas-trace check
 ```
 
 Always `-c ci` for test targets — the default is watch mode, which never exits.
@@ -21,7 +20,7 @@ Always `-c ci` for test targets — the default is watch mode, which never exits
 >
 > A bare `nx test <project>` starts Vitest in watch mode, keeps the process running, and blocks every later step that waits for it. The symptom — a "hung" build that is really an idle watcher — is expected, not a broken setup: add `-c ci` and it runs to completion with coverage.
 
-The traceability check runs collection only, no tests, and prints the functions and rule ids that no test names. Fix a gap by writing the test, not by editing the check ([ADR 049](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>)).
+The trace tool is a local aid, not a gate: `uv run aurelius-atlas-trace check` runs collection only, no tests, and prints the functions and rule ids that no test names. CI proves behaviour by running the suites ([ADR 056](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)); if you use the check and it finds a gap, fix it by writing the test, not by editing the check.
 
 ## Writing tests
 
@@ -31,14 +30,14 @@ The traceability check runs collection only, no tests, and prints the functions 
 
 ### Naming what a test proves
 
-`@pytest.mark.covers("<dotted.path>", rules=["ENT-07"])` names the function under test and the specification rules it checks. CI fails on gaps; `uv run aurelius-atlas-trace check` shows them locally first.
+`@pytest.mark.covers("<dotted.path>", rules=["ENT-07"])` names the function under test and the specification rules it checks. It is a review convention ([ADR 056](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)): the marker points a reviewer from a rule id to the test that proves it.
 
-- **Every new public function gets a test that names it** — the trace check enforces it, so writing the test is not optional bookkeeping.
+- **Every new public function gets a test that names it** — the test is the proof of behaviour; the marker is how a reviewer finds it.
 - Every rule id in an increment's spec gets a test that names it the same way.
 
 ## Flaky tests
 
-1. Record the recurring failure pattern from CI (the test report keeps the evidence per change).
+1. Record the recurring failure pattern from CI (the job logs keep the evidence per change).
 2. Find the root cause — timing, isolation, shared environment — before any retry is considered.
 3. Fix the test or the product; do not skip. A test that cannot be made deterministic is removed with a note naming why, not annotated away.
 
@@ -46,7 +45,7 @@ The traceability check runs collection only, no tests, and prints the functions 
 >
 > **Flaky tests are fixed, never skipped**
 >
-> A skipped test silently deletes the evidence the gate is made of: the test report reads as green while the behaviour it stood for goes unproven. Retrying a flaky test hides its root cause — timing, isolation, shared environment — which is the bug worth fixing.
+> A skipped test silently deletes the evidence the gate is made of: the run reads as green while the behaviour it stood for goes unproven. Retrying a flaky test hides its root cause — timing, isolation, shared environment — which is the bug worth fixing.
 
 ## Pointers
 

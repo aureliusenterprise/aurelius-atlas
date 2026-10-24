@@ -256,6 +256,9 @@
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/055-the-lineage-chain-is-a-named-data-surface/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/template/</loc>
       </url>
       <url>
