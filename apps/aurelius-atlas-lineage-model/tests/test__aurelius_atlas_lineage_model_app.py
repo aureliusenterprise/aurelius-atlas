@@ -7,32 +7,41 @@ pybreaker's own management API (``half_open()``), not by sleeping.
 
 from collections.abc import Callable
 from typing import Any
+from uuid import UUID
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_lineage_model.app import create_app
-from aurelius_atlas_lineage_model.globals import FAST_FAIL_ATLAS
+from aurelius_atlas_lineage_model.globals import FAST_FAIL_ATLAS, FAST_FAIL_D2M, UPSTREAM_TIMEOUT_SECONDS
 from aurelius_atlas_server_client.client import AtlasClient
 from fake_upstream import FakeUpstream
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
+
+# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-27).
+E_IN = UUID("00000000-0000-4000-8000-000000000001")
+P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
+E_OUT = UUID("00000000-0000-4000-8000-000000000003")
 
 # The lineage body: a dataset feeding a process feeding a dataset (LM-02 fixture).
 LINEAGE: dict[str, Any] = {
     "guidEntityMap": {
-        "e-in": {"guid": "e-in", "typeName": "kafka_topic", "displayText": "Ingest Topic"},
-        "p-load": {"guid": "p-load", "typeName": "m4i_generic_process", "displayText": "Load Job"},
-        "e-out": {"guid": "e-out", "typeName": "hive_table", "displayText": "Sales Table"},
+        str(E_IN): {"guid": str(E_IN), "typeName": "kafka_topic", "displayText": "Ingest Topic"},
+        str(P_LOAD): {"guid": str(P_LOAD), "typeName": "m4i_generic_process", "displayText": "Load Job"},
+        str(E_OUT): {"guid": str(E_OUT), "typeName": "hive_table", "displayText": "Sales Table"},
     },
     "relations": [
-        {"fromEntityId": "e-in", "relationshipId": "rel-1", "toEntityId": "p-load"},
-        {"fromEntityId": "p-load", "relationshipId": "rel-2", "toEntityId": "e-out"},
+        {"fromEntityId": str(E_IN), "relationshipId": "rel-1", "toEntityId": str(P_LOAD)},
+        {"fromEntityId": str(P_LOAD), "relationshipId": "rel-2", "toEntityId": str(E_OUT)},
     ],
 }
 
 # The data2model answer: the browser's document, returned verbatim (LM-01).
-EXTRACTED: dict[str, Any] = {"model": '{"ar3_model": {"@identifier": "x"}}', "metadata": [{"id": "e-in", "data": {}}]}
+EXTRACTED: dict[str, Any] = {
+    "model": '{"ar3_model": {"@identifier": "x"}}',
+    "metadata": [{"id": str(E_IN), "data": {}}],
+}
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -44,7 +53,7 @@ def _happy_upstream(upstream: FakeUpstream) -> None:
     """Set the handler: the fetch answers the lineage, the extract answers the model body."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/v2/lineage/e-in":
+        if request.url.path == f"/v2/lineage/{E_IN}":
             return upstream.json(200, LINEAGE)
         return upstream.json(200, EXTRACTED)
 
@@ -69,7 +78,7 @@ def _breaker_app(settings: Any, auth: Any, upstream: FakeUpstream, **overrides: 
 async def _ask(app: FastAPI, token_value: str, times: int) -> list[httpx.Response]:
     """Ask the lineage route ``times`` times, answering every response."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://lineage-model") as http:
-        return [await http.get("/", params={"guid": "e-in"}, headers=_bearer(token_value)) for _ in range(times)]
+        return [await http.get("/", params={"guid": str(E_IN)}, headers=_bearer(token_value)) for _ in range(times)]
 
 
 @pytest.mark.covers(
@@ -85,7 +94,7 @@ async def test__the_extract_body_is_returned_verbatim(
     """200 application/json with the data2model body, byte for byte (the screen's document)."""
     _happy_upstream(upstream)
 
-    response = await client.get("/", params={"guid": "e-in"}, headers=_bearer(token()))
+    response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/json")
@@ -98,7 +107,7 @@ async def test__a_missing_token_is_rejected(client: httpx.AsyncClient, upstream:
     """No bearer credential is a 401; no upstream call is made (AUX-05)."""
     _happy_upstream(upstream)
 
-    response = await client.get("/", params={"guid": "e-in"})
+    response = await client.get("/", params={"guid": str(E_IN)})
 
     assert response.status_code == 401
     assert upstream.requests == []
@@ -114,7 +123,7 @@ async def test__a_token_minted_for_another_audience_is_rejected(
     _happy_upstream(upstream)
 
     forged = token(azp="some-other-client", audience="some-other-client")
-    response = await client.get("/", params={"guid": "e-in"}, headers=_bearer(forged))
+    response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(forged))
 
     assert response.status_code == 401
     assert upstream.requests == []
@@ -179,10 +188,10 @@ async def test__the_app_closes_the_pools_it_built(
         AsyncClient(transport=ASGITransport(app=app), base_url="http://lineage-model") as http,
         app.router.lifespan_context(app),  # start and stop: the pools open and close
     ):
-        response = await http.get("/", params={"guid": "e-in"}, headers=_bearer(token()))
+        response = await http.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
         assert response.status_code == 200
 
-    assert [request.url.path for request in upstream.requests] == ["/v2/lineage/e-in", "/extract"]
+    assert [request.url.path for request in upstream.requests] == [f"/v2/lineage/{E_IN}", "/extract"]
     assert len(built) == 2
     assert all(pool.is_closed for pool in built)  # the app built them, the app closed them
 
@@ -191,7 +200,7 @@ def _statuses(upstream: FakeUpstream, atlas: list[int]) -> None:
     """Answer the lineage feed from ``atlas`` in order, the extract happily (the trip tests)."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/v2/lineage/e-in":
+        if request.url.path == f"/v2/lineage/{E_IN}":
             return httpx.Response(atlas.pop(0))
         return upstream.json(200, EXTRACTED)
 
@@ -339,4 +348,135 @@ async def test__the_half_open_trial_reopens_the_circuit_on_failure(
     answers = await _ask(app, token(), 1)
 
     assert [answer.status_code for answer in answers] == [502]
+    assert app.state.atlas_breaker.current_state == "open"
+
+
+# ---------------------------------------------------------------------------
+# LM-07 (DV-22) — a transport failure is the app's 502, not a crash
+# ---------------------------------------------------------------------------
+
+
+def _refusing_upstream(upstream: FakeUpstream, path: str) -> None:
+    """Answer every request to ``path`` with a refused connection, the rest as the happy chain (LM-07)."""
+    refused = "connection refused"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == path:
+            raise httpx.ConnectError(refused, request=request)
+        if request.url.path == f"/v2/lineage/{E_IN}":
+            return upstream.json(200, LINEAGE)
+        return upstream.json(200, EXTRACTED)
+
+    upstream.handler = handler
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-07"])
+async def test__an_unreachable_atlas_is_a_502_not_a_crash(
+    client: httpx.AsyncClient,
+    token: Callable[..., str],
+    upstream: FakeUpstream,
+) -> None:
+    """The fetch's transport failure (connect refused) is the handler's 502 Atlas body (LM-07, DV-22)."""
+    _refusing_upstream(upstream, f"/v2/lineage/{E_IN}")
+
+    response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
+
+    assert response.status_code == 502
+    assert response.json()["errorMessage"] == "the lineage service is unreachable"
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-07"])
+async def test__an_unreachable_extract_is_a_502(
+    client: httpx.AsyncClient,
+    token: Callable[..., str],
+    upstream: FakeUpstream,
+) -> None:
+    """The extract leg's transport failure rides the same handler: 502, the fetch succeeded (LM-07, DV-22)."""
+    _refusing_upstream(upstream, "/extract")
+
+    response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
+
+    assert response.status_code == 502
+    assert response.json()["errorMessage"] == "the lineage service is unreachable"
+    assert upstream.of(f"/v2/lineage/{E_IN}")  # the chain reached the extract leg
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-07"])
+async def test__a_hanging_upstream_times_out_to_a_502(
+    client: httpx.AsyncClient,
+    token: Callable[..., str],
+    upstream: FakeUpstream,
+) -> None:
+    """A call that outlives UPSTREAM_TIMEOUT_SECONDS is a read timeout: a 502, never a hang (LM-07, LM-10).
+
+    The MockTransport does not enforce the pool's timeout, so the handler raises
+    what the bound raises at a real socket: the app's contract is the answer
+    (502, DV-22), the bound's firing is httpx's tested behaviour.
+    """
+    timed_out = f"timed out after {UPSTREAM_TIMEOUT_SECONDS}s"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout(timed_out, request=request)
+
+    upstream.handler = handler
+
+    response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
+
+    assert response.status_code == 502
+    assert response.json()["errorMessage"] == "the lineage service is unreachable"
+
+
+# ---------------------------------------------------------------------------
+# LM-12 / LM-13 — the extract side fast-fails; transport failures are outages
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-12"])
+async def test__a_dead_extract_circuit_fast_fails_without_calling(
+    settings: Any,  # noqa: ANN401  # the fixture's settings object
+    auth: Any,  # noqa: ANN401  # the fixture's verifier
+    token: Callable[..., str],
+    upstream: FakeUpstream,
+) -> None:
+    """The open data2model circuit answers 502 FAST_FAIL_D2M with zero extract calls — the LM-12 mirror (LM-12)."""
+    app = _breaker_app(settings, auth, upstream, breaker_fail_max=1)
+
+    def tripping(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/extract":
+            return httpx.Response(500)  # the extract outage: counted, trips its breaker (LM-13)
+        return upstream.json(200, LINEAGE)
+
+    upstream.handler = tripping
+    await _ask(app, token(), 1)  # the trip
+    assert app.state.d2m_breaker.current_state == "open"
+    assert app.state.atlas_breaker.current_state == "closed"  # the fetch side is healthy (LM-11)
+
+    upstream.requests.clear()
+    answers = await _ask(app, token(), 3)
+
+    assert [answer.status_code for answer in answers] == [502, 502, 502]
+    assert answers[0].json()["errorMessage"] == FAST_FAIL_D2M
+    assert upstream.of("/extract") == []  # the fast-fail: no extract call, no pool, no timeout
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-13"])
+async def test__transport_failures_open_the_circuit(
+    settings: Any,  # noqa: ANN401  # the fixture's settings object
+    auth: Any,  # noqa: ANN401  # the fixture's verifier
+    token: Callable[..., str],
+    upstream: FakeUpstream,
+) -> None:
+    """Connect refused counts as an outage like a 5xx: two of them (fail_max=2) open the circuit (LM-13)."""
+    app = _breaker_app(settings, auth, upstream, breaker_fail_max=2)
+
+    refused = "connection refused"
+
+    def refusing(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError(refused, request=request)
+
+    upstream.handler = refusing
+
+    answers = await _ask(app, token(), 2)
+
+    assert [answer.status_code for answer in answers] == [502, 502]
     assert app.state.atlas_breaker.current_state == "open"

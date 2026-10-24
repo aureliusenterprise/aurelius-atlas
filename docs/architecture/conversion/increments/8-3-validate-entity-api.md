@@ -102,8 +102,8 @@ parity scenario a whole-body comparison with no volatile fields.
 
 ## Test list
 
-- Unit: `apps/aurelius-atlas-validate-entity/tests/test__app.py` (VE-01/02/
-  03/04 wiring on the fake issuer, the mock document verbatim),
+- Unit: `apps/aurelius-atlas-validate-entity/tests/test__aurelius_atlas_validate_entity_app.py`
+  (VE-01/02/03/04 wiring on the fake issuer, the mock document verbatim),
   `test__aurelius_atlas_validate_entity_settings.py` (VE-05),
   `test__aurelius_atlas_validate_entity_providers_auth.py`/
   `test__…_providers_telemetry.py`/`test__…_routes.py` (the DD-120 providers and

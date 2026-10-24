@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_validate_entity.app import create_app
 from aurelius_atlas_validate_entity.mock import MOCK_VALIDATION
@@ -96,6 +96,44 @@ async def test__liveness_needs_no_token(client: httpx.AsyncClient) -> None:
     response = await client.get("/liveness")
 
     assert response.status_code == 204
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-01"])
+async def test__a_megabyte_body_still_answers_the_mock(client: httpx.AsyncClient, token: Callable[..., str]) -> None:
+    """The body is never read, so its size is not a constraint: a megabyte answers the mock (VE-01, DV-14)."""
+    huge = b"[" + b'{"attribute": "x"},' * 30_000 + b"{}]"
+
+    response = await client.post(
+        "/",
+        content=huge,
+        headers={**_bearer(token()), "content-type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == MOCK_VALIDATION
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-01"])
+async def test__a_body_without_a_content_type_still_answers_the_mock(
+    client: httpx.AsyncClient, token: Callable[..., str]
+) -> None:
+    """A POST with no content-type answers the mock: the route reads no body, so the header is irrelevant (VE-01)."""
+    response = await client.post("/", content=b"raw bytes, no declared type", headers=_bearer(token()))
+
+    assert response.status_code == 200
+    assert response.json() == MOCK_VALIDATION
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app")
+async def test__the_mock_route_is_post_only(client: httpx.AsyncClient, token: Callable[..., str]) -> None:
+    """A GET on the mock route is a 405: the legacy endpoint is POST-only (DV-14).
+
+    No rule states it — the framework does; the test names the route for ADR 049.
+    """
+    response = await client.get("/", headers=_bearer(token()))
+
+    assert response.status_code == 405
+    assert response.headers["allow"] == "POST"
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-05"])

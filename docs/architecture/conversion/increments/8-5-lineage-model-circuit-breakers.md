@@ -80,10 +80,16 @@ per upstream; the `pybreaker` `calling()` generator seam is the async-safe
 form (the lib's `call_async` is tornado-only and fails on this Python); the
 exclude predicate counts 4xx as facts.
 
+DV-27 (`deviations.md`, DD-124 — rides this branch, not this spec's breakers):
+the lineage chain's `guid` is a `UUID` on every typed surface; a non-UUID guid
+is LM-07's `400` before any upstream call, so a malformed guid never reaches
+the guarded fetch.
+
 ## Acceptance
 
 - Unit (the 8.2 app suite, fake upstream + recording transport):
-  `tests/test__app.py` — `test__the_app_carries_one_breaker_per_upstream`
+  `tests/test__aurelius_atlas_lineage_model_app.py` —
+  `test__the_app_carries_one_breaker_per_upstream`
   (LM-11, LM-15), `test__the_upstream_outages_open_the_circuit` (LM-11, LM-13),
   `test__an_open_circuit_answers_without_calling_the_upstream` (LM-12),
   `test__a_dead_atlas_circuit_leaves_the_extract_circuit_closed` (LM-11, LM-12),

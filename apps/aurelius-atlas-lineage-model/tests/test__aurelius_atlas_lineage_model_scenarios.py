@@ -11,14 +11,18 @@ import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
 from fake_upstream import FakeUpstream
 
 SCENARIOS = Path(__file__).parents[1] / "scenarios"
 FIXTURES = SCENARIOS / "fixtures"
+
+E_IN = UUID("00000000-0000-4000-8000-000000000001")
+"""The fixture graph's root entity: the fixed UUID of 8.2's fixtures (DV-27)."""
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -33,7 +37,7 @@ def scenario_upstream(upstream: FakeUpstream) -> FakeUpstream:
     extract: dict[str, Any] = json.loads((FIXTURES / "graph.extract.json").read_text())
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/v2/lineage/e-in":
+        if request.url.path == f"/v2/lineage/{E_IN}":
             return FakeUpstream.json(200, lineage)
         if request.url.path == "/extract":
             return FakeUpstream.json(200, extract)

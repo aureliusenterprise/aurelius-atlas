@@ -6,7 +6,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_auth import KeycloakAuth
 from aurelius_atlas_data2model.app import create_app

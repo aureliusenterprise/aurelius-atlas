@@ -105,7 +105,7 @@ as data, not as the enum machinery.
 ## Test list
 
 - Unit: `apps/aurelius-atlas-data2model/tests/test__extract.py` (the DTM
-  rules), `test__app.py` (settings/liveness wiring),
+  rules), `test__aurelius_atlas_data2model_app.py` (settings/liveness wiring),
   `test__…_providers_auth.py`/`test__…_providers_telemetry.py`/`test__…_routes.py`
   (the DD-120 providers and route factories, on the fake issuer).
 - Scenario (parity, read from Aurelius source — ADR 052 applied to the

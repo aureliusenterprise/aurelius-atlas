@@ -1,14 +1,9 @@
-"""Parity scenarios: the editor's contract, read from the Aurelius source (ADR 052, ADR 055).
-
-The mock answers a constant, so a scenario is a whole-body comparison: the
-caller's entity payload in, the legacy's ``output`` dict out, byte equality,
-with no volatile fields and no upstream to stub (DV-14).
-"""
+"""Parity scenarios: the lineage caller's payload, read from the Aurelius source (ADR 052, ADR 055)."""
 
 from collections.abc import Callable
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
 
@@ -22,7 +17,7 @@ def _bearer(token: str) -> dict[str, str]:
 
 @pytest.fixture
 def authorized_client(client: httpx.AsyncClient, token: Callable[..., str]) -> httpx.AsyncClient:
-    """The in-process client with a bearer token, as the editor's caller sends it."""
+    """The in-process client, carrying a bearer token minted for this app (the scenarios call /extract)."""
     client.headers.update(_bearer(token()))
     return client
 
