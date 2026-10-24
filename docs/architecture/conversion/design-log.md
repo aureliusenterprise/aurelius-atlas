@@ -2014,12 +2014,13 @@ the rules of SRC-05 state; Atlas's order without a sort is the index's and has n
 - **Increment:** 4.1
 - **Date:** 2026-10-24
 
-**Decision.** A search naming classification types reads the instances of those types from the classification
-index, keeps those that match the tag filters, evaluated with the search query's predicates over their
-attribute values, and adds to the entity query that the entity lists one of them (`classificationGuids`,
-attached or propagated). `_NOT_CLASSIFIED` and any classification test whether the entity lists none or some.
-The entity documents gain the pipe-separated classification names Atlas keeps on an entity vertex, computed
-when it is written from the instances it lists.
+**Decision.** The entity documents gain what Atlas keeps on an entity vertex of its classifications, computed
+when an entity is written from the instances it lists: `__traitNames` and `__propagatedTraitNames`, the type
+names of those attached and propagated, `__classificationNames` and `__propagatedClassificationNames` as
+`|a|b|`, and the GUIDs of the instances. A search naming classifications without tag filters tests the type
+names, as Atlas's `buildTraitPredict` does; with tag filters it reads the instances of the types named from
+the classification index, keeps those that match, evaluated with the search query's predicates over their
+attribute values, and adds to the entity query that the entity lists one of them.
 
 **Reason.** An entity already lists every classification it carries, propagated ones included (DD-070,
 DD-075), and tag filters are what classification instances are searched by; no mapping of classification
