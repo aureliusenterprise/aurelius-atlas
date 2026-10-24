@@ -26,7 +26,7 @@ from aurelius_atlas_core.entity_documents import (
     WriteResult,
 )
 from aurelius_atlas_core.search_fields import search_fields
-from aurelius_atlas_core.search_query import SearchQuery
+from aurelius_atlas_core.search_query import SearchHits, SearchQuery
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
@@ -206,8 +206,8 @@ class EntityStore:
         """The classification instances of these types, or of every type for None (DD-090)."""
         return await self._documents.classifications_of_types(type_names)
 
-    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
-        """The entities of a search query's page, and how many match it in all (DD-089)."""
+    async def search(self, query: SearchQuery) -> SearchHits:
+        """The entities of a search query's page, how many match it in all, and their scores (DD-089)."""
         return await self._documents.search(query)
 
     async def get_tasks(self, guids: Sequence[str]) -> dict[str, tuple[StoredTask, DocumentVersion]]:

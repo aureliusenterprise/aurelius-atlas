@@ -1,7 +1,7 @@
 """``ElasticsearchEntityDocuments`` (ENS-01, ENS-04, ENS-05, ENS-07, ENS-08, ENS-09) on the fake client."""
 
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core import entity_documents
@@ -14,6 +14,7 @@ from aurelius_atlas_core.entity_documents import (
     LinkedWrite,
     Reservation,
 )
+from aurelius_atlas_core.free_text import TextQuery
 from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -344,7 +345,8 @@ async def test__a_search_query_selects_in_elasticsearch_what_it_selects_in_memor
     await documents.write([(item, None) for item in SEARCHED])
     query = SearchQuery(type_names=frozenset({"table"}), filter=criterion)
 
-    found, total = await documents.search(query)
+    hits = await documents.search(query)
+    found, total = hits.entities, hits.total
 
     expected = [
         item.guid
@@ -361,15 +363,55 @@ async def test__a_search_sorts_pages_counts_and_keeps_to_active_entities(
     """By a field descending, missing last; by creation without; a page of it with the total; all types."""
     await documents.write([(item, None) for item in SEARCHED])
 
-    by_name, _ = await documents.search(SearchQuery(type_names=None, sort_field="keyword.t.name", descending=True))
-    by_creation, _ = await documents.search(SearchQuery(type_names=frozenset({"table"})))
-    page, total = await documents.search(SearchQuery(type_names=None, offset=1, size=2, active_only=True))
+    by_name = (
+        await documents.search(SearchQuery(type_names=None, sort_field="keyword.t.name", descending=True))
+    ).entities
+    by_creation = (await documents.search(SearchQuery(type_names=frozenset({"table"})))).entities
+    paged = await documents.search(SearchQuery(type_names=None, offset=1, size=2, active_only=True))
+    page, total = paged.entities, paged.total
     await documents.prepare()
 
     assert [item.guid for item in by_name] == ["a", "b", "c", "d"]
     assert [item.guid for item in by_creation] == ["c", "b", "a"]
     assert ([item.guid for item in page], total) == (["a"], 2)
     assert "t-entities" in fake.settings_updates
+
+
+@pytest.mark.covers(
+    f"{E}.search", "aurelius_atlas_core.testing.memory.MemoryEntityDocuments.search", rules=["FTX-02", "FTX-04"]
+)
+@pytest.mark.parametrize("text", ["alpha", "ALPHA x", "a*", "y view", "nothing"])
+async def test__free_text_scores_in_elasticsearch_as_it_scores_in_memory(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch, text: str
+) -> None:
+    """A ``simple_query_string`` over the boosted text sub-fields finds and ranks what ``text_matches`` does."""
+    requests: list[dict[str, Any]] = []
+    answer = fake.search
+
+    async def recorded(**request: Any) -> dict[str, Any]:  # noqa: ANN401 - Elasticsearch's keyword arguments
+        requests.append(request)
+        return await answer(**request)
+
+    monkeypatch.setattr(fake, "search", recorded)
+    memory = MemoryEntityDocuments()
+    await documents.write([(item, None) for item in SEARCHED])
+    await memory.write([(item, None) for item in SEARCHED])
+    weights = {"keyword.t.name": 5, "keyword.t.tags": 3, "keyword.__typeName": 1}
+    query = SearchQuery(type_names=None, text=TextQuery(text, weights))
+
+    found = await documents.search(query)
+    expected = await memory.search(query)
+    request = requests[-1]["query"]["bool"]["must"][0]["simple_query_string"]
+
+    assert [(item.guid, score) for item, score in zip(found.entities, found.scores, strict=True)] == [
+        (item.guid, score) for item, score in zip(expected.entities, expected.scores, strict=True)
+    ]
+    assert found.total == expected.total
+    assert request["fields"] == [
+        "search.keyword.t.name.text^5",
+        "search.keyword.t.tags.text^3",
+        "search.keyword.__typeName.text^1",
+    ]
 
 
 @pytest.mark.covers(f"{E}.classifications_of_types", rules=["CSR-03"])
