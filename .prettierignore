@@ -1,6 +1,7 @@
 # Add files here to ignore them from prettier formatting
-/dist
+**/dist
 /coverage
+/site
 /.nx/cache
 /.nx/workspace-data
 **/CHANGELOG.md

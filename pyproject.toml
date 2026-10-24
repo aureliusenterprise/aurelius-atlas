@@ -172,7 +172,7 @@ exclude-subpackages = ["testing"]
 specs = "docs/architecture/conversion/increments"
 
 [tool.pyright]
-exclude = [".venv"]
+exclude = [".venv", "site", "coverage", "tmp", "**/dist", "**/target"]
 pythonVersion = "3.14"
 reportUnnecessaryTypeIgnoreComment = "error"
 typeCheckingMode = "standard"

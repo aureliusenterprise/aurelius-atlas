@@ -1,3 +1,15 @@
 !**/.env
 !**/ca/*
 !**/certs/*
+# Generated trees: not project inputs, and they churn on every build/test run.
+# Root-anchored where the same name is vendored in-tree (dashboardv2 site
+# templates are tracked sources, DD-017).
+/site/
+coverage/
+tmp/
+dist/
+target/
+.angular/
+.venv/
+__pycache__/
+*.egg-info/
