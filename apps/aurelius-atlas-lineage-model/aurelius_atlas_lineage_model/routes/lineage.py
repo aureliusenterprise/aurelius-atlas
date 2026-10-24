@@ -9,6 +9,7 @@ LM-07, LM-12) — the root's handlers turn it into the Atlas-shaped answer.
 """
 
 from typing import Annotated
+from uuid import UUID
 
 from aurelius_atlas_auth import KeycloakAuth
 from aurelius_atlas_data2model_client.client import Data2ModelClient, Data2ModelClientError
@@ -47,7 +48,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     @router.get("/", dependencies=[auth.require_auth])
     async def lineage_model(
         request: Request,
-        guid: str,
+        guid: UUID,
         depth: Annotated[int, Query(ge=1)] = DEFAULT_DEPTH,
         direction: Direction = "BOTH",
         token: Annotated[str, auth.require_bearer] = "",
@@ -73,7 +74,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
 
 
 async def _fetch(  # noqa: PLR0913, PLR0917 - the guarded call's own parts: client, breaker, query, token
-    atlas: AtlasClient, breaker: CircuitBreaker, guid: str, depth: int, direction: Direction, token: str
+    atlas: AtlasClient, breaker: CircuitBreaker, guid: UUID, depth: int, direction: Direction, token: str
 ) -> LineageInfo | None:
     """One guarded fetch of the entity's lineage, on the caller's token (LM-04, CL-03).
 

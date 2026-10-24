@@ -4,6 +4,8 @@ The app validates its own query with the same constraints this model states —
 one contract for caller and server, LM-01's shape.
 """
 
+from uuid import UUID
+
 import pytest
 from aurelius_atlas_lineage_model_client.models import (
     DEFAULT_DEPTH,
@@ -14,13 +16,16 @@ from aurelius_atlas_lineage_model_client.models import (
 from aurelius_atlas_server_client.lineage import Direction  # noqa: F401 - the shared vocabulary, CL-12/CL-30
 from pydantic import ValidationError
 
+E_1 = UUID("00000000-0000-4000-8000-000000000001")
+"""A fixed entity guid, the shape every lineage query carries (DV-27)."""
+
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__the_defaults_are_the_endpoints_own() -> None:
     """Guid required, depth 3 at least 1, BOTH by default (LM-01)."""
-    params = LineageModelParams(guid="e-1")
+    params = LineageModelParams(guid=E_1)
 
-    assert (params.guid, params.depth, params.direction) == ("e-1", DEFAULT_DEPTH, "BOTH")
+    assert (params.guid, params.depth, params.direction) == (E_1, DEFAULT_DEPTH, "BOTH")
     assert DEFAULT_DEPTH == 3
     assert MIN_DEPTH == 1
 
@@ -32,27 +37,29 @@ def test__a_missing_guid_is_rejected() -> None:
         LineageModelParams.model_validate({"depth": 2})
     with pytest.raises(ValidationError):
         LineageModelParams.model_validate({"guid": ""})
+    with pytest.raises(ValidationError):
+        LineageModelParams.model_validate({"guid": "e-1"})  # a readable id is no longer a guid (DV-27)
 
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__a_depth_below_one_is_rejected() -> None:
     """``ge=1`` is the contract the app enforces (LM-01)."""
     with pytest.raises(ValidationError):
-        LineageModelParams.model_validate({"guid": "e-1", "depth": 0})
+        LineageModelParams.model_validate({"guid": str(E_1), "depth": 0})
 
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__a_direction_outside_the_vocabulary_is_rejected() -> None:
     """The legacy's ``Enum()`` crash is DV-20's 400 (LM-01)."""
     with pytest.raises(ValidationError):
-        LineageModelParams.model_validate({"guid": "e-1", "direction": "SIDEWAYS"})
+        LineageModelParams.model_validate({"guid": str(E_1), "direction": "SIDEWAYS"})
 
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__an_unknown_query_key_is_rejected() -> None:
     """``extra='forbid'``: the query has exactly the three parameters (LM-01)."""
     with pytest.raises(ValidationError):
-        LineageModelParams.model_validate({"guid": "e-1", "page": 1})
+        LineageModelParams.model_validate({"guid": str(E_1), "page": 1})
 
 
 @pytest.mark.covers(rules=["CL-30"])

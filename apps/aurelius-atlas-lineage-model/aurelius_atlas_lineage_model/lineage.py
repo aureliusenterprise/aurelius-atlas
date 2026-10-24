@@ -31,12 +31,22 @@ __all__ = [
     "flatten_relations",
 ]
 
-PROCESS_TYPES: frozenset[str] = frozenset({"m4i_generic_process"})
+PROCESS_TYPES: frozenset[str] = frozenset(
+    {
+        "m4i_generic_process",
+        "m4i_api_operation_process",
+        "m4i_connector_process",
+        "m4i_ingress_controller_process",
+        "m4i_ingress_object_process",
+        "m4i_kubernetes_service_process",
+        "m4i_microservice_process",
+    }
+)
 """The legacy ``process_types`` list, ported verbatim (LM-03): a lineage endpoint
 whose type name is in this family is a process, every other type an entity."""
 
 
-def _endpoint_slots(prefix: str, header: EntityHeaderLite | None) -> dict[str, str | None]:
+def _endpoint_slots(prefix: str, header: EntityHeaderLite | None) -> dict[str, Any]:
     """The four ``*_entity_*``/``*_process_*`` slots of one relation endpoint (LM-02).
 
     A process fills its ``*_process_*`` slots and nulls its ``*_entity_*`` ones;

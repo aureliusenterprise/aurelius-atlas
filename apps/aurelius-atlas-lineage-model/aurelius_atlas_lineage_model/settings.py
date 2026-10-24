@@ -19,7 +19,7 @@ DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS = 60.0
 """Seconds an open circuit stays open before its half-open trial; the auth library's default."""
 
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
-"""Levels both logfire and uvicorn know."""
+"""Levels both uvicorn and the OTel console accept."""
 
 TLS_PAIR_ERROR = (
     f"{ENV_PREFIX}TLS_CERT_FILE and {ENV_PREFIX}TLS_KEY_FILE must both be set, or both be unset, to configure TLS"
