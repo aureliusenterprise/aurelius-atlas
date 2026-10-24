@@ -122,6 +122,8 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-088](<#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type>) | Entity attributes are searched in typed search fields named after their defining type | 4.1 | Proposed |
 | [DD-089](<#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given>) | A search is a query of the entity documents, ordered by creation when no sort is given | 4.1 | Proposed |
 | [DD-090](<#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them>) | A classification search finds instances first, then the entities listing them | 4.1 | Proposed |
+| [DD-091](<#dd-091-free-text-is-split-from-quick-search>) | Free text is split from quick search | 4.2 | Proposed |
+| [DD-092](<#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights>) | String search fields carry an analysed text sub-field, searched with Atlas's weights | 4.2 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -1390,3 +1392,31 @@ Recovery, at start-up, finds journal entries whose lease has passed. A committed
 **Alternatives.** Search fields on classification documents: the same answers, with a second set of mappings. Classification type names on the entity only: tag filters could not be answered.
 
 **Consequences.** A search reads every instance of the types it names; an entity query names at most 65,536 instances, Elasticsearch's `terms` limit, beyond which the search fails.
+
+### DD-091. Free text is split from quick search
+
+- **Status:** Proposed
+- **Increment:** 4.2
+- **Date:** 2026-10-24
+
+**Decision.** Increment 4.2 is split: 4.2a indexes and searches free text, in basic search's `query` and in `search/fulltext`; 4.2b answers `search/quick` with its facets, and `search/suggestions`.
+
+**Reason.** Quick search and suggestions build on the free text; each part is about one increment.
+
+**Alternatives.** One increment of about twice the size.
+
+**Consequences.** Until 4.2b, the dashboards' quick search box finds nothing.
+
+### DD-092. String search fields carry an analysed text sub-field, searched with Atlas's weights
+
+- **Status:** Proposed
+- **Increment:** 4.2
+- **Date:** 2026-10-24
+
+**Decision.** The dynamic template of `keyword` search fields gives each a `text` sub-field, analysed by Elasticsearch's standard analyser, and keeps values over 8,191 characters out of the keyword. An entity's search fields gain `__classificationsText`. A free-text query is a `simple_query_string` over the text sub-fields of the string attributes of the non-internal entity types and of `__classificationsText`, `__labels`, `__customAttributes` and `__typeName`, each boosted by the weight Atlas's `SolrIndexHelper` gives its Solr field. The in-memory documents match words the same way, without Elasticsearch's scoring.
+
+**Reason.** Atlas's free text is Solr's `edismax` over the same fields with the same weights as `qf`; a sub-field keeps each attribute's weight and its exact `keyword` for the filters of 4.1.
+
+**Alternatives.** One catch-all text field: every attribute would weigh the same, and 4.2b's suggestions could not keep to the fields weighted 8 or more. `query_string`: closer to `edismax`, but a malformed query fails.
+
+**Consequences.** Fields mapped before 4.2a have no text sub-field; an entity index created before needs creating again.

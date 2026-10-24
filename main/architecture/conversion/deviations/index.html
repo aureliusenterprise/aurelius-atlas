@@ -3680,6 +3680,8 @@
       
         
       
+        
+      
     
     
     
@@ -4558,6 +4560,33 @@
     
   
   4.1b Classification search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-2-free-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.2a Free text
 
     
   </span>
@@ -6842,6 +6871,22 @@ Atlas clients expect when it lands).</p>
 <td>Each name is matched on its own</td>
 <td>A pattern names one classification</td>
 <td>4.1</td>
+</tr>
+<tr>
+<td>DV-48</td>
+<td>Search</td>
+<td>A free-text query is read by Solr's <code>edismax</code>: <code>AND</code>, <code>OR</code>, <code>NOT</code> in either case, <code>field:value</code></td>
+<td>It is read as <code>simple_query_string</code>: <code>+</code>, <code>\|</code>, <code>-</code> and quotes</td>
+<td>A malformed query must not fail the search (DD-092)</td>
+<td>4.2</td>
+</tr>
+<tr>
+<td>DV-49</td>
+<td>Search</td>
+<td>With free text enabled, <code>fulltext</code> searches <code>__fullText</code>, which is no longer written, and finds nothing new</td>
+<td><code>fulltext</code> answers from the free text</td>
+<td>An endpoint that finds nothing helps no client</td>
+<td>4.2</td>
 </tr>
 </tbody>
 </table>

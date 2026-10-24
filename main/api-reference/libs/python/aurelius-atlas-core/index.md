@@ -706,7 +706,7 @@ Methods:
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
 - **`search`** –
 
-  The entities of a search query's page, and how many match it in all (DD-089).
+  The entities of a search query's page, how many match it in all, and their scores (DD-089).
 - **`type_in_use`** –
 
   Whether an entity, relationship or classification of exactly this type exists, in any state.
@@ -854,10 +854,10 @@ The entities whose references name any of these GUIDs (EDL-10, DD-057).
 #### search
 
 ```
-search(query: SearchQuery) -> tuple[list[StoredEntity], int]
+search(query: SearchQuery) -> SearchHits
 ```
 
-The entities of a search query's page, and how many match it in all (DD-089).
+The entities of a search query's page, how many match it in all, and their scores (DD-089).
 
 #### type\_in\_use
 
@@ -1093,6 +1093,9 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`KEYWORD_LIMIT`** –
+
+  `ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
 - **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]]`) –
 - **`REFERRING_PAGE`** –
 
@@ -1194,7 +1197,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "search": {"type": "object", "dynamic": True, "subobjects": False},
     },
     "dynamic_templates": [
-        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": {"type": kind}}} for kind in KINDS
+        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
     ],
 }
 ```
@@ -1224,6 +1227,14 @@ JOURNAL_PAGE = 1000
 ```
 
 How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+
+### KEYWORD\_LIMIT
+
+```
+KEYWORD_LIMIT = 8191
+```
+
+`ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
 
 ### LINKED\_MODELS
 
@@ -1536,10 +1547,12 @@ Index the document's state before, or delete one that did not exist before (DD-0
 #### search
 
 ```
-search(query: SearchQuery) -> tuple[list[StoredEntity], int]
+search(query: SearchQuery) -> SearchHits
 ```
 
 Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+
+Free text is a scored `simple_query_string` over the text sub-fields (DD-092).
 
 #### write
 
@@ -1616,7 +1629,7 @@ Methods:
   Put back a linked document's state before a write, or delete one the write created (DD-062).
 - **`search`** –
 
-  The entities of the query's page, as of now, and how many match it in all (DD-089).
+  The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1760,10 +1773,10 @@ Put back a linked document's state before a write, or delete one the write creat
 #### search
 
 ```
-search(query: SearchQuery) -> tuple[list[StoredEntity], int]
+search(query: SearchQuery) -> SearchHits
 ```
 
-The entities of the query's page, as of now, and how many match it in all (DD-089).
+The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
 
 #### write
 
