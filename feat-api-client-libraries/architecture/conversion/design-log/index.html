@@ -4894,6 +4894,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dd-091-free-text-is-split-from-quick-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-091. Free text is split from quick search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-092. String search fields carry an analysed text sub-field, searched with Atlas's weights
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6074,6 +6096,8 @@
       
         
       
+        
+      
     
     
     
@@ -6952,6 +6976,33 @@
     
   
   4.1b Classification search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-2-free-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.2a Free text
 
     
   </span>
@@ -10458,6 +10509,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dd-091-free-text-is-split-from-quick-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-091. Free text is split from quick search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-092. String search fields carry an analysed text sub-field, searched with Atlas's weights
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12157,6 +12230,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them">DD-090</a></td>
 <td>A classification search finds instances first, then the entities listing them</td>
 <td>4.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-091-free-text-is-split-from-quick-search">DD-091</a></td>
+<td>Free text is split from quick search</td>
+<td>4.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights">DD-092</a></td>
+<td>String search fields carry an analysed text sub-field, searched with Atlas's weights</td>
+<td>4.2</td>
 <td>Proposed</td>
 </tr>
 <tr>
@@ -14246,6 +14331,35 @@ attributes is needed, and the filter semantics are the ones entity filters have.
 Classification type names on the entity only: tag filters could not be answered.</p>
 <p><strong>Consequences.</strong> A search reads every instance of the types it names; an entity query names at most 65,536
 instances, Elasticsearch's <code>terms</code> limit, beyond which the search fails.</p>
+<h3 id="dd-091-free-text-is-split-from-quick-search">DD-091. Free text is split from quick search<a class="headerlink" href="#dd-091-free-text-is-split-from-quick-search" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.2</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> Increment 4.2 is split: 4.2a indexes and searches free text, in basic search's <code>query</code> and in
+<code>search/fulltext</code>; 4.2b answers <code>search/quick</code> with its facets, and <code>search/suggestions</code>.</p>
+<p><strong>Reason.</strong> Quick search and suggestions build on the free text; each part is about one increment.</p>
+<p><strong>Alternatives.</strong> One increment of about twice the size.</p>
+<p><strong>Consequences.</strong> Until 4.2b, the dashboards' quick search box finds nothing.</p>
+<h3 id="dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights">DD-092. String search fields carry an analysed text sub-field, searched with Atlas's weights<a class="headerlink" href="#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.2</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> The dynamic template of <code>keyword</code> search fields gives each a <code>text</code> sub-field, analysed by
+Elasticsearch's standard analyser, and keeps values over 8,191 characters out of the keyword. An entity's
+search fields gain <code>__classificationsText</code>. A free-text query is a <code>simple_query_string</code> over the text
+sub-fields of the string attributes of the non-internal entity types and of <code>__classificationsText</code>,
+<code>__labels</code>, <code>__customAttributes</code> and <code>__typeName</code>, each boosted by the weight Atlas's <code>SolrIndexHelper</code> gives
+its Solr field. The in-memory documents match words the same way, without Elasticsearch's scoring.</p>
+<p><strong>Reason.</strong> Atlas's free text is Solr's <code>edismax</code> over the same fields with the same weights as <code>qf</code>; a
+sub-field keeps each attribute's weight and its exact <code>keyword</code> for the filters of 4.1.</p>
+<p><strong>Alternatives.</strong> One catch-all text field: every attribute would weigh the same, and 4.2b's suggestions could
+not keep to the fields weighted 8 or more. <code>query_string</code>: closer to <code>edismax</code>, but a malformed query fails.</p>
+<p><strong>Consequences.</strong> Fields mapped before 4.2a have no text sub-field; an entity index created before needs
+creating again.</p>
 <h3 id="dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place">DD-126. The webapp is a new project, not the Aurelius app upgraded in place<a class="headerlink" href="#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Proposed</li>

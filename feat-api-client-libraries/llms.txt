@@ -140,6 +140,7 @@
 - [3.5a Entity audit](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/3-5-entity-audit/index.md>)
 - [4.1b Classification search](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/4-1-classification-search/index.md>)
 - [4.1a Entity search](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/4-1-entity-search/index.md>)
+- [4.2a Free text](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/4-2-free-text/index.md>)
 - [7.0 Webapp foundation (umbrella)](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-0-webapp-foundation/index.md>)
 - [7.1 Webapp shell and localisation](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-1-webapp-shell/index.md>)
 - [7.11 Shell chrome](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-11-shell-chrome/index.md>)
