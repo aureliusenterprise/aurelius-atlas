@@ -63,6 +63,13 @@ it. The stages, in the order they run:
 Merge requires all affected stages green; the evidence report is what reviewers read. The
 pipeline definition is in the repository's CI configuration.
 
+Coverage is measured in every `-c ci` test run and uploaded to the analysis stage:
+SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **quality gate is the
+coverage gate** — there is deliberately no second coverage flag in the pipeline.
+The last full review of what the suites prove — coverage baselines and non-happy-flow
+representativeness per project — is the [Test Suite Review](./testing-review.md)
+([DD-125](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
+
 ## Indicators
 
 The gate aims at delivery outcomes, not coverage for its own sake. The indicators follow the
@@ -91,6 +98,7 @@ carry test updates.
 ## Pointers
 
 - Commands, conventions, flaky triage: [Testing guide](../../../contributor-guide/testing.md)
+- Coverage baselines and the hardening plan: [Test Suite Review](./testing-review.md)
 - Gates and evidence: [ADR 014](../../adr/014-the-gate-is-defined-once-and-runs-everywhere.md),
   [ADR 015](../../adr/015-a-change-answers-for-what-it-caused.md),
   [ADR 049](../../adr/049-every-function-and-rule-is-traceable-to-a-test.md)

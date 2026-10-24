@@ -53,7 +53,10 @@ the webapp's parser's input.
   route, audience `aurelius-atlas-data2model` (tokens minted for another client are
   rejected, AUX-04/AUX-05). `/extract` is read-only, so no write role.
 - OTLP export is app-owned (DD-107/DD-108): `otel_*` settings, `otel-data2model` client,
-  collector leg `https://localhost:4319`. Unset = console-only (AUX-03).
+  collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-121).
+- Every HTTP call is visible (DD-121): `HTTPX2ClientInstrumentor` covers the httpx2
+  calls the auth library makes to the issuer (token verification, JWKS fetch),
+  so even the JWKS request appears as a client span in Tempo.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-data2model` after changing `.env`);
   `OTEL_INGEST_CLIENT_SECRET` mirrors `apps/aurelius-atlas-server/.env`.
 - `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`.

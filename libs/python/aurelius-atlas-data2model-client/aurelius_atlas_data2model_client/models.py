@@ -45,49 +45,56 @@ class _Rule(BaseModel):
 
     model_config = ConfigDict(extra="ignore", frozen=True)
 
-    id: LegacyStr = ""
-    """The rule's id — the caller's reference into ``rules`` (relation/view rules name it)."""
+    id: LegacyStr = Field(
+        default="",
+        description="The rule's id — the reference relation and view rules use to name it.",
+    )
 
 
+# DTM-03.
 class MappingEntry(_Rule):
-    """One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."""
+    """One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."""
 
-    key: str
-    """The metadata attribute's name."""
+    key: str = Field(description="The metadata attribute's name.")
 
-    value: str
-    """The source column's name."""
+    value: str = Field(description="The source column's name.")
 
 
+# DTM-02; DTM-11 validates ``concept_type``.
 class ElementRule(_Rule):
-    """An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02)."""
+    """An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``."""
 
-    id_key: str
-    """The column holding each node's id; rows with a null id are dropped, first row per id wins."""
+    id_key: str = Field(
+        description="The column holding each node's id; rows with a null id are dropped, first row per id wins.",
+    )
 
-    concept_type: str
-    """The node's Archimate element type tag (DTM-11 validates it).
+    concept_type: str = Field(
+        description="The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``.",
+    )
 
-    The lineage chain uses ``lineage_dataset``/``lineage_process``.
-    """
+    id_prefix: LegacyStr = Field(default="", description="The prefix of each node id.")
 
-    id_prefix: LegacyStr = ""
-    """Prefix of the node id (DTM-02)."""
+    concept_name_prefix: LegacyStr = Field(default="", description="The prefix of each node name.")
 
-    concept_name_prefix: LegacyStr = ""
-    """Prefix of the node name."""
+    concept_name_key: LegacyStr = Field(
+        default="",
+        description="The column holding the node name; empty means the name is ``''``.",
+    )
 
-    concept_name_key: LegacyStr = ""
-    """The column holding the node name; empty means the name is ``''`` (DTM-02)."""
+    concept_label_prefix: LegacyStr = Field(
+        default="",
+        description="The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels.",
+    )
 
-    concept_label_prefix: LegacyStr = ""
-    """Prefix of the node label (kept for the legacy contract; the ar3 writer ignores labels)."""
+    concept_label_key: LegacyStr = Field(
+        default="",
+        description="The column holding the node label; the ar3 writer ignores labels.",
+    )
 
-    concept_label_key: LegacyStr = ""
-    """The column holding the node label; the ar3 writer ignores labels."""
-
-    mapping: list[MappingEntry] = Field(default_factory=list)
-    """Metadata attributes to attach per row (DTM-03)."""
+    mapping: list[MappingEntry] = Field(
+        default_factory=list,
+        description="Metadata attributes to attach per row, each a key/value pair.",
+    )
 
     @field_validator("concept_type")
     @classmethod
@@ -98,37 +105,39 @@ class ElementRule(_Rule):
         return value
 
 
+# DTM-04; DTM-11 validates ``relationship_type``. ``fmt_relation`` resolved
+# ``source``/``target`` into the referenced element rule's ``id_key``/``id_prefix``;
+# the port keeps the rule references and resolves them the same way, in
+# :mod:`aurelius_atlas_data2model.extract`.
 class RelationRule(_Rule):
-    """A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).
+    """A relation rule (legacy ``RelationshipDefinition``): one edge per row."""
 
-    ``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's
-    ``id_key``/``id_prefix``; the port keeps the rule references and resolves them the
-    same way, in :mod:`aurelius_atlas_data2model.extract`.
-    """
+    id_key: str = Field(description="The column holding each edge's id.")
 
-    id_key: str
-    """The column holding each edge's id."""
+    relationship_type: str = Field(
+        description="The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain.",
+    )
 
-    relationship_type: str
-    """The Archimate relationship shorthand (``lr`` for the lineage chain; DTM-11 validates it)."""
+    source: LegacyStr = Field(default="", description="The id of the element rule holding the source ids.")
 
-    source: LegacyStr = ""
-    """The id of the element rule holding the source ids."""
+    target: LegacyStr = Field(default="", description="The id of the element rule holding the target ids.")
 
-    target: LegacyStr = ""
-    """The id of the element rule holding the target ids."""
+    id_prefix: LegacyStr = Field(default="", description="The prefix of each edge id.")
 
-    id_prefix: LegacyStr = ""
-    """Prefix of the edge id."""
+    relationship_name_key: LegacyStr = Field(
+        default="",
+        description="The column holding the edge name; empty means the name is ``''``.",
+    )
 
-    relationship_name_key: LegacyStr = ""
-    """The column holding the edge name; empty means the name is ``''``."""
+    relationship_label_key: LegacyStr = Field(
+        default="",
+        description="The column holding the edge label; the ar3 writer ignores labels.",
+    )
 
-    relationship_label_key: LegacyStr = ""
-    """The column holding the edge label; the ar3 writer ignores labels."""
-
-    mapping: list[MappingEntry] = Field(default_factory=list)
-    """Metadata attributes to attach per row (DTM-03)."""
+    mapping: list[MappingEntry] = Field(
+        default_factory=list,
+        description="Metadata attributes to attach per row, each a key/value pair.",
+    )
 
     @field_validator("relationship_type")
     @classmethod
@@ -139,74 +148,84 @@ class RelationRule(_Rule):
         return value
 
 
+# DTM-07; the rule reference is resolved at parse time (DTM-11).
 class ViewNodeRule(_Rule):
-    """A view node entry: includes the referenced element rule's nodes (DTM-07)."""
+    """A view node entry: includes the referenced element rule's nodes."""
 
-    rule: str
-    """The id of the element rule whose rows fill the view (resolved at parse time, DTM-11)."""
+    rule: str = Field(description="The id of the element rule whose rows fill the view.")
 
 
+# DTM-07; the rule reference is resolved at parse time (DTM-11).
 class ViewEdgeRule(_Rule):
-    """A view edge entry: includes the referenced relation rule's edges (DTM-07)."""
+    """A view edge entry: includes the referenced relation rule's edges."""
 
-    rule: str
-    """The id of the relation rule whose rows fill the view (resolved at parse time, DTM-11)."""
+    rule: str = Field(description="The id of the relation rule whose rows fill the view.")
 
 
+# DTM-06; DTM-07.
 class ViewRule(_Rule):
-    """A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06)."""
+    """A view rule (legacy ``ViewDefinition``): one diagram per layout match."""
 
-    view_layout: LegacyStr = ""
-    """The layout name; a layout the registry does not know drops the view entirely (DTM-06)."""
+    view_layout: LegacyStr = Field(
+        default="",
+        description="The layout name; a layout the registry does not know drops the view entirely.",
+    )
 
-    id_type: LegacyStr = "dynamic"
-    """``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``."""
+    id_type: LegacyStr = Field(
+        default="dynamic",
+        description="``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``.",
+    )
 
-    id_key: LegacyStr = ""
-    """The grouping column for a dynamic view."""
+    id_key: LegacyStr = Field(default="", description="The grouping column for a dynamic view.")
 
-    id_value: LegacyStr = ""
-    """The view id for a static view (``lineage_view`` for the lineage chain)."""
+    id_value: LegacyStr = Field(default="", description="The view id for a static view.")
 
-    id_prefix: LegacyStr = ""
-    """Prefix of a dynamic view id."""
+    id_prefix: LegacyStr = Field(default="", description="The prefix of a dynamic view id.")
 
-    view_name_type: LegacyStr = "dynamic"
-    """``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``."""
+    view_name_type: LegacyStr = Field(
+        default="dynamic",
+        description="``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``.",
+    )
 
-    view_name_key: LegacyStr = ""
-    """The column holding the view name for a dynamic view."""
+    view_name_key: LegacyStr = Field(
+        default="",
+        description="The column holding the view name for a dynamic view.",
+    )
 
-    view_name_value: LegacyStr = ""
-    """The view name for a static view (``Lineage`` for the lineage chain)."""
+    view_name_value: LegacyStr = Field(default="", description="The view name for a static view.")
 
-    view_name_prefix: LegacyStr = ""
-    """Prefix of a dynamic view name."""
+    view_name_prefix: LegacyStr = Field(default="", description="The prefix of a dynamic view name.")
 
-    view_nodes: list[ViewNodeRule] = Field(default_factory=list)
-    """The element rules whose nodes fill the view, in order (DTM-07)."""
+    view_nodes: list[ViewNodeRule] = Field(
+        default_factory=list,
+        description="The element rules whose nodes fill the view, in order.",
+    )
 
-    view_edges: list[ViewEdgeRule] = Field(default_factory=list)
-    """The relation rules whose edges fill the view; empty means all model edges between the view nodes (DTM-07)."""
+    view_edges: list[ViewEdgeRule] = Field(
+        default_factory=list,
+        description="The relation rules whose edges fill the view; empty means all model edges between the view nodes.",
+    )
 
-    view_path: list[LegacyStr] = Field(default_factory=list)
-    """Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only)."""
+    view_path: list[LegacyStr] = Field(
+        default_factory=list,
+        description="Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only).",
+    )
 
-    mapping: list[MappingEntry] = Field(default_factory=list)
-    """Metadata attributes to attach per view (legacy: unused by the writer; kept for the contract)."""
+    mapping: list[MappingEntry] = Field(
+        default_factory=list,
+        description="Metadata attributes to attach per view; unused by the writer, kept for the contract.",
+    )
 
 
+# DTM-03.
 class RulesDef(_Rule):
-    """The ``rules`` body: elements, relations, views, in rule order (DTM-03)."""
+    """The ``rules`` body: elements, relations, views, in rule order."""
 
-    elements: list[ElementRule] = Field(default_factory=list)
-    """The element rules."""
+    elements: list[ElementRule] = Field(default_factory=list, description="The element rules.")
 
-    relations: list[RelationRule] = Field(default_factory=list)
-    """The relation rules."""
+    relations: list[RelationRule] = Field(default_factory=list, description="The relation rules.")
 
-    views: list[ViewRule] = Field(default_factory=list)
-    """The view rules."""
+    views: list[ViewRule] = Field(default_factory=list, description="The view rules.")
 
     @model_validator(mode="after")
     def _references_resolve(self) -> RulesDef:
@@ -234,49 +253,53 @@ class RulesDef(_Rule):
         return self
 
 
+# DTM-01. An absent ``data``/``rules`` is the empty extraction the legacy
+# answers with the model skeleton (DTM-11); ``data`` is a list of row maps,
+# columns keyed by name — a key absent from a row reads as null, as the
+# legacy's missing DataFrame cell.
 class ExtractionRequest(_Rule):
-    """The ``POST /extract`` body: ``{data: [row…], rules: {...}}`` (DTM-01).
+    """The ``POST /extract`` body: ``{data: [row…], rules: {...}}``."""
 
-    An absent ``data``/``rules`` is the empty extraction the legacy answers with the
-    model skeleton (DTM-11); ``data`` is a list of row maps, columns keyed by name —
-    a key absent from a row reads as null, as the legacy's missing DataFrame cell.
-    """
+    data: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="The tabular rows; each row is a plain map of column names to values.",
+    )
 
-    data: list[dict[str, Any]] = Field(default_factory=list)
-    """The tabular rows; plain maps, not models (DD-109)."""
+    rules: RulesDef = Field(
+        default_factory=RulesDef,
+        description="The element, relation, and view rules that build the model.",
+    )
 
-    rules: RulesDef = Field(default_factory=RulesDef)
-    """The element/relation/view rules."""
 
-
+# DTM-03; CL-20. ``data`` carries the rule's provenance (``created_by``,
+# ``m4i_id_prefix``, ``m4i_original_id``, …) plus the row's mapped attributes,
+# keyed by the ``mapping`` entries — open by contract, so a plain map.
 class MetadataEntry(BaseModel):
-    """One ``{id, data}`` metadata entry of the extraction answer (DTM-03; CL-20).
-
-    ``data`` carries the rule's provenance (``created_by``, ``m4i_id_prefix``,
-    ``m4i_original_id``, …) plus the row's mapped attributes, keyed by the
-    ``mapping`` entries — open by contract, so a plain map.
-    """
+    """One ``{id, data}`` metadata entry of the extraction answer."""
 
     model_config = ConfigDict(extra="ignore", frozen=True)
 
-    id: str
-    """The element/edge/view id the entry describes, with its rule's prefix."""
+    id: str = Field(description="The element, edge, or view id the entry describes, with its rule's prefix.")
 
-    data: dict[str, Any] = Field(default_factory=dict)
-    """The provenance and mapped attributes; open keys by contract (DTM-03)."""
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        description="The provenance and mapped attributes, as open key/value maps.",
+    )
 
 
+# DTM-01; CL-20. The model is a JSON *string* inside the JSON body, as the
+# legacy answer is (DV-15); ``model_validate_json`` of it is the caller's
+# ar3 document.
 class ExtractionResponse(BaseModel):
-    """The ``POST /extract`` answer: ``{metadata: […], model: "<ar3 JSON string>"}`` (DTM-01; CL-20).
-
-    The model is a JSON *string* inside the JSON body, as the legacy answer is
-    (DV-15); ``model_validate_json`` of it is the caller's ar3 document.
-    """
+    """The ``POST /extract`` answer: ``{metadata: […], model: "<ar3 JSON string>"}``."""
 
     model_config = ConfigDict(extra="ignore", frozen=True)
 
-    metadata: list[MetadataEntry] = Field(default_factory=list)
-    """One entry per element/edge row and per view (DTM-03)."""
+    metadata: list[MetadataEntry] = Field(
+        default_factory=list,
+        description="One entry per element/edge row and per view.",
+    )
 
-    model: str
-    """The ar3 model, JSON-encoded — the browser draws it (DV-15)."""
+    model: str = Field(
+        description="The ar3 model, JSON-encoded as a string; the browser draws it.",
+    )

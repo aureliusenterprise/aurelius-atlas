@@ -22,7 +22,7 @@ services:
                     "CMD",
                     "python3",
                     "-c",
-                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/v2/lineage/e-in', timeout=5).close()",
+                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/v2/lineage/00000000-0000-4000-8000-000000000001', timeout=5).close()",
                 ]
             interval: 5s
             timeout: 5s

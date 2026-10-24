@@ -209,12 +209,16 @@ nav:
                       - 7.16 UI components (details chrome): architecture/conversion/increments/7-16-ui-components-details-ii.md
                       - 7.17 Collector ingest auth: architecture/conversion/increments/7-17-collector-ingest-auth.md
                       - 7.18 Collector ingest identity: architecture/conversion/increments/7-18-collector-ingest-identity.md
+                      - 7.19 Frontend failure UX: architecture/conversion/increments/7-19-frontend-failure-ux.md
                       - 8.0 Auxiliary API foundation: architecture/conversion/increments/8-0-auxiliary-api-foundation.md
                       - 8.1 data2model API: architecture/conversion/increments/8-1-data2model-api.md
                       - 8.2 lineage-model API: architecture/conversion/increments/8-2-lineage-model-api.md
                       - 8.3 validate-entity API: architecture/conversion/increments/8-3-validate-entity-api.md
                       - 8.4 API client libraries: architecture/conversion/increments/8-4-api-client-libraries.md
                       - 8.5 lineage-model circuit breakers: architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md
+                      - 8.6 Aux API failure hardening: architecture/conversion/increments/8-6-aux-failure-hardening.md
+                      - 8.7 Client failure contract: architecture/conversion/increments/8-7-client-failure-contract.md
+                      - 9.1 Targeted resilience e2e: architecture/conversion/increments/9-1-targeted-resilience-e2e.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
@@ -249,6 +253,7 @@ nav:
                       - Configuration Management: architecture/platform/delivery/configuration-management.md
                       - Change Management: architecture/platform/delivery/change-management.md
                       - Testing: architecture/platform/delivery/testing.md
+                      - Test Suite Review: architecture/platform/delivery/testing-review.md
                       - Release Management: architecture/platform/delivery/release-management.md
                       - Deployment: architecture/platform/delivery/deployment.md
                 - Observability:

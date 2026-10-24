@@ -4198,3 +4198,347 @@ use-case class per route — rejected by DD-119 already.
 (`create_app` stays canonical); new provider/route test files name the new
 public functions (ADR 049). The specs' design-log fields gain DD-120; no rule
 id changes meaning. The e2e suites are untouched — they ride the wire.
+
+### DD-121 — Telemetry goes native: the OTel SDK replaces the logfire shell
+
+- **Status:** Proposed
+- **Increment:** 8.5 (rides the client-libraries branch; no new roadmap row — no Atlas REST semantics)
+- **Date:** 2026-10-23
+
+**Decision.** All five Python apps (the Atlas server, the FastAPI example,
+data2model, lineage-model, validate-entity) drop `logfire` and configure
+OpenTelemetry natively. The `aurelius-atlas-otel` lib gains `telemetry.py`:
+`build_providers` assembles the SDK `TracerProvider`/`MeterProvider`/
+`LoggerProvider` from a service name/version, the app-built ingest pipeline
+(DD-107's `build_otlp_pipeline` pair, now a single `pipeline=` parameter), a
+standard-OTLP **env leg** that switches on when `OTEL_EXPORTER_OTLP_ENDPOINT`
+is present in the process environment, and a stdout **console leg** for
+debug-level runs; `setup_telemetry` installs them on the OTel globals (the
+set-once first call wins, as the FastAPI test harnesses create one app per
+test), and `bridge_logging` attaches the supported
+`opentelemetry-instrumentation-logging` handler to named loggers. The apps
+call `setup_telemetry` plus the native instrumentors
+(`FastAPIInstrumentor`, and the example's `HTTPXClientInstrumentor`/
+`PsycopgInstrumentor`); the example's SSE gauge registers through
+`metrics.get_meter().create_observable_gauge`, and its settings' level type
+becomes a plain `Literal` (the set logfire's `LevelName` carried). The wire
+to the collector is plain OTLP/HTTP on both legs, unchanged: the per-service
+leg (4319, JWT per export, CIA-07) and the example's legacy leg (4321, the
+shared static bearer — exactly the static-header shape the SDK reads from
+`OTEL_EXPORTER_OTLP_HEADERS`, CIA-10). This supersedes DD-107's logfire
+integration detail (`additional_span_processors` /
+`MetricsOptions.additional_readers` — the mechanism is the same app-built
+pair, now installed by the lib instead of adopted by the shell) and DD-120's
+copy of the `logfire.configure` block.
+
+**Reason.** Every logfire use was a thin wrapper: `send_to_logfire=False`
+in all five apps (the SaaS is never contacted), no structured logging
+(`logfire.info`) and no `@logfire.instrument` decorators anywhere, and
+`instrument_fastapi`/`httpx`/`psycopg` are the native
+`opentelemetry-instrumentation-*` packages behind a rename. The one feature
+of value — the dev console — is replaced by `ConsoleSpanExporter`/
+`ConsoleLogRecordExporter` on debug runs, where the extra verbosity is free.
+The wrapper also caused the workspace's import oddity: the apps imported
+`opentelemetry.*` symbols (the example's `Observation`, `LoggingHandler`)
+through a dependency declared on logfire, and the otel lib carried lazy
+"arrives transitively via logfire" imports while already declaring
+`opentelemetry-sdk` directly. Native providers make the dependency graph
+honest: each app declares what it imports.
+
+**Alternatives.** Keep logfire (refused — a wrapper with one vendored
+feature, paid in a transitive dependency graph and a second config surface;
+the collector stack is the observability product, logfire's console was its
+only local value). Console export at info level (refused — the SDK's span
+JSON dwarfs the request logs; the dev console earns its keep at debug, and
+debug already implies verbose). `LoggingInstrumentor().instrument()` for the
+log bridge (refused — it attaches on the _root_ logger and installs a record
+factory; the example's contract is per-named-logger handlers with
+propagation off, which `bridge_logging` keeps). Keeping logfire on the
+example app alone for its log tail (refused — one shell, one mechanism, and
+the native log pipeline covers the tail: `logs=True` builds the logger
+provider the bridge feeds).
+
+**Consequences.** Five pyprojects swap `logfire[...]` for the native
+`opentelemetry-instrumentation-*` packages (locked at the same
+`0.65b0`/`1.44.0` the shell pinned); `uv.lock` loses logfire. The otel lib
+gains `opentelemetry-instrumentation-logging` (the supported handler — the
+SDK's own `LoggingHandler` is deprecated in 1.44). The example's legacy leg
+is now the SDK reading standard env: its `.env`/compose pair
+(`OTEL_EXPORTER_OTLP_ENDPOINT`/`_CERTIFICATE`/`_HEADERS`) is unchanged —
+DD-107's CIA-10 posture, restated without the shell. The otel lib reads the
+standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var — the one exception to its
+"reads no env vars" rule, recorded in its `AGENTS.md` (a third-party-runtime
+name, bare by the workspace's env-prefix rule). Unit specs: the lib gains
+`test__telemetry.py` (the legs, the install guard, the bridge — CIA-07/
+CIA-10); the three 8.x apps' telemetry specs swap the
+`logfire.configure`-monkeypatch seam for `setup_telemetry`/
+`FastAPIInstrumentor` on the app module. `setup_telemetry` is set-once per
+process, so a second `create_app` in one test process keeps the first
+call's providers — the same lifecycle logfire's `configure` had. The e2e
+suites are untouched — they ride the wire (the collector accepts the same
+OTLP/HTTP pushes on the same legs). AUX-03's rule id stands (unset credential
+= no OTLP leg); its "console only" wording now means the stdout leg of
+debug-level runs — at info/warning an app with no credential exports
+nothing, where logfire's pretty console used to print (this supersedes that
+detail of the 8.0 spec's AUX-03 row).
+
+**Chain stitching (same increment).** The switch kept the example's httpx
+instrumentation 1:1 (`logfire.instrument_httpx` → `HTTPXClientInstrumentor`),
+and the e2e walk showed what the other apps deliberately left uninstrumented:
+the 8.2 chain's upstream calls (lineage-model → Atlas fetch, → data2model
+extract, LM-04) carried no W3C `traceparent`, so every service rooted its own
+trace in Tempo. lineage-model graduates: `HTTPXClientInstrumentor` rides its
+composition root, so the caller's trace rides the chain's httpx calls and the
+8.2 chain (browser → lineage-model → data2model) is one trace. The e2e suite
+adds the stitch probe (`test__the_chain_shares_one_trace_with_the_caller`):
+a minted trace id as `traceparent`, then the Tempo read-back shows the
+lineage-model `GET /` span and the data2model `POST /extract` span under the
+caller's id (LM-04's calls, DD-121). The issuer mints (the auth lib) and the
+OTLP ingest shim stay uninstrumented — mint spans are per-request noise, and
+instrumenting the exporter is a self-referential span loop.
+
+**Every HTTP call visible (same increment).** The issuer-mint refusal above
+is reversed for httpx (user call): every FastAPI app that reaches the network
+over httpx now installs `HTTPXClientInstrumentor` — the example (as before),
+lineage-model (the chain, above), and data2model/validate-entity (the auth
+library's issuer verification and JWKS fetches ride the caller's trace). The
+server's outbound legs are deliberately not httpx: its store calls ride the
+elasticsearch client (below, natively instrumented) and its OTLP export rides
+`requests` inside the ingest shim, which stays uninstrumented (the
+self-referential span loop above stands).
+`build_providers` registers the per-process system metrics on every app's
+meter provider (DD-121): the system-metrics package's default instrument set
+minus the host-wide `system.*` group — the dev/e2e apps share one host, so
+five containers would report the same host series five times (infra host
+metrics ride the pullers). The set lands in Prometheus next to the RED series
+(`process_cpu_time_seconds_total`, `process_memory_usage_bytes`,
+`cpython_gc_collections_total`, per `exported_job`). Elasticsearch needs no
+package at all: elasticsearch-py
+≥ 8.13 emits a span per store operation on the global tracer, on by default
+(the contrib package is stale and self-disables on native clients), so the
+server's ES spans ride the app-owned leg as installed (`db.system.name`,
+`db.operation.name` on each). The server suite adds the guard probe
+(`test__the_store_calls_ride_the_server_trace`): a minted `traceparent` on a
+typedefs call, and the Tempo read-back requires the request span and an
+elasticsearch span under the caller's trace id.
+
+### DD-122 — httpx2 replaces httpx across the HTTP surface
+
+- **Status:** Proposed
+- **Increment:** 8.5 (rides the client-libraries branch; no new roadmap row — no
+  Atlas REST semantics)
+- **Date:** 2026-10-24
+
+**Decision.** Every first-party httpx use moves to **httpx2** (`pydantic/httpx2`,
+the Pydantic-stewardship continuation of httpx): the nine pyprojects that
+required `httpx>=0.28.1` (the example, lineage-model, the auth lib, the five
+client libs, parity, sdk) require `httpx2>=2.0.0` instead, the six
+FastAPI-dependent pyprojects raise their floor to `fastapi>=0.162.0` (the first
+release whose extras require httpx2), and every `import httpx` becomes
+`import httpx2 as httpx` — the alias starlette's own testclient uses, keeping
+call sites (`httpx.AsyncClient`, `httpx.RequestError`, …) untouched. The four
+apps' `configure_telemetry` swap `HTTPXClientInstrumentor` for the
+`HTTPX2ClientInstrumentor` that `opentelemetry-instrumentation-httpx` 0.65b0
+already ships (same import path, same spans: `http.method`/`http.url`/
+`http.status_code`). Where a CA file configured TLS, the deprecated
+`verify=<path>` string becomes `verify=ssl.create_default_context(cafile=...)`
+(the auth lib, the example's outbound provider, lineage-model's upstreams).
+
+**Reason.** Starlette 1.6 deprecates `httpx` with its `TestClient`
+(`StarletteDeprecationWarning: … install httpx2 instead` — the warning the user
+reported), and httpx2 is where httpx's stewardship continues. The migration
+surface is small and verified: every symbol the repo uses exists on httpx2
+(`Client`, `AsyncClient`, `Response`, `MockTransport`, `ASGITransport`,
+`Timeout`, the error family, `codes`, `QueryParams`); OTel instruments httpx2
+natively at 0.65b0, so DD-121's "every HTTP call visible" rule rides unchanged;
+fastapi core never required httpx at all (only its extras), so bumping to
+0.162.0 drops the httpx pin from the apps' transitive closure with no code
+change — `fastapi.testclient` is unchanged and silently rides httpx2.
+
+**Deliberate deviations.** httpx2 reads the **OS trust store** by default
+(`truststore`), not certifi: a deployment that trusted a CA through
+`SSL_CERT_FILE` for httpx must pass `verify=ssl.create_default_context(cafile=…)`
+(the pattern this DD lands on the three CA-aware sites). `verify=<str>` is
+deprecated on httpx2, which is why the string CA paths are gone from first-party
+code. **httpx stays in the venv**, pulled by `python-keycloak` (dev-only, the
+example's e2e fixtures): its sync path rides `requests` — which takes a str CA
+path and rejects an `SSLContext` — and its async path is classic httpx, whose
+`verify=<path>` deprecation warning is python-keycloak's own, not first-party.
+Starlette prefers httpx2 when both are importable, so the TestClient warning is
+gone with both installed.
+
+**Consequences.** `uv.lock`: `httpx2`/`httpcore2`/`truststore`/`httpx2-jsfetch`
+in, `fastapi` 0.141.1 → 0.162.0, `httpx` demoted to a python-keycloak-only
+dependency. The auth lib gains `_tls_context` (a CA-rooted context, or system
+trust when unconfigured — the same trust httpx's `verify=<path>`/`verify=True`
+built); the example's provider spec asserts the context, not the string. The
+fix rides DD-121's audit trail: 51 e2e (all five apps, rebuilt images bundling
+the httpx2 wheels) and the per-project unit suites pass, the
+`StarletteDeprecationWarning` is gone from every warnings summary, and the
+OTel spans over httpx2 are read back from Tempo by the unchanged chain and
+store probes.
+
+### DD-123 — The 8.x apps' app/scenario test modules carry their package name
+
+- **Status:** Accepted
+- **Increment:** 8.5 (rides the client-libraries branch; no new roadmap row —
+  no Atlas REST semantics)
+- **Date:** 2026-10-24
+
+**Context.** A repository-wide pytest run (`uv run pytest apps libs`, the
+root's Common Commands) fails collection with `import file mismatch`: the three
+8.x apps each carry `tests/test__app.py` and `tests/test__scenarios.py`. The
+`tests/` dirs are not packages (INP001 is waived for test files), so pytest's
+default prepend import mode puts each `tests/` dir on `sys.path` and imports by
+basename — the first app collected owns the module name and the other two
+error. Per-app runs (`nx test`, `cwd` = project root) never collided; the
+collision is what a uniform basename across apps means for root collection.
+
+**Decision.** The six files take the package-prefixed names the apps' sibling
+test files already use (`test__<package>_<module>.py`): `test__app.py` →
+`test__aurelius_atlas_data2model_app.py`, `test__aurelius_atlas_lineage_model_app.py`,
+`test__aurelius_atlas_validate_entity_app.py`, and the same for the three
+`test__scenarios.py`. The specs' test lists cite the new names.
+
+**Reason.** Unique basenames are pytest's own hint for this error, and the
+prefix is each app's established convention for every other test module
+(`test__aurelius_atlas_data2model_settings.py`, …) — the collision is the two
+names that predate DD-120's layout settling. Renaming all three apps (not just
+the two losers of the import race) keeps the family uniform.
+
+**Alternatives.** (a) Add `__init__.py` to every `tests/` dir — rejected: the
+conftest and tests/ helper imports (the 8.2 fake upstream, the 8.4 recorders)
+and the pyright `extraPaths` execution environments are built on `tests/`
+riding `sys.path`, not on it being a package. (b) `importmode=importlib` at the
+root — rejected: it changes collection semantics workspace-wide to fix two
+names. (c) Rename only data2model's pair (it wins the alphabetical race) —
+rejected: the other two stay collision-prone for every future sibling app.
+
+**Consequences.** Rule ids and `covers` markers are untouched — the trace
+plugin reads them from the files, and the per-app `trace.json`/`junit.xml`/
+`coverage.xml` artifacts (untracked, `tools/plugins/python.ts`) regenerate with
+the new nodeids on the next `nx test -c ci`. DD-119's and DD-120's
+Consequences mention `test__app.py` as history and are not edited. The specs'
+test lists (8.1, 8.2, 8.3, 8.5) name the new files in the same change.
+
+### DD-124 — The lineage guid is a UUID on every typed surface
+
+- **Status:** Accepted
+- **Increment:** 8.5 (rides the client-libraries branch; no new roadmap row —
+  the guid's type is a contract detail of the 8.2/8.4 surfaces, DV-27)
+- **Date:** 2026-10-24
+
+**Context.** The lineage chain carried the entity guid as `str` end to end:
+`LineageModelParams.guid`, `AtlasClient.get_lineage`, `LineageModelClient.get`,
+the app route's query parameter, `EntityHeaderLite.guid`, `LineageRelation`'s
+endpoint ids, and `LineageInfo.guid_entity_map`'s keys. Atlas's own guids are
+UUIDs (`Entity.getGuidAsString` returns the canonical string of a `UUID`), and
+the 5.1 feed will answer `v2/lineage/{guid}` with them. A `str` guid accepts any
+token — the fixtures grew readable ids (`e-in`) that no Atlas entity could have,
+and a malformed guid travels all the way to the upstream before failing.
+
+**Decision.** Every lineage guid is `uuid.UUID` on the typed surface: the
+client models and methods, the app route's `guid` query parameter (FastAPI
+parses it, so a non-UUID is DV-21's `400` before any upstream call),
+`EntityHeaderLite.guid`, `LineageRelation.fromEntityId`/`toEntityId`, and
+`LineageInfo.guidEntityMap`'s keys. `LineageRelation.relationshipId` stays
+`str` — it is a relation id, not an entity guid, and the legacy fixtures give
+it readable values. The Java-parity typedef/instance guids of the server
+surface (`aurelius-atlas-model`) are untouched — this is the lineage chain
+only. Fixtures use fixed UUIDs (`00000000-0000-4000-8000-0000000000NN`);
+names, labels, and relation ids stay readable.
+
+**Reason.** Pydantic parses and serialises UUIDs natively (the OpenAPI schema
+gains `format: uuid`; JSON string keys coerce into `dict[UUID, ...]`), httpx
+stringifies a UUID into the canonical lowercase form on the wire, and the
+extract engine's `_legacy_str` stringifies the UUID cells of the flattened
+rows — so the wire stays byte-identical to Atlas's, while every Python
+surface rejects a malformed guid at its own boundary. A `str`-typed chain
+would leave the route answering DV-21's 400 only for _missing_ guids and
+forwarding garbage for present-but-invalid ones.
+
+**Alternatives.** (a) `Annotated[str, UuidCheck]` validators — rejected:
+re-implements what `UUID` gives for free, and the schema loses `format:
+uuid`. (b) Typing the Java-parity guids too — rejected for now: the 1.x/5.x
+surfaces mirror Atlas's Java DTOs, where guid is `String` at the wire;
+DV-27's row scopes this to the lineage chain, and a parity spec change is
+Java-reference work (ADR 052), not a client-library detail.
+
+**Consequences.** The e2e fixture file is named for its guid, so
+`e2e/fixtures/v2/lineage/e-in` becomes the UUID-named file the fixture
+`http.server` maps `/v2/lineage/<guid>` onto. `test__lineage.py` gains
+`test__a_guid_that_is_not_a_uuid_is_400` (LM-07); the dangling-guid test's
+endpoint becomes a well-formed UUID the map lacks — a malformed guid can no
+longer reach the flattening at all, which is the point.
+
+### DD-125 — The test suite review of 2026-10-24 scopes the hardening increments
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (rides the delivery docs; no roadmap row — the
+  hardening increments 8.6/8.7/7.19/9.1 carry their own rows when specified)
+- **Date:** 2026-10-24
+
+**Context.** Development added tests ad hoc per increment. A workspace-wide
+review (all apps, all Python libraries, all frontend projects, both e2e
+suites) measured coverage and scored every suite against the five non-happy
+flow categories (input/validation, business rule/auth, infrastructure,
+interrupted/async, edge-case). Findings: infrastructure failure testing is a
+house strength (lineage-model, store-es, auth); the systematic holes are
+mid-request infra failures (server, core), frontend session lifecycle and
+error UX breadth (7 of 71 webapp-side specs assert an HTTP error), the client
+libraries' response-shape failures (2xx-with-garbage-body, timeout vs connect
+error), and data2model's view-edge/dynamic-view engine paths (0%). No coverage
+threshold exists in CI, and the Python libraries' `coverage.xml` is generated
+in CI only, not committed.
+
+**Decision.** The review's findings, verdicts, ranked deferred backlog, and
+template-code exemptions are recorded in
+[Test Suite Review](../platform/delivery/testing-review.md), kept as a dated
+review page (reviews record, they do not drift). Four hardening increments
+proceed from it, one PR each, spec-first. The review's first finding about
+the ledger: **the failure semantics are almost all already specified — the
+tests are what is missing** (DTM-04/06/07 state the view-edge and dynamic-view
+paths at 0% coverage; LM-07/11/12/13 state the transport-failure, fast-fail,
+and outage-counting behaviours; CL-04/05/06 state the client failure
+contract; APC-04/05, ALR-04/05, SHC-05 state the frontend's). The increments
+therefore cite the existing ids, and mint new ones only where a finding names
+behaviour no rule states: **8.6** aux API failure hardening (proves
+DTM/LM/VE ids, adds negative parity scenarios), **8.7** client failure
+contract (adds CL-08 — a 2xx body that fails its model is the contract
+failing, not succeeding; proves CL-04/05/06), **7.19** frontend failure UX
+(proves APC/ALR/SPL/SHC ids; the example app's editor has no increment spec,
+its tests carry plain names), **9.1** resilience e2e with targeted
+container-stopping scenarios (the only new prefix, `RSL`). Coverage
+enforcement stays where it is: the
+SonarQube quality gate — no `--cov-fail-under`, no Vitest
+`coverage.thresholds`, no new CI flag. The server-spine findings (mid-request
+store failure, concurrent store writes) are explicitly deferred to the 2.x
+track as ranked backlog #1, not dropped.
+
+**Reason.** The gate already measures coverage (the `-c ci` configs write
+`coverage.xml`/`lcov.info`, CI uploads them, `nx affected -t sonar` feeds
+Sonar, whose quality gate fails on low levels — including new-code coverage,
+which ratchets naturally with every hardening PR); a second local flag would
+duplicate the gate and fight ADR 014's "defined once, runs everywhere". The
+priority split (frontend / aux APIs / clients first) follows where the
+representativeness gaps bite the conversion's next increments; the server
+spine's mid-request failures pair with 2.2's entity-store work, which changes
+those same call paths.
+
+**Alternatives.** (a) A per-project coverage ratchet in the Nx python plugin
+and Vitest configs — refused, see Reason (and the user's call of this date).
+(b) One workspace-wide coverage floor — refused: the template baseline is
+heterogeneous and a uniform floor would punish the vendored dashboard and
+the example apps. (c) Destructive failure-injection e2e as a nightly
+resilience suite — refused for now in favour of a small number of targeted
+scenarios inside the existing per-PR e2e suites (≤2 min budget each), the
+same realism bar as ADR 012.
+
+**Consequences.** The review page is the reference for "what was known on
+this date"; its numbers are a snapshot, the trace report stays the live
+system of record. Rule-id reservations: **CL-08** (8.7's one new rule) and
+`RSL-01…` (9.1); the other increments cite existing ids — minting new ids for
+already-specified behaviour would fork the ledger. The fastapi-example, `sdk`'s
+aws/msal/logger, aurelius-atlas-example, and the dashboard are exempted from
+hardening (matching the trace check's `exclude-projects` and DD-017).
+Phase ordering: 8.6 and 8.7 parallel, 7.19 parallel, 9.1 after 8.6 and 7.19.
