@@ -127,6 +127,38 @@ class SearchParameters(AtlasModel):
     sort_order: SortOrder | None = None
 
 
+class QuickSearchParameters(AtlasModel):
+    """``QuickSearchParameters``: what a quick search looks for, without classifications (QSR-01)."""
+
+    query: str | None = None
+    type_name: str | None = None
+    entity_filters: FilterCriteria | None = None
+    include_sub_types: JavaBool = False
+    exclude_deleted_entities: JavaBool = False
+    offset: JavaInt = 0
+    limit: JavaInt = 0
+    attributes: OptionalNameSet = None
+    sort_by: str | None = None
+    sort_order: SortOrder | None = None
+    exclude_header_attributes: JavaBool = False
+
+    def search_parameters(self) -> SearchParameters:
+        """``createSearchParameters``: the basic search a quick search is (QSR-02)."""
+        return SearchParameters(
+            query=self.query,
+            type_name=self.type_name,
+            exclude_deleted_entities=self.exclude_deleted_entities,
+            include_sub_types=self.include_sub_types,
+            limit=self.limit,
+            offset=self.offset,
+            entity_filters=self.entity_filters,
+            attributes=self.attributes,
+            sort_by=self.sort_by,
+            sort_order=self.sort_order,
+            exclude_header_attributes=self.exclude_header_attributes,
+        )
+
+
 class AtlasQueryType(StrEnum):
     """``AtlasSearchResult.AtlasQueryType``."""
 
@@ -172,3 +204,25 @@ class AtlasSearchResult(AtlasModel):
         """``addEntity``: append the header, replacing one of the same GUID."""
         entities = [entity for entity in self.entities or [] if entity.guid != header.guid]
         self.entities = [*entities, header]
+
+
+class AtlasAggregationEntry(AtlasModel):
+    """``AtlasAggregationEntry``: a facet value and how many entities have it (QSR-03)."""
+
+    name: str | None = None
+    count: int = 0
+
+
+class AtlasQuickSearchResult(AtlasModel):
+    """``AtlasQuickSearchResult``: a quick search's results and its facets (QSR-02, QSR-03)."""
+
+    search_results: AtlasSearchResult | None = None
+    aggregation_metrics: dict[str, list[AtlasAggregationEntry]] | None = None
+
+
+class AtlasSuggestionsResult(AtlasModel):
+    """``AtlasSuggestionsResult``: the terms suggested for a prefix (SUG-01)."""
+
+    suggestions: list[str] | None = None
+    prefix_string: str | None = None
+    field_name: str | None = None
