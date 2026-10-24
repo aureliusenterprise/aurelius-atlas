@@ -1,7 +1,7 @@
 # 4.2a Free text
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [\#145](<https://github.com/aureliusenterprise/aurelius-atlas/pull/145>)
 - **Records:** DD-091, DD-092, DV-48, DV-49; ends the `query` part of DV-46; relies on DD-087 to DD-090
 
 The first part of increment 4.2 (DD-091): free text, as Atlas's `FreeTextSearchProcessor` answers basic search's `query` through its Solr `/freetext` handler, weighted by the attributes' `searchWeight`, and `GET v2/search/fulltext`. 4.2b adds quick search with its facets and suggestions.
