@@ -204,12 +204,14 @@ class FakeClient:
         from_: int = 0,
         track_total_hits: bool | None = None,
         track_scores: bool | None = None,
+        aggs: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Answer like ``_search`` with the documents matching the query, ``size`` of them from ``from_``.
 
         With ``sort``, hits are ordered by the sort fields (``_score`` among them) and carry their sort values; a
         plain direction stands a document without the field in with its id, an options object puts it last. Only
         hits after ``search_after`` are answered. The total counts every match; each hit has its ``_score``.
+        ``terms`` aggregations count the values of every match.
         """
         _ = track_total_hits, track_scores
         order = [_sort_clause(clause) for clause in sort or []]
@@ -230,7 +232,11 @@ class FakeClient:
             hits.append(hit)
         if sort:
             hits.sort(key=cmp_to_key(lambda a, b: _compare(a["sort"], b["sort"], order)))
-        return {"hits": {"total": {"value": len(hits)}, "hits": hits[from_ : from_ + size]}}
+        response: dict[str, Any] = {"hits": {"total": {"value": len(hits)}, "hits": hits[from_ : from_ + size]}}
+        if aggs:
+            sources = [hit["_source"] for hit in hits]
+            response["aggregations"] = {name: _terms(sources, spec["terms"]) for name, spec in aggs.items()}
+        return response
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
         """Answer like ``_count`` for a ``match_all`` or ``term`` query."""
@@ -312,6 +318,24 @@ def _text_score(source: dict[str, Any], options: dict[str, Any]) -> float:
         if any(_term_in(term, words) for term in terms):
             score += float(boost or 1)
     return score
+
+
+def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, Any]:
+    """A ``terms`` aggregation, by count then key: a ``.text`` sub-field's lowercased words, else the values;
+    ``include`` a regular expression the whole term matches.
+    """  # noqa: D205 - one sentence
+    field: str = options["field"]
+    text = field.endswith(".text")
+    include = re.compile(options["include"]) if "include" in options else None
+    counts: dict[Any, int] = {}
+    for source in sources:
+        held = _held(source, field.removesuffix(".text") if text else field)
+        terms = {word.lower() for value in held for word in _WORD.findall(str(value))} if text else set(held)
+        for term in terms:
+            if include is None or include.fullmatch(str(term)):
+                counts[term] = counts.get(term, 0) + 1
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[: options.get("size", 10)]
+    return {"buckets": [{"key": key, "doc_count": count} for key, count in ordered]}
 
 
 def _term_in(term: str, words: set[str]) -> bool:
