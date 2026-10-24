@@ -203,21 +203,26 @@ class FakeClient:
         seq_no_primary_term: bool = False,
         from_: int = 0,
         track_total_hits: bool | None = None,
+        track_scores: bool | None = None,
     ) -> dict[str, Any]:
         """Answer like ``_search`` with the documents matching the query, ``size`` of them from ``from_``.
 
-        With ``sort``, hits are ordered by the sort fields and carry their sort values; a plain direction stands a
-        document without the field in with its id, an options object puts it last. Only hits after
-        ``search_after`` are answered. The total counts every match.
+        With ``sort``, hits are ordered by the sort fields (``_score`` among them) and carry their sort values; a
+        plain direction stands a document without the field in with its id, an options object puts it last. Only
+        hits after ``search_after`` are answered. The total counts every match; each hit has its ``_score``.
         """
-        _ = track_total_hits
+        _ = track_total_hits, track_scores
         order = [_sort_clause(clause) for clause in sort or []]
         hits = []
         for document_id, (source, seq_no) in self._index_of(index).items():
-            values = [_sort_value(source, field, document_id, options) for field, options in order]
+            score = _score(source, query)
+            values = [
+                score if field == "_score" else _sort_value(source, field, document_id, options)
+                for field, options in order
+            ]
             if not _matches(source, query) or (search_after is not None and _compare(values, search_after, order) <= 0):
                 continue
-            hit: dict[str, Any] = {"_id": document_id, "_source": source}
+            hit: dict[str, Any] = {"_id": document_id, "_source": source, "_score": score}
             if seq_no_primary_term:
                 hit |= {"_seq_no": seq_no, "_primary_term": self.primary_term}
             if sort:
@@ -248,8 +253,9 @@ def _read(body: bytes) -> dict[str, Any]:
 
 
 def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # noqa: PLR0911 - one per kind
-    """Whether ``source`` matches a query: ``match_all``, ``match_none``, ``bool`` (``filter``, ``must_not``,
-    ``should``), and single-field ``term``, ``terms``, ``range``, ``prefix``, ``wildcard`` and ``exists``.
+    """Whether ``source`` matches a query: ``match_all``, ``match_none``, ``bool`` (``filter``, ``must``,
+    ``must_not``, ``should``), ``simple_query_string``, and single-field ``term``, ``terms``, ``range``,
+    ``prefix``, ``wildcard`` and ``exists``.
     """  # noqa: D205 - one sentence
     if query is None or "match_all" in query:
         return True
@@ -259,10 +265,12 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # n
         clauses = query["bool"]
         should = clauses.get("should", [])
         return (
-            all(_matches(source, clause) for clause in clauses.get("filter", []))
+            all(_matches(source, clause) for clause in clauses.get("filter", []) + clauses.get("must", []))
             and not any(_matches(source, clause) for clause in clauses.get("must_not", []))
             and (not should or any(_matches(source, clause) for clause in should))
         )
+    if "simple_query_string" in query:
+        return _text_score(source, query["simple_query_string"]) > 0
     if "exists" in query:
         return _held(source, query["exists"]["field"]) != []
     ((kind, condition),) = query.items()
@@ -279,6 +287,41 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # n
         pattern = _wildcard(options["value"], ignore_case=bool(options.get("case_insensitive")))
         return any(isinstance(value, str) and pattern.fullmatch(value) is not None for value in held)
     return operand in held
+
+
+def _score(source: dict[str, Any], query: dict[str, Any] | None) -> float:
+    """A document's score: what its ``simple_query_string`` clauses, alone or in a ``bool``'s ``must``, give it."""
+    if query is None:
+        return 0.0
+    if "simple_query_string" in query:
+        return _text_score(source, query["simple_query_string"])
+    return sum((_score(source, clause) for clause in query.get("bool", {}).get("must", [])), 0.0)
+
+
+def _text_score(source: dict[str, Any], options: dict[str, Any]) -> float:
+    """A ``simple_query_string`` read word by word: each field (``.text`` sub-field, ``^`` boost) whose words, in
+    any case, hold one of the query's, or one beginning with a word ending in ``*``, adds its boost.
+    """  # noqa: D205 - one sentence
+    terms = [term.lower() for term in _QUERY_WORD.findall(options["query"])]
+    score = 0.0
+    for spec in options["fields"]:
+        name, _, boost = spec.partition("^")
+        words = {
+            word.lower() for value in _held(source, name.removesuffix(".text")) for word in _WORD.findall(str(value))
+        }
+        if any(_term_in(term, words) for term in terms):
+            score += float(boost or 1)
+    return score
+
+
+def _term_in(term: str, words: set[str]) -> bool:
+    if term.endswith("*"):
+        return any(word.startswith(term[:-1]) for word in words)
+    return term in words
+
+
+_WORD = re.compile(r"\w+")
+_QUERY_WORD = re.compile(r"\w+\*?")
 
 
 def _value(source: dict[str, Any], field: str) -> Any:  # noqa: ANN401 - any field value
