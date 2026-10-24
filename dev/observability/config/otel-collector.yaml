@@ -1,16 +1,68 @@
 receivers:
+    # Three ingest legs, credential-typed (DD-193, DD-196). TLS (below) proves
+    # which collector you reach on all of them; the auth extension proves who
+    # writes. The contrib image has no compositeauth extension, so a port
+    # carries exactly one authenticator — the legs are separate ports by
+    # construction.
+    #
+    # The browser leg: the webapp/example /otel/ proxies pass the signed-in
+    # user's Keycloak access token through (CSP stays 'self'), and the oidc
+    # extension validates it against the issuer — every span/metric carries
+    # the user's identity (the sub claim). Unauthenticated pushes are 401.
     otlp:
+        protocols:
+            http:
+                endpoint: 0.0.0.0:4318
+                tls:
+                    cert_file: /certs/otel-collector.pem
+                    key_file: /certs/otel-collector-key.pem
+                auth:
+                    authenticator: oidc
+    # The per-service leg (DD-196, CIA-06): headless producers with a Keycloak
+    # identity — the three slice metrics-pullers (oauth2client extension) and
+    # the Atlas server (the in-app refresh shim) — present client-credentials
+    # JWTs minted for their otel-* realm clients. The SAME oidc extension as
+    # the browser leg validates them: one issuer, one audience
+    # (otel-collector), one trust story; the azp claim carries the client id
+    # (the resource processor stamps it). The shared token is answered 401
+    # here (CIA-08) — the legs are credential-typed.
+    otlp/services:
         protocols:
             grpc:
                 endpoint: 0.0.0.0:4317
                 tls:
                     cert_file: /certs/otel-collector.pem
                     key_file: /certs/otel-collector-key.pem
+                auth:
+                    authenticator: oidc
             http:
-                endpoint: 0.0.0.0:4318
+                endpoint: 0.0.0.0:4319
                 tls:
                     cert_file: /certs/otel-collector.pem
                     key_file: /certs/otel-collector-key.pem
+                auth:
+                    authenticator: oidc
+    # The legacy leg (DD-196): the two producers that cannot present a
+    # Keycloak JWT — Keycloak's native OTLP (the issuer cannot mint its own
+    # token at cold boot) and the FastAPI example (static-header SDK, 60s
+    # tokens) — keep 7.17's shared ingest token (bearertokenauth, CIA-10).
+    # Retires when a Quarkus bearer hook and the example's shim exist.
+    otlp/legacy:
+        protocols:
+            grpc:
+                endpoint: 0.0.0.0:4320
+                tls:
+                    cert_file: /certs/otel-collector.pem
+                    key_file: /certs/otel-collector-key.pem
+                auth:
+                    authenticator: bearertokenauth
+            http:
+                endpoint: 0.0.0.0:4321
+                tls:
+                    cert_file: /certs/otel-collector.pem
+                    key_file: /certs/otel-collector-key.pem
+                auth:
+                    authenticator: bearertokenauth
 
 processors:
     batch:
@@ -19,17 +71,73 @@ processors:
             - action: upsert
               key: deployment.environment.name
               value: development
+            # CIA-05 (DD-194): the OIDC verifier keeps the verified token's
+            # claims in the request context under their raw JWT names —
+            # Keycloak's subject claim is `sub`, so the path is
+            # auth.claims.sub (the extension README's `subject` example fits
+            # issuers that name the claim that). Copy it onto the resource so
+            # every user-driven span/metric carries the user's identity
+            # (searchable in Tempo as resource["enduser.id"]). Legacy-leg
+            # pushes carry no auth context: the upsert lands an empty
+            # attribute, so those producers stay unattributed (enduser.id=""),
+            # by design. Service-account pushes carry the client's UUID `sub`
+            # here; transform/identity (below) clears it (CIA-09, DD-196).
+            - action: upsert
+              key: enduser.id
+              from_context: auth.claims.sub
+            # CIA-09 (DD-196): the verified token's azp (authorized party) is
+            # the minting client — per-service identity on the per-service
+            # leg (otel-postgres, …), `aurelius` on the browser leg. Empty on
+            # the legacy leg (no OIDC context, the DD-194 empty-upsert rule).
+            - action: upsert
+              key: otel.ingest.client
+              from_context: auth.claims.azp
+    # CIA-09 (DD-196): a service-account push must not wear a user identity.
+    # The service-account sub is a client UUID, not a person — on pushes from
+    # an otel-* client, clear the enduser.id the sub-upsert above stamped, so
+    # human and machine identity stay distinguishable (enduser.id=<sub> +
+    # otel.ingest.client=aurelius for users; enduser.id="" +
+    # otel.ingest.client=otel-* for services; both empty on the legacy leg).
+    transform/identity:
+        trace_statements:
+            - context: resource
+              statements:
+                  - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
+        metric_statements:
+            - context: resource
+              statements:
+                  - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
+        log_statements:
+            - context: resource
+              statements:
+                  - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
+    # The metrics leg of CIA-05 (DD-194): the prometheus exporter keeps only
+    # a few resource attributes as labels (service.name -> exported_job) and
+    # drops the rest, so the stamped enduser.id would never reach Prometheus.
+    # Promote it onto every datapoint, where the exporter turns it into the
+    # enduser_id label — panels can group by user. Service-leg metrics carry
+    # the empty enduser.id (DD-196: cleared by transform/identity, stamped
+    # with otel.ingest.client), so producer series get one constant
+    # enduser_id="" label — no cardinality growth. DD-196 extends the
+    # promotion: otel.ingest.client rides the same hop (label
+    # otel_ingest_client) — where per-service attribution becomes queryable.
+    transform/user_labels:
+        metric_statements:
+            - context: datapoint
+              statements:
+                  - set(attributes["enduser.id"], resource.attributes["enduser.id"])
+                  - set(attributes["otel.ingest.client"], resource.attributes["otel.ingest.client"])
 
 exporters:
     debug:
         verbosity: basic
-    otlphttp/loki:
+    otlp_http/loki:
         endpoint: http://loki:3100/otlp
-    otlphttp/tempo:
+    otlp_http/tempo:
         endpoint: http://tempo:4318
     prometheus:
         endpoint: 0.0.0.0:9464
-        # OTel SDKs like logfire aggregate histograms exponentially; the
+        # OTel SDKs aggregate histograms exponentially; the
         # classic text format would flatten them to a lone +Inf bucket
         # (histogram_quantile then always NaN). Emit them as Prometheus
         # native histograms so p95 panels work for every producer.
@@ -37,9 +145,49 @@ exporters:
 
 extensions:
     health_check:
+    # Shared ingest secret for the service leg, compared against the
+    # Authorization header. The dev default lives in this project's .env
+    # (OTEL_COLLECTOR_INGEST_TOKEN, compose interpolates it into the
+    # container env); deployments inject their own.
+    bearertokenauth:
+        tokens:
+            - ${env:OTEL_COLLECTOR_INGEST_TOKEN}
+    # Ingest validator (DD-193, browser leg; DD-196, per-service leg): verifies
+    # the presented token against the issuer's JWKS and requires the
+    # otel-collector audience the realm's otel-ingest scope mints. The
+    # `providers` shape is the extension's current schema (the flat
+    # single-provider keys are deprecated) and is a list: the validator accepts
+    # a token from ANY provider, so both of the dev Keycloak's listeners verify
+    # — this is one realm with one signing key served on two URLs (ADR 039's
+    # dual listener), not two trust domains.
+    #
+    # Why both (DD-202): the `iss` a token carries is the listener that minted
+    # it, and the listener is baked into each producer's container env at
+    # creation, so any producer/collector issuer mix that is not all-:8080 or
+    # all-:8443 401s the leg and silently drops telemetry (the ESD-06
+    # starvation). Listing both providers removes the failure mode: minting is
+    # standardized on the TLS :8443 listener (every test and every slice
+    # puller), the plaintext :8080 listener stays validated for the human dev
+    # browser, which cannot enroll the mkcert CA (ADR 039's relaxation). The
+    # audience is enforced per provider; the keys are discovered per issuer.
+    #
+    # issuer_ca_path: unset on the plaintext listener, pinned to the shared
+    # mkcert CA on the TLS one (mounted at /dev-ca from the webapp's copy —
+    # same CA material across the workspace). Discovery runs at extension
+    # start: Keycloak must be up (restart policy on the collector covers the
+    # dev start race) and `keycloak.localhost` resolvable (extra_hosts in
+    # docker-compose.yaml — :8443 is loopback-published, host DNS cannot
+    # resolve it).
+    oidc:
+        providers:
+            - issuer_url: http://keycloak.localhost:8080/realms/master
+              audience: otel-collector
+            - issuer_url: https://keycloak.localhost:8443/realms/master
+              audience: otel-collector
+              issuer_ca_path: /dev-ca/ca.pem
 
 service:
-    extensions: [health_check]
+    extensions: [health_check, bearertokenauth, oidc]
     # Internal telemetry (otelcol_* pipeline health) on 0.0.0.0 so
     # Prometheus (job otel-collector-internal) can scrape it — the default
     # binds to loopback, which is unreachable across containers.
@@ -53,14 +201,16 @@ service:
                               port: 8888
     pipelines:
         traces:
-            receivers: [otlp]
-            processors: [resource, batch]
-            exporters: [otlphttp/tempo, debug]
+            receivers: [otlp, otlp/services, otlp/legacy]
+            processors: [resource, transform/identity, batch]
+            exporters: [otlp_http/tempo, debug]
         metrics:
-            receivers: [otlp]
-            processors: [resource, batch]
+            receivers: [otlp, otlp/services, otlp/legacy]
+            processors: [resource, transform/identity, transform/user_labels, batch]
             exporters: [prometheus, debug]
         logs:
-            receivers: [otlp]
-            processors: [resource, batch]
-            exporters: [otlphttp/loki, debug]
+            # Service legs only: no browser producer emits OTLP logs, and the
+            # OIDC leg stays trace/metric-shaped (the SDK's signals).
+            receivers: [otlp/services, otlp/legacy]
+            processors: [resource, transform/identity, batch]
+            exporters: [otlp_http/loki, debug]

@@ -1,0 +1,21 @@
+[project]
+dependencies = ["httpx2>=2.0.0", "pydantic>=2.14.1"]
+description = "The Aurelius Atlas data2model API as a contract and a client: the /extract rules document as pydantic models, and an async client for the API."
+name = "aurelius-atlas-data2model-client"
+requires-python = ">=3.14"
+version = "0.1.0"
+
+[[project.authors]]
+name = "Aurelius Enterprise"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aurelius_atlas_data2model_client"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "module"
+asyncio_mode = "auto"
+required_plugins = ["pytest-asyncio"]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]

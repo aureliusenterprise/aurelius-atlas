@@ -1,0 +1,119 @@
+name: aurelius-atlas-lineage-model-e2e
+
+# The 8.2 chain (DD-200): the app under test, the real 8.1 data2model, and a
+# canned-file fixture Atlas. The fixture answers GET /v2/lineage/<guid> from
+# files under fixtures/ (python http.server maps the URL path to the file), so
+# the app's upstream calls run over real HTTP between containers; the graph
+# then flows through the real extraction. The 5.1 slice replaces the fixture
+# with the server (DV-69).
+services:
+    fixture-atlas:
+        image: dhi.io/python:3.14-alpine3.24
+        # The base image's Cmd is `python3` with no entrypoint, so the command
+        # carries the interpreter. http.server maps the URL path to the file
+        # path: GET /v2/lineage/<guid> serves fixtures/v2/lineage/<guid>, and an
+        # absent guid is a 404 — the app's 204 path (LM-05).
+        command: ["python3", "-m", "http.server", "21000", "--directory", "/fixtures"]
+        volumes:
+            - ./fixtures:/fixtures:ro
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "python3",
+                    "-c",
+                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/v2/lineage/00000000-0000-4000-8000-000000000001', timeout=5).close()",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 12
+
+    aurelius-atlas-data2model:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-data2model:local
+        environment:
+            # ${VAR:?} guards: Nx injects the project .env into the task
+            # environment; a missing value would only show as a settings error
+            # inside the started container. The chain forwards the caller's
+            # bearer token here (LM-04), so this service verifies it against
+            # the e2e issuer (DTM-10), audience `aurelius` — the audience the
+            # forwarded webapp tokens carry (AUX-04).
+            AURELIUS_ATLAS_DATA2MODEL_LOG_LEVEL: info
+            AURELIUS_ATLAS_DATA2MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-data2model.pem
+            AURELIUS_ATLAS_DATA2MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-data2model-key.pem
+            AURELIUS_ATLAS_DATA2MODEL_TLS_CA_FILE: /certs/ca.pem
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: master
+            # Fixed by design, not a deployment knob: the chain forwards the
+            # webapp's token (LM-04), whose audience is `aurelius` (AUX-04).
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
+            # OTLP ingest identity (DD-196, DD-197): as in the 8.1 suite, the
+            # mint rides the TLS :8443 issuer (DD-202: every per-service
+            # producer mints there; the collector validates both listeners),
+            # the export goes to the collector's TLS :4319 on the dev
+            # observability network. The secret is the shared dev ingest
+            # secret (DD-196): this suite's environment carries it under the
+            # lineage-model prefix.
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_ID: otel-data2model
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            - keycloak.localhost:host-gateway
+        networks:
+            - default
+            # The collector answers as `otel-collector` here; its publishes are
+            # loopback-pinned (CIA-03), so host-gateway would not reach it.
+            - aurelius-atlas-dev-observability-network
+        ports:
+            - 21001
+        volumes:
+            - ../../aurelius-atlas-data2model/certs:/certs:ro
+
+    aurelius-atlas-lineage-model:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-lineage-model:local
+        depends_on:
+            fixture-atlas:
+                condition: service_healthy
+            aurelius-atlas-data2model:
+                condition: service_healthy
+        environment:
+            # The chain's upstreams, in-network: the fixture Atlas over plain
+            # http, the data2model over TLS — its certificate covers the
+            # service name (tls.json), verified against the dev CA (LM-04).
+            AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info
+            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-lineage-model.pem
+            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-lineage-model-key.pem
+            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CA_FILE: /certs/ca.pem
+            # The e2e issuer (dev/keycloak, TLS listener): GET / verifies the
+            # caller's bearer token (LM-08). Audience `aurelius` — the webapp's
+            # client id, the audience of the tokens the chain forwards (AUX-04);
+            # the suite mints its test tokens for it.
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: ${AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE:?}
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /certs/ca.pem
+            AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL: http://fixture-atlas:21000
+            AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL: https://aurelius-atlas-data2model:21001
+            # OTLP ingest identity (DD-196, DD-197): otel-lineage-model mints
+            # at the TLS :8443 issuer (DD-202), exports to the collector's
+            # TLS :4319.
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_ID: otel-lineage-model
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET: ${AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            - keycloak.localhost:host-gateway
+        networks:
+            - default
+            - aurelius-atlas-dev-observability-network
+        ports:
+            - 21002
+        volumes:
+            - ../certs:/certs:ro
+
+networks:
+    aurelius-atlas-dev-observability-network:
+        external: true

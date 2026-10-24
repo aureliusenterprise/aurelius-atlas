@@ -1,13 +1,65 @@
 @let _active = active();
+@let _title = title();
+@let _isCard = _title !== undefined;
 
 @if (_active) {
-    <div class="modal" [class.is-active]="_active">
-        <div class="modal-background"></div>
-        <div class="modal-content">
-            <ng-content select="[modal-content]"></ng-content>
+    <div class="modal is-active">
+        <!--
+            Backdrop dismissal is a pointer affordance; the keyboard path is
+            the Escape handler on the dialog and the close/cancel buttons.
+            A11y rules want a focusable keyboard element on the backdrop
+            itself, and Bulma's modal has none — Escape is the dialog's.
+        -->
+        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- NOSONAR S1077: the backdrop is the pointer path by design; Escape on the dialog is the keyboard path. -->
+        <div class="modal-background" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
+        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- The Escape handler catches keydowns bubbling from the dialog's
+             focused descendants; the container itself needs no focus, and a
+             tabindex here would add a tab stop the modal does not want. -->
+        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+        <div
+            [class]="_isCard ? 'modal-card' : 'modal-content'"
+            [attr.role]="_isCard ? 'dialog' : null"
+            [attr.aria-label]="_title"
+            (keydown.escape)="onEscape()"
+        >
+            @if (_isCard) {
+                <header class="modal-card-head">
+                    <p class="modal-card-title">{{ _title }}</p>
+                    <button type="button" class="delete" [attr.aria-label]="ariaLabel()" (click)="dismiss()"></button>
+                </header>
+            }
+            <div [class.modal-card-body]="_isCard">
+                <ng-content select="[modal-content]"></ng-content>
+                <ng-content></ng-content>
+            </div>
+            @if (_isCard) {
+                <footer class="modal-card-foot">
+                    @if (confirmLabel()) {
+                        <button
+                            type="button"
+                            class="button is-success"
+                            [class.is-loading]="confirmPending()"
+                            [disabled]="confirmPending()"
+                            (click)="onConfirmClick()"
+                        >
+                            {{ confirmLabel() }}
+                        </button>
+                    }
+                    @if (cancelLabel()) {
+                        <button type="button" class="button" (click)="dismiss()">{{ cancelLabel() }}</button>
+                    }
+                </footer>
+            }
         </div>
-        @if (showCloseButton()) {
-            <button class="modal-close is-large" aria-label="close" (click)="close()"></button>
+        @if (!_isCard && showCloseButton()) {
+            <button
+                type="button"
+                class="modal-close is-large"
+                [attr.aria-label]="ariaLabel()"
+                (click)="close()"
+            ></button>
         }
     </div>
 }

@@ -4,12 +4,16 @@
 @let _pageTokens = pageTokens();
 
 <nav class="pagination" role="navigation" aria-label="pagination">
+    <!-- Previous/next labels: Aurelius table shell chrome (DD-136). The i18n id
+         must equal the dictionary path exactly — a `|description` suffix joins
+         the extracted id, and the key-keyed bridge would not match it. -->
     <button
         type="button"
         class="pagination-previous"
         [disabled]="!_hasPreviousPage"
         (click)="previousPage()"
         aria-label="Go to previous page"
+        i18n="@@components.sortableTableShell.previous"
     >
         Previous
     </button>
@@ -19,6 +23,7 @@
         [disabled]="!_hasNextPage"
         (click)="nextPage()"
         aria-label="Go to next page"
+        i18n="@@components.sortableTableShell.next"
     >
         Next page
     </button>

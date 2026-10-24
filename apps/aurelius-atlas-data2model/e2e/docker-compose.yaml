@@ -1,0 +1,52 @@
+name: aurelius-atlas-data2model-e2e
+
+services:
+    aurelius-atlas-data2model:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-data2model:local
+        environment:
+            # ${VAR:?} guards: Nx injects the project .env into the task
+            # environment; a missing value would otherwise only show as a
+            # settings error inside the started container.
+            AURELIUS_ATLAS_DATA2MODEL_LOG_LEVEL: info
+            # HTTPS with this project's certificate (`nx certgen`); the
+            # healthcheck verifies it.
+            AURELIUS_ATLAS_DATA2MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-data2model.pem
+            AURELIUS_ATLAS_DATA2MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-data2model-key.pem
+            AURELIUS_ATLAS_DATA2MODEL_TLS_CA_FILE: /certs/ca.pem
+            # The e2e issuer (dev/keycloak, TLS listener): /extract verifies the
+            # caller's bearer token against it (DTM-10). The audience is the
+            # dev realm's public `aurelius` client — the webapp's client id,
+            # the audience the browser's tokens carry (AUX-04); the suite mints
+            # its test tokens for it.
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: master
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: ${AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE:?}
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
+            # OTLP ingest identity (DD-196, DD-197): the app exports through
+            # its own pipeline, minting client-credentials JWTs as
+            # otel-data2model for the per-service leg (:4319). The mint rides
+            # the TLS :8443 listener (DD-202): every per-service producer
+            # mints there and the collector validates both listeners, so no
+            # suite order can split mint issuer from validator.
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_ID: otel-data2model
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            # The issuer, published loopback-wide on this machine by the dev
+            # Keycloak stack (as the server suite reaches it for its mint).
+            - keycloak.localhost:host-gateway
+        networks:
+            # The collector answers as `otel-collector` on this network — the
+            # name in its certificate. Its publishes are loopback-pinned
+            # (CIA-03), so a host-gateway extra_host would not reach it.
+            - aurelius-atlas-dev-observability-network
+        ports:
+            - 21001
+        volumes:
+            - ../certs:/certs:ro
+
+networks:
+    aurelius-atlas-dev-observability-network:
+        external: true

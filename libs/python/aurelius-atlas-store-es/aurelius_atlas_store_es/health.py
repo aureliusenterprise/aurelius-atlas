@@ -27,10 +27,19 @@ class HealthReport(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     status: HealthStatus
+    """Whether the store can serve requests."""
+
     cluster_name: str | None = None
+    """The cluster's name, when the server answered."""
+
     version: str | None = None
+    """The server's version, when the server answered."""
+
     cluster_status: str | None = None
+    """The cluster's status (``green``/``yellow``/``red``), when the server answered."""
+
     reason: str | None = None
+    """What makes the store ``DOWN``; None when it is ``UP``."""
 
 
 async def check_health(client: AsyncElasticsearch) -> HealthReport:

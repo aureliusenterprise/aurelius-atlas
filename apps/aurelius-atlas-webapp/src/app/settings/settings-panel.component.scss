@@ -1,0 +1,36 @@
+/*
+ * The settings panel's sections (SPL-03..SPL-12): the drawer body stacks
+ * them; each section's heading is a Bulma `.label`, the form-controls
+ * guide's field label (DD-167) — the same shape the ui-lib Select renders
+ * for Appearance, so all six headings match, and every heading is the
+ * accessible name of its control (DD-169): `label[for]` on the selects
+ * and the checkbox, `aria-labelledby` on the language group; Appearance
+ * rides the Select's own `label[for]`. The checkbox is a plain control
+ * on the section grid (Bulma's guide has the label above the control).
+ * The panel ships no layout of its own beyond this rhythm — the drawer
+ * (DD-157) carries the panel chrome, Bulma carries the controls.
+ */
+.settings-section + .settings-section {
+    margin-top: 1.5rem;
+}
+
+.settings-section input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* The active locale (SPL-06, DD-170): the template marks it
+ * `is-selected`/`aria-current`; Bulma 1 gives a selected button no
+ * fill, so the Aurelius blue carries it — pinned #0073dd with white
+ * ink (SHM-07's footer pair, 4.9:1, the same in either scheme; the
+ * scheme-following `--bulma-link` lightens in dark, DD-156, and white
+ * ink would fall on its 73% light-blue). */
+.settings-section .button.is-selected {
+    background-color: #0073dd;
+    border-color: #0073dd;
+    color: var(--bulma-white); // the footer's pinned pair (SHM-07), 4.6:1
+}
+
+.settings-section .help {
+    margin-top: 0.5rem;
+}

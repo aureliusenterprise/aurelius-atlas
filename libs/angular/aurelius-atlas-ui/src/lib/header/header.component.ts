@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectionStrategy, Component, input, model } from "@angular/core";
+import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } from "@angular/core";
 
 @Component({
     selector: "aurelius-atlas-ui-header",
@@ -18,6 +18,21 @@ export class Header {
      * The logo to display in the header.
      */
     readonly logo = input<string>();
+
+    /**
+     * The CSS class on the logo image. The Aurelius chrome sizes its brand
+     * mark through the `.logo` rule in this component's styles (max-width
+     * 150px, max-height 50px — the legacy navbar anatomy, SHM-02);
+     * consumers style logos their own way by passing a different class.
+     */
+    readonly logoCssClass = input<string>("logo");
+
+    /**
+     * Pin the navbar to the top of the viewport (`is-fixed-top`). The
+     * legacy chrome is pinned; pair it with `has-navbar-fixed-top` on the
+     * body so content starts below the bar (SHM-05).
+     */
+    readonly fixed = input(false, { transform: booleanAttribute });
 
     /**
      * The name of the application to display in the header.

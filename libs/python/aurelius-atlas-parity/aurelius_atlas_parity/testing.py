@@ -9,7 +9,7 @@ import uuid
 from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 type Scope = MutableMapping[str, Any]
 type Receive = Callable[[], Awaitable[MutableMapping[str, Any]]]

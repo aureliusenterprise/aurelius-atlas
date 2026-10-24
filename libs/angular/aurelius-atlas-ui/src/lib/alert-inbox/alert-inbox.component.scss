@@ -1,0 +1,101 @@
+/*
+ * The inbox bar (ALR-11): the chips ride Bulma's `buttons has-addons`
+ * group — the joined shape comes from Bulma, this sheet carries the
+ * full-width row, the severity fills, the count tag, and the unread dot.
+ * The projected Clear all is a member of the same group, `is-expanded`
+ * like the chips, so the strip reads as one joined bar of equal
+ * segments (DD-180, DD-182).
+ *
+ * A pressed chip rides its severity's colour (DD-182): the fills are
+ * DD-152's pinned ramp, fixed in both schemes like the badge's dot
+ * (DD-168) and the footer's pair (SHM-07). Bulma's own `.button.is-*`
+ * fills are scheme-following token tints, and the brand pins the
+ * `light` plate outside Bulma's scheme machinery (SHM-04) — DD-176's
+ * measured trap. The inks are the ramp's own inverts: Bulma's black on
+ * warning and info (yellow and teal take dark ink, 11.7:1 and 9.7:1),
+ * white on danger (4.5:1). An unpressed chip is a plain Bulma button —
+ * "off" needs no colour. The fill rides `is-sev-*` classes, not Bulma's
+ * `is-info` etc., so Bulma's scheme-following button rules stay off the
+ * chip: unpressed must stay plain.
+ *
+ * The count tag is the chip's pinned pair (DD-176): Bulma's `is-light`
+ * is a scheme trap — the brand pins the light plate outside Bulma's
+ * scheme machinery (SHM-04) while Bulma's dark theme re-pins the ink,
+ * white-on-white in dark mode.
+ */
+.aurelius-alert-inbox {
+    border-bottom: 1px solid var(--bulma-scheme-main-bis);
+    padding: 0.75rem 2rem;
+}
+
+.aurelius-alert-inbox-group {
+    display: flex;
+    flex-wrap: nowrap;
+    margin-bottom: 0;
+}
+
+/*
+ * `--aurelius-chip-fill` is the chip's background plate — the unread
+ * dot rings against it (below). A plain chip rides the panel's surface;
+ * the selected rules re-pin it to their fill.
+ */
+.aurelius-alert-inbox-chip {
+    --aurelius-chip-fill: var(--bulma-scheme-main);
+}
+
+.aurelius-alert-inbox-chip.is-selected.is-sev-info {
+    background-color: #17a2b8; // $info (DD-152)
+    border-color: #17a2b8;
+    color: var(--bulma-black-bis); // #141414, 9.7:1 on the teal
+    --aurelius-chip-fill: #17a2b8;
+}
+
+.aurelius-alert-inbox-chip.is-selected.is-sev-warning {
+    background-color: #ffc107; // $warning (DD-152)
+    border-color: #ffc107;
+    color: var(--bulma-black-bis); // Bulma's warning ink, 11.7:1
+    --aurelius-chip-fill: #ffc107;
+}
+
+.aurelius-alert-inbox-chip.is-selected.is-sev-error {
+    background-color: #dc3545; // $danger (DD-152)
+    border-color: #dc3545;
+    color: var(--bulma-white); // 4.5:1 on the red (Bulma's danger invert)
+    --aurelius-chip-fill: #dc3545;
+}
+
+/*
+ * The count badge is the chip's only content taller than the button's
+ * own content box, and Bulma's `.tag` is a 2em-tall control: at the
+ * small button's font that is 1.5rem over a 1.125rem line — the badge
+ * stretched the chips a step above the projected action (measured
+ * live, DD-183). Compacted to the button's scale — line-height 1,
+ * hairline vertical padding, under the 1.125rem line — every member of
+ * the group computes to the plain small-button height, and the joined
+ * bar is one height (the group's flex stretch keeps them equal).
+ */
+.aurelius-alert-inbox-count {
+    background-color: #f5f5f5; // $light, pinned in both schemes (DD-176)
+    color: #363636; // its legacy invert (SHM-04's pair)
+    height: auto;
+    line-height: 1;
+    margin-inline-start: 0.375rem;
+    padding: 0.125em 0.5em;
+}
+
+/*
+ * The unread dot (ALR-12): the chip's own ink (currentColor) with a
+ * hairline ring in the chip's plate — the badge's idiom (DD-168). The
+ * ramp's colour is the chip's whole face now (DD-182), so a ramp-
+ * coloured dot would ride its own colour and vanish; the ink dot keeps
+ * a clear edge on every fill and on the plain chip.
+ */
+.aurelius-alert-inbox-unread {
+    background-color: currentColor;
+    border: 1.5px solid var(--aurelius-chip-fill);
+    border-radius: var(--bulma-radius-rounded);
+    flex-shrink: 0;
+    height: 0.5rem;
+    margin-inline-start: 0.25rem;
+    width: 0.5rem;
+}

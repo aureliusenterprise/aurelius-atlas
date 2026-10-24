@@ -34,5 +34,17 @@ export default [
         // Override or add rules here
         rules: {},
     },
+    {
+        files: ["**/*.ts"],
+        rules: {
+            // Underscore-prefixed params are intentional (e.g. the static
+            // ngTemplateContextGuard signature, which types a template's
+            // context without using its arguments).
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+            ],
+        },
+    },
     ...storybook.configs["flat/recommended"],
 ];

@@ -1,0 +1,66 @@
+@let _label = label();
+@let _icon = icon();
+
+@if (_label) {
+    <label class="label" [id]="inputId + '-label'" [for]="inputId">{{ _label }}</label>
+}
+<div class="field has-addons" [class.is-marginless]="!_label">
+    <!-- Slot for caller buttons left of the field, as the shell's addons-left did. -->
+    <ng-content select="[buttons-left]"></ng-content>
+    <div class="control is-expanded" [class.has-icons-left]="_icon">
+        <div class="select is-fullwidth" [class.is-danger]="invalid()">
+            <!-- The disabled state rides ngModel's own input, not an attr
+                 binding: the value accessor's setDisabledState writes the
+                 property and would undo an [attr.disabled]. -->
+            <select
+                [id]="inputId"
+                ngModel
+                name="value"
+                [ngModel]="controlValue()"
+                (ngModelChange)="onValueChange($event)"
+                [disabled]="disabled()"
+                [attr.aria-labelledby]="inputId + '-label'"
+                aria-required="true"
+            >
+                <option hidden [value]="">--&nbsp;{{ placeholderMessage() }}&nbsp;--</option>
+                <!-- Caller options before the data rows, as the shell's options-before did. -->
+                <ng-content select="[options-before]"></ng-content>
+                @for (row of options(); track $index) {
+                    @if (row[displayField()]) {
+                        <option [value]="$index">{{ displayValue(row) }}</option>
+                    }
+                }
+                <!-- Caller options after the data rows, as the shell's options-after did. -->
+                <ng-content select="[options-after]"></ng-content>
+            </select>
+        </div>
+        @if (_icon) {
+            <span class="icon is-left" [class.has-text-danger]="invalid()" [class.has-text-info]="!invalid()">
+                <fa-icon [icon]="_icon"></fa-icon>
+            </span>
+        }
+        @if (invalid()) {
+            <p class="help is-danger">{{ requiredErrorMessage() }}</p>
+        }
+    </div>
+    @if (searchVisible()) {
+        <div class="control">
+            <button
+                type="button"
+                class="button is-info"
+                [class.is-loading]="searchLoading()"
+                [class.is-static]="disabled()"
+                [attr.disabled]="disabled() ? '' : null"
+                [attr.aria-busy]="searchLoading()"
+                [attr.aria-label]="searchLabel()"
+                (click)="activateSearch()"
+            >
+                <span class="icon is-small">
+                    <fa-icon [icon]="faSearch"></fa-icon>
+                </span>
+            </button>
+        </div>
+    }
+    <!-- Slot for caller buttons right of the field, as the shell's addons-right did. -->
+    <ng-content select="[buttons-right]"></ng-content>
+</div>

@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/angular";
 import { Pagination } from "./pagination.component";
 
+/**
+ * Bulma pagination: previous/next buttons around a row of page numbers,
+ * the current page marked. It collapses long page runs to the first, last
+ * and a window around the current page.
+ */
 const meta: Meta<Pagination> = {
     component: Pagination,
     title: "Pagination",
@@ -10,6 +15,7 @@ export default meta;
 
 type Story = StoryObj<Pagination>;
 
+/** Page 1 of 5: Previous disabled, next enabled, pages 1–5 listed. */
 export const Primary: Story = {
     args: {
         pageIndex: 0,
@@ -21,6 +27,7 @@ export const Primary: Story = {
     }),
 };
 
+/** Mid-run: both arrows enabled, the current page marked. */
 export const SecondPage: Story = {
     args: {
         pageIndex: 1,
@@ -32,6 +39,7 @@ export const SecondPage: Story = {
     }),
 };
 
+/** The last page: Next is disabled. */
 export const LastPage: Story = {
     args: {
         pageIndex: 4,
@@ -43,6 +51,7 @@ export const LastPage: Story = {
     }),
 };
 
+/** 100 items: the page run collapses around the current page. */
 export const LongForm: Story = {
     args: {
         pageIndex: 12,
@@ -54,6 +63,7 @@ export const LongForm: Story = {
     }),
 };
 
+/** No items: both arrows disabled, no page numbers. */
 export const Empty: Story = {
     args: {
         pageIndex: 0,

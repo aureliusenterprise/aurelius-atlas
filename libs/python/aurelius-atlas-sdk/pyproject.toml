@@ -1,5 +1,5 @@
 [project]
-dependencies = ["httpx>=0.28.1"]
+dependencies = ["httpx2>=2.0.0"]
 description = "This library provides common utilities for Aurelius projects."
 name = "aurelius-atlas-sdk"
 requires-python = ">=3.14"

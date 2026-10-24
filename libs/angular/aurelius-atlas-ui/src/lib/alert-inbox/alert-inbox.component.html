@@ -1,0 +1,44 @@
+<!--
+    The inbox bar (ALR-11): a full-width Bulma button group —
+    `buttons has-addons` joins every member, `is-expanded` stretches
+    them to fill the row. The chips come first, in inbox order (info,
+    warning, error — the ramp, calm to urgent, ALR-11); the caller's
+    clear-all action joins the group at its end (the panel projects
+    it, DD-180), so the strip is one joined bar (DD-182).
+
+    A chip is a toggle button (ALR-11): `aria-pressed` carries the
+    visible state — pressed while the severity shows — and the pressed
+    chip rides its severity's pinned fill (the scss, DD-182; Bulma's own
+    `.button.is-*` fills are scheme-following, SHM-04's trap). A
+    severity with no alerts greys out: the chip is disabled — nothing to
+    show, nothing to toggle (DD-184). The count tag is the severity's
+    total; the dot rides in the chip's ink while any of its groups is
+    unread (ALR-12), with an sr-only label so the information is not
+    colour-only.
+-->
+<!-- NOSONAR S6851: the chip bar is a styled button group (ALR-11); fieldset/address/details are content elements, not a Bulma `buttons has-addons` bar. -->
+<div class="aurelius-alert-inbox" role="group" [attr.aria-label]="ariaLabel()">
+    <div class="buttons has-addons aurelius-alert-inbox-group">
+        @for (count of counts(); track count.severity) {
+            <button
+                type="button"
+                [class]="
+                    'button is-small is-expanded aurelius-alert-inbox-chip is-sev-' +
+                    count.severity +
+                    (isOn(count) ? ' is-selected' : '')
+                "
+                [disabled]="isVoid(count)"
+                [attr.aria-pressed]="isOn(count)"
+                (click)="toggleSeverity.emit(count.severity)"
+            >
+                <span>{{ severityLabels()[count.severity] }}</span>
+                <span class="tag aurelius-alert-inbox-count">{{ count.total }}</span>
+                @if (count.unread > 0) {
+                    <span class="aurelius-alert-inbox-unread" aria-hidden="true"></span>
+                    <span class="is-sr-only">{{ unreadLabel() }}</span>
+                }
+            </button>
+        }
+        <ng-content></ng-content>
+    </div>
+</div>

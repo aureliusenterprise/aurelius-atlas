@@ -1,0 +1,105 @@
+<!--
+  The Aurelius Atlas navbar chrome (SHC-02..SHC-05), ported from the legacy
+  Aurelius navbar search-free (DD-145): the search bar and the nav buttons stay
+  with the search slice; the PWA install/update items, the services dropdown,
+  and the loading/pipeline sticky block are not ported (see DD-145).
+
+  i18n ids are the legacy dictionary paths, read by the XLIFF bridge (DD-128,
+  extended to @@shell.* by SHC-07). Translation descriptions are comments,
+  never `id|description` suffixes — the suffix joins the extracted id and the
+  key-keyed bridge can never match it (DD-144).
+-->
+<!-- The legacy navbar is pinned (SHM-05, `navbar is-fixed-top`); the body
+     carries the matching has-navbar-fixed-top padding (index.html). -->
+<aurelius-atlas-ui-header fixed [name]="appName" [logo]="appLogo" logoCssClass="logo">
+    <ng-container navbar-end>
+        <!-- Documentation (SHC-03) -->
+        <div class="navbar-item">
+            <div class="buttons">
+                <!-- Legacy navbar-documentation: icon + word, opens in a new tab. -->
+                <a
+                    class="button is-outlined is-dark"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    [href]="documentationUrl"
+                >
+                    <span class="icon">
+                        <fa-icon aria-hidden="true" [icon]="faBook"></fa-icon>
+                    </span>
+                    <!-- Documentation. -->
+                    <span i18n="@@shell.header.documentation">Documentation</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Settings gear (SPL-01, SPL-14, DD-166, DD-167): opens the panel
+             by navigating the `drawer` aux outlet — the open state rides the
+             URL, so the locale switch's reload keeps it. RouterLinkActive
+             keys `is-active` off the drawer segment, so the gear is lit
+             while the panel is open; the link then targets the URL it is
+             on, and the router cancels that same-URL navigation — a no-op. -->
+        <a
+            class="navbar-item"
+            i18n-aria-label="@@shell.header.settings"
+            aria-label="Settings"
+            [routerLink]="[{ outlets: { drawer: ['settings'] } }]"
+            routerLinkActive="is-active"
+        >
+            <span class="icon">
+                <fa-icon aria-hidden="true" [icon]="faGear"></fa-icon>
+            </span>
+        </a>
+
+        <!-- Alerts bell (ALR-01, ALR-02, ALR-02a, ALR-12): the gear's pattern — the
+             bell opens the alerts drawer through the one `drawer` outlet,
+             and opening it swaps the settings panel away. The ui-lib Badge
+             carries the presence dot — unread presence, not the whole
+             store: opening the drawer reads the feed and the dot goes;
+             its colour is the highest unread severity (the icon carries
+             the ring's transform origin, the pendulum hangs from its
+             handle). -->
+        <a
+            class="navbar-item"
+            i18n-aria-label="@@shell.header.alerts"
+            aria-label="Alerts"
+            [routerLink]="[{ outlets: { drawer: ['alerts'] } }]"
+            routerLinkActive="is-active"
+        >
+            <aurelius-atlas-ui-badge [visible]="alerts.hasUnread()" [severity]="alerts.topUnreadSeverity()">
+                <span class="icon aurelius-bell-icon" #bellIcon>
+                    <fa-icon aria-hidden="true" [icon]="faBell"></fa-icon>
+                </span>
+            </aurelius-atlas-ui-badge>
+        </a>
+
+        <!-- Account dropdown (SHC-05): welcome / Account-security / Logout. -->
+        <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">
+                <!-- Logged in as. -->
+                <span i18n="@@shell.header.welcome">Logged in as</span>
+                {{ session.identity() }}
+            </a>
+            <div class="navbar-dropdown is-right">
+                <!-- Account-security: the Keycloak account console. -->
+                <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
+                <hr class="navbar-divider" />
+                <!-- NOSONAR S125: a DD-153 decision note, not commented-out code.
+                     Logout is an anchor by legacy form: the dropdown's ink chain
+                     styles anchors, and a native button element keeps the browser's
+                     centered text and picks up the dropdown item's white plate on
+                     mobile (DD-153). Enter/Space is the keyboard path below. -->
+                <!-- NOSONAR S6851: the anchor form is the DD-153 decision; Enter/Space is the keyboard path, as role=button prescribes. -->
+                <a
+                    class="navbar-item"
+                    role="button"
+                    tabindex="0"
+                    (click)="logout()"
+                    (keydown.enter)="logout()"
+                    (keydown.space)="$event.preventDefault(); logout()"
+                    i18n="@@shell.header.logout"
+                    >Logout</a
+                >
+            </div>
+        </div>
+    </ng-container>
+</aurelius-atlas-ui-header>

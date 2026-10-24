@@ -1,6 +1,10 @@
+import json
 import re
+import ssl
 from collections.abc import Generator
 from pathlib import Path
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import dotenv
 import pytest
@@ -12,21 +16,43 @@ from sqlalchemy import URL, Engine
 from sqlmodel import Session, SQLModel, create_engine
 from tenacity import RetryCallState, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from testcontainers.compose import DockerCompose
-from testcontainers.core.wait_strategies import HealthcheckWaitStrategy, HttpWaitStrategy
+from testcontainers.core.wait_strategies import HttpWaitStrategy
 
 CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 
+# The issuer this suite mints from (DD-193, DD-202): the e2e Keycloak serves
+# HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
+# mint fixtures below and every per-service producer use it, and the
+# collector's oidc extension validates it (CA-pinned discovery, mounted at
+# /dev-ca). Standardizing the mint on :8443 is what keeps every suite in one
+# issuer world (DD-202); the plaintext :8080 listener stays validated in the
+# collector, for the human dev browser only (ADR 039).
+KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
+
 
 class Settings(BaseSettings):
-    """Test configuration."""
+    """Test configuration: the dev identity the browser signs in as and the database behind it."""
 
     auth_realm_name: str
+    """The realm the tokens are minted from."""
+
     database_name: str
+    """The database the backend serves."""
+
     database_password: SecretStr
+    """The database password; never shown in logs."""
+
     database_port: int
+    """The published port of the database."""
+
     database_username: str
+    """The database user."""
+
     password: SecretStr
+    """The dev user's password; never shown in logs."""
+
     username: str
+    """The dev user the browser signs in as."""
 
     model_config = SettingsConfigDict(
         # Namespace this project's e2e config: the compose files and the
@@ -54,6 +80,12 @@ def observability() -> DockerCompose:
     """
     Return a Docker Compose instance for the observability services.
 
+    No issuer env is set here (DD-202): the collector validates both dev
+    Keycloak listeners from its own config, and every producer — this
+    suite's minted tokens included, and the keycloak stack's metrics-puller
+    it starts — presents the TLS :8443 iss, so the stack boots in exactly
+    one world no matter who started it first.
+
     Note: This fixture starts the observability services if they're not already running, but does not stop them after
     the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
     the services are no longer needed.
@@ -80,13 +112,16 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
     context = Path(__file__).parents[3].absolute() / "dev" / "keycloak"
     compose = DockerCompose(context=context)
 
+    # Readiness is compose's own: start() runs ``up --wait`` and the keycloak
+    # service carries a healthcheck, so the command returns when Keycloak is
+    # ready (DD-195: this is the gate that lets the collector's
+    # ``restart: on-failure`` cover its OIDC-discovery boot race). No
+    # testcontainers HealthcheckWaitStrategy here: the strategy reads
+    # docker-py ``attrs`` the ComposeContainer wrapper does not have, and a
+    # strategy must be registered before start() to run at all.
     compose.start()
 
-    return compose.waiting_for(
-        {
-            "keycloak": HealthcheckWaitStrategy(),
-        },
-    )
+    return compose
 
 
 @pytest.fixture(scope="session")
@@ -203,3 +238,33 @@ def session(database: Engine) -> Generator[Session]:
     """Return a SQLModel session."""
     with Session(database, expire_on_commit=False) as session:
         yield session
+
+
+@pytest.fixture
+def user_token(keycloak: DockerCompose, settings: Settings) -> str:
+    """A real user access token minted by the e2e Keycloak (DD-193, CIA-01/02).
+
+    The password grant for the dev sign-in user (the same ``aurelius`` client
+    the SPA rides, ``directAccessGrantsEnabled``): the token carries the
+    ``otel-collector`` audience the realm's otel-ingest scope mints, which is
+    what the collector's browser-leg OIDC receiver requires. ``keycloak``
+    guarantees the issuer is up; the shared dev CA verifies the :8443 listener.
+
+    Function-scoped on purpose: the dev realm mints 60s tokens, and the test
+    using it runs once per browser (~7 minutes total) — a session-scoped
+    token is stale for the last browser.
+    """
+    _ = keycloak
+    body = urlencode(
+        {
+            "grant_type": "password",
+            "client_id": "aurelius",
+            "username": settings.username,
+            "password": settings.password.get_secret_value(),
+        }
+    ).encode()
+    request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # https constant issuer
+    context = ssl.create_default_context(cafile=str(CA_FILE))
+
+    with urlopen(request, context=context) as response:  # noqa: S310  # CA-verified constant issuer
+        return json.load(response)["access_token"]

@@ -1,0 +1,36 @@
+@let _items = items();
+@let _activeGuid = activeGuid();
+
+@if (warning()) {
+    <span class="tag is-warning is-light is-small">
+        <span class="icon is-small mr-1">
+            <fa-icon [icon]="warningIcon"></fa-icon>
+        </span>
+        {{ warning() }}
+    </span>
+}
+@if (_items.length) {
+    <nav class="breadcrumb is-small has-arrow-separator" [attr.aria-label]="breadcrumbsLabel()">
+        <ul>
+            @for (item of _items; track item.guid) {
+                <li [class.is-active]="item.guid === _activeGuid">
+                    <!-- The href is the keyboard path; the click handler cancels
+                         the fragment navigation and emits (UIC-11). -->
+                    <a
+                        href="#"
+                        class="truncate"
+                        [attr.aria-current]="item.guid === _activeGuid ? 'page' : null"
+                        (click)="onItemClick($event, item)"
+                    >
+                        @if (item.icon) {
+                            <span class="icon is-small" [title]="item.typeName">
+                                <fa-icon [ngClass]="item.iconClass" [icon]="item.icon"></fa-icon>
+                            </span>
+                        }
+                        <span [title]="item.name">{{ item.name }}</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

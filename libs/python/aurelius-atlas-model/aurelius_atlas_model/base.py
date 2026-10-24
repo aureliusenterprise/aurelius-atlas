@@ -84,7 +84,11 @@ type OptionalNameSet = Annotated[list[str] | None, AfterValidator(_unique_or_nul
 
 
 class AtlasModel(BaseModel):
-    """The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020)."""
+    """The base of every Atlas model.
+
+    Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to strings),
+    and validation on assignment — the Jackson conventions of the Java models (TDM-01 to TDM-03, TDM-15, DD-020).
+    """
 
     model_config = ConfigDict(
         alias_generator=to_camel,

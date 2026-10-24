@@ -1,0 +1,39 @@
+<!--
+    The governance-responsibilities info modal (BRW-03): the ui-lib modal in
+    card anatomy with the legacy description paragraph and the static
+    role table. The card component two-way binds `active`.
+-->
+<aurelius-atlas-ui-modal [(active)]="active" [title]="title" [ariaLabel]="closeLabel">
+    <div class="content">
+        <p i18n="@@search.browse.governanceContext.infoModal.description">
+            The data governance model captures various kinds of organizational roles with regards to data governance:
+        </p>
+        <div class="block">
+            <aurelius-atlas-ui-sortable-table [rows]="rows" [rowsSelectable]="false">
+                <ng-template aurelius-atlas-ui-table-column [isNarrow]="true" [title]="iconHint">
+                    {{ iconTitle }}
+                </ng-template>
+                <ng-template
+                    aurelius-atlas-ui-table-column
+                    [isNarrow]="true"
+                    [sortBy]="'typeName'"
+                    [title]="typeNameHint"
+                >
+                    {{ typeNameTitle }}
+                </ng-template>
+                <ng-template aurelius-atlas-ui-table-column [sortBy]="'description'" [title]="descriptionHint">
+                    {{ descriptionTitle }}
+                </ng-template>
+                <ng-template aurelius-atlas-ui-table-row let-row>
+                    <td>
+                        <span class="icon is-small business" [title]="row.typeName">
+                            <fa-icon [icon]="row.icon"></fa-icon>
+                        </span>
+                    </td>
+                    <th scope="row">{{ row.typeName }}</th>
+                    <td>{{ row.description }}</td>
+                </ng-template>
+            </aurelius-atlas-ui-sortable-table>
+        </div>
+    </div>
+</aurelius-atlas-ui-modal>

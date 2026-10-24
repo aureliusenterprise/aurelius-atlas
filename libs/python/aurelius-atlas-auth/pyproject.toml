@@ -1,0 +1,28 @@
+[project]
+dependencies = [
+    "cachetools>=7.2.1",
+    "cryptography>=50.0.1",
+    "fastapi>=0.162.0",
+    "httpx2>=2.0.0",
+    "pybreaker>=1.4.1",
+    "pyjwt[crypto]>=2.15.1",
+]
+description = "Keycloak bearer-token authentication for Aurelius Atlas services: OIDC discovery, JWKS verification and the write-role gate."
+name = "aurelius-atlas-auth"
+requires-python = ">=3.14"
+version = "0.6.1"
+
+[[project.authors]]
+name = "Aurelius Enterprise"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aurelius_atlas_auth"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "module"
+asyncio_mode = "auto"
+required_plugins = ["pytest-asyncio"]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]

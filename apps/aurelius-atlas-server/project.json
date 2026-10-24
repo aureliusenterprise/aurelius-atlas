@@ -4,8 +4,10 @@
         "aurelius-atlas-core",
         "aurelius-atlas-dashboard",
         "aurelius-atlas-dev-elasticsearch",
+        "aurelius-atlas-dev-keycloak",
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-model",
+        "aurelius-atlas-otel",
         "aurelius-atlas-store-es"
     ],
     "name": "aurelius-atlas-server",
@@ -33,7 +35,11 @@
                 { "target": "decrypt" },
                 { "target": "certgen" },
                 {
-                    "projects": ["aurelius-atlas-dev-elasticsearch", "aurelius-atlas-dev-observability"],
+                    "projects": [
+                        "aurelius-atlas-dev-elasticsearch",
+                        "aurelius-atlas-dev-keycloak",
+                        "aurelius-atlas-dev-observability"
+                    ],
                     "target": "serve"
                 },
                 { "projects": ["aurelius-atlas-dashboard"], "target": "build" }

@@ -1,0 +1,48 @@
+<!--
+    The Bulma addons chip (UIC-16): the lead tag is decorative — the
+    label tag carries the name, as the legacy chip's tooltip did. The
+    propagated tag is the legacy structure kept: tag + hoverable dropdown,
+    Bulma's CSS doing the open on hover, the sources projected (DD-189).
+-->
+<div class="tags has-addons">
+    <span class="tag" [ngClass]="leadColor()" [attr.title]="leadTitle()" aria-hidden="true">
+        @if (leadLabel()) {
+            <!-- The term chip's lead is the kind's word (the legacy term
+                 lead was text-only); the classification lead is the
+                 hashtag glyph (the legacy classification lead). -->
+            {{ leadLabel() }}
+        } @else {
+            <span class="icon is-small">
+                <fa-icon [icon]="hashtagIcon"></fa-icon>
+            </span>
+        }
+    </span>
+    @if (loading()) {
+        <span class="tag">
+            <span class="loader"></span>
+        </span>
+    } @else {
+        <span class="tag" [attr.title]="tooltip()">{{ label() }}</span>
+        @if (propagated()) {
+            <div
+                class="tag is-primary dropdown is-hoverable"
+                [attr.title]="propagatedLabel() ?? propagatedLabelDefault"
+            >
+                <div class="dropdown-trigger">
+                    <span class="icon is-small">
+                        <fa-icon [icon]="propagatedIcon"></fa-icon>
+                    </span>
+                </div>
+                <div class="dropdown-menu" role="menu">
+                    <div class="dropdown-content">
+                        <div class="dropdown-item">
+                            <strong>{{ label() }}</strong>
+                            <span>{{ originLabel() ?? originLabelDefault }}</span>
+                        </div>
+                        <ng-content select="[chip-sources]"></ng-content>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

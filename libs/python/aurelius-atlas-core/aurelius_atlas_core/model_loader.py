@@ -31,6 +31,7 @@ from aurelius_atlas_model.typedef import (
     TypeCategory,
 )
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from pydantic import Field
 
 from aurelius_atlas_core.typedef_store import (
     ADD_MANDATORY_ATTRIBUTE,
@@ -62,21 +63,65 @@ class PatchDataError(ValueError):
 
 
 class TypedefPatch(AtlasModel):
-    """One typedef patch (``AtlasTypeDefStoreInitializer.TypeDefPatch``, MDL-05)."""
+    """One typedef patch of a models-directory patch file (MDL-05).
 
-    id: str | None = None
-    description: str | None = None
-    action: str | None = None
-    type_name: str | None = None
-    apply_to_version: str | None = None
-    update_to_version: str | None = None
-    params: dict[str, Any] | None = None
-    attribute_defs: list[AtlasAttributeDef] | None = None
-    element_defs: list[AtlasEnumElementDef] | None = None
-    type_def_options: dict[str, str] | None = None
-    service_type: str | None = None
-    attribute_name: str | None = None
-    super_types: list[str] | None = None
+    The fields a patch uses depend on its ``action``; the patch handlers read
+    the ones their action needs.
+    """
+
+    id: str | None = Field(default=None, description="The unique id of the patch.")
+
+    description: str | None = Field(default=None, description="A description of the patch.")
+
+    action: str | None = Field(
+        default=None,
+        description="The action the patch performs, e.g. ``ADD_ATTRIBUTE`` or ``REMOVE_LEGACY_REF_ATTRIBUTES``.",
+    )
+
+    type_name: str | None = Field(default=None, description="The name of the type the patch changes.")
+
+    apply_to_version: str | None = Field(
+        default=None,
+        description="The type version the patch applies to; a patch applies when the stored "
+        "version equals it or starts below it.",
+    )
+
+    update_to_version: str | None = Field(
+        default=None,
+        description="The type version the type gets when the patch is applied.",
+    )
+
+    params: dict[str, Any] | None = Field(
+        default=None,
+        description="Parameters of the action, e.g. ``ownedAttribute``/``inverseAttribute`` for a ref-attribute patch.",
+    )
+
+    attribute_defs: list[AtlasAttributeDef] | None = Field(
+        default=None,
+        description="The attributes the patch adds to or changes on the type.",
+    )
+
+    element_defs: list[AtlasEnumElementDef] | None = Field(
+        default=None,
+        description="The enum values the patch adds to the type.",
+    )
+
+    type_def_options: dict[str, str] | None = Field(
+        default=None,
+        description="The type options the patch sets on the type.",
+    )
+
+    service_type: str | None = Field(default=None, description="The service type of the patched type.")
+
+    attribute_name: str | None = Field(
+        default=None,
+        description="The name of a single attribute the patch acts on.",
+    )
+
+    super_types: list[str] | None = Field(
+        default=None,
+        description="The super types the patch adds to the type.",
+    )
 
     def record(self) -> AtlasPatch:
         """The patch's record, before its status is known."""
@@ -84,9 +129,12 @@ class TypedefPatch(AtlasModel):
 
 
 class TypedefPatches(AtlasModel):
-    """A patch file (``TypeDefPatches``, MDL-05)."""
+    """A patch file: the patches of a models directory (MDL-05)."""
 
-    patches: list[TypedefPatch] | None = None
+    patches: list[TypedefPatch] | None = Field(
+        default=None,
+        description="The patches of the file, in the order they are applied.",
+    )
 
 
 @dataclass

@@ -147,6 +147,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# Nx temporary build outputs
+/tmp/
+
 # mypy
 .mypy_cache/
 .dmypy.json

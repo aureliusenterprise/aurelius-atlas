@@ -5,7 +5,12 @@
         <div class="card-header-title">
             <ng-content select="[header]"></ng-content>
         </div>
-        <button class="card-header-icon" aria-label="Toggle content" (click)="toggle()">
+        <button
+            class="card-header-icon"
+            i18n="@@components.accordion.toggleContent"
+            [attr.aria-label]="ariaLabel()"
+            (click)="toggle()"
+        >
             <span class="icon has-text-primary">
                 <fa-icon [icon]="_expanded ? faChevronUp : faChevronDown"></fa-icon>
             </span>

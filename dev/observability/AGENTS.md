@@ -9,7 +9,7 @@ rules live in the root `AGENTS.md`.
 - `docker-compose.yaml` — the five services, all on
   `aurelius-atlas-dev-observability-network`
 - `config/` — collector pipelines and Prometheus/Loki/Tempo configs.
-  Histograms pushed over OTLP may aggregate exponentially (logfire,
+  Histograms pushed over OTLP may aggregate exponentially (OTel SDKs,
   Keycloak/micrometer); the collector's prometheus exporter converts those
   to Prometheus native histograms, which exist only in the protobuf format
   — the `otel-collector` scrape job negotiates `PrometheusProto` with
@@ -30,8 +30,8 @@ rules live in the root `AGENTS.md`.
   instead of `rate()` to avoid NaN between ticks.
 - `config/grafana/` — file-provisioned datasources and the **dashboards**
   folder: one dashboard per app/dev stack (`aurelius-atlas-fastapi`,
-  `aurelius-atlas-frontend`, `aurelius-atlas-keycloak`, `aurelius-atlas-postgres`,
-  `aurelius-atlas-elasticsearch`,
+  `aurelius-atlas-frontend`, `aurelius-atlas-webapp`, `aurelius-atlas-keycloak`,
+  `aurelius-atlas-postgres`, `aurelius-atlas-elasticsearch`,
   `aurelius-atlas-observability-stack`), all in the
   "Aurelius" folder. They are plain JSON edited in the repo (Grafana's UI
   edits are lost on recreate), keyed by the telemetry identities the slices
@@ -55,14 +55,42 @@ rules live in the root `AGENTS.md`.
 
 - Targets are purely inferred from the compose file (`project.json` has none) —
   add compose-level config there, not in `project.json`.
-- Everything exports to the **collector** (4317 gRPC / 4318 HTTP), never
-  directly to a backend; new instrumented projects follow the same pattern.
-  Both receivers serve TLS only (`config/otel-collector.yaml` uses this
-  project's `certs/`, `nx certgen`) — exporters set `OTEL_EXPORTER_OTLP_CERTIFICATE`
-  (Keycloak instead needs the JVM truststore in `JAVA_OPTS`).
-- Consumers started via `nx serve`: the FastAPI example (OTLP), Keycloak
-  (`implicitDependencies` here), and the frontend (via its `/otel` dev proxy to
-  `:4318`).
+- Everything exports to the **collector**, never directly to a backend; new
+  instrumented projects follow the same pattern. Ingest is three credential-typed
+  legs (DD-193, DD-196): the **browser leg** is `otlp` HTTP :4318 behind the `oidc`
+  extension (Keycloak user JWTs, audience `otel-collector`; the SPAs' `/otel`
+  proxies pass `Authorization` through), the **per-service leg** is `otlp/services`
+  gRPC :4317 + HTTP :4319 behind the SAME `oidc` extension (client-credentials JWTs
+  from the `otel-*` realm clients — the slice pullers' `oauth2client` extension,
+  the Atlas server's in-app refresh shim; `azp` stamps `otel.ingest.client`), and
+  the **legacy leg** is `otlp/legacy` gRPC :4320 + HTTP :4321 behind
+  `bearertokenauth` (shared `OTEL_COLLECTOR_INGEST_TOKEN`, Keycloak-native OTLP +
+  the FastAPI example only — producers that cannot present a Keycloak JWT). The
+  contrib image has **no `compositeauth` extension**, so one port carries exactly
+  one authenticator — a bearer works on exactly one leg (401 elsewhere), which is
+  what makes the legs credential-typed. All receivers serve TLS only
+  (`config/otel-collector.yaml` uses this
+  project's `certs/`, `nx certgen`) — exporters set
+  `OTEL_EXPORTER_OTLP_CERTIFICATE` (Keycloak instead needs the JVM truststore
+  in `JAVA_OPTS`). The `oidc` extension is configured in its current
+  `providers` shape (`issuer_url` + `issuer_ca_path` per provider; the flat
+  top-level single-provider keys are deprecated), fixed in
+  `config/otel-collector.yaml` with **no env injection** (DD-202): it lists
+  both dev Keycloak listeners — TLS `:8443` (CA-pinned to the shared mkcert
+  root, mounted at `/dev-ca`) and plaintext `:8080` — because a token's `iss`
+  is the listener that minted it and a non-matching validator 401s the leg
+  silently. Every automated producer mints at `:8443` (the slice composes
+  carry it as a literal); the `:8080` provider exists for the human dev
+  browser only (ADR 039), which cannot enroll the CA. Do not re-introduce
+  issuer env: the suite-level flip convention it enabled made telemetry
+  starve on shared stacks (ESD-06, DD-202). Discovery is a startup dependency
+  on Keycloak, and the container gets `keycloak.localhost:host-gateway` since
+  `:8443` is loopback-published.
+- Consumers started via `nx serve`: the FastAPI example (OTLP, legacy leg :4321),
+  Keycloak (`implicitDependencies` here; native OTLP on the legacy leg :4320,
+  its puller on the per-service leg :4317), the Atlas server (`nx serve` chains
+  dev-keycloak since DD-196 — its export mints ingest JWTs), and the frontend
+  (via its `/otel` dev proxy to the browser leg at `:4318`).
 - Slices that own components speaking no OTLP (databases) ship their own
   **`metrics-puller`** sidecar — a Collector that scrapes locally, next to the
   targets and credentials, and pushes OTLP here: `dev-postgres` (app PG) and
@@ -89,6 +117,15 @@ nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
 
 - Add metrics/traces pipelines in `config/` and reload by restarting the
   collector service rather than editing compose env vars.
+- Browser-leg pushes carry the OIDC token's `sub` as the `enduser.id`
+  resource attribute (claim copy in `config/otel-collector.yaml`, DD-194);
+  the metrics pipeline promotes it to the `enduser_id` Prometheus label with
+  a `transform` datapoint statement — the prometheus exporter drops other
+  resource attributes. The per-service leg stamps `otel.ingest.client` from
+  the token's `azp` (the client id) and `transform/identity` clears
+  `enduser.id` on `otel-*` pushes — machine telemetry wears no user identity
+  (DD-196, CIA-09). Read traces back with `GET :3200/api/traces/<id>`
+  (plural; Tempo 3.x).
 
 ## Removal
 

@@ -6,7 +6,7 @@ Read from ``TypesREST`` and ``Servlets.validateQueryParamLength`` of Apache Atla
 
 from typing import Any, cast
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore, types_def_of

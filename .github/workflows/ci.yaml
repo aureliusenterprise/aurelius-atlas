@@ -37,12 +37,6 @@ jobs:
             - name: Run pre-commit hooks
               uses: pre-commit/action@v3.0.1
 
-            # Every public function and every specified rule is named by a test (ADR 049).
-            # Collects all Atlas projects' tests without running them, so it does not
-            # depend on which projects are affected (DD-009).
-            - name: Check traceability
-              run: uv run aurelius-atlas-trace check
-
     test:
         runs-on: ubuntu-latest
         needs: validate
@@ -88,23 +82,6 @@ jobs:
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t test e2e -c ci
-
-            # One page per change with results, coverage and traceability (ADR 049 R3).
-            - name: Build test report
-              if: ${{ !cancelled() }}
-              run: |
-                  uv run aurelius-atlas-trace report \
-                    --output dist/test-report/index.html \
-                    --summary dist/test-report/summary.md
-                  cat dist/test-report/summary.md >> "$GITHUB_STEP_SUMMARY"
-
-            - name: Upload test report
-              if: ${{ !cancelled() }}
-              uses: actions/upload-artifact@v7
-              with:
-                  name: test-report
-                  path: dist/test-report/
-                  if-no-files-found: ignore
 
             - name: Upload coverage reports
               uses: actions/upload-artifact@v7

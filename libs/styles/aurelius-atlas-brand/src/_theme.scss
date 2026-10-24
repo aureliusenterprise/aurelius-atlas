@@ -1,6 +1,9 @@
 /*
  * Global application theme.
  * Framework overrides and customization goes here.
+ *
+ * The Aurelius brand overrides (DD-148) are emitted in _main.scss, after
+ * Bulma's own :root — the cascade requires it, so they cannot live here.
  */
 
 @use "variables";
