@@ -65,11 +65,16 @@ KEYCLOAK_DEV_ISSUER = "http://keycloak.localhost:8080/realms/master"
 
 
 class Settings(BaseSettings):
-    """Test configuration."""
+    """Test configuration: the dev identity the browser signs in as (APC-10)."""
 
     auth_realm_name: str = "master"
+    """The realm the tokens are minted from."""
+
     password: SecretStr
+    """The dev user's password; never shown in logs."""
+
     username: str
+    """The dev user the browser signs in as."""
 
     model_config = SettingsConfigDict(
         # Namespace this project's e2e config: the Nx-injected .env uses

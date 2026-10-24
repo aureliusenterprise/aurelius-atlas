@@ -31,15 +31,28 @@ KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
 
 
 class Settings(BaseSettings):
-    """Test configuration."""
+    """Test configuration: the dev identity the browser signs in as and the database behind it."""
 
     auth_realm_name: str
+    """The realm the tokens are minted from."""
+
     database_name: str
+    """The database the backend serves."""
+
     database_password: SecretStr
+    """The database password; never shown in logs."""
+
     database_port: int
+    """The published port of the database."""
+
     database_username: str
+    """The database user."""
+
     password: SecretStr
+    """The dev user's password; never shown in logs."""
+
     username: str
+    """The dev user the browser signs in as."""
 
     model_config = SettingsConfigDict(
         # Namespace this project's e2e config: the compose files and the
