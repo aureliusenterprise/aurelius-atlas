@@ -66,7 +66,7 @@ export class DarkModeService {
      */
     private initialize(): Mode {
         const stored = localStorage.getItem("data-theme");
-        const attribute = this.document.documentElement.getAttribute("data-theme");
+        const attribute = this.document.documentElement.dataset["theme"];
         let dataTheme = (attribute || stored) as Mode;
 
         if (!MODES.includes(dataTheme)) {
@@ -85,9 +85,9 @@ export class DarkModeService {
     private updateDataThemeAttribute(mode: Mode): void {
         const htmlElement = this.document.documentElement;
         if (mode === null) {
-            htmlElement.removeAttribute("data-theme");
+            delete htmlElement.dataset["theme"];
         } else {
-            htmlElement.setAttribute("data-theme", mode);
+            htmlElement.dataset["theme"] = mode;
         }
     }
 

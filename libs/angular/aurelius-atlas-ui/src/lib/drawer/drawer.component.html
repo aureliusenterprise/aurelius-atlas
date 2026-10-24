@@ -11,8 +11,9 @@
         -->
         <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
-        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()"></div>
+        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
         <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <!-- NOSONAR S6851: Bulma's drawer layer (DD-162) — the native <dialog> renders in the top layer, bypassing the scrim stacking the slide-out animation needs. -->
         <div
             #panel
             class="aurelius-drawer-panel"

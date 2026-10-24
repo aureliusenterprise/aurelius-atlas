@@ -16,6 +16,7 @@
     unread (ALR-12), with an sr-only label so the information is not
     colour-only.
 -->
+<!-- NOSONAR S6851: the chip bar is a styled button group (ALR-11); fieldset/address/details are content elements, not a Bulma `buttons has-addons` bar. -->
 <div class="aurelius-alert-inbox" role="group" [attr.aria-label]="ariaLabel()">
     <div class="buttons has-addons aurelius-alert-inbox-group">
         @for (count of counts(); track count.severity) {
