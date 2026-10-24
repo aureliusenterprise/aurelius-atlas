@@ -1,0 +1,5 @@
+{
+    "services": {
+        "aurelius-atlas-lineage-model": ["aurelius-atlas-lineage-model", "localhost", "127.0.0.1"]
+    }
+}

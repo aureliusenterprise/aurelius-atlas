@@ -1,0 +1,36 @@
+[project]
+dependencies = [
+    "aurelius-atlas-auth",
+    "aurelius-atlas-otel",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "logfire[fastapi]>=5.2.0",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.15.0",
+    "uvicorn[standard]>=0.54.0",
+]
+description = "The Aurelius Atlas lineage-model API: an entity guid in, the lineage graph's archimate model out."
+name = "aurelius-atlas-lineage-model"
+requires-python = ">=3.14"
+version = "0.1.0"
+
+[[project.authors]]
+name = "Aurelius Enterprise"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aurelius_atlas_lineage_model"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "module"
+asyncio_mode = "auto"
+required_plugins = ["pytest-asyncio"]
+
+[tool.uv.sources.aurelius-atlas-auth]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-otel]
+workspace = true
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]

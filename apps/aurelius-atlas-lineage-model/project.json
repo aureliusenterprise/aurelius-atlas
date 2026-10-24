@@ -1,0 +1,45 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": [
+        "aurelius-atlas-auth",
+        "aurelius-atlas-data2model",
+        "aurelius-atlas-dev-keycloak",
+        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-otel"
+    ],
+    "name": "aurelius-atlas-lineage-model",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_lineage_model",
+    "tags": [],
+    "targets": {
+        "e2e": {
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "dependencies": true, "target": "decrypt" },
+                { "target": "certgen" },
+                { "target": "docker-build" },
+                { "dependencies": true, "target": "up" },
+                { "projects": ["aurelius-atlas-data2model"], "target": "certgen" },
+                { "projects": ["aurelius-atlas-data2model"], "target": "docker-build" }
+            ]
+        },
+        "serve": {
+            "continuous": true,
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                {
+                    "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
+                    "target": "serve"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Serve the lineage-model API on https://localhost:21002"
+            },
+            "options": {
+                "command": "uv run python -m aurelius_atlas_lineage_model"
+            }
+        }
+    }
+}
