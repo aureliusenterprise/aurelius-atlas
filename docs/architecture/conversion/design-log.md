@@ -125,6 +125,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-087](#dd-087-basic-search-is-split-into-entity-and-classification-search)                              | Basic search is split into entity and classification search                                | 4.1       | Proposed             |
 | [DD-088](#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type)    | Entity attributes are searched in typed search fields named after their defining type      | 4.1       | Proposed             |
 | [DD-089](#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given)    | A search is a query of the entity documents, ordered by creation when no sort is given     | 4.1       | Proposed             |
+| [DD-090](#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them)             | A classification search finds instances first, then the entities listing them              | 4.1       | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -2006,3 +2007,26 @@ the rules of SRC-05 state; Atlas's order without a sort is the index's and has n
 **Alternatives.** Elasticsearch's query language in the core: the in-memory documents could not answer it.
 
 **Consequences.** `approximateCount` is exact.
+
+### DD-090. A classification search finds instances first, then the entities listing them
+
+- **Status:** Proposed
+- **Increment:** 4.1
+- **Date:** 2026-10-24
+
+**Decision.** A search naming classification types reads the instances of those types from the classification
+index, keeps those that match the tag filters, evaluated with the search query's predicates over their
+attribute values, and adds to the entity query that the entity lists one of them (`classificationGuids`,
+attached or propagated). `_NOT_CLASSIFIED` and any classification test whether the entity lists none or some.
+The entity documents gain the pipe-separated classification names Atlas keeps on an entity vertex, computed
+when it is written from the instances it lists.
+
+**Reason.** An entity already lists every classification it carries, propagated ones included (DD-070,
+DD-075), and tag filters are what classification instances are searched by; no mapping of classification
+attributes is needed, and the filter semantics are the ones entity filters have.
+
+**Alternatives.** Search fields on classification documents: the same answers, with a second set of mappings.
+Classification type names on the entity only: tag filters could not be answered.
+
+**Consequences.** A search reads every instance of the types it names; an entity query names at most 65,536
+instances, Elasticsearch's `terms` limit, beyond which the search fails.
