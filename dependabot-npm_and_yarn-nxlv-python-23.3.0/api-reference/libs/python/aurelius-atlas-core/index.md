@@ -662,6 +662,9 @@ Entities of the registry's entity types, and the relationships between them, in 
 
 Methods:
 
+- **`classifications_of_types`** –
+
+  The classification instances of these types, or of every type for None (DD-090).
 - **`classified`** –
 
   The entities listing any of these classification instances, attached or propagated (DD-075, DD-076).
@@ -701,6 +704,9 @@ Methods:
 - **`referring`** –
 
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
+- **`search`** –
+
+  The entities of a search query's page, how many match it in all, and their scores (DD-089).
 - **`type_in_use`** –
 
   Whether an entity, relationship or classification of exactly this type exists, in any state.
@@ -728,6 +734,14 @@ task_listeners: list[Callable[[], None]] = []
 ```
 
 Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### classifications\_of\_types
+
+```
+classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
+```
+
+The classification instances of these types, or of every type for None (DD-090).
 
 #### classified
 
@@ -836,6 +850,14 @@ referring(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
 The entities whose references name any of these GUIDs (EDL-10, DD-057).
+
+#### search
+
+```
+search(query: SearchQuery) -> SearchHits
+```
+
+The entities of a search query's page, how many match it in all, and their scores (DD-089).
 
 #### type\_in\_use
 
@@ -1050,12 +1072,18 @@ Attributes:
 - **`CLASSIFICATION_MAPPING`** (`dict[str, Any]`) –
 
   Classification instances by type and entity; attribute values stored, not indexed (DD-070).
+- **`CLASSIFICATION_PAGE`** –
+
+  How many classification instances one search page holds.
+- **`ENTITY_FIELD_LIMIT`** –
+
+  `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
 - **`ENTITY_INDEX`** –
 
   The alias of the entity index (DD-043).
 - **`ENTITY_MAPPING`** (`dict[str, Any]`) –
 
-  System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
+  System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
 - **`INDEX_PREFIX`** –
 
   The prefix of the three aliases; tests give their own.
@@ -1065,6 +1093,9 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`KEYWORD_LIMIT`** –
+
+  `ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
 - **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]]`) –
 - **`REFERRING_PAGE`** –
 
@@ -1112,6 +1143,22 @@ CLASSIFICATION_MAPPING: dict[str, Any] = {
 
 Classification instances by type and entity; attribute values stored, not indexed (DD-070).
 
+### CLASSIFICATION\_PAGE
+
+```
+CLASSIFICATION_PAGE = 1000
+```
+
+How many classification instances one search page holds.
+
+### ENTITY\_FIELD\_LIMIT
+
+```
+ENTITY_FIELD_LIMIT = 100000
+```
+
+`index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
+
 ### ENTITY\_INDEX
 
 ```
@@ -1147,13 +1194,15 @@ ENTITY_MAPPING: dict[str, Any] = {
         "pendingTasks": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
+        "search": {"type": "object", "dynamic": True, "subobjects": False},
     },
+    "dynamic_templates": [
+        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
+    ],
 }
 ```
 
-System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, until 4.1.
-
-DD-043, DD-057.
+System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088).
 
 ### INDEX\_PREFIX
 
@@ -1178,6 +1227,14 @@ JOURNAL_PAGE = 1000
 ```
 
 How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+
+### KEYWORD\_LIMIT
+
+```
+KEYWORD_LIMIT = 8191
+```
+
+`ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
 
 ### LINKED\_MODELS
 
@@ -1277,6 +1334,9 @@ ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PRE
 
 Methods:
 
+- **`classifications_of_types`** –
+
+  Refresh the classification index, then page through the instances of the types by GUID (DD-090).
 - **`classified`** –
 
   Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
@@ -1325,6 +1385,9 @@ Methods:
 - **`restore_linked`** –
 
   Index the document's state before, or delete one that did not exist before (DD-062).
+- **`search`** –
+
+  Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1342,6 +1405,14 @@ aliases: tuple[str, ...]
 ```
 
 The aliases of the entity index, the reservations, the journal and the linked documents' indices.
+
+#### classifications\_of\_types
+
+```
+classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
+```
+
+Refresh the classification index, then page through the instances of the types by GUID (DD-090).
 
 #### classified
 
@@ -1473,6 +1544,16 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 
 Index the document's state before, or delete one that did not exist before (DD-062).
 
+#### search
+
+```
+search(query: SearchQuery) -> SearchHits
+```
+
+Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+
+Free text is a scored `simple_query_string` over the text sub-fields (DD-092).
+
 #### write
 
 ```
@@ -1495,6 +1576,9 @@ Where `EntityStore` keeps entities, reservations and its journal.
 
 Methods:
 
+- **`classifications_of_types`** –
+
+  The classification instances of these types, or of every type for None, as of now (DD-090).
 - **`classified`** –
 
   The entities listing any of these classification instances, as of now (DD-076).
@@ -1543,9 +1627,20 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`search`** –
+
+  The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
+
+#### classifications\_of\_types
+
+```
+classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
+```
+
+The classification instances of these types, or of every type for None, as of now (DD-090).
 
 #### classified
 
@@ -1674,6 +1769,14 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
+
+#### search
+
+```
+search(query: SearchQuery) -> SearchHits
+```
+
+The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
 
 #### write
 
@@ -2057,6 +2160,9 @@ Attributes:
 - **`provenance_type`** (`int`) –
 - **`references`** (`list[str] | None`) –
 - **`relationship_guids`** (`list[str] | None`) –
+- **`search`** (`dict[str, Any] | None`) –
+
+  The search fields, written by the store (DD-088).
 - **`state`** (`EntityStatus`) –
 - **`super_type_names`** (`list[str]`) –
 - **`type_name`** (`str`) –
@@ -2148,6 +2254,14 @@ references: list[str] | None = None
 ```
 relationship_guids: list[str] | None = None
 ```
+
+#### search
+
+```
+search: dict[str, Any] | None = None
+```
+
+The search fields, written by the store (DD-088).
 
 #### state
 
@@ -2510,10 +2624,10 @@ Classes:
   Patch data that Atlas does not check, and fails on with a runtime exception (MDL-06, MDL-13).
 - **`TypedefPatch`** –
 
-  One typedef patch (`AtlasTypeDefStoreInitializer.TypeDefPatch`, MDL-05).
+  One typedef patch of a models-directory patch file (MDL-05).
 - **`TypedefPatches`** –
 
-  A patch file (`TypeDefPatches`, MDL-05).
+  A patch file: the patches of a models directory (MDL-05).
 
 Functions:
 
@@ -2709,7 +2823,9 @@ Patch data that Atlas does not check, and fails on with a runtime exception (MDL
 
 Bases: `AtlasModel`
 
-One typedef patch (`AtlasTypeDefStoreInitializer.TypeDefPatch`, MDL-05).
+One typedef patch of a models-directory patch file (MDL-05).
+
+The fields a patch uses depend on its `action`; the patch handlers read the ones their action needs.
 
 Methods:
 
@@ -2736,79 +2852,96 @@ Attributes:
 #### action
 
 ```
-action: str | None = None
+action: str | None = Field(
+    default=None,
+    description="The action the patch performs, e.g. ``ADD_ATTRIBUTE`` or ``REMOVE_LEGACY_REF_ATTRIBUTES``.",
+)
 ```
 
 #### apply\_to\_version
 
 ```
-apply_to_version: str | None = None
+apply_to_version: str | None = Field(
+    default=None,
+    description="The type version the patch applies to; a patch applies when the stored version equals it or starts below it.",
+)
 ```
 
 #### attribute\_defs
 
 ```
-attribute_defs: list[AtlasAttributeDef] | None = None
+attribute_defs: list[AtlasAttributeDef] | None = Field(
+    default=None, description="The attributes the patch adds to or changes on the type."
+)
 ```
 
 #### attribute\_name
 
 ```
-attribute_name: str | None = None
+attribute_name: str | None = Field(default=None, description='The name of a single attribute the patch acts on.')
 ```
 
 #### description
 
 ```
-description: str | None = None
+description: str | None = Field(default=None, description='A description of the patch.')
 ```
 
 #### element\_defs
 
 ```
-element_defs: list[AtlasEnumElementDef] | None = None
+element_defs: list[AtlasEnumElementDef] | None = Field(
+    default=None, description="The enum values the patch adds to the type."
+)
 ```
 
 #### id
 
 ```
-id: str | None = None
+id: str | None = Field(default=None, description='The unique id of the patch.')
 ```
 
 #### params
 
 ```
-params: dict[str, Any] | None = None
+params: dict[str, Any] | None = Field(
+    default=None,
+    description="Parameters of the action, e.g. ``ownedAttribute``/``inverseAttribute`` for a ref-attribute patch.",
+)
 ```
 
 #### service\_type
 
 ```
-service_type: str | None = None
+service_type: str | None = Field(default=None, description='The service type of the patched type.')
 ```
 
 #### super\_types
 
 ```
-super_types: list[str] | None = None
+super_types: list[str] | None = Field(default=None, description='The super types the patch adds to the type.')
 ```
 
 #### type\_def\_options
 
 ```
-type_def_options: dict[str, str] | None = None
+type_def_options: dict[str, str] | None = Field(
+    default=None, description="The type options the patch sets on the type."
+)
 ```
 
 #### type\_name
 
 ```
-type_name: str | None = None
+type_name: str | None = Field(default=None, description='The name of the type the patch changes.')
 ```
 
 #### update\_to\_version
 
 ```
-update_to_version: str | None = None
+update_to_version: str | None = Field(
+    default=None, description="The type version the type gets when the patch is applied."
+)
 ```
 
 #### record
@@ -2823,7 +2956,7 @@ The patch's record, before its status is known.
 
 Bases: `AtlasModel`
 
-A patch file (`TypeDefPatches`, MDL-05).
+A patch file: the patches of a models directory (MDL-05).
 
 Attributes:
 
@@ -2832,7 +2965,9 @@ Attributes:
 #### patches
 
 ```
-patches: list[TypedefPatch] | None = None
+patches: list[TypedefPatch] | None = Field(
+    default=None, description="The patches of the file, in the order they are applied."
+)
 ```
 
 ### add\_attribute
