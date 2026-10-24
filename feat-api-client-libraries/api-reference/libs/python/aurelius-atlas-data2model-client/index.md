@@ -1,6 +1,6 @@
 # aurelius-atlas-data2model-client
 
-The contract and the async client of the data2model extraction API (8.4, DD-114, DD-115): the rules family the legacy chain evolved (AURELIUS-RULES), the extraction request/response, and the `Data2ModelClient` that posts them. The `aurelius-atlas-data2model` app imports its own contract from here.
+The contract and the async client of the data2model extraction API (8.4, DD-203, DD-204): the rules family the legacy chain evolved (AURELIUS-RULES), the extraction request/response, and the `Data2ModelClient` that posts them. The `aurelius-atlas-data2model` app imports its own contract from here.
 
 ## Installation
 
@@ -16,11 +16,11 @@ workspace = true
 
 ## aurelius\_atlas\_data2model\_client.models
 
-The `/extract` request contract as pydantic models (DTM-01, DTM-11, DTM-12; DD-109).
+The `/extract` request contract as pydantic models (DTM-01, DTM-11, DTM-12; DD-198).
 
 The legacy chain built these from `m4i-analytics` dict adapters (`ConceptDefinition` and subclasses, `**kwargs`-tolerant); the port states the same fields as pydantic models, so FastAPI validates the public request at the boundary: an unknown concept or relationship type, a missing required key, or a dangling rule reference is a 400 (DTM-11), not a 500 as in the legacy.
 
-The legacy adapters normalise `None` prefixes/keys to `''` — the lineage caller sends nulls for them — so the string fields accept `None` and normalise to `''`; extra keys (`alias`, `description`, `include`, …) are ignored, as the `**kwargs` did. The tabular `data` stays a plain list of row maps: the columns are the rules' keys, so the rows are a mapping, not a model (DD-109).
+The legacy adapters normalise `None` prefixes/keys to `''` — the lineage caller sends nulls for them — so the string fields accept `None` and normalise to `''`; extra keys (`alias`, `description`, `include`, …) are ignored, as the `**kwargs` did. The tabular `data` stays a plain list of row maps: the columns are the rules' keys, so the rows are a mapping, not a model (DD-198).
 
 Classes:
 
@@ -1996,7 +1996,7 @@ The Archimate 3.0 concept types a rule may name (DTM-11), ported from `m4i-analy
 
 The legacy `ElementType` / `RelationshipType` enums (`metamodel/Concepts.py`) are tables of data; the port keeps the two columns the extractor needs — the ar3 `@xsi_type` tag, and for elements the layer that organises them (`ArchimateModel.organize`) and for relationships the type attributes the ar3 writer emits — and drops the enum machinery.
 
-The tables are the request contract's validation domain (DTM-11), so they live with the contract in this library (CL-20, DD-114); the ar3 writer's layout constants stayed in the app's engine.
+The tables are the request contract's validation domain (DTM-11), so they live with the contract in this library (CL-20, DD-203); the ar3 writer's layout constants stayed in the app's engine.
 
 Attributes:
 
@@ -2125,7 +2125,7 @@ The shorthands a rule's `relationship_type` may name.
 
 ## aurelius\_atlas\_data2model\_client.client
 
-The async client for the data2model API (CL-01..CL-05, CL-21; DD-114, DD-115, DD-116).
+The async client for the data2model API (CL-01..CL-05, CL-21; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01) — the app builds the httpx client from its own settings and passes it in. The request path is relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Tests hand over one built on a `MockTransport` and no socket opens (CL-02); the bearer token goes on every call (CL-03); :class:`Data2ModelClientError` rises on a non-2xx answer, with the Atlas-shaped body when it parses (CL-04); an unreachable upstream propagates as `httpx`'s own error (CL-05).
 
@@ -2141,7 +2141,7 @@ Classes:
 
 - **`Data2ModelClient`** –
 
-  The client for one data2model service (CL-21, DD-114, DD-116).
+  The client for one data2model service (CL-21, DD-203, DD-205).
 - **`Data2ModelClientError`** –
 
   A non-2xx answer from the data2model API, with the status and the error body (CL-04).
@@ -2153,7 +2153,7 @@ Attributes:
   The status where an answer becomes an error: the client-error boundary (CL-04).
 - **`DEFAULT_TIMEOUT_SECONDS`** –
 
-  The suggested request timeout, seconds — for the httpx client an app builds (DD-111's bound).
+  The suggested request timeout, seconds — for the httpx client an app builds (DD-200's bound).
 - **`EXTRACT_PATH`** –
 
   The extraction endpoint of the data2model app (DTM-01), relative to the base URL (CL-01).
@@ -2172,7 +2172,7 @@ The status where an answer becomes an error: the client-error boundary (CL-04).
 DEFAULT_TIMEOUT_SECONDS = 10.0
 ```
 
-The suggested request timeout, seconds — for the httpx client an app builds (DD-111's bound).
+The suggested request timeout, seconds — for the httpx client an app builds (DD-200's bound).
 
 ### EXTRACT\_PATH
 
@@ -2196,7 +2196,7 @@ Where the bearer token comes from: a fixed token, or a callable that yields one 
 Data2ModelClient(http: AsyncClient, token: TokenSource)
 ```
 
-The client for one data2model service (CL-21, DD-114, DD-116).
+The client for one data2model service (CL-21, DD-203, DD-205).
 
 Parameters:
 

@@ -1,12 +1,12 @@
 # 8.7 Client failure contract
 
 - **Status:** in progress
-- **Pull request:** — (follows the review of 2026-10-24, DD-125)
-- **Records:** DD-125 (the review that scoped this; reserves CL-08); cites 8.4, ADR 055
+- **Pull request:** — (follows the review of 2026-10-24, DD-214)
+- **Records:** DD-214 (the review that scoped this; reserves CL-08); cites 8.4, ADR 055
 
 ## Scope
 
-Test-completeness plus one minted rule: the review found the four client libraries test their happy path, their 4xx/5xx errors, and the connect-refused propagation — and test nothing about the responses in between. The systematic holes (DD-125): a **200 whose body fails the response model** (no test proves what happens), a **timeout** (only connect-refused is proven), a **token source that raises**, and **`with_token` under concurrency**. This increment closes them across all four libraries:
+Test-completeness plus one minted rule: the review found the four client libraries test their happy path, their 4xx/5xx errors, and the connect-refused propagation — and test nothing about the responses in between. The systematic holes (DD-214): a **200 whose body fails the response model** (no test proves what happens), a **timeout** (only connect-refused is proven), a **token source that raises**, and **`with_token` under concurrency**. This increment closes them across all four libraries:
 
 - `aurelius-atlas-server-client` — `AdminApi`, `TypesApi`, and `get_lineage` against garbage 200s; transport timeout; raising token source; concurrent wrappers on the shared pool.
 - `aurelius-atlas-data2model-client` — `extract` against garbage 200s; a 5xx carrying the Atlas body; timeout; raising token source.
@@ -17,7 +17,7 @@ It does **not** deliver: aux API tests (8.6), frontend error UX (7.19), containe
 
 ## Semantics
 
-CL-08 is minted here (DD-125's reservation): the behaviour exists in the 8.4 code (the `model_validate_json` calls) and was never stated. Everything else is already specified by the cited rule in 8.4; the bullets state the exact path each test pins.
+CL-08 is minted here (DD-214's reservation): the behaviour exists in the 8.4 code (the `model_validate_json` calls) and was never stated. Everything else is already specified by the cited rule in 8.4; the bullets state the exact path each test pins.
 
 | Id | Rule |
 | --- | --- |
@@ -32,11 +32,11 @@ Proven paths (stated in 8.4):
 
 ## Aurelius origin
 
-None new: CL-08 states the 8.4 clients' own behaviour (the DD-114 contract: the library's model parses the library's response), and the proven paths cite 8.4's own origin list (the Angular `libs/atlas/api` DTOs, the aux-API contracts of 8.1–8.3). No wire behaviour changes, so no Java/legacy citation is added.
+None new: CL-08 states the 8.4 clients' own behaviour (the DD-203 contract: the library's model parses the library's response), and the proven paths cite 8.4's own origin list (the Angular `libs/atlas/api` DTOs, the aux-API contracts of 8.1–8.3). No wire behaviour changes, so no Java/legacy citation is added.
 
 ## Deviations
 
-None. No wire behaviour changes; 8.4's DD-114/DD-115/DD-116 stand.
+None. No wire behaviour changes; 8.4's DD-203/DD-204/DD-205 stand.
 
 ## Acceptance
 

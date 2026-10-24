@@ -1,6 +1,6 @@
 # aurelius-atlas-validate-entity-client
 
-The contract and the async client of the validate-entity API (8.4, DD-114, DD-115): the governance validation card the screen renders and the `ValidateEntityClient` that asks for it. The `aurelius-atlas-validate-entity` app imports its own response model from here.
+The contract and the async client of the validate-entity API (8.4, DD-203, DD-204): the governance validation card the screen renders and the `ValidateEntityClient` that asks for it. The `aurelius-atlas-validate-entity` app imports its own response model from here.
 
 ## Installation
 
@@ -16,9 +16,9 @@ workspace = true
 
 ## aurelius\_atlas\_validate\_entity\_client.models
 
-The governance-quality answer of the validate-entity API (CL-40, VE-02; DD-114).
+The governance-quality answer of the validate-entity API (CL-40, VE-02; DD-203).
 
-The body the 8.3 mock answers — the four cards the webapp's editor renders, the `AppSearchResult<GovQualitySearchObject>` shape of the legacy `libs/atlas/api::GovQualityApi` (ADR 055 R4) — stated as models so a caller parses it and the app's constant is checked against one shape (VE-02, DV-14).
+The body the 8.3 mock answers — the four cards the webapp's editor renders, the `AppSearchResult<GovQualitySearchObject>` shape of the legacy `libs/atlas/api::GovQualityApi` (ADR 055 R4) — stated as models so a caller parses it and the app's constant is checked against one shape (VE-02, DV-67).
 
 Every leaf is a `{"raw": …}` wrapper, and the `doc-…` ids, string `compliant` flags and `_meta.engine` of the mock are part of the browser contract, so they are modelled as they arrive, not normalised. The card keys and `isNonCompliant` are camelCase, the legacy's names.
 
@@ -756,11 +756,11 @@ The card for the name aspect.
 
 ## aurelius\_atlas\_validate\_entity\_client.client
 
-The async client for the validate-entity API (CL-01..CL-05, CL-40; DD-114, DD-115, DD-116).
+The async client for the validate-entity API (CL-01..CL-05, CL-40; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01). The request path is relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Tests pass one built on a `MockTransport` and no socket opens (CL-02); the bearer goes on every call (CL-03); `ValidateEntityClientError` rises on a non-2xx answer (CL-04); `httpx`'s own error propagates on an unreachable upstream (CL-05).
 
-`validate` posts any mapping — the endpoint never reads the body (VE-01, DD-112), so the request is not a model — and parses the fixed governance document into a :class:`~aurelius_atlas_validate_entity_client.models.ValidationResponse` (CL-40).
+`validate` posts any mapping — the endpoint never reads the body (VE-01, DD-201), so the request is not a model — and parses the fixed governance document into a :class:`~aurelius_atlas_validate_entity_client.models.ValidationResponse` (CL-40).
 
 Type Aliases:
 
@@ -772,7 +772,7 @@ Classes:
 
 - **`ValidateEntityClient`** –
 
-  The client for one validate-entity service (CL-40, DD-114, DD-116).
+  The client for one validate-entity service (CL-40, DD-203, DD-205).
 - **`ValidateEntityClientError`** –
 
   A non-2xx answer from the validate-entity API, with the status (CL-04).
@@ -827,7 +827,7 @@ Where the bearer token comes from: a fixed token, or a callable that yields one 
 ValidateEntityClient(http: AsyncClient, token: TokenSource)
 ```
 
-The client for one validate-entity service (CL-40, DD-114, DD-116).
+The client for one validate-entity service (CL-40, DD-203, DD-205).
 
 Parameters:
 

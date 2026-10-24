@@ -36,7 +36,7 @@ The gate is what protects production: no change reaches `main` — and nothing i
 
 Merge requires all affected stages green; the evidence report is what reviewers read. The pipeline definition is in the repository's CI configuration.
 
-Coverage is measured in every `-c ci` test run and uploaded to the analysis stage: SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **quality gate is the coverage gate** — there is deliberately no second coverage flag in the pipeline. The last full review of what the suites prove — coverage baselines and non-happy-flow representativeness per project — is the [Test Suite Review](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/testing-review/index.md>) ([DD-125](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments>)).
+Coverage is measured in every `-c ci` test run and uploaded to the analysis stage: SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **quality gate is the coverage gate** — there is deliberately no second coverage flag in the pipeline. The last full review of what the suites prove — coverage baselines and non-happy-flow representativeness per project — is the [Test Suite Review](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/testing-review/index.md>) ([DD-214](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments>)).
 
 ## Indicators
 

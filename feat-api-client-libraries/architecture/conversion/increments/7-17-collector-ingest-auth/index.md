@@ -2,13 +2,13 @@
 
 - **Status:** in progress
 - **Pull request:** [\#119](<https://github.com/aureliusenterprise/aurelius-atlas/pull/119>)
-- **Records:** DD-103 (the two-leg ingest proof: user JWTs for browsers, a shared token for services); extends ADR 039 (TLS proves the channel, the credential proves the writer) and ADR 034 (the one collection point); relies on SHL-11 (the proxy paths), SHL-14 and SPL-11 (the telemetry the proxies carry), ESD-06 (the puller sidecars), APC-05/APC-06 (the login the browser leg gates on)
+- **Records:** DD-193 (the two-leg ingest proof: user JWTs for browsers, a shared token for services); extends ADR 039 (TLS proves the channel, the credential proves the writer) and ADR 034 (the one collection point); relies on SHL-11 (the proxy paths), SHL-14 and SPL-11 (the telemetry the proxies carry), ESD-06 (the puller sidecars), APC-05/APC-06 (the login the browser leg gates on)
 
 ## Scope
 
 The OTel collector's OTLP receivers stop accepting anonymous writes. It delivers:
 
-- Two ingest legs on `dev/observability`'s collector, each with its own proof of the writer (DD-103):
+- Two ingest legs on `dev/observability`'s collector, each with its own proof of the writer (DD-193):
 
   - the **browser leg** (HTTP 4318) authenticates the signed-in user through the collector's `oidc` extension: Keycloak issuer, signature, and the `otel-collector` audience. A push with no token, a token from another issuer, or a non-JWT credential is answered 401;
   - the **service leg** (gRPC 4317, HTTP 4319) requires the shared ingest token through `bearertokenauth`: a push without it is answered 401 / `Unauthenticated`.
@@ -19,7 +19,7 @@ The OTel collector's OTLP receivers stop accepting anonymous writes. It delivers
   - server-side exporters (Atlas server, FastAPI example, Keycloak) present the shared token through the standard `OTEL_EXPORTER_OTLP_HEADERS` env var, and the slice puller sidecars (postgres, keycloak-infra, elasticsearch) through their exporter's `headers` block — all on the service leg (4317 gRPC / 4319 HTTP).
 - The collector's host publishes pinned to loopback (4317/4318/4319), the prometheus exporter's publish (:9464) dropped — Prometheus scrapes it inside the compose network.
 
-It explicitly does not deliver: per-service identities on the service leg (one shared secret for headless writers; Keycloak-JWT ingest for them stays a future option, DD-103), pre-login browser telemetry (the login is the telemetry gate — accepted, DD-103), token rotation machinery, production deployment manifests, or auth on the collector's internal telemetry (:8888, scraped in-network).
+It explicitly does not deliver: per-service identities on the service leg (one shared secret for headless writers; Keycloak-JWT ingest for them stays a future option, DD-193), pre-login browser telemetry (the login is the telemetry gate — accepted, DD-193), token rotation machinery, production deployment manifests, or auth on the collector's internal telemetry (:8888, scraped in-network).
 
 ## Semantics
 
@@ -37,7 +37,7 @@ None. Apache Atlas 2.4.0 ships no OpenTelemetry collector: its telemetry is Drop
 
 ## Deviations
 
-None against Apache Atlas (no Atlas behaviour is touched; the increment is platform-side). The deliberate posture choices — user JWTs on the browser leg over a shared secret, a shared secret on the service leg over per-service identity, the accepted loss of pre-login telemetry, loopback pinning — are recorded in DD-103, not in `deviations.md` (which tracks Atlas-parity deltas).
+None against Apache Atlas (no Atlas behaviour is touched; the increment is platform-side). The deliberate posture choices — user JWTs on the browser leg over a shared secret, a shared secret on the service leg over per-service identity, the accepted loss of pre-login telemetry, loopback pinning — are recorded in DD-193, not in `deviations.md` (which tracks Atlas-parity deltas).
 
 ## Acceptance
 
@@ -47,10 +47,10 @@ None against Apache Atlas (no Atlas behaviour is touched; the increment is platf
   - `test__otel_proxy_passes_authorization_through` — a token-less push through the proxy is the collector's 401, proving the proxy injects nothing (CIA-01, CIA-02)
   - `test__collector_rejects_unauthenticated_ingest` — a direct `POST /v1/traces` to the collector's published browser-leg port with no token answers 401, and the CA-verified TLS handshake to the same port succeeds (CIA-01)
   - `test__collector_accepts_a_user_token_on_the_browser_leg` — the same POST with a Keycloak-minted user token (the realm's password grant, the `otel-ingest` audience) answers 2xx (CIA-01, CIA-05, the positive control)
-  - `test__collector_stamps_the_user_onto_the_telemetry` — a probe span pushed with a user token comes back from Tempo with the token's `sub` on its resource attributes as `enduser.id` (trace-by-id read-back, `GET /api/traces/<id>?encoding=json`): the identity rode the data into the queryable backend (CIA-05, DD-105; webapp suite)
+  - `test__collector_stamps_the_user_onto_the_telemetry` — a probe span pushed with a user token comes back from Tempo with the token's `sub` on its resource attributes as `enduser.id` (trace-by-id read-back, `GET /api/traces/<id>?encoding=json`): the identity rode the data into the queryable backend (CIA-05, DD-194; webapp suite)
   - `test__collector_rejects_the_shared_token_on_the_browser_leg` — the service credential on the browser leg answers 401: the legs stay distinct proofs (CIA-01)
   - `test__collector_accepts_the_shared_ingest_token` — the service leg (4319) accepts the shared token (CIA-01, CIA-04)
   - `test__collector_publishes_are_loopback_pinned` — the published sockets bind 127.0.0.1 (CIA-03)
   - `test__producers_keep_flowing_with_the_token` — accepted OTLP exports reach the collector within the suite window, proving the server-side producers present the token (CIA-04; additionally proven by every producer keeping its `nx serve`/e2e runs green — Grafana's stack dashboard shows the pullers and Keycloak flowing)
-- Unit (vitest, `aurelius-atlas-observability`): `createAureliusOtelIngestAuth` sends the bearer token of an authenticated session, nothing for a signed-out one or before the client attaches, and the current token when refresh fails (CIA-02, DD-103).
+- Unit (vitest, `aurelius-atlas-observability`): `createAureliusOtelIngestAuth` sends the bearer token of an authenticated session, nothing for a signed-out one or before the client attaches, and the current token when refresh fails (CIA-02, DD-193).
 - Run: the dev stack (`nx up aurelius-atlas-dev-observability`) plus the producer slices; `curl --cacert dev/observability/certs/ca.pem` to `https://127.0.0.1:4318/v1/traces` answers 401 with no header and with the service token, 2xx with a user token; `https://127.0.0.1:4319/v1/traces` answers 401 with no header, 2xx with the service token.

@@ -1,8 +1,8 @@
 # 9.1 Targeted resilience e2e
 
 - **Status:** in progress
-- **Pull request:** — (follows the review of 2026-10-24, DD-125)
-- **Records:** RSL-01..03 (minted here); DD-125 (the review that scoped this); cites 7.7 (ALR-05), 7.3 (APC-05/10), 8.2/8.5 (LM-04, LM-12), DD-111, DD-117, DD-064, DD-085
+- **Pull request:** — (follows the review of 2026-10-24, DD-214)
+- **Records:** RSL-01..03 (minted here); DD-214 (the review that scoped this); cites 7.7 (ALR-05), 7.3 (APC-05/10), 8.2/8.5 (LM-04, LM-12), DD-200, DD-206, DD-153, DD-173
 
 ## Scope
 
@@ -12,7 +12,7 @@ The review's last category (infra/technical failures, category 3) is proven toda
 - **RSL-02** — the lineage chain's upstream outage, across containers: stop the fixture Atlas of the 8.2 chain; the app's real httpx call hits a refused connection and the app answers the Atlas-shaped 502 (LM-12's container-side twin — 8.6 proved it in-process with a fake transport); start the fixture and the chain answers the canned graph again.
 - **RSL-03** — the logout round-trip, in a real browser against the real Keycloak: sign in, log out from the navbar, and the IdP session ends — the app lands on the sign-in page (the guard's redirect, APC-05), and signing in again returns the greeted app. The SHC-05 logout path is unit-pinned in 7.19 (the fire-and-forget contract); this proves the Keycloak round-trip the unit can never run.
 
-It does **not** deliver: chaos testing, sustained-outage behaviour, the circuit-breaker-open e2e (8.5's unit suite owns it; one outage event is one failure, and opening needs five), Elasticsearch-loss scenarios (the server spine's deferred backlog, DD-125), or any production-code change.
+It does **not** deliver: chaos testing, sustained-outage behaviour, the circuit-breaker-open e2e (8.5's unit suite owns it; one outage event is one failure, and opening needs five), Elasticsearch-loss scenarios (the server spine's deferred backlog, DD-214), or any production-code change.
 
 ## Rule definitions
 
@@ -24,17 +24,17 @@ It does **not** deliver: chaos testing, sustained-outage behaviour, the circuit-
 
 ## Semantics
 
-- **RSL-01** (7.7 ALR-05, 7.12): the alerts interceptor reports `/api` calls that fail with 5xx or status 0; a stopped container makes nginx answer 502 (its `/api/` proxy resolves the upstream per request, DD-053 + the resolver pattern), so the browser's failed call follows the unit-tested path: bell badge, drawer feed row naming `Request failed: GET /api/... 502`. Recovery is the same stack's readiness probe (the conftest's version-endpoint poll, ATLAS\_SERVER\_HOST\_PORT) after `container.start()`.
-- **RSL-02** (8.2 LM-04/05, 8.5 LM-12, DD-111): the app calls the fixture Atlas over the compose network; a stopped container answers connection refused, the app's `httpx.RequestError` handler answers the Atlas 502 body (`errorCode` ATLAS-500-00-001 family, DD-20's 8.x shape). The container handle is found by compose labels (the collector fixture's pattern, CIA-03 suite). Restart + the compose healthcheck (5s interval) restores the chain.
-- **RSL-03** (SHC-05, APC-05/10, DD-064): Logout is the dropdown anchor (DD-064); `keycloak.logout()` ends the session at the IdP and returns to the app's origin. The root guard (APC-05, `check-sso`) then redirects to Keycloak's login — the same landing the `authenticated` fixture signs through — and the round-trip completes with the navbar greeting (SHC-05).
+- **RSL-01** (7.7 ALR-05, 7.12): the alerts interceptor reports `/api` calls that fail with 5xx or status 0; a stopped container makes nginx answer 502 (its `/api/` proxy resolves the upstream per request, DD-142 + the resolver pattern), so the browser's failed call follows the unit-tested path: bell badge, drawer feed row naming `Request failed: GET /api/... 502`. Recovery is the same stack's readiness probe (the conftest's version-endpoint poll, ATLAS\_SERVER\_HOST\_PORT) after `container.start()`.
+- **RSL-02** (8.2 LM-04/05, 8.5 LM-12, DD-200): the app calls the fixture Atlas over the compose network; a stopped container answers connection refused, the app's `httpx.RequestError` handler answers the Atlas 502 body (`errorCode` ATLAS-500-00-001 family, DD-20's 8.x shape). The container handle is found by compose labels (the collector fixture's pattern, CIA-03 suite). Restart + the compose healthcheck (5s interval) restores the chain.
+- **RSL-03** (SHC-05, APC-05/10, DD-153): Logout is the dropdown anchor (DD-153); `keycloak.logout()` ends the session at the IdP and returns to the app's origin. The root guard (APC-05, `check-sso`) then redirects to Keycloak's login — the same landing the `authenticated` fixture signs through — and the round-trip completes with the navbar greeting (SHC-05).
 
 ## Java origin
 
-No Java twin: Apache Atlas' webapp ships no resilience e2e (the legacy suite is integration-level, `webapp/src/test`). The scenarios follow the review (DD-125) category 3 and the Aurelius shell/chain rules cited above.
+No Java twin: Apache Atlas' webapp ships no resilience e2e (the legacy suite is integration-level, `webapp/src/test`). The scenarios follow the review (DD-214) category 3 and the Aurelius shell/chain rules cited above.
 
 ## Deviations
 
-None new. The outage answers ride the accepted 8.x shapes (DV-26's breaker 502, the SRV-04 error body) — cited, not restated.
+None new. The outage answers ride the accepted 8.x shapes (DV-77's breaker 502, the SRV-04 error body) — cited, not restated.
 
 ## Acceptance
 

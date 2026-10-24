@@ -111,6 +111,31 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Typedef Refresh Seconds",
 >       "type": "number"
 >     },
+>     "delete_type": {
+>       "default": "soft",
+>       "enum": [
+>         "soft",
+>         "hard"
+>       ],
+>       "title": "Delete Type",
+>       "type": "string"
+>     },
+>     "delete_type_override": {
+>       "default": false,
+>       "title": "Delete Type Override",
+>       "type": "boolean"
+>     },
+>     "tasks_enabled": {
+>       "default": true,
+>       "title": "Tasks Enabled",
+>       "type": "boolean"
+>     },
+>     "task_poll_seconds": {
+>       "default": 10.0,
+>       "exclusiveMinimum": 0,
+>       "title": "Task Poll Seconds",
+>       "type": "number"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
@@ -222,6 +247,10 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `dashboard_dir` (`DirectoryPath | None`)
 > - `models_dir` (`Path`)
 > - `typedef_refresh_seconds` (`float`)
+> - `delete_type` (`Literal['soft', 'hard']`)
+> - `delete_type_override` (`bool`)
+> - `tasks_enabled` (`bool`)
+> - `task_poll_seconds` (`float`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
 > - `elasticsearch_username` (`str`)
@@ -244,6 +273,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The built dashboards: `dashboardv2` at its root and `dashboardv3` in `n/`; None serves the API only (DSH-04).
+>
+> ### delete\_type
+>
+> ```
+> delete_type: Literal['soft', 'hard'] = 'soft'
+> ```
+>
+> How entities are deleted unless a request chooses: `atlas.DeleteHandlerV1.impl` (EDL-04, DD-059).
+>
+> ### delete\_type\_override
+>
+> ```
+> delete_type_override: bool = False
+> ```
+>
+> Whether a request's `deleteType` chooses: `atlas.rest.enable.delete.type.override` (EDL-04, DD-059).
 >
 > ### elasticsearch\_ca\_certs
 >
@@ -321,7 +366,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > otel_client_id: str = 'otel-atlas-server'
 > ```
 >
-> The ingest realm client the server mints for (7.18, DD-107).
+> The ingest realm client the server mints for (7.18, DD-196).
 >
 > ### otel\_client\_secret
 >
@@ -337,7 +382,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > otel_endpoint: str = 'https://localhost:4319'
 > ```
 >
-> The collector's per-service-leg HTTP base for the OTLP export (7.18, DD-107); the dev compose overrides with the service DNS name.
+> The collector's per-service-leg HTTP base for the OTLP export (7.18, DD-196); the dev compose overrides with the service DNS name.
 >
 > ### otel\_token\_url
 >
@@ -345,7 +390,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > otel_token_url: HttpUrl | None = None
 > ```
 >
-> The issuer's token endpoint for the OTLP ingest credential (7.18, DD-107): with `otel_client_secret` set, the server exports OTLP through the app-owned pipeline (the collector's per-service leg accepts only client-credentials JWTs); unset, the server exports no OTLP (console only). The OTel env vars (`OTEL_EXPORTER_OTLP_*`) are deliberately not read: the 60s dev token cannot ride a static header (DD-107).
+> The issuer's token endpoint for the OTLP ingest credential (7.18, DD-196): with `otel_client_secret` set, the server exports OTLP through the app-owned pipeline (the collector's per-service leg accepts only client-credentials JWTs); unset, the server exports no OTLP (console only). The OTel env vars (`OTEL_EXPORTER_OTLP_*`) are deliberately not read: the 60s dev token cannot ride a static header (DD-196).
 >
 > ### port
 >
@@ -362,6 +407,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The source revision the server was built from, reported by `admin/version` (ADM-01).
+>
+> ### task\_poll\_seconds
+>
+> ```
+> task_poll_seconds: float = 10.0
+> ```
+>
+> How often the worker looks for tasks other processes recorded or left behind (DD-080).
+>
+> ### tasks\_enabled
+>
+> ```
+> tasks_enabled: bool = True
+> ```
+>
+> Whether propagation is deferred to tasks a worker runs after the request: `atlas.tasks.enabled` (TSK-02, DD-081).
 >
 > ### tls
 >
@@ -492,7 +553,7 @@ Parameters:
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
 
-The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16).
+The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
 
 ### mount\_dashboards
 
@@ -514,7 +575,7 @@ Classes:
 
 - **`AtlasJSONResponse`** –
 
-  A JSON response with the Atlas media type (SRV-05).
+  A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039).
 
 Functions:
 
@@ -552,7 +613,13 @@ __all__ = ['ATLAS_JSON_MEDIA_TYPE', 'AtlasError', 'AtlasErrorCode', 'AtlasJSONRe
 
 Bases: `JSONResponse`
 
-A JSON response with the Atlas media type (SRV-05).
+A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039).
+
+Methods:
+
+- **`render`** –
+
+  Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them.
 
 Attributes:
 
@@ -564,6 +631,14 @@ Attributes:
 media_type = ATLAS_JSON_MEDIA_TYPE
 ```
 
+#### render
+
+```
+render(content: Any) -> bytes
+```
+
+Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them.
+
 ### atlas\_error\_handler
 
 ```
@@ -574,16 +649,24 @@ Answer an `AtlasError` with its status and `{"errorCode", "errorMessage"[, "erro
 
 ## aurelius\_atlas\_server.routes.admin
 
-The admin endpoints of `AdminResource`: version, status, session, liveness and readiness (ADM-01 to ADM-05).
+The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, purge, tasks.
+
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
 
 Functions:
 
 - **`csrf_token`** –
 
   A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
+- **`delete_task`** –
+
+  `deleteTask`: remove the tasks of the `guids` given (TSK-06).
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
+- **`get_patches`** –
+
+  `getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
 - **`get_readiness`** –
 
   Whether the server can serve requests: its store must be healthy (ADM-04).
@@ -593,9 +676,15 @@ Functions:
 - **`get_status`** –
 
   The service state, which is always `ACTIVE` while the server runs (ADM-02).
+- **`get_task_status`** –
+
+  `getTaskStatus`: the tasks of the `guids` given that exist, in their order, else every task (TSK-06).
 - **`get_version`** –
 
   The server's name, release and revision (ADM-01, DV-03).
+- **`purge_by_ids`** –
+
+  `purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
 - **`time_zones`** –
 
   The IANA time zone ids, sorted (DV-05).
@@ -613,6 +702,7 @@ Attributes:
 - **`LIVE`** –
 - **`NAME`** –
 - **`NOT_READY`** –
+- **`NO_CONTENT`** –
 - **`READY`** –
 - **`UI_SETTINGS`** (`dict[str, Any]`) –
 
@@ -664,6 +754,12 @@ NAME = 'aurelius-atlas'
 NOT_READY = 'Service not ready to accept client requests'
 ```
 
+### NO\_CONTENT
+
+```
+NO_CONTENT = 204
+```
+
 ### READY
 
 ```
@@ -701,6 +797,14 @@ csrf_token() -> str
 
 A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
 
+### delete\_task
+
+```
+delete_task(request: Request) -> Response
+```
+
+`deleteTask`: remove the tasks of the `guids` given (TSK-06).
+
 ### get\_liveness
 
 ```
@@ -708,6 +812,14 @@ get_liveness() -> str
 ```
 
 Whether the server runs (ADM-03).
+
+### get\_patches
+
+```
+get_patches(request: Request) -> dict[str, Any]
+```
+
+`getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
 
 ### get\_readiness
 
@@ -726,10 +838,12 @@ Raises:
 ### get\_session
 
 ```
-get_session() -> dict[str, Any]
+get_session(request: Request) -> dict[str, Any]
 ```
 
 The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+
+`atlas.tasks.enabled` is the server's `tasks_enabled` setting (DD-081).
 
 ### get\_status
 
@@ -739,6 +853,14 @@ get_status() -> dict[str, str]
 
 The service state, which is always `ACTIVE` while the server runs (ADM-02).
 
+### get\_task\_status
+
+```
+get_task_status(request: Request) -> AtlasJSONResponse
+```
+
+`getTaskStatus`: the tasks of the `guids` given that exist, in their order, else every task (TSK-06).
+
 ### get\_version
 
 ```
@@ -746,6 +868,20 @@ get_version(request: Request) -> dict[str, str]
 ```
 
 The server's name, release and revision (ADM-01, DV-03).
+
+### purge\_by\_ids
+
+```
+purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+```
+
+`purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
+
+Raises:
+
+- `AtlasError` –
+
+  `BAD_REQUEST` for a body that is not an array of strings (DV-10).
 
 ### time\_zones
 

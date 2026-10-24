@@ -1,6 +1,6 @@
 # aurelius-atlas-auth
 
-Keycloak bearer-token authentication shared by the Aurelius Atlas services (8.0, DD-108): OIDC discovery, JWKS verification and the write-role gate.
+Keycloak bearer-token authentication shared by the Aurelius Atlas services (8.0, DD-197): OIDC discovery, JWKS verification and the write-role gate.
 
 ## Installation
 
@@ -16,7 +16,7 @@ workspace = true
 
 ## aurelius\_atlas\_auth.auth
 
-Keycloak bearer-token authentication for Aurelius Atlas services (8.0, DD-108).
+Keycloak bearer-token authentication for Aurelius Atlas services (8.0, DD-197).
 
 Ported from the template's FastAPI example (the workspace's reference for the pattern: `apps/aurelius-atlas-fastapi-example/.../providers/auth.py`), reshaped as a per-service object so each application owns one :class:`KeycloakAuth` built from its own settings — no module-level caches shared across applications.
 

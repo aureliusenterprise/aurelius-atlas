@@ -1,6 +1,6 @@
 # aurelius-atlas-server-client
 
-The contract and the async client of the Atlas REST API (8.4, DD-114, DD-115): the admin, types and lineage models every consumer of `aurelius-atlas-server` speaks, and the `httpx2`-based `AtlasClient` that calls it. The lineage-model app imports the lineage wire models from here — one source of truth for both sides of the wire.
+The contract and the async client of the Atlas REST API (8.4, DD-203, DD-204): the admin, types and lineage models every consumer of `aurelius-atlas-server` speaks, and the `httpx2`-based `AtlasClient` that calls it. The lineage-model app imports the lineage wire models from here — one source of truth for both sides of the wire.
 
 ## Installation
 
@@ -131,6 +131,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasSessionInfo
 
 Bases: `AtlasModel`
@@ -251,6 +253,8 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### AtlasStatus
 
 Bases: `AtlasModel`
@@ -309,6 +313,8 @@ to_json() -> dict[str, Any]
 ```
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
 ### AtlasVersion
 
@@ -423,11 +429,13 @@ to_json() -> dict[str, Any]
 
 The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
 
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ## aurelius\_atlas\_server\_client.lineage
 
 The Atlas `v2/lineage/{guid}` body, as the server client's contract (CL-12, LM-04).
 
-Moved here from `aurelius_atlas_lineage_model.lineage` by increment 8.4 (DD-114): the body is the *server's* answer — the Aurelius `LineageInfo` wire shape of `libs/m4i-atlas-core` (ADR 055 R4), stated as pydantic (DD-109) so the serving side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
+Moved here from `aurelius_atlas_lineage_model.lineage` by increment 8.4 (DD-203): the body is the *server's* answer — the Aurelius `LineageInfo` wire shape of `libs/m4i-atlas-core` (ADR 055 R4), stated as pydantic (DD-198) so the serving side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
 
 The *flattening* is not here: `PROCESS_TYPES`, `LINEAGE_RULES` and `flatten_relations` are 8.2's app logic and stay in the app (8.4 spec, CL-12).
 
@@ -762,9 +770,9 @@ The guid of the target entity.
 
 ## aurelius\_atlas\_server\_client.client
 
-The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-114, DD-115, DD-116).
+The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-203, DD-204, DD-205).
 
-One client per server: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01) — the app builds the httpx client from its own settings (TLS, timeout) and passes it in. The request paths are relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Because the client arrives from outside, tests hand over one built on a `MockTransport` and no socket opens (CL-02, the DD-111 seam made async). Every request carries `authorization: Bearer <token>` from the token source (CL-03); a non-2xx answer raises :class:`AtlasClientError` with the status and the server's `{errorCode, errorMessage}` when the body parses (CL-04); an unreachable upstream propagates as `httpx`'s own error — mapping it to an HTTP status is the app's job (LM-07's DV-22), not the client's (CL-05).
+One client per server: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01) — the app builds the httpx client from its own settings (TLS, timeout) and passes it in. The request paths are relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Because the client arrives from outside, tests hand over one built on a `MockTransport` and no socket opens (CL-02, the DD-200 seam made async). Every request carries `authorization: Bearer <token>` from the token source (CL-03); a non-2xx answer raises :class:`AtlasClientError` with the status and the server's `{errorCode, errorMessage}` when the body parses (CL-04); an unreachable upstream propagates as `httpx`'s own error — mapping it to an HTTP status is the app's job (LM-07's DV-80), not the client's (CL-05).
 
 The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin`, `routes/types.py` under `/api/atlas/v2/types`, and the `v2/lineage/{guid}` feed of the server root (whose route lands with 5.1, CL-11).
 
@@ -781,7 +789,7 @@ Classes:
   The admin resource of an :class:`AtlasClient` (CL-11): `client.admin`.
 - **`AtlasClient`** –
 
-  The client for one Atlas metadata server (CL-11, DD-114, DD-116).
+  The client for one Atlas metadata server (CL-11, DD-203, DD-205).
 - **`AtlasClientError`** –
 
   A non-2xx answer from the Atlas server, with the status and the error body (CL-04).
@@ -943,7 +951,7 @@ version() -> AtlasVersion
 AtlasClient(http: AsyncClient, token: TokenSource)
 ```
 
-The client for one Atlas metadata server (CL-11, DD-114, DD-116).
+The client for one Atlas metadata server (CL-11, DD-203, DD-205).
 
 Parameters:
 

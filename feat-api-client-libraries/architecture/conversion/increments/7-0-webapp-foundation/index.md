@@ -2,7 +2,7 @@
 
 - **Status:** planned
 - **Pull request:** –
-- **Records:** ADR 053; DD-037 to DD-042
+- **Records:** ADR 053; DD-126 to DD-131
 
 ## Scope
 
@@ -71,7 +71,7 @@ None. The 7.x track ports an Angular front end written by Aurelius, not Apache A
 
 ## Deviations
 
-- **DV-11**: Aurelius Atlas serves a web interface of its own design once 7.10 lands, where Apache Atlas 2.4.0 serves its two dashboards. The REST contract is unaffected; the parity harness keeps reading the Atlas dashboards as the reference. Added to [Deviations](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/deviations/index.md>).
+- **DV-64**: Aurelius Atlas serves a web interface of its own design once 7.10 lands, where Apache Atlas 2.4.0 serves its two dashboards. The REST contract is unaffected; the parity harness keeps reading the Atlas dashboards as the reference. Added to [Deviations](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/deviations/index.md>).
 
 ## Acceptance
 

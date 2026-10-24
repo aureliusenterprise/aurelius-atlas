@@ -61,6 +61,7 @@ Not in scope:
 | --- | --- |
 | SCN-14 | The trace file records every test's `user_properties` after collection; each scenario test carries one `parity.endpoint` property per endpoint its stages call (method and URL before substitution, without the query) and one `parity.deviation` property per deviation id |
 | SCN-15 | The report has a section with one row per endpoint: its scenarios with their outcomes and deviations, with the same statuses as rules; the Markdown summary counts endpoints |
+| SCN-16 | Every run of a scenario starts with `{run}` saved: a value unique to that run, in letters and digits, for names a scenario creates (added by 2.4, DD-055) |
 
 Rule SCN-01 is ADR 052 R1: a scenario without a citation is not a scenario. The format borrows the stage shape of Tavern, and scenarios run as ordinary parametrised pytest tests ([DD-012](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests>)). Rules SCN-09 and SCN-10 make the comparison exact ([DD-013](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths>)), and SCN-14 carries scenario facts to the report through the trace file ([DD-014](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/#dd-014-scenario-facts-reach-the-report-as-test-properties>)).
 

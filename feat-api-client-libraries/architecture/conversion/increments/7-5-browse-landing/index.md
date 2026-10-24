@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** [\#101](<https://github.com/aureliusenterprise/aurelius-atlas/pull/101>)
-- **Records:** ADR 053; DD-054, DD-055; relies on ADR 007, DD-037, DD-039, DD-045, DD-046, DD-047, DD-051, DD-052, UIC rules (7.2)
+- **Records:** ADR 053; DD-143, DD-144; relies on ADR 007, DD-126, DD-128, DD-134, DD-135, DD-136, DD-140, DD-141, UIC rules (7.2)
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
 
@@ -20,8 +20,8 @@ Explicitly not delivered here, with the increment that will:
 
 | Deferred | Lands with | Why |
 | --- | --- | --- |
-| The cards' search fields (`simple-search-input`) and the "explore" buttons (`directTo*`) | The search slice (7.4, gated by server 4.1 + 2.3 — DD-051) | Both are search navigation: they set `SearchService.query/filters` and route to `/search/results`, a screen whose API does not exist yet. Porting the affordance without its destination is the speculative build DD-051 rejects (DD-054) |
-| The Shell chrome (header, footer, global nav) | The search slice | Aurelius wraps every screen in `libs/shell`, and the header's centrepiece is the global search bar; wiring the chrome is one decision with the search entry point, not two (DD-054) |
+| The cards' search fields (`simple-search-input`) and the "explore" buttons (`directTo*`) | The search slice (7.4, gated by server 4.1 + 2.3 — DD-140) | Both are search navigation: they set `SearchService.query/filters` and route to `/search/results`, a screen whose API does not exist yet. Porting the affordance without its destination is the speculative build DD-140 rejects (DD-143) |
+| The Shell chrome (header, footer, global nav) | The search slice | Aurelius wraps every screen in `libs/shell`, and the header's centrepiece is the global search bar; wiring the chrome is one decision with the search entry point, not two (DD-143) |
 | `directToUser` (governance card: search the signed-in user's e-mail) | The search slice | Same: search navigation; the e-mail is now available from Keycloak, the results page is not |
 | Search client, results, details | 7.4 / 7.6, after server 4.1 / 2.3 | API not ready (user decision, 2026-10-20: hold all search until the API is ready) |
 
@@ -35,8 +35,8 @@ Each rule the behaviour must obey, in plain words, with an id that tests name (`
 | BRW-02 | Every visible string on the page carries its legacy dictionary key as its i18n id (`@@search.browse.<context>.<key>`), with no literal prose in templates (WBP-05); the keys all exist in the XLIFF bridge, so both locales render fully (the completeness spec proves it) |
 | BRW-03 | Each card's info icon opens that card's info modal: a description paragraph and a table of the legacy static rows — business: data domain / data entity / data attribute; technical: system / collection / dataset / field; governance: domain lead / data owner / data steward — each row an icon, a type name and a description, every string localized by its `search.browse.<context>.infoModal.*` key; the modal opens on icon click and closes via the ui-lib modal's close affordance |
 | BRW-04 | The landing page issues no HTTP requests: component specs prove an empty `HttpTestingController`, and the e2e landing scenario records zero `/api` calls (the screen exists before its API does) |
-| BRW-05 | The page is zoneless/Angular-idiom (standalone, OnPush, signals, `inject()`): modal open state is the ui-lib modal's model signal, card data is static consts, no store, no `BehaviorSubject` (DD-046, purity gate) |
-| BRW-06 | No search affordance is ported: no search field, no explore button, no route to results (DD-054); the page's links and buttons are exactly the info-icon opens |
+| BRW-05 | The page is zoneless/Angular-idiom (standalone, OnPush, signals, `inject()`): modal open state is the ui-lib modal's model signal, card data is static consts, no store, no `BehaviorSubject` (DD-135, purity gate) |
+| BRW-06 | No search affordance is ported: no search field, no explore button, no route to results (DD-143); the page's links and buttons are exactly the info-icon opens |
 | BRW-07 | e2e (authenticated, chromium/firefox/webkit): the landing renders all three cards with localized titles; clicking a card's info icon opens its modal with its type-name rows visible; closing returns to the landing; the nl-NL locale renders the Dutch card titles |
 
 ## Aurelius origin
@@ -51,7 +51,7 @@ The Aurelius 17 app (`.scratch/aurelius`, commit pinned by 7-0), `apps/atlas/src
 
 None against Apache Atlas: this slice is an Aurelius product screen, and Atlas has no equivalent UI.
 
-Against the Aurelius product, one intended difference is recorded in [design-log](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/index.md>): the landing page is ported **statically** — search affordances and the Shell chrome arrive with the search slice (DD-054), because the user has put all search work on hold until the server search API (4.1, with 2.3 entity read) exists.
+Against the Aurelius product, one intended difference is recorded in [design-log](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/index.md>): the landing page is ported **statically** — search affordances and the Shell chrome arrive with the search slice (DD-143), because the user has put all search work on hold until the server search API (4.1, with 2.3 entity read) exists.
 
 ## Acceptance
 

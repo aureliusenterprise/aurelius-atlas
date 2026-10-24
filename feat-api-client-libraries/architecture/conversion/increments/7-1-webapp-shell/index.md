@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** \#98
-- **Records:** ADR 053; DD-037, DD-038, DD-039, DD-040, DD-044; relies on ADR 007, ADR 018, DD-019
+- **Records:** ADR 053; DD-126, DD-127, DD-128, DD-129, DD-133; relies on ADR 007, ADR 018, DD-019
 
 Part of the [7.0 umbrella](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-0-webapp-foundation/index.md>), whose rules WBP-01 to WBP-07 this slice inherits and its Acceptance repeats.
 
@@ -34,7 +34,7 @@ Not in scope:
 | SHL-02 | Bootstrap reads `/config.json` and validates it into the typed `AppConfig`; a missing, unreachable, or malformed file throws at bootstrap |
 | SHL-03 | The root component renders a router outlet and nothing else, as the Aurelius root does |
 | SHL-04 | `GET /search/browse` renders the browse placeholder, the Aurelius default destination |
-| SHL-05 | An unknown path redirects to the default destination, matching the Aurelius `**` fallback (one hop, DD-043) |
+| SHL-05 | An unknown path redirects to the default destination, matching the Aurelius `**` fallback (one hop, DD-132) |
 | SHL-06 | Scroll position is restored on browser back and forward, as `scrollPositionRestoration: 'enabled'` does in Aurelius |
 | SHL-07 | The app is served in `en-US` and `nl-NL`; a build localises both, and `nx extract-i18n` regenerates the template catalogue |
 | SHL-08 | Every one of the 105 Aurelius dictionary keys is present in the `en-US` catalogue with its Aurelius English text, and in the `nl-NL` catalogue with its Aurelius Dutch text |
@@ -43,11 +43,11 @@ Not in scope:
 | SHL-11 | The built image serves the app over TLS on 8080, proxies `/api/` and `/otel/` as the example app's nginx config does, and its CSP keeps `connect-src 'self'` |
 | SHL-12 | A Playwright scenario loads the app in each of chromium, firefox, and webkit, reaches the browse placeholder, and switches locale |
 | SHL-13 | Every `signal`, service, and pure function the slice adds has a Vitest test naming it, and the coverage gate for the app holds |
-| SHL-14 | The app exports traces and Core Web Vitals metrics to the `otelExporterUrl` through `aurelius-atlas-observability`, records uncaught errors as span events, and propagates `traceparent` on HTTP calls (DD-040) |
+| SHL-14 | The app exports traces and Core Web Vitals metrics to the `otelExporterUrl` through `aurelius-atlas-observability`, records uncaught errors as span events, and propagates `traceparent` on HTTP calls (DD-129) |
 
 SHL-01 and SHL-10 are the point of the slice: they make the project real on this workspace's rules before any feature code arrives, so no later slice inherits a legacy scaffold.
 
-SHL-08 keeps the Aurelius dictionary complete rather than migrating the keys a screen happens to use. A partial dictionary makes each later slice responsible for adding strings, and the gaps surface as missing translations in Dutch months later (DD-039).
+SHL-08 keeps the Aurelius dictionary complete rather than migrating the keys a screen happens to use. A partial dictionary makes each later slice responsible for adding strings, and the gaps surface as missing translations in Dutch months later (DD-128).
 
 ## Aurelius origin
 
@@ -65,18 +65,18 @@ Cited by path in `aureliusenterprise/aurelius` at the cloned commit, so a review
 | `libs/i18n` (`I18nService`, `I18nModule.forRoot`) | `@angular/localize` + a locale service following the example app |
 | `apps/atlas/proxy.conf.json`, `project.json` targets | the workspace's `proxy.conf.json` + inferred targets |
 
-`@models4insight/google-analytics` and the `ClickstreamModule` of `libs/services/clickstream` are **dropped, not ported**: the workspace observes itself through OpenTelemetry ([ADR 016](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/016-the-system-observes-itself-internally/index.md>)) and `aurelius-atlas-observability`, and a second telemetry path to a third-party analytics host would add an egress the CSP is built to refuse (DD-040).
+`@models4insight/google-analytics` and the `ClickstreamModule` of `libs/services/clickstream` are **dropped, not ported**: the workspace observes itself through OpenTelemetry ([ADR 016](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/016-the-system-observes-itself-internally/index.md>)) and `aurelius-atlas-observability`, and a second telemetry path to a third-party analytics host would add an egress the CSP is built to refuse (DD-129).
 
 ## Deviations
 
-None against Apache Atlas: the Aurelius interface is Aurelius's own, and the Atlas dashboards are untouched (WBP-07). Against the Aurelius product, the two intended differences are recorded in [design-log](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/index.md>): telemetry goes to OpenTelemetry instead of Google Analytics (DD-040), and localisation moves from a `TranslateService` abstraction to the built-in one (DD-039).
+None against Apache Atlas: the Aurelius interface is Aurelius's own, and the Atlas dashboards are untouched (WBP-07). Against the Aurelius product, the two intended differences are recorded in [design-log](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/index.md>): telemetry goes to OpenTelemetry instead of Google Analytics (DD-129), and localisation moves from a `TranslateService` abstraction to the built-in one (DD-128).
 
 ## Acceptance
 
 - `apps/aurelius-atlas-webapp/tests` (co-located `.spec.ts`, Vitest) — config parsing and the failure modes of SHL-02, the metrics-endpoint derivation of SHL-14; the route table of SHL-04, SHL-05, SHL-06; the root component of SHL-03; the locale service of SHL-07. SHL-13.
 - `apps/aurelius-atlas-webapp/e2e/` — pytest + Playwright against the built image: SHL-12, plus SHL-11's TLS and proxy paths and the CSP check.
 - `scripts/check-webapp-purity.sh` (or an ESLint rule set) — WBP-02, SHL-01, SHL-09, SHL-10: greps the tree for `@NgModule`, `platformBrowserDynamic`, `@models4insight/`, `@ngx-translate/`, `environment`, and a state-owning `new BehaviorSubject` outside RxJS interop. Run in CI and by `nx run aurelius-atlas-webapp:check-purity`.
-- Dictionary completeness for SHL-08 — a Vitest test that loads the Aurelius JSON from the cloned reference checkout path recorded in the test, and asserts each key and value appears in both catalogues. Reference JSON is vendored into `tests/fixtures/` (DD-039), so the test runs offline.
+- Dictionary completeness for SHL-08 — a Vitest test that loads the Aurelius JSON from the cloned reference checkout path recorded in the test, and asserts each key and value appears in both catalogues. Reference JSON is vendored into `tests/fixtures/` (DD-128), so the test runs offline.
 - Umbrella checks: `nx build`, `nx test -c ci`, `nx lint`, `nx e2e` for the app.
 
 ### Definition of done, in order

@@ -1,6 +1,6 @@
 # aurelius-atlas-lineage-model-client
 
-The contract and the async client of the lineage-model API (8.4, DD-114, DD-115): the query-parameter model of `GET /v2/lineage` and the model-document response. The `aurelius-atlas-lineage-model` app imports its own contract from here; a no-lineage answer (204) is `None`.
+The contract and the async client of the lineage-model API (8.4, DD-203, DD-204): the query-parameter model of `GET /v2/lineage` and the model-document response. The `aurelius-atlas-lineage-model` app imports its own contract from here; a no-lineage answer (204) is `None`.
 
 ## Installation
 
@@ -16,9 +16,9 @@ workspace = true
 
 ## aurelius\_atlas\_lineage\_model\_client.models
 
-The request and response shapes of the lineage-model API (CL-30, LM-01/LM-04; DD-114).
+The request and response shapes of the lineage-model API (CL-30, LM-01/LM-04; DD-203).
 
-The ids of this module's rules stay here: `LineageModelParams` is LM-01's query (DV-20/DV-21 are its rejections), `LineageModelResponse` is the LM-04/LM-01 forward of the data2model answer (DV-15's contract). Field descriptions are the public OpenAPI documentation, so they name no rule ids; the Java classes ported are in the increment spec.
+The ids of this module's rules stay here: `LineageModelParams` is LM-01's query (DV-72/DV-73 are its rejections), `LineageModelResponse` is the LM-04/LM-01 forward of the data2model answer (DV-68's contract). Field descriptions are the public OpenAPI documentation, so they name no rule ids; the Java classes ported are in the increment spec.
 
 The query of `GET /` and the answer it forwards from data2model, stated once so the app validates its own query with the same model a caller builds (CL-07). The lineage directions are imported from `aurelius-atlas-server-client` — the lineage vocabulary belongs to the lineage API (CL-12), not to each consumer; reusing it is CL-10's rule applied to types.
 
@@ -222,7 +222,7 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 
 ## aurelius\_atlas\_lineage\_model\_client.client
 
-The async client for the lineage-model API (CL-01..CL-05, CL-30; DD-114, DD-115, DD-116).
+The async client for the lineage-model API (CL-01..CL-05, CL-30; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01). The request path is relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Tests hand over one built on a `MockTransport` and no socket opens (CL-02); the bearer goes on every call (CL-03); `LineageModelClientError` rises on a non-2xx answer with the Atlas-shaped body when it parses (CL-04); an unreachable upstream propagates as `httpx`'s own error (CL-05).
 
@@ -238,7 +238,7 @@ Classes:
 
 - **`LineageModelClient`** –
 
-  The client for one lineage-model service (CL-30, DD-114, DD-116).
+  The client for one lineage-model service (CL-30, DD-203, DD-205).
 - **`LineageModelClientError`** –
 
   A non-2xx answer from the lineage-model API, with the status and the error body (CL-04).
@@ -293,7 +293,7 @@ Where the bearer token comes from: a fixed token, or a callable that yields one 
 LineageModelClient(http: AsyncClient, token: TokenSource)
 ```
 
-The client for one lineage-model service (CL-30, DD-114, DD-116).
+The client for one lineage-model service (CL-30, DD-203, DD-205).
 
 Parameters:
 
@@ -331,7 +331,7 @@ Raises:
 
 - `LineageModelClientError` –
 
-  The API answered 4xx/5xx (400 is DV-20/DV-21, 502 is DV-22 — both with the Atlas-shaped body).
+  The API answered 4xx/5xx (400 is DV-72/DV-73, 502 is DV-80 — both with the Atlas-shaped body).
 
 #### with\_token
 
@@ -355,7 +355,7 @@ Attributes:
 
 - **`error_code`** –
 
-  The `errorCode` of the Atlas-shaped body, when it parsed (DV-20/DV-21/DV-22).
+  The `errorCode` of the Atlas-shaped body, when it parsed (DV-72/DV-73/DV-80).
 - **`error_message`** –
 
   The `errorMessage` of the Atlas-shaped body, when it parsed.
@@ -369,7 +369,7 @@ Attributes:
 error_code = error_code
 ```
 
-The `errorCode` of the Atlas-shaped body, when it parsed (DV-20/DV-21/DV-22).
+The `errorCode` of the Atlas-shaped body, when it parsed (DV-72/DV-73/DV-80).
 
 #### error\_message
 

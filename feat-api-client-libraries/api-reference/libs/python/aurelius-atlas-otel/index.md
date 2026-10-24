@@ -1,6 +1,6 @@
 # aurelius-atlas-otel
 
-The OTLP ingest credential for the collector's per-service leg (7.18, DD-107), shared by every Aurelius Atlas service that exports telemetry with a Keycloak client-credentials identity (8.0, DD-108).
+The OTLP ingest credential for the collector's per-service leg (7.18, DD-196), shared by every Aurelius Atlas service that exports telemetry with a Keycloak client-credentials identity (8.0, DD-197).
 
 ## Installation
 
@@ -16,11 +16,11 @@ workspace = true
 
 ## aurelius\_atlas\_otel.ingest
 
-The OTLP ingest credential for the collector's per-service leg (7.18, DD-107, CIA-07).
+The OTLP ingest credential for the collector's per-service leg (7.18, DD-196, CIA-07).
 
-The collector's per-service leg (4317 gRPC / 4319 HTTP) accepts only Keycloak client-credentials JWTs minted for the service's realm client `otel-<service>` (audience `otel-collector`, the `otel-ingest` scope). The OTel Python SDK reads `OTEL_EXPORTER_OTLP_HEADERS` statically, and the dev realm's access token lives 60s — a bearer JWT in a static header expires a minute in. So the app owns the OTLP export: a refresh-ahead token source feeds a `requests.Session` that injects a fresh bearer header on every OTLP request, handed to app-built exporters whose processor/reader `setup_telemetry` installs on the process's providers (DD-121).
+The collector's per-service leg (4317 gRPC / 4319 HTTP) accepts only Keycloak client-credentials JWTs minted for the service's realm client `otel-<service>` (audience `otel-collector`, the `otel-ingest` scope). The OTel Python SDK reads `OTEL_EXPORTER_OTLP_HEADERS` statically, and the dev realm's access token lives 60s — a bearer JWT in a static header expires a minute in. So the app owns the OTLP export: a refresh-ahead token source feeds a `requests.Session` that injects a fresh bearer header on every OTLP request, handed to app-built exporters whose processor/reader `setup_telemetry` installs on the process's providers (DD-210).
 
-Extracted from the Atlas server's `otel_ingest` module so every service on the leg shares one credential (8.0, DD-108); the server keeps the settings mapping, this library owns the mechanism.
+Extracted from the Atlas server's `otel_ingest` module so every service on the leg shares one credential (8.0, DD-197); the server keeps the settings mapping, this library owns the mechanism.
 
 No new dependency: the session rides the `requests` the OTLP exporter already uses, and the mint is stdlib urllib. The dev realm's 60s token is why the header is read per request, not once.
 
@@ -34,7 +34,7 @@ Functions:
 
 - **`build_otlp_pipeline`** –
 
-  The app-owned OTLP export (DD-107): a trace processor + metric reader.
+  The app-owned OTLP export (DD-196): a trace processor + metric reader.
 
 Attributes:
 
@@ -85,7 +85,7 @@ bearer() -> str | None
 
 A valid bearer token, minting/refreshing as needed.
 
-On mint failure with no usable token, `None` — the request then goes out header-less and the collector's 401 is the visible failure (DD-107: no silent fallback).
+On mint failure with no usable token, `None` — the request then goes out header-less and the collector's 401 is the visible failure (DD-196: no silent fallback).
 
 ### build\_otlp\_pipeline
 
@@ -93,7 +93,7 @@ On mint failure with no usable token, `None` — the request then goes out heade
 build_otlp_pipeline(endpoint: str, ca_file: str | None, token_source: ClientCredentialsTokenSource) -> IngestPipeline
 ```
 
-The app-owned OTLP export (DD-107): a trace processor + metric reader.
+The app-owned OTLP export (DD-196): a trace processor + metric reader.
 
 The exporters inject the bearer header per export through the ingest session.
 
