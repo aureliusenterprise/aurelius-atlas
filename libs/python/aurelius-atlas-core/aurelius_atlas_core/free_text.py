@@ -139,7 +139,7 @@ def field_terms(found: Sequence[Mapping[str, object]], field: str, prefix: str) 
 
 
 def top_terms(per_field: Mapping[str, Sequence[tuple[str, int]]]) -> list[str]:
-    """``getTopTerms``: the fields' terms with their frequencies summed, the 5 most frequent, then by term (DV-50)."""
+    """``getTopTerms``: the fields' terms with their frequencies summed, the 5 most frequent, then by term (DV-81)."""
     summed: Counter[str] = Counter()
     for terms in per_field.values():
         for term, count in terms:
