@@ -4,7 +4,7 @@ The I/O behind ``EntityStore``: reads in real time, conditional writes, create-o
 Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep their digits (DD-039).
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
@@ -160,6 +160,9 @@ TASK_MAPPING: dict[str, Any] = {
 
 TASK_PAGE = 1000
 """How many tasks one search page holds."""
+
+CLASSIFICATION_PAGE = 1000
+"""How many classification instances one search page holds."""
 
 
 @dataclass(frozen=True)
@@ -318,6 +321,10 @@ class EntityDocuments(Protocol):
 
     async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
         """The entities of the query's page, as of now, and how many match it in all (DD-089)."""
+        ...
+
+    async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
+        """The classification instances of these types, or of every type for None, as of now (DD-090)."""
         ...
 
 
@@ -588,6 +595,23 @@ class ElasticsearchEntityDocuments:
         response = await self._client.count(index=self._entities, query={"term": {"typeName": type_name}})
         return int(response["count"])
 
+    async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
+        """Refresh the classification index, then page through the instances of the types by GUID (DD-090)."""
+        index = self._linked[LinkedKind.CLASSIFICATION]
+        await self._client.indices.refresh(index=index)
+        query: dict[str, Any] = {"match_all": {}} if type_names is None else {"terms": {"typeName": sorted(type_names)}}
+        found: list[StoredClassification] = []
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=index, size=CLASSIFICATION_PAGE, query=query, sort=[{"guid": "asc"}], search_after=after
+            )
+            hits = response["hits"]["hits"]
+            found += [StoredClassification.model_validate(hit["_source"]) for hit in hits]
+            if len(hits) < CLASSIFICATION_PAGE:
+                return found
+            after = hits[-1]["sort"]
+
     async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
         """Refresh the entity index, then answer the query as a ``bool`` query of the search fields (DD-089)."""
         await self._client.indices.refresh(index=self._entities)
@@ -639,6 +663,11 @@ def _es_filter(node: Filter) -> dict[str, Any]:  # noqa: C901, PLR0911, PLR0912 
             return {"match_none": {}}
         case Test.ANYTHING:
             return {"match_all": {}}
+        case Test.ANY_OF:
+            return {"terms": {path: sorted(value)}}
+        case Test.MATCHES:
+            pattern = "*".join(_escape_wildcard(part) for part in str(value).split("*"))
+            return {"wildcard": {path: {"value": pattern, "case_insensitive": True}}}
         case Test.EQ:
             return {"term": {path: value}}
         case Test.NEQ:

@@ -71,6 +71,7 @@ class AtlasErrorCode(Enum):
     )
     INVALID_OBJECT_ID = (400, "ATLAS-400-00-021", "ObjectId is not valid {0}")
     UNKNOWN_TYPENAME = (400, "ATLAS-400-00-00A", "{0}: Unknown/invalid typename")
+    UNKNOWN_CLASSIFICATION = (400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification")
     UNKNOWN_ATTRIBUTE = (400, "ATLAS-400-00-023", "Attribute {0} not found for type {1}")
     SYSTEM_TYPE = (400, "ATLAS-400-00-024", "{0} is a System-type")
     INVALID_STRUCT_VALUE = (400, "ATLAS-400-00-025", "not a valid struct value {0}")

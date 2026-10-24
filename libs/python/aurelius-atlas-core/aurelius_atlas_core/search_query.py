@@ -6,6 +6,7 @@ Elasticsearch documents translate it; ``matches`` states it for one entity's sea
 documents and the tests read it.
 """
 
+import re
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -47,6 +48,10 @@ class Test(StrEnum):
     """Matches no entity (``ALWAYS_FALSE``)."""
     ANYTHING = "ANYTHING"
     """Matches every entity: a predicate that holds for any value."""
+    ANY_OF = "ANY_OF"
+    """A value, or an array element, among the values (``CONTAINS_ANY``)."""
+    MATCHES = "MATCHES"
+    """A value, or an array element, matching a pattern, ``*`` any characters, ignoring case (CSR-02)."""
 
 
 @dataclass(frozen=True)
@@ -106,12 +111,14 @@ def matches(node: Filter, fields: Mapping[str, Any]) -> bool:
     return _test(node, fields.get(node.field))
 
 
-def _test(criterion: Criterion, value: Any) -> bool:  # noqa: ANN401, C901, PLR0911 - one predicate per test
+def _test(criterion: Criterion, value: Any) -> bool:  # noqa: ANN401, C901, PLR0911, PLR0912 - one predicate per test
     test, expected = criterion.test, criterion.value
     if test is Test.NOTHING:
         return False
     if test is Test.ANYTHING:
         return True
+    if test in {Test.ANY_OF, Test.MATCHES}:
+        return _any_item(test, value, expected)
     if test is Test.IS_NULL:
         return value is None
     if test is Test.NOT_NULL:
@@ -133,6 +140,20 @@ def _test(criterion: Criterion, value: Any) -> bool:  # noqa: ANN401, C901, PLR0
     if test is Test.RANGE:
         return expected <= value <= criterion.value2
     return _compare(test, value, expected)
+
+
+def _any_item(test: Test, value: Any, expected: Any) -> bool:  # noqa: ANN401 - a field's value
+    """``ANY_OF`` and ``MATCHES``: of a value, or of any element of an array."""
+    items = value if isinstance(value, list) else [] if value is None else [value]
+    if test is Test.ANY_OF:
+        return any(item in expected for item in items)
+    pattern = wildcard_pattern(expected)
+    return any(isinstance(item, str) and pattern.fullmatch(item) is not None for item in items)
+
+
+def wildcard_pattern(pattern: str) -> re.Pattern[str]:
+    """``getRegexString``'s pattern of one name: ``*`` any characters, the rest as it is, ignoring case."""
+    return re.compile(".*".join(re.escape(part) for part in pattern.split("*")), re.IGNORECASE | re.DOTALL)
 
 
 def _contains(value: Any, expected: Any, *, array: bool) -> bool:  # noqa: ANN401 - a field's value

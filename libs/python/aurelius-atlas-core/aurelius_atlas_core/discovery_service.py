@@ -50,7 +50,7 @@ class EntityDiscoveryService:
         """
         parameters = parameters.model_copy(deep=True)
         context = SearchContext(parameters, self._store.registry)
-        if not context.entity_types:
+        if not context.entity_types and context.classification_mode is None:
             raise AtlasError(AtlasErrorCode.INVALID_SEARCH_PARAMS)
         result = AtlasSearchResult(
             query_type=AtlasQueryType.BASIC, query_text=parameters.query, search_parameters=parameters

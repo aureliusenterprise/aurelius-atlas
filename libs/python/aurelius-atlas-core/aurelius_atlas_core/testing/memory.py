@@ -1,6 +1,6 @@
 """``TypedefDocument`` and ``EntityDocuments`` in memory, for unit tests that need no Elasticsearch."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from typing import Any
 
 from aurelius_atlas_model import codec
@@ -20,6 +20,7 @@ from aurelius_atlas_core.entity_documents import (
     WriteResult,
 )
 from aurelius_atlas_core.search_query import SearchQuery, selects
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
@@ -253,6 +254,15 @@ class MemoryEntityDocuments:
     async def count_type(self, type_name: str) -> int:
         """Entities of exactly the type."""
         return sum(1 for source, _ in self.entities.values() if source.get("typeName") == type_name)
+
+    async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
+        """The classification instances of the types, or of every type, by GUID."""
+        found = await self.get_linked(LinkedKind.CLASSIFICATION, sorted(self.linked[LinkedKind.CLASSIFICATION]))
+        return [
+            instance
+            for instance, _ in found.values()
+            if isinstance(instance, StoredClassification) and (type_names is None or instance.type_name in type_names)
+        ]
 
     async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
         """The query evaluated over every entity's search fields (DD-089)."""

@@ -176,6 +176,7 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "classified",
             "list_tasks",
             "search",
+            "classifications_of_types",
             "get_linked",
             "restore_linked",
             "count_linked_type",
@@ -326,6 +327,10 @@ CRITERIA = [
     Criterion("long.t.n", Test.NOTHING),
     Criterion("long.t.n", Test.ANYTHING),
     Group(Condition.OR, (Criterion("long.t.n", Test.EQ, 1), Criterion("keyword.t.name", Test.EQ, ""))),
+    Criterion("keyword.t.tags", Test.ANY_OF, frozenset({"y", "q"}), array=True),
+    Criterion("long.t.n", Test.ANY_OF, frozenset({2}), array=False),
+    Criterion("keyword.t.name", Test.MATCHES, "AL*"),
+    Criterion("keyword.t.tags", Test.MATCHES, "X", array=True),
     Group(Condition.AND, (Criterion("long.t.n", Test.NOT_NULL), Criterion("keyword.t.name", Test.CONTAINS, "a"))),
 ]
 
@@ -365,3 +370,23 @@ async def test__a_search_sorts_pages_counts_and_keeps_to_active_entities(
     assert [item.guid for item in by_creation] == ["c", "b", "a"]
     assert ([item.guid for item in page], total) == (["a"], 2)
     assert "t-entities" in fake.settings_updates
+
+
+@pytest.mark.covers(f"{E}.classifications_of_types", rules=["CSR-03"])
+async def test__classification_instances_are_read_by_type_page_by_page(
+    documents: ElasticsearchEntityDocuments, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Of the types given, or of every type (DD-090)."""
+    monkeypatch.setattr(entity_documents, "CLASSIFICATION_PAGE", 1)
+    instances = [
+        StoredClassification(guid="k1", type_name="pii", entity_guid="a"),
+        StoredClassification(guid="k2", type_name="secret", entity_guid="a"),
+        StoredClassification(guid="k3", type_name="pii", entity_guid="b"),
+    ]
+    await documents.write([], [], {LinkedKind.CLASSIFICATION: LinkedWrite([(item, None) for item in instances])})
+
+    piis = await documents.classifications_of_types(["pii"])
+    every = await documents.classifications_of_types(None)
+
+    assert [item.guid for item in piis] == ["k1", "k3"]
+    assert [item.guid for item in every] == ["k1", "k2", "k3"]
