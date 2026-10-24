@@ -91,7 +91,8 @@ The basic search endpoints of Atlas's `DiscoveryREST` (`aurelius_atlas_server/ro
 entities by type, with sub types or of every type (`_ALL_ENTITY_TYPES`), by attribute filters with Atlas's
 operators, by state, sorted and paged by offset or marker: `POST` and `GET search/basic` and `GET
 search/attribute`. Entity attributes are searched in typed fields named after the type that defines them
-(DD-088); classification search follows in 4.1b, free text in 4.2.
+(DD-088). `classification` and `tagFilters` find entities by their attached or propagated classifications and
+their attributes (DD-090); free text follows in 4.2.
 
 ## Running it
 
