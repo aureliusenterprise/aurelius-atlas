@@ -662,6 +662,9 @@ Entities of the registry's entity types, and the relationships between them, in 
 
 Methods:
 
+- **`classifications_of_types`** –
+
+  The classification instances of these types, or of every type for None (DD-090).
 - **`classified`** –
 
   The entities listing any of these classification instances, attached or propagated (DD-075, DD-076).
@@ -731,6 +734,14 @@ task_listeners: list[Callable[[], None]] = []
 ```
 
 Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### classifications\_of\_types
+
+```
+classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
+```
+
+The classification instances of these types, or of every type for None (DD-090).
 
 #### classified
 
@@ -1061,6 +1072,9 @@ Attributes:
 - **`CLASSIFICATION_MAPPING`** (`dict[str, Any]`) –
 
   Classification instances by type and entity; attribute values stored, not indexed (DD-070).
+- **`CLASSIFICATION_PAGE`** –
+
+  How many classification instances one search page holds.
 - **`ENTITY_FIELD_LIMIT`** –
 
   `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
@@ -1125,6 +1139,14 @@ CLASSIFICATION_MAPPING: dict[str, Any] = {
 ```
 
 Classification instances by type and entity; attribute values stored, not indexed (DD-070).
+
+### CLASSIFICATION\_PAGE
+
+```
+CLASSIFICATION_PAGE = 1000
+```
+
+How many classification instances one search page holds.
 
 ### ENTITY\_FIELD\_LIMIT
 
@@ -1301,6 +1323,9 @@ ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PRE
 
 Methods:
 
+- **`classifications_of_types`** –
+
+  Refresh the classification index, then page through the instances of the types by GUID (DD-090).
 - **`classified`** –
 
   Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
@@ -1369,6 +1394,14 @@ aliases: tuple[str, ...]
 ```
 
 The aliases of the entity index, the reservations, the journal and the linked documents' indices.
+
+#### classifications\_of\_types
+
+```
+classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
+```
+
+Refresh the classification index, then page through the instances of the types by GUID (DD-090).
 
 #### classified
 
@@ -1530,6 +1563,9 @@ Where `EntityStore` keeps entities, reservations and its journal.
 
 Methods:
 
+- **`classifications_of_types`** –
+
+  The classification instances of these types, or of every type for None, as of now (DD-090).
 - **`classified`** –
 
   The entities listing any of these classification instances, as of now (DD-076).
@@ -1584,6 +1620,14 @@ Methods:
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
+
+#### classifications\_of\_types
+
+```
+classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
+```
+
+The classification instances of these types, or of every type for None, as of now (DD-090).
 
 #### classified
 

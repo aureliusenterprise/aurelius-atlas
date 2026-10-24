@@ -3678,6 +3678,8 @@
       
         
       
+        
+      
     
     
     
@@ -4529,6 +4531,33 @@
     
   
   4.1a Entity search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-1-classification-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.1b Classification search
 
     
   </span>
@@ -6804,6 +6833,14 @@ Atlas clients expect when it lands).</p>
 <td><code>classification</code>, <code>query</code>, <code>termName</code> are searched; no parameters or a filter value of another type fail with Java exceptions</td>
 <td>Until 4.1b, 4.2, 5.2 these fail with <code>BAD_REQUEST</code>; no parameters is <code>INVALID_SEARCH_PARAMS</code></td>
 <td>Refusing beats a wrong answer; Java's exceptions are not decisions</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td>DV-47</td>
+<td>Search</td>
+<td>A wildcard classification name is a regular expression over the entity's pipe-separated names; its <code>*</code> spans names</td>
+<td>Each name is matched on its own</td>
+<td>A pattern names one classification</td>
 <td>4.1</td>
 </tr>
 </tbody>

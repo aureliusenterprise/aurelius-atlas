@@ -67,7 +67,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 3.5a | Entity audit | Entity audit events and audit REST | `EntityAuditListenerV2`, `HBaseBasedAuditRepository` | in progress |
 | 3.5b | Classification audit | Classification audit events, `bulk/headers` (DD-074) | `EntityAuditListenerV2`, `ClassificationAssociator` | in progress |
 | 4.1a | Entity search | `SearchParameters`, entity filters, operators, sort, paging, search fields | `EntitySearchProcessor`, `SearchContext` | in progress |
-| 4.1b | Classification search | Classification filters, wildcards, sub classifications | `ClassificationSearchProcessor` | planned |
+| 4.1b | Classification search | Classification filters, wildcards, sub classifications | `ClassificationSearchProcessor` | in progress |
 | 4.2 | Quick search and suggestions | Free text, facets, suggestions | `AtlasDiscoveryService` | planned |
 | 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | planned |
 | 4.4 | DSL execution | AST to search queries; declared unsupported forms | `GremlinQueryComposer` (replaced) | planned |

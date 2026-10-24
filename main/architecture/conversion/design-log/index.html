@@ -4592,6 +4592,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-090. A classification search finds instances first, then the entities listing them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4671,6 +4682,8 @@
       
         
           
+        
+      
         
       
         
@@ -5584,6 +5597,33 @@
     
   
   4.1a Entity search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-1-classification-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.1b Classification search
 
     
   </span>
@@ -8401,6 +8441,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-090. A classification search finds instances first, then the entities listing them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9104,6 +9155,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given">DD-089</a></td>
 <td>A search is a query of the entity documents, ordered by creation when no sort is given</td>
+<td>4.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them">DD-090</a></td>
+<td>A classification search finds instances first, then the entities listing them</td>
 <td>4.1</td>
 <td>Proposed</td>
 </tr>
@@ -10634,6 +10691,26 @@ documents by evaluating it. Without <code>sortBy</code> entities come by creatio
 the rules of SRC-05 state; Atlas's order without a sort is the index's and has nothing to keep.</p>
 <p><strong>Alternatives.</strong> Elasticsearch's query language in the core: the in-memory documents could not answer it.</p>
 <p><strong>Consequences.</strong> <code>approximateCount</code> is exact.</p>
+<h3 id="dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them">DD-090. A classification search finds instances first, then the entities listing them<a class="headerlink" href="#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.1</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> The entity documents gain what Atlas keeps on an entity vertex of its classifications, computed
+when an entity is written from the instances it lists: <code>__traitNames</code> and <code>__propagatedTraitNames</code>, the type
+names of those attached and propagated, <code>__classificationNames</code> and <code>__propagatedClassificationNames</code> as
+<code>|a|b|</code>, and the GUIDs of the instances. A search naming classifications without tag filters tests the type
+names, as Atlas's <code>buildTraitPredict</code> does; with tag filters it reads the instances of the types named from
+the classification index, keeps those that match, evaluated with the search query's predicates over their
+attribute values, and adds to the entity query that the entity lists one of them.</p>
+<p><strong>Reason.</strong> An entity already lists every classification it carries, propagated ones included (DD-070,
+DD-075), and tag filters are what classification instances are searched by; no mapping of classification
+attributes is needed, and the filter semantics are the ones entity filters have.</p>
+<p><strong>Alternatives.</strong> Search fields on classification documents: the same answers, with a second set of mappings.
+Classification type names on the entity only: tag filters could not be answered.</p>
+<p><strong>Consequences.</strong> A search reads every instance of the types it names; an entity query names at most 65,536
+instances, Elasticsearch's <code>terms</code> limit, beyond which the search fails.</p>
 
 
 
