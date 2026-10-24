@@ -3935,6 +3935,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4724,6 +4732,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5032,6 +5067,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -6024,6 +6140,8 @@
       
         
       
+        
+      
     
     
     
@@ -6146,6 +6264,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -7142,6 +7287,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -7334,11 +7487,11 @@ consumer and the server validate against one source of truth (DD-114).</p>
 </tr>
 <tr>
 <td>CL-11</td>
-<td><code>AtlasClient</code> answers the server's implemented routes: <code>admin.version()</code>, <code>admin.status()</code>, <code>admin.session()</code>, <code>admin.readiness()</code>, <code>liveness()</code>; the typedef calls <code>typedef_by_name</code>, <code>typedef_by_guid</code>, <code>typedefs(filter)</code>, <code>typedef_headers(filter)</code>, the six kind lookups (<code>enumdef</code>…<code>businessmetadatadef</code>, by name and guid), and the <code>create</code>/<code>update</code>/<code>delete</code> writes — each path mirroring <code>routes/admin.py</code> / <code>routes/types.py</code>. <code>get_lineage(guid, depth, direction) -&gt; LineageInfo</code> reads <code>v2/lineage/{guid}</code> (CL-12's model) — the client side of the feed whose <strong>server</strong> route lands with 5.1; 8.2 is its first caller.</td>
+<td><code>AtlasClient</code> answers the server's implemented routes: <code>admin.version()</code>, <code>admin.status()</code>, <code>admin.session()</code>, <code>admin.readiness()</code>, <code>liveness()</code>; the typedef calls <code>typedef_by_name</code>, <code>typedef_by_guid</code>, <code>typedefs(filter)</code>, <code>typedef_headers(filter)</code>, the six kind lookups (<code>enumdef</code>…<code>businessmetadatadef</code>, by name and guid), and the <code>create</code>/<code>update</code>/<code>delete</code> writes — each path mirroring <code>routes/admin.py</code> / <code>routes/types.py</code>. <code>get_lineage(guid, depth, direction) -&gt; LineageInfo</code> reads <code>v2/lineage/{guid}</code> (CL-12's model; the guid is a <code>UUID</code> — DV-27, DD-124) — the client side of the feed whose <strong>server</strong> route lands with 5.1; 8.2 is its first caller.</td>
 </tr>
 <tr>
 <td>CL-12</td>
-<td><code>aurelius_atlas_server_client.lineage</code> owns the <code>v2/lineage/{guid}</code> body — <code>LineageInfo</code>, <code>EntityHeaderLite</code>, <code>LineageRelation</code>, <code>Direction</code> — moved verbatim from 8.2's app module (LM-04's model, LM-01's <code>Direction</code>); the flattening (<code>flatten_relations</code>, <code>PROCESS_TYPES</code>, <code>LINEAGE_RULES</code>) is 8.2's app logic and stays in the app.</td>
+<td><code>aurelius_atlas_server_client.lineage</code> owns the <code>v2/lineage/{guid}</code> body — <code>LineageInfo</code>, <code>EntityHeaderLite</code>, <code>LineageRelation</code>, <code>Direction</code> — moved verbatim from 8.2's app module (LM-04's model, LM-01's <code>Direction</code>), the entity guids typed as <code>UUID</code> (<code>guidEntityMap</code> keys, headers, relation endpoints — DV-27; <code>relationshipId</code> stays <code>str</code>); the flattening (<code>flatten_relations</code>, <code>PROCESS_TYPES</code>, <code>LINEAGE_RULES</code>) is 8.2's app logic and stays in the app.</td>
 </tr>
 <tr>
 <td>CL-20</td>
@@ -7350,7 +7503,7 @@ consumer and the server validate against one source of truth (DD-114).</p>
 </tr>
 <tr>
 <td>CL-30</td>
-<td><code>aurelius_atlas_lineage_model_client</code> states <code>GET /</code> (8.2): <code>LineageModelParams</code> (<code>guid</code>, <code>depth</code> ≥ 1 default 3, <code>direction</code>, the LM-01 shape) and <code>LineageModelResponse</code> (the <code>{model, metadata}</code> passthrough of <code>/extract</code>, LM-04); <code>LineageModelClient.get(guid, depth, direction)</code> maps a 204 to <code>None</code> (LM-05/LM-06's empty answer).</td>
+<td><code>aurelius_atlas_lineage_model_client</code> states <code>GET /</code> (8.2): <code>LineageModelParams</code> (<code>guid</code> — a <code>UUID</code>, DV-27 — <code>depth</code> ≥ 1 default 3, <code>direction</code>, the LM-01 shape) and <code>LineageModelResponse</code> (the <code>{model, metadata}</code> passthrough of <code>/extract</code>, LM-04); <code>LineageModelClient.get(guid, depth, direction)</code> maps a 204 to <code>None</code> (LM-05/LM-06's empty answer).</td>
 </tr>
 <tr>
 <td>CL-40</td>
@@ -7406,7 +7559,7 @@ increment adds no <code>DV-</code> rows because it changes no wire behaviour.</p
   <code>ExtractionResponse</code>, <code>Data2ModelClient(http, token).extract(request) -&gt; ExtractionResponse</code>,
   <code>Data2ModelClientError</code>.</li>
 <li><code>aurelius_atlas_lineage_model_client</code>: <code>LineageModelParams</code>, <code>LineageModelResponse</code>,
-  <code>LineageModelClient(http, token).get(guid, depth=3, direction="BOTH") -&gt; LineageModelResponse | None</code>,
+  <code>LineageModelClient(http, token).get(guid: UUID, depth=3, direction="BOTH") -&gt; LineageModelResponse | None</code>,
   <code>LineageModelClientError</code>.</li>
 <li><code>aurelius_atlas_validate_entity_client</code>: <code>ValidationResponse</code> (+card/item models),
   <code>ValidateEntityClient(http, token).validate(entity: Mapping) -&gt; ValidationResponse</code>,

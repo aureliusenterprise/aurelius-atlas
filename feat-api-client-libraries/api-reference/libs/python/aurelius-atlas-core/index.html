@@ -5245,6 +5245,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -6034,6 +6042,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../architecture/conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -6177,6 +6212,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -7157,6 +7273,8 @@
       
         
       
+        
+      
     
     
     
@@ -7279,6 +7397,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -10936,14 +11081,14 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
           <b><code><a class="autorefs autorefs-internal" title="            TypedefPatch (aurelius_atlas_core.model_loader.TypedefPatch)" href="./#aurelius_atlas_core.model_loader.TypedefPatch">TypedefPatch</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One typedef patch (<code>AtlasTypeDefStoreInitializer.TypeDefPatch</code>, MDL-05).</p>
+            <p>One typedef patch of a models-directory patch file (MDL-05).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            TypedefPatches (aurelius_atlas_core.model_loader.TypedefPatches)" href="./#aurelius_atlas_core.model_loader.TypedefPatches">TypedefPatches</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A patch file (<code>TypeDefPatches</code>, MDL-05).</p>
+            <p>A patch file: the patches of a models directory (MDL-05).</p>
           </div>
         </li>
     </ul>
@@ -11664,7 +11809,9 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
 
 
 
-        <p>One typedef patch (<code>AtlasTypeDefStoreInitializer.TypeDefPatch</code>, MDL-05).</p>
+        <p>One typedef patch of a models-directory patch file (MDL-05).</p>
+<p>The fields a patch uses depend on its <code>action</code>; the patch handlers read
+the ones their action needs.</p>
 
 
 
@@ -11912,7 +12059,10 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.action" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">action</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">action</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The action the patch performs, e.g. ``ADD_ATTRIBUTE`` or ``REMOVE_LEGACY_REF_ATTRIBUTES``."</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -11935,7 +12085,10 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.apply_to_version" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">apply_to_version</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">apply_to_version</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The type version the patch applies to; a patch applies when the stored version equals it or starts below it."</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -11963,7 +12116,9 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
 
   
       pydantic-model
-   (aurelius_atlas_model.typedef.AtlasAttributeDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasAttributeDef">AtlasAttributeDef</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+   (aurelius_atlas_model.typedef.AtlasAttributeDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasAttributeDef">AtlasAttributeDef</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The attributes the patch adds to or changes on the type."</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -11986,7 +12141,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.attribute_name" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">attribute_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">attribute_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s1">'The name of a single attribute the patch acts on.'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12009,7 +12164,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.description" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">description</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">description</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s1">'A description of the patch.'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12037,7 +12192,9 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
 
   
       pydantic-model
-   (aurelius_atlas_model.typedef.AtlasEnumElementDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasEnumElementDef">AtlasEnumElementDef</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+   (aurelius_atlas_model.typedef.AtlasEnumElementDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasEnumElementDef">AtlasEnumElementDef</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The enum values the patch adds to the type."</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12060,7 +12217,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.id" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nb">id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nb">id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s1">'The unique id of the patch.'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12083,7 +12240,10 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.params" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">params</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">params</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"Parameters of the action, e.g. ``ownedAttribute``/``inverseAttribute`` for a ref-attribute patch."</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12106,7 +12266,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.service_type" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">service_type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">service_type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s1">'The service type of the patched type.'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12129,7 +12289,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.super_types" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">super_types</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">super_types</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s1">'The super types the patch adds to the type.'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12152,7 +12312,9 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.type_def_options" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">type_def_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">type_def_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The type options the patch sets on the type."</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12175,7 +12337,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.type_name" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">type_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">type_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s1">'The name of the type the patch changes.'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12198,7 +12360,9 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatch.update_to_version" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">update_to_version</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">update_to_version</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The type version the type gets when the patch is applied."</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12265,7 +12429,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
 
 
 
-        <p>A patch file (<code>TypeDefPatches</code>, MDL-05).</p>
+        <p>A patch file: the patches of a models directory (MDL-05).</p>
 
 
 
@@ -12323,7 +12487,9 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
   </span>
 
 <a href="#aurelius_atlas_core.model_loader.TypedefPatches.patches" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">patches</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            TypedefPatch (aurelius_atlas_core.model_loader.TypedefPatch)" href="./#aurelius_atlas_core.model_loader.TypedefPatch">TypedefPatch</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">patches</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            TypedefPatch (aurelius_atlas_core.model_loader.TypedefPatch)" href="./#aurelius_atlas_core.model_loader.TypedefPatch">TypedefPatch</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span>
+    <span class="n"><span title="pydantic.Field(default)">default</span></span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n"><span title="pydantic.Field(description)">description</span></span><span class="o">=</span><span class="s2">"The patches of the file, in the order they are applied."</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

@@ -20,7 +20,7 @@
         <link rel="prev" href="../8-4-api-client-libraries/">
       
       
-        <link rel="next" href="../../../vision-and-strategy/">
+        <link rel="next" href="../8-6-aux-failure-hardening/">
       
       
         
@@ -3935,6 +3935,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4724,6 +4732,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5006,6 +5041,87 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -5991,6 +6107,8 @@
       
         
       
+        
+      
     
     
     
@@ -6113,6 +6231,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -7076,6 +7221,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -7217,10 +7370,15 @@ Technical decisions in DD-117 (<code>design-log.md</code>): the breakers live in
 per upstream; the <code>pybreaker</code> <code>calling()</code> generator seam is the async-safe
 form (the lib's <code>call_async</code> is tornado-only and fails on this Python); the
 exclude predicate counts 4xx as facts.</p>
+<p>DV-27 (<code>deviations.md</code>, DD-124 — rides this branch, not this spec's breakers):
+the lineage chain's <code>guid</code> is a <code>UUID</code> on every typed surface; a non-UUID guid
+is LM-07's <code>400</code> before any upstream call, so a malformed guid never reaches
+the guarded fetch.</p>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Unit (the 8.2 app suite, fake upstream + recording transport):
-  <code>tests/test__app.py</code> — <code>test__the_app_carries_one_breaker_per_upstream</code>
+  <code>tests/test__aurelius_atlas_lineage_model_app.py</code> —
+  <code>test__the_app_carries_one_breaker_per_upstream</code>
   (LM-11, LM-15), <code>test__the_upstream_outages_open_the_circuit</code> (LM-11, LM-13),
   <code>test__an_open_circuit_answers_without_calling_the_upstream</code> (LM-12),
   <code>test__a_dead_atlas_circuit_leaves_the_extract_circuit_closed</code> (LM-11, LM-12),

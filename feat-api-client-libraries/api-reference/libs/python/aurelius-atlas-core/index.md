@@ -489,10 +489,10 @@ Classes:
   Patch data that Atlas does not check, and fails on with a runtime exception (MDL-06, MDL-13).
 - **`TypedefPatch`** –
 
-  One typedef patch (`AtlasTypeDefStoreInitializer.TypeDefPatch`, MDL-05).
+  One typedef patch of a models-directory patch file (MDL-05).
 - **`TypedefPatches`** –
 
-  A patch file (`TypeDefPatches`, MDL-05).
+  A patch file: the patches of a models directory (MDL-05).
 
 Functions:
 
@@ -688,7 +688,9 @@ Patch data that Atlas does not check, and fails on with a runtime exception (MDL
 
 Bases: `AtlasModel`
 
-One typedef patch (`AtlasTypeDefStoreInitializer.TypeDefPatch`, MDL-05).
+One typedef patch of a models-directory patch file (MDL-05).
+
+The fields a patch uses depend on its `action`; the patch handlers read the ones their action needs.
 
 Methods:
 
@@ -715,79 +717,96 @@ Attributes:
 #### action
 
 ```
-action: str | None = None
+action: str | None = Field(
+    default=None,
+    description="The action the patch performs, e.g. ``ADD_ATTRIBUTE`` or ``REMOVE_LEGACY_REF_ATTRIBUTES``.",
+)
 ```
 
 #### apply\_to\_version
 
 ```
-apply_to_version: str | None = None
+apply_to_version: str | None = Field(
+    default=None,
+    description="The type version the patch applies to; a patch applies when the stored version equals it or starts below it.",
+)
 ```
 
 #### attribute\_defs
 
 ```
-attribute_defs: list[AtlasAttributeDef] | None = None
+attribute_defs: list[AtlasAttributeDef] | None = Field(
+    default=None, description="The attributes the patch adds to or changes on the type."
+)
 ```
 
 #### attribute\_name
 
 ```
-attribute_name: str | None = None
+attribute_name: str | None = Field(default=None, description='The name of a single attribute the patch acts on.')
 ```
 
 #### description
 
 ```
-description: str | None = None
+description: str | None = Field(default=None, description='A description of the patch.')
 ```
 
 #### element\_defs
 
 ```
-element_defs: list[AtlasEnumElementDef] | None = None
+element_defs: list[AtlasEnumElementDef] | None = Field(
+    default=None, description="The enum values the patch adds to the type."
+)
 ```
 
 #### id
 
 ```
-id: str | None = None
+id: str | None = Field(default=None, description='The unique id of the patch.')
 ```
 
 #### params
 
 ```
-params: dict[str, Any] | None = None
+params: dict[str, Any] | None = Field(
+    default=None,
+    description="Parameters of the action, e.g. ``ownedAttribute``/``inverseAttribute`` for a ref-attribute patch.",
+)
 ```
 
 #### service\_type
 
 ```
-service_type: str | None = None
+service_type: str | None = Field(default=None, description='The service type of the patched type.')
 ```
 
 #### super\_types
 
 ```
-super_types: list[str] | None = None
+super_types: list[str] | None = Field(default=None, description='The super types the patch adds to the type.')
 ```
 
 #### type\_def\_options
 
 ```
-type_def_options: dict[str, str] | None = None
+type_def_options: dict[str, str] | None = Field(
+    default=None, description="The type options the patch sets on the type."
+)
 ```
 
 #### type\_name
 
 ```
-type_name: str | None = None
+type_name: str | None = Field(default=None, description='The name of the type the patch changes.')
 ```
 
 #### update\_to\_version
 
 ```
-update_to_version: str | None = None
+update_to_version: str | None = Field(
+    default=None, description="The type version the type gets when the patch is applied."
+)
 ```
 
 #### record
@@ -802,7 +821,7 @@ The patch's record, before its status is known.
 
 Bases: `AtlasModel`
 
-A patch file (`TypeDefPatches`, MDL-05).
+A patch file: the patches of a models directory (MDL-05).
 
 Attributes:
 
@@ -811,7 +830,9 @@ Attributes:
 #### patches
 
 ```
-patches: list[TypedefPatch] | None = None
+patches: list[TypedefPatch] | None = Field(
+    default=None, description="The patches of the file, in the order they are applied."
+)
 ```
 
 ### add\_attribute

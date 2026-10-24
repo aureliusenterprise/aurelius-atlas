@@ -337,6 +337,9 @@
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-18-collector-ingest-identity/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-19-frontend-failure-ux/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/7-2-design-system/</loc>
       </url>
       <url>
@@ -365,6 +368,15 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/8-5-lineage-model-circuit-breakers/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/8-6-aux-failure-hardening/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/8-7-client-failure-contract/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/9-1-targeted-resilience-e2e/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/increments/template/</loc>
@@ -443,6 +455,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/release-management/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/testing-review/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/testing/</loc>

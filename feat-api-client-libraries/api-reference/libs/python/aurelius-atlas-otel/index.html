@@ -4084,6 +4084,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4873,6 +4881,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../architecture/conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5016,6 +5051,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -5996,6 +6112,8 @@
       
         
       
+        
+      
     
     
     
@@ -6118,6 +6236,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -7116,9 +7261,8 @@ scope). The OTel Python SDK reads <code>OTEL_EXPORTER_OTLP_HEADERS</code> static
 and the dev realm's access token lives 60s — a bearer JWT in a static header
 expires a minute in. So the app owns the OTLP export: a refresh-ahead token
 source feeds a <code>requests.Session</code> that injects a fresh bearer header on
-every OTLP request, handed to app-built exporters wired into logfire through
-its <code>additional_span_processors</code> / <code>MetricsOptions.additional_readers</code>
-seams (logfire's env-driven OTLP export is not used when this is on).</p>
+every OTLP request, handed to app-built exporters whose processor/reader
+<code>setup_telemetry</code> installs on the process's providers (DD-121).</p>
 <p>Extracted from the Atlas server's <code>otel_ingest</code> module so every service on
 the leg shares one credential (8.0, DD-108); the server keeps the settings
 mapping, this library owns the mechanism.</p>
@@ -7214,13 +7358,13 @@ why the header is read per request, not once.</p>
   </span>
 
 <a href="#aurelius_atlas_otel.ingest.IngestPipeline" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">IngestPipeline</span> <span class="o">=</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="s1">'SpanProcessor'</span><span class="p">,</span> <span class="s1">'PeriodicExportingMetricReader'</span><span class="p">]</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">IngestPipeline</span> <span class="o">=</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="opentelemetry.sdk.trace.export.BatchSpanProcessor">BatchSpanProcessor</span></span><span class="p">,</span> <span class="n"><span title="opentelemetry.sdk.metrics.export.PeriodicExportingMetricReader">PeriodicExportingMetricReader</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>The (span processor, metric reader) pair <code>build_otlp_pipeline</code> returns,
-for logfire's <code>additional_span_processors</code> / <code>additional_readers</code>.</p>
+for <code>setup_telemetry</code>'s <code>span_processors</code> / <code>metric_readers</code>.</p>
 
     </div>
 
@@ -7370,7 +7514,7 @@ session.</p>
 <p>:param endpoint: the collector's service-leg base (<code>https://host:4319</code>)
 :param ca_file: PEM CA verifying the collector's TLS
 :param token_source: the ingest credential source
-:returns: a span processor and a metric reader for logfire to adopt</p>
+:returns: a span processor and a metric reader for <code>setup_telemetry</code></p>
 
 
     </div>

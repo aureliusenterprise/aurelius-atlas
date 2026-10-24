@@ -3935,6 +3935,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4724,6 +4732,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5032,6 +5067,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -6024,6 +6140,8 @@
       
         
       
+        
+      
     
     
     
@@ -6146,6 +6264,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -7142,6 +7287,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -7256,7 +7409,7 @@ httpx call).</p>
 <tbody>
 <tr>
 <td>LM-01</td>
-<td><code>GET /</code> takes <code>guid</code> (required), <code>depth</code> (int, default 3) and <code>direction</code> (<code>BOTH</code>/<code>INPUT</code>/<code>OUTPUT</code>, default <code>BOTH</code>); on success it answers <code>200 application/json</code> with the data2model body <code>{model, metadata}</code> verbatim (the lineage screen's document)</td>
+<td><code>GET /</code> takes <code>guid</code> (a UUID, required — DV-27), <code>depth</code> (int, default 3) and <code>direction</code> (<code>BOTH</code>/<code>INPUT</code>/<code>OUTPUT</code>, default <code>BOTH</code>); on success it answers <code>200 application/json</code> with the data2model body <code>{model, metadata}</code> verbatim (the lineage screen's document)</td>
 <td><code>lineage_model()</code> (<code>return response.text</code>)</td>
 <td><code>test__the_extract_body_is_returned_verbatim</code></td>
 <td>—</td>
@@ -7300,8 +7453,8 @@ httpx call).</p>
 <td>LM-07</td>
 <td>An upstream failure that is not the 404/400 of the lineage fetch — a 5xx, a lineage body naming a guid absent from <code>guidEntityMap</code>, a failing <code>/extract</code> — is answered <code>502</code> with the Atlas error body; a missing <code>depth</code>/<code>direction</code>/<code>guid</code> query problem is <code>400</code> with the same body, not a 500 from <code>int()</code>/<code>Enum()</code>/a literal-<code>None</code> guid fetch</td>
 <td>uncaught <code>ValueError</code>/<code>KeyError</code>/<code>ClientResponseError</code>/<code>raise_for_status</code> (Flask 500)</td>
-<td><code>test__an_upstream_server_failure_is_502</code> <code>test__a_lineage_with_a_dangling_guid_is_502</code> <code>test__a_failing_extract_is_502</code> <code>test__an_invalid_direction_is_400</code> <code>test__a_non_numeric_depth_is_400</code> <code>test__a_missing_guid_is_400</code></td>
-<td>DV-20, DV-21, DV-22</td>
+<td><code>test__an_upstream_server_failure_is_502</code> <code>test__a_lineage_with_a_dangling_guid_is_502</code> <code>test__a_failing_extract_is_502</code> <code>test__an_invalid_direction_is_400</code> <code>test__a_non_numeric_depth_is_400</code> <code>test__a_missing_guid_is_400</code> <code>test__a_guid_that_is_not_a_uuid_is_400</code></td>
+<td>DV-20, DV-21, DV-22, DV-27</td>
 </tr>
 <tr>
 <td>LM-08</td>
@@ -7361,12 +7514,16 @@ only the fields the flattening reads are declared (DD-109).</p>
 <li><strong>DV-23</strong>: the endpoint fully verifies the bearer token for its audience
   (AUX-05, DD-108), not the legacy's <code>transparent=True</code> pass-through;
   browser tokens (azp <code>aurelius</code>) pass both.</li>
+<li><strong>DV-27</strong>: the <code>guid</code> is a <code>UUID</code> on every typed surface (route, client
+  models, <code>LineageInfo</code>), not the legacy's opaque string — a non-UUID guid is
+  the <code>400</code> of DV-21 before any upstream call (LM-01, LM-07, DD-124).</li>
 </ul>
 <h2 id="test-list">Test list<a class="headerlink" href="#test-list" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Unit: <code>apps/aurelius-atlas-lineage-model/tests/test__lineage.py</code> (LM-02..LM-07,
   the flattening, rules, forwarding, upstream statuses on a mock transport),
-  <code>test__app.py</code> (LM-01/08/09 wiring on the fake issuer),
+  <code>test__aurelius_atlas_lineage_model_app.py</code> (LM-01/08/09 wiring on the fake
+  issuer),
   <code>test__aurelius_atlas_lineage_model_settings.py</code> (LM-10), <code>test__…___main__.py</code>.</li>
 <li>Scenario (parity, read from Aurelius source): <code>scenarios/lineage/graph.scenario.yaml</code>
   — the caller's fixed rules over the 8.1 scenario's two-relation lineage;

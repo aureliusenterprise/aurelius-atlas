@@ -26,34 +26,34 @@ Classes:
 
 - **`ElementRule`** –
 
-  An element rule (legacy `ElementDefinition`): one node per row of `id_key` (DTM-02).
+  An element rule (legacy `ElementDefinition`): one node per row of `id_key`.
 - **`ExtractionRequest`** –
 
-  The `POST /extract` body: `{data: [row…], rules: {...}}` (DTM-01).
+  The `POST /extract` body: `{data: [row…], rules: {...}}`.
 - **`ExtractionResponse`** –
 
-  The `POST /extract` answer: `{metadata: […], model: "<ar3 JSON string>"}` (DTM-01; CL-20).
+  The `POST /extract` answer: `{metadata: […], model: "<ar3 JSON string>"}`.
 - **`MappingEntry`** –
 
-  One `{key, value}`: attach column `value` as metadata attribute `key` (DTM-03).
+  One `{key, value}`: attach column `value` as metadata attribute `key`.
 - **`MetadataEntry`** –
 
-  One `{id, data}` metadata entry of the extraction answer (DTM-03; CL-20).
+  One `{id, data}` metadata entry of the extraction answer.
 - **`RelationRule`** –
 
-  A relation rule (legacy `RelationshipDefinition`): one edge per row (DTM-04).
+  A relation rule (legacy `RelationshipDefinition`): one edge per row.
 - **`RulesDef`** –
 
-  The `rules` body: elements, relations, views, in rule order (DTM-03).
+  The `rules` body: elements, relations, views, in rule order.
 - **`ViewEdgeRule`** –
 
-  A view edge entry: includes the referenced relation rule's edges (DTM-07).
+  A view edge entry: includes the referenced relation rule's edges.
 - **`ViewNodeRule`** –
 
-  A view node entry: includes the referenced element rule's nodes (DTM-07).
+  A view node entry: includes the referenced element rule's nodes.
 - **`ViewRule`** –
 
-  A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
+  A view rule (legacy `ViewDefinition`): one diagram per layout match.
 
 Attributes:
 
@@ -128,7 +128,7 @@ A view rule's dangling view\_nodes reference (DTM-11).
 
 Bases: `_Rule`
 
-An element rule (legacy `ElementDefinition`): one node per row of `id_key` (DTM-02).
+An element rule (legacy `ElementDefinition`): one node per row of `id_key`.
 
 **Show JSON schema:**
 
@@ -136,18 +136,21 @@ An element rule (legacy `ElementDefinition`): one node per row of `id_key` (DTM-
 {
   "$defs": {
     "MappingEntry": {
-      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03).",
+      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "key": {
+          "description": "The metadata attribute's name.",
           "title": "Key",
           "type": "string"
         },
         "value": {
+          "description": "The source column's name.",
           "title": "Value",
           "type": "string"
         }
@@ -160,47 +163,56 @@ An element rule (legacy `ElementDefinition`): one node per row of `id_key` (DTM-
       "type": "object"
     }
   },
-  "description": "An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02).",
+  "description": "An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "id_key": {
+      "description": "The column holding each node's id; rows with a null id are dropped, first row per id wins.",
       "title": "Id Key",
       "type": "string"
     },
     "concept_type": {
+      "description": "The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``.",
       "title": "Concept Type",
       "type": "string"
     },
     "id_prefix": {
       "default": "",
+      "description": "The prefix of each node id.",
       "title": "Id Prefix",
       "type": "string"
     },
     "concept_name_prefix": {
       "default": "",
+      "description": "The prefix of each node name.",
       "title": "Concept Name Prefix",
       "type": "string"
     },
     "concept_name_key": {
       "default": "",
+      "description": "The column holding the node name; empty means the name is ``''``.",
       "title": "Concept Name Key",
       "type": "string"
     },
     "concept_label_prefix": {
       "default": "",
+      "description": "The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels.",
       "title": "Concept Label Prefix",
       "type": "string"
     },
     "concept_label_key": {
       "default": "",
+      "description": "The column holding the node label; the ar3 writer ignores labels.",
       "title": "Concept Label Key",
       "type": "string"
     },
     "mapping": {
+      "description": "Metadata attributes to attach per row, each a key/value pair.",
       "items": {
         "$ref": "#/$defs/MappingEntry"
       },
@@ -247,7 +259,7 @@ The column holding the node label; the ar3 writer ignores labels.
 concept_label_prefix: LegacyStr = ''
 ```
 
-Prefix of the node label (kept for the legacy contract; the ar3 writer ignores labels).
+The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels.
 
 #### concept\_name\_key
 
@@ -255,7 +267,7 @@ Prefix of the node label (kept for the legacy contract; the ar3 writer ignores l
 concept_name_key: LegacyStr = ''
 ```
 
-The column holding the node name; empty means the name is `''` (DTM-02).
+The column holding the node name; empty means the name is `''`.
 
 #### concept\_name\_prefix
 
@@ -263,7 +275,7 @@ The column holding the node name; empty means the name is `''` (DTM-02).
 concept_name_prefix: LegacyStr = ''
 ```
 
-Prefix of the node name.
+The prefix of each node name.
 
 #### concept\_type
 
@@ -271,9 +283,7 @@ Prefix of the node name.
 concept_type: str
 ```
 
-The node's Archimate element type tag (DTM-11 validates it).
-
-The lineage chain uses `lineage_dataset`/`lineage_process`.
+The node's Archimate element type tag, e.g. `lineage_dataset` or `lineage_process`.
 
 #### id
 
@@ -281,7 +291,7 @@ The lineage chain uses `lineage_dataset`/`lineage_process`.
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### id\_key
 
@@ -297,7 +307,7 @@ The column holding each node's id; rows with a null id are dropped, first row pe
 id_prefix: LegacyStr = ''
 ```
 
-Prefix of the node id (DTM-02).
+The prefix of each node id.
 
 #### mapping
 
@@ -305,7 +315,7 @@ Prefix of the node id (DTM-02).
 mapping: list[MappingEntry]
 ```
 
-Metadata attributes to attach per row (DTM-03).
+Metadata attributes to attach per row, each a key/value pair.
 
 #### model\_config
 
@@ -317,9 +327,7 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 
 Bases: `_Rule`
 
-The `POST /extract` body: `{data: [row…], rules: {...}}` (DTM-01).
-
-An absent `data`/`rules` is the empty extraction the legacy answers with the model skeleton (DTM-11); `data` is a list of row maps, columns keyed by name — a key absent from a row reads as null, as the legacy's missing DataFrame cell.
+The `POST /extract` body: `{data: [row…], rules: {...}}`.
 
 **Show JSON schema:**
 
@@ -327,47 +335,56 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
 {
   "$defs": {
     "ElementRule": {
-      "description": "An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02).",
+      "description": "An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "id_key": {
+          "description": "The column holding each node's id; rows with a null id are dropped, first row per id wins.",
           "title": "Id Key",
           "type": "string"
         },
         "concept_type": {
+          "description": "The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``.",
           "title": "Concept Type",
           "type": "string"
         },
         "id_prefix": {
           "default": "",
+          "description": "The prefix of each node id.",
           "title": "Id Prefix",
           "type": "string"
         },
         "concept_name_prefix": {
           "default": "",
+          "description": "The prefix of each node name.",
           "title": "Concept Name Prefix",
           "type": "string"
         },
         "concept_name_key": {
           "default": "",
+          "description": "The column holding the node name; empty means the name is ``''``.",
           "title": "Concept Name Key",
           "type": "string"
         },
         "concept_label_prefix": {
           "default": "",
+          "description": "The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels.",
           "title": "Concept Label Prefix",
           "type": "string"
         },
         "concept_label_key": {
           "default": "",
+          "description": "The column holding the node label; the ar3 writer ignores labels.",
           "title": "Concept Label Key",
           "type": "string"
         },
         "mapping": {
+          "description": "Metadata attributes to attach per row, each a key/value pair.",
           "items": {
             "$ref": "#/$defs/MappingEntry"
           },
@@ -383,18 +400,21 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     },
     "MappingEntry": {
-      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03).",
+      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "key": {
+          "description": "The metadata attribute's name.",
           "title": "Key",
           "type": "string"
         },
         "value": {
+          "description": "The source column's name.",
           "title": "Value",
           "type": "string"
         }
@@ -407,47 +427,56 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     },
     "RelationRule": {
-      "description": "A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).\n\n``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's\n``id_key``/``id_prefix``; the port keeps the rule references and resolves them the\nsame way, in :mod:`aurelius_atlas_data2model.extract`.",
+      "description": "A relation rule (legacy ``RelationshipDefinition``): one edge per row.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "id_key": {
+          "description": "The column holding each edge's id.",
           "title": "Id Key",
           "type": "string"
         },
         "relationship_type": {
+          "description": "The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain.",
           "title": "Relationship Type",
           "type": "string"
         },
         "source": {
           "default": "",
+          "description": "The id of the element rule holding the source ids.",
           "title": "Source",
           "type": "string"
         },
         "target": {
           "default": "",
+          "description": "The id of the element rule holding the target ids.",
           "title": "Target",
           "type": "string"
         },
         "id_prefix": {
           "default": "",
+          "description": "The prefix of each edge id.",
           "title": "Id Prefix",
           "type": "string"
         },
         "relationship_name_key": {
           "default": "",
+          "description": "The column holding the edge name; empty means the name is ``''``.",
           "title": "Relationship Name Key",
           "type": "string"
         },
         "relationship_label_key": {
           "default": "",
+          "description": "The column holding the edge label; the ar3 writer ignores labels.",
           "title": "Relationship Label Key",
           "type": "string"
         },
         "mapping": {
+          "description": "Metadata attributes to attach per row, each a key/value pair.",
           "items": {
             "$ref": "#/$defs/MappingEntry"
           },
@@ -463,14 +492,16 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     },
     "RulesDef": {
-      "description": "The ``rules`` body: elements, relations, views, in rule order (DTM-03).",
+      "description": "The ``rules`` body: elements, relations, views, in rule order.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "elements": {
+          "description": "The element rules.",
           "items": {
             "$ref": "#/$defs/ElementRule"
           },
@@ -478,6 +509,7 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
           "type": "array"
         },
         "relations": {
+          "description": "The relation rules.",
           "items": {
             "$ref": "#/$defs/RelationRule"
           },
@@ -485,6 +517,7 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
           "type": "array"
         },
         "views": {
+          "description": "The view rules.",
           "items": {
             "$ref": "#/$defs/ViewRule"
           },
@@ -496,14 +529,16 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     },
     "ViewEdgeRule": {
-      "description": "A view edge entry: includes the referenced relation rule's edges (DTM-07).",
+      "description": "A view edge entry: includes the referenced relation rule's edges.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "rule": {
+          "description": "The id of the relation rule whose rows fill the view.",
           "title": "Rule",
           "type": "string"
         }
@@ -515,14 +550,16 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     },
     "ViewNodeRule": {
-      "description": "A view node entry: includes the referenced element rule's nodes (DTM-07).",
+      "description": "A view node entry: includes the referenced element rule's nodes.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "rule": {
+          "description": "The id of the element rule whose rows fill the view.",
           "title": "Rule",
           "type": "string"
         }
@@ -534,59 +571,70 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     },
     "ViewRule": {
-      "description": "A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06).",
+      "description": "A view rule (legacy ``ViewDefinition``): one diagram per layout match.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "view_layout": {
           "default": "",
+          "description": "The layout name; a layout the registry does not know drops the view entirely.",
           "title": "View Layout",
           "type": "string"
         },
         "id_type": {
           "default": "dynamic",
+          "description": "``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``.",
           "title": "Id Type",
           "type": "string"
         },
         "id_key": {
           "default": "",
+          "description": "The grouping column for a dynamic view.",
           "title": "Id Key",
           "type": "string"
         },
         "id_value": {
           "default": "",
+          "description": "The view id for a static view.",
           "title": "Id Value",
           "type": "string"
         },
         "id_prefix": {
           "default": "",
+          "description": "The prefix of a dynamic view id.",
           "title": "Id Prefix",
           "type": "string"
         },
         "view_name_type": {
           "default": "dynamic",
+          "description": "``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``.",
           "title": "View Name Type",
           "type": "string"
         },
         "view_name_key": {
           "default": "",
+          "description": "The column holding the view name for a dynamic view.",
           "title": "View Name Key",
           "type": "string"
         },
         "view_name_value": {
           "default": "",
+          "description": "The view name for a static view.",
           "title": "View Name Value",
           "type": "string"
         },
         "view_name_prefix": {
           "default": "",
+          "description": "The prefix of a dynamic view name.",
           "title": "View Name Prefix",
           "type": "string"
         },
         "view_nodes": {
+          "description": "The element rules whose nodes fill the view, in order.",
           "items": {
             "$ref": "#/$defs/ViewNodeRule"
           },
@@ -594,6 +642,7 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
           "type": "array"
         },
         "view_edges": {
+          "description": "The relation rules whose edges fill the view; empty means all model edges between the view nodes.",
           "items": {
             "$ref": "#/$defs/ViewEdgeRule"
           },
@@ -601,6 +650,7 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
           "type": "array"
         },
         "view_path": {
+          "description": "Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only).",
           "items": {
             "type": "string"
           },
@@ -608,6 +658,7 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
           "type": "array"
         },
         "mapping": {
+          "description": "Metadata attributes to attach per view; unused by the writer, kept for the contract.",
           "items": {
             "$ref": "#/$defs/MappingEntry"
           },
@@ -619,14 +670,16 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "object"
     }
   },
-  "description": "The ``POST /extract`` body: ``{data: [row\u2026], rules: {...}}`` (DTM-01).\n\nAn absent ``data``/``rules`` is the empty extraction the legacy answers with the\nmodel skeleton (DTM-11); ``data`` is a list of row maps, columns keyed by name \u2014\na key absent from a row reads as null, as the legacy's missing DataFrame cell.",
+  "description": "The ``POST /extract`` body: ``{data: [row\u2026], rules: {...}}``.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "data": {
+      "description": "The tabular rows; each row is a plain map of column names to values.",
       "items": {
         "additionalProperties": true,
         "type": "object"
@@ -635,7 +688,8 @@ An absent `data`/`rules` is the empty extraction the legacy answers with the mod
       "type": "array"
     },
     "rules": {
-      "$ref": "#/$defs/RulesDef"
+      "$ref": "#/$defs/RulesDef",
+      "description": "The element, relation, and view rules that build the model."
     }
   },
   "title": "ExtractionRequest",
@@ -655,7 +709,7 @@ Fields:
 data: list[dict[str, Any]]
 ```
 
-The tabular rows; plain maps, not models (DD-109).
+The tabular rows; each row is a plain map of column names to values.
 
 #### id
 
@@ -663,7 +717,7 @@ The tabular rows; plain maps, not models (DD-109).
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### model\_config
 
@@ -677,15 +731,13 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 rules: RulesDef
 ```
 
-The element/relation/view rules.
+The element, relation, and view rules that build the model.
 
 ### ExtractionResponse
 
 Bases: `BaseModel`
 
-The `POST /extract` answer: `{metadata: […], model: "<ar3 JSON string>"}` (DTM-01; CL-20).
-
-The model is a JSON *string* inside the JSON body, as the legacy answer is (DV-15); `model_validate_json` of it is the caller's ar3 document.
+The `POST /extract` answer: `{metadata: […], model: "<ar3 JSON string>"}`.
 
 **Show JSON schema:**
 
@@ -693,14 +745,16 @@ The model is a JSON *string* inside the JSON body, as the legacy answer is (DV-1
 {
   "$defs": {
     "MetadataEntry": {
-      "description": "One ``{id, data}`` metadata entry of the extraction answer (DTM-03; CL-20).\n\n``data`` carries the rule's provenance (``created_by``, ``m4i_id_prefix``,\n``m4i_original_id``, \u2026) plus the row's mapped attributes, keyed by the\n``mapping`` entries \u2014 open by contract, so a plain map.",
+      "description": "One ``{id, data}`` metadata entry of the extraction answer.",
       "properties": {
         "id": {
+          "description": "The element, edge, or view id the entry describes, with its rule's prefix.",
           "title": "Id",
           "type": "string"
         },
         "data": {
           "additionalProperties": true,
+          "description": "The provenance and mapped attributes, as open key/value maps.",
           "title": "Data",
           "type": "object"
         }
@@ -712,9 +766,10 @@ The model is a JSON *string* inside the JSON body, as the legacy answer is (DV-1
       "type": "object"
     }
   },
-  "description": "The ``POST /extract`` answer: ``{metadata: [\u2026], model: \"<ar3 JSON string>\"}`` (DTM-01; CL-20).\n\nThe model is a JSON *string* inside the JSON body, as the legacy answer is\n(DV-15); ``model_validate_json`` of it is the caller's ar3 document.",
+  "description": "The ``POST /extract`` answer: ``{metadata: [\u2026], model: \"<ar3 JSON string>\"}``.",
   "properties": {
     "metadata": {
+      "description": "One entry per element/edge row and per view.",
       "items": {
         "$ref": "#/$defs/MetadataEntry"
       },
@@ -722,6 +777,7 @@ The model is a JSON *string* inside the JSON body, as the legacy answer is (DV-1
       "type": "array"
     },
     "model": {
+      "description": "The ar3 model, JSON-encoded as a string; the browser draws it.",
       "title": "Model",
       "type": "string"
     }
@@ -750,7 +806,7 @@ Fields:
 metadata: list[MetadataEntry]
 ```
 
-One entry per element/edge row and per view (DTM-03).
+One entry per element/edge row and per view.
 
 #### model
 
@@ -758,7 +814,7 @@ One entry per element/edge row and per view (DTM-03).
 model: str
 ```
 
-The ar3 model, JSON-encoded — the browser draws it (DV-15).
+The ar3 model, JSON-encoded as a string; the browser draws it.
 
 #### model\_config
 
@@ -770,24 +826,27 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 
 Bases: `_Rule`
 
-One `{key, value}`: attach column `value` as metadata attribute `key` (DTM-03).
+One `{key, value}`: attach column `value` as metadata attribute `key`.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03).",
+  "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key``.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "key": {
+      "description": "The metadata attribute's name.",
       "title": "Key",
       "type": "string"
     },
     "value": {
+      "description": "The source column's name.",
       "title": "Value",
       "type": "string"
     }
@@ -813,7 +872,7 @@ Fields:
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### key
 
@@ -841,22 +900,22 @@ The source column's name.
 
 Bases: `BaseModel`
 
-One `{id, data}` metadata entry of the extraction answer (DTM-03; CL-20).
-
-`data` carries the rule's provenance (`created_by`, `m4i_id_prefix`, `m4i_original_id`, …) plus the row's mapped attributes, keyed by the `mapping` entries — open by contract, so a plain map.
+One `{id, data}` metadata entry of the extraction answer.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "One ``{id, data}`` metadata entry of the extraction answer (DTM-03; CL-20).\n\n``data`` carries the rule's provenance (``created_by``, ``m4i_id_prefix``,\n``m4i_original_id``, \u2026) plus the row's mapped attributes, keyed by the\n``mapping`` entries \u2014 open by contract, so a plain map.",
+  "description": "One ``{id, data}`` metadata entry of the extraction answer.",
   "properties": {
     "id": {
+      "description": "The element, edge, or view id the entry describes, with its rule's prefix.",
       "title": "Id",
       "type": "string"
     },
     "data": {
       "additionalProperties": true,
+      "description": "The provenance and mapped attributes, as open key/value maps.",
       "title": "Data",
       "type": "object"
     }
@@ -885,7 +944,7 @@ Fields:
 data: dict[str, Any]
 ```
 
-The provenance and mapped attributes; open keys by contract (DTM-03).
+The provenance and mapped attributes, as open key/value maps.
 
 #### id
 
@@ -893,7 +952,7 @@ The provenance and mapped attributes; open keys by contract (DTM-03).
 id: str
 ```
 
-The element/edge/view id the entry describes, with its rule's prefix.
+The element, edge, or view id the entry describes, with its rule's prefix.
 
 #### model\_config
 
@@ -905,9 +964,7 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 
 Bases: `_Rule`
 
-A relation rule (legacy `RelationshipDefinition`): one edge per row (DTM-04).
-
-`fmt_relation` resolved `source`/`target` into the referenced element rule's `id_key`/`id_prefix`; the port keeps the rule references and resolves them the same way, in :mod:`aurelius_atlas_data2model.extract`.
+A relation rule (legacy `RelationshipDefinition`): one edge per row.
 
 **Show JSON schema:**
 
@@ -915,18 +972,21 @@ A relation rule (legacy `RelationshipDefinition`): one edge per row (DTM-04).
 {
   "$defs": {
     "MappingEntry": {
-      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03).",
+      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "key": {
+          "description": "The metadata attribute's name.",
           "title": "Key",
           "type": "string"
         },
         "value": {
+          "description": "The source column's name.",
           "title": "Value",
           "type": "string"
         }
@@ -939,47 +999,56 @@ A relation rule (legacy `RelationshipDefinition`): one edge per row (DTM-04).
       "type": "object"
     }
   },
-  "description": "A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).\n\n``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's\n``id_key``/``id_prefix``; the port keeps the rule references and resolves them the\nsame way, in :mod:`aurelius_atlas_data2model.extract`.",
+  "description": "A relation rule (legacy ``RelationshipDefinition``): one edge per row.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "id_key": {
+      "description": "The column holding each edge's id.",
       "title": "Id Key",
       "type": "string"
     },
     "relationship_type": {
+      "description": "The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain.",
       "title": "Relationship Type",
       "type": "string"
     },
     "source": {
       "default": "",
+      "description": "The id of the element rule holding the source ids.",
       "title": "Source",
       "type": "string"
     },
     "target": {
       "default": "",
+      "description": "The id of the element rule holding the target ids.",
       "title": "Target",
       "type": "string"
     },
     "id_prefix": {
       "default": "",
+      "description": "The prefix of each edge id.",
       "title": "Id Prefix",
       "type": "string"
     },
     "relationship_name_key": {
       "default": "",
+      "description": "The column holding the edge name; empty means the name is ``''``.",
       "title": "Relationship Name Key",
       "type": "string"
     },
     "relationship_label_key": {
       "default": "",
+      "description": "The column holding the edge label; the ar3 writer ignores labels.",
       "title": "Relationship Label Key",
       "type": "string"
     },
     "mapping": {
+      "description": "Metadata attributes to attach per row, each a key/value pair.",
       "items": {
         "$ref": "#/$defs/MappingEntry"
       },
@@ -1018,7 +1087,7 @@ Validators:
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### id\_key
 
@@ -1034,7 +1103,7 @@ The column holding each edge's id.
 id_prefix: LegacyStr = ''
 ```
 
-Prefix of the edge id.
+The prefix of each edge id.
 
 #### mapping
 
@@ -1042,7 +1111,7 @@ Prefix of the edge id.
 mapping: list[MappingEntry]
 ```
 
-Metadata attributes to attach per row (DTM-03).
+Metadata attributes to attach per row, each a key/value pair.
 
 #### model\_config
 
@@ -1072,7 +1141,7 @@ The column holding the edge name; empty means the name is `''`.
 relationship_type: str
 ```
 
-The Archimate relationship shorthand (`lr` for the lineage chain; DTM-11 validates it).
+The Archimate relationship shorthand, e.g. `lr` for the lineage chain.
 
 #### source
 
@@ -1094,7 +1163,7 @@ The id of the element rule holding the target ids.
 
 Bases: `_Rule`
 
-The `rules` body: elements, relations, views, in rule order (DTM-03).
+The `rules` body: elements, relations, views, in rule order.
 
 **Show JSON schema:**
 
@@ -1102,47 +1171,56 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
 {
   "$defs": {
     "ElementRule": {
-      "description": "An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02).",
+      "description": "An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "id_key": {
+          "description": "The column holding each node's id; rows with a null id are dropped, first row per id wins.",
           "title": "Id Key",
           "type": "string"
         },
         "concept_type": {
+          "description": "The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``.",
           "title": "Concept Type",
           "type": "string"
         },
         "id_prefix": {
           "default": "",
+          "description": "The prefix of each node id.",
           "title": "Id Prefix",
           "type": "string"
         },
         "concept_name_prefix": {
           "default": "",
+          "description": "The prefix of each node name.",
           "title": "Concept Name Prefix",
           "type": "string"
         },
         "concept_name_key": {
           "default": "",
+          "description": "The column holding the node name; empty means the name is ``''``.",
           "title": "Concept Name Key",
           "type": "string"
         },
         "concept_label_prefix": {
           "default": "",
+          "description": "The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels.",
           "title": "Concept Label Prefix",
           "type": "string"
         },
         "concept_label_key": {
           "default": "",
+          "description": "The column holding the node label; the ar3 writer ignores labels.",
           "title": "Concept Label Key",
           "type": "string"
         },
         "mapping": {
+          "description": "Metadata attributes to attach per row, each a key/value pair.",
           "items": {
             "$ref": "#/$defs/MappingEntry"
           },
@@ -1158,18 +1236,21 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "object"
     },
     "MappingEntry": {
-      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03).",
+      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "key": {
+          "description": "The metadata attribute's name.",
           "title": "Key",
           "type": "string"
         },
         "value": {
+          "description": "The source column's name.",
           "title": "Value",
           "type": "string"
         }
@@ -1182,47 +1263,56 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "object"
     },
     "RelationRule": {
-      "description": "A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).\n\n``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's\n``id_key``/``id_prefix``; the port keeps the rule references and resolves them the\nsame way, in :mod:`aurelius_atlas_data2model.extract`.",
+      "description": "A relation rule (legacy ``RelationshipDefinition``): one edge per row.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "id_key": {
+          "description": "The column holding each edge's id.",
           "title": "Id Key",
           "type": "string"
         },
         "relationship_type": {
+          "description": "The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain.",
           "title": "Relationship Type",
           "type": "string"
         },
         "source": {
           "default": "",
+          "description": "The id of the element rule holding the source ids.",
           "title": "Source",
           "type": "string"
         },
         "target": {
           "default": "",
+          "description": "The id of the element rule holding the target ids.",
           "title": "Target",
           "type": "string"
         },
         "id_prefix": {
           "default": "",
+          "description": "The prefix of each edge id.",
           "title": "Id Prefix",
           "type": "string"
         },
         "relationship_name_key": {
           "default": "",
+          "description": "The column holding the edge name; empty means the name is ``''``.",
           "title": "Relationship Name Key",
           "type": "string"
         },
         "relationship_label_key": {
           "default": "",
+          "description": "The column holding the edge label; the ar3 writer ignores labels.",
           "title": "Relationship Label Key",
           "type": "string"
         },
         "mapping": {
+          "description": "Metadata attributes to attach per row, each a key/value pair.",
           "items": {
             "$ref": "#/$defs/MappingEntry"
           },
@@ -1238,14 +1328,16 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "object"
     },
     "ViewEdgeRule": {
-      "description": "A view edge entry: includes the referenced relation rule's edges (DTM-07).",
+      "description": "A view edge entry: includes the referenced relation rule's edges.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "rule": {
+          "description": "The id of the relation rule whose rows fill the view.",
           "title": "Rule",
           "type": "string"
         }
@@ -1257,14 +1349,16 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "object"
     },
     "ViewNodeRule": {
-      "description": "A view node entry: includes the referenced element rule's nodes (DTM-07).",
+      "description": "A view node entry: includes the referenced element rule's nodes.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "rule": {
+          "description": "The id of the element rule whose rows fill the view.",
           "title": "Rule",
           "type": "string"
         }
@@ -1276,59 +1370,70 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "object"
     },
     "ViewRule": {
-      "description": "A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06).",
+      "description": "A view rule (legacy ``ViewDefinition``): one diagram per layout match.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "view_layout": {
           "default": "",
+          "description": "The layout name; a layout the registry does not know drops the view entirely.",
           "title": "View Layout",
           "type": "string"
         },
         "id_type": {
           "default": "dynamic",
+          "description": "``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``.",
           "title": "Id Type",
           "type": "string"
         },
         "id_key": {
           "default": "",
+          "description": "The grouping column for a dynamic view.",
           "title": "Id Key",
           "type": "string"
         },
         "id_value": {
           "default": "",
+          "description": "The view id for a static view.",
           "title": "Id Value",
           "type": "string"
         },
         "id_prefix": {
           "default": "",
+          "description": "The prefix of a dynamic view id.",
           "title": "Id Prefix",
           "type": "string"
         },
         "view_name_type": {
           "default": "dynamic",
+          "description": "``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``.",
           "title": "View Name Type",
           "type": "string"
         },
         "view_name_key": {
           "default": "",
+          "description": "The column holding the view name for a dynamic view.",
           "title": "View Name Key",
           "type": "string"
         },
         "view_name_value": {
           "default": "",
+          "description": "The view name for a static view.",
           "title": "View Name Value",
           "type": "string"
         },
         "view_name_prefix": {
           "default": "",
+          "description": "The prefix of a dynamic view name.",
           "title": "View Name Prefix",
           "type": "string"
         },
         "view_nodes": {
+          "description": "The element rules whose nodes fill the view, in order.",
           "items": {
             "$ref": "#/$defs/ViewNodeRule"
           },
@@ -1336,6 +1441,7 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
           "type": "array"
         },
         "view_edges": {
+          "description": "The relation rules whose edges fill the view; empty means all model edges between the view nodes.",
           "items": {
             "$ref": "#/$defs/ViewEdgeRule"
           },
@@ -1343,6 +1449,7 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
           "type": "array"
         },
         "view_path": {
+          "description": "Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only).",
           "items": {
             "type": "string"
           },
@@ -1350,6 +1457,7 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
           "type": "array"
         },
         "mapping": {
+          "description": "Metadata attributes to attach per view; unused by the writer, kept for the contract.",
           "items": {
             "$ref": "#/$defs/MappingEntry"
           },
@@ -1361,14 +1469,16 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "object"
     }
   },
-  "description": "The ``rules`` body: elements, relations, views, in rule order (DTM-03).",
+  "description": "The ``rules`` body: elements, relations, views, in rule order.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "elements": {
+      "description": "The element rules.",
       "items": {
         "$ref": "#/$defs/ElementRule"
       },
@@ -1376,6 +1486,7 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "array"
     },
     "relations": {
+      "description": "The relation rules.",
       "items": {
         "$ref": "#/$defs/RelationRule"
       },
@@ -1383,6 +1494,7 @@ The `rules` body: elements, relations, views, in rule order (DTM-03).
       "type": "array"
     },
     "views": {
+      "description": "The view rules.",
       "items": {
         "$ref": "#/$defs/ViewRule"
       },
@@ -1420,7 +1532,7 @@ The element rules.
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### model\_config
 
@@ -1448,20 +1560,22 @@ The view rules.
 
 Bases: `_Rule`
 
-A view edge entry: includes the referenced relation rule's edges (DTM-07).
+A view edge entry: includes the referenced relation rule's edges.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "A view edge entry: includes the referenced relation rule's edges (DTM-07).",
+  "description": "A view edge entry: includes the referenced relation rule's edges.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "rule": {
+      "description": "The id of the relation rule whose rows fill the view.",
       "title": "Rule",
       "type": "string"
     }
@@ -1485,7 +1599,7 @@ Fields:
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### model\_config
 
@@ -1499,26 +1613,28 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 rule: str
 ```
 
-The id of the relation rule whose rows fill the view (resolved at parse time, DTM-11).
+The id of the relation rule whose rows fill the view.
 
 ### ViewNodeRule
 
 Bases: `_Rule`
 
-A view node entry: includes the referenced element rule's nodes (DTM-07).
+A view node entry: includes the referenced element rule's nodes.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "A view node entry: includes the referenced element rule's nodes (DTM-07).",
+  "description": "A view node entry: includes the referenced element rule's nodes.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "rule": {
+      "description": "The id of the element rule whose rows fill the view.",
       "title": "Rule",
       "type": "string"
     }
@@ -1542,7 +1658,7 @@ Fields:
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### model\_config
 
@@ -1556,13 +1672,13 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 rule: str
 ```
 
-The id of the element rule whose rows fill the view (resolved at parse time, DTM-11).
+The id of the element rule whose rows fill the view.
 
 ### ViewRule
 
 Bases: `_Rule`
 
-A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
+A view rule (legacy `ViewDefinition`): one diagram per layout match.
 
 **Show JSON schema:**
 
@@ -1570,18 +1686,21 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
 {
   "$defs": {
     "MappingEntry": {
-      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03).",
+      "description": "One ``{key, value}``: attach column ``value`` as metadata attribute ``key``.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "key": {
+          "description": "The metadata attribute's name.",
           "title": "Key",
           "type": "string"
         },
         "value": {
+          "description": "The source column's name.",
           "title": "Value",
           "type": "string"
         }
@@ -1594,14 +1713,16 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
       "type": "object"
     },
     "ViewEdgeRule": {
-      "description": "A view edge entry: includes the referenced relation rule's edges (DTM-07).",
+      "description": "A view edge entry: includes the referenced relation rule's edges.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "rule": {
+          "description": "The id of the relation rule whose rows fill the view.",
           "title": "Rule",
           "type": "string"
         }
@@ -1613,14 +1734,16 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
       "type": "object"
     },
     "ViewNodeRule": {
-      "description": "A view node entry: includes the referenced element rule's nodes (DTM-07).",
+      "description": "A view node entry: includes the referenced element rule's nodes.",
       "properties": {
         "id": {
           "default": "",
+          "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
           "title": "Id",
           "type": "string"
         },
         "rule": {
+          "description": "The id of the element rule whose rows fill the view.",
           "title": "Rule",
           "type": "string"
         }
@@ -1632,59 +1755,70 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
       "type": "object"
     }
   },
-  "description": "A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06).",
+  "description": "A view rule (legacy ``ViewDefinition``): one diagram per layout match.",
   "properties": {
     "id": {
       "default": "",
+      "description": "The rule's id \u2014 the reference relation and view rules use to name it.",
       "title": "Id",
       "type": "string"
     },
     "view_layout": {
       "default": "",
+      "description": "The layout name; a layout the registry does not know drops the view entirely.",
       "title": "View Layout",
       "type": "string"
     },
     "id_type": {
       "default": "dynamic",
+      "description": "``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``.",
       "title": "Id Type",
       "type": "string"
     },
     "id_key": {
       "default": "",
+      "description": "The grouping column for a dynamic view.",
       "title": "Id Key",
       "type": "string"
     },
     "id_value": {
       "default": "",
+      "description": "The view id for a static view.",
       "title": "Id Value",
       "type": "string"
     },
     "id_prefix": {
       "default": "",
+      "description": "The prefix of a dynamic view id.",
       "title": "Id Prefix",
       "type": "string"
     },
     "view_name_type": {
       "default": "dynamic",
+      "description": "``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``.",
       "title": "View Name Type",
       "type": "string"
     },
     "view_name_key": {
       "default": "",
+      "description": "The column holding the view name for a dynamic view.",
       "title": "View Name Key",
       "type": "string"
     },
     "view_name_value": {
       "default": "",
+      "description": "The view name for a static view.",
       "title": "View Name Value",
       "type": "string"
     },
     "view_name_prefix": {
       "default": "",
+      "description": "The prefix of a dynamic view name.",
       "title": "View Name Prefix",
       "type": "string"
     },
     "view_nodes": {
+      "description": "The element rules whose nodes fill the view, in order.",
       "items": {
         "$ref": "#/$defs/ViewNodeRule"
       },
@@ -1692,6 +1826,7 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
       "type": "array"
     },
     "view_edges": {
+      "description": "The relation rules whose edges fill the view; empty means all model edges between the view nodes.",
       "items": {
         "$ref": "#/$defs/ViewEdgeRule"
       },
@@ -1699,6 +1834,7 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
       "type": "array"
     },
     "view_path": {
+      "description": "Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only).",
       "items": {
         "type": "string"
       },
@@ -1706,6 +1842,7 @@ A view rule (legacy `ViewDefinition`): one diagram per layout match (DTM-06).
       "type": "array"
     },
     "mapping": {
+      "description": "Metadata attributes to attach per view; unused by the writer, kept for the contract.",
       "items": {
         "$ref": "#/$defs/MappingEntry"
       },
@@ -1741,7 +1878,7 @@ Fields:
 id: LegacyStr = ''
 ```
 
-The rule's id — the caller's reference into `rules` (relation/view rules name it).
+The rule's id — the reference relation and view rules use to name it.
 
 #### id\_key
 
@@ -1757,7 +1894,7 @@ The grouping column for a dynamic view.
 id_prefix: LegacyStr = ''
 ```
 
-Prefix of a dynamic view id.
+The prefix of a dynamic view id.
 
 #### id\_type
 
@@ -1773,7 +1910,7 @@ id_type: LegacyStr = 'dynamic'
 id_value: LegacyStr = ''
 ```
 
-The view id for a static view (`lineage_view` for the lineage chain).
+The view id for a static view.
 
 #### mapping
 
@@ -1781,7 +1918,7 @@ The view id for a static view (`lineage_view` for the lineage chain).
 mapping: list[MappingEntry]
 ```
 
-Metadata attributes to attach per view (legacy: unused by the writer; kept for the contract).
+Metadata attributes to attach per view; unused by the writer, kept for the contract.
 
 #### model\_config
 
@@ -1795,7 +1932,7 @@ model_config = ConfigDict(extra='ignore', frozen=True)
 view_edges: list[ViewEdgeRule]
 ```
 
-The relation rules whose edges fill the view; empty means all model edges between the view nodes (DTM-07).
+The relation rules whose edges fill the view; empty means all model edges between the view nodes.
 
 #### view\_layout
 
@@ -1803,7 +1940,7 @@ The relation rules whose edges fill the view; empty means all model edges betwee
 view_layout: LegacyStr = ''
 ```
 
-The layout name; a layout the registry does not know drops the view entirely (DTM-06).
+The layout name; a layout the registry does not know drops the view entirely.
 
 #### view\_name\_key
 
@@ -1819,7 +1956,7 @@ The column holding the view name for a dynamic view.
 view_name_prefix: LegacyStr = ''
 ```
 
-Prefix of a dynamic view name.
+The prefix of a dynamic view name.
 
 #### view\_name\_type
 
@@ -1835,7 +1972,7 @@ view_name_type: LegacyStr = 'dynamic'
 view_name_value: LegacyStr = ''
 ```
 
-The view name for a static view (`Lineage` for the lineage chain).
+The view name for a static view.
 
 #### view\_nodes
 
@@ -1843,7 +1980,7 @@ The view name for a static view (`Lineage` for the lineage chain).
 view_nodes: list[ViewNodeRule]
 ```
 
-The element rules whose nodes fill the view, in order (DTM-07).
+The element rules whose nodes fill the view, in order.
 
 #### view\_path
 

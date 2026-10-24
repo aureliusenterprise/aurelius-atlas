@@ -36,6 +36,8 @@ The gate is what protects production: no change reaches `main` — and nothing i
 
 Merge requires all affected stages green; the evidence report is what reviewers read. The pipeline definition is in the repository's CI configuration.
 
+Coverage is measured in every `-c ci` test run and uploaded to the analysis stage: SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **quality gate is the coverage gate** — there is deliberately no second coverage flag in the pipeline. The last full review of what the suites prove — coverage baselines and non-happy-flow representativeness per project — is the [Test Suite Review](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/testing-review/index.md>) ([DD-125](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/conversion/design-log/#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments>)).
+
 ## Indicators
 
 The gate aims at delivery outcomes, not coverage for its own sake. The indicators follow the [DORA metrics](<https://www.devops-research.com/research.html>), with starting-point targets to be operationalized with business stakeholders:
@@ -57,6 +59,7 @@ Each is measured from the system's own records: the failure rate from deployment
 ## Pointers
 
 - Commands, conventions, flaky triage: [Testing guide](<https://aureliusenterprise.github.io/feat-api-client-libraries/contributor-guide/testing/index.md>)
+- Coverage baselines and the hardening plan: [Test Suite Review](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/platform/delivery/testing-review/index.md>)
 - Gates and evidence: [ADR 014](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/index.md>), [ADR 015](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/015-a-change-answers-for-what-it-caused/index.md>), [ADR 049](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>)
 - Realism: [ADR 010](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>), [ADR 012](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/012-validation-runs-against-real-services/index.md>)
 - Parity method: [ADR 052](<https://aureliusenterprise.github.io/feat-api-client-libraries/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/index.md>), the [parity library](<https://aureliusenterprise.github.io/feat-api-client-libraries/api-reference/libs/python/aurelius-atlas-parity/index.md>)

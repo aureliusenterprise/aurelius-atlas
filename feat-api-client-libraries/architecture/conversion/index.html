@@ -3933,6 +3933,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4722,6 +4730,33 @@
   
   
     <li class="md-nav__item">
+      <a href="./increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -4865,6 +4900,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -5857,6 +5973,8 @@
       
         
       
+        
+      
     
     
     
@@ -5979,6 +6097,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -7277,6 +7422,13 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
+<td>7.19</td>
+<td>Frontend failure UX</td>
+<td>Test-completeness of the frontend failure paths (DD-125): the data-access error matrix, observability branch holes, config-boot failure, editor failing save/delete, out-of-order search — no new rule ids</td>
+<td>— (proves APC-04, SHL-02/14, SPL-03/04)</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
@@ -7316,6 +7468,27 @@ checks a PR must pass:</p>
 <td>lineage-model circuit breakers</td>
 <td>Per-upstream circuit breakers on the 8.2 chain: outages open the circuit, the open circuit fast-fails 502 (LM-11..15, DD-117, DV-26)</td>
 <td>Aurelius <code>m4i-lineage-model</code> (bare <code>requests.post</code>, no breaker)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.6</td>
+<td>Aux API failure hardening</td>
+<td>Test-completeness of the 8.1–8.3 failure paths (DD-125): engine view/dynamic-view paths, transport-failure 502, d2m fast-fail, timeout, negative parity scenarios — no new rule ids</td>
+<td>— (proves DTM-04/06/07, LM-07/12/13, VE-01)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.7</td>
+<td>Client failure contract</td>
+<td>Test-completeness of the four client libraries (DD-125): 2xx-with-garbage-body, timeout vs connect error, raising token source, concurrent <code>with_token</code> (adds CL-08; proves CL-03/04/05)</td>
+<td>— (the 8.4 clients, unproven failure paths)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.1</td>
+<td>Targeted resilience e2e</td>
+<td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
+<td>— (no Java twin; Atlas ships no resilience e2e)</td>
 <td>in progress</td>
 </tr>
 </tbody>

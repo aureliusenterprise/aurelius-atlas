@@ -311,11 +311,15 @@ Fields:
 cluster_name: str | None = None
 ```
 
+The cluster's name, when the server answered.
+
 #### cluster\_status
 
 ```
 cluster_status: str | None = None
 ```
+
+The cluster's status (`green`/`yellow`/`red`), when the server answered.
 
 #### model\_config
 
@@ -329,17 +333,23 @@ model_config = ConfigDict(frozen=True)
 reason: str | None = None
 ```
 
+What makes the store `DOWN`; None when it is `UP`.
+
 #### status
 
 ```
 status: HealthStatus
 ```
 
+Whether the store can serve requests.
+
 #### version
 
 ```
 version: str | None = None
 ```
+
+The server's version, when the server answered.
 
 ### HealthStatus
 

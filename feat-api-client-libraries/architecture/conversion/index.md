@@ -91,12 +91,16 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 7.16 | UI components: details chrome | classification-chip, type-name, details-navigation, section-stats as dumb components (UIC-16..20, DD-099..102) | Aurelius `search/components/classification`, `type-name`, `details/components/navigation` | in progress |
 | 7.17 | Collector ingest auth | Two-leg OTLP ingest: user JWTs on the browser leg (OIDC), shared token on the service leg, loopback-pinned publishes (CIA-01..05, DD-103) | – (platform-side, extends ADR 039) | in progress |
 | 7.18 | Collector ingest identity | Per-service ingest identity: client-credentials JWTs on the per-service leg (OIDC), azp-stamped writes, shared-token legacy leg (CIA-06..10, DD-107) | – (platform-side, extends ADR 039) | in progress |
+| 7.19 | Frontend failure UX | Test-completeness of the frontend failure paths (DD-125): the data-access error matrix, observability branch holes, config-boot failure, editor failing save/delete, out-of-order search — no new rule ids | — (proves APC-04, SHL-02/14, SPL-03/04) | in progress |
 | 8.0 | Auxiliary API foundation | Shared foundation for the ADR 055 data surface: `aurelius-atlas-otel` + `aurelius-atlas-auth` libs, per-service ingest clients (AUX-01..05, DD-108) | Aurelius server `otel_ingest`, FastAPI example app | in progress |
 | 8.1 | data2model API | Legacy `/extract` as a FastAPI app: archimate rows in, ar3 model string out, native layout (ADR 055, DV-15) | Aurelius `m4i-data2model`, `m4i-analytics` | planned |
 | 8.2 | lineage-model API | Legacy lineage flattening as a FastAPI app: Atlas lineage in, archimate rows out; source stubbed until 5.1 (ADR 055, DV-16) | Aurelius `m4i-lineage-model` | planned |
 | 8.3 | validate-entity API | Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-14) | Aurelius `m4i-validate-entity` | in progress |
 | 8.4 | API client libraries | Contract + async client library per Python API (CL-01..50, DD-114/115): models move to the lib, the app imports its own contract | Aurelius `libs/atlas/api` (the Angular twin), 8.1-8.3 apps | in progress |
 | 8.5 | lineage-model circuit breakers | Per-upstream circuit breakers on the 8.2 chain: outages open the circuit, the open circuit fast-fails 502 (LM-11..15, DD-117, DV-26) | Aurelius `m4i-lineage-model` (bare `requests.post`, no breaker) | in progress |
+| 8.6 | Aux API failure hardening | Test-completeness of the 8.1–8.3 failure paths (DD-125): engine view/dynamic-view paths, transport-failure 502, d2m fast-fail, timeout, negative parity scenarios — no new rule ids | — (proves DTM-04/06/07, LM-07/12/13, VE-01) | in progress |
+| 8.7 | Client failure contract | Test-completeness of the four client libraries (DD-125): 2xx-with-garbage-body, timeout vs connect error, raising token source, concurrent `with_token` (adds CL-08; proves CL-03/04/05) | — (the 8.4 clients, unproven failure paths) | in progress |
+| 9.1 | Targeted resilience e2e | Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03) | — (no Java twin; Atlas ships no resilience e2e) | in progress |
 
 ## After phase 0
 

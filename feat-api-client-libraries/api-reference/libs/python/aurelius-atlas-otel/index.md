@@ -18,7 +18,7 @@ workspace = true
 
 The OTLP ingest credential for the collector's per-service leg (7.18, DD-107, CIA-07).
 
-The collector's per-service leg (4317 gRPC / 4319 HTTP) accepts only Keycloak client-credentials JWTs minted for the service's realm client `otel-<service>` (audience `otel-collector`, the `otel-ingest` scope). The OTel Python SDK reads `OTEL_EXPORTER_OTLP_HEADERS` statically, and the dev realm's access token lives 60s — a bearer JWT in a static header expires a minute in. So the app owns the OTLP export: a refresh-ahead token source feeds a `requests.Session` that injects a fresh bearer header on every OTLP request, handed to app-built exporters wired into logfire through its `additional_span_processors` / `MetricsOptions.additional_readers` seams (logfire's env-driven OTLP export is not used when this is on).
+The collector's per-service leg (4317 gRPC / 4319 HTTP) accepts only Keycloak client-credentials JWTs minted for the service's realm client `otel-<service>` (audience `otel-collector`, the `otel-ingest` scope). The OTel Python SDK reads `OTEL_EXPORTER_OTLP_HEADERS` statically, and the dev realm's access token lives 60s — a bearer JWT in a static header expires a minute in. So the app owns the OTLP export: a refresh-ahead token source feeds a `requests.Session` that injects a fresh bearer header on every OTLP request, handed to app-built exporters whose processor/reader `setup_telemetry` installs on the process's providers (DD-121).
 
 Extracted from the Atlas server's `otel_ingest` module so every service on the leg shares one credential (8.0, DD-108); the server keeps the settings mapping, this library owns the mechanism.
 
@@ -48,10 +48,10 @@ Attributes:
 ### IngestPipeline
 
 ```
-IngestPipeline = tuple['SpanProcessor', 'PeriodicExportingMetricReader']
+IngestPipeline = tuple[BatchSpanProcessor, PeriodicExportingMetricReader]
 ```
 
-The (span processor, metric reader) pair `build_otlp_pipeline` returns, for logfire's `additional_span_processors` / `additional_readers`.
+The (span processor, metric reader) pair `build_otlp_pipeline` returns, for `setup_telemetry`'s `span_processors` / `metric_readers`.
 
 ### REFRESH\_AHEAD\_SECONDS
 
@@ -97,4 +97,4 @@ The app-owned OTLP export (DD-107): a trace processor + metric reader.
 
 The exporters inject the bearer header per export through the ingest session.
 
-:param endpoint: the collector's service-leg base (`https://host:4319`) :param ca\_file: PEM CA verifying the collector's TLS :param token\_source: the ingest credential source :returns: a span processor and a metric reader for logfire to adopt
+:param endpoint: the collector's service-leg base (`https://host:4319`) :param ca\_file: PEM CA verifying the collector's TLS :param token\_source: the ingest credential source :returns: a span processor and a metric reader for `setup_telemetry`

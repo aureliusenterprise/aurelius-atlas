@@ -1,6 +1,6 @@
 # aurelius-atlas-server-client
 
-The contract and the async client of the Atlas REST API (8.4, DD-114, DD-115): the admin, types and lineage models every consumer of `aurelius-atlas-server` speaks, and the `httpx`-based `AtlasClient` that calls it. The lineage-model app imports the lineage wire models from here — one source of truth for both sides of the wire.
+The contract and the async client of the Atlas REST API (8.4, DD-114, DD-115): the admin, types and lineage models every consumer of `aurelius-atlas-server` speaks, and the `httpx2`-based `AtlasClient` that calls it. The lineage-model app imports the lineage wire models from here — one source of truth for both sides of the wire.
 
 ## Installation
 
@@ -24,36 +24,36 @@ Classes:
 
 - **`AtlasErrorInfo`** –
 
-  The body every Atlas error is answered with (SRV-04; CL-10).
+  The body every Atlas error is answered with.
 - **`AtlasSessionInfo`** –
 
-  The body of `GET /api/atlas/admin/session` (ADM-05, DV-04; CL-10).
+  The body of `GET /api/atlas/admin/session`.
 - **`AtlasStatus`** –
 
-  The body of `GET /api/atlas/admin/status` (ADM-02; CL-10).
+  The body of `GET /api/atlas/admin/status`.
 - **`AtlasVersion`** –
 
-  The body of `GET /api/atlas/admin/version` (ADM-01, DV-03; CL-10).
+  The body of `GET /api/atlas/admin/version`.
 
 ### AtlasErrorInfo
 
 Bases: `AtlasModel`
 
-The body every Atlas error is answered with (SRV-04; CL-10).
-
-`{errorCode, errorMessage}`, plus `errorCause` on the server-side codes. The 8.x auxiliary apps reuse the shape with the `ATLAS-400-00-029` code.
+The body every Atlas error is answered with.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The body every Atlas error is answered with (SRV-04; CL-10).\n\n``{errorCode, errorMessage}``, plus ``errorCause`` on the server-side codes.\nThe 8.x auxiliary apps reuse the shape with the ``ATLAS-400-00-029`` code.",
+  "description": "The body every Atlas error is answered with.",
   "properties": {
     "errorCode": {
+      "description": "The Atlas error code, e.g. ``ATLAS-400-00-007``.",
       "title": "Errorcode",
       "type": "string"
     },
     "errorMessage": {
+      "description": "The human-readable error message.",
       "title": "Errormessage",
       "type": "string"
     },
@@ -67,6 +67,7 @@ The body every Atlas error is answered with (SRV-04; CL-10).
         }
       ],
       "default": null,
+      "description": "The cause of a server-side error, when there is one.",
       "title": "Errorcause"
     }
   },
@@ -91,17 +92,23 @@ Fields:
 error_cause: str | None = None
 ```
 
+The cause of a server-side error, when there is one.
+
 #### error\_code
 
 ```
 error_code: str
 ```
 
+The Atlas error code, e.g. `ATLAS-400-00-007`.
+
 #### error\_message
 
 ```
 error_message: str
 ```
+
+The human-readable error message.
 
 #### model\_config
 
@@ -128,15 +135,13 @@ The JSON Atlas writes for this model: Java names, null fields left out, empty on
 
 Bases: `AtlasModel`
 
-The body of `GET /api/atlas/admin/session` (ADM-05, DV-04; CL-10).
-
-The `atlas.*` UI settings ride along as extras; the typed fields are the session's own — no user until 6.1, so `user_name` answers `None`.
+The body of `GET /api/atlas/admin/session`.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The body of ``GET /api/atlas/admin/session`` (ADM-05, DV-04; CL-10).\n\nThe ``atlas.*`` UI settings ride along as extras; the typed fields are the\nsession's own \u2014 no user until 6.1, so ``user_name`` answers ``None``.",
+  "description": "The body of ``GET /api/atlas/admin/session``.",
   "properties": {
     "userName": {
       "anyOf": [
@@ -148,9 +153,11 @@ The `atlas.*` UI settings ride along as extras; the typed fields are the session
         }
       ],
       "default": null,
+      "description": "The signed-in user's name, when known.",
       "title": "Username"
     },
     "groups": {
+      "description": "The groups of the signed-in user.",
       "items": {
         "type": "string"
       },
@@ -158,6 +165,7 @@ The `atlas.*` UI settings ride along as extras; the typed fields are the session
       "type": "array"
     },
     "timezones": {
+      "description": "The timezones the UI offers.",
       "items": {
         "type": "string"
       },
@@ -174,6 +182,7 @@ The `atlas.*` UI settings ride along as extras; the typed fields are the session
         }
       ],
       "default": null,
+      "description": "The CSRF token mutating requests must carry.",
       "title": "Csrftoken"
     }
   },
@@ -195,11 +204,15 @@ Fields:
 csrf_token: str | None = None
 ```
 
+The CSRF token mutating requests must carry.
+
 #### groups
 
 ```
 groups: list[str]
 ```
+
+The groups of the signed-in user.
 
 #### model\_config
 
@@ -220,11 +233,15 @@ model_config = ConfigDict(
 timezones: list[str]
 ```
 
+The timezones the UI offers.
+
 #### user\_name
 
 ```
 user_name: str | None = None
 ```
+
+The signed-in user's name, when known.
 
 #### to\_json
 
@@ -238,15 +255,16 @@ The JSON Atlas writes for this model: Java names, null fields left out, empty on
 
 Bases: `AtlasModel`
 
-The body of `GET /api/atlas/admin/status` (ADM-02; CL-10).
+The body of `GET /api/atlas/admin/status`.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The body of ``GET /api/atlas/admin/status`` (ADM-02; CL-10).",
+  "description": "The body of ``GET /api/atlas/admin/status``.",
   "properties": {
     "Status": {
+      "description": "The service state; the only state is ``ACTIVE``.",
       "title": "Status",
       "type": "string"
     }
@@ -282,7 +300,7 @@ model_config = ConfigDict(
 status: str
 ```
 
-The service state; the only one Aurelius Atlas has is `ACTIVE`.
+The service state; the only state is `ACTIVE`.
 
 #### to\_json
 
@@ -296,29 +314,31 @@ The JSON Atlas writes for this model: Java names, null fields left out, empty on
 
 Bases: `AtlasModel`
 
-The body of `GET /api/atlas/admin/version` (ADM-01, DV-03; CL-10).
-
-The keys are Atlas's, capitalised; the Aurelius server reports its own name and description there (DV-03).
+The body of `GET /api/atlas/admin/version`.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The body of ``GET /api/atlas/admin/version`` (ADM-01, DV-03; CL-10).\n\nThe keys are Atlas's, capitalised; the Aurelius server reports its own name\nand description there (DV-03).",
+  "description": "The body of ``GET /api/atlas/admin/version``.",
   "properties": {
     "Version": {
+      "description": "The software version.",
       "title": "Version",
       "type": "string"
     },
     "Revision": {
+      "description": "The source revision the software was built from.",
       "title": "Revision",
       "type": "string"
     },
     "Name": {
+      "description": "The software name.",
       "title": "Name",
       "type": "string"
     },
     "Description": {
+      "description": "A description of the software.",
       "title": "Description",
       "type": "string"
     }
@@ -356,6 +376,8 @@ Fields:
 description: str
 ```
 
+A description of the software.
+
 #### model\_config
 
 ```
@@ -375,17 +397,23 @@ model_config = ConfigDict(
 name: str
 ```
 
+The software name.
+
 #### revision
 
 ```
 revision: str
 ```
 
+The source revision the software was built from.
+
 #### version
 
 ```
 version: str
 ```
+
+The software version.
 
 #### to\_json
 
@@ -413,13 +441,13 @@ Classes:
 
 - **`EntityHeaderLite`** –
 
-  The fields of an Atlas entity header the lineage body carries (LM-02).
+  The fields of an Atlas entity header the lineage body carries.
 - **`LineageInfo`** –
 
-  The body of Atlas's `v2/lineage/{guid}` answer (LM-04).
+  The body of Atlas's `v2/lineage/{guid}` answer.
 - **`LineageRelation`** –
 
-  One Atlas lineage relation: an edge between two entity guids (LM-02).
+  One Atlas lineage relation: an edge between two entity guids.
 
 ### Direction
 
@@ -433,22 +461,23 @@ The lineage directions Atlas accepts (the legacy's `LineageDirection` enum, LM-0
 
 Bases: `BaseModel`
 
-The fields of an Atlas entity header the lineage body carries (LM-02).
-
-Extra fields are ignored — Atlas's header carries classifications, labels, statuses and more that the lineage rows never use.
+The fields of an Atlas entity header the lineage body carries.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The fields of an Atlas entity header the lineage body carries (LM-02).\n\nExtra fields are ignored \u2014 Atlas's header carries classifications,\nlabels, statuses and more that the lineage rows never use.",
+  "description": "The fields of an Atlas entity header the lineage body carries.",
   "properties": {
     "guid": {
+      "description": "The entity's guid.",
+      "format": "uuid",
       "title": "Guid",
       "type": "string"
     },
     "typeName": {
       "default": "",
+      "description": "The entity's type name.",
       "title": "Typename",
       "type": "string"
     },
@@ -462,6 +491,7 @@ Extra fields are ignored — Atlas's header carries classifications, labels, sta
         }
       ],
       "default": null,
+      "description": "The entity's display text, when it has one.",
       "title": "Displaytext"
     }
   },
@@ -480,7 +510,7 @@ Config:
 
 Fields:
 
-- `guid` (`str`)
+- `guid` (`UUID`)
 - `type_name` (`str`)
 - `display_text` (`str | None`)
 
@@ -490,11 +520,15 @@ Fields:
 display_text: str | None = None
 ```
 
+The entity's display text, when it has one.
+
 #### guid
 
 ```
-guid: str
+guid: UUID
 ```
+
+The entity's guid.
 
 #### model\_config
 
@@ -508,13 +542,13 @@ model_config = ConfigDict(populate_by_name=True, extra='ignore')
 type_name: str = ''
 ```
 
+The entity's type name.
+
 ### LineageInfo
 
 Bases: `BaseModel`
 
-The body of Atlas's `v2/lineage/{guid}` answer (LM-04).
-
-The legacy's `LineageInfo` dataclass, as a pydantic model: the camelCase wire names are the aliases; `baseEntityGuid`, `lineageDepth` and `lineageDirection` exist upstream but the flattening reads none of them.
+The body of Atlas's `v2/lineage/{guid}` answer.
 
 **Show JSON schema:**
 
@@ -522,14 +556,17 @@ The legacy's `LineageInfo` dataclass, as a pydantic model: the camelCase wire na
 {
   "$defs": {
     "EntityHeaderLite": {
-      "description": "The fields of an Atlas entity header the lineage body carries (LM-02).\n\nExtra fields are ignored \u2014 Atlas's header carries classifications,\nlabels, statuses and more that the lineage rows never use.",
+      "description": "The fields of an Atlas entity header the lineage body carries.",
       "properties": {
         "guid": {
+          "description": "The entity's guid.",
+          "format": "uuid",
           "title": "Guid",
           "type": "string"
         },
         "typeName": {
           "default": "",
+          "description": "The entity's type name.",
           "title": "Typename",
           "type": "string"
         },
@@ -543,6 +580,7 @@ The legacy's `LineageInfo` dataclass, as a pydantic model: the camelCase wire na
             }
           ],
           "default": null,
+          "description": "The entity's display text, when it has one.",
           "title": "Displaytext"
         }
       },
@@ -553,17 +591,22 @@ The legacy's `LineageInfo` dataclass, as a pydantic model: the camelCase wire na
       "type": "object"
     },
     "LineageRelation": {
-      "description": "One Atlas lineage relation: an edge between two entity guids (LM-02).",
+      "description": "One Atlas lineage relation: an edge between two entity guids.",
       "properties": {
         "fromEntityId": {
+          "description": "The guid of the source entity.",
+          "format": "uuid",
           "title": "Fromentityid",
           "type": "string"
         },
         "relationshipId": {
+          "description": "The id of the lineage relation.",
           "title": "Relationshipid",
           "type": "string"
         },
         "toEntityId": {
+          "description": "The guid of the target entity.",
+          "format": "uuid",
           "title": "Toentityid",
           "type": "string"
         }
@@ -577,16 +620,21 @@ The legacy's `LineageInfo` dataclass, as a pydantic model: the camelCase wire na
       "type": "object"
     }
   },
-  "description": "The body of Atlas's ``v2/lineage/{guid}`` answer (LM-04).\n\nThe legacy's ``LineageInfo`` dataclass, as a pydantic model: the camelCase\nwire names are the aliases; ``baseEntityGuid``, ``lineageDepth`` and\n``lineageDirection`` exist upstream but the flattening reads none of them.",
+  "description": "The body of Atlas's ``v2/lineage/{guid}`` answer.",
   "properties": {
     "guidEntityMap": {
       "additionalProperties": {
         "$ref": "#/$defs/EntityHeaderLite"
       },
+      "description": "The entity headers of the lineage graph, keyed by guid.",
+      "propertyNames": {
+        "format": "uuid"
+      },
       "title": "Guidentitymap",
       "type": "object"
     },
     "relations": {
+      "description": "The lineage edges of the graph.",
       "items": {
         "$ref": "#/$defs/LineageRelation"
       },
@@ -606,14 +654,16 @@ Config:
 
 Fields:
 
-- `guid_entity_map` (`dict[str, EntityHeaderLite]`)
+- `guid_entity_map` (`dict[UUID, EntityHeaderLite]`)
 - `relations` (`list[LineageRelation]`)
 
 #### guid\_entity\_map
 
 ```
-guid_entity_map: dict[str, EntityHeaderLite]
+guid_entity_map: dict[UUID, EntityHeaderLite]
 ```
+
+The entity headers of the lineage graph, keyed by guid.
 
 #### model\_config
 
@@ -627,27 +677,34 @@ model_config = ConfigDict(populate_by_name=True, extra='ignore')
 relations: list[LineageRelation]
 ```
 
+The lineage edges of the graph.
+
 ### LineageRelation
 
 Bases: `BaseModel`
 
-One Atlas lineage relation: an edge between two entity guids (LM-02).
+One Atlas lineage relation: an edge between two entity guids.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "One Atlas lineage relation: an edge between two entity guids (LM-02).",
+  "description": "One Atlas lineage relation: an edge between two entity guids.",
   "properties": {
     "fromEntityId": {
+      "description": "The guid of the source entity.",
+      "format": "uuid",
       "title": "Fromentityid",
       "type": "string"
     },
     "relationshipId": {
+      "description": "The id of the lineage relation.",
       "title": "Relationshipid",
       "type": "string"
     },
     "toEntityId": {
+      "description": "The guid of the target entity.",
+      "format": "uuid",
       "title": "Toentityid",
       "type": "string"
     }
@@ -669,15 +726,17 @@ Config:
 
 Fields:
 
-- `from_entity_id` (`str`)
+- `from_entity_id` (`UUID`)
 - `relationship_id` (`str`)
-- `to_entity_id` (`str`)
+- `to_entity_id` (`UUID`)
 
 #### from\_entity\_id
 
 ```
-from_entity_id: str
+from_entity_id: UUID
 ```
+
+The guid of the source entity.
 
 #### model\_config
 
@@ -691,11 +750,15 @@ model_config = ConfigDict(populate_by_name=True, extra='ignore')
 relationship_id: str
 ```
 
+The id of the lineage relation.
+
 #### to\_entity\_id
 
 ```
-to_entity_id: str
+to_entity_id: UUID
 ```
+
+The guid of the target entity.
 
 ## aurelius\_atlas\_server\_client.client
 
@@ -924,7 +987,7 @@ types = TypesApi(api)
 #### get\_lineage
 
 ```
-get_lineage(guid: str, depth: int = 3, direction: Direction = 'BOTH') -> LineageInfo
+get_lineage(guid: UUID, depth: int = 3, direction: Direction = 'BOTH') -> LineageInfo
 ```
 
 `GET /v2/lineage/{guid}` (LM-01's upstream, CL-11/CL-12) — the server route lands with 5.1.

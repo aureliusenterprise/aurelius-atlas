@@ -20,7 +20,7 @@
         <link rel="prev" href="../change-management/">
       
       
-        <link rel="next" href="../release-management/">
+        <link rel="next" href="../testing-review/">
       
       
         
@@ -3931,6 +3931,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4720,6 +4728,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -4863,6 +4898,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -5859,6 +5975,8 @@
       
         
       
+        
+      
     
     
     
@@ -6081,6 +6199,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -6948,6 +7093,8 @@
       
         
       
+        
+      
     
     
     
@@ -7062,6 +7209,12 @@ it. The stages, in the order they run:</p>
 </ol>
 <p>Merge requires all affected stages green; the evidence report is what reviewers read. The
 pipeline definition is in the repository's CI configuration.</p>
+<p>Coverage is measured in every <code>-c ci</code> test run and uploaded to the analysis stage:
+SonarQube receives each project's <code>coverage.xml</code> / <code>lcov.info</code>, and its <strong>quality gate is the
+coverage gate</strong> — there is deliberately no second coverage flag in the pipeline.
+The last full review of what the suites prove — coverage baselines and non-happy-flow
+representativeness per project — is the <a href=".././testing-review/">Test Suite Review</a>
+(<a href="../../../conversion/design-log/#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments">DD-125</a>).</p>
 <h2 id="indicators">Indicators<a class="headerlink" href="#indicators" title="Permanent link">&para;</a></h2>
 <p>The gate aims at delivery outcomes, not coverage for its own sake. The indicators follow the
 <a href="https://www.devops-research.com/research.html">DORA metrics</a>, with starting-point targets to be
@@ -7111,6 +7264,7 @@ timing, isolation, shared environment — which is the bug worth fixing.</p>
 <h2 id="pointers">Pointers<a class="headerlink" href="#pointers" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Commands, conventions, flaky triage: <a href="../../../../contributor-guide/testing/">Testing guide</a></li>
+<li>Coverage baselines and the hardening plan: <a href=".././testing-review/">Test Suite Review</a></li>
 <li>Gates and evidence: <a href="../../../adr/014-the-gate-is-defined-once-and-runs-everywhere/">ADR 014</a>,
   <a href="../../../adr/015-a-change-answers-for-what-it-caused/">ADR 015</a>,
   <a href="../../../adr/049-every-function-and-rule-is-traceable-to-a-test/">ADR 049</a></li>

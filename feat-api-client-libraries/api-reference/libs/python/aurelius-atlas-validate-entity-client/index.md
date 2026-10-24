@@ -26,25 +26,25 @@ Classes:
 
 - **`GovQualityItem`** –
 
-  One governance check: a verdict item of a card (VE-02).
+  One governance check: a verdict item of a card.
 - **`GovQualityMeta`** –
 
-  The `_meta` of an item: the engine, score and document id (VE-02).
+  The `_meta` of an item: the engine, score and document id.
 - **`GovQualityValue`** –
 
-  A `{"raw": …}` wrapper — every leaf of the governance document is one (VE-02).
+  A `{"raw": …}` wrapper — every leaf of the governance document is one.
 - **`ValidationCard`** –
 
-  One governance card: the items of one aspect, with the card's verdict (VE-02).
+  One governance card: the items of one aspect, with the card's verdict.
 - **`ValidationResponse`** –
 
-  The `POST /` answer: the four governance cards (VE-02, DV-14; CL-40).
+  The `POST /` answer: the four governance cards.
 
 ### GovQualityItem
 
 Bases: `BaseModel`
 
-One governance check: a verdict item of a card (VE-02).
+One governance check: a verdict item of a card.
 
 **Show JSON schema:**
 
@@ -53,17 +53,20 @@ One governance check: a verdict item of a card (VE-02).
   "$defs": {
     "GovQualityMeta": {
       "additionalProperties": false,
-      "description": "The ``_meta`` of an item: the engine, score and document id (VE-02).",
+      "description": "The ``_meta`` of an item: the engine, score and document id.",
       "properties": {
         "engine": {
+          "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
           "title": "Engine",
           "type": "string"
         },
         "score": {
+          "description": "The item's score.",
           "title": "Score",
           "type": "integer"
         },
         "id": {
+          "description": "The document id, e.g. a ``doc-\u2026`` id.",
           "title": "Id",
           "type": "string"
         }
@@ -78,7 +81,7 @@ One governance check: a verdict item of a card (VE-02).
     },
     "GovQualityValue": {
       "additionalProperties": false,
-      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02).",
+      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
       "properties": {
         "raw": {
           "anyOf": [
@@ -92,6 +95,7 @@ One governance check: a verdict item of a card (VE-02).
               "type": "array"
             }
           ],
+          "description": "The value: a string, or a list of strings (``usedattributes``).",
           "title": "Raw"
         }
       },
@@ -103,28 +107,35 @@ One governance check: a verdict item of a card (VE-02).
     }
   },
   "additionalProperties": false,
-  "description": "One governance check: a verdict item of a card (VE-02).",
+  "description": "One governance check: a verdict item of a card.",
   "properties": {
     "result": {
-      "$ref": "#/$defs/GovQualityValue"
+      "$ref": "#/$defs/GovQualityValue",
+      "description": "The human-readable verdict."
     },
     "dataqualitytype": {
-      "$ref": "#/$defs/GovQualityValue"
+      "$ref": "#/$defs/GovQualityValue",
+      "description": "The kind of check; ``attribute`` checks carry the legacy's lower-case name."
     },
     "usedattributes": {
-      "$ref": "#/$defs/GovQualityValue"
+      "$ref": "#/$defs/GovQualityValue",
+      "description": "The entity attributes the check reads."
     },
     "name": {
-      "$ref": "#/$defs/GovQualityValue"
+      "$ref": "#/$defs/GovQualityValue",
+      "description": "The check's name, e.g. ``Attribute - <key>``."
     },
     "compliant": {
-      "$ref": "#/$defs/GovQualityValue"
+      "$ref": "#/$defs/GovQualityValue",
+      "description": "The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."
     },
     "_meta": {
-      "$ref": "#/$defs/GovQualityMeta"
+      "$ref": "#/$defs/GovQualityMeta",
+      "description": "The producing engine's record."
     },
     "id": {
-      "$ref": "#/$defs/GovQualityValue"
+      "$ref": "#/$defs/GovQualityValue",
+      "description": "The item's document id, wrapped like every leaf."
     }
   },
   "required": [
@@ -162,7 +173,7 @@ Fields:
 compliant: GovQualityValue
 ```
 
-The verdict flag, a string `'0'`/`'1'` — as the legacy emits it (VE-02).
+The verdict flag, a string `'0'`/`'1'` — as the legacy emits it.
 
 #### dataqualitytype
 
@@ -170,7 +181,7 @@ The verdict flag, a string `'0'`/`'1'` — as the legacy emits it (VE-02).
 dataqualitytype: GovQualityValue
 ```
 
-The kind of check; the mock's items are `attribute` checks (the legacy's lower-case name).
+The kind of check; `attribute` checks carry the legacy's lower-case name.
 
 #### id
 
@@ -200,7 +211,7 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 name: GovQualityValue
 ```
 
-The check's name; the mock's items name `Attribute - <key>`.
+The check's name, e.g. `Attribute - <key>`.
 
 #### result
 
@@ -222,24 +233,27 @@ The entity attributes the check reads.
 
 Bases: `BaseModel`
 
-The `_meta` of an item: the engine, score and document id (VE-02).
+The `_meta` of an item: the engine, score and document id.
 
 **Show JSON schema:**
 
 ```
 {
   "additionalProperties": false,
-  "description": "The ``_meta`` of an item: the engine, score and document id (VE-02).",
+  "description": "The ``_meta`` of an item: the engine, score and document id.",
   "properties": {
     "engine": {
+      "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
       "title": "Engine",
       "type": "string"
     },
     "score": {
+      "description": "The item's score.",
       "title": "Score",
       "type": "integer"
     },
     "id": {
+      "description": "The document id, e.g. a ``doc-\u2026`` id.",
       "title": "Id",
       "type": "string"
     }
@@ -271,7 +285,7 @@ Fields:
 engine: str
 ```
 
-The engine that produced the item; the mock names `atlas-dev-gov-quality` (DV-14).
+The engine that produced the item, e.g. `atlas-dev-gov-quality`.
 
 #### id
 
@@ -279,7 +293,7 @@ The engine that produced the item; the mock names `atlas-dev-gov-quality` (DV-14
 id: str
 ```
 
-The document id; the mock's `doc-…` ids are the browser contract.
+The document id, e.g. a `doc-…` id.
 
 #### model\_config
 
@@ -299,14 +313,14 @@ The item's score.
 
 Bases: `BaseModel`
 
-A `{"raw": …}` wrapper — every leaf of the governance document is one (VE-02).
+A `{"raw": …}` wrapper — every leaf of the governance document is one.
 
 **Show JSON schema:**
 
 ```
 {
   "additionalProperties": false,
-  "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02).",
+  "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
   "properties": {
     "raw": {
       "anyOf": [
@@ -320,6 +334,7 @@ A `{"raw": …}` wrapper — every leaf of the governance document is one (VE-02
           "type": "array"
         }
       ],
+      "description": "The value: a string, or a list of strings (``usedattributes``).",
       "title": "Raw"
     }
   },
@@ -358,7 +373,7 @@ The value: a string, or a list of strings (`usedattributes`).
 
 Bases: `BaseModel`
 
-One governance card: the items of one aspect, with the card's verdict (VE-02).
+One governance card: the items of one aspect, with the card's verdict.
 
 **Show JSON schema:**
 
@@ -367,28 +382,35 @@ One governance card: the items of one aspect, with the card's verdict (VE-02).
   "$defs": {
     "GovQualityItem": {
       "additionalProperties": false,
-      "description": "One governance check: a verdict item of a card (VE-02).",
+      "description": "One governance check: a verdict item of a card.",
       "properties": {
         "result": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The human-readable verdict."
         },
         "dataqualitytype": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The kind of check; ``attribute`` checks carry the legacy's lower-case name."
         },
         "usedattributes": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The entity attributes the check reads."
         },
         "name": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The check's name, e.g. ``Attribute - <key>``."
         },
         "compliant": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."
         },
         "_meta": {
-          "$ref": "#/$defs/GovQualityMeta"
+          "$ref": "#/$defs/GovQualityMeta",
+          "description": "The producing engine's record."
         },
         "id": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The item's document id, wrapped like every leaf."
         }
       },
       "required": [
@@ -405,17 +427,20 @@ One governance card: the items of one aspect, with the card's verdict (VE-02).
     },
     "GovQualityMeta": {
       "additionalProperties": false,
-      "description": "The ``_meta`` of an item: the engine, score and document id (VE-02).",
+      "description": "The ``_meta`` of an item: the engine, score and document id.",
       "properties": {
         "engine": {
+          "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
           "title": "Engine",
           "type": "string"
         },
         "score": {
+          "description": "The item's score.",
           "title": "Score",
           "type": "integer"
         },
         "id": {
+          "description": "The document id, e.g. a ``doc-\u2026`` id.",
           "title": "Id",
           "type": "string"
         }
@@ -430,7 +455,7 @@ One governance card: the items of one aspect, with the card's verdict (VE-02).
     },
     "GovQualityValue": {
       "additionalProperties": false,
-      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02).",
+      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
       "properties": {
         "raw": {
           "anyOf": [
@@ -444,6 +469,7 @@ One governance card: the items of one aspect, with the card's verdict (VE-02).
               "type": "array"
             }
           ],
+          "description": "The value: a string, or a list of strings (``usedattributes``).",
           "title": "Raw"
         }
       },
@@ -455,9 +481,10 @@ One governance card: the items of one aspect, with the card's verdict (VE-02).
     }
   },
   "additionalProperties": false,
-  "description": "One governance card: the items of one aspect, with the card's verdict (VE-02).",
+  "description": "One governance card: the items of one aspect, with the card's verdict.",
   "properties": {
     "items": {
+      "description": "The checks of this card.",
       "items": {
         "$ref": "#/$defs/GovQualityItem"
       },
@@ -465,6 +492,7 @@ One governance card: the items of one aspect, with the card's verdict (VE-02).
       "type": "array"
     },
     "isNonCompliant": {
+      "description": "Whether any item fails; the editor's badge.",
       "title": "Isnoncompliant",
       "type": "boolean"
     }
@@ -513,9 +541,7 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 
 Bases: `BaseModel`
 
-The `POST /` answer: the four governance cards (VE-02, DV-14; CL-40).
-
-The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` — the aspects the editor's governance panel renders.
+The `POST /` answer: the four governance cards.
 
 **Show JSON schema:**
 
@@ -524,28 +550,35 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
   "$defs": {
     "GovQualityItem": {
       "additionalProperties": false,
-      "description": "One governance check: a verdict item of a card (VE-02).",
+      "description": "One governance check: a verdict item of a card.",
       "properties": {
         "result": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The human-readable verdict."
         },
         "dataqualitytype": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The kind of check; ``attribute`` checks carry the legacy's lower-case name."
         },
         "usedattributes": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The entity attributes the check reads."
         },
         "name": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The check's name, e.g. ``Attribute - <key>``."
         },
         "compliant": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."
         },
         "_meta": {
-          "$ref": "#/$defs/GovQualityMeta"
+          "$ref": "#/$defs/GovQualityMeta",
+          "description": "The producing engine's record."
         },
         "id": {
-          "$ref": "#/$defs/GovQualityValue"
+          "$ref": "#/$defs/GovQualityValue",
+          "description": "The item's document id, wrapped like every leaf."
         }
       },
       "required": [
@@ -562,17 +595,20 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
     },
     "GovQualityMeta": {
       "additionalProperties": false,
-      "description": "The ``_meta`` of an item: the engine, score and document id (VE-02).",
+      "description": "The ``_meta`` of an item: the engine, score and document id.",
       "properties": {
         "engine": {
+          "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
           "title": "Engine",
           "type": "string"
         },
         "score": {
+          "description": "The item's score.",
           "title": "Score",
           "type": "integer"
         },
         "id": {
+          "description": "The document id, e.g. a ``doc-\u2026`` id.",
           "title": "Id",
           "type": "string"
         }
@@ -587,7 +623,7 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
     },
     "GovQualityValue": {
       "additionalProperties": false,
-      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02).",
+      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
       "properties": {
         "raw": {
           "anyOf": [
@@ -601,6 +637,7 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
               "type": "array"
             }
           ],
+          "description": "The value: a string, or a list of strings (``usedattributes``).",
           "title": "Raw"
         }
       },
@@ -612,9 +649,10 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
     },
     "ValidationCard": {
       "additionalProperties": false,
-      "description": "One governance card: the items of one aspect, with the card's verdict (VE-02).",
+      "description": "One governance card: the items of one aspect, with the card's verdict.",
       "properties": {
         "items": {
+          "description": "The checks of this card.",
           "items": {
             "$ref": "#/$defs/GovQualityItem"
           },
@@ -622,6 +660,7 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
           "type": "array"
         },
         "isNonCompliant": {
+          "description": "Whether any item fails; the editor's badge.",
           "title": "Isnoncompliant",
           "type": "boolean"
         }
@@ -634,19 +673,23 @@ The keys are the legacy's — `dataEntity`, `definition`, `domainLead`, `name` �
     }
   },
   "additionalProperties": false,
-  "description": "The ``POST /`` answer: the four governance cards (VE-02, DV-14; CL-40).\n\nThe keys are the legacy's \u2014 ``dataEntity``, ``definition``, ``domainLead``,\n``name`` \u2014 the aspects the editor's governance panel renders.",
+  "description": "The ``POST /`` answer: the four governance cards.",
   "properties": {
     "dataEntity": {
-      "$ref": "#/$defs/ValidationCard"
+      "$ref": "#/$defs/ValidationCard",
+      "description": "The card for the data entity aspect."
     },
     "definition": {
-      "$ref": "#/$defs/ValidationCard"
+      "$ref": "#/$defs/ValidationCard",
+      "description": "The card for the definition aspect."
     },
     "domainLead": {
-      "$ref": "#/$defs/ValidationCard"
+      "$ref": "#/$defs/ValidationCard",
+      "description": "The card for the domain lead aspect."
     },
     "name": {
-      "$ref": "#/$defs/ValidationCard"
+      "$ref": "#/$defs/ValidationCard",
+      "description": "The card for the name aspect."
     }
   },
   "required": [
@@ -679,17 +722,23 @@ Fields:
 data_entity: ValidationCard
 ```
 
+The card for the data entity aspect.
+
 #### definition
 
 ```
 definition: ValidationCard
 ```
 
+The card for the definition aspect.
+
 #### domain\_lead
 
 ```
 domain_lead: ValidationCard
 ```
+
+The card for the domain lead aspect.
 
 #### model\_config
 
@@ -702,6 +751,8 @@ model_config = ConfigDict(populate_by_name=True, extra='forbid', frozen=True)
 ```
 name: ValidationCard
 ```
+
+The card for the name aspect.
 
 ## aurelius\_atlas\_validate\_entity\_client.client
 

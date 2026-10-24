@@ -5036,6 +5036,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5825,6 +5833,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../architecture/conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5968,6 +6003,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -6948,6 +7064,8 @@
       
         
       
+        
+      
     
     
     
@@ -7070,6 +7188,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -8989,7 +9134,7 @@
 <p><a href="https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-server-client"><img alt="SonarQube Cloud" src="https://sonarcloud.io/images/project_badges/sonarcloud-light.svg" /></a></p>
 <p>The contract and the async client of the Atlas REST API (8.4, DD-114, DD-115):
 the admin, types and lineage models every consumer of <code>aurelius-atlas-server</code>
-speaks, and the <code>httpx</code>-based <code>AtlasClient</code> that calls it. The lineage-model app
+speaks, and the <code>httpx2</code>-based <code>AtlasClient</code> that calls it. The lineage-model app
 imports the lineage wire models from here — one source of truth for both sides
 of the wire.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
@@ -9041,7 +9186,7 @@ answers, and the <code>{errorCode, errorMessage}</code> body of every Atlas erro
    (aurelius_atlas_server_client.models.AtlasErrorInfo)" href="./#aurelius_atlas_server_client.models.AtlasErrorInfo">AtlasErrorInfo</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The body every Atlas error is answered with (SRV-04; CL-10).</p>
+            <p>The body every Atlas error is answered with.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9053,7 +9198,7 @@ answers, and the <code>{errorCode, errorMessage}</code> body of every Atlas erro
    (aurelius_atlas_server_client.models.AtlasSessionInfo)" href="./#aurelius_atlas_server_client.models.AtlasSessionInfo">AtlasSessionInfo</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The body of <code>GET /api/atlas/admin/session</code> (ADM-05, DV-04; CL-10).</p>
+            <p>The body of <code>GET /api/atlas/admin/session</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9065,7 +9210,7 @@ answers, and the <code>{errorCode, errorMessage}</code> body of every Atlas erro
    (aurelius_atlas_server_client.models.AtlasStatus)" href="./#aurelius_atlas_server_client.models.AtlasStatus">AtlasStatus</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The body of <code>GET /api/atlas/admin/status</code> (ADM-02; CL-10).</p>
+            <p>The body of <code>GET /api/atlas/admin/status</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9077,7 +9222,7 @@ answers, and the <code>{errorCode, errorMessage}</code> body of every Atlas erro
    (aurelius_atlas_server_client.models.AtlasVersion)" href="./#aurelius_atlas_server_client.models.AtlasVersion">AtlasVersion</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The body of <code>GET /api/atlas/admin/version</code> (ADM-01, DV-03; CL-10).</p>
+            <p>The body of <code>GET /api/atlas/admin/version</code>.</p>
           </div>
         </li>
     </ul>
@@ -9122,19 +9267,19 @@ answers, and the <code>{errorCode, errorMessage}</code> body of every Atlas erro
       pydantic-model
    (aurelius_atlas_model.typedef.AtlasModel)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasModel">AtlasModel</a></code></p>
 
-        <p>The body every Atlas error is answered with (SRV-04; CL-10).</p>
-<p><code>{errorCode, errorMessage}</code>, plus <code>errorCause</code> on the server-side codes.
-The 8.x auxiliary apps reuse the shape with the <code>ATLAS-400-00-029</code> code.</p>
+        <p>The body every Atlas error is answered with.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body every Atlas error is answered with (SRV-04; CL-10).\n\n``{errorCode, errorMessage}``, plus ``errorCause`` on the server-side codes.\nThe 8.x auxiliary apps reuse the shape with the ``ATLAS-400-00-029`` code."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body every Atlas error is answered with."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"errorCode"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The Atlas error code, e.g. ``ATLAS-400-00-007``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Errorcode"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"errorMessage"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The human-readable error message."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Errormessage"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
@@ -9148,6 +9293,7 @@ The 8.x auxiliary apps reuse the shape with the <code>ATLAS-400-00-029</code> co
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The cause of a server-side error, when there is one."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Errorcause"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
@@ -9222,6 +9368,8 @@ The 8.x auxiliary apps reuse the shape with the <code>ATLAS-400-00-029</code> co
 
     <div class="doc doc-contents ">
 
+        <p>The cause of a server-side error, when there is one.</p>
+
     </div>
 
 </div>
@@ -9244,6 +9392,8 @@ The 8.x auxiliary apps reuse the shape with the <code>ATLAS-400-00-029</code> co
 
     <div class="doc doc-contents ">
 
+        <p>The Atlas error code, e.g. <code>ATLAS-400-00-007</code>.</p>
+
     </div>
 
 </div>
@@ -9265,6 +9415,8 @@ The 8.x auxiliary apps reuse the shape with the <code>ATLAS-400-00-029</code> co
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The human-readable error message.</p>
 
     </div>
 
@@ -9355,13 +9507,11 @@ The 8.x auxiliary apps reuse the shape with the <code>ATLAS-400-00-029</code> co
       pydantic-model
    (aurelius_atlas_model.typedef.AtlasModel)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasModel">AtlasModel</a></code></p>
 
-        <p>The body of <code>GET /api/atlas/admin/session</code> (ADM-05, DV-04; CL-10).</p>
-<p>The <code>atlas.*</code> UI settings ride along as extras; the typed fields are the
-session's own — no user until 6.1, so <code>user_name</code> answers <code>None</code>.</p>
+        <p>The body of <code>GET /api/atlas/admin/session</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of ``GET /api/atlas/admin/session`` (ADM-05, DV-04; CL-10).\n\nThe ``atlas.*`` UI settings ride along as extras; the typed fields are the\nsession's own \u2014 no user until 6.1, so ``user_name`` answers ``None``."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of ``GET /api/atlas/admin/session``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"userName"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -9373,9 +9523,11 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The signed-in user's name, when known."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Username"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"groups"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The groups of the signed-in user."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -9383,6 +9535,7 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"timezones"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The timezones the UI offers."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -9399,6 +9552,7 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The CSRF token mutating requests must carry."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Csrftoken"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
@@ -9478,6 +9632,8 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 
     <div class="doc doc-contents ">
 
+        <p>The CSRF token mutating requests must carry.</p>
+
     </div>
 
 </div>
@@ -9499,6 +9655,8 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The groups of the signed-in user.</p>
 
     </div>
 
@@ -9552,6 +9710,8 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 
     <div class="doc doc-contents ">
 
+        <p>The timezones the UI offers.</p>
+
     </div>
 
 </div>
@@ -9573,6 +9733,8 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The signed-in user's name, when known.</p>
 
     </div>
 
@@ -9633,13 +9795,14 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
       pydantic-model
    (aurelius_atlas_model.typedef.AtlasModel)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasModel">AtlasModel</a></code></p>
 
-        <p>The body of <code>GET /api/atlas/admin/status</code> (ADM-02; CL-10).</p>
+        <p>The body of <code>GET /api/atlas/admin/status</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of ``GET /api/atlas/admin/status`` (ADM-02; CL-10)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of ``GET /api/atlas/admin/status``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"Status"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The service state; the only state is ``ACTIVE``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Status"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -9726,7 +9889,7 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
 
     <div class="doc doc-contents ">
 
-        <p>The service state; the only one Aurelius Atlas has is <code>ACTIVE</code>.</p>
+        <p>The service state; the only state is <code>ACTIVE</code>.</p>
 
     </div>
 
@@ -9787,27 +9950,29 @@ session's own — no user until 6.1, so <code>user_name</code> answers <code>Non
       pydantic-model
    (aurelius_atlas_model.typedef.AtlasModel)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasModel">AtlasModel</a></code></p>
 
-        <p>The body of <code>GET /api/atlas/admin/version</code> (ADM-01, DV-03; CL-10).</p>
-<p>The keys are Atlas's, capitalised; the Aurelius server reports its own name
-and description there (DV-03).</p>
+        <p>The body of <code>GET /api/atlas/admin/version</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of ``GET /api/atlas/admin/version`` (ADM-01, DV-03; CL-10).\n\nThe keys are Atlas's, capitalised; the Aurelius server reports its own name\nand description there (DV-03)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of ``GET /api/atlas/admin/version``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"Version"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The software version."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Version"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"Revision"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source revision the software was built from."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Revision"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"Name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The software name."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Name"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"Description"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A description of the software."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Description"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -9903,6 +10068,8 @@ and description there (DV-03).</p>
 
     <div class="doc doc-contents ">
 
+        <p>A description of the software.</p>
+
     </div>
 
 </div>
@@ -9955,6 +10122,8 @@ and description there (DV-03).</p>
 
     <div class="doc doc-contents ">
 
+        <p>The software name.</p>
+
     </div>
 
 </div>
@@ -9977,6 +10146,8 @@ and description there (DV-03).</p>
 
     <div class="doc doc-contents ">
 
+        <p>The source revision the software was built from.</p>
+
     </div>
 
 </div>
@@ -9998,6 +10169,8 @@ and description there (DV-03).</p>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The software version.</p>
 
     </div>
 
@@ -10095,7 +10268,7 @@ side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
    (aurelius_atlas_server_client.lineage.EntityHeaderLite)" href="./#aurelius_atlas_server_client.lineage.EntityHeaderLite">EntityHeaderLite</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The fields of an Atlas entity header the lineage body carries (LM-02).</p>
+            <p>The fields of an Atlas entity header the lineage body carries.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -10107,7 +10280,7 @@ side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
    (aurelius_atlas_server_client.lineage.LineageInfo)" href="./#aurelius_atlas_server_client.lineage.LineageInfo">LineageInfo</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The body of Atlas's <code>v2/lineage/{guid}</code> answer (LM-04).</p>
+            <p>The body of Atlas's <code>v2/lineage/{guid}</code> answer.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -10119,7 +10292,7 @@ side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
    (aurelius_atlas_server_client.lineage.LineageRelation)" href="./#aurelius_atlas_server_client.lineage.LineageRelation">LineageRelation</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One Atlas lineage relation: an edge between two entity guids (LM-02).</p>
+            <p>One Atlas lineage relation: an edge between two entity guids.</p>
           </div>
         </li>
     </ul>
@@ -10178,20 +10351,21 @@ side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>The fields of an Atlas entity header the lineage body carries (LM-02).</p>
-<p>Extra fields are ignored — Atlas's header carries classifications,
-labels, statuses and more that the lineage rows never use.</p>
+        <p>The fields of an Atlas entity header the lineage body carries.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The fields of an Atlas entity header the lineage body carries (LM-02).\n\nExtra fields are ignored \u2014 Atlas's header carries classifications,\nlabels, statuses and more that the lineage rows never use."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The fields of an Atlas entity header the lineage body carries."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"guid"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity's guid."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Guid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"typeName"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity's type name."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Typename"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
@@ -10205,6 +10379,7 @@ labels, statuses and more that the lineage rows never use.</p>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity's display text, when it has one."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Displaytext"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
@@ -10232,7 +10407,7 @@ labels, statuses and more that the lineage rows never use.</p>
   
       pydantic-field
    (aurelius_atlas_server_client.lineage.EntityHeaderLite.guid)" href="./#aurelius_atlas_server_client.lineage.EntityHeaderLite.guid">guid</a></code>
-                (<code><span title="str">str</span></code>)
+                (<code><span title="uuid.UUID">UUID</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            type_name
@@ -10283,6 +10458,8 @@ labels, statuses and more that the lineage rows never use.</p>
 
     <div class="doc doc-contents ">
 
+        <p>The entity's display text, when it has one.</p>
+
     </div>
 
 </div>
@@ -10300,10 +10477,12 @@ labels, statuses and more that the lineage rows never use.</p>
   </span>
 
 <a href="#aurelius_atlas_server_client.lineage.EntityHeaderLite.guid" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">guid</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">guid</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The entity's guid.</p>
 
     </div>
 
@@ -10350,6 +10529,8 @@ labels, statuses and more that the lineage rows never use.</p>
 
     <div class="doc doc-contents ">
 
+        <p>The entity's type name.</p>
+
     </div>
 
 </div>
@@ -10384,23 +10565,23 @@ labels, statuses and more that the lineage rows never use.</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>The body of Atlas's <code>v2/lineage/{guid}</code> answer (LM-04).</p>
-<p>The legacy's <code>LineageInfo</code> dataclass, as a pydantic model: the camelCase
-wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</code> and
-<code>lineageDirection</code> exist upstream but the flattening reads none of them.</p>
+        <p>The body of Atlas's <code>v2/lineage/{guid}</code> answer.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"EntityHeaderLite"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The fields of an Atlas entity header the lineage body carries (LM-02).\n\nExtra fields are ignored \u2014 Atlas's header carries classifications,\nlabels, statuses and more that the lineage rows never use."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The fields of an Atlas entity header the lineage body carries."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"guid"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity's guid."</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Guid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"typeName"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity's type name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Typename"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
@@ -10414,6 +10595,7 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
 <span class="w">            </span><span class="p">}</span>
 <span class="w">          </span><span class="p">],</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity's display text, when it has one."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Displaytext"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
@@ -10424,17 +10606,22 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"LineageRelation"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One Atlas lineage relation: an edge between two entity guids (LM-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One Atlas lineage relation: an edge between two entity guids."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"fromEntityId"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The guid of the source entity."</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Fromentityid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationshipId"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the lineage relation."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationshipid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"toEntityId"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The guid of the target entity."</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Toentityid"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -10448,16 +10635,21 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of Atlas's ``v2/lineage/{guid}`` answer (LM-04).\n\nThe legacy's ``LineageInfo`` dataclass, as a pydantic model: the camelCase\nwire names are the aliases; ``baseEntityGuid``, ``lineageDepth`` and\n``lineageDirection`` exist upstream but the flattening reads none of them."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The body of Atlas's ``v2/lineage/{guid}`` answer."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"guidEntityMap"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/EntityHeaderLite"</span>
 <span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity headers of the lineage graph, keyed by guid."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"propertyNames"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span>
+<span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Guidentitymap"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"relations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The lineage edges of the graph."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/LineageRelation"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -10486,7 +10678,7 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
   
       pydantic-field
    (aurelius_atlas_server_client.lineage.LineageInfo.guid_entity_map)" href="./#aurelius_atlas_server_client.lineage.LineageInfo.guid_entity_map">guid_entity_map</a></code>
-                (<code><span title="dict">dict</span>[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="            EntityHeaderLite
+                (<code><span title="dict">dict</span>[<span title="uuid.UUID">UUID</span>, <a class="autorefs autorefs-internal" title="            EntityHeaderLite
 
 
   
@@ -10533,7 +10725,7 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
   </span>
 
 <a href="#aurelius_atlas_server_client.lineage.LineageInfo.guid_entity_map" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">guid_entity_map</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            EntityHeaderLite
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">guid_entity_map</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="uuid.UUID">UUID</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            EntityHeaderLite
 
 
   
@@ -10542,6 +10734,8 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The entity headers of the lineage graph, keyed by guid.</p>
 
     </div>
 
@@ -10593,6 +10787,8 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
 
     <div class="doc doc-contents ">
 
+        <p>The lineage edges of the graph.</p>
+
     </div>
 
 </div>
@@ -10627,21 +10823,26 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>One Atlas lineage relation: an edge between two entity guids (LM-02).</p>
+        <p>One Atlas lineage relation: an edge between two entity guids.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One Atlas lineage relation: an edge between two entity guids (LM-02)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One Atlas lineage relation: an edge between two entity guids."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"fromEntityId"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The guid of the source entity."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Fromentityid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"relationshipId"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the lineage relation."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationshipid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"toEntityId"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The guid of the target entity."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Toentityid"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -10672,7 +10873,7 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
   
       pydantic-field
    (aurelius_atlas_server_client.lineage.LineageRelation.from_entity_id)" href="./#aurelius_atlas_server_client.lineage.LineageRelation.from_entity_id">from_entity_id</a></code>
-                (<code><span title="str">str</span></code>)
+                (<code><span title="uuid.UUID">UUID</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            relationship_id
@@ -10690,7 +10891,7 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
   
       pydantic-field
    (aurelius_atlas_server_client.lineage.LineageRelation.to_entity_id)" href="./#aurelius_atlas_server_client.lineage.LineageRelation.to_entity_id">to_entity_id</a></code>
-                (<code><span title="str">str</span></code>)
+                (<code><span title="uuid.UUID">UUID</span></code>)
             </li>
         </ul>
 
@@ -10718,10 +10919,12 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
   </span>
 
 <a href="#aurelius_atlas_server_client.lineage.LineageRelation.from_entity_id" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">from_entity_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">from_entity_id</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The guid of the source entity.</p>
 
     </div>
 
@@ -10768,6 +10971,8 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
 
     <div class="doc doc-contents ">
 
+        <p>The id of the lineage relation.</p>
+
     </div>
 
 </div>
@@ -10785,10 +10990,12 @@ wire names are the aliases; <code>baseEntityGuid</code>, <code>lineageDepth</cod
   </span>
 
 <a href="#aurelius_atlas_server_client.lineage.LineageRelation.to_entity_id" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">to_entity_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">to_entity_id</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The guid of the target entity.</p>
 
     </div>
 
@@ -11460,7 +11667,7 @@ the caller's own token, so the client sends the browser's credential upstream.</
 
 
 <a href="#aurelius_atlas_server_client.client.AtlasClient" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">AtlasClient</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="http (aurelius_atlas_server_client.client.AtlasClient(http))" href="./#aurelius_atlas_server_client.client.AtlasClient(http)">http</a></span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="token (aurelius_atlas_server_client.client.AtlasClient(token))" href="./#aurelius_atlas_server_client.client.AtlasClient(token)">token</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TokenSource (aurelius_atlas_server_client.client.TokenSource)" href="./#aurelius_atlas_server_client.client.TokenSource">TokenSource</a></span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">AtlasClient</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="http (aurelius_atlas_server_client.client.AtlasClient(http))" href="./#aurelius_atlas_server_client.client.AtlasClient(http)">http</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="token (aurelius_atlas_server_client.client.AtlasClient(token))" href="./#aurelius_atlas_server_client.client.AtlasClient(token)">token</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TokenSource (aurelius_atlas_server_client.client.TokenSource)" href="./#aurelius_atlas_server_client.client.TokenSource">TokenSource</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -11474,7 +11681,7 @@ the caller's own token, so the client sends the browser's credential upstream.</
     <ul>
         <li class="doc-section-item field-body">
 <h4 id="aurelius_atlas_server_client.client.AtlasClient(http)" class="doc doc-heading doc-heading-parameter">              <b><code>http</code></b>
-<a href="#aurelius_atlas_server_client.client.AtlasClient(http)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="httpx.AsyncClient">AsyncClient</span></code>)
+<a href="#aurelius_atlas_server_client.client.AtlasClient(http)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="httpx2.AsyncClient">AsyncClient</span></code>)
           –
           <div class="doc-md-description">
             <p>The <code>httpx.AsyncClient</code> to speak through, built by the caller —
@@ -11627,7 +11834,7 @@ Its base URL carries the server root; the paths here are relative to it.</p>
   </span>
 
 <a href="#aurelius_atlas_server_client.client.AtlasClient.get_lineage" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_lineage</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server_client.client.AtlasClient.get_lineage(guid)">guid</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server_client.client.AtlasClient.get_lineage(depth)">depth</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server_client.client.AtlasClient.get_lineage(direction)">direction</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Direction (aurelius_atlas_server_client.lineage.Direction)" href="./#aurelius_atlas_server_client.lineage.Direction">Direction</a></span> <span class="o">=</span> <span class="s1">'BOTH'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            LineageInfo
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_lineage</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server_client.client.AtlasClient.get_lineage(guid)">guid</span></span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server_client.client.AtlasClient.get_lineage(depth)">depth</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server_client.client.AtlasClient.get_lineage(direction)">direction</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Direction (aurelius_atlas_server_client.lineage.Direction)" href="./#aurelius_atlas_server_client.lineage.Direction">Direction</a></span> <span class="o">=</span> <span class="s1">'BOTH'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            LineageInfo
 
 
   

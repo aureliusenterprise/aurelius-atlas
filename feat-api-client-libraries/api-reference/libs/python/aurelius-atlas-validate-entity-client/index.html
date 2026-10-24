@@ -4522,6 +4522,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5311,6 +5319,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../architecture/conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5454,6 +5489,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -6434,6 +6550,8 @@
       
         
       
+        
+      
     
     
     
@@ -6556,6 +6674,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -8015,7 +8160,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
    (aurelius_atlas_validate_entity_client.models.GovQualityItem)" href="./#aurelius_atlas_validate_entity_client.models.GovQualityItem">GovQualityItem</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One governance check: a verdict item of a card (VE-02).</p>
+            <p>One governance check: a verdict item of a card.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -8027,7 +8172,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
    (aurelius_atlas_validate_entity_client.models.GovQualityMeta)" href="./#aurelius_atlas_validate_entity_client.models.GovQualityMeta">GovQualityMeta</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The <code>_meta</code> of an item: the engine, score and document id (VE-02).</p>
+            <p>The <code>_meta</code> of an item: the engine, score and document id.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -8039,7 +8184,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
    (aurelius_atlas_validate_entity_client.models.GovQualityValue)" href="./#aurelius_atlas_validate_entity_client.models.GovQualityValue">GovQualityValue</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A <code>{"raw": …}</code> wrapper — every leaf of the governance document is one (VE-02).</p>
+            <p>A <code>{"raw": …}</code> wrapper — every leaf of the governance document is one.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -8051,7 +8196,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
    (aurelius_atlas_validate_entity_client.models.ValidationCard)" href="./#aurelius_atlas_validate_entity_client.models.ValidationCard">ValidationCard</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One governance card: the items of one aspect, with the card's verdict (VE-02).</p>
+            <p>One governance card: the items of one aspect, with the card's verdict.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -8063,7 +8208,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
    (aurelius_atlas_validate_entity_client.models.ValidationResponse)" href="./#aurelius_atlas_validate_entity_client.models.ValidationResponse">ValidationResponse</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The <code>POST /</code> answer: the four governance cards (VE-02, DV-14; CL-40).</p>
+            <p>The <code>POST /</code> answer: the four governance cards.</p>
           </div>
         </li>
     </ul>
@@ -8103,24 +8248,27 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>One governance check: a verdict item of a card (VE-02).</p>
+        <p>One governance check: a verdict item of a card.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"GovQualityMeta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The engine that produced the item, e.g. ``atlas-dev-gov-quality``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Engine"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's score."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Score"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The document id, e.g. a ``doc-\u2026`` id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -8135,7 +8283,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"GovQualityValue"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"raw"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -8149,6 +8297,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">              </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">          </span><span class="p">],</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The value: a string, or a list of strings (``usedattributes``)."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Raw"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
@@ -8160,28 +8309,35 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance check: a verdict item of a card (VE-02)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance check: a verdict item of a card."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The human-readable verdict."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"dataqualitytype"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The kind of check; ``attribute`` checks carry the legacy's lower-case name."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"usedattributes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity attributes the check reads."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The check's name, e.g. ``Attribute - &lt;key&gt;``."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"compliant"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"_meta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityMeta"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityMeta"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The producing engine's record."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's document id, wrapped like every leaf."</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -8341,7 +8497,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
-        <p>The verdict flag, a string <code>'0'</code>/<code>'1'</code> — as the legacy emits it (VE-02).</p>
+        <p>The verdict flag, a string <code>'0'</code>/<code>'1'</code> — as the legacy emits it.</p>
 
     </div>
 
@@ -8370,7 +8526,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
-        <p>The kind of check; the mock's items are <code>attribute</code> checks (the legacy's lower-case name).</p>
+        <p>The kind of check; <code>attribute</code> checks carry the legacy's lower-case name.</p>
 
     </div>
 
@@ -8480,7 +8636,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
-        <p>The check's name; the mock's items name <code>Attribute - &lt;key&gt;</code>.</p>
+        <p>The check's name, e.g. <code>Attribute - &lt;key&gt;</code>.</p>
 
     </div>
 
@@ -8574,22 +8730,25 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>The <code>_meta</code> of an item: the engine, score and document id (VE-02).</p>
+        <p>The <code>_meta</code> of an item: the engine, score and document id.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id (VE-02)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The engine that produced the item, e.g. ``atlas-dev-gov-quality``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Engine"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's score."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Score"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The document id, e.g. a ``doc-\u2026`` id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -8671,7 +8830,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
-        <p>The engine that produced the item; the mock names <code>atlas-dev-gov-quality</code> (DV-14).</p>
+        <p>The engine that produced the item, e.g. <code>atlas-dev-gov-quality</code>.</p>
 
     </div>
 
@@ -8695,7 +8854,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
-        <p>The document id; the mock's <code>doc-…</code> ids are the browser contract.</p>
+        <p>The document id, e.g. a <code>doc-…</code> id.</p>
 
     </div>
 
@@ -8778,12 +8937,12 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>A <code>{"raw": …}</code> wrapper — every leaf of the governance document is one (VE-02).</p>
+        <p>A <code>{"raw": …}</code> wrapper — every leaf of the governance document is one.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"raw"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -8797,6 +8956,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The value: a string, or a list of strings (``usedattributes``)."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Raw"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
@@ -8916,35 +9076,42 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>One governance card: the items of one aspect, with the card's verdict (VE-02).</p>
+        <p>One governance card: the items of one aspect, with the card's verdict.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"GovQualityItem"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance check: a verdict item of a card (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance check: a verdict item of a card."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The human-readable verdict."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"dataqualitytype"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The kind of check; ``attribute`` checks carry the legacy's lower-case name."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"usedattributes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity attributes the check reads."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The check's name, e.g. ``Attribute - &lt;key&gt;``."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"compliant"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"_meta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityMeta"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityMeta"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The producing engine's record."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's document id, wrapped like every leaf."</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -8961,17 +9128,20 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"GovQualityMeta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The engine that produced the item, e.g. ``atlas-dev-gov-quality``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Engine"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's score."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Score"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The document id, e.g. a ``doc-\u2026`` id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -8986,7 +9156,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"GovQualityValue"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"raw"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -9000,6 +9170,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">              </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">          </span><span class="p">],</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The value: a string, or a list of strings (``usedattributes``)."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Raw"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
@@ -9011,9 +9182,10 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance card: the items of one aspect, with the card's verdict (VE-02)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance card: the items of one aspect, with the card's verdict."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The checks of this card."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityItem"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -9021,6 +9193,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"isNonCompliant"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Whether any item fails; the editor's badge."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Isnoncompliant"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -9184,37 +9357,42 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>The <code>POST /</code> answer: the four governance cards (VE-02, DV-14; CL-40).</p>
-<p>The keys are the legacy's — <code>dataEntity</code>, <code>definition</code>, <code>domainLead</code>,
-<code>name</code> — the aspects the editor's governance panel renders.</p>
+        <p>The <code>POST /</code> answer: the four governance cards.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"GovQualityItem"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance check: a verdict item of a card (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance check: a verdict item of a card."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The human-readable verdict."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"dataqualitytype"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The kind of check; ``attribute`` checks carry the legacy's lower-case name."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"usedattributes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity attributes the check reads."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The check's name, e.g. ``Attribute - &lt;key&gt;``."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"compliant"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"_meta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityMeta"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityMeta"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The producing engine's record."</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span>
+<span class="w">          </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityValue"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's document id, wrapped like every leaf."</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -9231,17 +9409,20 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"GovQualityMeta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``_meta`` of an item: the engine, score and document id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The engine that produced the item, e.g. ``atlas-dev-gov-quality``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Engine"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The item's score."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Score"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The document id, e.g. a ``doc-\u2026`` id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -9256,7 +9437,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"GovQualityValue"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"raw"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -9270,6 +9451,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">              </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">          </span><span class="p">],</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The value: a string, or a list of strings (``usedattributes``)."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Raw"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
@@ -9281,9 +9463,10 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ValidationCard"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance card: the items of one aspect, with the card's verdict (VE-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One governance card: the items of one aspect, with the card's verdict."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The checks of this card."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/GovQualityItem"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -9291,6 +9474,7 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"isNonCompliant"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Whether any item fails; the editor's badge."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Isnoncompliant"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -9303,19 +9487,23 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /`` answer: the four governance cards (VE-02, DV-14; CL-40).\n\nThe keys are the legacy's \u2014 ``dataEntity``, ``definition``, ``domainLead``,\n``name`` \u2014 the aspects the editor's governance panel renders."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /`` answer: the four governance cards."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"dataEntity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The card for the data entity aspect."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"definition"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The card for the definition aspect."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"domainLead"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The card for the domain lead aspect."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ValidationCard"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The card for the name aspect."</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -9431,6 +9619,8 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
+        <p>The card for the data entity aspect.</p>
+
     </div>
 
 </div>
@@ -9458,6 +9648,8 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 
     <div class="doc doc-contents ">
 
+        <p>The card for the definition aspect.</p>
+
     </div>
 
 </div>
@@ -9484,6 +9676,8 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The card for the domain lead aspect.</p>
 
     </div>
 
@@ -9534,6 +9728,8 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The card for the name aspect.</p>
 
     </div>
 
@@ -9781,7 +9977,7 @@ so the request is not a model — and parses the fixed governance document into 
 
 
 <a href="#aurelius_atlas_validate_entity_client.client.ValidateEntityClient" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">ValidateEntityClient</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="http (aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http))" href="./#aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http)">http</a></span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="token (aurelius_atlas_validate_entity_client.client.ValidateEntityClient(token))" href="./#aurelius_atlas_validate_entity_client.client.ValidateEntityClient(token)">token</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TokenSource (aurelius_atlas_validate_entity_client.client.TokenSource)" href="./#aurelius_atlas_validate_entity_client.client.TokenSource">TokenSource</a></span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">ValidateEntityClient</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="http (aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http))" href="./#aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http)">http</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="token (aurelius_atlas_validate_entity_client.client.ValidateEntityClient(token))" href="./#aurelius_atlas_validate_entity_client.client.ValidateEntityClient(token)">token</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TokenSource (aurelius_atlas_validate_entity_client.client.TokenSource)" href="./#aurelius_atlas_validate_entity_client.client.TokenSource">TokenSource</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -9795,7 +9991,7 @@ so the request is not a model — and parses the fixed governance document into 
     <ul>
         <li class="doc-section-item field-body">
 <h4 id="aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http)" class="doc doc-heading doc-heading-parameter">              <b><code>http</code></b>
-<a href="#aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="httpx.AsyncClient">AsyncClient</span></code>)
+<a href="#aurelius_atlas_validate_entity_client.client.ValidateEntityClient(http)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="httpx2.AsyncClient">AsyncClient</span></code>)
           –
           <div class="doc-md-description">
             <p>The <code>httpx.AsyncClient</code> to speak through, built by the caller —

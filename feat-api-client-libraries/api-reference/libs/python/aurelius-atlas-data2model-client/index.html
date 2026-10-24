@@ -5141,6 +5141,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5930,6 +5938,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../architecture/conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -6073,6 +6108,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -7053,6 +7169,8 @@
       
         
       
+        
+      
     
     
     
@@ -7175,6 +7293,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -9255,7 +9400,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.ElementRule)" href="./#aurelius_atlas_data2model_client.models.ElementRule">ElementRule</a></code></b>
           –
           <div class="doc-md-description">
-            <p>An element rule (legacy <code>ElementDefinition</code>): one node per row of <code>id_key</code> (DTM-02).</p>
+            <p>An element rule (legacy <code>ElementDefinition</code>): one node per row of <code>id_key</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9267,7 +9412,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.ExtractionRequest)" href="./#aurelius_atlas_data2model_client.models.ExtractionRequest">ExtractionRequest</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The <code>POST /extract</code> body: <code>{data: [row…], rules: {...}}</code> (DTM-01).</p>
+            <p>The <code>POST /extract</code> body: <code>{data: [row…], rules: {...}}</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9279,7 +9424,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.ExtractionResponse)" href="./#aurelius_atlas_data2model_client.models.ExtractionResponse">ExtractionResponse</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The <code>POST /extract</code> answer: <code>{metadata: […], model: "&lt;ar3 JSON string&gt;"}</code> (DTM-01; CL-20).</p>
+            <p>The <code>POST /extract</code> answer: <code>{metadata: […], model: "&lt;ar3 JSON string&gt;"}</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9291,7 +9436,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.MappingEntry)" href="./#aurelius_atlas_data2model_client.models.MappingEntry">MappingEntry</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One <code>{key, value}</code>: attach column <code>value</code> as metadata attribute <code>key</code> (DTM-03).</p>
+            <p>One <code>{key, value}</code>: attach column <code>value</code> as metadata attribute <code>key</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9303,7 +9448,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.MetadataEntry)" href="./#aurelius_atlas_data2model_client.models.MetadataEntry">MetadataEntry</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One <code>{id, data}</code> metadata entry of the extraction answer (DTM-03; CL-20).</p>
+            <p>One <code>{id, data}</code> metadata entry of the extraction answer.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9315,7 +9460,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.RelationRule)" href="./#aurelius_atlas_data2model_client.models.RelationRule">RelationRule</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A relation rule (legacy <code>RelationshipDefinition</code>): one edge per row (DTM-04).</p>
+            <p>A relation rule (legacy <code>RelationshipDefinition</code>): one edge per row.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9327,7 +9472,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.RulesDef)" href="./#aurelius_atlas_data2model_client.models.RulesDef">RulesDef</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The <code>rules</code> body: elements, relations, views, in rule order (DTM-03).</p>
+            <p>The <code>rules</code> body: elements, relations, views, in rule order.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9339,7 +9484,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.ViewEdgeRule)" href="./#aurelius_atlas_data2model_client.models.ViewEdgeRule">ViewEdgeRule</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A view edge entry: includes the referenced relation rule's edges (DTM-07).</p>
+            <p>A view edge entry: includes the referenced relation rule's edges.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9351,7 +9496,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.ViewNodeRule)" href="./#aurelius_atlas_data2model_client.models.ViewNodeRule">ViewNodeRule</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A view node entry: includes the referenced element rule's nodes (DTM-07).</p>
+            <p>A view node entry: includes the referenced element rule's nodes.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -9363,7 +9508,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
    (aurelius_atlas_data2model_client.models.ViewRule)" href="./#aurelius_atlas_data2model_client.models.ViewRule">ViewRule</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A view rule (legacy <code>ViewDefinition</code>): one diagram per layout match (DTM-06).</p>
+            <p>A view rule (legacy <code>ViewDefinition</code>): one diagram per layout match.</p>
           </div>
         </li>
     </ul>
@@ -9624,24 +9769,27 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>An element rule (legacy <code>ElementDefinition</code>): one node per row of <code>id_key</code> (DTM-02).</p>
+        <p>An element rule (legacy <code>ElementDefinition</code>): one node per row of <code>id_key</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"MappingEntry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The metadata attribute's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source column's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -9654,47 +9802,56 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding each node's id; rows with a null id are dropped, first row per id wins."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"concept_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Type"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each node id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"concept_name_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each node name."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Name Prefix"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"concept_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the node name; empty means the name is ``''``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Name Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"concept_label_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Label Prefix"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"concept_label_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the node label; the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Label Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per row, each a key/value pair."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -9908,7 +10065,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prefix of the node label (kept for the legacy contract; the ar3 writer ignores labels).</p>
+        <p>The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels.</p>
 
     </div>
 
@@ -9937,7 +10094,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>The column holding the node name; empty means the name is <code>''</code> (DTM-02).</p>
+        <p>The column holding the node name; empty means the name is <code>''</code>.</p>
 
     </div>
 
@@ -9966,7 +10123,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prefix of the node name.</p>
+        <p>The prefix of each node name.</p>
 
     </div>
 
@@ -9990,8 +10147,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>The node's Archimate element type tag (DTM-11 validates it).</p>
-<p>The lineage chain uses <code>lineage_dataset</code>/<code>lineage_process</code>.</p>
+        <p>The node's Archimate element type tag, e.g. <code>lineage_dataset</code> or <code>lineage_process</code>.</p>
 
     </div>
 
@@ -10020,7 +10176,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -10073,7 +10229,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prefix of the node id (DTM-02).</p>
+        <p>The prefix of each node id.</p>
 
     </div>
 
@@ -10102,7 +10258,7 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Metadata attributes to attach per row (DTM-03).</p>
+        <p>Metadata attributes to attach per row, each a key/value pair.</p>
 
     </div>
 
@@ -10161,56 +10317,62 @@ keys, so the rows are a mapping, not a model (DD-109).</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>The <code>POST /extract</code> body: <code>{data: [row…], rules: {...}}</code> (DTM-01).</p>
-<p>An absent <code>data</code>/<code>rules</code> is the empty extraction the legacy answers with the
-model skeleton (DTM-11); <code>data</code> is a list of row maps, columns keyed by name —
-a key absent from a row reads as null, as the legacy's missing DataFrame cell.</p>
+        <p>The <code>POST /extract</code> body: <code>{data: [row…], rules: {...}}</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"ElementRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding each node's id; rows with a null id are dropped, first row per id wins."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each node id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_name_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each node name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Name Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the node name; empty means the name is ``''``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Name Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_label_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Label Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_label_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the node label; the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Label Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per row, each a key/value pair."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10226,18 +10388,21 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"MappingEntry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The metadata attribute's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source column's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -10250,47 +10415,56 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"RelationRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).\n\n``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's\n``id_key``/``id_prefix``; the port keeps the rule references and resolves them the\nsame way, in :mod:`aurelius_atlas_data2model.extract`."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A relation rule (legacy ``RelationshipDefinition``): one edge per row."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding each edge's id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationship_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule holding the source ids."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Source"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule holding the target ids."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Target"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each edge id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationship_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the edge name; empty means the name is ``''``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Name Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationship_label_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the edge label; the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Label Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per row, each a key/value pair."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10306,14 +10480,16 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"RulesDef"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``rules`` body: elements, relations, views, in rule order (DTM-03)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``rules`` body: elements, relations, views, in rule order."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"elements"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element rules."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ElementRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10321,6 +10497,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The relation rules."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/RelationRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10328,6 +10505,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"views"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view rules."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10339,14 +10517,16 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewEdgeRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges (DTM-07)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the relation rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -10358,14 +10538,16 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewNodeRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes (DTM-07)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -10377,59 +10559,70 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view rule (legacy ``ViewDefinition``): one diagram per layout match."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_layout"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The layout name; a layout the registry does not know drops the view entirely."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Layout"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dynamic"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The grouping column for a dynamic view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view id for a static view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of a dynamic view id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dynamic"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the view name for a dynamic view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view name for a static view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of a dynamic view name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element rules whose nodes fill the view, in order."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewNodeRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10437,6 +10630,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_edges"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The relation rules whose edges fill the view; empty means all model edges between the view nodes."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewEdgeRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10444,6 +10638,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only)."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10451,6 +10646,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per view; unused by the writer, kept for the contract."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -10462,14 +10658,16 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /extract`` body: ``{data: [row\u2026], rules: {...}}`` (DTM-01).\n\nAn absent ``data``/``rules`` is the empty extraction the legacy answers with the\nmodel skeleton (DTM-11); ``data`` is a list of row maps, columns keyed by name \u2014\na key absent from a row reads as null, as the legacy's missing DataFrame cell."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /extract`` body: ``{data: [row\u2026], rules: {...}}``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The tabular rows; each row is a plain map of column names to values."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
@@ -10478,7 +10676,8 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"rules"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/RulesDef"</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/RulesDef"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element, relation, and view rules that build the model."</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ExtractionRequest"</span><span class="p">,</span>
@@ -10558,7 +10757,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The tabular rows; plain maps, not models (DD-109).</p>
+        <p>The tabular rows; each row is a plain map of column names to values.</p>
 
     </div>
 
@@ -10587,7 +10786,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -10639,7 +10838,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The element/relation/view rules.</p>
+        <p>The element, relation, and view rules that build the model.</p>
 
     </div>
 
@@ -10675,22 +10874,22 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>The <code>POST /extract</code> answer: <code>{metadata: […], model: "&lt;ar3 JSON string&gt;"}</code> (DTM-01; CL-20).</p>
-<p>The model is a JSON <em>string</em> inside the JSON body, as the legacy answer is
-(DV-15); <code>model_validate_json</code> of it is the caller's ar3 document.</p>
+        <p>The <code>POST /extract</code> answer: <code>{metadata: […], model: "&lt;ar3 JSON string&gt;"}</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"MetadataEntry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{id, data}`` metadata entry of the extraction answer (DTM-03; CL-20).\n\n``data`` carries the rule's provenance (``created_by``, ``m4i_id_prefix``,\n``m4i_original_id``, \u2026) plus the row's mapped attributes, keyed by the\n``mapping`` entries \u2014 open by contract, so a plain map."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{id, data}`` metadata entry of the extraction answer."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element, edge, or view id the entry describes, with its rule's prefix."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The provenance and mapped attributes, as open key/value maps."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Data"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -10702,9 +10901,10 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /extract`` answer: ``{metadata: [\u2026], model: \"&lt;ar3 JSON string&gt;\"}`` (DTM-01; CL-20).\n\nThe model is a JSON *string* inside the JSON body, as the legacy answer is\n(DV-15); ``model_validate_json`` of it is the caller's ar3 document."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /extract`` answer: ``{metadata: [\u2026], model: \"&lt;ar3 JSON string&gt;\"}``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One entry per element/edge row and per view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MetadataEntry"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -10712,6 +10912,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ar3 model, JSON-encoded as a string; the browser draws it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Model"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -10792,7 +10993,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>One entry per element/edge row and per view (DTM-03).</p>
+        <p>One entry per element/edge row and per view.</p>
 
     </div>
 
@@ -10816,7 +11017,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The ar3 model, JSON-encoded — the browser draws it (DV-15).</p>
+        <p>The ar3 model, JSON-encoded as a string; the browser draws it.</p>
 
     </div>
 
@@ -10875,22 +11076,25 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>One <code>{key, value}</code>: attach column <code>value</code> as metadata attribute <code>key</code> (DTM-03).</p>
+        <p>One <code>{key, value}</code>: attach column <code>value</code> as metadata attribute <code>key</code>.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The metadata attribute's name."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source column's name."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -10976,7 +11180,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -11083,21 +11287,20 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>One <code>{id, data}</code> metadata entry of the extraction answer (DTM-03; CL-20).</p>
-<p><code>data</code> carries the rule's provenance (<code>created_by</code>, <code>m4i_id_prefix</code>,
-<code>m4i_original_id</code>, …) plus the row's mapped attributes, keyed by the
-<code>mapping</code> entries — open by contract, so a plain map.</p>
+        <p>One <code>{id, data}</code> metadata entry of the extraction answer.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{id, data}`` metadata entry of the extraction answer (DTM-03; CL-20).\n\n``data`` carries the rule's provenance (``created_by``, ``m4i_id_prefix``,\n``m4i_original_id``, \u2026) plus the row's mapped attributes, keyed by the\n``mapping`` entries \u2014 open by contract, so a plain map."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{id, data}`` metadata entry of the extraction answer."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element, edge, or view id the entry describes, with its rule's prefix."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The provenance and mapped attributes, as open key/value maps."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Data"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -11168,7 +11371,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The provenance and mapped attributes; open keys by contract (DTM-03).</p>
+        <p>The provenance and mapped attributes, as open key/value maps.</p>
 
     </div>
 
@@ -11192,7 +11395,7 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
 
     <div class="doc doc-contents ">
 
-        <p>The element/edge/view id the entry describes, with its rule's prefix.</p>
+        <p>The element, edge, or view id the entry describes, with its rule's prefix.</p>
 
     </div>
 
@@ -11251,27 +11454,27 @@ a key absent from a row reads as null, as the legacy's missing DataFrame cell.</
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>A relation rule (legacy <code>RelationshipDefinition</code>): one edge per row (DTM-04).</p>
-<p><code>fmt_relation</code> resolved <code>source</code>/<code>target</code> into the referenced element rule's
-<code>id_key</code>/<code>id_prefix</code>; the port keeps the rule references and resolves them the
-same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
+        <p>A relation rule (legacy <code>RelationshipDefinition</code>): one edge per row.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"MappingEntry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The metadata attribute's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source column's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -11284,47 +11487,56 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).\n\n``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's\n``id_key``/``id_prefix``; the port keeps the rule references and resolves them the\nsame way, in :mod:`aurelius_atlas_data2model.extract`."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A relation rule (legacy ``RelationshipDefinition``): one edge per row."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding each edge's id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"relationship_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Type"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule holding the source ids."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Source"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule holding the target ids."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Target"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each edge id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"relationship_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the edge name; empty means the name is ``''``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Name Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"relationship_label_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the edge label; the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Label Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per row, each a key/value pair."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -11509,7 +11721,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -11562,7 +11774,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prefix of the edge id.</p>
+        <p>The prefix of each edge id.</p>
 
     </div>
 
@@ -11591,7 +11803,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Metadata attributes to attach per row (DTM-03).</p>
+        <p>Metadata attributes to attach per row, each a key/value pair.</p>
 
     </div>
 
@@ -11696,7 +11908,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The Archimate relationship shorthand (<code>lr</code> for the lineage chain; DTM-11 validates it).</p>
+        <p>The Archimate relationship shorthand, e.g. <code>lr</code> for the lineage chain.</p>
 
     </div>
 
@@ -11790,53 +12002,62 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>The <code>rules</code> body: elements, relations, views, in rule order (DTM-03).</p>
+        <p>The <code>rules</code> body: elements, relations, views, in rule order.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"ElementRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"An element rule (legacy ``ElementDefinition``): one node per row of ``id_key`` (DTM-02)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"An element rule (legacy ``ElementDefinition``): one node per row of ``id_key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding each node's id; rows with a null id are dropped, first row per id wins."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The node's Archimate element type tag, e.g. ``lineage_dataset`` or ``lineage_process``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each node id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_name_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each node name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Name Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the node name; empty means the name is ``''``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Name Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_label_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of the node label; kept for the legacy contract, the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Label Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"concept_label_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the node label; the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Concept Label Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per row, each a key/value pair."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -11852,18 +12073,21 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"MappingEntry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The metadata attribute's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source column's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -11876,47 +12100,56 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"RelationRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A relation rule (legacy ``RelationshipDefinition``): one edge per row (DTM-04).\n\n``fmt_relation`` resolved ``source``/``target`` into the referenced element rule's\n``id_key``/``id_prefix``; the port keeps the rule references and resolves them the\nsame way, in :mod:`aurelius_atlas_data2model.extract`."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A relation rule (legacy ``RelationshipDefinition``): one edge per row."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding each edge's id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationship_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The Archimate relationship shorthand, e.g. ``lr`` for the lineage chain."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule holding the source ids."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Source"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule holding the target ids."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Target"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of each edge id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationship_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the edge name; empty means the name is ``''``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Name Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"relationship_label_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the edge label; the ar3 writer ignores labels."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Relationship Label Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per row, each a key/value pair."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -11932,14 +12165,16 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewEdgeRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges (DTM-07)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the relation rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -11951,14 +12186,16 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewNodeRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes (DTM-07)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -11970,59 +12207,70 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view rule (legacy ``ViewDefinition``): one diagram per layout match."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_layout"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The layout name; a layout the registry does not know drops the view entirely."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Layout"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dynamic"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The grouping column for a dynamic view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view id for a static view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of a dynamic view id."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dynamic"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Type"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the view name for a dynamic view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view name for a static view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_name_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of a dynamic view name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Prefix"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element rules whose nodes fill the view, in order."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewNodeRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -12030,6 +12278,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_edges"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The relation rules whose edges fill the view; empty means all model edges between the view nodes."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewEdgeRule"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -12037,6 +12286,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"view_path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only)."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -12044,6 +12294,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per view; unused by the writer, kept for the contract."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">          </span><span class="p">},</span>
@@ -12055,14 +12306,16 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``rules`` body: elements, relations, views, in rule order (DTM-03)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``rules`` body: elements, relations, views, in rule order."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"elements"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element rules."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ElementRule"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -12070,6 +12323,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"relations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The relation rules."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/RelationRule"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -12077,6 +12331,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"views"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view rules."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewRule"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -12220,7 +12475,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -12337,18 +12592,20 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>A view edge entry: includes the referenced relation rule's edges (DTM-07).</p>
+        <p>A view edge entry: includes the referenced relation rule's edges.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges (DTM-07)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the relation rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -12424,7 +12681,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -12471,7 +12728,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The id of the relation rule whose rows fill the view (resolved at parse time, DTM-11).</p>
+        <p>The id of the relation rule whose rows fill the view.</p>
 
     </div>
 
@@ -12507,18 +12764,20 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>A view node entry: includes the referenced element rule's nodes (DTM-07).</p>
+        <p>A view node entry: includes the referenced element rule's nodes.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes (DTM-07)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">}</span>
@@ -12594,7 +12853,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -12641,7 +12900,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The id of the element rule whose rows fill the view (resolved at parse time, DTM-11).</p>
+        <p>The id of the element rule whose rows fill the view.</p>
 
     </div>
 
@@ -12677,24 +12936,27 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="aurelius_atlas_data2model_client.models._Rule">_Rule</span></code></p>
 
-        <p>A view rule (legacy <code>ViewDefinition</code>): one diagram per layout match (DTM-06).</p>
+        <p>A view rule (legacy <code>ViewDefinition</code>): one diagram per layout match.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"MappingEntry"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key`` (DTM-03)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ``{key, value}``: attach column ``value`` as metadata attribute ``key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The metadata attribute's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Key"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The source column's name."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -12707,14 +12969,16 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewEdgeRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges (DTM-07)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view edge entry: includes the referenced relation rule's edges."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the relation rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -12726,14 +12990,16 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"ViewNodeRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes (DTM-07)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view node entry: includes the referenced element rule's nodes."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"rule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The id of the element rule whose rows fill the view."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rule"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">        </span><span class="p">}</span>
@@ -12745,59 +13011,70 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view rule (legacy ``ViewDefinition``): one diagram per layout match (DTM-06)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A view rule (legacy ``ViewDefinition``): one diagram per layout match."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's id \u2014 the reference relation and view rules use to name it."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_layout"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The layout name; a layout the registry does not know drops the view entirely."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Layout"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dynamic"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"``static``: one view ided by ``id_value``; ``dynamic``: one view per value of ``id_key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Type"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The grouping column for a dynamic view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view id for a static view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Value"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"id_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of a dynamic view id."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Id Prefix"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_name_type"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dynamic"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"``static``: the name is ``view_name_value``; ``dynamic``: the name comes from ``view_name_key``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Type"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_name_key"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The column holding the view name for a dynamic view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Key"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_name_value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The view name for a static view."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Value"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_name_prefix"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The prefix of a dynamic view name."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"View Name Prefix"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The element rules whose nodes fill the view, in order."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewNodeRule"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -12805,6 +13082,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_edges"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The relation rules whose edges fill the view; empty means all model edges between the view nodes."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/ViewEdgeRule"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -12812,6 +13090,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"view_path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Extra organization folders below ``Views`` (legacy ``ViewPathMapping``s; static entries only)."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -12819,6 +13098,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"mapping"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Metadata attributes to attach per view; unused by the writer, kept for the contract."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/MappingEntry"</span>
 <span class="w">      </span><span class="p">},</span>
@@ -13067,7 +13347,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The rule's id — the caller's reference into <code>rules</code> (relation/view rules name it).</p>
+        <p>The rule's id — the reference relation and view rules use to name it.</p>
 
     </div>
 
@@ -13125,7 +13405,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prefix of a dynamic view id.</p>
+        <p>The prefix of a dynamic view id.</p>
 
     </div>
 
@@ -13183,7 +13463,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The view id for a static view (<code>lineage_view</code> for the lineage chain).</p>
+        <p>The view id for a static view.</p>
 
     </div>
 
@@ -13212,7 +13492,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Metadata attributes to attach per view (legacy: unused by the writer; kept for the contract).</p>
+        <p>Metadata attributes to attach per view; unused by the writer, kept for the contract.</p>
 
     </div>
 
@@ -13264,7 +13544,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The relation rules whose edges fill the view; empty means all model edges between the view nodes (DTM-07).</p>
+        <p>The relation rules whose edges fill the view; empty means all model edges between the view nodes.</p>
 
     </div>
 
@@ -13293,7 +13573,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The layout name; a layout the registry does not know drops the view entirely (DTM-06).</p>
+        <p>The layout name; a layout the registry does not know drops the view entirely.</p>
 
     </div>
 
@@ -13351,7 +13631,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Prefix of a dynamic view name.</p>
+        <p>The prefix of a dynamic view name.</p>
 
     </div>
 
@@ -13409,7 +13689,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The view name for a static view (<code>Lineage</code> for the lineage chain).</p>
+        <p>The view name for a static view.</p>
 
     </div>
 
@@ -13438,7 +13718,7 @@ same way, in :mod:<code>aurelius_atlas_data2model.extract</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The element rules whose nodes fill the view, in order (DTM-07).</p>
+        <p>The element rules whose nodes fill the view, in order.</p>
 
     </div>
 
@@ -13973,7 +14253,7 @@ chain's payload and the 8.1 answer are one contract on both sides (CL-21).</p>
 
 
 <a href="#aurelius_atlas_data2model_client.client.Data2ModelClient" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Data2ModelClient</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="http (aurelius_atlas_data2model_client.client.Data2ModelClient(http))" href="./#aurelius_atlas_data2model_client.client.Data2ModelClient(http)">http</a></span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="token (aurelius_atlas_data2model_client.client.Data2ModelClient(token))" href="./#aurelius_atlas_data2model_client.client.Data2ModelClient(token)">token</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TokenSource (aurelius_atlas_data2model_client.client.TokenSource)" href="./#aurelius_atlas_data2model_client.client.TokenSource">TokenSource</a></span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Data2ModelClient</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="http (aurelius_atlas_data2model_client.client.Data2ModelClient(http))" href="./#aurelius_atlas_data2model_client.client.Data2ModelClient(http)">http</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="token (aurelius_atlas_data2model_client.client.Data2ModelClient(token))" href="./#aurelius_atlas_data2model_client.client.Data2ModelClient(token)">token</a></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TokenSource (aurelius_atlas_data2model_client.client.TokenSource)" href="./#aurelius_atlas_data2model_client.client.TokenSource">TokenSource</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -13987,7 +14267,7 @@ chain's payload and the 8.1 answer are one contract on both sides (CL-21).</p>
     <ul>
         <li class="doc-section-item field-body">
 <h4 id="aurelius_atlas_data2model_client.client.Data2ModelClient(http)" class="doc doc-heading doc-heading-parameter">              <b><code>http</code></b>
-<a href="#aurelius_atlas_data2model_client.client.Data2ModelClient(http)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="httpx.AsyncClient">AsyncClient</span></code>)
+<a href="#aurelius_atlas_data2model_client.client.Data2ModelClient(http)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="httpx2.AsyncClient">AsyncClient</span></code>)
           –
           <div class="doc-md-description">
             <p>The <code>httpx.AsyncClient</code> to speak through, built by the caller —

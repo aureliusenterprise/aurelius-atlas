@@ -57,7 +57,7 @@ The reference for every rule is the Aurelius source (ADR 055 R4): `backend/m4i-v
 
 ## Test list
 
-- Unit: `apps/aurelius-atlas-validate-entity/tests/test__app.py` (VE-01/02/ 03/04 wiring on the fake issuer, the mock document verbatim), `test__aurelius_atlas_validate_entity_settings.py` (VE-05), `test__aurelius_atlas_validate_entity_providers_auth.py`/ `test__…_providers_telemetry.py`/`test__…_routes.py` (the DD-120 providers and route factories, on the fake issuer), `test__…___main__.py`.
+- Unit: `apps/aurelius-atlas-validate-entity/tests/test__aurelius_atlas_validate_entity_app.py` (VE-01/02/03/04 wiring on the fake issuer, the mock document verbatim), `test__aurelius_atlas_validate_entity_settings.py` (VE-05), `test__aurelius_atlas_validate_entity_providers_auth.py`/ `test__…_providers_telemetry.py`/`test__…_routes.py` (the DD-120 providers and route factories, on the fake issuer), `test__…___main__.py`.
 - Scenario (parity, read from Aurelius source): `scenarios/validation/ mock.scenario.yaml` — the caller's entity payload, `POST /` → the full mock document, byte equality (no volatile: the body is a constant).
 - E2E: `e2e/` — real container, Keycloak-minted token (the browser's own: the public `aurelius` client, the caller's audience, AUX-04); 401 anonymous, 200 mock, liveness.
 

@@ -34,6 +34,21 @@ Configuration is managed via the `Settings` model:
 >
 > ```
 > {
+>   "$defs": {
+>     "LogLevel": {
+>       "enum": [
+>         "trace",
+>         "debug",
+>         "info",
+>         "notice",
+>         "warn",
+>         "warning",
+>         "error",
+>         "fatal"
+>       ],
+>       "type": "string"
+>     }
+>   },
 >   "additionalProperties": false,
 >   "description": "Application configuration settings.",
 >   "properties": {
@@ -171,20 +186,9 @@ Configuration is managed via the `Settings` model:
 >       "type": "string"
 >     },
 >     "log_level": {
+>       "$ref": "#/$defs/LogLevel",
 >       "default": "info",
->       "description": "The logging level for the application.",
->       "enum": [
->         "trace",
->         "debug",
->         "info",
->         "notice",
->         "warn",
->         "warning",
->         "error",
->         "fatal"
->       ],
->       "title": "Log Level",
->       "type": "string"
+>       "description": "The logging level for the application."
 >     },
 >     "port": {
 >       "default": 8000,
@@ -261,7 +265,7 @@ Configuration is managed via the `Settings` model:
 > - `database_port` (`int`)
 > - `database_username` (`str`)
 > - `host` (`str`)
-> - `log_level` (`LevelName`)
+> - `log_level` (`LogLevel`)
 > - `port` (`int`)
 > - `auth_ca_file` (`str`)
 > - `database_sslmode` (`str`)
@@ -485,7 +489,7 @@ Configuration is managed via the `Settings` model:
 > ### log\_level
 >
 > ```
-> log_level: LevelName = 'info'
+> log_level: LogLevel = 'info'
 > ```
 >
 > The logging level for the application.

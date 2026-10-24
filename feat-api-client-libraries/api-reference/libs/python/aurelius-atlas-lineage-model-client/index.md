@@ -18,16 +18,18 @@ workspace = true
 
 The request and response shapes of the lineage-model API (CL-30, LM-01/LM-04; DD-114).
 
+The ids of this module's rules stay here: `LineageModelParams` is LM-01's query (DV-20/DV-21 are its rejections), `LineageModelResponse` is the LM-04/LM-01 forward of the data2model answer (DV-15's contract). Field descriptions are the public OpenAPI documentation, so they name no rule ids; the Java classes ported are in the increment spec.
+
 The query of `GET /` and the answer it forwards from data2model, stated once so the app validates its own query with the same model a caller builds (CL-07). The lineage directions are imported from `aurelius-atlas-server-client` — the lineage vocabulary belongs to the lineage API (CL-12), not to each consumer; reusing it is CL-10's rule applied to types.
 
 Classes:
 
 - **`LineageModelParams`** –
 
-  The `GET /` query: guid, depth, direction (LM-01; CL-30).
+  The `GET /` query of the lineage-model API: which entity, how deep, which way.
 - **`LineageModelResponse`** –
 
-  The answer of `GET /`: the data2model body, forwarded verbatim (LM-01/LM-04; CL-30).
+  The answer of `GET /`: the flattened lineage as an ar3 model and its metadata.
 
 Attributes:
 
@@ -64,9 +66,7 @@ __all__ = ['DEFAULT_DEPTH', 'MIN_DEPTH', 'Direction', 'LineageModelParams', 'Lin
 
 Bases: `BaseModel`
 
-The `GET /` query: guid, depth, direction (LM-01; CL-30).
-
-The app validates its own query parameters against these constraints, and a caller builds them — the 400 of DV-20/DV-21 is a body this model rejects.
+The `GET /` query of the lineage-model API: which entity, how deep, which way.
 
 **Show JSON schema:**
 
@@ -83,22 +83,25 @@ The app validates its own query parameters against these constraints, and a call
     }
   },
   "additionalProperties": false,
-  "description": "The ``GET /`` query: guid, depth, direction (LM-01; CL-30).\n\nThe app validates its own query parameters against these constraints, and a\ncaller builds them \u2014 the 400 of DV-20/DV-21 is a body this model rejects.",
+  "description": "The ``GET /`` query of the lineage-model API: which entity, how deep, which way.",
   "properties": {
     "guid": {
-      "minLength": 1,
+      "description": "The guid of the entity whose lineage is flattened.",
+      "format": "uuid",
       "title": "Guid",
       "type": "string"
     },
     "depth": {
       "default": 3,
+      "description": "How many hops of lineage to walk; at least one.",
       "minimum": 1,
       "title": "Depth",
       "type": "integer"
     },
     "direction": {
       "$ref": "#/$defs/Direction",
-      "default": "BOTH"
+      "default": "BOTH",
+      "description": "Which way to walk the lineage: upstream, downstream, or both."
     }
   },
   "required": [
@@ -116,17 +119,17 @@ Config:
 
 Fields:
 
-- `guid` (`str`)
+- `guid` (`UUID`)
 - `depth` (`int`)
 - `direction` (`Direction`)
 
 #### depth
 
 ```
-depth: int
+depth: int = DEFAULT_DEPTH
 ```
 
-How many hops to walk; at least one, three by default (LM-01).
+How many hops of lineage to walk; at least one.
 
 #### direction
 
@@ -134,15 +137,15 @@ How many hops to walk; at least one, three by default (LM-01).
 direction: Direction = 'BOTH'
 ```
 
-Which way to walk the lineage (LM-01, DV-20).
+Which way to walk the lineage: upstream, downstream, or both.
 
 #### guid
 
 ```
-guid: str
+guid: UUID
 ```
 
-The entity whose lineage flattens; required (DV-21).
+The guid of the entity whose lineage is flattened.
 
 #### model\_config
 
@@ -154,21 +157,21 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 
 Bases: `BaseModel`
 
-The answer of `GET /`: the data2model body, forwarded verbatim (LM-01/LM-04; CL-30).
-
-`model` is the ar3 model as a JSON *string* (DV-15's contract, kept by the passthrough); `metadata` is open by the data2model contract, so a plain map.
+The answer of `GET /`: the flattened lineage as an ar3 model and its metadata.
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The answer of ``GET /``: the data2model body, forwarded verbatim (LM-01/LM-04; CL-30).\n\n``model`` is the ar3 model as a JSON *string* (DV-15's contract, kept by the\npassthrough); ``metadata`` is open by the data2model contract, so a plain map.",
+  "description": "The answer of ``GET /``: the flattened lineage as an ar3 model and its metadata.",
   "properties": {
     "model": {
+      "description": "The ar3 model, JSON-encoded as a string; the browser draws it.",
       "title": "Model",
       "type": "string"
     },
     "metadata": {
+      "description": "One entry per element, edge, and view: the provenance of each row and its mapped attributes, as open key/value maps.",
       "items": {
         "additionalProperties": true,
         "type": "object"
@@ -201,7 +204,7 @@ Fields:
 metadata: list[dict[str, Any]]
 ```
 
-One entry per element/edge row and per view (DTM-03).
+One entry per element, edge, and view: the provenance of each row and its mapped attributes, as open key/value maps.
 
 #### model
 
@@ -209,7 +212,7 @@ One entry per element/edge row and per view (DTM-03).
 model: str
 ```
 
-The ar3 model, JSON-encoded — the browser draws it.
+The ar3 model, JSON-encoded as a string; the browser draws it.
 
 #### model\_config
 
@@ -317,7 +320,7 @@ Methods:
 #### get
 
 ```
-get(guid: str, depth: int = DEFAULT_DEPTH, direction: Direction = 'BOTH') -> LineageModelResponse | None
+get(guid: UUID, depth: int = DEFAULT_DEPTH, direction: Direction = 'BOTH') -> LineageModelResponse | None
 ```
 
 `GET /?guid=&depth=&direction=`: the flattened lineage's model (LM-01, CL-30).

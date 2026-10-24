@@ -4395,6 +4395,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5184,6 +5192,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/7-19-frontend-failure-ux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  7.19 Frontend failure UX
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../architecture/conversion/increments/8-0-auxiliary-api-foundation/" class="md-nav__link">
         
   
@@ -5327,6 +5362,87 @@
     
   
   8.5 lineage-model circuit breakers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/8-6-aux-failure-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.6 Aux API failure hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/8-7-client-failure-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  8.7 Client failure contract
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/9-1-targeted-resilience-e2e/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.1 Targeted resilience e2e
 
     
   </span>
@@ -6307,6 +6423,8 @@
       
         
       
+        
+      
     
     
     
@@ -6429,6 +6547,33 @@
     
   
   Testing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/platform/delivery/testing-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Test Suite Review
 
     
   </span>
@@ -7693,6 +7838,21 @@
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"LogLevel"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"enum"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"trace"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"debug"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"info"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"notice"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"warn"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"warning"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"error"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"fatal"</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Application configuration settings."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -7830,20 +7990,9 @@
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"log_level"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"$ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"#/$defs/LogLevel"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The logging level for the application."</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"enum"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">"trace"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"debug"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"info"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"notice"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"warn"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"warning"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"error"</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">"fatal"</span>
-<span class="w">      </span><span class="p">],</span>
-<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Log Level"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The logging level for the application."</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"port"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mi">8000</span><span class="p">,</span>
@@ -8097,7 +8246,7 @@
   
       pydantic-field
    (aurelius_atlas_fastapi_example.models.Settings.log_level)" href="./#aurelius_atlas_fastapi_example.models.Settings.log_level">log_level</a></code>
-                (<code><span title="logfire.LevelName">LevelName</span></code>)
+                (<code><span title="aurelius_atlas_fastapi_example.models.LogLevel">LogLevel</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            port
@@ -8822,7 +8971,7 @@
   </span>
 
 <a href="#aurelius_atlas_fastapi_example.models.Settings.log_level" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">log_level</span><span class="p">:</span> <span class="n"><span title="logfire.LevelName">LevelName</span></span> <span class="o">=</span> <span class="s1">'info'</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">log_level</span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_fastapi_example.models.LogLevel">LogLevel</span></span> <span class="o">=</span> <span class="s1">'info'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
