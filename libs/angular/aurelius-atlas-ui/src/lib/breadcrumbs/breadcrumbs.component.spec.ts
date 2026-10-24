@@ -38,7 +38,7 @@ describe("Breadcrumbs", () => {
         expect(nav.querySelectorAll("li a")[0].textContent).toContain("Domain");
     });
 
-    it("names the trail from the caller's label (DD-047)", () => {
+    it("names the trail from the caller's label (DD-136)", () => {
         fixture.componentRef.setInput("items", items);
         fixture.componentRef.setInput("breadcrumbsLabel", "kruimelpad");
         fixture.detectChanges();

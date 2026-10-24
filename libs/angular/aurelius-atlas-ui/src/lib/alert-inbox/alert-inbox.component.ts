@@ -18,7 +18,7 @@ import type { AlertGroup, AlertSeverity, AlertSeverityCount } from "../alert-lis
  * The component is presentational: the caller passes the feed, the
  * component derives the counts, and the caller applies the filter —
  * which severities are visible is a view concern of the panel that
- * embeds the bar (the list stays the rows, DD-088's boundary).
+ * embeds the bar (the list stays the rows, DD-176's boundary).
  *
  * A severity with no alerts greys out: its chip is disabled, unpressed,
  * and takes no fill — there is nothing to show and nothing to toggle

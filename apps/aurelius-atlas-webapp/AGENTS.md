@@ -15,16 +15,16 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 - `public/silent-check-sso.html` — the silent-SSO redirect page (hash-pinned in
   the nginx CSP; served at the origin root, keyed to it by `keycloakInitOptions()`)
 - `src/locale/` — **generated** XLIFF catalogues (the Aurelius dictionary bridge,
-  DD-039); regenerate with `node tools/generate-legacy-catalogue.mjs`, never hand-edit
+  DD-128); regenerate with `node tools/generate-legacy-catalogue.mjs`, never hand-edit
 - `tests/fixtures/` — the vendored legacy dictionaries (parity reference, SHL-08)
 - `scripts/check-webapp-purity.sh` — the legacy-construct gate (WBP-02); runs as a
   `dependsOn` of `test`, so CI enforces it
 - `dev/config.json` — runtime config, bundled **only** in the development build
 - `proxy.conf.json` — dev-server proxy: `/api` → atlas-server :21000 (**no
-  rewrite** — the client composes the `/api` prefix, DD-050), `/otel` → 4318
+  rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)
 - `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the built
-  image, with the real atlas-server container behind nginx `/api/` (DD-053) and
+  image, with the real atlas-server container behind nginx `/api/` (DD-142) and
   Keycloak sign-in via the `authenticated` fixture (APC-10)
 
 ## Porting rules (every slice)
@@ -61,7 +61,7 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
 
 - Components stay presentational; state in signal stores under the feature
   folder; HTTP only via `aurelius-atlas-data-access` services (`TypeDefsService`,
-  `AdminService` — 7.3's live surface; search types arrive with 7.4, DD-051).
+  `AdminService` — 7.3's live surface; search types arrive with 7.4, DD-140).
 - Auth is `keycloak-angular` only: the root guard + `check-sso`/silent-SSO, and
   `includeBearerTokenInterceptor` on `/api`. Never hand-write an `updateToken`
   loop (APC-07) and never store tokens outside keycloak-js's own memory (DD-004).

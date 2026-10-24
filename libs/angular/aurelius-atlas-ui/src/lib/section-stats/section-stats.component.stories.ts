@@ -38,7 +38,7 @@ const host = (args: Record<string, unknown>) => ({
 /**
  * The governance-quality bar: three stats, each heading a jump link to
  * its section, the counts above the fold. Clicking a heading emits its
- * target (DD-066's pattern — the lib emits, the app scrolls).
+ * target (DD-154's pattern — the lib emits, the app scrolls).
  */
 export const Primary: Story = {
     args: {

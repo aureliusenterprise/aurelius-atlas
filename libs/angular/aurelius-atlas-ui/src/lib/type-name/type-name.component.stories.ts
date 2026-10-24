@@ -79,7 +79,7 @@ export const TextOnly: Story = {
 
 /**
  * The badge on the dark theme: the legacy pure blue lifts to Bulma's
- * dark-adapted lightness for the dark surface (DD-068), the shared
+ * dark-adapted lightness for the dark surface (DD-156), the shared
  * business orange stays. It opens dark — the toolbar Theme switch flips
  * it at any time.
  */

@@ -5,7 +5,7 @@ name: aurelius-atlas-lineage-model-e2e
 # files under fixtures/ (python http.server maps the URL path to the file), so
 # the app's upstream calls run over real HTTP between containers; the graph
 # then flows through the real extraction. The 5.1 slice replaces the fixture
-# with the server (DV-16).
+# with the server (DV-52).
 services:
     fixture-atlas:
         image: dhi.io/python:3.14-alpine3.24

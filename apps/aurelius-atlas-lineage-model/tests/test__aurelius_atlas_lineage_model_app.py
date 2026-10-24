@@ -19,7 +19,7 @@ from fake_upstream import FakeUpstream
 from fastapi import FastAPI
 from httpx2 import ASGITransport, AsyncClient
 
-# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-27).
+# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-61).
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
 P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
 E_OUT = UUID("00000000-0000-4000-8000-000000000003")

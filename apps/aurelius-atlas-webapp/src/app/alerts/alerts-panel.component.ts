@@ -14,7 +14,7 @@ import { AlertsService } from "./alerts.service";
  * ALR-12), the feed renders what the store holds (ALR-03).
  *
  * Like the settings panel, it is a routed component in the `drawer` aux
- * outlet (SPL-14's shape, DD-078, ALR-01): the bell navigates to it,
+ * outlet (SPL-14's shape, DD-166, ALR-01): the bell navigates to it,
  * dismissal navigates away, and the outlet segment rides the URL — so
  * the language switch's full-page navigation (SPL-06) reloads the same
  * page with the drawer open. The one named outlet swaps drawers: opening
@@ -111,7 +111,7 @@ export class AlertsPanel {
     };
 
     /**
-     * The drawer's dismissal (ALR-01, DD-078's pattern): navigate the
+     * The drawer's dismissal (ALR-01, DD-166's pattern): navigate the
      * `drawer` outlet away.
      */
     protected close(): void {

@@ -7,10 +7,10 @@ import type { AlertSeverity } from "../alert-list/alert-group";
  * ALR-10): a small severity-coloured marker, hidden when not visible.
  * The dot carries a ring in the surrounding ink so it keeps a visible
  * edge on any band — Bulma's navbar-scoped `--bulma-navbar-item-color`
- * when the badge sits inside a navbar item (black on DD-080's slate,
+ * when the badge sits inside a navbar item (black on DD-168's slate,
  * the legacy grey on the light band), `currentColor` everywhere else.
  *
- * The colours are the brand ramp DD-063 pinned (danger, warning,
+ * The colours are the brand ramp DD-152 pinned (danger, warning,
  * info), fixed in both schemes — like the footer's pair (SHM-07), a
  * severity marker must not shift with the theme.
  */
@@ -24,7 +24,7 @@ import type { AlertSeverity } from "../alert-list/alert-group";
 export class Badge {
     /**
      * The dot's severity: `error` (danger), `warning`, or `info` —
-     * DD-063's ramp (ALR-02).
+     * DD-152's ramp (ALR-02).
      */
     readonly severity = input<AlertSeverity>("error");
 

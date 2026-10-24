@@ -36,7 +36,7 @@ path each test pins, so the test names are auditable against the originals.
   edge/metadata entry — keep-first at the relation level.
 - **DTM-06** (8-1): a dynamic view groups rows by `id_key` (null keys skipped);
   a dynamic view name reads `view_name_key`, `view_name_prefix`, and the legacy
-  `'nan'` when the group's key column is absent (DV-17);
+  `'nan'` when the group's key column is absent (DV-53);
   `archimate_hierarchical` lays out bottom-to-top.
 - **DTM-07** (8-1): a view's `view_edges` rules select edge ids from the
   relation's `id_key` column: model-edge intersection, dedupe in first-seen
@@ -53,9 +53,9 @@ path each test pins, so the test names are auditable against the originals.
 - **LM-13** (8-5): a transport failure **counts as an outage** for its breaker:
   repeated connect failures open the circuit.
 - **VE-01** (8-3): the mock accepts an oversized body and a body with no
-  `content-type` verbatim — the body is never read (DV-14).
+  `content-type` verbatim — the body is never read (DV-50).
 - (framework default, no rule id): `GET /` on validate-entity's mock route
-  answers `405` — the legacy is POST-only (DV-14) and there is no GET parity;
+  answers `405` — the legacy is POST-only (DV-50) and there is no GET parity;
   the test names the route function for ADR 049.
 
 ## Java origin
@@ -64,15 +64,15 @@ None new: this increment proves rules whose Java origin 8.1/8.2/8.3/8.5
 already cite (`data2model`'s `extract.py`/`to_JSON.py`, `lineage_model`'s
 `lineage_model.py`, the legacy validation mock). The negative parity
 stages cite the same legacy sources as their positive counterparts, with
-the deviation refs the rules carry (DV-17, DV-18, DV-21, DV-24).
+the deviation refs the rules carry (DV-53, DV-18, DV-56, DV-58).
 
 ## Deviations
 
 None new. The negative scenarios state existing deviations, each with its
 `deviations:` ref in the YAML (the 8.0 harness's feature, DV-06): DV-18
-(malformed body → 400, not the legacy Flask 500), DV-21 (a malformed/missing
-query → 400, not the legacy's `int()`/`Enum()` crash 500), DV-14 (any body
-accepted), DV-17 (null view name renders `'nan'` as the legacy does).
+(malformed body → 400, not the legacy Flask 500), DV-56 (a malformed/missing
+query → 400, not the legacy's `int()`/`Enum()` crash 500), DV-50 (any body
+accepted), DV-53 (null view name renders `'nan'` as the legacy does).
 
 ## Acceptance
 
@@ -86,7 +86,7 @@ Unit (naming rules per ADR 049; run `uv run pytest apps/<app>/tests`):
   `test__a_view_edge_rule_for_an_absent_column_is_skipped` (DTM-07),
   `test__a_dynamic_view_groups_rows_by_its_key_column` (DTM-06),
   `test__a_dynamic_view_name_comes_from_its_key_column` (DTM-06),
-  `test__a_dynamic_view_name_without_its_key_column_is_the_legacy_nan` (DTM-06, DV-17),
+  `test__a_dynamic_view_name_without_its_key_column_is_the_legacy_nan` (DTM-06, DV-53),
   `test__the_hierarchical_layout_ranks_bottom_to_top` (DTM-06, DTM-08).
 - `apps/aurelius-atlas-lineage-model/tests/test__aurelius_atlas_lineage_model_app.py`
   — appended tests (the `FakeUpstream` handler seam, DD-111):
@@ -97,8 +97,8 @@ Unit (naming rules per ADR 049; run `uv run pytest apps/<app>/tests`):
   `test__a_hanging_upstream_times_out_to_a_502` (LM-07, LM-10).
 - `apps/aurelius-atlas-validate-entity/tests/test__aurelius_atlas_validate_entity_app.py`
   — appended: `test__the_mock_route_is_post_only` (405),
-  `test__a_megabyte_body_still_answers_the_mock` (VE-01, DV-14),
-  `test__a_body_without_a_content_type_still_answers_the_mock` (VE-01, DV-14).
+  `test__a_megabyte_body_still_answers_the_mock` (VE-01, DV-50),
+  `test__a_body_without_a_content_type_still_answers_the_mock` (VE-01, DV-50).
 
 Parity scenarios (ADR 052; run in-process by `tests/test__*_scenarios.py` and
 against the container by `e2e/*_scenarios_e2e.py`):
@@ -108,10 +108,10 @@ against the container by `e2e/*_scenarios_e2e.py`):
   (`deviations: [DV-18]`, cites the legacy `extract` view's `ValueError`),
   and an unknown `concept_type` rule → 400 (DTM-11).
 - `apps/aurelius-atlas-lineage-model/scenarios/lineage/graph-rejections.scenario.yaml`
-  — a missing `guid` → 400 (`deviations: [DV-21]`, cites the legacy guid
-  `None` crash), a `depth=0` → 400 (DV-21), a `direction=SIDEWAYS` → 400.
+  — a missing `guid` → 400 (`deviations: [DV-56]`, cites the legacy guid
+  `None` crash), a `depth=0` → 400 (DV-56), a `direction=SIDEWAYS` → 400.
 - `apps/aurelius-atlas-validate-entity/scenarios/validation/mock-rejections.scenario.yaml`
-  — the malformed-body stage → 200 mock (`deviations: [DV-14]`, VE-01's
+  — the malformed-body stage → 200 mock (`deviations: [DV-50]`, VE-01's
   other half as a wire contract).
 
 Gates: `uv run aurelius-atlas-trace check` green (the appended tests name the

@@ -20,7 +20,7 @@ type GuardFn = (
 ) => Promise<boolean>;
 
 describe("routes", () => {
-    it("guards every route from the app root (APC-05, DD-052)", () => {
+    it("guards every route from the app root (APC-05, DD-141)", () => {
         expect(routes).toHaveLength(1);
         expect(routes[0]).toMatchObject({ path: "" });
         expect(routes[0].canActivate).toHaveLength(1);
@@ -38,7 +38,7 @@ describe("routes", () => {
         await expect(loadChildren()).resolves.toBe(SEARCH_ROUTES);
     });
 
-    it("routes the settings panel into the drawer aux outlet (SPL-14, DD-078)", async () => {
+    it("routes the settings panel into the drawer aux outlet (SPL-14, DD-166)", async () => {
         const settings = routes[0].children?.find((route) => route.outlet === "drawer");
         expect(settings?.path).toBe("settings");
 
@@ -69,7 +69,7 @@ describe("routes", () => {
         await expect(loadComponent()).resolves.toBe(Details);
     });
 
-    it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-043)", () => {
+    it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-132)", () => {
         expect(routes[0].children?.at(-1)).toMatchObject({
             path: "**",
             redirectTo: "search/browse",
@@ -147,7 +147,7 @@ describe("routes", () => {
         });
     });
 
-    it("registers the root guard with createAuthGuard, once (DD-052)", () => {
+    it("registers the root guard with createAuthGuard, once (DD-141)", () => {
         expect(createAuthGuardCalls).toHaveLength(1);
         expect(typeof createAuthGuardCalls[0][0]).toBe("function");
     });

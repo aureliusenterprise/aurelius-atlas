@@ -12,7 +12,7 @@ collaborators, routes serve, `app.py` composes.
 - `aurelius_atlas_lineage_model/app.py` — the composition root:
   `create_app(settings, auth=None, atlas=None, d2m=None)` builds the verifier,
   the upstream clients and their breakers, mounts the routers, wires the
-  upstream-error/400 handlers (LM-05/LM-07, DV-20..DV-22, LM-12's open-circuit
+  upstream-error/400 handlers (LM-05/LM-07, DV-55..DV-22, LM-12's open-circuit
   502 — the mapping is the app's own contract, kept at the root) and the
   telemetry. The `auth`/`atlas`/`d2m` arguments are injectable for tests
   (DD-111); the lifespan closes the httpx2 pools the app built (DD-116).
@@ -68,10 +68,10 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
 - Auth is the shared lib (`aurelius-atlas-auth`, DD-108): `auth.require_auth` +
   `auth.require_bearer` on the route — the caller's **raw** token is forwarded to both
   upstreams (LM-04). Audience `aurelius` (the webapp's client id, AUX-04): the chain
-  forwards browser tokens, so this app verifies them for that audience (LM-08, DV-23).
-- The upstreams are settings, never hosts (DV-16): `atlas_base_url` (the server's
+  forwards browser tokens, so this app verifies them for that audience (LM-08, DV-57).
+- The upstreams are settings, never hosts (DV-52): `atlas_base_url` (the server's
   lineage feed, 5.1) and `data2model_url` (the 8.1 app).
-- Each upstream is guarded by its own `pybreaker` breaker (8.5, LM-11..LM-14, DV-26,
+- Each upstream is guarded by its own `pybreaker` breaker (8.5, LM-11..LM-14, DV-60,
   DD-117): the documented `with breaker.calling():` seam at each call site, the callable
   `exclude` predicate (4xx is a fact, not an outage — the auth library's AUX-02 shape),
   one breaker per integration point. The breakers live in the app, not the client
@@ -92,7 +92,7 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
 - `e2e/docker-compose.yaml` — the 8.2 chain (DD-111): this app + the **real** data2model
   image (certs mounted from its project) + a fixture Atlas (`python -m http.server` over
   `e2e/fixtures/`, where `v2/lineage/<guid>` is the canned graph, named for the fixed
-  UUID guid the scenario fixtures carry (DV-27)); the collector on the observability network, Keycloak through
+  UUID guid the scenario fixtures carry (DV-61)); the collector on the observability network, Keycloak through
   `keycloak.localhost:host-gateway`.
 
 ## Removal

@@ -17,7 +17,7 @@ services:
             # caller's bearer token against it (VE-03). The audience is the dev
             # realm's public `aurelius` client — the webapp's client id, the
             # audience the browser's tokens carry (AUX-04); the suite mints its
-            # test tokens for it, as the editor's caller sends them (DV-24).
+            # test tokens for it, as the editor's caller sends them (DV-58).
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://keycloak.localhost:8443/
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: master
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: ${AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE:?}

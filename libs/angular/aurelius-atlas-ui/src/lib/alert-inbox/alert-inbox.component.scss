@@ -7,10 +7,10 @@
  * segments (DD-090, DD-092).
  *
  * A pressed chip rides its severity's colour (DD-092): the fills are
- * DD-063's pinned ramp, fixed in both schemes like the badge's dot
- * (DD-080) and the footer's pair (SHM-07). Bulma's own `.button.is-*`
+ * DD-152's pinned ramp, fixed in both schemes like the badge's dot
+ * (DD-168) and the footer's pair (SHM-07). Bulma's own `.button.is-*`
  * fills are scheme-following token tints, and the brand pins the
- * `light` plate outside Bulma's scheme machinery (SHM-04) — DD-088's
+ * `light` plate outside Bulma's scheme machinery (SHM-04) — DD-176's
  * measured trap. The inks are the ramp's own inverts: Bulma's black on
  * warning and info (yellow and teal take dark ink, 11.7:1 and 9.7:1),
  * white on danger (4.5:1). An unpressed chip is a plain Bulma button —
@@ -18,7 +18,7 @@
  * `is-info` etc., so Bulma's scheme-following button rules stay off the
  * chip: unpressed must stay plain.
  *
- * The count tag is the chip's pinned pair (DD-088): Bulma's `is-light`
+ * The count tag is the chip's pinned pair (DD-176): Bulma's `is-light`
  * is a scheme trap — the brand pins the light plate outside Bulma's
  * scheme machinery (SHM-04) while Bulma's dark theme re-pins the ink,
  * white-on-white in dark mode.
@@ -44,21 +44,21 @@
 }
 
 .aurelius-alert-inbox-chip.is-selected.is-sev-info {
-    background-color: #17a2b8; // $info (DD-063)
+    background-color: #17a2b8; // $info (DD-152)
     border-color: #17a2b8;
     color: var(--bulma-black-bis); // #141414, 9.7:1 on the teal
     --aurelius-chip-fill: #17a2b8;
 }
 
 .aurelius-alert-inbox-chip.is-selected.is-sev-warning {
-    background-color: #ffc107; // $warning (DD-063)
+    background-color: #ffc107; // $warning (DD-152)
     border-color: #ffc107;
     color: var(--bulma-black-bis); // Bulma's warning ink, 11.7:1
     --aurelius-chip-fill: #ffc107;
 }
 
 .aurelius-alert-inbox-chip.is-selected.is-sev-error {
-    background-color: #dc3545; // $danger (DD-063)
+    background-color: #dc3545; // $danger (DD-152)
     border-color: #dc3545;
     color: var(--bulma-white); // 4.5:1 on the red (Bulma's danger invert)
     --aurelius-chip-fill: #dc3545;
@@ -75,7 +75,7 @@
  * bar is one height (the group's flex stretch keeps them equal).
  */
 .aurelius-alert-inbox-count {
-    background-color: #f5f5f5; // $light, pinned in both schemes (DD-088)
+    background-color: #f5f5f5; // $light, pinned in both schemes (DD-176)
     color: #363636; // its legacy invert (SHM-04's pair)
     height: auto;
     line-height: 1;
@@ -85,7 +85,7 @@
 
 /*
  * The unread dot (ALR-12): the chip's own ink (currentColor) with a
- * hairline ring in the chip's plate — the badge's idiom (DD-080). The
+ * hairline ring in the chip's plate — the badge's idiom (DD-168). The
  * ramp's colour is the chip's whole face now (DD-092), so a ramp-
  * coloured dot would ride its own colour and vanish; the ink dot keeps
  * a clear edge on every fill and on the plain chip.

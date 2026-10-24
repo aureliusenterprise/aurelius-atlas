@@ -20,9 +20,9 @@ in `libs/angular/AGENTS.md`.
 - `chromatic` target depends on `decrypt` (SOPS) for the Chromatic token.
 - `check-purity` — runs `apps/aurelius-atlas-webapp/scripts/check-webapp-purity.sh`
   from the workspace root (one script, one list of banned constructs; it greps
-  `libs/angular` too, DD-048), wired as a `dependsOn` of `test`.
+  `libs/angular` too, DD-137), wired as a `dependsOn` of `test`.
 - Chrome strings: `i18n` attributes with ids reusing the legacy `components.*`
-  dictionary paths (DD-047). The webapp's generator bridges the vendored
+  dictionary paths (DD-136). The webapp's generator bridges the vendored
   `tests/fixtures/components-*.json` into its XLIFF catalogues, and
   `i18n-completeness.spec.ts` proves both locales; a new chrome string needs a
   fixture entry in both locales. (`extract-i18n` emits the template units once

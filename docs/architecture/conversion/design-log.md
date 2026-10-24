@@ -877,7 +877,7 @@ would hang start-up.
 process that loses ten times in a row still reports the file or patch as failed, as Atlas does on a lock
 failure.
 
-### DD-037. The webapp is a new project, not the Aurelius app upgraded in place
+### DD-126. The webapp is a new project, not the Aurelius app upgraded in place
 
 - **Status:** Proposed
 - **Increment:** 7.0
@@ -906,7 +906,7 @@ clone is kept at `.scratch/aurelius` as the reference checkout, git-ignored and 
 graph; every `Aurelius origin` citation in the 7.x increments points into it, and it is re-fetched
 by path when a citation must be checked.
 
-### DD-038. Signals replace the custom store; each slice owns its state
+### DD-127. Signals replace the custom store; each slice owns its state
 
 - **Status:** Proposed
 - **Increment:** 7.0
@@ -934,7 +934,7 @@ carries (selected entity, filters, breadcrumbs) finds no home.
 read as the source of assertions (ADR 053 R5). The purity check fails a state-owning `Subject`, so
 a slice cannot keep one by accident.
 
-### DD-039. Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture
+### DD-128. Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture
 
 - **Status:** Proposed
 - **Increment:** 7.1
@@ -964,7 +964,7 @@ expressions, and the `TranslateService.get()` call sites become static messages.
 no consumer after 7.10 are dead weight until swept; the completeness test is what keeps them named
 rather than silently dropped.
 
-### DD-040. Google Analytics and clickstream are dropped, not ported
+### DD-129. Google Analytics and clickstream are dropped, not ported
 
 - **Status:** Proposed
 - **Increment:** 7.1
@@ -991,7 +991,7 @@ Aurelius interface at 7.10; page views can be re-added to `aurelius-atlas-observ
 deliberate feature. No Aurelius code is translated, so this is the one part of `Core.imports` that
 has no destination.
 
-### DD-041. The webapp's config is a typed AppConfig, and `environment.ts` is not ported
+### DD-130. The webapp's config is a typed AppConfig, and `environment.ts` is not ported
 
 - **Status:** Proposed
 - **Increment:** 7.1
@@ -1021,7 +1021,7 @@ setting has one shape per deployment rather than one per build. The `dev/config.
 development assets are bundled only in the development build, so a real secret never rides in a
 production bundle.
 
-### DD-042. Webapp purity is a checked gate, not a review convention
+### DD-131. Webapp purity is a checked gate, not a review convention
 
 - **Status:** Proposed
 - **Increment:** 7.0
@@ -1050,7 +1050,7 @@ the definition of good Angular — idioms it cannot see (`input()` versus `@Inpu
 `OnPush`) stay with review. Its allow-list is where an exemption is argued in the open, so an
 escape hatch is a reviewed change rather than a quiet one.
 
-### DD-043. The wildcard fallback redirects to the destination, not through the root
+### DD-132. The wildcard fallback redirects to the destination, not through the root
 
 - **Status:** Proposed
 - **Increment:** 7.1
@@ -1075,7 +1075,7 @@ it encodes the destination, not the chain. The `''` route remains the single def
 default destination; the fallback names it, so a later slice that moves the default edits both
 lines, and `routes.spec.ts` pins both.
 
-### DD-044. Operational telemetry lands with 7.1; the auth wiring stays with 7.3
+### DD-133. Operational telemetry lands with 7.1; the auth wiring stays with 7.3
 
 - **Status:** Proposed
 - **Increment:** 7.1
@@ -1086,7 +1086,7 @@ tracing `ErrorHandler`, and the `traceparent` HTTP interceptor, all from
 `aurelius-atlas-observability` — lands with 7.1, not with 7.3. The Keycloak
 providers and the bearer-token interceptor stay in 7.3, which owns the auth wiring.
 
-**Reason.** DD-040 attaches the telemetry replacement to this increment, and the
+**Reason.** DD-129 attaches the telemetry replacement to this increment, and the
 shell is where the Aurelius `Core.imports` (the single wiring point that carried
 both GA/clickstream and the app's providers) dissolves — so the OTel half of that
 dissolution belongs here. The exporter endpoint is already a 7.1 config field
@@ -1096,7 +1096,7 @@ Telemetry is also the shell's own operational signal — the earlier it covers t
 app, the more of the port it observes.
 
 **Alternatives.** Wire everything in 7.3: keeps one bootstrap commit, but leaves
-DD-040 unsatisfied for a whole increment and pairs telemetry with auth for no
+DD-129 unsatisfied for a whole increment and pairs telemetry with auth for no
 dependency that exists — the OTel providers need only `AppConfig`. Wire traces
 only, metrics in a later slice: the metrics provider is the same call with a
 metrics exporter; splitting them adds no review value.
@@ -1107,7 +1107,7 @@ so trace propagation is in place before the first request exists. The bootstrap
 in `app.config.ts` matches the example app's provider set minus Keycloak, which
 is the visible difference between the two files.
 
-### DD-045. The design-system slice ports the in-use components, not the library
+### DD-134. The design-system slice ports the in-use components, not the library
 
 - **Status:** Proposed
 - **Increment:** 7.2
@@ -1139,7 +1139,7 @@ the in-use set, and the deferred folders are named in the increment's not-in-sco
 table with their slice. A later slice that needs a deferred component adds it under its
 own increment, where its caller can be reviewed with it.
 
-### DD-046. Component services dissolve into signal state; nothing is ported as a store
+### DD-135. Component services dissolve into signal state; nothing is ported as a store
 
 - **Status:** Proposed
 - **Increment:** 7.2
@@ -1153,7 +1153,7 @@ and the `MonitorAsync` plumbing are not ported at all; `PageScrollService` in `H
 dropped for the router's own scroll restoration. Where legacy state was persisted
 (sort and page survive navigation via the store), persistence moves to the caller.
 
-**Reason.** The custom store is the pattern the port exists to remove (DD-038, ADR 053
+**Reason.** The custom store is the pattern the port exists to remove (DD-127, ADR 053
 R3), and the purity gate refuses a state-owning `BehaviorSubject` in this tree. The
 state those services hold is view state — which column is sorted, which page is open —
 which is exactly what a `model()` is for, and a component that owns it in a signal can
@@ -1172,7 +1172,7 @@ signal has no consumer. The legacy Jest assertions about store interaction are
 re-expressed as component-level assertions (UIC-06), so the behavioural knowledge
 survives while the abstraction does not.
 
-### DD-047. Shared chrome strings are localisation units keyed by the legacy dictionary paths
+### DD-136. Shared chrome strings are localisation units keyed by the legacy dictionary paths
 
 - **Status:** Proposed
 - **Increment:** 7.2
@@ -1190,7 +1190,7 @@ table's column names) is passed as content nodes, not as a string input.
 **Reason.** WBP-05 forbids literal prose in a template, and the Dutch translations of
 these seven strings already exist — dropping them would ship an untranslated table
 header in the one language the port promises. The bridge keys catalogues by dictionary
-path (DD-039) so a reviewer can diff a unit against the legacy entry, and the
+path (DD-128) so a reviewer can diff a unit against the legacy entry, and the
 completeness spec proves both locales; reusing the legacy paths keeps component chrome
 and app text in one catalogue with one mechanism. Content nodes for caller-owned text
 is what the built-in localisation cannot do for a string input: a translated string
@@ -1208,23 +1208,23 @@ alias. A component string with no legacy key (a state the Aurelius component nev
 had) gets a new id under `components.*` and gains a Dutch entry in the fixtures, so the
 completeness gate is the point where a new chrome string is argued.
 
-### DD-048. The purity gate is made executable over `libs/angular`
+### DD-137. The purity gate is made executable over `libs/angular`
 
 - **Status:** Proposed
 - **Increment:** 7.2
 - **Date:** 2026-10-20
 
 **Decision.** `check-webapp-purity.sh` gains the `libs/angular` tree it was documented
-to grep (DD-042), and `aurelius-atlas-ui` gets a `check-purity` target wired as a
+to grep (DD-131), and `aurelius-atlas-ui` gets a `check-purity` target wired as a
 `dependsOn` of its `test` target, so CI enforces the legacy-construct ban on the
 library as well as the app.
 
-**Reason.** DD-042 states the gate greps `apps/aurelius-atlas-webapp` and
+**Reason.** DD-131 states the gate greps `apps/aurelius-atlas-webapp` and
 `libs/angular`; the script greps only the app's `src/`. The claim was written when the
 library held six hand-written components and 7.2 is the first slice to fill it with
 ported code — exactly the material a copied Aurelius file arrives in, with its
 `NgModule` and its `BehaviorSubject` attached. A rule that is documented and not
-checked is the failure mode DD-042 was written against.
+checked is the failure mode DD-131 was written against.
 
 **Alternatives.** An ESLint rule set in the library: carries what a linter can see
 (`@NgModule`, a banned import) and nothing about a service that owns state in a
@@ -1234,11 +1234,11 @@ editing the library will not find it.
 
 **Consequences.** The gate runs twice per CI job, over two roots, from one script — so
 one list of forbidden constructs stays the definition. Any exemption is an allow-list
-entry in that script, a reviewed change in the open (DD-042's consequence), and 7.2's
+entry in that script, a reviewed change in the open (DD-131's consequence), and 7.2's
 ported components are expected to need none: the six existing library components are
 already clean.
 
-### DD-049. The Storybook preview loads `@angular/localize/init`
+### DD-138. The Storybook preview loads `@angular/localize/init`
 
 - **Status:** Proposed
 - **Increment:** 7.2
@@ -1247,7 +1247,7 @@ already clean.
 **Decision.** `.storybook/preview.ts` imports `@angular/localize/init` as its first
 side-effect, the same polyfill the webapp build loads through its `polyfills` option.
 
-**Reason.** A chrome string in a component template (DD-047) compiles to a `$localize`
+**Reason.** A chrome string in a component template (DD-136) compiles to a `$localize`
 call. Under the app's build that global exists; under Storybook's build it does not, so
 every story whose template carries an `i18n` attribute throws `$localize is not
 defined` at render — the `i18n` bridge silently made every story with chrome text
@@ -1263,7 +1263,7 @@ baseline and the `play()` queries assert on. A story that needs the Dutch text i
 of scope — translation is a per-app build-time concern; the completeness spec (SHL-08,
 UIC-04) is what proves the catalogues carry both locales.
 
-### DD-050. The client owns the base URL; the proxy forwards the prefix untouched
+### DD-139. The client owns the base URL; the proxy forwards the prefix untouched
 
 - **Status:** Proposed
 - **Increment:** 7.3
@@ -1279,7 +1279,7 @@ resolved against `<base href>`, prefix injected by the deployment proxy: dev
 **Reason.** The 7.0 audit asked how the legacy app reaches the server and found: nowhere
 in the code — the coupling lives entirely in deployment. That is invisible to the compiler,
 untestable against a stub, and the reason the legacy client cannot say which API it
-speaks to. Aurelius Atlas inverts it: the client names its base URL from config (DD-041's
+speaks to. Aurelius Atlas inverts it: the client names its base URL from config (DD-130's
 runtime-settings channel), the proxy is a dumb forwarder, and a deployment moves the API
 by serving a `config.json`, not by editing proxy tables. The server's routes already carry
 the `/api/atlas/...` prefix, so a rewriting proxy would double-strip it; forwarding
@@ -1293,9 +1293,9 @@ per-deployment origins in the CSP, reopening the same-origin boundary ADR 039 cl
 **Consequences.** The webapp's dev proxy no longer points at the FastAPI example's
 `:8000` (the copied line retargets at `:21000`); the example app keeps its own chain
 until 7.10 retires it. The e2e nginx's `/api/` placeholder comment ("the Atlas API server
-joins this proxy when 7.3 wires real data") is redeemed by DD-053.
+joins this proxy when 7.3 wires real data") is redeemed by DD-142.
 
-### DD-051. The REST client ports the live surface; the search client is redesigned in 7.4
+### DD-140. The REST client ports the live surface; the search client is redesigned in 7.4
 
 - **Status:** Proposed (the lineage/validate exclusion is superseded by
   [ADR 055](../adr/055-the-lineage-chain-is-a-named-data-surface.md) — increments
@@ -1315,7 +1315,7 @@ engines (`/elastic`, `/gov_quality`, `/data_quality`) — a third-party search b
 Aurelius Atlas does not have and will not gain: search is Elasticsearch-native here
 (ADR: the store). The server's Atlas-native search is increment 4.1, planned. Porting the
 App Search DTOs now would ship typed structs for a wire format no server speaks, specs
-asserting calls that answer 404, and a mapping layer 4.1 reworks anyway (DD-051's
+asserting calls that answer 404, and a mapping layer 4.1 reworks anyway (DD-140's
 consequence). The rest of the legacy surface (entity, glossary, relationship, lineage,
 validate, dashboard) has the same property in smaller doses: endpoints 2.3+ have not
 landed, and the lineage/validate/dashboard backends are separate services with no
@@ -1331,7 +1331,7 @@ lands testable against the real server, and the specs stay honest through 7.4–
 legacy's service+free-function duplication (e.g. `EntityAPIService.getEntityById` and
 `get-entity-by-id/`) collapses to one method each as each set is ported.
 
-### DD-052. Auth is guarded at the app root; the bearer token is stated inert until 6.1
+### DD-141. Auth is guarded at the app root; the bearer token is stated inert until 6.1
 
 - **Status:** Proposed
 - **Increment:** 7.3
@@ -1364,7 +1364,7 @@ suite gains the example's authenticated-login fixture as `aurelius-writer`). The
 unauthenticated redirect-to-sign-in is itself tested (APC-05) — the sign-in page is the
 app's first collaborator, and the flow is proven in CI, not assumed.
 
-### DD-053. The webapp e2e stack runs the real Atlas server behind the proxy
+### DD-142. The webapp e2e stack runs the real Atlas server behind the proxy
 
 - **Status:** Proposed
 - **Increment:** 7.3
@@ -1394,7 +1394,7 @@ already up for the server's own e2e, so cache-hit order matters little). The dev
 `nx serve aurelius-atlas-server` + `nx serve aurelius-atlas-webapp` becomes the documented
 development loop.
 
-### DD-054. The landing page is ported statically; search affordances and Shell chrome join the search slice
+### DD-143. The landing page is ported statically; search affordances and Shell chrome join the search slice
 
 - **Status:** Proposed
 - **Increment:** 7.5
@@ -1411,7 +1411,7 @@ hold until the server search API exists (4.1 basic search, 2.3 entity read).
 **Reason.** The landing page's content — cards, info modals, type tables — is entirely
 static and fully keyed in the XLIFF bridge, so the screen can be ported and proven today;
 its search affordances are navigation into a screen that has no API, and shipping a search
-box whose results page 404s is the speculative build DD-051 refuses, one level up. The
+box whose results page 404s is the speculative build DD-140 refuses, one level up. The
 Shell is deferred for the same reason in chrome form: Aurelius's header carries the global
 search bar and session UI, so wiring the chrome is one decision taken together with the
 search entry point, not two. The user's 2026-10-20 direction ("port the landing page;
@@ -1427,7 +1427,7 @@ re-adds the affordances as part of the search slice, at which point the Shell ro
 7.x ledger is taken with it. The 7.5 roadmap row is retitled to the landing page; browse
 domain grids, if kept from the legacy design, follow with the search slice.
 
-### DD-055. i18n ids carry no description suffix; the bridge key must equal the extracted id
+### DD-144. i18n ids carry no description suffix; the bridge key must equal the extracted id
 
 - **Status:** Proposed
 - **Increment:** 7.5
@@ -1437,11 +1437,11 @@ domain grids, if kept from the legacy design, follow with the search slice.
 `i18n="@@<dictionary.path>"` only — never `@@<id>|<description>`. Where a unit wants a
 translator note, the note lives in an adjacent comment. `aurelius-atlas-ui`'s four chrome
 units (`components.sortableTableShell.previous|next|noData`, `components.accordion.toggleContent`)
-drop their `| … (DD-047)` suffixes, and the `SortableTable` component drops
+drop their `| … (DD-136)` suffixes, and the `SortableTable` component drops
 `TableColumn`/`TableRow` from its `imports` (caller-projected directives, NG8113).
 
 **Reason.** Angular joins the `|description` half into the extracted trans-unit id, so the
-key-keyed bridge (DD-039, DD-047) can never match such a unit: `extract-i18n` emits
+key-keyed bridge (DD-128, DD-136) can never match such a unit: `extract-i18n` emits
 `components.sortableTableShell.next|Aurelius table shell …` where the catalogue carries
 plain `components.sortableTableShell.next`. The nl-NL build then answers "No translation
 found" for the unit — the chrome string ships untranslated in the one language the bridge
@@ -1460,14 +1460,14 @@ key-mangling rule in the generator for a note the XLIFF `<note>` element (which
 `extract-i18n` emits from the marker's description) already carries — the catalogue
 already proves round-tripping works without it. Register the chrome strings in the
 catalogues _with_ the suffix: breaks the "id equals the legacy dictionary path" invariant
-DD-047 states in its title.
+DD-136 states in its title.
 
 **Consequences.** `nx extract-i18n aurelius-atlas-webapp` output is now a strict subset of
 the bridge catalogue, so `nx build aurelius-atlas-webapp` is warning-clean and can be used
 as the id-parity gate; the 7.2 spec's chrome-string rule (UIC-04) is unchanged, and the
 accordion's toggle-content unit starts translating in nl-NL for the first time.
 
-### DD-056. The Shell chrome is ported search-free; the root composes header and footer
+### DD-145. The Shell chrome is ported search-free; the root composes header and footer
 
 - **Status:** Proposed
 - **Increment:** 7.11
@@ -1479,24 +1479,24 @@ ui-lib component) over the router outlet, footer below. What is ported: the bran
 name from `/config.json`, linking to the default route), the Documentation link, the
 language dropdown, the account dropdown (identity, Keycloak account console, logout),
 and the copyright footer. What is not: the global search bar and nav buttons (they join
-7.4, unchanged from DD-054's reasoning), the PWA install/update buttons (no service
+7.4, unchanged from DD-143's reasoning), the PWA install/update buttons (no service
 worker is ported), the Models4Insight services dropdown (not part of this product), the
 sticky loading/pipeline block (nothing to track yet), and the login button (every route
 is guarded, APC-05 — the logged-out navbar is unreachable). The navbar is not
 `is-fixed-top`. Switching language is a full-page navigation into the locale tree, not
 ngx-translate's runtime swap.
 
-**Reason.** DD-054 deferred the chrome _with the search bar_ because wiring them was one
+**Reason.** DD-143 deferred the chrome _with the search bar_ because wiring them was one
 decision; the user has since asked for the shell as its own deliverable, so the seam
 moves: the frame is orthogonal to search, and a screen wearing its header/footer is
-strictly closer to the product than a bare outlet. DD-054's search half stands
+strictly closer to the product than a bare outlet. DD-143's search half stands
 unchanged — this entry supersedes only its Shell-chrome sentence. The deferred controls
 each fail a test this workspace already enforces: an install button with no service
 worker is a promise the build does not keep; a services dropdown points at products
 outside this repo; a login button behind a guard is dead markup; a loading bar has no
 long navigation to track while the only screen is static. Aurelius's `Shell` module,
-its service (token refresh on window focus — keycloak-angular owns refresh, DD-052) and
-its reusable-route strategy are Redux-era plumbing the port's idioms replace (DD-046).
+its service (token refresh on window focus — keycloak-angular owns refresh, DD-141) and
+its reusable-route strategy are Redux-era plumbing the port's idioms replace (DD-135).
 
 **Alternatives.** Port the shell wholesale with the deferred controls hidden behind
 config flags (Aurelius's own `standalone`/`hideDocumentation` knobs): config that only
@@ -1510,9 +1510,9 @@ loading bar (a pinned header is a layout contract, not a class). The root's "bar
 outlet" spec (SHL-03, 7.1) is superseded by SHC-01 — the Aurelius root _is_ the shell,
 and the reading that motivated 7.1's placeholder retires. The shell's chrome strings are
 new vendored fixtures (`shell.header.*`, `shell.footer.*`), bridged like the components
-dictionary (DD-047), so UIC-04's invented-string gate extends to them.
+dictionary (DD-136), so UIC-04's invented-string gate extends to them.
 
-### DD-057. Session chrome injects the keycloak-js `Keycloak` instance, not keycloak-angular's `KeycloakService`
+### DD-146. Session chrome injects the keycloak-js `Keycloak` instance, not keycloak-angular's `KeycloakService`
 
 - **Status:** Accepted
 - **Increment:** 7.11
@@ -1543,7 +1543,7 @@ before the guard redirects, so only the built image exercised it.
 keycloak-js instance. Spec test providers use `{ provide: Keycloak, … }`.
 7.4's session-touching code follows the same token.
 
-### DD-059. The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned
+### DD-148. The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned
 
 - **Status:** Accepted
 - **Increment:** 7.12
@@ -1574,12 +1574,12 @@ out transparent). Light-forcing is Bulma 1's scheme machinery, one attribute;
 the brand colours stay scheme-independent so the switch has nothing to
 re-brand. The flex-column footer replaces the legacy's
 `.is-tall-container{min-height:100vh}`-inside-fixed-padding trick with the
-modern equivalent (DD-056's static-navbar reading is superseded — the pinned
+modern equivalent (DD-145's static-navbar reading is superseded — the pinned
 navbar is what the demo ships).
 
 **Alternatives.** Stay on the Bulma-1 defaults and re-skin component by
 component (the 7.2 status quo): every new surface drifts from the legacy
-brand. Port `@models4insight/styles` (DD-037 reversal): a Bulma 0.9.4 theme
+brand. Port `@models4insight/styles` (DD-126 reversal): a Bulma 0.9.4 theme
 package, the dependency the workspace adopted away from. Pin the legacy
 `has-background-*` classes only (no tokens): the demo's own utility CSS, and
 the token overrides are the one lever — the utilities read the same HSL
@@ -1592,7 +1592,7 @@ colours (`has-background-light` = `#f5f5f5`), so 7.4+ surfaces inherit the
 look. The greys are Bulma 0.9.4's pair, not Bootstrap's — the brand library's
 `$gray-*` stays for the `is-dark` pair (`#363636`).
 
-### DD-058. Dev Keycloak users carry `default-roles-master` explicitly
+### DD-147. Dev Keycloak users carry `default-roles-master` explicitly
 
 - **Status:** Accepted
 - **Increment:** 7.11 (dev infrastructure)
@@ -1629,7 +1629,7 @@ users — a boot re-import skips an existing realm wholesale — the recipe
 is in `dev/keycloak/AGENTS.md`. New realm-default-role needs (e.g.
 `offline_access` for refresh tokens) arrive here, not per client.
 
-### DD-060. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet
+### DD-149. Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet
 
 - **Status:** Accepted
 - **Increment:** 7.12
@@ -1666,7 +1666,7 @@ e2e suite now measures the CSS the browser actually applies. If LCP
 ever matters, re-measure with the inliner enabled in a browser that
 executes the swap script before re-enabling.
 
-### DD-061. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid
+### DD-150. The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid
 
 - **Status:** Accepted
 - **Increment:** 7.12
@@ -1707,7 +1707,7 @@ The `section > container` wrapper is the pattern for 7.4+ routed pages
 element. `min-height: 100vh` on the band means short pages scroll the
 footer into view; that is the legacy behaviour the demo shows.
 
-### DD-062. The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics
+### DD-151. The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics
 
 - **Status:** Accepted
 - **Increment:** 7.12
@@ -1725,7 +1725,7 @@ are pinned back on the selectors that scope them (`.title`/`.subtitle`
 ink, links and `strong` alike). `.content` is `#4a4a4a` with `#363636`
 600 headings. SHM-03.
 
-**Reason.** Reviewing the font story against the live demo: DD-059 pinned
+**Reason.** Reviewing the font story against the live demo: DD-148 pinned
 the body (stack, 16px/1.5, `#4a4a4a`) and the chrome bands, and every
 body-level value matched — but Bulma 1 re-tinted its whole grey ramp 221
 degrees (`text` `#4a5568`, `text-strong` `#2e333d`) and re-weighted the
@@ -1741,7 +1741,7 @@ chain at once, including selectors the brand file does not enumerate.
 (`.title { color }`, `.box { color }`, …): whack-a-mole across Bulma's
 long hsl-composed chains (the navbar dropdown composes `h`/`s` from the
 scheme with the `text` lightness — enumerating all compositions misses
-them, as the first cut did). Pin only the body (DD-059 as landed): the
+them, as the first cut did). Pin only the body (DD-148 as landed): the
 user-visible difference is exactly what the review found — a blue-grey
 app where the demo is neutral grey.
 
@@ -1752,7 +1752,7 @@ so a future dark scheme inherits Aurelius' neutral ramp machinery
 unchanged. `--bulma-text-rgb`-style companions are emitted for
 `text`/`text-strong`/`text-weak` (consumers read them raw).
 
-### DD-063. The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map
+### DD-152. The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map
 
 **Decision.** The brand library overrides the **accent** colours, not
 primary. `--bulma-primary` keeps Bulma's own teal `#00d1b2` (identical
@@ -1770,7 +1770,7 @@ hover/active band renders `#f5f5f5` with `#000` ink (the demo's
 `.navbar-link:hover`); Bulma 1 derives it from the hero chain and renders
 a blue-tinted plate. The plate composes `hsl(navbar-h/s,
 navbar-item-background-l + hover-delta, a)`, so the brand neutralises
-the `navbar` hue/saturation channels (the DD-062 pattern) and sets the
+the `navbar` hue/saturation channels (the DD-151 pattern) and sets the
 hover/active deltas to the band grey's 96 % lightness; Bulma 1 has **no**
 hover-ink token at all (0.9.4's `navbar-item-hover-color` is gone), so
 the black ink rides on a scoped hover rule mirroring Bulma's plate
@@ -1799,12 +1799,12 @@ what Bulma 1 composes at runtime.
 **Consequences.** The landing page's icon highlights match the demo.
 `$bulma-token-overrides` shrinks to the four chrome greys; accents have
 their own `$bulma-accent-overrides` map (value + ink lightness). The
-navbar hover/active emission joins the navbar block (DD-059's "scope on
+navbar hover/active emission joins the navbar block (DD-148's "scope on
 `.navbar`" pattern), with the one ink rule outside the token machinery —
 the first brand rule that must set a state colour Bulma 1 never tokenised.
 Pinned by `test__accent_ramp_matches_the_demo`.
 
-### DD-064. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor
+### DD-153. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor
 
 **Decision.** The brand carries the legacy theme's mobile navbar on Bulma
 1: `--bulma-navbar-burger-color: #4a4a4a` with the burger **channels** set
@@ -1831,7 +1831,7 @@ rendered Aurelius blue, the logout item sat centred on a white tile
 inside the grey menu, and the menu's dropdowns showed as white panels
 with blue chevrons. The legacy theme (`.scratch/aurelius`
 `libs/styles/src/styles/_theme.scss`) sets exactly four navbar rules —
-height, background, dropdown-arrow black, hover `#f5f5f5`/`#000` (DD-063)
+height, background, dropdown-arrow black, hover `#f5f5f5`/`#000` (DD-152)
 — and inherits 0.9.4's defaults for the rest; every mobile deviation is
 Bulma 1 changing those defaults (burger/arrow from link, unscoped
 dropdown plates, the chevron regression) or the port deviating from the
@@ -1849,7 +1849,7 @@ as the demo. The media block is the brand's first responsive emission;
 the chevron rule documents the upstream regression it mirrors. Pinned by
 `test__burger_menu_matches_the_legacy_mobile_chrome`.
 
-### DD-066. The entity card emits `entityClicked`; the caller navigates
+### DD-154. The entity card emits `entityClicked`; the caller navigates
 
 The ported `entity-card` (7.13) emits `entityClicked(guid)` on a title click and
 does not navigate. The legacy `DetailsCardComponent` injected `Router` and, on a
@@ -1861,7 +1861,7 @@ to choose emit-or-navigate.
 are dumb and live in `aurelius-atlas-ui`); an injected `Router` inside a lib
 component re-creates the coupling the port exists to remove, and the
 `observers.length` probe is a side-channel, not an API. Emitting always and
-letting the app route is the DD-046 pattern (`SearchField` emits, the caller
+letting the app route is the DD-135 pattern (`SearchField` emits, the caller
 filters).
 
 **Alternatives.** Port the probe (emit-if-observed, else navigate): keeps the
@@ -1872,7 +1872,7 @@ anchor: the details route belongs to 7.6, the lib must not know its path.
 **Consequences.** 7.6 wires `entityClicked` to the router. The card is
 testable and storyable with zero app services.
 
-### DD-067. The select is one field with a `searchRequested` output
+### DD-155. The select is one field with a `searchRequested` output
 
 The ported `select` (7.13) is the Bulma select field plus a search button that
 emits `searchRequested`. The legacy `SelectComponent` embedded a
@@ -1885,7 +1885,7 @@ the API coupling 7.2 set aside for the app slices (7.7 owns the editor
 anatomy). The presentation half (field, options, null/no-data messages,
 timestamp display, required help) is pure, so it ports now; the modal half
 arrives as app wiring listening to `searchRequested`. The reactive form
-dissolves into `value = model()` exactly as DD-046 did for `SearchField`, and
+dissolves into `value = model()` exactly as DD-135 did for `SearchField`, and
 the `compareWith` default becomes strict equality — the lodash `isEqual` deep
 compare was a legacy default the Aurelius callers never relied on.
 
@@ -1897,9 +1897,9 @@ presentation/data split lets 7.7 wire only the modal.
 **Consequences.** 7.7 composes select + modal; the lib stays pure. Option
 identity is strict reference equality — callers pass stable objects.
 
-### DD-068. The brand ships a dark ink ramp on Bulma's dark hosts
+### DD-156. The brand ships a dark ink ramp on Bulma's dark hosts
 
-The brand theme (DD-059/062) pins the light ink chain in `:root` — body
+The brand theme (DD-148, DD-151) pins the light ink chain in `:root` — body
 `#4a4a4a`, the neutral text ramp, `.content` — and `:root` out-cascades
 Bulma's own `[data-theme=dark]` block (equal specificity, later source).
 The result: under a dark scheme (the storybook theme switch, any future
@@ -1909,7 +1909,7 @@ on both of Bulma's dark hosts, `[data-theme="dark"]` (the explicit
 toggle, `DarkModeService`'s attribute) and `:root:not([data-theme])`
 inside `prefers-color-scheme: dark` (the OS path, Bulma's `system-theme`
 pattern): the text chain re-pins to Bulma's dark-scheme lightnesses over
-the DD-062 neutral hue (text 71% `#b5b5b5`, strong 93% `#ededed`, weak
+the DD-151 neutral hue (text 71% `#b5b5b5`, strong 93% `#ededed`, weak
 53% `#878787` — ~9:1 on the 9% surface), the body ink/background return
 to the scheme tokens, `.content` follows, the link lifts to Bulma's own
 dark adaptation (`link-on-scheme-l`, 73% — `#0073dd` is ~3.9:1 dark-on-
@@ -1930,7 +1930,7 @@ white are the legacy chrome in either scheme, and a light navbar over a
 dark page is Bulma's own `.navbar.is-light` idiom.
 
 **Alternatives.** Unpin the ink from `:root` and let Bulma's schemes own
-it: correct, but it deletes the DD-062 legacy ramp (Bulma 1's dark ink is
+it: correct, but it deletes the DD-151 legacy ramp (Bulma 1's dark ink is
 221°-tinted, the demo's is neutral) and out-of-scope churn on a light-
 only slice. A full brand dark palette (every accent re-tuned): the demo
 has no dark mode to measure against (the legacy Aurelius is light-only —
@@ -1944,7 +1944,7 @@ the app only through an explicit switch. Play tests cover the ramp on
 the entity-card/breadcrumbs dark composition stories; the light ramp is
 unchanged (SHM-03's measurements stand).
 
-### DD-069. The drawer is a new ui-lib component, not a Modal or a dropdown
+### DD-157. The drawer is a new ui-lib component, not a Modal or a dropdown
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -1960,7 +1960,7 @@ SCSS on Bulma tokens, carrying the `Modal`'s dismissal set (`active` as
 primitives are modal and navbar-dropdown. A drawer keeps the page content
 visible beside the settings (the point of a side panel), which the centred
 modal does not. Building it on Bulma tokens (`--bulma-scheme-main`, the text
-chain, the border ramp) makes DD-068's dark ink ramp apply to it for free.
+chain, the border ramp) makes DD-156's dark ink ramp apply to it for free.
 The dismissal semantics copy the `Modal` because that component proved the
 a11y pattern this repo accepts: the backdrop is the pointer path, Escape on
 the dialog is the keyboard path (the S1077 precedent in `modal.component.html`).
@@ -1980,7 +1980,7 @@ its buttons, the drawer has a focusable form. The component is generic
 (`title`, projected content), so the 7.6 filters/detail side panels can reuse
 it. Stories carry an OnDark variant like every overlay the lib ships.
 
-### DD-070. The telemetry switch stops exports immediately and starts them on reload
+### DD-158. The telemetry switch stops exports immediately and starts them on reload
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2017,7 +2017,7 @@ even the no-op path). The panel's reload hint is a rule with a test (SPL-11).
 A served-app scenario (no OTLP requests after off) lands with the 7.10 e2e
 set that serves the app.
 
-### DD-071. The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default
+### DD-159. The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2058,7 +2058,7 @@ empty attribute does not match Bulma's `:root:not([data-theme])` OS path, so
 Auto would never follow the OS. The 7.12 spec's html-attribute assertions
 keep passing because the script writes `light` when nothing is stored.
 
-### DD-072. Settings are a facade over one owner service per category
+### DD-160. Settings are a facade over one owner service per category
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2098,9 +2098,9 @@ sole writer of its key. Adding a setting = one owner + one facade member;
 the 7.6/7.7 screens consume owners directly (a table reads
 `PageSizeService`, not the facade) — the facade serves the panel, owners
 serve consumers. Server-side sync, when it lands, adds the PUT path in
-`UserPreference` and a hydrate step at bootstrap (DD-073).
+`UserPreference` and a hydrate step at bootstrap (DD-161).
 
-### DD-073. Settings are browser-scoped localStorage; server-side persistence is the follow-up slice
+### DD-161. Settings are browser-scoped localStorage; server-side persistence is the follow-up slice
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2112,14 +2112,14 @@ They are user-experience conveniences, scoped to the browser: nothing that
 identifies a user, grants a permission, or belongs to the catalogue is kept
 there. Server-side per-user persistence (Keycloak profile attributes, or the
 Atlas session settings ADM-05 exposes) is a deliberate later slice behind the
-`UserPreference` seam (DD-072).
+`UserPreference` seam (DD-160).
 
 **Reason.** The user chose localStorage for now and named Keycloak's user
 profile as the server-side direction. The two server channels are not ready:
 `GET /atlas/admin/session` (ADM-05) publishes settings but Atlas 2.4.0 has
 no settings-write endpoint, and Keycloak profile writes need admin
 token-roles — both are increments of their own. The privacy line matters for
-DD-070's off switch: a browser-scoped store keeps the promise simple (off
+DD-158's off switch: a browser-scoped store keeps the promise simple (off
 means this browser sends nothing; nothing was sent about a user).
 
 **Alternatives.** Cookies: sent to the server on every request for data the
@@ -2128,12 +2128,12 @@ synchronous bootstrap read SPL-07/SPL-11 need becomes an ordering problem.
 Server-first now: blocks the panel on the 6.1 identity + a new endpoint,
 putting a UI feature behind API work the user scoped later.
 
-**Consequences.** DV-12 records the panel as a deliberate addition (Atlas has
+**Consequences.** DV-48 records the panel as a deliberate addition (Atlas has
 none). A shared browser shares its settings — acceptable for v1, named for
 the server-side slice to fix. Key names are documented in this entry so the
 server-side slice can migrate them.
 
-### DD-074. The drawer animates in and out; the layer's life is the exit animation's
+### DD-162. The drawer animates in and out; the layer's life is the exit animation's
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2182,7 +2182,7 @@ functions. Keyframe names are prefixed `aurelius-drawer-`; the exit's
 encapsulation decorates keyframe names (computed
 `_ngcontent-ng-…_aurelius-drawer-out`), not by prefix.
 
-### DD-075. The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped
+### DD-163. The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2210,11 +2210,11 @@ in the brand (duplicates Bulma's values, and a brand-wide change to fix
 one component). Plain literals (loses the seam).
 
 **Consequences.** The drawer's computed padding is 2rem; the scrim is
-Bulma's modal-background recipe, dark-ramp aware (DD-068). The fallbacks
+Bulma's modal-background recipe, dark-ramp aware (DD-156). The fallbacks
 drift if a future Bulma changes the modal defaults — named, low-risk,
-the component owns its layer (DD-069).
+the component owns its layer (DD-157).
 
-### DD-076. The Appearance picker is the ui-lib Select; the Select gains `searchVisible`
+### DD-164. The Appearance picker is the ui-lib Select; the Select gains `searchVisible`
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2243,7 +2243,7 @@ element (specs index it). The Select gains a `NoSearch` story. A
 selected row can never be cleared — the placeholder is `hidden` and
 `setTheme` ignores null; the panel always has a theme.
 
-### DD-077. About shows one version; the server is not fetched
+### DD-165. About shows one version; the server is not fetched
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2270,7 +2270,7 @@ state the release strategy rules out).
 server; the panel is no longer its consumer, and DV-03's parity scope
 does not change.
 
-### DD-078. The settings panel is a routed overlay in the `drawer` aux outlet
+### DD-166. The settings panel is a routed overlay in the `drawer` aux outlet
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2287,7 +2287,7 @@ an alerts drawer is named — get their own outlet segments and compose in
 the URL: `(settings:…)(alerts:…)`.
 
 **Reason.** Switching language is a full-page navigation into the locale
-tree (DD-039), and the user wants the reload to land on the same page
+tree (DD-128), and the user wants the reload to land on the same page
 with the settings open. The URL is the only state that survives a full
 reload, and named outlets are Angular's mechanism for putting an
 overlay in the URL — the segment rides `localeHref()` untouched, so the
@@ -2301,17 +2301,17 @@ sticky. A service + effect — doesn't survive the reload, which is the
 requirement.
 
 **Consequences.** Closing destroys the panel, so the drawer's exit
-animation (DD-074) is not awaited there — accepted, named; the DD-074
+animation (DD-162) is not awaited there — accepted, named; the DD-162
 lifecycle remains for the drawer's own API (`close()` on a non-routed
 drawer), and the enter animation plays on open, including after the
 locale reload. Dismissal is destructive (no panel state to keep — the
-facade owns it, DD-072). Deep links work: visiting
+facade owns it, DD-160). Deep links work: visiting
 `/search/browse(drawer:settings)` opens the panel on that page. The
 `serverUnavailable` fallback and the `open()` API are gone; the panel
 spec drives the component directly (as the routed-component test
 pattern prescribes).
 
-### DD-079. Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings
+### DD-167. Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2357,7 +2357,7 @@ promise. (4) Keep `.menu-label` — the inconsistency the user flagged.
 pure pass-through. The `.label` heads are normal-case and stronger
 ink; the panel scss comment follows. No string ids change.
 
-### DD-080. The navbar follows the scheme: the dark slate band
+### DD-168. The navbar follows the scheme: the dark slate band
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2367,9 +2367,9 @@ ink; the panel scss comment follows. No string ids change.
 (SHM-01's "the brand colours do not follow the scheme", for the navbar
 only) for a neutral slate, #72757d — hsl(224, 4%, 47%), the faint cool
 cast of $blue. The bar's chrome composes on the slate: ink #000 (5.6:1),
-hover/active the light plate (Bulma's +8%/+12% deltas, DD-063's deltas
+hover/active the light plate (Bulma's +8%/+12% deltas, DD-152's deltas
 inverted for a dark band), the gear's `is-active` the white plate
-(DD-063's selected pair), the `is-dark` Documentation button's
+(DD-152's selected pair), the `is-dark` Documentation button's
 ink/border black (its pinned #363636 rides at 2.5:1 on the slate). The
 account dropdown keeps Bulma's scheme composition. The footer stays
 pinned (SHM-07 — blue/white reads the same in either scheme). The logo
@@ -2397,7 +2397,7 @@ logo's navy/cyan palette is now load-bearing across schemes: a future
 rebrand or light-variant asset replaces this decision (supersede, don't
 edit). The light band is untouched (SHM-05 stays the light-mode chrome).
 
-### DD-081. Settings headings are the controls' accessible names
+### DD-169. Settings headings are the controls' accessible names
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2405,7 +2405,7 @@ edit). The light band is untouched (SHM-05 stays the light-mode chrome).
 
 **Decision.** Every settings control's `.label` heading is its
 accessible name (the Bulma form guide's labelled control, the guide
-DD-079 adopted): Time zone and Page size are `label[for]`/`id` pairs on
+DD-167 adopted): Time zone and Page size are `label[for]`/`id` pairs on
 the native selects, Telemetry on the checkbox (the label moves from the
 old wrapping `.checkbox` — the checkbox is a plain control on the
 section grid), Appearance rides the ui-lib Select's own
@@ -2413,17 +2413,17 @@ section grid), Appearance rides the ui-lib Select's own
 control — are a `role="group"` labelled by their heading. About is a
 section title, not a field, and is not associated.
 
-**Reason.** The user's review of the DD-079 layout: the headings looked
+**Reason.** The user's review of the DD-167 layout: the headings looked
 right and were wired to nothing — clicking a label did nothing, and a
 screen reader announced bare "combobox"/"checkbox". The Bulma form
-guide the headings already follow prescribes the association; DD-079
+guide the headings already follow prescribes the association; DD-167
 adopted the shape and left out the link.
 
 **Alternatives.** `aria-labelledby` everywhere (works, and the
 `label[for]` is the HTML-native form the guide shows; the group and the
 Select use it where no single labelable control exists). Keeping the
 wrapping `.checkbox` label (an accessible name, and the Bulma checkbox
-idiom — rejected: the guide's stacked label/field shape is what DD-079
+idiom — rejected: the guide's stacked label/field shape is what DD-167
 just standardised on, and the checkbox label had no text to wrap).
 
 **Consequences.** Fixed ids (`settings-timezone`, …): the panel is a
@@ -2431,7 +2431,7 @@ singleton route, so collision is impossible. The checkbox loses
 Bulma's `.checkbox` hover affordance (the label click replaces it). The
 panel spec asserts each pair.
 
-### DD-082. The active locale is filled with the Aurelius blue
+### DD-170. The active locale is filled with the Aurelius blue
 
 - **Status:** Accepted
 - **Increment:** 7.14
@@ -2456,7 +2456,7 @@ visual half of it.
 a shadow on the plate, not a fill; the same non-result). A check-mark
 icon on the active link (a decoration needing a string and an id on
 both locales, for what a fill says for free). `var(--bulma-link)`
-(the scheme-following accent — rejected: DD-068 lightens it to 73%
+(the scheme-following accent — rejected: DD-156 lightens it to 73%
 in dark, and white ink on a 73% light-blue fails; the pinned pair
 holds 4.6:1 in either scheme).
 
@@ -2466,7 +2466,7 @@ is blue, its neighbours stay plain. The panel spec asserts the
 `is-selected` class on the active link (the scss fill itself is a
 style, not a testable DOM fact).
 
-### DD-083. The alerts store groups by a quiet window
+### DD-171. The alerts store groups by a quiet window
 
 - **Status:** Accepted
 - **Increment:** 7.15
@@ -2504,13 +2504,13 @@ bell's ring needs arrival counting, which raw-alert caps lose).
 constructor argument of the test, no zone patching under zoneless).
 
 **Consequences.** In-memory: alerts die with the tab — session events,
-not preferences; the persisted lane is DD-073's and this stays out of
+not preferences; the persisted lane is DD-161's and this stays out of
 it. `AlertGroup` (the ui-lib model, ALR-10) is the store's public row;
 the merge-key `source` is internal to the store. A 60 s constant;
 raising it is a one-line change. The cap's eviction is silent (alerts
 are cheap, the drawer is not an archive).
 
-### DD-084. The app's ErrorHandler chains: alert, then trace
+### DD-172. The app's ErrorHandler chains: alert, then trace
 
 - **Status:** Accepted
 - **Increment:** 7.15
@@ -2541,10 +2541,10 @@ them; a second listener double-records).
 
 **Consequences.** Every uncaught error is now user-visible — noisy
 runtime bugs surface in the drawer (the intent, ALR-04; the store's
-window, DD-083, absorbs repeat spam). The trace path is unchanged: the
+window, DD-171, absorbs repeat spam). The trace path is unchanged: the
 `app.config.spec.ts` provider-set specs keep SHL-14's shape.
 
-### DD-085. The HTTP reporter: 5xx and network failures on /api
+### DD-173. The HTTP reporter: 5xx and network failures on /api
 
 - **Status:** Accepted
 - **Increment:** 7.15
@@ -2565,7 +2565,7 @@ observable is untouched. 4xx is silent.
 is a client-side correction the calling feature already handles (its
 form, its not-found view), and reporting it would train users to
 ignore the drawer. The report is the drawer's, not the caller's:
-7.4+ features keep their own `onError` UX; DD-083's window folds the
+7.4+ features keep their own `onError` UX; DD-171's window folds the
 pairs into one row.
 
 **Alternatives.** Per-call `onError` reporting at each feature (every
@@ -2581,13 +2581,13 @@ feature also shows its own error (accepted: the drawer is the
 collected record). The status-0 case cannot tell an offline browser
 from a refused connection — one message covers both.
 
-### DD-086. The bell: severity badge and ring, one outlet
+### DD-174. The bell: severity badge and ring, one outlet
 
 - **Status:** Accepted
 - **Increment:** 7.15
 - **Date:** 2026-10-21
 
-**Decision.** The header bell is the gear's pattern (DD-078, DD-079):
+**Decision.** The header bell is the gear's pattern (DD-166, DD-167):
 a `navbar-item` routerLink to `(drawer:alerts)`, `is-active` while
 open, and the one `drawer` outlet swaps the settings panel and the
 alerts drawer (ALR-01). It carries the ui-lib `Badge`: a presence dot,
@@ -2604,7 +2604,7 @@ and "a little animation on the bell whenever an alert becomes
 available" — the ring is the arrival, the dot is the presence, the
 colour is the worst. Presence beats a count: the store caps at 30 and
 merges bursts, so a count badge overflows its own model. The
-single-outlet swap is DD-078's mechanism with a second segment (the
+single-outlet swap is DD-166's mechanism with a second segment (the
 URL owns which drawer is open; the locale switch's reload keeps it,
 SPL-14's mechanic reused). The ring is WAAPI, not a CSS class: the
 animation restarts cleanly mid-swing (a class re-trigger needs a
@@ -2619,14 +2619,14 @@ JS-driven replay). `@angular/animations` (not a dependency; the zoneless
 app has no animation renderer, WAAPI is the browser's).
 
 **Consequences.** The dot's contrast on the navbar bands is the
-Badge's problem (its ring, DD-087's note); the header keeps the
-DD-080 slate. The dot is a component, not Bulma's `.badge` idiom (the
+Badge's problem (its ring, DD-175's note); the header keeps the
+DD-168 slate. The dot is a component, not Bulma's `.badge` idiom (the
 lib has no Bulma DOM assumptions). A future read-model (server events,
 6.x) adds a source to the store, not a new door.
 
-### DD-087. AlertList and Badge are ui-lib presentational components
+### DD-175. AlertList and Badge are ui-lib presentational components
 
-- **Status:** Accepted (the `clearAll()` half of the contract superseded by DD-088)
+- **Status:** Accepted (the `clearAll()` half of the contract superseded by DD-176)
 - **Increment:** 7.15
 - **Date:** 2026-10-21
 
@@ -2643,12 +2643,12 @@ strings (ALR-08). The store, the window, and the routing stay app-side.
 for alerts." The feed has a second consumer by the plan's own logic
 (7.6+ feature slices push alerts through the same store, and the
 drawer is the product's surface); the dot generalises to any nav item.
-The lib's rule is the same one `Drawer` keeps (DD-069): Bulma-shaped
+The lib's rule is the same one `Drawer` keeps (DD-157): Bulma-shaped
 presentational markup, state in the caller. The lib's chrome-strings
-lane (DD-047: legacy dictionary paths) has no alert keys to reuse —
-these are Aurelius's own strings (DV-13) — so the inputs carry
+lane (DD-136: legacy dictionary paths) has no alert keys to reuse —
+these are Aurelius's own strings (DV-49) — so the inputs carry
 defaults and the app's catalogue owns the translations; the XLIFF
-gate (SHL-08) and the purity gate (DD-048) stay app-side, the lib
+gate (SHL-08) and the purity gate (DD-137) stay app-side, the lib
 stays service-free (its AGENTS.md convention).
 
 **Alternatives.** App-local components under `src/app/alerts` (not
@@ -2663,7 +2663,7 @@ covers the feed and the dot). The badge's ring is Bulma-token ink
 (`--bulma-navbar-item-color`, currentColor fallback) — a future non-
 navbar host keeps a visible edge without a new input.
 
-### DD-088. The chip's pinned pair; Clear all in the drawer head
+### DD-176. The chip's pinned pair; Clear all in the drawer head
 
 - **Status:** Accepted
 - **Increment:** 7.15
@@ -2675,7 +2675,7 @@ Bulma's `tag is-light`; and the "Clear all" button is a content action
 in the drawer's head, not part of the feed. The Drawer grows a
 `drawer-actions` projection slot between the title and the close button
 and AlertList loses its `clearLabel`/`clearAll` — clearing a store the
-list does not own was the list's borrowed business (DD-087's
+list does not own was the list's borrowed business (DD-175's
 presentational rule).
 
 **Reason.** The user's review of the live drawer: "the counter text is
@@ -2689,12 +2689,12 @@ theme re-pins `light`'s invert to a scheme-following ink — the
 ink (white-on-white). The pinned `#f5f5f5`/`#363636` pair is the
 footer's idiom (SHM-07): the same marker in either scheme, 9.3:1. The
 first fix placed Clear all above the rows inside the scrolling body
-(DD-088's first pass, unit-tested); on review the head is the stronger
+(DD-176's first pass, unit-tested); on review the head is the stronger
 answer — the body scrolls, so the hatch must ride the sticky head.
 
 **Alternatives.** Pin `light-invert` in the brand's `dark-ink` ramp
 (fixes the tag and every `is-light` surface app-wide — rejected as
-wider than the bug: DD-068's ramp re-pins the ink chain Bulma itself
+wider than the bug: DD-156's ramp re-pins the ink chain Bulma itself
 adapts; `light` is a colour pair SHM-04 pins deliberately, and
 dark-adapting it reopens SHM-01's promise). A severity-coloured chip
 (the row is already severity-coloured; the chip is metadata, not a
@@ -2705,9 +2705,9 @@ reusability": a feed that owns a store-clearing button presumes the
 store's shape — the head slot keeps the list the rows.
 
 **Consequences.** The chip is the third pinned pair in the product
-(footer SHM-07, active locale DD-082, chip DD-088) — the growing list
+(footer SHM-07, active locale DD-170, chip DD-176) — the growing list
 of surfaces that read the same in both schemes. The Drawer's head
-anatomy (DD-069's, shared with settings) gains an optional slot: the
+anatomy (DD-157's, shared with settings) gains an optional slot: the
 settings panel projects nothing and is unchanged. The alerts drawer's
 tab order is close, then Clear all (both in the head), then the rows.
 
@@ -2721,7 +2721,7 @@ tab order is close, then Clear all (both in the head), then the rows.
 bar (ALR-11): a new ui-lib `AlertInbox`, a Bulma `buttons has-addons`
 group of one chip per severity (`is-expanded`, feed order, an empty
 severity's chip included), each chip a filter toggle showing that
-severity's **total** group count, a dot riding the DD-063 ramp while any
+severity's **total** group count, a dot riding the DD-152 ramp while any
 of its groups is unread, and the caller's Clear all projected into the
 bar's end. The Drawer grows a second projection slot, `drawer-subhead`,
 a strip between the head and the body; the bar rides it. Read tracking
@@ -2763,9 +2763,9 @@ drawer's tab order is close, the three chips, Clear all, then the
 rows. `AlertGroup.read` joins the lib's model — the third field the
 store owns and the list renders (ALR-10's vocabulary grows). The bell
 badge goes quiet on open, which is the point: it asked for attention
-and got it. DD-088's Clear all in the head is superseded in placement
+and got it. DD-176's Clear all in the head is superseded in placement
 (its "above the notifications" requirement keeps holding — the bar
-never scrolls, DD-091); DD-088's chip-pair pinning stands.
+never scrolls, DD-091); DD-176's chip-pair pinning stands.
 
 ### DD-091 — The drawer's body is the scroll container
 
@@ -2780,7 +2780,7 @@ body scrolls (`min-height: 0`, `overflow-y: auto`): the head and the
 
 **Reason.** Found while answering the user's question about a long
 feed: the panel carried `overflow-y: auto`, so the whole drawer
-scrolled — the head, title, close button, and DD-088's Clear all slid
+scrolled — the head, title, close button, and DD-176's Clear all slid
 away with the feed, and the "head does not scroll" clause ALR-06 cited
 was not true. A drawer whose chrome scrolls away is a page, not a
 drawer: the close control and the command strip must be reachable at
@@ -2812,7 +2812,7 @@ one `buttons has-addons` group (the actions join the joined bar, not
 beside it); the chip order flips to the ramp ascending — `info`,
 `warning`, `error`, calm to urgent (SEVERITIES, the countSeverities
 output, and the chips all follow); and a shown chip rides its
-severity's fill — the DD-063 pinned ramp (`#17a2b8`/`#ffc107`/`#dc3545`)
+severity's fill — the DD-152 pinned ramp (`#17a2b8`/`#ffc107`/`#dc3545`)
 with the ramp's own inks (black on warning and info, white on danger),
 not a single Aurelius blue. The unread dot rides the chip's ink
 (currentColor) with a hairline ring in the chip's plate, and the fill
@@ -2827,15 +2827,15 @@ bar's own information: a chip IS a severity, and one blue bar made the
 chips interchangeable — the colours are the legend. Bulma's own
 `.button.is-info`-family fills are scheme-following token tints, and
 the brand pins `light` outside Bulma's scheme machinery (SHM-04): the
-pinned ramp is the product's severity vocabulary (DD-063, DD-080) and
+pinned ramp is the product's severity vocabulary (DD-152, DD-168) and
 reads the same in both schemes, like the badge's dot and the footer's
-pair. The dot flips to ink for the same reason DD-088 pinned the
+pair. The dot flips to ink for the same reason DD-176 pinned the
 count chip: a ramp-coloured dot on a ramp-coloured chip rides its own
 colour and vanishes.
 
 **Alternatives.** Bulma's `.button.is-info`/`.is-warning`/`.is-danger`
 fills (scheme-following: the tints shift with the theme and collide
-with the brand's pinned plates — DD-088's trap, measured once on this
+with the brand's pinned plates — DD-176's trap, measured once on this
 very bar). Severity text ink on a plain chip, fill reserved (the user
 asked for coloured buttons; an outline bar reads disabled, not
 filtered). Ramp descending (error first, DD-090's first pass — kept
@@ -2876,7 +2876,7 @@ expose each other's heights.
 **Alternatives.** `align-items: flex-start` on the group (leaves the
 tall chips and short actions as they are, the join shows the gap). A
 plain `<span>` instead of a Bulma `.tag` (the tag's plate/rounding is
-the chip vocabulary, DD-088's pinned pair; the height is the only
+the chip vocabulary, DD-176's pinned pair; the height is the only
 part to shed). `is-normal` on the tag (the size modifiers are font
 sizes, the `2em` height rides them all).
 
@@ -2976,15 +2976,15 @@ properties accordion, and the side navigation — every part in its empty state,
 fed by the bridge keys `search.details.*` already in the catalogue. No entity
 fetch: `GET /v2/entity/guid/{guid}` is server 2.3 (planned), the type dispatch
 is nine `m4i_*` governance layouts, and the lineage/quality cards post to
-backends Aurelius Atlas will not have (DD-051). The wiring increment — the
+backends Aurelius Atlas will not have (DD-140). The wiring increment — the
 resolver, the header data, the type components, lineage — is named in the spec
 and lands when 2.3 does.
 
 **Reason.** Every Aurelius details section reads one resolved entity; the
-Aurelius `DetailsResolver` feeds a search stack that DD-051 deliberately left
-unported. Shipping the fetch against a 404 is the speculative build DD-051
+Aurelius `DetailsResolver` feeds a search stack that DD-140 deliberately left
+unported. Shipping the fetch against a 404 is the speculative build DD-140
 refuses, and shipping mock entity data is a UI promise the slice cannot keep —
-the 7.5 seam (DD-054) again, one screen deeper. The skeleton is what is true
+the 7.5 seam (DD-143) again, one screen deeper. The skeleton is what is true
 today: the URL is the screen's address, the chrome's strings are all keyed, the
 7.13 components already render the trail and the rows, and the deep-link
 contract (DET-07) is testable end to end with zero data.
@@ -3015,7 +3015,7 @@ assertions on the request (path, headers, guid encoding) and the response
 mapping. No screen calls it (DD-096's skeleton fetches nothing); the 2.3+7.6
 wiring increment consumes it.
 
-**Reason.** DD-051's rule is one method per server increment, "each method
+**Reason.** DD-140's rule is one method per server increment, "each method
 lands testable against the real server." The entity-by-guid read is the
 surface 2.3 implements, and its wire format is fixed by Atlas's source and
 tests, not by this workspace — so the DTOs and the request shape are knowable
@@ -3026,11 +3026,11 @@ client at once; splitting it keeps 2.3+7.6 about the server round-trip.
 **Alternatives.** Grow the client in 2.3+7.6 (the honest choice 7.3's pattern
 allows — accepted as the fallback if the split adds review load). Port the
 whole legacy `EntityAPIService` surface (create, update, bulk, relationships —
-endpoints 2.4/3.x, unportable per DD-051's audit).
+endpoints 2.4/3.x, unportable per DD-140's audit).
 
 **Consequences.** The data-access lib gains one Atlas-native entity method,
 the typedefs client's shape (APC-01 base url, one method per legacy
-duplication, DD-051). When 2.3 lands, the e2e wiring scenario is the method's
+duplication, DD-140). When 2.3 lands, the e2e wiring scenario is the method's
 first real 200; its specs keep asserting the request until then.
 
 ### DD-098 — One API base: the client's URLs all ride the API_BASE_URL token
@@ -3055,7 +3055,7 @@ these into the server api... All requests can be expected to be made to the
 server api," scoped the same day: "we may have other surfaces eventually but
 this is the one that replaces app search and the apache atlas apis" — the
 decision fixes the data plane's successor, and does not fence in identity,
-telemetry, or future non-data surfaces. The audit (7.3, DD-051) found the
+telemetry, or future non-data surfaces. The audit (7.3, DD-140) found the
 legacy split's two clients —
 the Atlas REST set and the App Search stack (`/elastic`, `/gov_quality`,
 `/data_quality`) — and ported only endpoints the server answers; the state
@@ -3194,7 +3194,7 @@ details screens duplicate — `default-details.component.html` (one stat:
 properties) and `gov-quality-details.component.html` (three: non-compliant,
 compliant, properties) — as one component: `items: { label, target, count }`,
 `p.heading > a` (href `#target`) + `p.title` per item, `itemClicked(target)`
-on activation (DD-066's emit-instead-of-navigate pattern; the anchor's href
+on activation (DD-154's emit-instead-of-navigate pattern; the anchor's href
 is the keyboard path).
 
 **Reason.** The two bars are the same Bulma block with a different item
@@ -3560,7 +3560,7 @@ this workspace already runs and tests:
 - `libs/python/aurelius-atlas-auth` — the FastAPI example's OIDC verifier
   (OIDC discovery + JWKS behind a circuit breaker, kid-pinned RS256 verify,
   issuer check, `azp`∪`aud` audience match, realm-roles-plus-own-audience
-  roles per DD-043) becomes the workspace's auth library. The auxiliary
+  roles per DD-132) becomes the workspace's auth library. The auxiliary
   apps consume it as `require_auth` / `require_write` dependencies; the raw
   bearer dependency exists for forwarding only, never authorisation (AUX-05).
 
@@ -3624,7 +3624,7 @@ science corpus. One less native dependency in a dhi.io/alpine wheel set
 the pydantic rule models, which FastAPI documents for free.
 
 **Alternatives.** Port `m4i-analytics`'s DataFrame pipeline (refused —
-DV-15 already refuses the library; its graphviz/bokeh tree arrives with
+DV-51 already refuses the library; its graphviz/bokeh tree arrives with
 it). Pandas inside a thin native shell (refused — every DTM rule has a
 five-line plain-Python form; pandas would be a dependency of a dozen
 `drop_duplicates` calls). pydantic row models for `data` (refused — the
@@ -3681,7 +3681,7 @@ real `.env` on purpose: those tests talk to the real dev stack.
 **Decision.** `create_app(settings, auth=None, http=None)` takes the upstream
 `httpx.Client` the lineage fetch and the `/extract` call run on; production
 builds one (timeout, CA), tests inject a `MockTransport`. The e2e stand-in
-for the Atlas lineage feed (5.1, DV-16) is a **canned-file fixture Atlas**: a
+for the Atlas lineage feed (5.1, DV-52) is a **canned-file fixture Atlas**: a
 dhi.io Python image serving `http.server`, whose `--directory` is the suite's
 fixture directory, answering `GET /v2/lineage/<guid>` from
 `<guid>.lineage.json` (404 for an absent file, matching Atlas).
@@ -3703,7 +3703,7 @@ camelCase JSON is Atlas's, not a mock's invention.
 with less code to own). testcontainers MockServer/WireMock (refused — a
 Java/Go image for a two-route contract; the workspace's e2e stack stays
 dhi.io images plus stdlib). Pointing the suite at a real Atlas (refused —
-5.1 is not built; DV-16 is the stated stub).
+5.1 is not built; DV-52 is the stated stub).
 
 **Consequences.** The 8.2 e2e chain (Keycloak → lineage-model → real
 data2model → fixture Atlas) exercises the full browser path minus the
@@ -3729,20 +3729,20 @@ shape (VE-02) and the auth gate (VE-03), so the document lives in one
 place as data, and the scenario/unit tests compare whole bodies with no
 volatile fields. An injectable verifier is the DD-108/8.1 pattern (the
 auth library's own test double is the reference); a request model would
-invent a contract the mock does not have (DV-14: the body is ignored,
+invent a contract the mock does not have (DV-50: the body is ignored,
 malformed bodies answer the document too — VE-01).
 
 **Alternatives.** Pydantic models for the mock document (refused — the
 document is a fixed literal; modelling it adds code that can drift from
 the bytes the browser contract is). A `Request`-reading handler that
-validates the entity (refused — DV-14 is the stated mock: validation is a
+validates the entity (refused — DV-50 is the stated mock: validation is a
 future server rule, not this increment).
 
 **Consequences.** The 8.x app set is uniform (auth lib, otel lib, liveness,
 TLS, settings shape); the parity scenario is byte equality, so a change to
 the document is a visible contract change. When real validation lands
 (future server rule), this app's endpoint gains an input contract and the
-constant moves to a fallback path — a new increment, a superseded DV-14.
+constant moves to a fallback path — a new increment, a superseded DV-50.
 
 ### DD-113 — One issuer world: producers mint on the TLS listener, the collector validates both
 
@@ -4425,7 +4425,7 @@ test lists (8.1, 8.2, 8.3, 8.5) name the new files in the same change.
 
 - **Status:** Accepted
 - **Increment:** 8.5 (rides the client-libraries branch; no new roadmap row —
-  the guid's type is a contract detail of the 8.2/8.4 surfaces, DV-27)
+  the guid's type is a contract detail of the 8.2/8.4 surfaces, DV-61)
 - **Date:** 2026-10-24
 
 **Context.** The lineage chain carried the entity guid as `str` end to end:
@@ -4439,7 +4439,7 @@ and a malformed guid travels all the way to the upstream before failing.
 
 **Decision.** Every lineage guid is `uuid.UUID` on the typed surface: the
 client models and methods, the app route's `guid` query parameter (FastAPI
-parses it, so a non-UUID is DV-21's `400` before any upstream call),
+parses it, so a non-UUID is DV-56's `400` before any upstream call),
 `EntityHeaderLite.guid`, `LineageRelation.fromEntityId`/`toEntityId`, and
 `LineageInfo.guidEntityMap`'s keys. `LineageRelation.relationshipId` stays
 `str` — it is a relation id, not an entity guid, and the legacy fixtures give
@@ -4454,14 +4454,14 @@ stringifies a UUID into the canonical lowercase form on the wire, and the
 extract engine's `_legacy_str` stringifies the UUID cells of the flattened
 rows — so the wire stays byte-identical to Atlas's, while every Python
 surface rejects a malformed guid at its own boundary. A `str`-typed chain
-would leave the route answering DV-21's 400 only for _missing_ guids and
+would leave the route answering DV-56's 400 only for _missing_ guids and
 forwarding garbage for present-but-invalid ones.
 
 **Alternatives.** (a) `Annotated[str, UuidCheck]` validators — rejected:
 re-implements what `UUID` gives for free, and the schema loses `format:
 uuid`. (b) Typing the Java-parity guids too — rejected for now: the 1.x/5.x
 surfaces mirror Atlas's Java DTOs, where guid is `String` at the wire;
-DV-27's row scopes this to the lineage chain, and a parity spec change is
+DV-61's row scopes this to the lineage chain, and a parity spec change is
 Java-reference work (ADR 052), not a client-library detail.
 
 **Consequences.** The e2e fixture file is named for its guid, so
@@ -4542,3 +4542,71 @@ already-specified behaviour would fork the ledger. The fastapi-example, `sdk`'s
 aws/msal/logger, aurelius-atlas-example, and the dashboard are exempted from
 hardening (matching the trace check's `exclude-projects` and DD-017).
 Phase ordering: 8.6 and 8.7 parallel, 7.19 parallel, 9.1 after 8.6 and 7.19.
+
+### DD-177. The parallel tracks' colliding DD/DV ids renumber to the 7.x/8.x side
+
+- **Status:** Accepted
+- **Increment:** — (merge hygiene; lands with the merge of main into
+  `feat/api-client-libraries`, PR #143)
+- **Date:** 2026-10-24
+
+**Decision.** The 2.x/3.x track (server spine, entity store, relationships,
+classifications, tasks, audits) and the 7.x/8.x track (webapp shell, aux APIs,
+client libraries) branched at DD-036/DV-10 and minted ids in parallel: main
+took DD-037..089 and DV-11..46, the branch took DD-037..088 (51 ids, the same
+numbers, different decisions) and DV-11..27 (DV-18 and DV-22 uncollided). The
+merge renumbers the **branch side above both ranges**: DD-037..088 → DD-126..176
+and DV-11..17, DV-19..21, DV-23..27 → DV-47..61, in ascending order, and this
+entry (DD-177) records it. Main's ids keep their numbers. The citation sweep
+rewrote every spec, doc, code comment, scenario, `.env` comment, and trace
+marker on the branch side; a chain whose members renumber non-consecutively
+becomes an explicit list (`DD-059/062` → `DD-148, DD-151`).
+
+**Reason.** Main's 2.x decisions are merged and cited by merged code — they
+are the accepted record, and the ledger's rule (numbers are never reused,
+accepted entries are never edited) protects them. The branch's specs are the
+in-progress side of the same ledger, so it is the side allowed to move; moving
+51+15 ids in one mechanical, reviewable sweep costs less than living with
+ids that mean two things. The branch's non-colliding ids stay: DD-089..125 and
+DV-18/DV-22 (both free on main) are untouched, and the new range starts above
+main's DD-089 with room for this entry.
+
+**Consequences.** The merge of main into the branch is conflict-free for the
+id ledger: the two tracks occupy disjoint ranges. The mapping table (branch
+old → new) is this entry's appendix, below; every pre-merge commit message
+cites the OLD numbers — commit history is not rewritten, and the appendix is
+the lookup from a commit's citation to the merged record. The design-log and
+deviations tables are sorted by number, so the renumbered entries interleave
+with main's by position only after the merge sorts them; within the branch
+the sweep is in-place (ascending order). The untracked dev `.env` files
+(decrypted from the renumbered `.env.enc` comments) refresh on the next
+`nx decrypt`.
+
+| Old    | New    | Old    | New    | Old    | New    |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| DD-037 | DD-126 | DD-056 | DD-145 | DD-075 | DD-163 |
+| DD-038 | DD-127 | DD-057 | DD-146 | DD-076 | DD-164 |
+| DD-039 | DD-128 | DD-058 | DD-147 | DD-077 | DD-165 |
+| DD-040 | DD-129 | DD-059 | DD-148 | DD-078 | DD-166 |
+| DD-041 | DD-130 | DD-060 | DD-149 | DD-079 | DD-167 |
+| DD-042 | DD-131 | DD-061 | DD-150 | DD-080 | DD-168 |
+| DD-043 | DD-132 | DD-062 | DD-151 | DD-081 | DD-169 |
+| DD-044 | DD-133 | DD-063 | DD-152 | DD-082 | DD-170 |
+| DD-045 | DD-134 | DD-064 | DD-153 | DD-083 | DD-171 |
+| DD-046 | DD-135 | DD-066 | DD-154 | DD-084 | DD-172 |
+| DD-047 | DD-136 | DD-067 | DD-155 | DD-085 | DD-173 |
+| DD-048 | DD-137 | DD-068 | DD-156 | DD-086 | DD-174 |
+| DD-049 | DD-138 | DD-069 | DD-157 | DD-087 | DD-175 |
+| DD-050 | DD-139 | DD-070 | DD-158 | DD-088 | DD-176 |
+| DD-051 | DD-140 | DD-071 | DD-159 | DV-11  | DV-47  |
+| DD-052 | DD-141 | DD-072 | DD-160 | DV-12  | DV-48  |
+| DD-053 | DD-142 | DD-073 | DD-161 | DV-13  | DV-49  |
+| DD-054 | DD-143 | DD-074 | DD-162 | DV-14  | DV-50  |
+| DD-055 | DD-144 | —      | —      | DV-15  | DV-51  |
+| —      | —      | —      | —      | DV-16  | DV-52  |
+| DV-17  | DV-53  | DV-21  | DV-56  | DV-25  | DV-59  |
+| DV-19  | DV-54  | DV-23  | DV-57  | DV-26  | DV-60  |
+| DV-20  | DV-55  | DV-24  | DV-58  | DV-27  | DV-61  |
+
+DD-065 is main's alone (the branch mints no DD-065) and is untouched, as are
+the branch's DD-089..125 and DV-18/DV-22 — all outside the collision.

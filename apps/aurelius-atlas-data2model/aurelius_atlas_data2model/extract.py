@@ -26,10 +26,10 @@ SCRIPT_NAME = "Model Extractor API"
 """The ``created_by`` provenance the legacy extractor stamps on every metadata entry."""
 
 ROW_SPACING = 95
-"""Vertical distance between node tops in the native layout: node height 55 + a 40 gap (DV-15)."""
+"""Vertical distance between node tops in the native layout: node height 55 + a 40 gap (DV-51)."""
 
 RANK_SPACING = 320
-"""Horizontal distance between ranks in the native layout: node width 120 + a 200 gap (DV-15)."""
+"""Horizontal distance between ranks in the native layout: node width 120 + a 200 gap (DV-51)."""
 
 _INVERTED_TAGS = frozenset({"ar3_Access", "ar3_Specialization"})
 """The relationship tags whose direction the legacy layouts inverted (``_prepare_model``)."""
@@ -187,7 +187,7 @@ def _view_node_ids(rows: list[dict[str, Any]], rule: ViewRule, elements: dict[st
     The legacy scans each node rule's column (non-null, first per value) in rule
     order; an empty collection is the legacy's ``None`` — the whole model. Preset
     node coordinates (``x``/``x_key`` in a view node rule) are ignored: the layout
-    is native (DV-15).
+    is native (DV-51).
     """
     ids: list[str] = []
     for node_rule in rule.view_nodes:
@@ -231,7 +231,7 @@ def _view_edge_ids(
 
 
 def _ranks(node_ids: list[str], edges: list[_Edge]) -> dict[str, int]:
-    """Each node's rank: the longest path from an edge source, cycles bounded (DV-15).
+    """Each node's rank: the longest path from an edge source, cycles bounded (DV-51).
 
     The legacy graphviz layout ranked with dot; the inversion the legacy layouts
     applied (``_prepare_model``) applies to the ranking edges here: writes and
@@ -263,7 +263,7 @@ def _ranks(node_ids: list[str], edges: list[_Edge]) -> dict[str, int]:
 
 
 def _coordinates(node_ids: list[str], edges: list[_Edge], layout: str) -> dict[str, tuple[int, int]]:
-    """The native deterministic layout (DTM-08, DV-15).
+    """The native deterministic layout (DTM-08, DV-51).
 
     ``archimate_process`` ranks left to right (graphviz ``rankdir=LR``);
     ``archimate_hierarchical`` ranks bottom to top (``rankdir=BT``). Nodes stack by

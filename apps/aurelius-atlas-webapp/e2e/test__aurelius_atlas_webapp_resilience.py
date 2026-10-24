@@ -166,7 +166,7 @@ def test__logout_returns_to_sign_in_and_signing_in_again_restores_the_app(
 ) -> None:
     """RSL-03: Logout ends the Keycloak session (SHC-05, APC-05/10).
 
-    The dropdown is Bulma's CSS-hover (DD-064: Logout is an anchor): hover
+    The dropdown is Bulma's CSS-hover (DD-153: Logout is an anchor): hover
     opens it, the click ends the session at the IdP and lands the app on the
     origin. The guard's check-sso then finds no SSO session and redirects to
     Keycloak's login — the same page the ``authenticated`` fixture signs

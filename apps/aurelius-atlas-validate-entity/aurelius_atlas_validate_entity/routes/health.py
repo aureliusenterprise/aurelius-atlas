@@ -1,4 +1,4 @@
-"""The container healthcheck: the anonymous liveness probe (VE-04, DV-25)."""
+"""The container healthcheck: the anonymous liveness probe (VE-04, DV-59)."""
 
 from fastapi import APIRouter
 

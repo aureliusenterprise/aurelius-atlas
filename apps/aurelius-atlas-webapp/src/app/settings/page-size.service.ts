@@ -9,7 +9,7 @@ export const DEFAULT_PAGE_SIZE = 10;
 export const PAGE_SIZES = [5, 10, 20, 50] as const;
 
 /**
- * The page-size owner (SPL-08, DD-072): the default pagination size the
+ * The page-size owner (SPL-08, DD-160): the default pagination size the
  * 7.6/7.7 tables read. Positive integers only — a corrupt store falls back
  * to the default.
  */

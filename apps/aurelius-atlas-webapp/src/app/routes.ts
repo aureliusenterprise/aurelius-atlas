@@ -2,7 +2,7 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes } from "@angular/ro
 import { AuthGuardData, createAuthGuard } from "keycloak-angular";
 
 /**
- * The app-root guard (APC-05, DD-052): an unauthenticated visit redirects to the
+ * The app-root guard (APC-05, DD-141): an unauthenticated visit redirects to the
  * Keycloak sign-in page and returns to the requested route afterwards. The legacy
  * `Shell.childRoutes(..., requiresAuth)` guarded every feature route from the shell;
  * `createAuthGuard` on the root route guards them all from where routing is declared,
@@ -40,7 +40,7 @@ async function rootAuthGuard(
  * `app.config.ts`, where Aurelius had `scrollPositionRestoration: 'enabled'`
  * (SHL-06).
  *
- * Everything sits under one guarded empty-path parent (APC-05, DD-052): the
+ * Everything sits under one guarded empty-path parent (APC-05, DD-141): the
  * parent matches every navigation, so its guard runs for every screen — the
  * signal-state replacement of the Aurelius shell's per-route `requiresAuth`.
  */
@@ -54,7 +54,7 @@ export const routes: Routes = [
                 path: "search",
                 loadChildren: () => import("./search/search.routes").then((m) => m.SEARCH_ROUTES),
             },
-            // The settings panel, in the `drawer` aux outlet (SPL-14, DD-078):
+            // The settings panel, in the `drawer` aux outlet (SPL-14, DD-166):
             // the gear navigates to `(drawer:settings)`, dismissal navigates
             // away, and the segment rides the URL — the language switch's
             // full-page reload (SPL-06) lands on the same page, panel open.
@@ -64,7 +64,7 @@ export const routes: Routes = [
                 loadComponent: () => import("./settings/settings-panel.component").then((m) => m.SettingsPanel),
             },
             // The alerts drawer, the second route in the one `drawer` outlet
-            // (ALR-01, DD-078's shape): the bell navigates to `(drawer:alerts)`
+            // (ALR-01, DD-166's shape): the bell navigates to `(drawer:alerts)`
             // and the outlet swaps panels — the settings panel and the alerts
             // drawer replace each other, the open state rides the URL.
             {
@@ -77,7 +77,7 @@ export const routes: Routes = [
             // '**' -> '' -> '/search/browse' lands on the default destination.
             // Angular 22's router stops at '' after a wildcard redirect (the
             // empty-path redirect is not re-triggered), so the fallback redirects
-            // straight to the destination: same observable end state (SHL-05), DD-043.
+            // straight to the destination: same observable end state (SHL-05), DD-132.
             { path: "**", redirectTo: "search/browse", pathMatch: "full" },
         ],
     },

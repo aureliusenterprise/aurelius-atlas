@@ -87,7 +87,7 @@ async def test__the_lineage_rules_extract_over_https(api: Data2ModelClient) -> N
     """With a real realm token, the client library extracts the diagram from the container (DTM-01, DTM-10)."""
     response = await api.extract(ExtractionRequest.model_validate(_LINEAGE_BODY))
     assert [entry.id for entry in response.metadata] == ["e-in", "p-load", "rel-1", "lineage_view"]
-    assert response.model  # The ar3 JSON string the browser draws (DV-15).
+    assert response.model  # The ar3 JSON string the browser draws (DV-51).
 
 
 @pytest.mark.covers("aurelius_atlas_data2model.app.create_app")

@@ -45,7 +45,7 @@ The reference is the Aurelius source (ADR 055 R4):
 `backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py` calls
 `requests.post` bare — no breaker, no retries; the legacy has no breaker
 behaviour to port, so the rules below state the workspace convention
-(the auth library's JWKS breaker, AUX-02) applied to the 8.2 chain. DV-26.
+(the auth library's JWKS breaker, AUX-02) applied to the 8.2 chain. DV-60.
 
 ### The upstream circuit breakers
 
@@ -67,12 +67,12 @@ shape DV-22 defines, with a message naming the fast-fail.
 The legacy `m4i-lineage-model` (Flask, `requests.post` to data2model,
 `m4i-atlas-core.get_lineage_by_guid`) has no resilience device — its dev
 `aiocache` `@cached()` is not ported (8.2). The breaker is new behaviour,
-recorded as DV-26; the workspace convention it follows is
+recorded as DV-60; the workspace convention it follows is
 `aurelius-atlas-auth`'s JWKS breaker (AUX-02, same `pybreaker` dependency).
 
 ## Deviations
 
-DV-26 (`deviations.md`): the legacy has no upstream circuit breaker; the port
+DV-60 (`deviations.md`): the legacy has no upstream circuit breaker; the port
 guards each upstream with one, opening on 5xx/transport failures only.
 Technical decisions in DD-117 (`design-log.md`): the breakers live in the app
 (not the client libraries — DD-116 keeps the libs transport-only); one breaker
@@ -80,7 +80,7 @@ per upstream; the `pybreaker` `calling()` generator seam is the async-safe
 form (the lib's `call_async` is tornado-only and fails on this Python); the
 exclude predicate counts 4xx as facts.
 
-DV-27 (`deviations.md`, DD-124 — rides this branch, not this spec's breakers):
+DV-61 (`deviations.md`, DD-124 — rides this branch, not this spec's breakers):
 the lineage chain's `guid` is a `UUID` on every typed surface; a non-UUID guid
 is LM-07's `400` before any upstream call, so a malformed guid never reaches
 the guarded fetch.

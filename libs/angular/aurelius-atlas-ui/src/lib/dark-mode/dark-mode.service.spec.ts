@@ -55,7 +55,7 @@ describe("DarkModeService", () => {
         expect(root().getAttribute("data-theme")).toBe("light");
     });
 
-    it("setMode(null) REMOVES the attribute — Auto is no attribute, not an empty one (SPL-03, DD-071)", () => {
+    it("setMode(null) REMOVES the attribute — Auto is no attribute, not an empty one (SPL-03, DD-159)", () => {
         service.setMode("dark");
         settle();
         service.setMode(null);

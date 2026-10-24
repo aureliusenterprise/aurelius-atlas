@@ -5,12 +5,12 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core";
  * subtitle, and action slots, plus a boxed tab strip in the foot — the
  * chrome every search/browse screen sits under.
  *
- * Ported as a section and slots only (DD-045): the Aurelius hero embedded a
+ * Ported as a section and slots only (DD-134): the Aurelius hero embedded a
  * `router-outlet` with an animated scroll-to-nav on navigation and needed
  * `ngx-page-scroll-core`; a dumb component has no route to activate, so the
  * routing host and the scroll move to the app shell with its routes (7.4+).
  *
- * Title, subtitle, and slot content are caller-supplied (DD-047) — the
+ * Title, subtitle, and slot content are caller-supplied (DD-136) — the
  * Aurelius app passed the product name and translated its tab labels.
  */
 @Component({

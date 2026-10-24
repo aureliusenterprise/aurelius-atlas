@@ -31,7 +31,7 @@ endpoint family of the catalogue API (increment 4.1, built on the one store of
 [047](./047-one-search-store-is-the-system-of-record.md)), and the third-party
 search surface has no Aurelius Atlas backend and is not ported — its client
 methods exist only for endpoints the server answers
-([DD-051](../conversion/design-log.md)).
+([DD-140](../conversion/design-log.md)).
 
 Today this is a stated rule over verified fact, not new work: the ported
 client library (7.3) injects one `API_BASE_URL` and composes every data URL
@@ -62,7 +62,7 @@ the new product speaks — before the search slice (7.4) decides by omission.
   reading the Atlas reference for them.
 - **R3 — Search is the server's** ([047](./047-one-search-store-is-the-system-of-record.md)):
   no second index, no third-party engine, in the webapp's view of the system.
-- **R4 — The client stays honest** ([DD-051](../conversion/design-log.md)):
+- **R4 — The client stays honest** ([DD-140](../conversion/design-log.md)):
   client methods exist only for endpoints the server answers, so specs and
   e2e never assert a backend that will not exist.
 
@@ -75,7 +75,7 @@ the new product speaks — before the search slice (7.4) decides by omission.
   third-party engine: one URL, two systems of record, and a dependency the
   deployment must run. Fails R3; pays R1's letter to break its purpose.
 - **Consolidate later.** Port the split, fold search in when 4.1 lands: dead
-  clients at day one (DD-051's audit finding verbatim) and an origin/auth
+  clients at day one (DD-140's audit finding verbatim) and an origin/auth
   story left open through the 7.x track. Fails R1 for the whole interim.
 
 ## Tradeoffs
@@ -84,8 +84,8 @@ the new product speaks — before the search slice (7.4) decides by omission.
   proven in e2e), one bearer token on every data call (APC-06, 6.1), one wire
   format to keep parity with; the search slice is a thin client over an
   endpoint family, not a second stack.
-- **Negative:** search is blocked on the server's 4.1 — the hold DD-051 and
-  DD-054 already accepted; 7.4's client is specified from the Atlas source
+- **Negative:** search is blocked on the server's 4.1 — the hold DD-140 and
+  DD-143 already accepted; 7.4's client is specified from the Atlas source
   (052) as 4.1's spec lands, not guessed from the legacy's search-backend DTOs.
   A future data surface is an ADR event, not a pull request — the friction is
   the point, and the price of it.
@@ -95,4 +95,4 @@ the new product speaks — before the search slice (7.4) decides by omission.
   record does not stand in their way. The workspace's `EntitiesService` in
   `aurelius-atlas-data-access` is the FastAPI example's CRUD/SSE client — a
   template example, not a second data plane; it retires with the examples at
-  7.10 (DV-11, DD-019).
+  7.10 (DV-47, DD-019).

@@ -66,7 +66,7 @@ describe("ShellHeader", () => {
     });
 
     it("brands the navbar with the Aurelius logo (SHM-02)", () => {
-        // The brand is the legacy navbar logo (DD-059): the Aurelius Atlas
+        // The brand is the legacy navbar logo (DD-148): the Aurelius Atlas
         // mark, linking home, sized by the ui-lib's .logo rule. The app
         // name remains the accessible alt (SHC-02, superseded here).
         const brand = render().querySelector<HTMLAnchorElement>(".navbar-brand a.navbar-item");
@@ -87,7 +87,7 @@ describe("ShellHeader", () => {
         expect(normalize(link?.textContent)).toBe("Documentation");
     });
 
-    it("opens the settings panel from the gear (SPL-01, SPL-14, DD-078)", () => {
+    it("opens the settings panel from the gear (SPL-01, SPL-14, DD-166)", () => {
         // The gear replaces the language dropdown in navbar-end and opens
         // the panel by navigating the `drawer` aux outlet — the panel is a
         // routed component, no longer the header's child (SPL-14).
@@ -102,7 +102,7 @@ describe("ShellHeader", () => {
         expect(gear?.classList.contains("is-active")).toBe(false);
     });
 
-    it("lights the gear while the drawer route is open (SPL-01, DD-079)", async () => {
+    it("lights the gear while the drawer route is open (SPL-01, DD-167)", async () => {
         // RouterLinkActive keys `is-active` off the drawer segment: with
         // the settings outlet in the URL, the gear carries Bulma's
         // active-navbar-item styling. The drawer route is the app's real
@@ -240,7 +240,7 @@ describe("ShellHeader", () => {
     it("ends the Keycloak session on Logout (SHC-05)", () => {
         const { logout } = setup();
         const compiled = render();
-        // The legacy Logout is `a role="button" .navbar-item` (DD-064).
+        // The legacy Logout is `a role="button" .navbar-item` (DD-153).
         const anchor = [...compiled.querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
             item.textContent?.includes("Logout"),
         );

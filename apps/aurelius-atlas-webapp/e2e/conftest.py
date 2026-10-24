@@ -185,7 +185,7 @@ def compose(
     compose = DockerCompose(context=context, env_file=dotenv.find_dotenv())
     # Both host ports are fixed in the compose file, so the readiness probes
     # are fully known before the stack starts: nginx serving the shell, and
-    # the Atlas server answering its version endpoint directly (DD-053 — the
+    # the Atlas server answering its version endpoint directly (DD-142 — the
     # /api/ proxy test needs the server itself up, probing through nginx would
     # race its own boot). Registered pre-start so start() runs them.
     compose.waiting_for(
@@ -234,7 +234,7 @@ def authenticated(page: Page, base_url: str, settings: Settings) -> Page:
     """
     Sign in through Keycloak and return the page (APC-05 / APC-10).
 
-    Every webapp route sits behind the auth guard (DD-052), so the page tests
+    Every webapp route sits behind the auth guard (DD-141), so the page tests
     start from here. A navigation can be aborted mid-login when the e2e stack
     starts its compose networks while tests run (net::ERR_NETWORK_CHANGED), so
     each retry starts from a clean cookie jar: Keycloak may already have

@@ -288,7 +288,7 @@ class MetadataEntry(BaseModel):
 
 
 # DTM-01; CL-20. The model is a JSON *string* inside the JSON body, as the
-# legacy answer is (DV-15); ``model_validate_json`` of it is the caller's
+# legacy answer is (DV-51); ``model_validate_json`` of it is the caller's
 # ar3 document.
 class ExtractionResponse(BaseModel):
     """The ``POST /extract`` answer: ``{metadata: […], model: "<ar3 JSON string>"}``."""

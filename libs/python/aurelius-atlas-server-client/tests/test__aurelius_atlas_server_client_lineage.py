@@ -12,7 +12,7 @@ from aurelius_atlas_server_client.lineage import Direction, EntityHeaderLite, Li
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
 P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
-"""The fixture graph's entities: the fixed UUIDs of 8.2's fixtures (DV-27)."""
+"""The fixture graph's entities: the fixed UUIDs of 8.2's fixtures (DV-61)."""
 
 BODY: dict[str, Any] = {
     "baseEntityGuid": str(E_IN),
@@ -59,7 +59,7 @@ def test__an_entity_header_tolerates_the_atlas_fields_the_rows_never_use() -> No
 
 @pytest.mark.covers(rules=["CL-12"])
 def test__a_relation_round_trips_the_wire_names() -> None:
-    """The snake_case model, the camelCase wire; the endpoint guids travel as UUID strings (LM-02, DV-27)."""
+    """The snake_case model, the camelCase wire; the endpoint guids travel as UUID strings (LM-02, DV-61)."""
     relation = LineageRelation.model_validate(
         {"fromEntityId": str(E_IN), "relationshipId": "r", "toEntityId": str(P_LOAD)}
     )

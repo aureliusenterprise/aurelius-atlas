@@ -121,7 +121,7 @@ two copies of the same product, paid for legibility and reversibility.
   a slice that lands with Redux in it is a defect, not a state.
 - **Neutral / follow-ups:** the Aurelius interface becomes the served UI at some point in this
   track, which supersedes the plan to serve the Atlas dashboards at `/`
-  ([DV-11](../conversion/deviations.md)). The example app and the template's Angular toolchain
+  ([DV-47](../conversion/deviations.md)). The example app and the template's Angular toolchain
   then leave with it ([DD-019](../conversion/design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)).
   The track is scheduled as increments 7.x in the
   [conversion ledger](../conversion/index.md#roadmap) and starts with the application shell

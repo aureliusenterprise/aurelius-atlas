@@ -43,8 +43,8 @@ describe("App", () => {
         // above, footer below (SHL-03's bare-outlet reading is superseded
         // here — the legacy root renders <models4insight-shell>). The
         // outlet band is the legacy .is-tall-container (flex + 100vh), so
-        // the footer begins below the fold (SHM-05, SHM-07, DD-061). The
-        // named `drawer` outlet (SPL-14, DD-078) is the root's last child.
+        // the footer begins below the fold (SHM-05, SHM-07, DD-150). The
+        // named `drawer` outlet (SPL-14, DD-166) is the root's last child.
         expect([...compiled.children].map((child) => child.tagName.toLowerCase())).toEqual([
             "aurelius-atlas-webapp-header",
             "div",

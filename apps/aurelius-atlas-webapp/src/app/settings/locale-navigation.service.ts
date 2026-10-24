@@ -1,12 +1,12 @@
 import { Injectable } from "@angular/core";
 
-/** The locales the image serves (DD-039: one build per locale, locale tree in nginx). */
+/** The locales the image serves (DD-128: one build per locale, locale tree in nginx). */
 export const LOCALES = ["en-US", "nl-NL"] as const;
 
 /**
- * The language owner (SPL-06, DD-072): the active locale and the full-page
+ * The language owner (SPL-06, DD-160): the active locale and the full-page
  * locale navigation. There is no stored language preference to own — the
- * locale builds are separate bundles (DD-039), so switching is a
+ * locale builds are separate bundles (DD-128), so switching is a
  * navigation, not a setting (SHC-04); the settings panel consumes this
  * service (SPL-01 moves the control there).
  */

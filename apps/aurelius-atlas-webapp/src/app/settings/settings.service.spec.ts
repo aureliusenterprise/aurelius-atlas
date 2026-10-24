@@ -1,5 +1,5 @@
 /**
- * The settings facade (SPL-10, DD-072): one injectable over one owner per
+ * The settings facade (SPL-10, DD-160): one injectable over one owner per
  * category. The rule under test is the delegation — each setter reaches
  * its owner, each signal reflects the owner's state — and the read-only
  * surface: the panel writes through the setters, never the signals.
@@ -76,7 +76,7 @@ describe("SettingsService facade (SPL-10)", () => {
         expect(telemetry.enabled()).toBe(false);
     });
 
-    it("is a facade: it stores nothing of its own (SPL-10, DD-072)", () => {
+    it("is a facade: it stores nothing of its own (SPL-10, DD-160)", () => {
         const settings = facade();
         settings.setTheme("light");
         TestBed.flushEffects(); // the theme owner's storage effect (SPL-04)

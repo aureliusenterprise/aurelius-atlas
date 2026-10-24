@@ -61,7 +61,7 @@ describe("Select", () => {
         expect(optionLabels()[0]).toBe("-- No data available --");
     });
 
-    it("hides the search button on request, plain dropdown (DD-076)", () => {
+    it("hides the search button on request, plain dropdown (DD-164)", () => {
         fixture.componentRef.setInput("options", rows);
         fixture.componentRef.setInput("searchVisible", false);
         fixture.detectChanges();
@@ -150,7 +150,7 @@ describe("Select", () => {
         );
     });
 
-    it("names the required help from the caller (DD-047)", () => {
+    it("names the required help from the caller (DD-136)", () => {
         fixture.componentRef.setInput("invalid", true);
         fixture.componentRef.setInput("requiredErrorMessage", "Kies een waarde");
         fixture.detectChanges();
@@ -171,7 +171,7 @@ describe("Select", () => {
         expect(button.classList.contains("is-static")).toBe(true);
     });
 
-    it("emits searchRequested from the search button (DD-067, UIC-14)", () => {
+    it("emits searchRequested from the search button (DD-155, UIC-14)", () => {
         fixture.detectChanges();
         const requested: number[] = [];
         component.searchRequested.subscribe(() => requested.push(1));
@@ -181,7 +181,7 @@ describe("Select", () => {
         expect(requested).toEqual([1]);
     });
 
-    it("names the search button from the caller (DD-047)", () => {
+    it("names the search button from the caller (DD-136)", () => {
         fixture.componentRef.setInput("searchLabel", "Zoeken");
         fixture.detectChanges();
 

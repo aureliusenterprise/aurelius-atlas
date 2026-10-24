@@ -1,7 +1,7 @@
 /**
- * The telemetry owner (SPL-11, DD-070, SPL-10): the stored switch gates
+ * The telemetry owner (SPL-11, DD-158, SPL-10): the stored switch gates
  * the SDK at bootstrap (`storedEnabled`, the seam app.config.ts reads).
- * The DD-070 asymmetry is the rule under test: **off** stops the running
+ * The DD-158 asymmetry is the rule under test: **off** stops the running
  * exporters immediately — the providers' `shutdown` is the one clean
  * direction the SDK has; **on** only stores, the reload assembles the SDK.
  * The providers are injected optionally: off-at-bootstrap means they were
@@ -45,7 +45,7 @@ describe("TelemetryService (SPL-11)", () => {
         expect(TelemetryService.storedEnabled()).toBe(false);
     });
 
-    it("off stores the choice and stops both exporters now (SPL-11, DD-070)", () => {
+    it("off stores the choice and stops both exporters now (SPL-11, DD-158)", () => {
         const svc = service();
 
         svc.setEnabled(false);
@@ -56,7 +56,7 @@ describe("TelemetryService (SPL-11)", () => {
         expect(meterShutdown).toHaveBeenCalledOnce();
     });
 
-    it("on stores the choice and touches no exporter — the reload assembles the SDK (SPL-11, DD-070)", () => {
+    it("on stores the choice and touches no exporter — the reload assembles the SDK (SPL-11, DD-158)", () => {
         const svc = service();
         svc.setEnabled(false);
         tracerShutdown.mockClear();

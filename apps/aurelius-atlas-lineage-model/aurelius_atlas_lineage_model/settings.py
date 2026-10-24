@@ -60,7 +60,7 @@ class LineageModelSettings(BaseSettings):
     """PEM CA verifying the issuer's TLS; unset uses the system trust store."""
 
     atlas_base_url: HttpUrl
-    """The Atlas metadata API whose ``v2/lineage`` feed is flattened (DV-16: a setting,
+    """The Atlas metadata API whose ``v2/lineage`` feed is flattened (DV-52: a setting,
     not a hardcoded host; the server's feed is increment 5.1)."""
 
     data2model_url: HttpUrl

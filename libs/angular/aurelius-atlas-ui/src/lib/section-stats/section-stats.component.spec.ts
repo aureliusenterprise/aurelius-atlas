@@ -56,7 +56,7 @@ describe("SectionStats", () => {
         expect(fixture.nativeElement.querySelectorAll(".level-item")).toHaveLength(1);
     });
 
-    it("emits itemClicked with the target, cancelling the fragment jump (UIC-19, DD-066)", () => {
+    it("emits itemClicked with the target, cancelling the fragment jump (UIC-19, DD-154)", () => {
         fixture.componentRef.setInput("items", items);
         fixture.detectChanges();
         const clicked: string[] = [];

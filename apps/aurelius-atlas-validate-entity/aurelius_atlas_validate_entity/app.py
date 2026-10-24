@@ -1,6 +1,6 @@
 """The composition root: settings in, application out (VE-01, VE-03, DD-108, DD-120).
 
-The app is the legacy mock (DV-14, DD-112): the entity body is never read and
+The app is the legacy mock (DV-50, DD-112): the entity body is never read and
 the answer is the fixed document (VE-01) — no store, no upstream, no cache
 (the legacy's dev ``@cached`` is not ported), no start-up work beyond the
 telemetry. Everything it collaborates with is built elsewhere and wired here —

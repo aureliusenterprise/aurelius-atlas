@@ -92,18 +92,18 @@ describe("AlertList (ALR-07, ALR-09, ALR-10)", () => {
         expect(ids).toEqual(["g7"]);
     });
 
-    it("carries no clear-all button (ALR-06, DD-088)", () => {
+    it("carries no clear-all button (ALR-06, DD-176)", () => {
         fixture.componentRef.setInput("alerts", [group()]);
         fixture.detectChanges();
 
         // Clearing the feed is the caller's action, placed in the
-        // drawer's head slot (DD-088) — the list is only the rows, so
+        // drawer's head slot (DD-176) — the list is only the rows, so
         // it has no clear control to bury in a long feed.
         expect(fixture.nativeElement.querySelector(".aurelius-alert-clear")).toBeNull();
         expect(fixture.nativeElement.querySelector("button:not(.delete)")).toBeNull();
     });
 
-    it("pins the count chip's pair, not Bulma's scheme-following is-light (ALR-07, DD-088)", () => {
+    it("pins the count chip's pair, not Bulma's scheme-following is-light (ALR-07, DD-176)", () => {
         fixture.componentRef.setInput("alerts", [group({ id: "burst", count: 3 })]);
         fixture.detectChanges();
 

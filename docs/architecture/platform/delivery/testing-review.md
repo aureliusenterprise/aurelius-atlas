@@ -25,7 +25,7 @@ Unit counts are test functions (an `it.each` expands to more at runtime);
 | server          | 29 + 11 scenarios | 4 + 11 scenarios (Chromium) | 98.6% | 400 / 404 / 409, ES-red readiness, store-unreachable boot              | a store failure **mid-request** surfacing as a raw 500, not an Atlas body                         |
 | data2model      | 47                | 3 + 1 scenario              | 92.1% | 401, body-shape 400, rule-ref 400                                      | view-edge selection and dynamic views are at 0% — a whole documented feature (DTM-06/07) untested |
 | lineage-model   | 56                | 5 + 1 scenario              | 98.7% | 502 / 204, breaker open / half-open, fail-before-call (the best suite) | the transport-failure handler and the data2model-side fast-fail are the two uncovered lines       |
-| validate-entity | 25                | 4 + 1 scenario              | 99.3% | 401, any-body-accepted (DV-14)                                         | a mock app: 405 and oversized body only                                                           |
+| validate-entity | 25                | 4 + 1 scenario              | 99.3% | 401, any-body-accepted (DV-50)                                         | a mock app: 405 and oversized body only                                                           |
 | fastapi-example | 102               | 21                          | —     | 401/403/503, SSE cancellation, breaker                                 | template code: out of scope (see [Scope](#scope-and-exemptions))                                  |
 
 ### Python libraries

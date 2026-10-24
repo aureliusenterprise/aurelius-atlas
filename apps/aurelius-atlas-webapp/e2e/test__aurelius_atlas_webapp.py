@@ -72,7 +72,7 @@ def test__locale_routes_fall_back_to_localized_app(page: Page, root_url: str, lo
     assert response.status == 200
     assert "text/html" in response.headers["content-type"]
     # The base tag's void-element serialisation is `>` (beasties) or `/>`
-    # (Angular raw, DD-060) — accept both.
+    # (Angular raw, DD-149) — accept both.
     assert re.search(rf'<base href="/{locale}/"\s*/?>', body)
     assert f'lang="{locale}"' in body
 
@@ -121,9 +121,9 @@ def test__unknown_path_falls_back_to_the_app(authenticated: Page, base_url: str)
 
 
 def test__api_proxy_forwards_to_the_atlas_server(page: Page, root_url: str) -> None:
-    """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-050).
+    """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-139).
 
-    The real Aurelius server (DD-053) answers the admin version endpoint
+    The real Aurelius server (DD-142) answers the admin version endpoint
     through nginx -> TLS -> server -> Elasticsearch, so the response proves
     the whole data path and that no proxy rewrites the /api prefix the client
     composes into its URLs.
@@ -513,7 +513,7 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
 
     The screen exists before its API does: the requests recorded across a
     reload of the landing must contain no /api call — the search affordances
-    that would need one are deferred (DD-054).
+    that would need one are deferred (DD-143).
     """
     api_requests: list[str] = []
     authenticated.on("request", lambda request: api_requests.append(request.url))
@@ -587,7 +587,7 @@ def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Pa
 
     panel.locator('a[hreflang="nl-NL"]').click()
 
-    # The drawer segment rides the URL through the locale reload (DD-078's
+    # The drawer segment rides the URL through the locale reload (DD-166's
     # URL-borne open state): match the locale tree prefix, not the tail.
     authenticated.wait_for_url(re.compile(r"/nl-NL/search/browse"))
     card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
@@ -650,7 +650,7 @@ def test__body_uses_the_legacy_type_and_ink(authenticated: Page) -> None:
 
 
 def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
-    """Every ink and weight the landing renders, measured against the demo (SHM-03, DD-062).
+    """Every ink and weight the landing renders, measured against the demo (SHM-03, DD-151).
 
     Bulma 1 re-tinted its greys and moved the weights (title 800, strong
     600, button 500); pinning the body alone left the ramp off the legacy
@@ -674,7 +674,7 @@ def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
     # The navbar chrome: links in the body ink, the dropdown items at
     # Bulma's 14px, buttons at weight 400. The locale <strong> the demo
     # measured (700/#4a4a4a) left the navbar with the language dropdown
-    # (7.14); its DD-062 pin — the legacy strong weight — is asserted on
+    # (7.14); its DD-151 pin — the legacy strong weight — is asserted on
     # the :root token the ramp rides.
     assert authenticated.locator(".navbar-link").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
     strong_weight = authenticated.evaluate(
@@ -713,7 +713,7 @@ def test__chrome_bands_carry_the_aurelius_palette(authenticated: Page) -> None:
 
 
 def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
-    """The Bulma accents render the demo's palette (SHM-04, DD-063).
+    """The Bulma accents render the demo's palette (SHM-04, DD-152).
 
     The legacy theme mapped its Bootstrap-style palette onto Bulma's
     accents — $blue to link, cyan/green/yellow/red to info/success/
@@ -754,7 +754,7 @@ def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
 
 
 def test__burger_menu_matches_the_legacy_mobile_chrome(authenticated: Page) -> None:
-    """The mobile burger menu renders the legacy chrome (SHM-04, DD-064).
+    """The mobile burger menu renders the legacy chrome (SHM-04, DD-153).
 
     Bulma 1 tints the burger from link (the Aurelius blue), leaves the
     burger menu's dropdowns as white plates on the grey band (its
@@ -833,7 +833,7 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
     """data-theme=light keeps the app light when the OS prefers dark (SHM-01).
 
     Bulma 1 follows ``prefers-color-scheme``; the legacy (Bulma 0.9.4) was
-    light-only, so the document root pins the light scheme (DD-059).
+    light-only, so the document root pins the light scheme (DD-148).
     """
     context = browser.new_context(color_scheme="dark", ignore_https_errors=True)
     page = context.new_page()
@@ -850,7 +850,7 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
         band = page.locator(".is-tall-container")
         footer = page.locator("footer.footer")
 
-        # The band is the scheme-following surface (DD-079, `.has-background`):
+        # The band is the scheme-following surface (DD-167, `.has-background`):
         # under the light pin it is Bulma 1's light scheme-bis — the legacy
         # #f5f5f5 band is the navbar's (SHM-04), the content band follows the
         # scheme (rgb(243, 244, 246) = hsl(221, 14%, 96%)).

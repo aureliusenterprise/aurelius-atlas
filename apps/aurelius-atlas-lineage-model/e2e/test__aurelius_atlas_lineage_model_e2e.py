@@ -28,7 +28,7 @@ CANNED_EXTRACT = Path(__file__).parents[1] / "scenarios" / "fixtures" / "graph.e
 """The 8.1 engine's answer for the canned graph's rows, generated with the fixtures."""
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
-"""The canned graph's root: the fixed UUID the fixture file is named for (DV-27)."""
+"""The canned graph's root: the fixed UUID the fixture file is named for (DV-61)."""
 
 
 async def _fetch_trace(trace_id: str) -> str | None:

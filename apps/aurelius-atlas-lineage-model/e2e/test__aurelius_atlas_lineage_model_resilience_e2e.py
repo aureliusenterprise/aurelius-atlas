@@ -35,7 +35,7 @@ RECOVERY_DEADLINE_SECONDS = 90
 """How long the chain may take to answer the canned graph after the restart."""
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
-"""The canned graph's root (the fixtures file's name, DV-27)."""
+"""The canned graph's root (the fixtures file's name, DV-61)."""
 
 
 def _stack_container(service: str) -> Container:

@@ -22,7 +22,7 @@ SCENARIOS = Path(__file__).parents[1] / "scenarios"
 FIXTURES = SCENARIOS / "fixtures"
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
-"""The fixture graph's root entity: the fixed UUID of 8.2's fixtures (DV-27)."""
+"""The fixture graph's root entity: the fixed UUID of 8.2's fixtures (DV-61)."""
 
 
 def _bearer(token: str) -> dict[str, str]:

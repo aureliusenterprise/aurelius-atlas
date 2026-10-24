@@ -1,17 +1,17 @@
 /*
- * The drawer's own layer (DD-069): Bulma 1 ships no drawer, so the anatomy
+ * The drawer's own layer (DD-157): Bulma 1 ships no drawer, so the anatomy
  * lives here, styled on Bulma's tokens — scheme-main surface, the text
  * chain, the border ramp, the modal's scrim recipe and z-band — so the
- * brand's dark ink ramp (DD-068) themes it with no extra work.
+ * brand's dark ink ramp (DD-156) themes it with no extra work.
  *
- * The modal tokens carry explicit fallbacks (DD-075): Bulma 1 emits
+ * The modal tokens carry explicit fallbacks (DD-163): Bulma 1 emits
  * `--bulma-modal-*` on the `.modal`/`.modal-card-*` selectors, not on
  * `:root`, so outside a modal they are undefined — bare `var(...)` use
  * collapsed the head/body padding to 0 and painted the scrim transparent
  * in the app. The fallbacks are Bulma's own defaults, spelled from the
- * root-scoped scheme ramp so dark mode keeps them (DD-068).
+ * root-scoped scheme ramp so dark mode keeps them (DD-156).
  *
- * Motion (DD-074): the panel slides in from the right edge over a fading
+ * Motion (DD-162): the panel slides in from the right edge over a fading
  * scrim and plays the reverse on close; the component keeps the layer
  * rendered until the exit animation ends. Reduced motion shortens the
  * animations to 0.01ms rather than removing them — the exit's
@@ -54,7 +54,7 @@ $aurelius-drawer-motion-duration: 200ms;
     animation: aurelius-drawer-fade-in $aurelius-drawer-motion-duration ease-out;
     // Bulma's modal-background recipe (modal.scss), spelled from the root
     // scheme ramp — the token itself is .modal-scoped and undefined here
-    // (DD-075).
+    // (DD-163).
     background-color: var(
         --bulma-modal-background-background-color,
         hsla(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-invert-l), 0.86)
@@ -95,7 +95,7 @@ $aurelius-drawer-motion-duration: 200ms;
     gap: var(--bulma-block-spacing);
     justify-content: space-between;
     // 2rem is Bulma's $modal-card-head-padding — the token is .modal-scoped
-    // (DD-075).
+    // (DD-163).
     padding: var(--bulma-modal-card-head-padding, 2rem);
 }
 
@@ -114,11 +114,11 @@ $aurelius-drawer-motion-duration: 200ms;
     // head and the `drawer-subhead` slot stay fixed above it.
     min-height: 0;
     overflow-y: auto;
-    // The same 2rem inset below the head's border (DD-075).
+    // The same 2rem inset below the head's border (DD-163).
     padding: var(--bulma-modal-card-head-padding, 2rem);
 }
 
-// The exit pass (DD-074): `closing()` adds the class, the panel's
+// The exit pass (DD-162): `closing()` adds the class, the panel's
 // animationend removes the layer. `forwards` holds the end state so the
 // drawer never flashes back before the layer is dropped.
 .is-closing {

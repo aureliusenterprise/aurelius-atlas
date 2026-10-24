@@ -1,8 +1,8 @@
 <!--
   The shell chrome (SHC-01): the Aurelius root wraps its outlet in the header
   and the footer (the legacy sticky loading/pipeline block is not ported,
-  DD-056). The outlet band is the legacy `.is-tall-container` (SHM-05,
-  SHM-07): a full viewport tall, so the footer starts below the fold (DD-061).
+  DD-145). The outlet band is the legacy `.is-tall-container` (SHM-05,
+  SHM-07): a full viewport tall, so the footer starts below the fold (DD-150).
 -->
 <aurelius-atlas-webapp-header />
 <div class="is-tall-container has-background">
@@ -10,7 +10,7 @@
 </div>
 <aurelius-atlas-webapp-footer />
 <!--
-    The drawer aux outlet (SPL-14, DD-078): routed overlays — the settings
+    The drawer aux outlet (SPL-14, DD-166): routed overlays — the settings
     panel today, the alerts drawer a future slice. Fixed-position layers
     (the ui-lib Drawer), mounted at the root so they sit above the shell
     chrome. The outlet name is the URL's `(drawer:…)` segment, which the

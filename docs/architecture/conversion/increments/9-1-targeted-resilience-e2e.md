@@ -4,7 +4,7 @@
 - **Pull request:** — (follows the review of 2026-10-24, DD-125)
 - **Records:** RSL-01..03 (minted here); DD-125 (the review that scoped this);
   cites 7.7 (ALR-05), 7.3 (APC-05/10), 8.2/8.5 (LM-04, LM-12), DD-111, DD-117,
-  DD-064, DD-085
+  DD-153, DD-173
 
 ## Scope
 
@@ -50,7 +50,7 @@ spine's deferred backlog, DD-125), or any production-code change.
 
 - **RSL-01** (7.7 ALR-05, 7.12): the alerts interceptor reports `/api` calls
   that fail with 5xx or status 0; a stopped container makes nginx answer 502
-  (its `/api/` proxy resolves the upstream per request, DD-053 + the resolver
+  (its `/api/` proxy resolves the upstream per request, DD-142 + the resolver
   pattern), so the browser's failed call follows the unit-tested path: bell
   badge, drawer feed row naming `Request failed: GET /api/... 502`. Recovery
   is the same stack's readiness probe (the conftest's version-endpoint poll,
@@ -61,8 +61,8 @@ spine's deferred backlog, DD-125), or any production-code change.
   (`errorCode` ATLAS-500-00-001 family, DD-20's 8.x shape). The container
   handle is found by compose labels (the collector fixture's pattern, CIA-03
   suite). Restart + the compose healthcheck (5s interval) restores the chain.
-- **RSL-03** (SHC-05, APC-05/10, DD-064): Logout is the dropdown anchor
-  (DD-064); `keycloak.logout()` ends the session at the IdP and returns to
+- **RSL-03** (SHC-05, APC-05/10, DD-153): Logout is the dropdown anchor
+  (DD-153); `keycloak.logout()` ends the session at the IdP and returns to
   the app's origin. The root guard (APC-05, `check-sso`) then redirects to
   Keycloak's login — the same landing the `authenticated` fixture signs
   through — and the round-trip completes with the navbar greeting (SHC-05).
@@ -75,7 +75,7 @@ is integration-level, `webapp/src/test`). The scenarios follow the review
 
 ## Deviations
 
-None new. The outage answers ride the accepted 8.x shapes (DV-26's breaker
+None new. The outage answers ride the accepted 8.x shapes (DV-60's breaker
 502, the SRV-04 error body) — cited, not restated.
 
 ## Acceptance

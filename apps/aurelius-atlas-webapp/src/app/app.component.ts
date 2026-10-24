@@ -9,7 +9,7 @@ import { ShellHeader } from "./shell/header.component";
  *
  * The Aurelius root renders `<models4insight-shell>`, which wraps its
  * `router-outlet` in the header, the loading/pipeline sticky block, and the
- * footer; the sticky block is not ported (DD-056), so the frame here is the
+ * footer; the sticky block is not ported (DD-145), so the frame here is the
  * header, the outlet, and the footer — SHL-03's "bare outlet" reading of the
  * Aurelius root component lands as this chrome.
  */

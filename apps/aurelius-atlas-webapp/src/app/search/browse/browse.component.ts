@@ -11,7 +11,7 @@ import { TechnicalContext } from "./technical-context/technical-context.componen
  *
  * The Aurelius page issued no requests here either; its search fields and
  * explore buttons are search navigation deferred to the search slice
- * (BRW-06, DD-054), as is the Shell chrome.
+ * (BRW-06, DD-143), as is the Shell chrome.
  */
 @Component({
     imports: [BusinessContext, GovernanceResponsibilities, TechnicalContext],

@@ -4,8 +4,8 @@
  * test are the panel's own — the sections render, the Appearance select
  * drives the theme through the facade, the language section computes locale
  * hrefs, the selects write their owners, About shows the build (SPL-12's
- * app==server version, DD-077), dismissal navigates the outlet away
- * (SPL-14, DD-078). The owners' storage behaviour is specced at the owner
+ * app==server version, DD-165), dismissal navigates the outlet away
+ * (SPL-14, DD-166). The owners' storage behaviour is specced at the owner
  * (their specs above); the panel only drives the facade.
  */
 import { TestBed } from "@angular/core/testing";
@@ -81,7 +81,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         document.documentElement.removeAttribute("data-theme");
     });
 
-    it("renders open: the routed panel exists only while open (SPL-14, DD-078)", async () => {
+    it("renders open: the routed panel exists only while open (SPL-14, DD-166)", async () => {
         const { fixture, compiled } = await renderOpen();
 
         expect(compiled.querySelector(".aurelius-drawer")).toBeTruthy();
@@ -105,7 +105,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
             expect(text).toContain(label);
         }
         // Every heading is a Bulma `.label` — the form-controls guide's
-        // field label, one shape for all six (SPL-13, DD-079). Appearance
+        // field label, one shape for all six (SPL-13, DD-167). Appearance
         // carries it through the Select's own label.
         const headings = [...compiled.querySelectorAll(".label")].map((el) =>
             (el.textContent ?? "").replace(/\s+/g, " ").trim(),
@@ -122,7 +122,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(compiled.querySelector(".menu-label")).toBeNull();
     });
 
-    it("every control's label is associated with it (SPL-13, DD-081)", async () => {
+    it("every control's label is associated with it (SPL-13, DD-169)", async () => {
         // The Bulma form guide's labelled control: the heading is the
         // control's accessible name, not a sibling paragraph. The selects
         // and the checkbox are `label[for]`/`id` pairs; the language links
@@ -153,7 +153,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(compiled.querySelector(`select#${appearanceFor}`)).toBeTruthy();
     });
 
-    it("dismissal flips the drawer and navigates the outlet away (SPL-14, DD-078)", async () => {
+    it("dismissal flips the drawer and navigates the outlet away (SPL-14, DD-166)", async () => {
         const { fixture, compiled } = await renderOpen();
         const router = TestBed.inject(Router);
         const navigate = vi.spyOn(router, "navigate").mockResolvedValue(true);
@@ -162,11 +162,11 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         fixture.detectChanges();
 
         expect(fixture.componentInstance.active()).toBe(false);
-        // The dismissal clears the `drawer` outlet segment (DD-078).
+        // The dismissal clears the `drawer` outlet segment (DD-166).
         expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
     });
 
-    it("the Appearance select drives the theme through the owner (SPL-03, SPL-10, DD-076)", async () => {
+    it("the Appearance select drives the theme through the owner (SPL-03, SPL-10, DD-164)", async () => {
         const { fixture, compiled } = await renderOpen();
         const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[0];
 
@@ -205,7 +205,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(links.map((l) => l.getAttribute("href"))).toEqual(["/en-US/", "/nl-NL/"]);
         // The active locale is marked from the document's lang (SPL-06),
         // and the mark is what the panel styles into a highlight
-        // (DD-082): `is-selected` + `aria-current` on the active link.
+        // (DD-170): `is-selected` + `aria-current` on the active link.
         expect(links[0].getAttribute("aria-current")).toBe("true");
         expect(links[1].getAttribute("aria-current")).toBeNull();
         expect(links[0].classList.contains("is-selected")).toBe(true);
@@ -214,7 +214,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
 
     it("the time zone select offers Browser default and the server's zones (SPL-07)", async () => {
         const { fixture, compiled } = await renderOpen();
-        // Index 1: the Appearance select (DD-076) comes first.
+        // Index 1: the Appearance select (DD-164) comes first.
         const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
 
         expect([...select.options].map((o) => o.textContent?.trim())).toEqual([
@@ -230,10 +230,10 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(TestBed.inject(SettingsService).timezone()).toBe("Europe/Amsterdam");
     });
 
-    it("the time zone select shows Browser default while nothing is stored (SPL-07, DD-079)", async () => {
+    it("the time zone select shows Browser default while nothing is stored (SPL-07, DD-167)", async () => {
         // An unset zone binds null — the "Browser default" option — not
         // the browser's resolved zone, which is not always one of the
-        // server's ids and left the select blank (DD-079).
+        // server's ids and left the select blank (DD-167).
         const { fixture, compiled } = await renderOpen();
         const select = compiled.querySelectorAll<HTMLSelectElement>(".select select")[1];
 
@@ -274,14 +274,14 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(TestBed.inject(SettingsService).telemetry()).toBe(false);
     });
 
-    it("About shows the build's one version (SPL-12, DD-077)", async () => {
+    it("About shows the build's one version (SPL-12, DD-165)", async () => {
         const { compiled } = await renderOpen();
         const about = [...compiled.querySelectorAll<HTMLElement>(".settings-section")].at(-1);
         const text = about?.textContent?.replace(/\s+/g, " ").trim();
 
         expect(text).toContain(config.appName);
         expect(text).toContain(config.appVersion);
-        // One release, one number: app and server share it (DD-077) — the
+        // One release, one number: app and server share it (DD-165) — the
         // server is not fetched and not listed.
         expect(text).not.toContain("Server");
     });

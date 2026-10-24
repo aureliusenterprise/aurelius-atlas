@@ -1,10 +1,10 @@
 /**
  * SHL-08: every Aurelius dictionary leaf must be present in both catalogues
  * with its Aurelius text, so a screen ported by a later slice can reference
- * any key and find it translated (DD-039). The vendored dictionaries under
+ * any key and find it translated (DD-128). The vendored dictionaries under
  * tests/fixtures/ are the reference, checked offline. The components
  * dictionaries are the chrome strings of the shared-components library,
- * carried by the `aurelius-atlas-ui` components (DD-047, UIC-04); the shell
+ * carried by the `aurelius-atlas-ui` components (DD-136, UIC-04); the shell
  * dictionaries are the header/footer chrome the webapp's shell carries
  * (SHC-07).
  */
@@ -144,7 +144,7 @@ describe("Aurelius dictionary bridge", () => {
         expect(translated.get(key)).toBe(nlLeaves[key]);
     });
 
-    it("uses only chrome strings the components/shell dictionaries define (UIC-04, DD-047, SHC-07)", () => {
+    it("uses only chrome strings the components/shell dictionaries define (UIC-04, DD-136, SHC-07)", () => {
         // Every `@@components.*` id carried by an aurelius-atlas-ui template,
         // and every `@@shell.*` id carried by the webapp's shell chrome, must
         // be a vendored chrome string — a component may not invent a unit the

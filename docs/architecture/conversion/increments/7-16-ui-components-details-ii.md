@@ -5,7 +5,7 @@
 - **Records:** DD-099 (the chip atom is the classification chip), DD-100 (the
   type-name badge is its own component), DD-101 (details navigation is a shell;
   the scroll directive stays app-side), DD-102 (the section count bar is
-  `section-stats`); relies on ADR 053, DD-046, DD-047, DD-066, DD-067, UIC-15
+  `section-stats`); relies on ADR 053, DD-135, DD-136, DD-154, DD-155, UIC-15
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
 slice inherits, and of the design-system track opened by [7.2](./7-2-design-system.md),
@@ -44,7 +44,7 @@ into `aurelius-atlas-ui` as dumb, signal-driven components:
   `details/gov-quality/gov-quality-details.component.html` (three stats) —
   `nav.level` of heading-link + count items; `items: { label, target, count }`
   in, `itemClicked(target)` out (the nav directive's anchor click, turned into
-  an emit, DD-066's pattern). The heading/count typography pair is the
+  an emit, DD-154's pattern). The heading/count typography pair is the
   Aurelius shape (DD-102).
 
 Not in scope:
@@ -67,9 +67,9 @@ in the test title (the TS pattern, UIC-11..15's precedent).
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UIC-16 | `classification-chip` renders the Bulma `tags.has-addons` chip: the lead tag (caller `icon`, `aria-hidden`, the chip's accessible `label` text) and a label tag carrying `label()` with `title` = `tooltip()`; `loading()` swaps the label tag for the loader tag. A `propagated()` chip adds the `is-hoverable` trigger tag (caller `propagatedIcon`, `title` = `propagatedLabel()`); its dropdown menu projects `[chip-sources]` under the `originLabel()` line. Inputs replace the legacy services; the term chip is the same atom with `is-info` on the lead tag — one component, colour is an input. |
 | UIC-17 | `type-name` renders the `span.icon-text` badge: `title` = `typeAlias ?? typeName`; the icon `span.icon` (caller `icon` + `iconClass()`) when `showIcon()`, the name span (`typeAlias ?? typeName`) when `showTypeName()`, and `&nbsp;(typeName)` when `showBaseTypeName() && typeAlias()`. Nothing renders when neither name is set. `entity-card`'s badge is this component (UIC-12's rendered output is unchanged — its spec stays green as the regression proof).                                                                                                                                      |
-| UIC-18 | `details-navigation` renders `box.is-paddingless` > `dropdown.is-up.is-right` with the toggle `button.is-text.is-large` (caller `toggleIcon`; toggles `is-active`, the Bulma CSS does the rest), and a `nav.menu` with the `menu-label` label (caller-supplied, DD-047) + the `ul.menu-list` holding projected `li`s. The component owns no scroll, no anchors: items are caller markup, so the app's directive (DD-101) wires them.                                                                                                                                                                      |
+| UIC-18 | `details-navigation` renders `box.is-paddingless` > `dropdown.is-up.is-right` with the toggle `button.is-text.is-large` (caller `toggleIcon`; toggles `is-active`, the Bulma CSS does the rest), and a `nav.menu` with the `menu-label` label (caller-supplied, DD-136) + the `ul.menu-list` holding projected `li`s. The component owns no scroll, no anchors: items are caller markup, so the app's directive (DD-101) wires them.                                                                                                                                                                      |
 | UIC-19 | `section-stats` renders `nav.level` with one `level-item.has-text-centered` per item: `p.heading > a` (href `#target`, emits `itemClicked(target)` on activation) + `p.title` with the count. `items()` is the whole input; counts arrive rendered-as-text from the caller. The default-details bar is one item, the gov-quality bar three — one component, both shapes.                                                                                                                                                                                                                                  |
-| UIC-20 | Every component: chrome strings are caller-supplied inputs with the legacy English defaults (DD-047); icons arrive as `IconDefinition` inputs (UIC-15); each ships a story, interactive ones a `play()` test (UIC-10's pattern); the purity gate stays green (DD-042/DD-048). The legacy defaults chosen here are the catalogue's English values of the existing bridge keys (`search.components.classification.isPropagated`/`.originates`, `search.components.term.term`, `search.details.components.navigation.details`).                                                                              |
+| UIC-20 | Every component: chrome strings are caller-supplied inputs with the legacy English defaults (DD-136); icons arrive as `IconDefinition` inputs (UIC-15); each ships a story, interactive ones a `play()` test (UIC-10's pattern); the purity gate stays green (DD-131/DD-137). The legacy defaults chosen here are the catalogue's English values of the existing bridge keys (`search.components.classification.isPropagated`/`.originates`, `search.components.term.term`, `search.details.components.navigation.details`).                                                                              |
 
 ## Aurelius origin
 

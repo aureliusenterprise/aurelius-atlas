@@ -12,7 +12,7 @@ const meta: Meta<Select> = {
     component: Select,
     title: "Select",
     // The shared template binds searchVisible; on by default, as the
-    // component's input and the legacy modal opener are (DD-076).
+    // component's input and the legacy modal opener are (DD-164).
     args: {
         searchVisible: true,
     },
@@ -143,7 +143,7 @@ export const SearchLoading: Story = {
 };
 
 /**
- * The plain dropdown (`searchVisible` off, DD-076): the settings panel's
+ * The plain dropdown (`searchVisible` off, DD-164): the settings panel's
  * theme picker form — a labelled select with no search button beside it.
  */
 export const NoSearch: Story = {

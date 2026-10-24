@@ -8,4 +8,4 @@ NAME = "aurelius-atlas-validate-entity"
 LOGGER = logging.getLogger(NAME)
 
 NO_CONTENT = 204
-"""The healthcheck's answer while the process serves (VE-04, DV-25)."""
+"""The healthcheck's answer while the process serves (VE-04, DV-59)."""

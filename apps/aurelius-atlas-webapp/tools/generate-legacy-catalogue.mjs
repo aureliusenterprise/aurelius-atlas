@@ -2,7 +2,7 @@
  * Generate the XLIFF catalogues from the vendored Aurelius dictionaries.
  *
  * The Aurelius interface localises through `@ngx-translate/core` with nested
- * flat-JSON dictionaries (DD-039). This workspace localises with the built-in
+ * flat-JSON dictionaries (DD-128). This workspace localises with the built-in
  * `@angular/localize`, whose catalogues the build compiles. This generator is
  * the bridge: it converts every dictionary leaf into one `<trans-unit>` whose
  * id is the dictionary key path, so a screen ported in a later slice can
@@ -31,7 +31,7 @@ const nl = JSON.parse(readFileSync(join(fixtures, "nl-NL.json"), "utf8"));
 
 // The Aurelius shared-components library shipped its own dictionary (the
 // chrome strings of accordion, table shell, etc.). The `aurelius-atlas-ui`
-// components carry those strings as `i18n="@@components.*"` units (DD-047),
+// components carry those strings as `i18n="@@components.*"` units (DD-136),
 // so the same keys must exist in the catalogues.
 const enComponents = JSON.parse(readFileSync(join(fixtures, "components-en-US.json"), "utf8"));
 const nlComponents = JSON.parse(readFileSync(join(fixtures, "components-nl-NL.json"), "utf8"));

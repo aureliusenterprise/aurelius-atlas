@@ -44,7 +44,7 @@ export class Details {
 
     /**
      * A crumb was clicked (DET-06): navigate the details route to that
-     * guid. The caller-routes contract of the 7.13 trail (DD-066's
+     * guid. The caller-routes contract of the 7.13 trail (DD-154's
      * sibling) — the screen owns the router, the lib component owns the
      * crumbs.
      * @param guid the entity the crumb points at

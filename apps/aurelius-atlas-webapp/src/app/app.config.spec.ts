@@ -148,7 +148,7 @@ describe("app providers (7.3)", () => {
         expect(providesToken(providers, AURELIUS_METER_PROVIDER)).toBe(true);
     });
 
-    it("assembles no SDK providers when the stored switch is off (SPL-11, DD-070)", async () => {
+    it("assembles no SDK providers when the stored switch is off (SPL-11, DD-158)", async () => {
         // Off at bootstrap = the SDK is never assembled (the gate skips
         // both provide calls). The token probe, not an HTTP call: with the
         // SDK absent, the OTLP interceptor's tracer injection is the

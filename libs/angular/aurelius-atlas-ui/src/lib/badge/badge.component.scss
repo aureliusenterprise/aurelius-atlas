@@ -1,12 +1,12 @@
 /*
  * The badge's dot (ALR-02): a 0.6rem circle pinned to the content's
  * top-right. The ring is the surrounding ink — Bulma emits
- * `--bulma-navbar-item-color` on navbar items (black on DD-080's slate,
+ * `--bulma-navbar-item-color` on navbar items (black on DD-168's slate,
  * the legacy grey on the light band), and currentColor serves the rest,
  * so the dot keeps a visible edge on any surface (the 3:1 graphics
  * floor a bare dot on a navbar band misses, warning especially).
  *
- * The fills are DD-063's pinned ramp, not the scheme-following tokens:
+ * The fills are DD-152's pinned ramp, not the scheme-following tokens:
  * a severity marker reads the same in both schemes, like the footer's
  * pair (SHM-07).
  */
@@ -27,13 +27,13 @@
 }
 
 .aurelius-badge-dot.is-error {
-    background-color: #dc3545; // $danger (DD-063)
+    background-color: #dc3545; // $danger (DD-152)
 }
 
 .aurelius-badge-dot.is-warning {
-    background-color: #ffc107; // $warning (DD-063)
+    background-color: #ffc107; // $warning (DD-152)
 }
 
 .aurelius-badge-dot.is-info {
-    background-color: #17a2b8; // $info (DD-063)
+    background-color: #17a2b8; // $info (DD-152)
 }

@@ -32,7 +32,7 @@ from server_recorder import Recorder
 VERSION: dict[str, Any] = {"Version": "4.1.0", "Revision": "abc1234", "Name": "Aurelius Atlas", "Description": "d"}
 TYPES_DEF: dict[str, Any] = {"enumDefs": [{"name": "e1", "category": "ENUM"}]}
 E_1 = UUID("00000000-0000-4000-8000-000000000001")
-"""A fixed entity guid, the shape every lineage call carries (DV-27)."""
+"""A fixed entity guid, the shape every lineage call carries (DV-61)."""
 LINEAGE: dict[str, Any] = {
     "guidEntityMap": {str(E_1): {"guid": str(E_1), "typeName": "hive_table", "displayText": "T"}},
     "relations": [],

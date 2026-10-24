@@ -43,7 +43,7 @@ class LineageModelClientError(RuntimeError):
         self.status_code = status_code
         """The HTTP status the API answered with."""
         self.error_code = error_code
-        """The ``errorCode`` of the Atlas-shaped body, when it parsed (DV-20/DV-21/DV-22)."""
+        """The ``errorCode`` of the Atlas-shaped body, when it parsed (DV-55/DV-56/DV-22)."""
         self.error_message = error_message
         """The ``errorMessage`` of the Atlas-shaped body, when it parsed."""
         detail = f"{error_code}: {error_message}" if error_code else f"HTTP {status_code}"
@@ -88,7 +88,7 @@ class LineageModelClient:
         :returns: the model document, or ``None`` for the empty answer of LM-05/LM-06 (204).
 
         Raises:
-            LineageModelClientError: The API answered 4xx/5xx (400 is DV-20/DV-21,
+            LineageModelClientError: The API answered 4xx/5xx (400 is DV-55/DV-56,
                 502 is DV-22 — both with the Atlas-shaped body).
         """
         response = await self._http.get(

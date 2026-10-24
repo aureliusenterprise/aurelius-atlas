@@ -8,7 +8,7 @@ import { APP_CONFIG } from "../tokens";
 import { PAGE_SIZES } from "./page-size.service";
 import { SettingsService } from "./settings.service";
 
-/** A row of the Appearance select — the ui-lib Select's row shape (DD-076). */
+/** A row of the Appearance select — the ui-lib Select's row shape (DD-164). */
 type ThemeRow = { mode: Mode; label: string };
 
 /**
@@ -18,9 +18,9 @@ type ThemeRow = { mode: Mode; label: string };
  * {@link SettingsService} facade (SPL-10); the panel itself stores nothing.
  *
  * The panel is a routed component in the `drawer` aux outlet (SPL-14,
- * DD-078): the gear navigates to it, dismissal navigates away, and the
+ * DD-166): the gear navigates to it, dismissal navigates away, and the
  * outlet segment rides the URL — so the language switch's full-page
- * navigation (SPL-06, DD-039) reloads the same locale page with the
+ * navigation (SPL-06, DD-128) reloads the same locale page with the
  * panel open.
  */
 @Component({
@@ -57,7 +57,7 @@ export class SettingsPanel {
     /** Accessible name of the drawer's close control (the Modal's ariaLabel pattern). */
     protected readonly closeLabel = $localize`:@@shell.settings.close:Close`;
 
-    /** The Appearance select's label (SPL-03, DD-076) — the section heading is the control's label. */
+    /** The Appearance select's label (SPL-03, DD-164) — the section heading is the control's label. */
     protected readonly appearanceLabel = $localize`:@@shell.settings.appearance:Appearance`;
 
     /** The theme choices for the select: Auto first (SPL-03). Mutable
@@ -89,7 +89,7 @@ export class SettingsPanel {
     }
 
     /**
-     * Store the select's choice (SPL-03, DD-076) — the valueChange path.
+     * Store the select's choice (SPL-03, DD-164) — the valueChange path.
      * @param row the chosen row; null (the placeholder) changes nothing
      */
     protected setTheme(row: ThemeRow | null): void {
@@ -99,7 +99,7 @@ export class SettingsPanel {
     }
 
     /**
-     * The drawer's dismissal (SPL-14, DD-078): navigate the `drawer`
+     * The drawer's dismissal (SPL-14, DD-166): navigate the `drawer`
      * outlet away. The panel is destroyed with the route, so the exit
      * animation is not awaited — the accepted cost of the URL owning
      * the open state.
@@ -112,7 +112,7 @@ export class SettingsPanel {
     /**
      * The zone the picker shows: the stored choice, or `null` when
      * nothing is stored — which selects the "Browser default" option
-     * (SPL-07, DD-079). Resolving the browser's own zone here instead
+     * (SPL-07, DD-167). Resolving the browser's own zone here instead
      * would leave the select blank whenever that zone is not among the
      * server's ids; the effective zone of a "Browser default" selection
      * is the browser's, applied at the date pipe (ADM-05).

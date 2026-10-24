@@ -6,7 +6,7 @@ being edited, ported from the Aurelius `m4i-validate-entity` service
 ([ADR 055](../../docs/architecture/adr/055-the-lineage-chain-is-a-named-data-surface.md)).
 
 Introduced by increment 8.3. The legacy service **is a mock**
-([DV-14](../../docs/architecture/conversion/deviations.md)): the body is never read
+([DV-50](../../docs/architecture/conversion/deviations.md)): the body is never read
 and the answer is a constant — the four governance cards the editor's panel renders.
 The port keeps that browser contract verbatim, with the workspace's auth and
 observability ([spec](../../docs/architecture/conversion/increments/8-3-validate-entity-api.md)).
@@ -31,4 +31,4 @@ npx nx e2e aurelius-atlas-validate-entity     # the image, realm tokens, real TL
 
 The app has no upstreams: unlike the [lineage-model](../aurelius-atlas-lineage-model/README.md)
 chain (8.2), nothing is forwarded. Real governance validation is a future server rule
-(DV-14); the app ships the mock, as the legacy did.
+(DV-50); the app ships the mock, as the legacy did.

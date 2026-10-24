@@ -20,7 +20,7 @@ describe("Browse", () => {
         expect(TestBed.createComponent(Browse).componentInstance).toBeTruthy();
     });
 
-    it("renders the hero: title and the keyed description, keeping #browse-placeholder (BRW-01, SHL-04, DD-039)", () => {
+    it("renders the hero: title and the keyed description, keeping #browse-placeholder (BRW-01, SHL-04, DD-128)", () => {
         const fixture = TestBed.createComponent(Browse);
         fixture.detectChanges();
 
@@ -52,7 +52,7 @@ describe("Browse", () => {
         expect(cardTitles).toEqual(["Business context", "Technical context", "Data governance organization"]);
     });
 
-    it("insets the page content in the legacy section > container grid (SHM-07, DD-061)", () => {
+    it("insets the page content in the legacy section > container grid (SHM-07, DD-150)", () => {
         const fixture = TestBed.createComponent(Browse);
         fixture.detectChanges();
 

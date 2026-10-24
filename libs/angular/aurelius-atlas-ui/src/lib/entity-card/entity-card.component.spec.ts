@@ -27,11 +27,11 @@ describe("EntityCard", () => {
         expect(title).toBeTruthy();
         expect(title.textContent.trim()).toBe("Sales Domain");
         // The href is the keyboard path: a native anchor activates on Enter,
-        // the click handler emits and cancels the fragment navigation (DD-066).
+        // the click handler emits and cancels the fragment navigation (DD-154).
         expect(title.getAttribute("href")).toBe("#");
     });
 
-    it("emits entityClicked on a title click, without navigating (DD-066, UIC-12)", () => {
+    it("emits entityClicked on a title click, without navigating (DD-154, UIC-12)", () => {
         fixture.componentRef.setInput("guid", "g1");
         fixture.componentRef.setInput("name", "Sales Domain");
         fixture.detectChanges();
@@ -119,7 +119,7 @@ describe("EntityCard", () => {
         expect(fixture.nativeElement.querySelector("h6.title.is-6").textContent.trim()).toBe("Loading Sales Domain...");
     });
 
-    it("keeps the loading label bare without a name (DD-047)", () => {
+    it("keeps the loading label bare without a name (DD-136)", () => {
         fixture.componentRef.setInput("loading", true);
         fixture.componentRef.setInput("loadingLabel", "Bezig met laden");
         fixture.detectChanges();

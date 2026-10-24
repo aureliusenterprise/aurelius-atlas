@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-08
 - **Deciders:** Aurelius Enterprise
-- **Supersedes:** the lineage and validate rows of [DD-051](../conversion/design-log.md#dd-051-the-rest-client-ports-the-live-surface-the-search-client-is-redesigned-in-7-4)
+- **Supersedes:** the lineage and validate rows of [DD-140](../conversion/design-log.md#dd-051-the-rest-client-ports-the-live-surface-the-search-client-is-redesigned-in-7-4)
 
 ## Decision
 
@@ -31,7 +31,7 @@ named: search stays the server's (047), the App Search surface stays unported,
 and the legacy catalogue APIs (entity, glossary, relationship) stay the
 server's Atlas paths (046).
 
-**What 054 relaxes, and only here.** DD-051 excluded the lineage and validate
+**What 054 relaxes, and only here.** DD-140 excluded the lineage and validate
 clients because "the lineage/validate/dashboard backends are separate services
 with no Aurelius equivalent" — the exclusion was about a backend that would
 never exist. This increment builds the backend, so the exclusion retires for
@@ -52,7 +52,7 @@ family whose backend does not exist in this workspace. The legacy chain is
 small (three services, a few hundred lines each), its contracts are
 fully readable in source, and the ar3 JSON the diagram library consumes is
 specified by the legacy parsers — a portable surface with no third-party
-dependency once `m4i-analytics` is reimplemented natively (DV-15). Leaving it
+dependency once `m4i-analytics` is reimplemented natively (DV-51). Leaving it
 unported would leave the webapp's lineage slices (7.x) permanently unwired.
 
 ## Requirements
@@ -82,7 +82,7 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.
 - **Keep m4i-analytics.** Port the legacy ar3 library (pandas, graphviz,
   bokeh, ~2k lines) as a workspace lib: a dependency of a retired product for
   a JSON string the webapp only needs to be ar3-shaped. Native reimplementation
-  (DV-15) keeps the browser contract and drops the tree. Refused.
+  (DV-51) keeps the browser contract and drops the tree. Refused.
 - **Server-side lineage feed first (5.1 before 8.x).** The real data path
   before the APIs: 5.1 grows lineage semantics without a consumer to specify
   them, and 8.x stays blocked. Refused — stub first (this ADR's data-path
@@ -99,8 +99,8 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.
 - The deployment topology grows three stateless containers (plus their
   OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the lineage
   data stays in the server's store (047), read through `/v2/lineage/{guid}`.
-- `deviations.md` records the deliberate divergences: DV-14 (validate-entity
-  ships as the legacy mock), DV-15 (native ar3 layout replaces m4i-analytics),
-  DV-16 (lineage source stubbed until 5.1).
-- DD-051's audit note stays as history; its lineage/validate exclusion is
+- `deviations.md` records the deliberate divergences: DV-50 (validate-entity
+  ships as the legacy mock), DV-51 (native ar3 layout replaces m4i-analytics),
+  DV-52 (lineage source stubbed until 5.1).
+- DD-140's audit note stays as history; its lineage/validate exclusion is
   superseded **by this record**, its App Search exclusion stands.

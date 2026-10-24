@@ -16,7 +16,7 @@ from lm_recorder import Recorder
 from pydantic import ValidationError
 
 E_1 = UUID("00000000-0000-4000-8000-000000000001")
-"""A fixed entity guid, the shape every lineage query carries (DV-27)."""
+"""A fixed entity guid, the shape every lineage query carries (DV-61)."""
 
 ANSWER = {"model": '{"ar3_model": {}}', "metadata": [{"id": str(E_1), "data": {}}]}
 ERROR_BODY = {"errorCode": "ATLAS-400-00-029", "errorMessage": "invalid lineage request"}
@@ -111,11 +111,11 @@ async def test__the_empty_answer_is_none(recorder: Recorder) -> None:
 
 @pytest.mark.covers("aurelius_atlas_lineage_model_client.client.LineageModelClient.get", rules=["CL-04"])
 async def test__a_rejected_query_raises_with_the_status_and_the_error_body(recorder: Recorder) -> None:
-    """The DV-20/DV-21 400, with the Atlas-shaped body in the error (CL-04)."""
+    """The DV-55/DV-56 400, with the Atlas-shaped body in the error (CL-04)."""
     recorder.answer(400, ERROR_BODY)
 
     with pytest.raises(LineageModelClientError) as raised:
-        await _client(recorder).get(E_1, direction=cast("Direction", "SIDEWAYS"))  # the DV-20 query, through the client
+        await _client(recorder).get(E_1, direction=cast("Direction", "SIDEWAYS"))  # the DV-55 query, through the client
 
     assert raised.value.status_code == 400
     assert raised.value.error_code == "ATLAS-400-00-029"

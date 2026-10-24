@@ -6,7 +6,7 @@ import { faSearch } from "@fortawesome/free-solid-svg-icons";
 
 /**
  * The legacy Aurelius search box (`models4insight-simple-search-input`),
- * ported without its `ControlShell` wrapper or reactive form (DD-046): the
+ * ported without its `ControlShell` wrapper or reactive form (DD-135): the
  * query lives in a `model()` and the Bulma field markup is inlined.
  *
  * The query two-way binds; `querySubmitted` fires on Enter, on the submit
@@ -14,7 +14,7 @@ import { faSearch } from "@fortawesome/free-solid-svg-icons";
  * filtering on submit sees the cleared term immediately).
  *
  * Chrome text — placeholder, submit/clear accessible names — is caller
- * supplied (DD-047): the Aurelius app translated the placeholder itself and
+ * supplied (DD-136): the Aurelius app translated the placeholder itself and
  * carried no string for the icon buttons.
  */
 @Component({

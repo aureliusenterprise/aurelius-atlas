@@ -28,7 +28,7 @@ auth=None)` builds the verifier, mounts the routers and the 400 handler (the app
 - `aurelius_atlas_data2model/types.py` — the Archimate element/relationship type tables
   (ported from `m4i-analytics` `Concepts.py` as data)
 - `aurelius_atlas_data2model/extract.py` — the extraction engine: per-rule node/edge/metadata
-  parse (DTM-02..DTM-05), view selection (DTM-07), the native LR/ BT layout (DTM-08, DV-15),
+  parse (DTM-02..DTM-05), view selection (DTM-07), the native LR/ BT layout (DTM-08, DV-51),
   the ar3 writer (DTM-09)
 - `aurelius_atlas_data2model/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, read from the Aurelius source (the lineage caller's

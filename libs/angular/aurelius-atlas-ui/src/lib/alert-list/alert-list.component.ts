@@ -14,7 +14,7 @@ import type { AlertGroup } from "./alert-group";
  * alert arriving while the drawer is open is announced without
  * interrupting. The list labels itself with the caller's `ariaLabel`.
  *
- * Clearing the whole feed lives outside the list (DD-088): the caller
+ * Clearing the whole feed lives outside the list (DD-176): the caller
  * places a clear-all action in the {@link Drawer}'s head slot, where a
  * long feed cannot bury it. The list stays the rows.
  *

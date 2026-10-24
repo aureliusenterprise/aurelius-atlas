@@ -1,4 +1,4 @@
-"""The app's name, logger and wire constants (LM-07, DV-20..DV-22)."""
+"""The app's name, logger and wire constants (LM-07, DV-55..DV-22)."""
 
 import logging
 
@@ -8,7 +8,7 @@ NAME = "aurelius-atlas-lineage-model"
 LOGGER = logging.getLogger(NAME)
 
 BAD_REQUEST = 400
-"""The status of a query the app will not process (LM-07, DV-20, DV-21)."""
+"""The status of a query the app will not process (LM-07, DV-55, DV-56)."""
 
 NOT_FOUND = 404
 """The upstream's answer for a guid it has no lineage for (LM-05)."""

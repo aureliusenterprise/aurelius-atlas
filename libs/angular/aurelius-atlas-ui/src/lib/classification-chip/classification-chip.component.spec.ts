@@ -108,7 +108,7 @@ describe("ClassificationChip", () => {
         expect(rows[0].textContent).toBe("Source entity");
     });
 
-    it("localises the origin line from the caller (UIC-20, DD-047)", () => {
+    it("localises the origin line from the caller (UIC-20, DD-136)", () => {
         host.propagated.set(true);
         host.originLabel.set("komt voor uit de volgende bronnen:");
         fixture.detectChanges();

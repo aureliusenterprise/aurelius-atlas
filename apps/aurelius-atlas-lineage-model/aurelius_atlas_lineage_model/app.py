@@ -100,7 +100,7 @@ def _setup_error_handlers(app: FastAPI) -> None:
     """The app's error contract: the upstream statuses mapped, the query rejections shaped.
 
     Kept at the root because the mapping is the app's own contract (LM-05,
-    LM-07, LM-12, DV-20..DV-22), not any collaborator's: the body shape is
+    LM-07, LM-12, DV-55..DV-22), not any collaborator's: the body shape is
     ``errors.atlas_error``, the statuses are the route's documented ones.
     """
 
@@ -118,7 +118,7 @@ def _setup_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     def validation_error(_request: Request, error: RequestValidationError) -> JSONResponse:
-        """A query the app will not process is a 400 with an Atlas-shaped error body (LM-07, DV-20, DV-21).
+        """A query the app will not process is a 400 with an Atlas-shaped error body (LM-07, DV-55, DV-56).
 
         The legacy let ``int()``, ``Enum()`` and a literal-``None`` guid crash
         Flask — a 500; the port states 400.

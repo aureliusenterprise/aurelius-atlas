@@ -4,7 +4,7 @@
  * stores nothing, so the specs are the panel's own wiring: it renders
  * open with the feed (ALR-01), the rows come from the store (ALR-07),
  * dismissal writes through the service (ALR-06), and closing navigates
- * the `drawer` outlet away (DD-078's pattern, ALR-01). The store's own
+ * the `drawer` outlet away (DD-166's pattern, ALR-01). The store's own
  * grouping and the feed's rendering are specced at the owner.
  */
 import { TestBed } from "@angular/core/testing";
@@ -142,7 +142,7 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         expect(compiled.querySelectorAll(".notification")).toHaveLength(2);
     });
 
-    it("navigates the drawer outlet away on dismissal (ALR-01, DD-078)", async () => {
+    it("navigates the drawer outlet away on dismissal (ALR-01, DD-166)", async () => {
         const alerts = setup();
         const { compiled } = await renderOpen(alerts);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");

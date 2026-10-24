@@ -31,15 +31,15 @@ const BELL_SWING: Keyframe[] = [
  * ui-lib header with the app name brand, and on the right the Documentation
  * link, the settings gear, and the account dropdown.
  *
- * The navbar is search-free by design (DD-056): the global search bar and
+ * The navbar is search-free by design (DD-145): the global search bar and
  * nav buttons join 7.4. The login button the legacy navbar shows when signed
  * out is not ported — the root guard (APC-05) makes that state unreachable
  * (SHC-05). The language dropdown (SHC-04) moved into the settings panel
  * (SPL-01, SPL-06): switching language stays a full-page navigation into the
- * locale tree, since the locale builds are separate bundles (DD-039).
+ * locale tree, since the locale builds are separate bundles (DD-128).
  *
  * The gear opens the settings panel by navigating the `drawer` aux outlet
- * (SPL-01, SPL-14, DD-078) — the open state lives in the URL, so a locale
+ * (SPL-01, SPL-14, DD-166) — the open state lives in the URL, so a locale
  * switch's full-page reload keeps the panel open on the same page.
  */
 @Component({

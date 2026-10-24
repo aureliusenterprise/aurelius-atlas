@@ -19,7 +19,7 @@ export class Accordion {
     /**
      * Accessible name of the toggle button. The legacy Aurelius component
      * read this from the `components.accordion.toggleContent` dictionary key;
-     * the template's `i18n` unit is the same id (DD-047), and a caller with a
+     * the template's `i18n` unit is the same id (DD-136), and a caller with a
      * more specific name (a per-screen label) overrides it here.
      */
     readonly ariaLabel = input("Toggle content");

@@ -1,11 +1,11 @@
 import { signal, Signal, WritableSignal } from "@angular/core";
 
 /**
- * The persistence seam (DD-072): the only code in the app that reads or
+ * The persistence seam (DD-160): the only code in the app that reads or
  * writes `localStorage` for settings. An owner service creates its
  * preference here; a server-backed store replaces this module's internals
  * (GET/PUT behind the same signal API) without touching owners, facade, or
- * panel. The keys are browser-scoped (DD-073) — see each owner for what it
+ * panel. The keys are browser-scoped (DD-161) — see each owner for what it
  * stores.
  */
 

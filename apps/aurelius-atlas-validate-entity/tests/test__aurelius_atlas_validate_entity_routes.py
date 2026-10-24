@@ -36,7 +36,7 @@ def test__the_gate_is_the_injected_verifier(auth: KeycloakAuth) -> None:
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.routes.health.liveness", rules=["VE-04"])
 def test__the_health_router_is_the_anonymous_liveness_check() -> None:
-    """The container healthcheck: GET /liveness answers 204, with no dependency to verify (VE-04, DV-25)."""
+    """The container healthcheck: GET /liveness answers 204, with no dependency to verify (VE-04, DV-59)."""
     (route,) = _routes(HEALTH)
 
     assert route.path == "/liveness"

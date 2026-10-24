@@ -2,7 +2,7 @@
 
 The route is the app's one use case and composes it directly, as the example
 app's routes compose theirs (DD-119's shape). The app is the legacy mock
-(DV-14, DD-112): the entity body is never read and the answer is the fixed
+(DV-50, DD-112): the entity body is never read and the answer is the fixed
 document — the mock's whole contract.
 """
 
@@ -21,7 +21,7 @@ byte guard between the constant and the browser contract the scenarios compare."
 
 
 def build_router(auth: KeycloakAuth) -> APIRouter:
-    """The validation router, gated by the app's verifier (VE-03, DV-24).
+    """The validation router, gated by the app's verifier (VE-03, DV-58).
 
     The gate is the verifier the composition root was built with — the
     router holds none of its own (DD-112's seam, DD-120).
@@ -32,7 +32,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     def validate_entity() -> ValidationResponse:
         """Answer the fixed governance-quality mock for any body (VE-01, VE-02).
 
-        The token is verified for this app's audience (VE-03, DV-24) and nothing is
+        The token is verified for this app's audience (VE-03, DV-58) and nothing is
         forwarded — the legacy's ``requires_auth(transparent=True)`` read the token
         and ignored it; the port keeps that: authentication yes, authorisation by
         the fixed answer. The body is the entity the editor is saving; the mock

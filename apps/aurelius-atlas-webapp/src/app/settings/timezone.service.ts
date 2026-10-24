@@ -3,7 +3,7 @@ import { Injectable, Signal } from "@angular/core";
 import { persisted, Persisted, readPreference, TIMEZONE_KEY } from "./user-preference";
 
 /**
- * The time zone owner (SPL-07, DD-072): the display zone for dates, stored
+ * The time zone owner (SPL-07, DD-160): the display zone for dates, stored
  * in the browser. `null` means "no choice made" — Angular's `DATE_PIPE_DEFAULT_TIMEZONE`
  * provider (the replacement of the removed `DATE_TIME_ZONE`) then falls back to the system zone, the app's behaviour before
  * the setting existed. The ids come from the server's session
@@ -24,7 +24,7 @@ export class TimezoneService {
      * Store the chosen zone id (`null` restores the system default). A
      * change applies on the next reload — the `DATE_PIPE_DEFAULT_TIMEZONE`
      * provider is
-     * read at bootstrap (DD-073, SPL-07).
+     * read at bootstrap (DD-161, SPL-07).
      * @param timezone the IANA zone id, or `null`
      */
     set(timezone: string | null): void {

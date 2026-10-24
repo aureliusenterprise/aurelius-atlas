@@ -1,7 +1,7 @@
 """Fixtures for the app tests: settings, a fake Keycloak issuer, the app.
 
 The fake issuer is the 8.0 auth library's test double (AUX-01..05 are tested at
-home, in ``aurelius-atlas-auth``). The app has no upstream (VE-01, DV-14), so
+home, in ``aurelius-atlas-auth``). The app has no upstream (VE-01, DV-50), so
 there is no fake service to wire: every answer comes from the app itself.
 """
 

@@ -34,28 +34,28 @@ The increment ledger for this track is the 7.x series:
   `otelExporterUrl` (`/otel/v1/traces`), uncaught errors recorded as span
   events, and `traceparent` propagated on HTTP calls — all through
   `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
-  clickstream paths (DD-040). Exports carry the signed-in user's Keycloak
+  clickstream paths (DD-129). Exports carry the signed-in user's Keycloak
   token (DD-103): the collector's browser leg validates it via OIDC, so
   telemetry is attributed; logged-out pushes are rejected (accepted loss)
 
-Not wired yet by design: the navbar's search bar and nav buttons (7.4, DD-051),
+Not wired yet by design: the navbar's search bar and nav buttons (7.4, DD-140),
 and server-side token verification (6.1 — the bearer token rides from day one
-and is inert until then, DD-052).
+and is inert until then, DD-141).
 
 ## Features (slice 7.3 — API client + auth wiring)
 
 - Auth: `keycloak-angular` with `check-sso` + silent-SSO
   (`public/silent-check-sso.html`); every route sits behind a root
   `createAuthGuard` whose guard redirects to Keycloak login with the current
-  URL as `redirect_uri` (APC-05, DD-052 — replacing the Aurelius
+  URL as `redirect_uri` (APC-05, DD-141 — replacing the Aurelius
   `libs/authentication` wholesale)
 - Bearer token on `/api` via `includeBearerTokenInterceptor`; refresh is
   keycloak-angular's, the legacy `updateToken` loop is not ported (APC-06,
   APC-07, DD-004's in-memory token store)
 - REST client: `aurelius-atlas-data-access`'s `TypeDefsService` and
-  `AdminService` type the live server surface (typedefs + admin, DD-051); the
+  `AdminService` type the live server surface (typedefs + admin, DD-140); the
   client composes `${apiBaseUrl}/atlas/v2/...` — the Aurelius
-  deployment-proxy coupling is not ported (APC-01, DD-050), so the dev proxy
+  deployment-proxy coupling is not ported (APC-01, DD-139), so the dev proxy
   and the nginx image forward `/api` untouched (APC-08)
 - Keycloak dev origins for 4300/4301 (serve) and 18444 (e2e) on the shared
   `aurelius` client (APC-09)
@@ -73,7 +73,7 @@ and is inert until then, DD-052).
 - The page issues zero HTTP requests (BRW-04): all content is static, every
   string carries its `@@search.browse.*` bridge key, and the strings that must
   live in TypeScript use `$localize` with the same ids
-- Deferred by design (BRW-06, DD-054): the cards' search fields and explore
+- Deferred by design (BRW-06, DD-143): the cards' search fields and explore
   buttons arrive with the search slice (7.4), which is gated on the server
   search API (4.1 + 2.3); the Shell chrome landed with 7.11
 
@@ -81,13 +81,13 @@ and is inert until then, DD-052).
 
 - The root frames every screen: the 7.2 `aurelius-atlas-ui` header above the
   outlet, the footer below it (SHC-01, superseding the bare outlet), as the
-  Aurelius root wraps its outlet in `libs/shell`'s chrome (DD-056)
-- Navbar, search-free (SHC-02..SHC-05, DD-056): app-name brand, the Aurelius
+  Aurelius root wraps its outlet in `libs/shell`'s chrome (DD-145)
+- Navbar, search-free (SHC-02..SHC-05, DD-145): app-name brand, the Aurelius
   Documentation link, the language dropdown, and the account dropdown —
   welcome line, Keycloak account console, and logout over `keycloak-angular`
   (the legacy `libs/authentication` session chrome is not ported)
 - Language switch is a full-page navigation into the locale tree the image
-  serves (DD-039): `localeHref` strips the active locale prefix and prepends
+  serves (DD-128): `localeHref` strips the active locale prefix and prepends
   the chosen one
 - Footer from the runtime config (SHC-06): copyright year, app name, version —
   `appName`/`appCopyright`/`appVersion` join `AppConfig`, the Aurelius
@@ -108,7 +108,7 @@ Keycloak sign-in page and returns to the app after you sign in as
 `aurelius-writer` (the dev-keycloak users). The dev server proxies `/api` →
 :21000 and `/otel` → 4318 (HTTPS, verified against the local CA via
 `NODE_EXTRA_CA_CERTS` from `.env.enc` — ADR 039); `/api` forwards with the
-prefix intact (DD-050). `/config.json` is served from `dev/` (development build
+prefix intact (DD-139). `/config.json` is served from `dev/` (development build
 only).
 
 ## Testing
@@ -126,10 +126,10 @@ legacy dictionaries (`tests/fixtures/*.json`) by
 `tools/generate-legacy-catalogue.mjs` — run that after touching them, and keep
 the completeness spec green. `nx extract-i18n` regenerates the template
 catalogue from templates only; the bridge files are the source of truth for
-dictionary keys (DD-039).
+dictionary keys (DD-128).
 
 The e2e stack runs the **real** Atlas server container behind the nginx `/api/`
-proxy on the dev Elasticsearch network (DD-053), with Keycloak on the host
+proxy on the dev Elasticsearch network (DD-142), with Keycloak on the host
 stack. Every page test signs in through the `authenticated` fixture
 (`AURELIUS_ATLAS_WEBAPP_USERNAME`/`_PASSWORD` from `.env.enc`, the
 `aurelius-writer` dev user); changing `dev/keycloak/import/master.json` needs a
@@ -138,7 +138,7 @@ down -v && up -d`) — Keycloak imports do not overwrite an existing realm.
 
 ## Features (slice 7.12 — theme, branding and layout)
 
-The chrome looks like the legacy demo (SHM-01..06, DD-059). The Aurelius
+The chrome looks like the legacy demo (SHM-01..06, DD-148). The Aurelius
 brand library emits its palette and the legacy type metrics as Bulma 1
 custom properties (`--bulma-link: #0073dd`, BlinkMacSystemFont-first
 stack, 16px/1.5, `#4a4a4a` ink, 4.25rem navbar), with the tokens Bulma scopes
@@ -146,17 +146,17 @@ on components (`.navbar`, `.footer`) re-emitted there. The accent ramp is the
 legacy theme's Bootstrap map — link `#0073dd`, info `#17a2b8`, success
 `#28a745`, warning `#ffc107`, danger `#dc3545` — while `primary` stays
 Bulma's own teal `#00d1b2` (the demo's landing icons) with white solid-fill
-ink (DD-063). The mobile burger chrome follows the legacy: the burger
+ink (DD-152). The mobile burger chrome follows the legacy: the burger
 renders in navbar grey with the black hover plate (Bulma 1 tints it from
 link), the burger menu's dropdowns blend into the band with no chevron
 (Bulma 1 leaves white plates and shows the arrow — 0.9.4's mobile
 rendering), and Logout is the legacy `a.navbar-item[role=button]` in
-navbar ink, not a red button (DD-064). Bulma 1 re-tinted the
+navbar ink, not a red button (DD-153). Bulma 1 re-tinted the
 whole grey ramp (221 degrees) and re-weighted title/strong/button, so the
 library re-emits Bulma 0.9.4's neutral channels — the `text`/`text-strong`
 hue-saturation-lightness triplets and the `.title`/`.button` weights — to
 keep headings, boxes and the navbar ink at the demo's `#4a4a4a`/`#363636`
-(DD-062). Light mode is forced
+(DD-151). Light mode is forced
 via `data-theme="light"` on the document root — no OS dark until a switch
 exists; the brand tokens sit outside the scheme machinery so a switch re-skins
 without re-branding. The navbar is pinned (`is-fixed-top`, body
@@ -164,11 +164,11 @@ without re-branding. The navbar is pinned (`is-fixed-top`, body
 with `assets/aurelius-atlas-logo.png` (the ui-lib Header takes
 `logo`/`logoCssClass`/`fixed`). The body is a flex column so the blue
 `#0073dd` footer sits below the fold (the band is a full viewport, the
-legacy `.is-tall-container` verbatim — DD-061), and page content is inset
+legacy `.is-tall-container` verbatim — DD-150), and page content is inset
 on Bulma's grid: the landing wraps in `section.section > div.container`
-(the legacy page anatomy, DD-061), the footer keeps its `container`, and
+(the legacy page anatomy, DD-150), the footer keeps its `container`, and
 the content band between the bars is the demo's full-bleed `#f5f5f5`. The prod build sets
-`optimization.styles.inlineCritical: false` (DD-060): Angular's critical-CSS
+`optimization.styles.inlineCritical: false` (DD-149): Angular's critical-CSS
 inliner loads the sheet `media="print"` for a swap script this zoneless CSR
 app never runs, so the brand rules on `.navbar`/`.footer` applied in dev only.
 

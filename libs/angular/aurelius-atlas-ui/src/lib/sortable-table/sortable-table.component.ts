@@ -9,13 +9,13 @@ import { SortDirection, TableColumn, TableRow } from "./table-column";
 /**
  * The Aurelius sortable table (`sortable-table-shell` + `sortable-table`),
  * ported without `@angular/material`, `ngx-pagination`, or the redux store
- * service (DD-046, UIC-05): sort, page, and selection are `model()` state,
+ * service (DD-135, UIC-05): sort, page, and selection are `model()` state,
  * paging reuses `Pagination`, and sorting is header clicks.
  *
  * Columns are `ng-template` blocks with the `aurelius-atlas-ui-table-column`
  * directive and rows render through the `aurelius-atlas-ui-table-row`
  * template, so a caller declares each column's content once and the table
- * clones it per row. Header text is caller content (DD-047).
+ * clones it per row. Header text is caller content (DD-136).
  */
 @Component({
     selector: "aurelius-atlas-ui-sortable-table",
@@ -92,7 +92,7 @@ export class SortableTable<T extends Record<string, unknown>> {
 
     /**
      * Accessible name of the empty-table message, the Aurelius `noData`
-     * chrome string (DD-047). A caller passes a localised string.
+     * chrome string (DD-136). A caller passes a localised string.
      */
     readonly emptyLabel = input("No data available");
 

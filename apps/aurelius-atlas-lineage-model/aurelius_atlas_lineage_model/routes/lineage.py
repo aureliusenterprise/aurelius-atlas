@@ -38,7 +38,7 @@ LINEAGE = "lineage"
 
 
 def build_router(auth: KeycloakAuth) -> APIRouter:
-    """The lineage router, gated by the app's verifier (LM-08, DV-23).
+    """The lineage router, gated by the app's verifier (LM-08, DV-57).
 
     The upstreams are read from the app state at call time, so the router
     holds none of its own — the composition root wires them (DD-111's seam).
@@ -55,7 +55,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     ) -> Response:
         """Flatten the entity's lineage and extract its model (LM-01).
 
-        The token is verified for this app's audience (LM-08, DV-23) and
+        The token is verified for this app's audience (LM-08, DV-57) and
         forwarded raw to both upstreams (LM-04) — the legacy's design: the
         upstream services accept the browser's own token. An empty graph (no
         lineage, no relations) is the 204 of LM-05/LM-06; failures arrive as

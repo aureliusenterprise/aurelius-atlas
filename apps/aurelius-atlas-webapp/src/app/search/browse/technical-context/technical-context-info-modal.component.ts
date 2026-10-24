@@ -21,7 +21,7 @@ type InfoRow = {
  * The modal's `active` model is bound by the card component (BRW-05). Every
  * string carries its legacy dictionary key as an i18n id; strings that must
  * live in TypeScript use `$localize` with the same `@@` ids (BRW-02), the
- * built-in-localize form of the DD-039 bridge.
+ * built-in-localize form of the DD-128 bridge.
  */
 @Component({
     imports: [FontAwesomeModule, Modal, SortableTable, TableColumn, TableRow],

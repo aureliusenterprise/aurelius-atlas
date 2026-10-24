@@ -23,7 +23,7 @@ TLS_PAIR_ERROR = (
 class ValidateEntitySettings(BaseSettings):
     """How the app runs, who issues its tokens, and where its telemetry goes.
 
-    The mock has no upstreams (VE-01, DV-14): the settings set is the same
+    The mock has no upstreams (VE-01, DV-50): the settings set is the same
     shape as the other auxiliary apps minus the proxy targets, so the dev
     deployment and the container image stay uniform (DD-112).
     """

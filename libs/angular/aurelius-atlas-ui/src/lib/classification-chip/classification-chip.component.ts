@@ -92,12 +92,12 @@ export class ClassificationChip {
     readonly originLabel = input<string | undefined>(undefined);
 
     /**
-     * The Aurelius English strings behind the optional labels (DD-047).
+     * The Aurelius English strings behind the optional labels (DD-136).
      */
     protected readonly propagatedLabelDefault = "Is propagated";
 
     /**
-     * The Aurelius English origin line (DD-047).
+     * The Aurelius English origin line (DD-136).
      */
     protected readonly originLabelDefault = "originates from the following sources:";
 }

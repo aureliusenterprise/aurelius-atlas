@@ -1,5 +1,5 @@
 # The mock never reads its body (8.6, DD-125): the legacy Aurelius app is a
-# governance-quality mock that answers its fixed cards to any request (DV-14),
+# governance-quality mock that answers its fixed cards to any request (DV-50),
 # and the port keeps that contract (VE-01) — no request model, no validation.
 # The stage sends bytes no JSON API would accept: the mock is not a JSON API,
 # and the 200 proves the body is never parsed. The response is the same fixed

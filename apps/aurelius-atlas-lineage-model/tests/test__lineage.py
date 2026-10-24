@@ -16,7 +16,7 @@ from aurelius_atlas_lineage_model.lineage import (
 )
 from fake_upstream import FakeUpstream
 
-# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-27).
+# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-61).
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
 P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
 E_OUT = UUID("00000000-0000-4000-8000-000000000003")
@@ -327,7 +327,7 @@ async def test__an_invalid_direction_is_400(
     client: httpx.AsyncClient,
     token: Callable[..., str],
 ) -> None:
-    """A direction outside BOTH/INPUT/OUTPUT is a client error, not the legacy's Enum crash (DV-20)."""
+    """A direction outside BOTH/INPUT/OUTPUT is a client error, not the legacy's Enum crash (DV-55)."""
     response = await client.get("/", params={"guid": str(E_IN), "direction": "SIDEWAYS"}, headers=_bearer(token()))
 
     assert response.status_code == 400
@@ -339,7 +339,7 @@ async def test__a_non_numeric_depth_is_400(
     client: httpx.AsyncClient,
     token: Callable[..., str],
 ) -> None:
-    """A depth that is not an integer is a client error, not the legacy's int() crash (DV-20)."""
+    """A depth that is not an integer is a client error, not the legacy's int() crash (DV-55)."""
     response = await client.get("/", params={"guid": str(E_IN), "depth": "deep"}, headers=_bearer(token()))
 
     assert response.status_code == 400
@@ -351,7 +351,7 @@ async def test__a_missing_guid_is_400(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """No guid is a client error, not the legacy's fetch of the literal guid None (DV-21)."""
+    """No guid is a client error, not the legacy's fetch of the literal guid None (DV-56)."""
     response = await client.get("/", headers=_bearer(token()))
 
     assert response.status_code == 400
@@ -364,7 +364,7 @@ async def test__a_guid_that_is_not_a_uuid_is_400(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """A guid outside the UUID shape is the same client error, answered before any upstream call (DV-21, DV-27)."""
+    """A guid outside the UUID shape is the same client error, answered before any upstream call (DV-56, DV-61)."""
     response = await client.get("/", params={"guid": "e-in"}, headers=_bearer(token()))
 
     assert response.status_code == 400

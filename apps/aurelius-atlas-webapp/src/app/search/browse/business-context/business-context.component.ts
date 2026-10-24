@@ -10,7 +10,7 @@ import { BusinessContextInfoModal } from "./business-context-info-modal.componen
  *
  * The Aurelius card also carried a `simple-search-input` and an "explore"
  * button; both are search navigation and deferred to the search slice
- * (BRW-06, DD-054) — the card's search/exploring *text* stays, as the
+ * (BRW-06, DD-143) — the card's search/exploring *text* stays, as the
  * landing copy the Aurelius screen shows before any search exists.
  */
 @Component({

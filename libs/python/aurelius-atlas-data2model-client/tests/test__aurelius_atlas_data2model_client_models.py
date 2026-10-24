@@ -139,7 +139,7 @@ def test__the_request_defaults_to_the_empty_extraction() -> None:
 
 @pytest.mark.covers(rules=["CL-20"])
 def test__the_response_states_the_answer_the_apps_send() -> None:
-    """``{metadata: [{id, data}], model: "<ar3 JSON string>"}`` — the model is a string (DV-15)."""
+    """``{metadata: [{id, data}], model: "<ar3 JSON string>"}`` — the model is a string (DV-51)."""
     response = ExtractionResponse.model_validate(
         {"metadata": [{"id": "n-1", "data": {"created_by": "dataset"}}], "model": '{"ar3_model": {}}', "extra": 1}
     )

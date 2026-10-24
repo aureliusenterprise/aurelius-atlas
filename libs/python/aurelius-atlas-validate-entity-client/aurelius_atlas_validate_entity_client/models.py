@@ -3,7 +3,7 @@
 The body the 8.3 mock answers — the four cards the webapp's editor renders, the
 ``AppSearchResult<GovQualitySearchObject>`` shape of the legacy
 ``libs/atlas/api::GovQualityApi`` (ADR 055 R4) — stated as models so a caller
-parses it and the app's constant is checked against one shape (VE-02, DV-14).
+parses it and the app's constant is checked against one shape (VE-02, DV-50).
 
 Every leaf is a ``{"raw": …}`` wrapper, and the ``doc-…`` ids, string
 ``compliant`` flags and ``_meta.engine`` of the mock are part of the browser
@@ -79,7 +79,7 @@ class ValidationCard(BaseModel):
     )
 
 
-# VE-02; DV-14; CL-40. The keys are the legacy's — ``dataEntity``,
+# VE-02; DV-50; CL-40. The keys are the legacy's — ``dataEntity``,
 # ``definition``, ``domainLead``, ``name`` — the aspects the editor's
 # governance panel renders.
 class ValidationResponse(BaseModel):

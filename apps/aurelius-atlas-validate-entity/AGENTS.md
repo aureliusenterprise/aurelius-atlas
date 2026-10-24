@@ -22,7 +22,7 @@ auth=None)` builds the verifier, mounts the routers, and configures the telemetr
   gated `POST /` answering the fixed mock, VE-01) and `health.py` (the anonymous
   `/liveness`)
 - `aurelius_atlas_validate_entity/mock.py` — `MOCK_VALIDATION`: the legacy's `output`
-  dict verbatim, as data (VE-02, DV-14, DD-112). The ids, `raw` strings, names and
+  dict verbatim, as data (VE-02, DV-50, DD-112). The ids, `raw` strings, names and
   verdicts are the webapp governance cards' contract — changing them is a visible
   contract change, not a refactor.
 - `aurelius_atlas_validate_entity/settings.py` — `ValidateEntitySettings`
@@ -51,7 +51,7 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
 - Auth is the shared lib (`aurelius-atlas-auth`, DD-108): `auth.require_auth` on the
   route; nothing is forwarded (the app has no upstreams). Audience `aurelius` (the
   webapp's client id, AUX-04): the browser calls this endpoint with its own token, so
-  this app verifies tokens for that audience (VE-03, DV-24).
+  this app verifies tokens for that audience (VE-03, DV-58).
 - OTLP export is app-owned (DD-107/DD-108): `otel_*` settings, `otel-validate-entity`
   client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-121).
 - Every HTTP call is visible (DD-121): `HTTPX2ClientInstrumentor` covers the httpx2

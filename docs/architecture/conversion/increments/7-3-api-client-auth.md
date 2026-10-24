@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** #100
-- **Records:** ADR 053; DD-050, DD-051, DD-052, DD-053; relies on ADR 007, ADR 018, ADR 038, DD-004, DD-041, DD-044
+- **Records:** ADR 053; DD-139, DD-140, DD-141, DD-142; relies on ADR 007, ADR 018, ADR 038, DD-004, DD-130, DD-133
 
 Part of the [7.0 umbrella](./7-0-webapp-foundation.md), whose rules WBP-01 to WBP-07 this
 slice inherits and its Acceptance repeats.
@@ -10,18 +10,18 @@ slice inherits and its Acceptance repeats.
 ## Scope
 
 Give the webapp a real backend: the Atlas REST client in `aurelius-atlas-data-access`,
-and the Keycloak wiring the shell deferred (DD-044). This is the slice that closes the
+and the Keycloak wiring the shell deferred (DD-133). This is the slice that closes the
 7.0 audit question — _how does the Aurelius interface reach the server?_ — and retargets
 the webapp's proxies at the server that answers.
 
-The audit's answer shapes the whole slice (DD-050): the Aurelius app has **no base URL at
+The audit's answer shapes the whole slice (DD-139): the Aurelius app has **no base URL at
 all**. Every legacy URL is a relative path resolved against `<base href>`, and the
 `/api/atlas` prefix is injected entirely by the deployment proxy (the dev
 `proxy.conf.json`, the k8s Apache `ProxyPass`). Aurelius Atlas is built the other way
 round: the client owns the base URL (`API_BASE_URL`, fed from runtime `/config.json`,
-DD-041) and the proxy forwards a same-origin prefix untouched.
+DD-130) and the proxy forwards a same-origin prefix untouched.
 
-The client ports **the surface the server implements today** (DD-051): the type
+The client ports **the surface the server implements today** (DD-140): the type
 definitions of increment 1.6 (`/api/atlas/v2/types/**`) and the admin endpoints of 0.5
 (`/api/atlas/admin/**`). It does not port calls to endpoints 2.x–4.x have not built —
 notably the search client, which the audit found is not an Atlas call at all (the Aurelius
@@ -37,7 +37,7 @@ which arrives in 7.4 redesigned against `/v2/search/basic` when browse consumes 
   already ships.
 - **Proxies and dev infrastructure**: the dev proxy and the e2e nginx `/api/` location
   retargeted at the Atlas server; the Keycloak client gains the webapp's origins; the e2e
-  stack runs the real Atlas server behind the proxy (DD-053).
+  stack runs the real Atlas server behind the proxy (DD-142).
 
 Not in scope:
 
@@ -53,14 +53,14 @@ Not in scope:
 
 | Id     | Rule                                                                                                                                                                                  |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| APC-01 | The client composes every URL from the injected `API_BASE_URL` token; no endpoint host, port, or `/api/atlas` prefix is hard-coded in the client (WBP, DD-050)                        |
-| APC-02 | Every endpoint the server implements today has exactly one typed client method: the typedefs of `/api/atlas/v2/types` and `version`/`status`/`session` of `/api/atlas/admin` (DD-051) |
+| APC-01 | The client composes every URL from the injected `API_BASE_URL` token; no endpoint host, port, or `/api/atlas` prefix is hard-coded in the client (WBP, DD-139)                        |
+| APC-02 | Every endpoint the server implements today has exactly one typed client method: the typedefs of `/api/atlas/v2/types` and `version`/`status`/`session` of `/api/atlas/admin` (DD-140) |
 | APC-03 | Client DTOs use the wire names the server writes (camelCase Java getter names), and the typedef cluster carries the fields of `AtlasTypesDef` (TDM-01, TDM-13)                        |
 | APC-04 | A failed call surfaces the Atlas error shape (`errorCode`, `errorMessage`, optional `errorCause`) as a typed error, not a bare HTTP status                                            |
 | APC-05 | Bootstrap initialises Keycloak with `onLoad: "check-sso"` and a silent-SSO redirect; an unauthenticated visit to a guarded route redirects to the sign-in page                        |
 | APC-06 | Every `/api` request carries `Authorization: Bearer <token>`; tokens live in Keycloak's in-memory store, never `localStorage` (DD-004, ADR 007)                                       |
 | APC-07 | Token refresh is keycloak-angular's, not a ported loop: no hand-written `updateToken` scheduler exists in the webapp (WBP-02)                                                         |
-| APC-08 | Both webapp proxies forward `/api` to the Atlas server with the prefix intact — the dev proxy and the e2e nginx both (DD-050)                                                         |
+| APC-08 | Both webapp proxies forward `/api` to the Atlas server with the prefix intact — the dev proxy and the e2e nginx both (DD-139)                                                         |
 | APC-09 | The Keycloak `aurelius` client's redirect URIs and web origins cover the webapp's dev ports (4300, 4301) and its e2e origin (18444)                                                   |
 | APC-10 | Every client method has a Vitest spec naming it, the guard has one, and the e2e suite proves the guarded flow and a real server response through the proxy                            |
 
@@ -86,18 +86,18 @@ Cited by path in `aureliusenterprise/aurelius` at the cloned commit, so a review
 
 | Aurelius                                                                                                                                                                                                                                                                                | Becomes                                                                                        |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| relative URLs + `<base href>` + deployment proxy (no base URL anywhere)                                                                                                                                                                                                                 | `API_BASE_URL` token from `/config.json`, prefix forwarded untouched (DD-050)                  |
+| relative URLs + `<base href>` + deployment proxy (no base URL anywhere)                                                                                                                                                                                                                 | `API_BASE_URL` token from `/config.json`, prefix forwarded untouched (DD-139)                  |
 | `libs/atlas/api/src/lib/type-def-api.service.ts` (`atlas/v2/types`)                                                                                                                                                                                                                     | `TypeDefsService.getTypedefs`, `getTypeDefByName`, per-kind lookups                            |
 | `libs/atlas/api/src/lib/get-type-defs/`, `get-type-by-name/`, `get-classification-def-by-name/`                                                                                                                                                                                         | the same `TypeDefsService` methods (legacy duplicated service + free function)                 |
 | `libs/atlas/api/src/lib/types.ts` (typedef cluster: `AtlasTypesDef`, `AtlasEntityDef`, `AtlasStructDef`, `AtlasClassificationDef`, `AtlasEnumDef`, `AtlasRelationshipDef`, `AtlasAttributeDef`, `AtlasConstraintDef`, `RelationshipEndDef`, `TypeCategory`, `Cardinality`, `IndexType`) | `atlas-typedef.ts` DTOs, same wire names (APC-03)                                              |
 | `libs/atlas/api/src/lib/utils.ts` (`createHttpParams`, nil-filtering)                                                                                                                                                                                                                   | `filterParams` in the client (the idiom the lib already uses)                                  |
-| `libs/atlas/api/src/lib/elastic/**`, `engines/atlas-entity-search.service.ts`, the `AppSearchService`→`AtlasEntitySearchService` DI alias                                                                                                                                               | not ported — 7.4 redesigns it against `/v2/search/basic` (DD-051)                              |
+| `libs/atlas/api/src/lib/elastic/**`, `engines/atlas-entity-search.service.ts`, the `AppSearchService`→`AtlasEntitySearchService` DI alias                                                                                                                                               | not ported — 7.4 redesigns it against `/v2/search/basic` (DD-140)                              |
 | `libs/atlas/api/src/lib/{get-lineage-model,get-dashboard,gov-quality}/**`                                                                                                                                                                                                               | not ported — backends Aurelius Atlas does not have                                             |
-| `libs/authentication` (`keycloak-js` + `ReplaySubject` auth state + manual `updateToken(5)` loop + `AuthenticationGuard`)                                                                                                                                                               | `keycloak-angular`: `provideKeycloak` + `createAuthGuard`, keycloak-angular's refresh (DD-052) |
+| `libs/authentication` (`keycloak-js` + `ReplaySubject` auth state + manual `updateToken(5)` loop + `AuthenticationGuard`)                                                                                                                                                               | `keycloak-angular`: `provideKeycloak` + `createAuthGuard`, keycloak-angular's refresh (DD-141) |
 | `libs/http/authorization-header.interceptor.ts` (`AuthTokenProvider` ctor injection per client)                                                                                                                                                                                         | `includeBearerTokenInterceptor` + `INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG` on `/api`          |
-| `libs/shell/shell.ts` `childRoutes(..., requiresAuth)` applying the guard                                                                                                                                                                                                               | the guard declared once on the webapp root route (DD-052)                                      |
+| `libs/shell/shell.ts` `childRoutes(..., requiresAuth)` applying the guard                                                                                                                                                                                                               | the guard declared once on the webapp root route (DD-141)                                      |
 | `apps/atlas/proxy.conf.json` (`/atlas` → `:21000/api/atlas`, prefix rewritten)                                                                                                                                                                                                          | webapp `proxy.conf.json` `/api` → the Atlas server, no rewrite (APC-08)                        |
-| `backend/m4i-reverse-proxy` (Apache `ProxyPass` per prefix)                                                                                                                                                                                                                             | the webapp nginx `/api/` location, TLS-verified (APC-08, DD-053)                               |
+| `backend/m4i-reverse-proxy` (Apache `ProxyPass` per prefix)                                                                                                                                                                                                                             | the webapp nginx `/api/` location, TLS-verified (APC-08, DD-142)                               |
 
 The legacy `libs/http` is not ported at all: `HttpService` (an `HttpClient` subclass),
 its cache interceptor, and its IE-header interceptor solve problems this workspace's
@@ -110,9 +110,9 @@ already implements, and the shapes come from the server's parity-tested models.
 
 Against the Aurelius product, three intended differences are recorded in
 [design-log](../design-log.md): the client owns the base URL where Aurelius delegated it
-to the proxy (DD-050); the search client is not ported in this slice and will not be
-ported as written (DD-051); and the auth wiring is keycloak-angular's, not the Aurelius
-`libs/authentication` (DD-052, on the pattern 7.1 set for the rest of `Core.imports`).
+to the proxy (DD-139); the search client is not ported in this slice and will not be
+ported as written (DD-140); and the auth wiring is keycloak-angular's, not the Aurelius
+`libs/authentication` (DD-141, on the pattern 7.1 set for the rest of `Core.imports`).
 
 ## Acceptance
 
@@ -126,13 +126,13 @@ ported as written (DD-051); and the auth wiring is keycloak-angular's, not the A
 - `apps/aurelius-atlas-webapp/e2e/` — an unauthenticated load lands on the Keycloak sign-in
   page (APC-05); an authenticated session reaches the browse placeholder (APC-05, APC-09);
   `GET /api/atlas/admin/version` **through the nginx proxy** returns the server's version
-  document (APC-08, DD-053), replacing the placeholder assertion that proxied Keycloak.
+  document (APC-08, DD-142), replacing the placeholder assertion that proxied Keycloak.
 - Umbrella checks: `nx build`, `nx test -c ci`, `nx lint`, `nx e2e` for the app, plus
   `nx test aurelius-atlas-data-access -c ci` and `nx build aurelius-atlas-data-access`.
 - Consumer regression: the example app is the data-access lib's current consumer, so
   `nx test aurelius-atlas-frontend-example -c ci` and its build must stay green (UIC-09's
   rule, applied to the lib).
-- Purity: `check-purity` covers `libs/angular` since DD-048, so the ported client is
+- Purity: `check-purity` covers `libs/angular` since DD-137, so the ported client is
   gated — no `@models4insight/` import, no state-owning `BehaviorSubject`.
 
 ### Definition of done, in order
@@ -142,7 +142,7 @@ ported as written (DD-051); and the auth wiring is keycloak-angular's, not the A
    from the browser answers through the proxy.
 2. The client specs and guard specs pass, each naming its APC rule id.
 3. `nx e2e aurelius-atlas-webapp` passes in all three browsers against the image, with
-   the real Atlas server behind the proxy (DD-053).
+   the real Atlas server behind the proxy (DD-142).
 4. The example app's tests and build are untouched-green.
 5. `aurelius-atlas-data-access` and the webapp's `AGENTS.md`/`README.md` describe the new
    wiring and its removal, per [ADR 003](../../adr/003-every-project-documents-itself.md).

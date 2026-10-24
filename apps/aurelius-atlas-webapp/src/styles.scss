@@ -1,9 +1,9 @@
-// Global styles: brand tokens only (DD-037 — the Aurelius @models4insight/styles
+// Global styles: brand tokens only (DD-126 — the Aurelius @models4insight/styles
 // is not ported; every colour and spacing comes from the brand library).
 @use "@aurelius/atlas-brand/src/main";
 
 /*
- * The legacy shell layout, ported (SHM-05, DD-059): body is a flex column
+ * The legacy shell layout, ported (SHM-05, DD-148): body is a flex column
  * filling the viewport, so the content band (app root's .is-tall-container)
  * grows and the footer always sits at the bottom of the fold — never
  * stranded mid-viewport on a short page, never floating below it on a tall

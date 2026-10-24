@@ -1,13 +1,13 @@
 <!--
   The Aurelius Atlas navbar chrome (SHC-02..SHC-05), ported from the legacy
-  Aurelius navbar search-free (DD-056): the search bar and the nav buttons stay
+  Aurelius navbar search-free (DD-145): the search bar and the nav buttons stay
   with the search slice; the PWA install/update items, the services dropdown,
-  and the loading/pipeline sticky block are not ported (see DD-056).
+  and the loading/pipeline sticky block are not ported (see DD-145).
 
-  i18n ids are the legacy dictionary paths, read by the XLIFF bridge (DD-039,
+  i18n ids are the legacy dictionary paths, read by the XLIFF bridge (DD-128,
   extended to @@shell.* by SHC-07). Translation descriptions are comments,
   never `id|description` suffixes — the suffix joins the extracted id and the
-  key-keyed bridge can never match it (DD-055).
+  key-keyed bridge can never match it (DD-144).
 -->
 <!-- The legacy navbar is pinned (SHM-05, `navbar is-fixed-top`); the body
      carries the matching has-navbar-fixed-top padding (index.html). -->
@@ -32,7 +32,7 @@
             </div>
         </div>
 
-        <!-- Settings gear (SPL-01, SPL-14, DD-078, DD-079): opens the panel
+        <!-- Settings gear (SPL-01, SPL-14, DD-166, DD-167): opens the panel
              by navigating the `drawer` aux outlet — the open state rides the
              URL, so the locale switch's reload keeps it. RouterLinkActive
              keys `is-active` off the drawer segment, so the gear is lit
@@ -83,12 +83,12 @@
                 <!-- Account-security: the Keycloak account console. -->
                 <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
                 <hr class="navbar-divider" />
-                <!-- NOSONAR S125: a DD-064 decision note, not commented-out code.
+                <!-- NOSONAR S125: a DD-153 decision note, not commented-out code.
                      Logout is an anchor by legacy form: the dropdown's ink chain
                      styles anchors, and a native button element keeps the browser's
                      centered text and picks up the dropdown item's white plate on
-                     mobile (DD-064). Enter/Space is the keyboard path below. -->
-                <!-- NOSONAR S6851: the anchor form is the DD-064 decision; Enter/Space is the keyboard path, as role=button prescribes. -->
+                     mobile (DD-153). Enter/Space is the keyboard path below. -->
+                <!-- NOSONAR S6851: the anchor form is the DD-153 decision; Enter/Space is the keyboard path, as role=button prescribes. -->
                 <a
                     class="navbar-item"
                     role="button"

@@ -17,7 +17,7 @@ from aurelius_atlas_server_client.lineage import Direction  # noqa: F401 - the s
 from pydantic import ValidationError
 
 E_1 = UUID("00000000-0000-4000-8000-000000000001")
-"""A fixed entity guid, the shape every lineage query carries (DV-27)."""
+"""A fixed entity guid, the shape every lineage query carries (DV-61)."""
 
 
 @pytest.mark.covers(rules=["CL-30"])
@@ -32,13 +32,13 @@ def test__the_defaults_are_the_endpoints_own() -> None:
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__a_missing_guid_is_rejected() -> None:
-    """The legacy's literal-``None`` crash is DV-21's 400: the contract requires the guid."""
+    """The legacy's literal-``None`` crash is DV-56's 400: the contract requires the guid."""
     with pytest.raises(ValidationError):
         LineageModelParams.model_validate({"depth": 2})
     with pytest.raises(ValidationError):
         LineageModelParams.model_validate({"guid": ""})
     with pytest.raises(ValidationError):
-        LineageModelParams.model_validate({"guid": "e-1"})  # a readable id is no longer a guid (DV-27)
+        LineageModelParams.model_validate({"guid": "e-1"})  # a readable id is no longer a guid (DV-61)
 
 
 @pytest.mark.covers(rules=["CL-30"])
@@ -50,7 +50,7 @@ def test__a_depth_below_one_is_rejected() -> None:
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__a_direction_outside_the_vocabulary_is_rejected() -> None:
-    """The legacy's ``Enum()`` crash is DV-20's 400 (LM-01)."""
+    """The legacy's ``Enum()`` crash is DV-55's 400 (LM-01)."""
     with pytest.raises(ValidationError):
         LineageModelParams.model_validate({"guid": str(E_1), "direction": "SIDEWAYS"})
 
@@ -64,7 +64,7 @@ def test__an_unknown_query_key_is_rejected() -> None:
 
 @pytest.mark.covers(rules=["CL-30"])
 def test__the_response_is_the_data2model_body_forwarded() -> None:
-    """``{model, metadata}`` — the model stays a JSON string, the metadata stays open maps (LM-04, DV-15)."""
+    """``{model, metadata}`` — the model stays a JSON string, the metadata stays open maps (LM-04, DV-51)."""
     response = LineageModelResponse.model_validate(
         {"model": '{"ar3_model": {"@identifier": "x"}}', "metadata": [{"id": "e-in", "data": {}}], "extra": 1}
     )
