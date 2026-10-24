@@ -22,6 +22,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | `POST`/`PUT /api/atlas/v2/entity` | Entities created or updated, in bulk, by unique attributes or by GUID |
 | `DELETE /api/atlas/v2/entity/...` | Entities deleted by GUID, in bulk or by unique attributes             |
 | `PUT /api/atlas/admin/purge`      | Deleted entities removed for good                                     |
+| `/api/atlas/v2/search/basic`      | Entities by type, attribute filters, sort and paging                  |
 
 ## Dashboards
 
@@ -83,6 +84,14 @@ The endpoints of Atlas's `RelationshipREST` (`aurelius_atlas_server/routes/relat
 update and delete relationship instances; deleting an entity deletes its relationships with it. An entity
 write creates, reuses and deletes the relationships its relationship attributes name, in the same write
 (DD-066).
+
+## Search
+
+The basic search endpoints of Atlas's `DiscoveryREST` (`aurelius_atlas_server/routes/discovery.py`) find
+entities by type, with sub types or of every type (`_ALL_ENTITY_TYPES`), by attribute filters with Atlas's
+operators, by state, sorted and paged by offset or marker: `POST` and `GET search/basic` and `GET
+search/attribute`. Entity attributes are searched in typed fields named after the type that defines them
+(DD-088); classification search follows in 4.1b, free text in 4.2.
 
 ## Running it
 

@@ -204,3 +204,54 @@ async def test__search_sorts_by_fields_in_either_direction() -> None:
     assert [hit["_id"] for hit in first["hits"]["hits"]] == ["d", "b"]
     assert first["hits"]["hits"][1]["sort"] == ["k3", "y"]
     assert [hit["_id"] for hit in rest["hits"]["hits"]] == ["c", "a"]
+
+
+async def test__bool_queries_exclude_require_any_and_test_presence() -> None:
+    """``must_not`` excludes, ``should`` needs one, ``exists`` a value; ``match_none`` nothing; dotted paths."""
+    fake = FakeClient()
+    documents = {
+        "a": {"search": {"keyword.t.name": "alpha", "long.t.n": [1, 5]}},
+        "b": {"search": {"keyword.t.name": "a*b?c", "long.t.n": 2}},
+        "c": {"search": {"keyword.t.name": "gamma"}, "nested": {"x": {"y": "z"}}},
+    }
+    for document_id, document in documents.items():
+        await fake.index(index="docs", id=document_id, document=document)
+
+    async def found(query: dict[str, object]) -> list[str]:
+        return sorted(hit["_id"] for hit in (await fake.search(index="docs", query=query))["hits"]["hits"])
+
+    name = "search.keyword.t.name"
+    assert await found({"bool": {"must_not": [{"term": {name: "alpha"}}]}}) == ["b", "c"]
+    assert await found(
+        {"bool": {"should": [{"term": {name: "gamma"}}, {"range": {"search.long.t.n": {"gte": 5}}}]}}
+    ) == [
+        "a",
+        "c",
+    ]
+    assert await found({"exists": {"field": "search.long.t.n"}}) == ["a", "b"]
+    assert await found({"match_none": {}}) == []
+    assert await found({"prefix": {name: "al"}}) == ["a"]
+    assert await found({"wildcard": {name: {"value": "*\\*b\\?*"}}}) == ["b"]
+    assert await found({"wildcard": {name: "?amm?"}}) == ["c"]
+    assert await found({"term": {"nested.x.y": "z"}}) == ["c"]
+    assert await found({"term": {"nested.x.q": "z"}}) == []
+
+
+async def test__search_sorts_with_options_and_pages_from_an_offset() -> None:
+    """Missing values last either way; arrays by least ascending, largest descending; ``from_`` skips."""
+    fake = FakeClient()
+    for document_id, value in (("a", [1, 9]), ("b", 5), ("c", None)):
+        await fake.index(index="docs", id=document_id, document={"n": value})
+    fake_settings = await fake.indices.put_settings(index="docs", settings={})
+
+    async def order(direction: str, offset: int = 0) -> list[str]:
+        response = await fake.search(
+            index="docs", sort=[{"n": {"order": direction, "missing": "_last"}}], from_=offset, size=10
+        )
+        return [hit["_id"] for hit in response["hits"]["hits"]]
+
+    assert await order("asc") == ["a", "b", "c"]
+    assert await order("desc") == ["a", "b", "c"]
+    assert await order("desc", 1) == ["b", "c"]
+    assert fake_settings["acknowledged"]
+    assert fake.settings_updates == ["docs"]

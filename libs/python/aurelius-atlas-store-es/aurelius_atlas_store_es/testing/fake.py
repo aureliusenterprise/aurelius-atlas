@@ -1,6 +1,7 @@
 """A stand-in for ``AsyncElasticsearch`` for unit tests that need no server."""
 
 import json
+import re
 from decimal import Decimal
 from functools import cmp_to_key
 from typing import Any
@@ -59,6 +60,11 @@ class FakeIndices:
         self._client.mapping_updates.append(index)
         return {"acknowledged": True}
 
+    async def put_settings(self, *, index: str, **_settings: object) -> dict[str, Any]:
+        """Count the call; the fake keeps no settings."""
+        self._client.settings_updates.append(index)
+        return {"acknowledged": True}
+
     async def refresh(self, *, index: str) -> dict[str, Any]:
         """Count the call; the fake's documents are always visible."""
         self._client.refreshes.append(index)
@@ -85,6 +91,7 @@ class FakeClient:
         self.documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
         self.primary_term = 1
         self.mapping_updates: list[str] = []
+        self.settings_updates: list[str] = []
         self.seq_no = -1
         self.refreshes: list[str] = []
 
@@ -194,16 +201,20 @@ class FakeClient:
         sort: list[Any] | None = None,
         search_after: list[Any] | None = None,
         seq_no_primary_term: bool = False,
+        from_: int = 0,
+        track_total_hits: bool | None = None,
     ) -> dict[str, Any]:
-        """Answer like ``_search`` with the documents matching the query.
+        """Answer like ``_search`` with the documents matching the query, ``size`` of them from ``from_``.
 
-        With ``sort``, hits are ordered by the sort fields, a document without one standing in with its id, and
-        carry their sort values; only those after ``search_after`` are answered.
+        With ``sort``, hits are ordered by the sort fields and carry their sort values; a plain direction stands a
+        document without the field in with its id, an options object puts it last. Only hits after
+        ``search_after`` are answered. The total counts every match.
         """
-        order = [next(iter(clause.items())) for clause in sort or []]
+        _ = track_total_hits
+        order = [_sort_clause(clause) for clause in sort or []]
         hits = []
         for document_id, (source, seq_no) in self._index_of(index).items():
-            values = [source.get(field, document_id) for field, _ in order]
+            values = [_sort_value(source, field, document_id, options) for field, options in order]
             if not _matches(source, query) or (search_after is not None and _compare(values, search_after, order) <= 0):
                 continue
             hit: dict[str, Any] = {"_id": document_id, "_source": source}
@@ -214,7 +225,7 @@ class FakeClient:
             hits.append(hit)
         if sort:
             hits.sort(key=cmp_to_key(lambda a, b: _compare(a["sort"], b["sort"], order)))
-        return {"hits": {"total": {"value": len(hits)}, "hits": hits[:size]}}
+        return {"hits": {"total": {"value": len(hits)}, "hits": hits[from_ : from_ + size]}}
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
         """Answer like ``_count`` for a ``match_all`` or ``term`` query."""
@@ -236,25 +247,91 @@ def _read(body: bytes) -> dict[str, Any]:
     return json.loads(body, parse_float=Decimal)
 
 
-def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
-    """Whether ``source`` matches a ``match_all``, a single-field ``term``, ``terms`` or ``range`` query, or a
-    ``bool`` query's ``filter`` clauses, all of them.
+def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # noqa: PLR0911 - one per kind
+    """Whether ``source`` matches a query: ``match_all``, ``match_none``, ``bool`` (``filter``, ``must_not``,
+    ``should``), and single-field ``term``, ``terms``, ``range``, ``prefix``, ``wildcard`` and ``exists``.
     """  # noqa: D205 - one sentence
     if query is None or "match_all" in query:
         return True
+    if "match_none" in query:
+        return False
     if "bool" in query:
-        return all(_matches(source, clause) for clause in query["bool"].get("filter", []))
-    if "range" in query:
-        ((field, bounds),) = query["range"].items()
-        return _in_range(source.get(field), bounds)
-    if "terms" in query:
-        ((field, values),) = query["terms"].items()
-        found = source.get(field)
-        held = found if isinstance(found, list) else [found]
-        return any(value in held for value in values)
-    ((field, value),) = query["term"].items()
-    found = source.get(field)
-    return value in found if isinstance(found, list) else found == value
+        clauses = query["bool"]
+        should = clauses.get("should", [])
+        return (
+            all(_matches(source, clause) for clause in clauses.get("filter", []))
+            and not any(_matches(source, clause) for clause in clauses.get("must_not", []))
+            and (not should or any(_matches(source, clause) for clause in should))
+        )
+    if "exists" in query:
+        return _held(source, query["exists"]["field"]) != []
+    ((kind, condition),) = query.items()
+    ((field, operand),) = condition.items()
+    held = _held(source, field)
+    if kind == "range":
+        return any(_in_range(value, operand) for value in held)
+    if kind == "terms":
+        return any(value in held for value in operand)
+    if kind == "prefix":
+        return any(isinstance(value, str) and value.startswith(operand) for value in held)
+    if kind == "wildcard":
+        pattern = _wildcard(operand["value"] if isinstance(operand, dict) else operand)
+        return any(isinstance(value, str) and pattern.fullmatch(value) is not None for value in held)
+    return operand in held
+
+
+def _value(source: dict[str, Any], field: str) -> Any:  # noqa: ANN401 - any field value
+    """A field's value: by its full name, or through objects, as a dotted path."""
+    if field in source:
+        return source[field]
+    head, separator, rest = field.partition(".")
+    while separator:
+        inner = source.get(head)
+        if isinstance(inner, dict):
+            found = _value(inner, rest)
+            if found is not None:
+                return found
+        step, separator, rest = rest.partition(".")
+        head = f"{head}.{step}"
+    return None
+
+
+def _held(source: dict[str, Any], field: str) -> list[Any]:
+    """The values a field holds: none, one, or an array's."""
+    value = _value(source, field)
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def _wildcard(pattern: str) -> re.Pattern[str]:
+    """An Elasticsearch wildcard pattern as a regular expression: ``*``, ``?``, and backslash escaping."""
+    parts, escaped = [], False
+    for character in pattern:
+        if escaped:
+            parts.append(re.escape(character))
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        else:
+            parts.append(_WILDCARDS.get(character) or re.escape(character))
+    return re.compile("".join(parts), re.DOTALL)
+
+
+_WILDCARDS = {"*": ".*", "?": "."}
+
+
+def _sort_clause(clause: Any) -> tuple[str, dict[str, Any]]:  # noqa: ANN401 - a sort clause
+    ((field, options),) = clause.items()
+    return field, options if isinstance(options, dict) else {"order": options, "missing": "_id"}
+
+
+def _sort_value(source: dict[str, Any], field: str, document_id: str, options: dict[str, Any]) -> Any:  # noqa: ANN401
+    """A hit's value of a sort field: an array's least, or largest descending; the id or None when missing."""
+    held = _held(source, field)
+    if not held:
+        return document_id if options.get("missing") == "_id" else None
+    return max(held) if options.get("order") == "desc" else min(held)
 
 
 _BOUNDS = {
@@ -270,10 +347,13 @@ def _in_range(value: Any, bounds: dict[str, Any]) -> bool:  # noqa: ANN401 - any
     return value is not None and all(_BOUNDS[name](value, bound) for name, bound in bounds.items())
 
 
-def _compare(left: list[Any], right: list[Any], order: list[tuple[str, str]]) -> int:
-    """Compare two hits' sort values field by field, each ascending or descending."""
-    for a, b, (_, direction) in zip(left, right, order, strict=False):
-        if a != b:
-            smaller = -1 if a < b else 1
-            return -smaller if direction == "desc" else smaller
+def _compare(left: list[Any], right: list[Any], order: list[tuple[str, dict[str, Any]]]) -> int:
+    """Compare two hits' sort values field by field, each ascending or descending, missing ones last."""
+    for a, b, (_, options) in zip(left, right, order, strict=False):
+        if a == b:
+            continue
+        if a is None or b is None:
+            return 1 if a is None else -1
+        smaller = -1 if a < b else 1
+        return -smaller if options.get("order") == "desc" else smaller
     return 0

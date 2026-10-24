@@ -25,6 +25,8 @@ from aurelius_atlas_core.entity_documents import (
     VersionedRelationship,
     WriteResult,
 )
+from aurelius_atlas_core.search_fields import search_fields
+from aurelius_atlas_core.search_query import SearchQuery
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
@@ -200,6 +202,10 @@ class EntityStore:
             if isinstance(document, StoredRelationship)
         }
 
+    async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
+        """The entities of a search query's page, and how many match it in all (DD-089)."""
+        return await self._documents.search(query)
+
     async def get_tasks(self, guids: Sequence[str]) -> dict[str, tuple[StoredTask, DocumentVersion]]:
         """The tasks with these GUIDs that exist, as last written (TSK-06, DD-079)."""
         found = await self._documents.get_linked(LinkedKind.TASK, list(dict.fromkeys(guids)))
@@ -345,9 +351,14 @@ class EntityStore:
         return entity_type
 
     def _stamped(self, entity: StoredEntity, write_id: str) -> StoredEntity:
-        """The entity as written: the write's id, and the GUIDs its references name (DD-046, DD-057)."""
-        references = entity.reference_guids(self._entity_type(entity)) or None
-        return entity.model_copy(update={"write_id": write_id, "references": references})
+        """The entity as written: the write's id, the GUIDs its references name and its search fields.
+
+        DD-046, DD-057, DD-088.
+        """
+        entity_type = self._entity_type(entity)
+        references = entity.reference_guids(entity_type) or None
+        search = search_fields(entity, entity_type)
+        return entity.model_copy(update={"write_id": write_id, "references": references, "search": search})
 
     def _key_changes(
         self, entities: Sequence[StoredEntity], before: Mapping[str, VersionedEntity], removed: Sequence[str]

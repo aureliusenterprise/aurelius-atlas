@@ -14,12 +14,14 @@ from aurelius_atlas_core.entity_documents import (
     LinkedWrite,
     Reservation,
 )
+from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.typedef_document import DocumentVersion
+from aurelius_atlas_model.discovery import Condition
 from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_store_es.testing.fake import FakeClient
@@ -173,6 +175,7 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "referring",
             "classified",
             "list_tasks",
+            "search",
             "get_linked",
             "restore_linked",
             "count_linked_type",
@@ -282,3 +285,83 @@ async def test__linked_documents_are_written_with_entities_in_one_bulk_request(
     await documents.restore_linked(kind, "r", None)
     assert await documents.count_linked_type(kind, "link") == 0
     assert f"t-{kind.value}" in fake.refreshes
+
+
+def searchable(guid: str, created: int, **fields: object) -> StoredEntity:
+    """A stored ``table`` with search fields."""
+    base = {
+        "keyword.__typeName": "table",
+        "keyword.__state": "ACTIVE",
+        "keyword.__guid": guid,
+        "long.__timestamp": created,
+    }
+    return entity(guid).model_copy(update={"search": {**base, **fields}})
+
+
+SEARCHED = [
+    searchable("a", 3, **{"keyword.t.name": "alpha", "long.t.n": 1, "keyword.t.tags": ["x", "y"]}),
+    searchable("b", 2, **{"keyword.t.name": "a*b", "long.t.n": 2, "keyword.__state": "DELETED"}),
+    searchable("c", 1, **{"keyword.t.name": "", "keyword.t.tags": []}),
+    entity("d").model_copy(update={"search": {"keyword.__typeName": "view", "long.__timestamp": 0}}),
+]
+
+CRITERIA = [
+    Criterion("keyword.t.name", Test.EQ, "alpha"),
+    Criterion("keyword.t.name", Test.NEQ, "alpha"),
+    Criterion("long.t.n", Test.LT, 2),
+    Criterion("long.t.n", Test.LTE, 2),
+    Criterion("long.t.n", Test.GT, 1),
+    Criterion("long.t.n", Test.GTE, 2),
+    Criterion("long.t.n", Test.RANGE, 1, 1),
+    Criterion("keyword.t.name", Test.STARTS_WITH, "al"),
+    Criterion("keyword.t.name", Test.ENDS_WITH, "*b"),
+    Criterion("keyword.t.name", Test.CONTAINS, "*"),
+    Criterion("keyword.t.name", Test.NOT_CONTAINS, "lp"),
+    Criterion("keyword.t.tags", Test.CONTAINS, "x", array=True),
+    Criterion("keyword.t.tags", Test.NOT_CONTAINS, "x", array=True),
+    Criterion("keyword.t.name", Test.IS_NULL),
+    Criterion("long.t.n", Test.NOT_NULL),
+    Criterion("keyword.t.name", Test.NOT_EMPTY),
+    Criterion("long.t.n", Test.NOT_EMPTY),
+    Criterion("long.t.n", Test.NOTHING),
+    Criterion("long.t.n", Test.ANYTHING),
+    Group(Condition.OR, (Criterion("long.t.n", Test.EQ, 1), Criterion("keyword.t.name", Test.EQ, ""))),
+    Group(Condition.AND, (Criterion("long.t.n", Test.NOT_NULL), Criterion("keyword.t.name", Test.CONTAINS, "a"))),
+]
+
+
+@pytest.mark.covers(f"{E}.search", "aurelius_atlas_core.search_query.selects", rules=["SRC-05", "SRC-07"])
+@pytest.mark.parametrize("criterion", CRITERIA)
+async def test__a_search_query_selects_in_elasticsearch_what_it_selects_in_memory(
+    documents: ElasticsearchEntityDocuments, criterion: Filter
+) -> None:
+    """Each test, translated to a query, finds the entities ``selects`` finds (DD-089)."""
+    await documents.write([(item, None) for item in SEARCHED])
+    query = SearchQuery(type_names=frozenset({"table"}), filter=criterion)
+
+    found, total = await documents.search(query)
+
+    expected = [
+        item.guid
+        for item in sorted(SEARCHED, key=lambda e: (e.search or {})["long.__timestamp"])
+        if selects(query, item.search or {})
+    ]
+    assert ([item.guid for item in found], total) == (expected, len(expected))
+
+
+@pytest.mark.covers(f"{E}.search", f"{E}.prepare", rules=["SRC-07"])
+async def test__a_search_sorts_pages_counts_and_keeps_to_active_entities(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient
+) -> None:
+    """By a field descending, missing last; by creation without; a page of it with the total; all types."""
+    await documents.write([(item, None) for item in SEARCHED])
+
+    by_name, _ = await documents.search(SearchQuery(type_names=None, sort_field="keyword.t.name", descending=True))
+    by_creation, _ = await documents.search(SearchQuery(type_names=frozenset({"table"})))
+    page, total = await documents.search(SearchQuery(type_names=None, offset=1, size=2, active_only=True))
+    await documents.prepare()
+
+    assert [item.guid for item in by_name] == ["a", "b", "c", "d"]
+    assert [item.guid for item in by_creation] == ["c", "b", "a"]
+    assert ([item.guid for item in page], total) == (["a"], 2)
+    assert "t-entities" in fake.settings_updates

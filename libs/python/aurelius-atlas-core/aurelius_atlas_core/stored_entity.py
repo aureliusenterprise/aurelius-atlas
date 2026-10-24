@@ -45,6 +45,8 @@ class StoredEntity(AtlasModel):
     relationship_guids: list[str] | None = None
     classification_guids: list[str] | None = None
     pending_tasks: list[str] | None = None
+    search: dict[str, Any] | None = None
+    """The search fields, written by the store (DD-088)."""
     write_id: str | None = None
 
     @classmethod

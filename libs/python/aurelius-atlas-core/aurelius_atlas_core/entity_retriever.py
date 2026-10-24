@@ -123,6 +123,26 @@ class EntityRetriever:
             header.classifications = await reading.classifications(stored)
         return header
 
+    async def header_with_attributes(self, stored: StoredEntity, attributes: Iterable[str]) -> AtlasEntityHeader:
+        """``toAtlasEntityHeader(vertex, attributes)``: the header, and the attributes named that have a value (SRC-09).
+
+        A name the type has no attribute of is read without its type prefix, also as a relationship attribute.
+        """
+        reading = self._reading(AtlasEntityExtInfo())
+        header = await reading.header(stored)
+        entity_type = self._store.registry.entity_type(stored.type_name)
+        for given in attributes:
+            name, attribute = given, None if entity_type is None else entity_type.attribute(given)
+            if attribute is None and entity_type is not None:
+                name = given.rsplit(".", 1)[-1]
+                if header.has_attribute(name):
+                    continue
+                attribute = entity_type.attribute(name) or entity_type.relationship_attribute(name)
+            value = None if attribute is None else await reading._vertex_attribute(stored, attribute)  # noqa: SLF001
+            if value is not None:
+                header.set_attribute(name, value)
+        return header
+
     async def classifications(self, guid: str) -> list[AtlasClassification]:
         """``getAllClassifications``: the classifications of the entity with ``guid``, in order (CLS-02, CLS-03).
 

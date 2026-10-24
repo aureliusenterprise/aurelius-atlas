@@ -202,6 +202,7 @@ nav:
                       - 3.4b Propagation tasks: architecture/conversion/increments/3-4-propagation-tasks.md
                       - 3.5a Entity audit: architecture/conversion/increments/3-5-entity-audit.md
                       - 3.5b Classification audit: architecture/conversion/increments/3-5-classification-audit.md
+                      - 4.1a Entity search: architecture/conversion/increments/4-1-entity-search.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

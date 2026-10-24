@@ -1,0 +1,290 @@
+name: Entities are searched by type, attribute filters, sort and paging
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchWithParameters
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchUsingBasic
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchUsingAttribute
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#validateBasicSearchParameters
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#searchWithSearchContext
+    - repository/src/main/java/org/apache/atlas/discovery/SearchContext.java#getEntityTypes
+    - repository/src/main/java/org/apache/atlas/discovery/EntitySearchProcessor.java
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapVertexToAtlasEntityHeader
+    - repository/src/main/java/org/apache/atlas/query/QueryParams.java#getNormalizedParams
+rules: [SRC-02, SRC-03, SRC-05, SRC-07, SRC-09, SRC-11]
+covers:
+    - aurelius_atlas_server.routes.discovery.search_with_parameters
+    - aurelius_atlas_server.routes.discovery.search_using_basic
+    - aurelius_atlas_server.routes.discovery.search_using_attribute
+stages:
+    - name: create a table type, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_stable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: name, typeName: string, isOptional: true }
+                        - { name: size, typeName: int, isOptional: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_stable_{run}
+                    description: scenario_stable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: name
+                          typeName: string
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: size
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+    - name: create three tables of sizes 1 to 3
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - {
+                        typeName: "scenario_stable_{run}",
+                        guid: "-1",
+                        attributes: { qualifiedName: "st1_{run}", name: one, size: 1 },
+                    }
+                  - {
+                        typeName: "scenario_stable_{run}",
+                        guid: "-2",
+                        attributes: { qualifiedName: "st2_{run}", name: two, size: 2 },
+                    }
+                  - {
+                        typeName: "scenario_stable_{run}",
+                        guid: "-3",
+                        attributes: { qualifiedName: "st3_{run}", name: three, size: 3 },
+                    }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_stable_{run}
+                        attributes: { qualifiedName: "st1_{run}", name: one }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: one
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_stable_{run}
+                        attributes: { qualifiedName: "st2_{run}", name: two }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: two
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_stable_{run}
+                        attributes: { qualifiedName: "st3_{run}", name: three }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: three
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID, "-2": a new GUID, "-3": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+              - $.guidAssignments['-3']
+          save:
+              one: $.guidAssignments['-1']
+              two: $.guidAssignments['-2']
+              three: $.guidAssignments['-3']
+    - name: the tables larger than 1, largest first; the filtered attribute is answered with them
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json:
+              typeName: scenario_stable_{run}
+              entityFilters: { attributeName: size, operator: ">", attributeValue: "1" }
+              sortBy: size
+              sortOrder: DESCENDING
+      response:
+          status: 200
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              queryType: BASIC
+              searchParameters:
+                  typeName: scenario_stable_{run}
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+                  sortBy: size
+                  sortOrder: DESCENDING
+                  entityFilters: { attributeName: size, operator: ">", attributeValue: "1" }
+              entities:
+                  - typeName: scenario_stable_{run}
+                    attributes: { qualifiedName: "st3_{run}", name: three, size: 3 }
+                    guid: "{three}"
+                    status: ACTIVE
+                    displayText: three
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+                  - typeName: scenario_stable_{run}
+                    attributes: { qualifiedName: "st2_{run}", name: two, size: 2 }
+                    guid: "{two}"
+                    status: ACTIVE
+                    displayText: two
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 2
+    - name: by query parameters, smallest first, one page of one
+      request:
+          method: GET
+          url: /api/atlas/v2/search/basic
+          params: { typeName: "scenario_stable_{run}", sortBy: size, limit: "1" }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  typeName: scenario_stable_{run}
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 1
+                  offset: 0
+                  sortBy: size
+              entities:
+                  - typeName: scenario_stable_{run}
+                    attributes: { qualifiedName: "st1_{run}", name: one }
+                    guid: "{one}"
+                    status: ACTIVE
+                    displayText: one
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 3
+    - name: by a prefix of the qualified name
+      request:
+          method: GET
+          url: /api/atlas/v2/search/attribute
+          params: { typeName: "scenario_stable_{run}", attrValuePrefix: "st2_" }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  typeName: scenario_stable_{run}
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+                  entityFilters: { attributeName: qualifiedName, operator: startsWith, attributeValue: "st2_" }
+              entities:
+                  - typeName: scenario_stable_{run}
+                    attributes: { qualifiedName: "st2_{run}", name: two }
+                    guid: "{two}"
+                    status: ACTIVE
+                    displayText: two
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 1
+    - name: an unknown type
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json: { typeName: "no_such_type_{run}" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-00A
+              errorMessage: "no_such_type_{run}: Unknown/invalid typename"
+    - name: no search parameter
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json: { limit: 5 }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-047
+              errorMessage: >-
+                  No search parameter was found. One of the following MUST be specified in the request; typeName,
+                  classification, termName or queryText
