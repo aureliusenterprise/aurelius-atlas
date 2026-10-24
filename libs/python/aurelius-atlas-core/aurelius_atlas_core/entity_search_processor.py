@@ -103,12 +103,14 @@ class EntitySearchProcessor:
             descending=parameters.sort_order is SortOrder.DESCENDING,
             offset=parameters.offset if marker is None else marker,
             size=parameters.limit,
+            text=self._context.text,
         )
 
     async def execute(self, store: EntityStore) -> list[StoredEntity]:
         """``execute``: the page of matching entities; with a marker, also the next page's offset (SRC-07, SRC-08)."""
         query = await self.query(store)
-        found, self.result_count = await store.search(query)
+        hits = await store.search(query)
+        found, self.result_count = hits.entities, hits.total
         if self._context.has_tag_filters:
             self.result_count = -1  # ClassificationSearchProcessor.getResultCount without an entity index query
         if self._context.marker is not None:
