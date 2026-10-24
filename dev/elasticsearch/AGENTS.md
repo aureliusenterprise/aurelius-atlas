@@ -18,6 +18,9 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
 - `implicitDependencies` on `aurelius-atlas-dev-observability`, as for dev/postgres: the
   `metrics-puller` joins the external `aurelius-atlas-dev-observability-network`. Prometheus series carry
   `exported_job="dev-elasticsearch"`.
+- `implicitDependencies` on `aurelius-atlas-dev-keycloak` too: the puller mints its ingest JWT there, and the
+  collector only rides out Keycloak's boot (DD-195) when something starts Keycloak; the store's e2e alone did
+  not, and its metrics never reached Prometheus.
 - The puller exports on the collector's **per-service leg** with its own
   identity (DD-196): the `oauth2client` extension mints client-credentials
   JWTs as the `otel-elasticsearch` realm client (dev/keycloak import) and

@@ -1,6 +1,6 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "implicitDependencies": ["aurelius-atlas-dev-observability"],
+    "implicitDependencies": ["aurelius-atlas-dev-observability", "aurelius-atlas-dev-keycloak"],
     "name": "aurelius-atlas-dev-elasticsearch",
     "projectType": "application",
     "release": {
