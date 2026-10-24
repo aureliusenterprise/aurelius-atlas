@@ -16,7 +16,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 
 - Registered in root `pyproject.toml` (members, dev group, `uv.sources`).
 - Apps build the client in `create_app` — `AtlasClient(http, token)` over an
-  `httpx.AsyncClient` of their own, whose **pool they close** in the lifespan
+  `httpx2.AsyncClient` of their own, whose **pool they close** in the lifespan
   (the client exposes no close, DD-116); the token
   source is `str | Callable[[], str]` — a route forwarding the caller's token
   uses `with_token(token)` per request (shares the pool, closes nothing).
@@ -25,10 +25,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 
 ## Conventions
 
-- No env vars (CL-01); the `httpx.AsyncClient` is provided externally (CL-02);
+- No env vars (CL-01); the `httpx2.AsyncClient` is provided externally (CL-02);
   bearer on every request (CL-03); `AtlasClientError` on >=400 with
   `status_code` and `.info` (CL-04);
-  transport failures propagate as `httpx` errors (CL-05).
+  transport failures propagate as `httpx2` errors (CL-05).
 - `routes/admin.py` / `routes/types.py` of the server are the source of truth
   for paths — mirror changes here in the same PR.
 

@@ -1,6 +1,6 @@
 """Unit tests for the upstream factories: pools, breakers, clients (LM-11, LM-13, LM-15, DD-116)."""
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_data2model_client.client import Data2ModelClient, Data2ModelClientError
 from aurelius_atlas_lineage_model.providers.upstreams import (

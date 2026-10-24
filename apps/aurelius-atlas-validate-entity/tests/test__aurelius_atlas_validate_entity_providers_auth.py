@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_validate_entity.providers.auth import build_auth
 from aurelius_atlas_validate_entity.settings import ValidateEntitySettings

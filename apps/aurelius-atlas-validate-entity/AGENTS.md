@@ -53,7 +53,10 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
   webapp's client id, AUX-04): the browser calls this endpoint with its own token, so
   this app verifies tokens for that audience (VE-03, DV-24).
 - OTLP export is app-owned (DD-107/DD-108): `otel_*` settings, `otel-validate-entity`
-  client, collector leg `https://localhost:4319`. Unset = console-only (AUX-03).
+  client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-121).
+- Every HTTP call is visible (DD-121): `HTTPX2ClientInstrumentor` covers the httpx2
+  calls the auth library makes to the issuer (token verification, JWKS fetch),
+  so even the JWKS request appears as a client span in Tempo.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-validate-entity` after changing
   `.env`); `OTEL_CLIENT_SECRET` mirrors the server's `OTEL_INGEST_CLIENT_SECRET` (DD-107).
 - `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`. The SANs

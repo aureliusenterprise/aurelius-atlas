@@ -55,7 +55,7 @@ decides whether the requests go to the application in-process or to a running se
 ```python
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
 

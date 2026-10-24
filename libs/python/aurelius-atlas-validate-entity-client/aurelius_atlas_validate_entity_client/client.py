@@ -18,7 +18,7 @@ so the request is not a model — and parses the fixed governance document into 
 from collections.abc import Callable, Mapping
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 from aurelius_atlas_validate_entity_client.models import ValidationResponse
 

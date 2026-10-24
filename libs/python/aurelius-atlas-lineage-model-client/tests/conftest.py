@@ -1,6 +1,6 @@
 """Fixtures for the lineage-model client: the recording transport (CL-02)."""
 
-import httpx
+import httpx2 as httpx
 import pytest
 from lm_recorder import Recorder
 

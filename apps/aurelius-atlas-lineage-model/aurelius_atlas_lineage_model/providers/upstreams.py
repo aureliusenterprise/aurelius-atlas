@@ -7,7 +7,9 @@ transport-only), with pybreaker's documented shapes: the callable ``exclude``
 predicate and a logging listener.
 """
 
-import httpx
+import ssl
+
+import httpx2 as httpx
 from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_server_client.client import AtlasClient
 from pybreaker import CircuitBreaker, CircuitBreakerListener, CircuitBreakerState
@@ -50,8 +52,11 @@ def upstream_http(settings: LineageModelSettings, base_url: HttpUrl) -> httpx.As
     (DD-111); the bearer token is a placeholder the route rebinds per request, and the
     client normalises the base URL, so it passes through as the settings state it.
     """
-    ca_file: str | bool = str(settings.auth_ca_file) if settings.auth_ca_file else True
-    return httpx.AsyncClient(base_url=str(base_url), verify=ca_file, timeout=UPSTREAM_TIMEOUT_SECONDS)
+    ca_file = settings.auth_ca_file
+    verify: ssl.SSLContext = (
+        ssl.create_default_context(cafile=str(ca_file)) if ca_file else ssl.create_default_context()
+    )
+    return httpx.AsyncClient(base_url=str(base_url), verify=verify, timeout=UPSTREAM_TIMEOUT_SECONDS)
 
 
 def atlas_breaker(settings: LineageModelSettings) -> CircuitBreaker:

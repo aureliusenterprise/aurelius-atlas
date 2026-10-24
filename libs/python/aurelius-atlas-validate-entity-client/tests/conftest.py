@@ -1,6 +1,6 @@
 """Fixtures for the validate-entity client: the recording transport (CL-02)."""
 
-import httpx
+import httpx2 as httpx
 import pytest
 from ve_recorder import Recorder
 

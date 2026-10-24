@@ -9,7 +9,7 @@ import by a unique name (the auth library's tests set the pattern).
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 
 class FakeUpstream:

@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from aurelius_atlas_parity.compare import Difference, apply_deviation, compare, mask_volatile

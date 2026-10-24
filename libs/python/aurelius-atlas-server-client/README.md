@@ -2,7 +2,7 @@
 
 The Atlas metadata API as a contract and a client (8.4, DD-114, DD-115, DD-116):
 admin, typedef and lineage wire models and an async `AtlasClient` over
-`httpx`. The Python twin of `libs/angular/aurelius-atlas-data-access` — every
+`httpx2`. The Python twin of `libs/angular/aurelius-atlas-data-access` — every
 consumer of the server speaks through this library, and the lineage-model app
 imports the lineage wire models from it (one source of truth). This file covers
 wiring specific to this lib; workspace-wide rules live in the root `AGENTS.md`
@@ -20,7 +20,7 @@ and `libs/python/AGENTS.md`.
 ## Wiring Checklist
 
 - Registered in root `pyproject.toml` (workspace members, dev group, `uv.sources`).
-- The app owns the pool: build the `httpx.AsyncClient` (base URL, TLS, timeout)
+- The app owns the pool: build the `httpx2.AsyncClient` (base URL, TLS, timeout)
   and `AtlasClient(http, token)` in `create_app`, close the **pool** in the
   lifespan's shutdown — the client exposes no close of its own (DD-116). A
   `with_token(...)` wrapper shares the pool and closes nothing.
@@ -31,15 +31,15 @@ and `libs/python/AGENTS.md`.
 
 ## Conventions
 
-- Libraries read no env vars: the app builds the `httpx.AsyncClient` from its
+- Libraries read no env vars: the app builds the `httpx2.AsyncClient` from its
   own settings (TLS, timeout) and passes it in with the token source (CL-01,
   DD-116). Request paths are relative to its base URL, so the app's URL passes
   through as given — no trailing-slash trimming.
-- The httpx client arrives from outside (CL-02): tests pass one built on a
-  `httpx.MockTransport`, no socket opens.
+- The httpx2 client arrives from outside (CL-02): tests pass one built on a
+  `httpx2.MockTransport`, no socket opens.
 - A non-2xx answer raises `AtlasClientError` with the status and the parsed
   `{errorCode, errorMessage}` (CL-04); an unreachable upstream propagates as
-  `httpx`'s own error — mapping it to a status is the app's job (CL-05).
+  `httpx2`'s own error — mapping it to a status is the app's job (CL-05).
 
 ## Commands
 

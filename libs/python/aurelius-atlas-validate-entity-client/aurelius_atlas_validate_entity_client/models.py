@@ -14,79 +14,83 @@ contract, so they are modelled as they arrive, not normalised. The card keys and
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# VE-02.
 class GovQualityValue(BaseModel):
-    """A ``{"raw": …}`` wrapper — every leaf of the governance document is one (VE-02)."""
+    """A ``{"raw": …}`` wrapper — every leaf of the governance document is one."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    raw: str | list[str]
-    """The value: a string, or a list of strings (``usedattributes``)."""
+    raw: str | list[str] = Field(
+        description="The value: a string, or a list of strings (``usedattributes``).",
+    )
 
 
+# VE-02.
 class GovQualityMeta(BaseModel):
-    """The ``_meta`` of an item: the engine, score and document id (VE-02)."""
+    """The ``_meta`` of an item: the engine, score and document id."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    engine: str
-    """The engine that produced the item; the mock names ``atlas-dev-gov-quality`` (DV-14)."""
+    engine: str = Field(
+        description="The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
+    )
 
-    score: int
-    """The item's score."""
+    score: int = Field(description="The item's score.")
 
-    id: str
-    """The document id; the mock's ``doc-…`` ids are the browser contract."""
+    id: str = Field(description="The document id, e.g. a ``doc-…`` id.")
 
 
+# VE-02.
 class GovQualityItem(BaseModel):
-    """One governance check: a verdict item of a card (VE-02)."""
+    """One governance check: a verdict item of a card."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    result: GovQualityValue
-    """The human-readable verdict."""
+    result: GovQualityValue = Field(description="The human-readable verdict.")
 
-    dataqualitytype: GovQualityValue
-    """The kind of check; the mock's items are ``attribute`` checks (the legacy's lower-case name)."""
+    dataqualitytype: GovQualityValue = Field(
+        description="The kind of check; ``attribute`` checks carry the legacy's lower-case name.",
+    )
 
-    usedattributes: GovQualityValue
-    """The entity attributes the check reads."""
+    usedattributes: GovQualityValue = Field(description="The entity attributes the check reads.")
 
-    name: GovQualityValue
-    """The check's name; the mock's items name ``Attribute - <key>``."""
+    name: GovQualityValue = Field(description="The check's name, e.g. ``Attribute - <key>``.")
 
-    compliant: GovQualityValue
-    """The verdict flag, a string ``'0'``/``'1'`` — as the legacy emits it (VE-02)."""
+    compliant: GovQualityValue = Field(
+        description="The verdict flag, a string ``'0'``/``'1'`` — as the legacy emits it.",
+    )
 
-    meta: GovQualityMeta = Field(alias="_meta")
-    """The producing engine's record."""
+    meta: GovQualityMeta = Field(alias="_meta", description="The producing engine's record.")
 
-    id: GovQualityValue
-    """The item's document id, wrapped like every leaf."""
+    id: GovQualityValue = Field(description="The item's document id, wrapped like every leaf.")
 
 
+# VE-02.
 class ValidationCard(BaseModel):
-    """One governance card: the items of one aspect, with the card's verdict (VE-02)."""
+    """One governance card: the items of one aspect, with the card's verdict."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    items: list[GovQualityItem] = Field(default_factory=list)
-    """The checks of this card."""
+    items: list[GovQualityItem] = Field(default_factory=list, description="The checks of this card.")
 
-    is_non_compliant: bool = Field(alias="isNonCompliant")
-    """Whether any item fails; the editor's badge."""
+    is_non_compliant: bool = Field(
+        alias="isNonCompliant",
+        description="Whether any item fails; the editor's badge.",
+    )
 
 
+# VE-02; DV-14; CL-40. The keys are the legacy's — ``dataEntity``,
+# ``definition``, ``domainLead``, ``name`` — the aspects the editor's
+# governance panel renders.
 class ValidationResponse(BaseModel):
-    """The ``POST /`` answer: the four governance cards (VE-02, DV-14; CL-40).
-
-    The keys are the legacy's — ``dataEntity``, ``definition``, ``domainLead``,
-    ``name`` — the aspects the editor's governance panel renders.
-    """
+    """The ``POST /`` answer: the four governance cards."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid", frozen=True)
 
-    data_entity: ValidationCard = Field(alias="dataEntity")
-    definition: ValidationCard
-    domain_lead: ValidationCard = Field(alias="domainLead")
-    name: ValidationCard
+    data_entity: ValidationCard = Field(alias="dataEntity", description="The card for the data entity aspect.")
+
+    definition: ValidationCard = Field(description="The card for the definition aspect.")
+
+    domain_lead: ValidationCard = Field(alias="domainLead", description="The card for the domain lead aspect.")
+
+    name: ValidationCard = Field(description="The card for the name aspect.")

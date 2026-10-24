@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import dotenv
-import httpx
+import httpx2 as httpx
 import pytest
 import pytest_asyncio
 from aurelius_atlas_validate_entity_client import ValidateEntityClient
@@ -31,7 +31,10 @@ class Settings(BaseSettings):
     """The public realm client the tokens are minted for (the webapp's client, the app's audience)."""
 
     username: str
+    """The dev user the tokens are minted for."""
+
     password: SecretStr
+    """The dev user's password; never shown in logs."""
 
     model_config = SettingsConfigDict(
         # Same prefix as the application's settings: the project .env Nx injects

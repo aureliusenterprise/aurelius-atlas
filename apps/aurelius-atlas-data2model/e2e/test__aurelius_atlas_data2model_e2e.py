@@ -6,7 +6,7 @@ same TLS and the same minted token the raw tests use — the library is proven
 against the real app, not a fake transport.
 """
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_data2model_client import Data2ModelClient, ExtractionRequest
 

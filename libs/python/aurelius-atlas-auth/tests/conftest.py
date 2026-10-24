@@ -7,7 +7,7 @@ import time
 from collections.abc import Callable, Iterator
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import jwt
 import pytest
 from aurelius_atlas_auth.auth import AuthConfig, KeycloakAuth

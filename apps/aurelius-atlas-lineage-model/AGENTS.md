@@ -15,12 +15,14 @@ collaborators, routes serve, `app.py` composes.
   upstream-error/400 handlers (LM-05/LM-07, DV-20..DV-22, LM-12's open-circuit
   502 — the mapping is the app's own contract, kept at the root) and the
   telemetry. The `auth`/`atlas`/`d2m` arguments are injectable for tests
-  (DD-111); the lifespan closes the httpx pools the app built (DD-116).
+  (DD-111); the lifespan closes the httpx2 pools the app built (DD-116).
 - `aurelius_atlas_lineage_model/providers/` — the factories: `auth.py` (the
-  shared `aurelius-atlas-auth` verifier, DD-108), `upstreams.py` (the httpx
+  shared `aurelius-atlas-auth` verifier, DD-108), `upstreams.py` (the httpx2
   pools, the per-upstream breakers with the `is_upstream_fact` exclude, the
-  clients — LM-11/LM-13), `telemetry.py` (logfire + the OTLP ingest leg, the
-  shared `aurelius-atlas-otel` lib: `otel-lineage-model`, DD-107/DD-108).
+  clients — LM-11/LM-13), `telemetry.py` (the native OTel providers + the
+  OTLP ingest leg, the shared `aurelius-atlas-otel` lib: `otel-lineage-model`,
+  DD-107/DD-108/DD-121; the FastAPI + httpx2 instrumentors stitch the chain —
+  the caller's `traceparent` rides the upstream calls, DD-121).
 - `aurelius_atlas_lineage_model/routes/` — `lineage.py` (`build_router(auth)`:
   the gated `GET /` composes the use case — fetch → flatten → extract → answer
   verbatim (LM-01), each upstream call behind its `pybreaker` breaker via the
@@ -76,7 +78,11 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
   libraries (DD-116 keeps the libs transport-only). pybreaker's `call_async` is
   tornado-only — do not use it.
 - OTLP export is app-owned (DD-107/DD-108): `otel_*` settings, `otel-lineage-model`
-  client, collector leg `https://localhost:4319`. Unset = console-only (AUX-03).
+  client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-121).
+- The chain is one trace (DD-121): `HTTPX2ClientInstrumentor` carries the caller's W3C
+  `traceparent` on the Atlas fetch and the `/extract` call (LM-04), so browser →
+  lineage-model → data2model share a trace id in Tempo. The e2e stitch probe reads
+  that trace back from Tempo (published loopback :3200, CIA-03).
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-lineage-model` after changing
   `.env`); `OTEL_CLIENT_SECRET` mirrors the server's `OTEL_INGEST_CLIENT_SECRET` (DD-107).
 - `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`. The SANs
@@ -85,8 +91,8 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
   liveness healthcheck.
 - `e2e/docker-compose.yaml` — the 8.2 chain (DD-111): this app + the **real** data2model
   image (certs mounted from its project) + a fixture Atlas (`python -m http.server` over
-  `e2e/fixtures/`, where `v2/lineage/e-in` is the canned graph, generated with the
-  scenario fixtures); the collector on the observability network, Keycloak through
+  `e2e/fixtures/`, where `v2/lineage/<guid>` is the canned graph, named for the fixed
+  UUID guid the scenario fixtures carry (DV-27)); the collector on the observability network, Keycloak through
   `keycloak.localhost:host-gateway`.
 
 ## Removal

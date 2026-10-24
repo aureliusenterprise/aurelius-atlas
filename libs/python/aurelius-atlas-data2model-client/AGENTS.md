@@ -25,10 +25,10 @@ by_alias=True))` — no `response_model` filtering; the wire stays exactly
 
 ## Conventions
 
-- No env vars (CL-01); the `httpx.AsyncClient` is provided externally (CL-02);
+- No env vars (CL-01); the `httpx2.AsyncClient` is provided externally (CL-02);
   bearer on every request
   (CL-03); `Data2ModelClientError` on >=400 with `status_code` (CL-04);
-  transport failures propagate as `httpx` errors (CL-05).
+  transport failures propagate as `httpx2` errors (CL-05).
 - `LegacyStr` keeps the legacy's null-as-empty-string posture: the model
   serialises omitted strings as `""`.
 

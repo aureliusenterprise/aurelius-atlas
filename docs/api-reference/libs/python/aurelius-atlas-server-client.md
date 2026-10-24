@@ -4,7 +4,7 @@
 
 The contract and the async client of the Atlas REST API (8.4, DD-114, DD-115):
 the admin, types and lineage models every consumer of `aurelius-atlas-server`
-speaks, and the `httpx`-based `AtlasClient` that calls it. The lineage-model app
+speaks, and the `httpx2`-based `AtlasClient` that calls it. The lineage-model app
 imports the lineage wire models from here — one source of truth for both sides
 of the wire.
 

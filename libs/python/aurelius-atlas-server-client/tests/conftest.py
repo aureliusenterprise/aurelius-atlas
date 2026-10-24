@@ -1,6 +1,6 @@
 """Fixtures for the server client: the recording transport (CL-02)."""
 
-import httpx
+import httpx2 as httpx
 import pytest
 from server_recorder import Recorder
 

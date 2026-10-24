@@ -1,5 +1,5 @@
 [project]
-dependencies = ["httpx>=0.28.1", "pydantic>=2.14.1"]
+dependencies = ["httpx2>=2.0.0", "pydantic>=2.14.1"]
 description = "The Aurelius Atlas validate-entity API as a contract and a client: the governance-quality answer as pydantic models, and an async client for the mock endpoint."
 name = "aurelius-atlas-validate-entity-client"
 requires-python = ">=3.14"

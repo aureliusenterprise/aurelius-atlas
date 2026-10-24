@@ -1,6 +1,6 @@
 """Fixtures for the data2model client: the recording transport (CL-02)."""
 
-import httpx
+import httpx2 as httpx
 import pytest
 from d2m_recorder import Recorder
 

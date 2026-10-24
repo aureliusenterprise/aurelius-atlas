@@ -9,7 +9,7 @@ import by a unique name (the 8.2 fake upstream sets the pattern).
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 
 class Recorder:

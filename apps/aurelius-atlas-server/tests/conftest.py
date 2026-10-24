@@ -2,7 +2,7 @@ import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server.settings import ENV_PREFIX

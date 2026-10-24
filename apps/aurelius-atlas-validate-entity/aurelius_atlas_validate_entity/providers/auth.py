@@ -1,6 +1,6 @@
 """The auth factory: the app's Keycloak verifier (VE-03, DD-108)."""
 
-import httpx
+import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 
 from aurelius_atlas_validate_entity.settings import ValidateEntitySettings

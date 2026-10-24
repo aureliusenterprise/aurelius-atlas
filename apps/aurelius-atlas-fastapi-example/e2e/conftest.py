@@ -7,7 +7,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 import dotenv
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_example import Entity
 from keycloak import KeycloakOpenID
@@ -25,19 +25,38 @@ CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 
 
 class Settings(BaseSettings):
-    """Test configuration."""
+    """Test configuration: the dev identities and database the e2e suite signs in and connects with."""
 
     auth_client_id: str
+    """The public realm client the tokens are minted for (the app's audience)."""
+
     auth_realm_name: str
+    """The realm the tokens are minted from."""
+
     database_name: str
+    """The database the app serves."""
+
     database_password: SecretStr
+    """The database password; never shown in logs."""
+
     database_port: int
+    """The published port of the database."""
+
     database_username: str
+    """The database user."""
+
     password: SecretStr
+    """The dev writer's password; never shown in logs."""
+
     username: str
+    """The dev writer the tokens are minted for."""
+
     # Read-only dev identity (import/master.json): exercises the 403 deny path.
     reader_password: SecretStr
+    """The dev reader's password; never shown in logs."""
+
     reader_username: str
+    """The read-only dev user, for the 403 deny path."""
 
     model_config = SettingsConfigDict(
         # Same prefix as the application's Settings (models.ENV_PREFIX): the
@@ -307,6 +326,10 @@ def keycloak_client(keycloak: DockerCompose, settings: Settings) -> KeycloakOpen
         server_url=f"https://keycloak.localhost:{port}",
         client_id=settings.auth_client_id,
         realm_name=settings.auth_realm_name,
+        # python-keycloak hands `verify` to BOTH requests (sync, str-only) and
+        # httpx (async, deprecates str) — a context breaks requests, a path
+        # warns in httpx. The path is the working side; the warning is
+        # python-keycloak's own (DD-122).
         verify=str(CA_FILE),
     )
 

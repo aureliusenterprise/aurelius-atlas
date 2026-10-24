@@ -17,7 +17,7 @@ from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from importlib.metadata import version
 
-import httpx
+import httpx2 as httpx
 from aurelius_atlas_auth import KeycloakAuth
 from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_server_client.client import AtlasClient

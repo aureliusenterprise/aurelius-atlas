@@ -16,8 +16,9 @@ The 204 of LM-05/LM-06 — the empty answer, no model — is *not* an error: it 
 """
 
 from collections.abc import Callable
+from uuid import UUID
 
-import httpx
+import httpx2 as httpx
 from aurelius_atlas_server_client.lineage import Direction
 
 from aurelius_atlas_lineage_model_client.models import DEFAULT_DEPTH, LineageModelResponse
@@ -80,7 +81,7 @@ class LineageModelClient:
         return LineageModelClient(self._http, token)
 
     async def get(
-        self, guid: str, depth: int = DEFAULT_DEPTH, direction: Direction = "BOTH"
+        self, guid: UUID, depth: int = DEFAULT_DEPTH, direction: Direction = "BOTH"
     ) -> LineageModelResponse | None:
         """``GET /?guid=&depth=&direction=``: the flattened lineage's model (LM-01, CL-30).
 
@@ -91,7 +92,9 @@ class LineageModelClient:
                 502 is DV-22 — both with the Atlas-shaped body).
         """
         response = await self._http.get(
-            "", params={"guid": guid, "depth": depth, "direction": direction}, headers=_bearer(self._token)
+            "",
+            params={"guid": str(guid), "depth": depth, "direction": direction},
+            headers=_bearer(self._token),
         )
         if response.status_code == NO_CONTENT:
             return None

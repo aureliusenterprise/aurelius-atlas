@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import dotenv
-import httpx
+import httpx2 as httpx
 import pytest
 import pytest_asyncio
 from aurelius_atlas_server_client import AtlasClient
@@ -33,7 +33,7 @@ def _environment() -> None:
     dotenv.load_dotenv(PROJECT / ".env")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def client(server: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running server over HTTPS, verifying it against the dev CA."""
     async with httpx.AsyncClient(base_url=server, verify=ssl.create_default_context(cafile=CA_FILE)) as client:

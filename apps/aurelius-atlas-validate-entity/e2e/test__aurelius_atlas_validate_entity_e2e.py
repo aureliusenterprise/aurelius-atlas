@@ -5,7 +5,7 @@ entity mapping in, the typed ``ValidationResponse`` out, parsed with the
 browser's card contract — the library is proven against the real app.
 """
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_validate_entity.mock import MOCK_VALIDATION
 from aurelius_atlas_validate_entity_client import ValidateEntityClient

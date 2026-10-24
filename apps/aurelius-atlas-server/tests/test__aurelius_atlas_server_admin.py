@@ -1,7 +1,7 @@
 import re
 import zoneinfo
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_server.errors import ATLAS_JSON_MEDIA_TYPE
 from aurelius_atlas_server.routes.admin import csrf_token, time_zones

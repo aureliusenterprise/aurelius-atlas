@@ -1,32 +1,37 @@
+import ssl
 from unittest.mock import MagicMock, Mock, patch
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_fastapi_example.providers.http import HTTP_TIMEOUT, http_client
 from fastapi import HTTPException
 
 
 def test__http_client_verifies_with_system_trust_without_ca_file(settings_plaintext: Mock) -> None:
-    """Without a configured CA bundle the client keeps httpx default verification."""
+    """Without a configured CA bundle the client verifies through the system trust."""
     with patch("aurelius_atlas_fastapi_example.providers.http.httpx.Client") as client_class:
         generator = http_client(settings_plaintext)
         next(generator)
         generator.close()
 
     _, kwargs = client_class.call_args
-    assert kwargs["verify"] is True
+    assert isinstance(kwargs["verify"], ssl.SSLContext)
     assert kwargs["timeout"] == HTTP_TIMEOUT
 
 
 def test__http_client_verifies_with_configured_ca_file(settings_http_ca: Mock) -> None:
-    """A configured CA bundle is used explicitly for TLS verification."""
-    with patch("aurelius_atlas_fastapi_example.providers.http.httpx.Client") as client_class:
+    """A configured CA bundle roots the client's TLS context (DD-122)."""
+    with (
+        patch("aurelius_atlas_fastapi_example.providers.http.httpx.Client") as client_class,
+        patch("aurelius_atlas_fastapi_example.providers.http.ssl.create_default_context") as make_context,
+    ):
         generator = http_client(settings_http_ca)
         next(generator)
         generator.close()
 
     _, kwargs = client_class.call_args
-    assert kwargs["verify"] == "/certs/ca.pem"
+    make_context.assert_called_once_with(cafile="/certs/ca.pem")
+    assert kwargs["verify"] is make_context.return_value
 
 
 def test__http_client_raises_service_unavailable_on_http_error(settings_plaintext: Mock) -> None:

@@ -7,7 +7,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_auth.auth import AuthConfig, KeycloakAuth
 from cryptography.hazmat.primitives.asymmetric import rsa

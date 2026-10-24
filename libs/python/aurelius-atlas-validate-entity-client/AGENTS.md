@@ -19,10 +19,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 
 ## Conventions
 
-- No env vars (CL-01); the `httpx.AsyncClient` is provided externally (CL-02);
+- No env vars (CL-01); the `httpx2.AsyncClient` is provided externally (CL-02);
   bearer on every request
   (CL-03); `ValidateEntityClientError` on >=400 with `status_code` (CL-04);
-  transport failures propagate as `httpx` errors (CL-05).
+  transport failures propagate as `httpx2` errors (CL-05).
 - Every model is `extra="forbid"` and frozen: the card the screen renders is
   exact, a field the legacy does not send is a validation error, not silence.
 

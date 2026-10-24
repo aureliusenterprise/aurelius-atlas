@@ -1,6 +1,6 @@
 """The auth factory: the app's Keycloak verifier (LM-08, DD-108)."""
 
-import httpx
+import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 
 from aurelius_atlas_lineage_model.settings import LineageModelSettings

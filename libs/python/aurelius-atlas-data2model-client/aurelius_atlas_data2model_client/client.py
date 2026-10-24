@@ -19,7 +19,7 @@ chain's payload and the 8.1 answer are one contract on both sides (CL-21).
 
 from collections.abc import Callable
 
-import httpx
+import httpx2 as httpx
 
 from aurelius_atlas_data2model_client.models import ExtractionRequest, ExtractionResponse
 

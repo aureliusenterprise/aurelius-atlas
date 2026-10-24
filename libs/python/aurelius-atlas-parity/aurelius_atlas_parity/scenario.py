@@ -45,8 +45,9 @@ type PathText = Annotated[str, Field(min_length=1)]
 class _Body(_Strict):
     """A ``json`` or ``text`` body; ``json: null`` is a body, a missing key is none."""
 
-    json_body: JsonValue = Field(default=None, alias="json")
-    text: str | None = None
+    json_body: JsonValue = Field(default=None, alias="json", description="The body, as a JSON value.")
+
+    text: str | None = Field(default=None, description="The body, as plain text.")
 
     @model_validator(mode="after")
     def _one_body(self) -> Self:
@@ -63,10 +64,18 @@ class _Body(_Strict):
 class Request(_Body):
     """What a stage sends."""
 
-    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
-    url: Annotated[str, Field(pattern=r"^/")]
-    params: dict[str, str | list[str]] = Field(default_factory=dict)
-    headers: dict[str, str] = Field(default_factory=dict)
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] = Field(
+        description="The HTTP method to send.",
+    )
+
+    url: str = Field(pattern=r"^/", description="The request path, starting with '/'.")
+
+    params: dict[str, str | list[str]] = Field(
+        default_factory=dict,
+        description="The query parameters; a list value repeats the parameter.",
+    )
+
+    headers: dict[str, str] = Field(default_factory=dict, description="The request headers.")
 
     @property
     def endpoint(self) -> str:
@@ -77,10 +86,16 @@ class Request(_Body):
 class Deviation(_Strict):
     """A deliberate difference from the Atlas response, with its recorded deviation (SCN-12)."""
 
-    id: Annotated[str, Field(pattern=r"^DV-\d{2,3}$")]
-    path: PathText
-    value: JsonValue = None
-    absent: bool = False
+    id: str = Field(pattern=r"^DV-\d{2,3}$", description="The recorded deviation id, e.g. 'DV-07'.")
+
+    path: PathText = Field(description="The JSON path of the response part that differs.")
+
+    value: JsonValue = Field(default=None, description="The value Aurelius Atlas answers there.")
+
+    absent: bool = Field(
+        default=False,
+        description="Whether Aurelius Atlas answers without this path at all.",
+    )
 
     _check = field_validator("path")(_check_path)
 
@@ -99,11 +114,24 @@ class Deviation(_Strict):
 class Response(_Body):
     """What a stage expects back: the Atlas response, adjusted by its deviations."""
 
-    status: Annotated[int, Field(ge=100, le=599)]
-    headers: dict[str, str] = Field(default_factory=dict)
-    volatile: list[PathText] = Field(default_factory=list)
-    save: dict[Annotated[str, Field(pattern=r"^[A-Za-z_]\w*$")], PathText] = Field(default_factory=dict)
-    deviations: list[Deviation] = Field(default_factory=list)
+    status: int = Field(ge=100, le=599, description="The expected HTTP status code.")
+
+    headers: dict[str, str] = Field(default_factory=dict, description="The response headers that must match.")
+
+    volatile: list[PathText] = Field(
+        default_factory=list,
+        description="JSON paths whose value is not compared, e.g. generated guids and times.",
+    )
+
+    save: dict[Annotated[str, Field(pattern=r"^[A-Za-z_]\w*$")], PathText] = Field(
+        default_factory=dict,
+        description="JSON paths to save for later stages, keyed by the name later stages substitute.",
+    )
+
+    deviations: list[Deviation] = Field(
+        default_factory=list,
+        description="The expected differences from the Atlas response, each with its deviation id.",
+    )
 
     @field_validator("volatile")
     @classmethod
@@ -125,22 +153,39 @@ class Response(_Body):
 class Stage(_Strict):
     """One request and the response it must get."""
 
-    name: str | None = None
-    request: Request
-    response: Response
+    name: str | None = Field(default=None, description="The name of the stage, for failure messages.")
+
+    request: Request = Field(description="What the stage sends.")
+
+    response: Response = Field(description="What the stage expects back.")
 
 
 class Scenario(_Strict):
     """One scenario file (SCN-01)."""
 
-    id: str = Field(exclude=True)
-    """The path below the scenario directory without the suffix, set when the file is read (SCN-04)."""
-    name: Annotated[str, Field(min_length=1)]
-    source: Annotated[list[Annotated[str, Field(min_length=1)]], Field(min_length=1)]
-    """Where in Atlas 2.4.0 the expectation was read: files, classes, methods or Atlas test fixtures."""
-    rules: list[str] = Field(default_factory=list)
-    covers: list[str] = Field(default_factory=list)
-    stages: Annotated[list[Stage], Field(min_length=1)]
+    id: str = Field(
+        exclude=True,
+        description="The path below the scenario directory without the suffix; set when the file is read (SCN-04).",
+    )
+
+    name: str = Field(min_length=1, description="The name of the scenario.")
+
+    source: list[PathText] = Field(
+        min_length=1,
+        description="Where in Atlas 2.4.0 the expectation was read: files, classes, methods.",
+    )
+
+    rules: list[str] = Field(
+        default_factory=list,
+        description="The rule ids of the increment specs this scenario checks (SCN-14).",
+    )
+
+    covers: list[str] = Field(
+        default_factory=list,
+        description="The public functions the scenario's tests name (SCN-14).",
+    )
+
+    stages: list[Stage] = Field(min_length=1, description="The stages, run in order.")
 
     def __str__(self) -> str:
         return self.id

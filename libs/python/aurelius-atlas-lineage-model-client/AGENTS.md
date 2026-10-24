@@ -22,10 +22,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 
 ## Conventions
 
-- No env vars (CL-01); the `httpx.AsyncClient` is provided externally (CL-02);
+- No env vars (CL-01); the `httpx2.AsyncClient` is provided externally (CL-02);
   bearer on every request
   (CL-03); `LineageModelClientError` on >=400 with `status_code` (CL-04);
-  transport failures propagate as `httpx` errors (CL-05).
+  transport failures propagate as `httpx2` errors (CL-05).
 - `get()` returns `None` for 204 (no lineage, CL-30), the response model for 200.
 
 ## Commands

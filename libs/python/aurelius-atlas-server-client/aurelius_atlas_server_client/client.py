@@ -22,8 +22,9 @@ The paths mirror the server's routes verbatim: ``routes/admin.py`` under
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
-import httpx
+import httpx2 as httpx
 from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
     AtlasBusinessMetadataDef,
@@ -321,7 +322,7 @@ class AtlasClient:
         """
         return AtlasClient(self._http, token)
 
-    async def get_lineage(self, guid: str, depth: int = 3, direction: Direction = "BOTH") -> LineageInfo:
+    async def get_lineage(self, guid: UUID, depth: int = 3, direction: Direction = "BOTH") -> LineageInfo:
         """``GET /v2/lineage/{guid}`` (LM-01's upstream, CL-11/CL-12) — the server route lands with 5.1.
 
         Raises:

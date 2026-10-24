@@ -1,6 +1,6 @@
 """The auth factory: the app's Keycloak verifier (DTM-10, DD-108)."""
 
-import httpx
+import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 
 from aurelius_atlas_data2model.settings import Data2ModelSettings

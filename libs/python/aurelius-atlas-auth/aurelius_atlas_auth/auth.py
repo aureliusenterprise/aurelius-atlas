@@ -21,10 +21,11 @@ The verification story (AUX-02..AUX-05):
 from __future__ import annotations
 
 import logging
+import ssl
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, cast
 
-import httpx
+import httpx2 as httpx
 import jwt
 from cachetools import TTLCache
 from fastapi import Depends, HTTPException
@@ -86,6 +87,17 @@ class _LoggingListener(CircuitBreakerListener):
         LOGGER.debug("Circuit breaker %s state changed from %s to %s", cb.name, old_state, new_state)
 
 
+def _tls_context(config: AuthConfig) -> ssl.SSLContext:
+    """The issuer client's TLS material as an ``ssl.SSLContext`` (DD-122).
+
+    httpx2 deprecates ``verify=<path>`` in favour of a context. With a CA file the
+    context is rooted at that CA alone — the same trust httpx's ``verify=<path>``
+    built; without one it loads the system trust, which is what httpx2's
+    truststore default reads.
+    """
+    return ssl.create_default_context(cafile=config.ca_file) if config.ca_file else ssl.create_default_context()
+
+
 class KeycloakAuth:
     """One service's Keycloak verifier: dependencies for FastAPI routers.
 
@@ -115,7 +127,7 @@ class KeycloakAuth:
             listeners=[_LoggingListener()],
         )
         self._http = (
-            http if http is not None else httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, verify=config.ca_file or True)
+            http if http is not None else httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, verify=_tls_context(config))
         )
         self._jwks = cast("dict[str, dict[str, RSAPublicKey]]", TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS))
 

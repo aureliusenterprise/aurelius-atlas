@@ -2,7 +2,7 @@
 
 The data2model extraction API as a contract and a client (8.4, DD-114,
 DD-115, DD-116): the rules family the legacy chain evolved (AURELIUS-RULES),
-the extraction request/response, and an async `Data2ModelClient` over `httpx`.
+the extraction request/response, and an async `Data2ModelClient` over `httpx2`.
 The `aurelius-atlas-data2model` app imports its own contract from here — one
 source of truth for both sides of the wire. This file covers wiring specific
 to this lib; workspace-wide rules live in the root `AGENTS.md` and
@@ -22,7 +22,7 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
 ## Wiring Checklist
 
 - Registered in root `pyproject.toml` (workspace members, dev group, `uv.sources`).
-- The app owns the pool: build the `httpx.AsyncClient` (base URL, TLS, timeout)
+- The app owns the pool: build the `httpx2.AsyncClient` (base URL, TLS, timeout)
   and `Data2ModelClient(http, token)` in `create_app`, close the **pool** in the
   lifespan's shutdown — the client exposes no close of its own (DD-116). A
   `with_token(...)` wrapper shares the pool and closes nothing.
@@ -33,14 +33,14 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
 
 ## Conventions
 
-- Libraries read no env vars: the app builds the `httpx.AsyncClient` from its
+- Libraries read no env vars: the app builds the `httpx2.AsyncClient` from its
   own settings (TLS, timeout) and passes it in with the token source (CL-01,
   DD-116). The request path is relative to its base URL, so the app's URL
   passes through as given — no trailing-slash trimming.
 - The request serialises with `model_dump(mode="json", by_alias=True)` — the
   wire keys are the legacy's (CL-20); parity stays byte-comparable.
 - A non-2xx answer raises `Data2ModelClientError` (CL-04); transport failures
-  propagate as `httpx` errors (CL-05).
+  propagate as `httpx2` errors (CL-05).
 
 ## Commands
 
