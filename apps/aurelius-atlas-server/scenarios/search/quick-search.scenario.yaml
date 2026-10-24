@@ -1,0 +1,293 @@
+name: Entities are found by quick search, with facets, and terms are suggested
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#quickSearch
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#getSuggestions
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#quickSearch
+    - repository/src/main/java/org/apache/atlas/discovery/SearchAggregatorImpl.java
+    - repository/src/main/java/org/apache/atlas/discovery/SuggestionsProviderImpl.java
+    - graphdb/janus/src/main/java/org/apache/atlas/repository/graphdb/janus/AtlasJanusGraphIndexClient.java#getAggregatedMetrics
+    - graphdb/janus/src/main/java/org/apache/atlas/repository/graphdb/janus/AtlasJanusGraphIndexClient.java#getSuggestions
+rules:
+    - QSR-02
+    - QSR-03
+    - QSR-04
+    - SUG-01
+covers:
+    - aurelius_atlas_server.routes.discovery.quick_search
+    - aurelius_atlas_server.routes.discovery.quick_search_using_query
+    - aurelius_atlas_server.routes.discovery.get_suggestions
+stages:
+    - name: create a table type of its own service type, its name weighing 9, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_qtable_{run}
+                    serviceType: scenario_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                        - name: name
+                          typeName: string
+                          isOptional: true
+                          searchWeight: 9
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_qtable_{run}
+                    description: scenario_qtable_{run}
+                    typeVersion: "1.0"
+                    serviceType: scenario_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: name
+                          typeName: string
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: 9
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+    - name: create three tables
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_qtable_{run}
+                    guid: "-1"
+                    attributes:
+                        qualifiedName: qt1_{run}
+                        name: plum_{run} one
+                  - typeName: scenario_qtable_{run}
+                    guid: "-2"
+                    attributes:
+                        qualifiedName: qt2_{run}
+                        name: plum_{run} two
+                  - typeName: scenario_qtable_{run}
+                    guid: "-3"
+                    attributes:
+                        qualifiedName: qt3_{run}
+                        name: plumber_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_qtable_{run}
+                        attributes:
+                            qualifiedName: qt1_{run}
+                            name: plum_{run} one
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: plum_{run} one
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_qtable_{run}
+                        attributes:
+                            qualifiedName: qt2_{run}
+                            name: plum_{run} two
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: plum_{run} two
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_qtable_{run}
+                        attributes:
+                            qualifiedName: qt3_{run}
+                            name: plumber_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: plumber_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments:
+                  "-1": a new GUID
+                  "-2": a new GUID
+                  "-3": a new GUID
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+              - $.guidAssignments['-3']
+          save:
+              first: $.guidAssignments['-1']
+              second: $.guidAssignments['-2']
+              third: $.guidAssignments['-3']
+    - name: the tables whose name holds a word beginning with the query, sorted by name, with their facets
+      request:
+          method: POST
+          url: /api/atlas/v2/search/quick
+          json:
+              query: plum_{run}
+              typeName: scenario_qtable_{run}
+              sortBy: name
+      response:
+          status: 200
+          json:
+              searchResults:
+                  queryType: BASIC
+                  searchParameters:
+                      query: plum_{run}*
+                      typeName: scenario_qtable_{run}
+                      sortBy: name
+                      excludeDeletedEntities: false
+                      includeClassificationAttributes: false
+                      includeSubTypes: false
+                      includeSubClassifications: true
+                      excludeHeaderAttributes: false
+                      limit: 100
+                      offset: 0
+                  queryText: plum_{run}*
+                  entities:
+                      - typeName: scenario_qtable_{run}
+                        attributes:
+                            qualifiedName: qt1_{run}
+                            name: plum_{run} one
+                        guid: "{first}"
+                        status: ACTIVE
+                        displayText: plum_{run} one
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_qtable_{run}
+                        attributes:
+                            qualifiedName: qt2_{run}
+                            name: plum_{run} two
+                        guid: "{second}"
+                        status: ACTIVE
+                        displayText: plum_{run} two
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                  approximateCount: 2
+              aggregationMetrics:
+                  __typeName:
+                      - name: scenario_qtable_{run}
+                        count: 2
+                  __state:
+                      - name: ACTIVE
+                        count: 2
+                  Asset.owner: []
+                  ServiceType:
+                      - name: scenario_{run}
+                        count: 2
+    - name: a plain query by query parameters, as a prefix of every type
+      request:
+          method: GET
+          url: /api/atlas/v2/search/quick
+          params:
+              query: plumber_{run}
+      response:
+          status: 200
+          json:
+              searchResults:
+                  queryType: BASIC
+                  searchParameters:
+                      query: plumber_{run}*
+                      excludeDeletedEntities: false
+                      includeClassificationAttributes: false
+                      includeSubTypes: false
+                      includeSubClassifications: true
+                      excludeHeaderAttributes: false
+                      limit: 100
+                      offset: 0
+                  queryText: plumber_{run}*
+                  entities:
+                      - typeName: scenario_qtable_{run}
+                        attributes:
+                            qualifiedName: qt3_{run}
+                            name: plumber_{run}
+                        guid: "{third}"
+                        status: ACTIVE
+                        displayText: plumber_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                  approximateCount: 1
+              aggregationMetrics:
+                  __typeName:
+                      - name: scenario_qtable_{run}
+                        count: 1
+                  __state:
+                      - name: ACTIVE
+                        count: 1
+                  Asset.owner: []
+                  ServiceType:
+                      - name: scenario_{run}
+                        count: 1
+    - name: the words of the name beginning with plum, most frequent first
+      request:
+          method: GET
+          url: /api/atlas/v2/search/suggestions
+          params:
+              prefixString: plum
+              fieldName: scenario_qtable_{run}.name
+      response:
+          status: 200
+          json:
+              suggestions:
+                  - plum_{run}
+                  - plumber_{run}
+              prefixString: plum
+              fieldName: scenario_qtable_{run}.name
