@@ -145,6 +145,13 @@ class AttributeSearchResult(AtlasModel):
     values: list[list[Any]] | None = None
 
 
+class AtlasFullTextResult(AtlasModel):
+    """``AtlasFullTextResult``: an entity a full-text search found, and its score (FTX-05)."""
+
+    entity: AtlasEntityHeader | None = None
+    score: float | None = None
+
+
 class AtlasSearchResult(AtlasModel):
     """``AtlasSearchResult``: the entities a search found, and how it was asked (SRC-09)."""
 
@@ -156,7 +163,7 @@ class AtlasSearchResult(AtlasModel):
     entities: list[AtlasEntityHeader] | None = None
     relations: list[dict[str, Any]] | None = None
     attributes: AttributeSearchResult | None = None
-    full_text_result: list[dict[str, Any]] | None = None
+    full_text_result: list[AtlasFullTextResult] | None = None
     referred_entities: dict[str, AtlasEntityHeader] | None = None
     approximate_count: int = -1
     next_marker: str | None = None
