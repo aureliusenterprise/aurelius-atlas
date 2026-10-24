@@ -1,6 +1,7 @@
 import { TestBed } from "@angular/core/testing";
 import { InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { WebTracerProvider } from "@opentelemetry/sdk-trace-web";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import { describe, it, expect, afterEach } from "vitest";
 import {
     AURELIUS_TRACER,
@@ -257,6 +258,24 @@ describe("OpenTelemetry Provider", () => {
 
             // Verify that spans are created with the provider
             expect(exporter.getFinishedSpans().length).toBeGreaterThan(0);
+        });
+
+        it("should merge the resource option into the provider resource", async () => {
+            const exporter = new InMemorySpanExporter();
+            const provider = createAureliusWebTracerProvider({
+                name: "test-service",
+                exporter,
+                spanProcessors: [new SimpleSpanProcessor(exporter)],
+                resource: resourceFromAttributes({ "deployment.environment.name": "stag" }),
+            });
+
+            const span = provider.getTracer("test").startSpan("test-span");
+            span.end();
+            await provider.forceFlush();
+
+            const [finished] = exporter.getFinishedSpans();
+            expect(finished.resource.attributes["deployment.environment.name"]).toBe("stag");
+            expect(finished.resource.attributes["service.name"]).toBe("test-service");
         });
     });
 });

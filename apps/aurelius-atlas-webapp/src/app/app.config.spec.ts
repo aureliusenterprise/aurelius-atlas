@@ -30,7 +30,8 @@ import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { bearerTokenConfig, initialize, keycloakInitOptions } from "./app.config";
+import { bearerTokenConfig, initialize, keycloakInitOptions, metricsUrl } from "./app.config";
+import { parseAppConfig } from "./config";
 import { TELEMETRY_KEY, TIMEZONE_KEY } from "./settings/user-preference";
 
 const configPayload = {
@@ -225,5 +226,33 @@ describe("app providers (7.3)", () => {
 
         expect(sources.length).toBeGreaterThan(0);
         expect(refreshCallers.map((source) => source.path)).toEqual([]);
+    });
+
+    it("metricsUrl prefers the explicit endpoint (SHL-14)", () => {
+        const cfg = parseAppConfig({
+            ...configPayload,
+            otelMetricsExporterUrl: "https://m.example:4318/v1/metrics",
+        });
+
+        expect(metricsUrl(cfg)).toBe("https://m.example:4318/v1/metrics");
+    });
+
+    it("metricsUrl derives it from the traces endpoint (SHL-14)", () => {
+        const cfg = parseAppConfig(configPayload);
+
+        expect(metricsUrl(cfg)).toBe("/otel/v1/metrics");
+    });
+
+    it("initialize fails loudly when /config.json answers 500 (SHL-02)", async () => {
+        // The app initializer awaits initialize(); a config failure rejects
+        // bootstrap, so the operator sees the error instead of a silently
+        // dead UI (SHL-02: config boot is fail-fast, never defaults).
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => new Response("upstream exploded", { status: 500, statusText: "Server Error" })),
+        );
+
+        await expect(initialize()).rejects.toThrow(/Failed to load app config \(\/config\.json\): 500 Server Error/);
+        vi.unstubAllGlobals();
     });
 });

@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { AdminService, AtlasSession, AtlasStatus, AtlasVersion } from "./admin.service";
 import { API_BASE_URL, provideApiBaseUrl } from "./api-config";
+import { atlasErrorFrom } from "./atlas-error";
 
 describe("AdminService", () => {
     let service: AdminService;
@@ -85,6 +86,63 @@ describe("AdminService", () => {
             const req = httpMock.expectOne("/api/atlas/admin/session");
             expect(req.request.method).toBe("GET");
             req.flush(response);
+        }));
+
+    it("surfaces the Atlas error body on a 4xx (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            service.getVersion().subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(404);
+                    expect(atlasErrorFrom(error)).toEqual({
+                        errorCode: "ATLAS-404-00-001",
+                        errorMessage: "no such admin endpoint",
+                    });
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/version");
+            req.flush(
+                { errorCode: "ATLAS-404-00-001", errorMessage: "no such admin endpoint" },
+                { status: 404, statusText: "Not Found" },
+            );
+        }));
+
+    it("maps a 5xx response onto its Atlas body too (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            service.getStatus().subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(503);
+                    expect(atlasErrorFrom(error)).toEqual({
+                        errorCode: "ATLAS-500-00-002",
+                        errorMessage: "elasticsearch cluster is unavailable",
+                    });
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/status");
+            req.flush(
+                { errorCode: "ATLAS-500-00-002", errorMessage: "elasticsearch cluster is unavailable" },
+                { status: 503, statusText: "Service Unavailable" },
+            );
+        }));
+
+    it("yields no Atlas body for a network failure (APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            service.getSession().subscribe({
+                next: fail,
+                error: (error) => {
+                    expect(error.status).toBe(0);
+                    expect(atlasErrorFrom(error)).toBeNull();
+                    done();
+                },
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/session");
+            req.flush(null, { status: 0, statusText: "Unknown Error" });
         }));
 
     it("composes every URL from API_BASE_URL (APC-01)", () => {

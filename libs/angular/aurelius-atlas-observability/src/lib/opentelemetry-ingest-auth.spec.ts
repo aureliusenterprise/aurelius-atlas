@@ -59,4 +59,13 @@ describe("createAureliusOtelIngestAuth (7.17, DD-103)", () => {
 
         await expect(auth.headers()).resolves.toEqual({ Authorization: "Bearer test-token" });
     });
+
+    it("sends nothing for an authenticated session without a token (DD-103)", async () => {
+        const keycloak = { ...makeKeycloakStub(), token: undefined };
+        const auth = createAureliusOtelIngestAuth();
+        auth.attach(keycloak);
+
+        await expect(auth.headers()).resolves.toEqual({});
+        expect(keycloak.updateToken).toHaveBeenCalledWith(30);
+    });
 });

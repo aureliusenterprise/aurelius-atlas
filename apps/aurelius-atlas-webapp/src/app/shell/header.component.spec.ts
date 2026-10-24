@@ -251,4 +251,32 @@ describe("ShellHeader", () => {
 
         expect(logout).toHaveBeenCalledOnce();
     });
+
+    it("ends the session fire-and-forget even when logout rejects (SHC-05)", async () => {
+        // logout() is `void keycloak.logout()`: the navigation starts
+        // immediately, so the component attaches no catch and awaits
+        // nothing — a rejection is not the click's problem. In a browser the
+        // rejection lands on the global error path (window's
+        // unhandledrejection → the app's AureliusTraceErrorHandler, which
+        // records it). The click's contract: called once, throws never. The
+        // mock consumes its own rejection (catch attached at construction)
+        // so the runner does not report the component's deliberate
+        // fire-and-forget as an unhandled rejection.
+        setup();
+        const keycloak = TestBed.inject(Keycloak) as unknown as { logout: ReturnType<typeof vi.fn> };
+        keycloak.logout.mockImplementation(() => {
+            const rejection = Promise.reject(new Error("Keycloak service unreachable"));
+            rejection.catch(() => undefined);
+            return rejection;
+        });
+
+        const compiled = render();
+        const anchor = [...compiled.querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
+            item.textContent?.includes("Logout"),
+        );
+
+        expect(() => anchor?.click()).not.toThrow();
+        expect(keycloak.logout).toHaveBeenCalledOnce();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+    });
 });
