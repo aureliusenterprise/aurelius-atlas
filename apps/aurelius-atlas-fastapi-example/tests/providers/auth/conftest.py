@@ -2,7 +2,7 @@ import secrets
 from collections.abc import Generator
 from unittest.mock import Mock
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_fastapi_example.models import Settings
 from aurelius_atlas_fastapi_example.providers import auth

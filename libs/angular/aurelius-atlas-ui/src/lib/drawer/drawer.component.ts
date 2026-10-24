@@ -46,11 +46,11 @@ export class Drawer {
      * would be overwritten by the binding).
      *
      * Content carrying the `drawer-actions` attribute projects into the
-     * head between the title and the close button (DD-088), so a
+     * head between the title and the close button (DD-176), so a
      * drawer's content actions (Clear all on the alerts feed) sit in the
      * sticky head and never scroll away with a long body. Content
      * carrying `drawer-subhead` projects into a full-width strip below
-     * the head (DD-090, the alerts inbox bar) — also outside the
+     * the head (DD-180, the alerts inbox bar) — also outside the
      * scrolling body.
      */
     readonly ariaLabel = input("Close");
@@ -67,9 +67,9 @@ export class Drawer {
 
     /**
      * The drawer is sliding out: `active` is already false — dismissal
-     * takes effect at once (DD-069) — while the panel plays its exit
+     * takes effect at once (DD-157) — while the panel plays its exit
      * animation, and the layer stays rendered until the animation ends
-     * (DD-074).
+     * (DD-162).
      */
     protected readonly closing = signal(false);
 
@@ -98,7 +98,7 @@ export class Drawer {
             });
         });
 
-        // Reopening mid-slide-out cancels the exit (DD-074): the layer is
+        // Reopening mid-slide-out cancels the exit (DD-162): the layer is
         // still rendered, so only the flag needs to go away.
         effect(() => {
             if (this.active()) {
@@ -116,7 +116,7 @@ export class Drawer {
 
     /**
      * Close the drawer. The layer lingers for the exit animation and is
-     * removed when it ends (DD-074); the open state, focus restoration
+     * removed when it ends (DD-162); the open state, focus restoration
      * and the caller's `active` binding all take effect immediately.
      */
     close(): void {

@@ -100,14 +100,18 @@ nav:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-auth: api-reference/libs/python/aurelius-atlas-auth.md
                       - aurelius-atlas-core: api-reference/libs/python/aurelius-atlas-core.md
+                      - aurelius-atlas-data2model-client: api-reference/libs/python/aurelius-atlas-data2model-client.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
+                      - aurelius-atlas-lineage-model-client: api-reference/libs/python/aurelius-atlas-lineage-model-client.md
                       - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
                       - aurelius-atlas-otel: api-reference/libs/python/aurelius-atlas-otel.md
                       - aurelius-atlas-parity: api-reference/libs/python/aurelius-atlas-parity.md
                       - aurelius-atlas-sdk: api-reference/libs/python/aurelius-atlas-sdk.md
+                      - aurelius-atlas-server-client: api-reference/libs/python/aurelius-atlas-server-client.md
                       - aurelius-atlas-store-es: api-reference/libs/python/aurelius-atlas-store-es.md
                       - aurelius-atlas-trace: api-reference/libs/python/aurelius-atlas-trace.md
                       - aurelius-atlas-typesystem: api-reference/libs/python/aurelius-atlas-typesystem.md
+                      - aurelius-atlas-validate-entity-client: api-reference/libs/python/aurelius-atlas-validate-entity-client.md
                 - Styles:
                       - api-reference/libs/styles/index.md
                       - aurelius-atlas-brand: api-reference/libs/styles/aurelius-atlas-brand.md
@@ -171,6 +175,7 @@ nav:
                 - 053. The webapp is rewritten in Angular idiom, slice by slice: architecture/adr/053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice.md
                 - 054. The server API is the webapp's one data plane: architecture/adr/054-the-server-api-is-the-webapps-one-data-plane.md
                 - 055. The lineage chain is a named data surface: architecture/adr/055-the-lineage-chain-is-a-named-data-surface.md
+                - 056. Behaviour is proven by executed tests: architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md
@@ -191,6 +196,25 @@ nav:
                       - 1.4 Typedef store: architecture/conversion/increments/1-4-typedef-store.md
                       - 1.5 Built-in models and patches: architecture/conversion/increments/1-5-builtin-models.md
                       - 1.6 Types REST: architecture/conversion/increments/1-6-types-rest.md
+                      - 2.1a Entity models: architecture/conversion/increments/2-1-entity-models.md
+                      - 2.1b Value types: architecture/conversion/increments/2-1-value-types.md
+                      - 2.1c Entity validation: architecture/conversion/increments/2-1-entity-validation.md
+                      - 2.2 Entity store: architecture/conversion/increments/2-2-entity-store.md
+                      - 2.3 Entity read REST: architecture/conversion/increments/2-3-entity-read-rest.md
+                      - 2.4 Entity write REST: architecture/conversion/increments/2-4-entity-write-rest.md
+                      - 2.5 Delete semantics: architecture/conversion/increments/2-5-delete-semantics.md
+                      - 3.1a Relationship instances: architecture/conversion/increments/3-1-relationship-instances.md
+                      - 3.1b Relationship attributes: architecture/conversion/increments/3-1-relationship-attributes.md
+                      - 3.2 Ownership cascades: architecture/conversion/increments/3-2-ownership-cascades.md
+                      - 3.3a Direct classifications: architecture/conversion/increments/3-3-direct-classifications.md
+                      - 3.3b Bulk classifications: architecture/conversion/increments/3-3-bulk-classifications.md
+                      - 3.4a Classification propagation: architecture/conversion/increments/3-4-classification-propagation.md
+                      - 3.4b Propagation tasks: architecture/conversion/increments/3-4-propagation-tasks.md
+                      - 3.5a Entity audit: architecture/conversion/increments/3-5-entity-audit.md
+                      - 3.5b Classification audit: architecture/conversion/increments/3-5-classification-audit.md
+                      - 4.1a Entity search: architecture/conversion/increments/4-1-entity-search.md
+                      - 4.1b Classification search: architecture/conversion/increments/4-1-classification-search.md
+                      - 4.2a Free text: architecture/conversion/increments/4-2-free-text.md
                       - 7.0 Webapp foundation (umbrella): architecture/conversion/increments/7-0-webapp-foundation.md
                       - 7.1 Webapp shell and localisation: architecture/conversion/increments/7-1-webapp-shell.md
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md
@@ -205,10 +229,16 @@ nav:
                       - 7.16 UI components (details chrome): architecture/conversion/increments/7-16-ui-components-details-ii.md
                       - 7.17 Collector ingest auth: architecture/conversion/increments/7-17-collector-ingest-auth.md
                       - 7.18 Collector ingest identity: architecture/conversion/increments/7-18-collector-ingest-identity.md
+                      - 7.19 Frontend failure UX: architecture/conversion/increments/7-19-frontend-failure-ux.md
                       - 8.0 Auxiliary API foundation: architecture/conversion/increments/8-0-auxiliary-api-foundation.md
                       - 8.1 data2model API: architecture/conversion/increments/8-1-data2model-api.md
                       - 8.2 lineage-model API: architecture/conversion/increments/8-2-lineage-model-api.md
                       - 8.3 validate-entity API: architecture/conversion/increments/8-3-validate-entity-api.md
+                      - 8.4 API client libraries: architecture/conversion/increments/8-4-api-client-libraries.md
+                      - 8.5 lineage-model circuit breakers: architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md
+                      - 8.6 Aux API failure hardening: architecture/conversion/increments/8-6-aux-failure-hardening.md
+                      - 8.7 Client failure contract: architecture/conversion/increments/8-7-client-failure-contract.md
+                      - 9.1 Targeted resilience e2e: architecture/conversion/increments/9-1-targeted-resilience-e2e.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
@@ -243,6 +273,7 @@ nav:
                       - Configuration Management: architecture/platform/delivery/configuration-management.md
                       - Change Management: architecture/platform/delivery/change-management.md
                       - Testing: architecture/platform/delivery/testing.md
+                      - Test Suite Review: architecture/platform/delivery/testing-review.md
                       - Release Management: architecture/platform/delivery/release-management.md
                       - Deployment: architecture/platform/delivery/deployment.md
                 - Observability:

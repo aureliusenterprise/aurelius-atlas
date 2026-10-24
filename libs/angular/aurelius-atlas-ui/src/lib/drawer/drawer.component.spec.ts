@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Drawer } from "./drawer.component";
 
 /**
- * Build the animationend a browser would fire (DD-074): jsdom runs no CSS
+ * Build the animationend a browser would fire (DD-162): jsdom runs no CSS
  * animations and ships no `AnimationEvent` constructor, so a plain event
  * carries the name. The name carries the emulated-encapsulation suffix a
  * compiled component's keyframes get (`aurelius-drawer-out-c0`).
@@ -47,14 +47,14 @@ describe("Drawer", () => {
 
         component.close();
         fixture.detectChanges();
-        // The layer lingers for the exit animation (DD-074); it is dropped
+        // The layer lingers for the exit animation (DD-162); it is dropped
         // when the animation ends.
         expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeTruthy();
         finishExit(fixture);
         expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeNull();
     });
 
-    it("slides out on close and drops the layer on animationend (DD-074)", () => {
+    it("slides out on close and drops the layer on animationend (DD-162)", () => {
         component.open();
         fixture.detectChanges();
 
@@ -73,7 +73,7 @@ describe("Drawer", () => {
         expect(fixture.nativeElement.querySelector(".aurelius-drawer")).toBeNull();
     });
 
-    it("reopening mid-slide-out cancels the exit (DD-074)", () => {
+    it("reopening mid-slide-out cancels the exit (DD-162)", () => {
         component.open();
         fixture.detectChanges();
         component.close();
@@ -120,7 +120,7 @@ describe("Drawer", () => {
         expect(hosted.nativeElement.querySelector(".aurelius-drawer-body p").textContent).toBe("hello");
     });
 
-    it("projects drawer-actions content into the head, before the close button (DD-088)", () => {
+    it("projects drawer-actions content into the head, before the close button (DD-176)", () => {
         const hosted = TestBed.createComponent(HeadActionHostComponent);
         hosted.detectChanges();
         hosted.componentInstance.drawer.open();
@@ -129,14 +129,14 @@ describe("Drawer", () => {
         const head = hosted.nativeElement.querySelector(".aurelius-drawer-head");
         const action = head.querySelector(".aurelius-alert-clear");
         // The action rides the sticky head, not the scrolling body: a
-        // long feed cannot bury it (DD-088).
+        // long feed cannot bury it (DD-176).
         expect(action?.textContent.trim()).toBe("Clear all");
         expect(hosted.nativeElement.querySelector(".aurelius-drawer-body .aurelius-alert-clear")).toBeNull();
         // ...and it sits beside the close control, in the flex row.
         expect(head.querySelector(".delete")).toBeTruthy();
     });
 
-    it("projects drawer-subhead content between the head and the body (DD-090)", () => {
+    it("projects drawer-subhead content between the head and the body (DD-180)", () => {
         const hosted = TestBed.createComponent(SubheadHostComponent);
         hosted.detectChanges();
         hosted.componentInstance.drawer.open();

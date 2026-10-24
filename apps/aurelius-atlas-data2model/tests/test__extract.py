@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from aurelius_atlas_data2model.extract import extract
 from aurelius_atlas_data2model.rules import ExtractionRequest
+from aurelius_atlas_data2model_client.models import ExtractionResponse
 
 # The smallest rules that produce a node: one element rule over an `eid` column.
 _ONE_ELEMENT: dict[str, Any] = {
@@ -22,14 +23,14 @@ _ONE_ELEMENT: dict[str, Any] = {
 }
 
 
-def _request(data: list[dict[str, Any]], rules: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Run an extraction: data rows plus rules, the answer as a dict."""
+def _request(data: list[dict[str, Any]], rules: dict[str, Any] | None = None) -> ExtractionResponse:
+    """Run an extraction: data rows plus rules, the answer as the contract model."""
     return extract(ExtractionRequest.model_validate({"data": data, "rules": rules or _ONE_ELEMENT}))
 
 
-def _model(answer: dict[str, Any]) -> dict[str, Any]:
+def _model(answer: ExtractionResponse) -> dict[str, Any]:
     """The ar3 model the answer carries, parsed from its JSON string (DTM-01)."""
-    return json.loads(answer["model"])
+    return json.loads(answer.model)
 
 
 def _identifiers(ar3: dict[str, Any]) -> list[str]:
@@ -111,7 +112,7 @@ def test__metadata_names_the_source_row_per_rule() -> None:
         "views": [],
     }
     answer = _request([{"eid": "a", "ename": "A", "etype": "kafka_topic"}], rules)
-    assert answer["metadata"] == [
+    assert [entry.model_dump() for entry in answer.metadata] == [
         {
             "id": "p:a",
             "data": {
@@ -147,7 +148,7 @@ def test__metadata_lists_elements_then_relations_then_views() -> None:
         ],
     }
     answer = _request([{"eid": "a", "eid2": "b", "rid": "e1"}], rules)
-    ids = [entry["data"]["m4i_original_id"] for entry in answer["metadata"]]
+    ids = [entry.data["m4i_original_id"] for entry in answer.metadata]
     assert ids == ["a", "b", "e1", "view"]
 
 
@@ -201,7 +202,7 @@ def test__every_edge_endpoint_is_a_model_node() -> None:
     targets = {r["@target"] for r in relationships}
     assert sources <= node_ids
     assert targets <= node_ids
-    metadata_ids = [entry["data"]["m4i_original_id"] for entry in answer["metadata"]]
+    metadata_ids = [entry.data["m4i_original_id"] for entry in answer.metadata]
     assert "e1" in metadata_ids
     assert "e2" in metadata_ids
 
@@ -258,7 +259,7 @@ def test__a_view_with_an_unknown_layout_is_ignored_entirely() -> None:
     answer = _request([{"eid": "a", "ename": "A"}], _UNKNOWN_VIEW)
     ar3 = _model(answer)
     assert ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"] == []
-    assert [e["data"]["m4i_original_id"] for e in answer["metadata"]] == ["a"]
+    assert [e.data["m4i_original_id"] for e in answer.metadata] == ["a"]
 
 
 @pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06"])
@@ -404,3 +405,228 @@ def test__extra_rule_keys_are_ignored() -> None:
     }
     ar3 = _model(_request([{"eid": "a", "ename": "A"}], rules))
     assert _identifiers(ar3) == ["a"]
+
+
+# ---------------------------------------------------------------------------
+# DTM-04 — relation rules keep the first row per relation id
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-04"])
+def test__a_relation_id_seen_twice_yields_one_edge() -> None:
+    """The second row of a relation id is dropped at the rule (keep='first'), edge and metadata alike."""
+    rules: dict[str, Any] = {
+        "elements": [
+            {"id": "src", "concept_type": "lineage_dataset", "id_key": "eid"},
+            {"id": "dst", "concept_type": "lineage_dataset", "id_key": "eid2"},
+        ],
+        "relations": [{"id": "r1", "relationship_type": "lr", "id_key": "rid", "source": "src", "target": "dst"}],
+        "views": [],
+    }
+    answer = _request([{"eid": "a", "eid2": "b", "rid": "e1"}, {"eid": "a", "eid2": "c", "rid": "e1"}], rules)
+    relationships = _model(answer)["ar3_model"]["ar3_relationships"]["ar3_relationship"]
+    assert [(r["@identifier"], r["@source"], r["@target"]) for r in relationships] == [("e1", "a", "b")]
+    # The dropped row yields no metadata either — the rule scanned it away (DTM-03 stays in step).
+    assert [entry.data["m4i_original_id"] for entry in answer.metadata if entry.id == "e1"] == ["e1"]
+
+
+# ---------------------------------------------------------------------------
+# DTM-06 — dynamic views: grouping, dynamic names, the hierarchical layout
+# ---------------------------------------------------------------------------
+
+
+def _dynamic_view(**overrides: Any) -> dict[str, Any]:  # noqa: ANN401 - the view-rule fields under test
+    """A dynamic-view rule set over a `g` grouping column, overridable per test (DTM-06)."""
+    view: dict[str, Any] = {
+        "id": "v1",
+        "view_layout": "archimate_process",
+        "id_type": "dynamic",
+        "id_key": "g",
+        "id_prefix": "v:",
+        "view_name_type": "static",
+        "view_name_value": "V",
+        "view_nodes": [{"rule": "e1"}],
+        "view_edges": [],
+    }
+    view.update(overrides)
+    return {
+        "elements": [{"id": "e1", "concept_type": "lineage_dataset", "id_key": "eid", "concept_name_key": "ename"}],
+        "relations": [],
+        "views": [view],
+    }
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06"])
+def test__a_dynamic_view_groups_rows_by_its_key_column() -> None:
+    """One view per distinct group value, ided by prefix+value; the null-key row joins no group (DTM-06)."""
+    answer = _request(
+        [{"eid": "a", "g": "g1"}, {"eid": "b", "g": "g2"}, {"eid": "c", "g": None}, {"eid": "d", "g": "g1"}],
+        _dynamic_view(),
+    )
+    ar3 = _model(answer)
+    views = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"]
+    assert [v["@identifier"] for v in views] == ["v:g1", "v:g2"]
+    assert [n["@elementRef"] for n in views[0]["ar3_node"]] == ["a", "d"]  # the group, scanned on its own rows
+    assert [n["@elementRef"] for n in views[1]["ar3_node"]] == ["b"]
+    view_entries = [entry for entry in answer.metadata if entry.id.startswith("v:")]
+    assert [entry.data["m4i_original_id"] for entry in view_entries] == ["g1", "g2"]
+    assert all(entry.data["m4i_id_type"] == "dynamic" for entry in view_entries)
+    assert all(entry.data["m4i_id_prefix"] == "v:" for entry in view_entries)
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06"])
+def test__a_dynamic_view_name_comes_from_its_key_column() -> None:
+    """A dynamic name is prefix + the group's first-row value of view_name_key (DTM-06)."""
+    ar3 = _model(
+        _request(
+            [{"eid": "a", "g": "g1", "vname": "Sales"}, {"eid": "b", "g": "g2", "vname": "Ops"}],
+            _dynamic_view(view_name_type="dynamic", view_name_key="vname", view_name_prefix="N: "),
+        )
+    )
+    views = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"]
+    assert [v["ar3_name"][0]["value"] for v in views] == ["N: Sales", "N: Ops"]
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06"])
+def test__a_dynamic_view_name_without_its_key_column_is_the_legacy_nan() -> None:
+    """The name column absent from the group's first row renders 'nan' — the legacy's pandas %s (DV-70)."""
+    ar3 = _model(
+        _request(
+            [{"eid": "a", "g": "g1"}],
+            _dynamic_view(view_name_type="dynamic", view_name_key="vname", view_name_prefix="N: "),
+        )
+    )
+    views = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"]
+    assert [v["ar3_name"][0]["value"] for v in views] == ["N: nan"]
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06", "DTM-08"])
+def test__the_hierarchical_layout_ranks_bottom_to_top() -> None:
+    """archimate_hierarchical stacks ranks on y (0, -320, -640), x centring the rank (DTM-08, DV-68)."""
+    rules: dict[str, Any] = {
+        "elements": [
+            {"id": "src", "concept_type": "lineage_dataset", "id_key": "eid"},
+            {"id": "dst", "concept_type": "lineage_dataset", "id_key": "eid2"},
+        ],
+        "relations": [{"id": "r1", "relationship_type": "lr", "id_key": "rid", "source": "src", "target": "dst"}],
+        "views": [
+            {
+                "id": "v1",
+                "view_layout": "archimate_hierarchical",
+                "id_type": "static",
+                "id_value": "view",
+                "view_name_type": "static",
+                "view_name_value": "V",
+                "view_nodes": [],
+                "view_edges": [],
+            }
+        ],
+    }
+    ar3 = _model(_request([{"eid": "a", "eid2": "b", "rid": "e1"}, {"eid": "b", "eid2": "c", "rid": "e2"}], rules))
+    view = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"][0]
+    by_ref = {node["@elementRef"]: node for node in view["ar3_node"]}
+    assert (by_ref["a"]["@x"], by_ref["a"]["@y"]) == (0, 0)
+    assert (by_ref["b"]["@x"], by_ref["b"]["@y"]) == (0, -320)
+    assert (by_ref["c"]["@x"], by_ref["c"]["@y"]) == (0, -640)
+
+
+# ---------------------------------------------------------------------------
+# DTM-07 — view edge selection
+# ---------------------------------------------------------------------------
+
+_TWO_RELATIONS: dict[str, Any] = {
+    "elements": [
+        {"id": "src", "concept_type": "lineage_dataset", "id_key": "eid"},
+        {"id": "dst", "concept_type": "lineage_dataset", "id_key": "eid2"},
+    ],
+    "relations": [
+        {"id": "r1", "relationship_type": "lr", "id_key": "rid1", "source": "src", "target": "dst"},
+        {"id": "r2", "relationship_type": "lr", "id_key": "rid2", "source": "src", "target": "dst"},
+    ],
+}
+
+
+def _view_with_edges(view_edges: list[dict[str, str]]) -> dict[str, Any]:
+    """The two-relation rule set with one static view selecting by ``view_edges`` (DTM-07)."""
+    return {
+        **_TWO_RELATIONS,
+        "views": [
+            {
+                "id": "v1",
+                "view_layout": "archimate_process",
+                "id_type": "static",
+                "id_value": "view",
+                "view_name_type": "static",
+                "view_name_value": "V",
+                "view_nodes": [],
+                "view_edges": view_edges,
+            }
+        ],
+    }
+
+
+_TWO_RELATION_ROWS: list[dict[str, Any]] = [
+    {"eid": "a", "eid2": "b", "rid1": "e1", "rid2": "e2"},
+    {"eid": "b", "eid2": "c", "rid2": "e3"},
+]
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-07"])
+def test__view_edges_select_their_rule_column_of_the_model_edges() -> None:
+    """A view_edges rule collects its relation's id column; the view holds the selected model edges (DTM-07)."""
+    ar3 = _model(_request(_TWO_RELATION_ROWS, _view_with_edges([{"rule": "r1"}])))
+    view = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"][0]
+    assert [c["@relationshipRef"] for c in view["ar3_connection"]] == ["e1"]
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-07"])
+def test__a_view_without_edge_rules_holds_every_edge_between_its_nodes() -> None:
+    """An empty selection is None — every model edge between the view's nodes (DTM-07).
+
+    The row whose rid1 is null is a model edge ided ``'nan'`` (the legacy's pandas
+    ``%s`` of the null, DV-70's family) — and the whole-model selection includes it.
+    """
+    ar3 = _model(_request(_TWO_RELATION_ROWS, _view_with_edges([])))
+    view = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"][0]
+    assert [c["@relationshipRef"] for c in view["ar3_connection"]] == ["e1", "nan", "e2", "e3"]
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-07"])
+def test__view_edge_selection_skips_a_null_value() -> None:
+    """A row whose selected column is null joins no selection — no 'nan' edge id (DTM-07)."""
+    rules = {
+        "elements": [
+            {"id": "src", "concept_type": "lineage_dataset", "id_key": "eid"},
+            {"id": "dst", "concept_type": "lineage_dataset", "id_key": "eid2"},
+        ],
+        "relations": [{"id": "r1", "relationship_type": "lr", "id_key": "rid", "source": "src", "target": "dst"}],
+        "views": [
+            {
+                "id": "v1",
+                "view_layout": "archimate_process",
+                "id_type": "static",
+                "id_value": "view",
+                "view_name_type": "static",
+                "view_name_value": "V",
+                "view_nodes": [],
+                "view_edges": [{"rule": "r1"}],
+            }
+        ],
+    }
+    answer = _request([{"eid": "a", "eid2": "b", "rid": "e1"}, {"eid": "b", "eid2": "c", "rid": None}], rules)
+    ar3 = _model(answer)
+    # The null-rid row is a model edge (id 'nan', the legacy's), and the selection refuses it.
+    assert [r["@identifier"] for r in ar3["ar3_model"]["ar3_relationships"]["ar3_relationship"]] == ["e1", "nan"]
+    view = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"][0]
+    assert [c["@relationshipRef"] for c in view["ar3_connection"]] == ["e1"]
+
+
+@pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-07"])
+def test__a_view_edge_rule_for_an_absent_column_is_skipped() -> None:
+    """An edge rule whose relation column is not a data column is skipped: the selection stays None — all (DTM-07)."""
+    # The rows carry rid2 (r2's column) only; the view selects on r1 (rid1) — its column is absent.
+    # The r1 rule over a column-less row is still a model edge ided 'nan' (the legacy's null).
+    rows = [{"eid": "a", "eid2": "b", "rid2": "e2"}]
+    ar3 = _model(_request(rows, _view_with_edges([{"rule": "r1"}])))
+    view = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"][0]
+    assert [c["@relationshipRef"] for c in view["ar3_connection"]] == ["nan", "e2"]  # the skipped rule leaves "all"

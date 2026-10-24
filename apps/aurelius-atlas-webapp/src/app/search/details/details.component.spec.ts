@@ -10,7 +10,7 @@ import { Breadcrumbs } from "aurelius-atlas-ui";
 import { Details } from "./details.component";
 
 /**
- * The details skeleton (DET-01..06, DD-096): it renders the legacy
+ * The details skeleton (DET-01..06, DD-186): it renders the legacy
  * default-details anatomy in its empty state — no entity answers (server
  * 2.3 is planned), so every slot is empty, the title rides its localized
  * fallback, and the screen issues no request. The specs are the skeleton's
@@ -58,7 +58,7 @@ describe("Details skeleton (DET-01, DET-02, DET-04, DET-05, DET-06)", () => {
         expect(container?.querySelectorAll('a[href="#properties-details"]').length).toBeGreaterThanOrEqual(2);
     });
 
-    it("renders the empty state, not fake state (DET-02, DD-096)", () => {
+    it("renders the empty state, not fake state (DET-02, DD-186)", () => {
         setup();
         const { compiled } = render();
 
@@ -93,7 +93,7 @@ describe("Details skeleton (DET-01, DET-02, DET-04, DET-05, DET-06)", () => {
         expect(normalize(compiled.querySelector(".level .heading a")?.textContent)).toBe("Properties");
     });
 
-    it("navigates the details route on a crumb click (DET-06, DD-066's sibling)", () => {
+    it("navigates the details route on a crumb click (DET-06, DD-154's sibling)", () => {
         setup();
         const { fixture } = render();
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");

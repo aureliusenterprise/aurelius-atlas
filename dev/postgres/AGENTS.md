@@ -25,16 +25,16 @@ workspace-wide rules live in the root `AGENTS.md`.
   and sink `postgres` fixtures take the `observability` fixture). Prometheus
   series carry `exported_job="dev-postgres"`.
 - The puller exports on the collector's **per-service leg** with its own
-  identity (DD-107): the `oauth2client` extension mints client-credentials
+  identity (DD-196): the `oauth2client` extension mints client-credentials
   JWTs as the `otel-postgres` realm client (dev/keycloak import) and attaches
   them per export — mint, cache, refresh, no custom code. Env in
   compose: `OTEL_INGEST_CLIENT_ID`/`_SECRET` (from `.env.enc`) +
   `OTEL_INGEST_TOKEN_URL`/`_CA_FILE` — **literals**, the dev Keycloak's TLS
-  `:8443` listener + this slice's CA (DD-113: the mint issuer is baked into
+  `:8443` listener + this slice's CA (DD-202: the mint issuer is baked into
   the container at creation, so an env default let suite order split it from
   the collector's validator; the collector validates both listeners, and
   every producer mints at :8443). The puller carries
-  `restart: on-failure:15` (the DD-106 boot race, issuer-shaped: the mint
+  `restart: on-failure:15` (the DD-195 boot race, issuer-shaped: the mint
   needs Keycloak up). The slice no longer carries the shared ingest token —
   its puller was the only consumer.
 - Database `aurelius`, credentials from `.env` dev defaults — the same values

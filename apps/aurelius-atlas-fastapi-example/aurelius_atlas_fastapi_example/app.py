@@ -2,9 +2,11 @@ import logging
 from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
-import logfire
+from aurelius_atlas_otel import bridge_logging, setup_telemetry
 from fastapi import FastAPI
-from opentelemetry.sdk._logs import LoggingHandler
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPX2ClientInstrumentor
+from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor
 from sqlmodel import SQLModel
 
 from aurelius_atlas_fastapi_example.globals import LOGGER, METADATA, NAME
@@ -14,22 +16,14 @@ from aurelius_atlas_fastapi_example.providers.metrics import register_sse_metric
 from aurelius_atlas_fastapi_example.routes import ENTITIES, HEALTH
 
 
-def _ensure_logfire_handler(logger: logging.Logger) -> None:
-    """Ensure a logger has exactly one OTEL logging handler attached."""
-    logger_provider = logfire.DEFAULT_LOGFIRE_INSTANCE.config.get_logger_provider()
-    logger.handlers = [handler for handler in logger.handlers if not isinstance(handler, LoggingHandler)]
-    logger.addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
-
-
 def setup_logging(level: str) -> None:
     """Configure application and uvicorn loggers for OTEL log export."""
     log_level = level.upper()
 
-    for logger_name in (NAME, "uvicorn.error", "uvicorn.access"):
-        logger = logging.getLogger(logger_name)
-        _ensure_logfire_handler(logger)
-        logger.setLevel(log_level)
-        logger.propagate = False
+    names = (NAME, "uvicorn.error", "uvicorn.access")
+    bridge_logging(*names)
+    for logger_name in names:
+        logging.getLogger(logger_name).setLevel(log_level)
 
 
 def make_lifespan(settings: Settings) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
@@ -96,23 +90,23 @@ def create_app(settings: Settings) -> FastAPI:
 
     setup_routes(app)
 
-    logfire.configure(
-        send_to_logfire=False,
-        service_name=app.title,
-        service_version=app.version,
-        min_level=settings.log_level,
-        # The Angular frontend injects W3C traceparent headers on purpose
-        # (aurelius-atlas-observability interceptor), so joining incoming trace
-        # context is intended. Without this, logfire's default warns on the
-        # first extracted context by emitting a standalone 0-length
-        # "Found propagated trace context" trace.
-        distributed_tracing=True,
-        console=logfire.ConsoleOptions(min_log_level=settings.log_level),
+    # Telemetry (DD-210): native OTel providers. This producer rides the
+    # legacy shared-token leg (CIA-10): the env-driven OTLP export —
+    # endpoint, CA, static bearer — is standard SDK env configuration, read
+    # by setup_telemetry's env leg (DD-196: its per-service graduation is
+    # deferred). The W3C traceparent headers the Angular frontend injects
+    # (aurelius-atlas-observability interceptor) are joined by the native
+    # propagators by default. Debug runs also print to stdout (DD-210).
+    setup_telemetry(
+        app.title,
+        app.version,
+        logs=True,
+        console=settings.log_level in {"trace", "debug"},
     )
 
-    logfire.instrument_fastapi(app)
-    logfire.instrument_httpx()
-    logfire.instrument_psycopg()
+    FastAPIInstrumentor.instrument_app(app)
+    HTTPX2ClientInstrumentor().instrument()
+    PsycopgInstrumentor().instrument()
 
     register_sse_metric()
 

@@ -1,0 +1,8 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-validate-entity-client",
+    "projectType": "library",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_validate_entity_client",
+    "tags": [],
+    "targets": {}
+}

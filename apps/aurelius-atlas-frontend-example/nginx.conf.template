@@ -117,8 +117,8 @@ server {
     # proxy passes the Authorization header through untouched (nginx's
     # default — no proxy_set_header here) to the collector's OIDC receiver,
     # which validates issuer, signature and the otel-collector audience
-    # (DD-103, CIA-01/02). A logged-out push has no token and is answered
-    # 401 — accepted, the telemetry gate is the login (DD-103).
+    # (DD-193, CIA-01/02). A logged-out push has no token and is answered
+    # 401 — accepted, the telemetry gate is the login (DD-193).
     location /otel/ {
         set $otel_upstream ${AURELIUS_ATLAS_FRONTEND_OTEL_UPSTREAM};
         rewrite ^/otel(/.*)$ $1 break;

@@ -12,12 +12,12 @@ import { Accordion, Breadcrumbs } from "aurelius-atlas-ui";
  * trail), description box, property-count level, properties accordion, and
  * the side navigation.
  *
- * Empty state, not fake state (DET-02, DD-096): the Aurelius screen renders
+ * Empty state, not fake state (DET-02, DD-186): the Aurelius screen renders
  * one resolved entity, and `GET /v2/entity/guid/{guid}` is server 2.3
  * (planned). The skeleton fetches nothing — the title rides its localized
  * fallback, the trail renders nothing under the breadcrumbs' empty guard,
  * the description is empty, and the accordion holds zero rows. The client
- * method the wiring increment consumes (DET-03, DD-097) exists in
+ * method the wiring increment consumes (DET-03, DD-187) exists in
  * `aurelius-atlas-data-access`; calling it is the 2.3+7.6 slice's first line.
  *
  * The `:guid` is the screen's address (DET-07): a signal derived from the
@@ -44,7 +44,7 @@ export class Details {
 
     /**
      * A crumb was clicked (DET-06): navigate the details route to that
-     * guid. The caller-routes contract of the 7.13 trail (DD-066's
+     * guid. The caller-routes contract of the 7.13 trail (DD-154's
      * sibling) — the screen owns the router, the lib component owns the
      * crumbs.
      * @param guid the entity the crumb points at

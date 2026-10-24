@@ -1,19 +1,35 @@
-"""The lineage models, the flattening, and the fixed rules document (LM-02..LM-04).
+"""The flattening and the fixed rules document (LM-02..LM-04), on the client library's models.
+
+The lineage body models — ``LineageInfo``, ``EntityHeaderLite``, ``LineageRelation``,
+``Direction`` — moved to ``aurelius-atlas-server-client`` by increment 8.4 (DD-203,
+CL-12): they are the ``v2/lineage/{guid}`` contract of the Atlas API. This module
+re-exports them so the app's import path stays, and keeps what the app *is*: the
+flattening (``flatten_relations``, ``PROCESS_TYPES``) and the fixed rules document
+(``LINEAGE_RULES``) the legacy chain posted — 8.2's logic, not a contract.
 
 The reference is the Aurelius source: ``fmt_lineage_relation``, the ``rules``
 dict and ``process_types`` in
-``backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py``, and the
-camelCase wire shape of ``libs/m4i-atlas-core``'s ``LineageInfo`` (ADR 055 R4).
-Per DD-109 the models are pydantic (the upstream JSON is parsed at the
+``backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py``.
+Per DD-198 the models are pydantic (the upstream JSON is parsed at the
 boundary), the rows are plain dicts, and no pandas is involved.
 """
 
-from typing import Any, Literal
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from aurelius_atlas_server_client.lineage import Direction, EntityHeaderLite, LineageInfo, LineageRelation
 
-type Direction = Literal["BOTH", "INPUT", "OUTPUT"]
-"""The lineage directions Atlas accepts (the legacy's ``LineageDirection`` enum)."""
+from aurelius_atlas_lineage_model.errors import UpstreamError
+
+__all__ = [
+    "LINEAGE_RULES",
+    "PROCESS_TYPES",
+    "Direction",
+    "EntityHeaderLite",
+    "LineageInfo",
+    "LineageRelation",
+    "UpstreamError",
+    "flatten_relations",
+]
 
 PROCESS_TYPES: frozenset[str] = frozenset(
     {
@@ -30,54 +46,7 @@ PROCESS_TYPES: frozenset[str] = frozenset(
 whose type name is in this family is a process, every other type an entity."""
 
 
-class EntityHeaderLite(BaseModel):
-    """The fields of an Atlas entity header the flattening reads (LM-02).
-
-    Extra fields are ignored — Atlas's header carries classifications,
-    labels, statuses and more that the lineage rows never use.
-    """
-
-    model_config = ConfigDict(populate_by_name=True, extra="ignore")
-
-    guid: str
-    type_name: str = Field(alias="typeName", default="")
-    display_text: str | None = Field(alias="displayText", default=None)
-
-
-class LineageRelation(BaseModel):
-    """One Atlas lineage relation: an edge between two entity guids (LM-02)."""
-
-    model_config = ConfigDict(populate_by_name=True, extra="ignore")
-
-    from_entity_id: str = Field(alias="fromEntityId")
-    relationship_id: str = Field(alias="relationshipId")
-    to_entity_id: str = Field(alias="toEntityId")
-
-
-class LineageInfo(BaseModel):
-    """The body of Atlas's ``v2/lineage/{guid}`` answer (LM-04).
-
-    The legacy's ``LineageInfo`` dataclass, as a pydantic model: the camelCase
-    wire names are the aliases; ``baseEntityGuid``, ``lineageDepth`` and
-    ``lineageDirection`` exist upstream but the flattening reads none of them.
-    """
-
-    model_config = ConfigDict(populate_by_name=True, extra="ignore")
-
-    guid_entity_map: dict[str, EntityHeaderLite] = Field(alias="guidEntityMap", default_factory=dict)
-    relations: list[LineageRelation] = Field(default_factory=list)
-
-
-class UpstreamError(Exception):
-    """An upstream Atlas/data2model failure, with the status to answer (LM-05, LM-07)."""
-
-    def __init__(self, status_code: int, message: str) -> None:
-        super().__init__(message)
-        self.status_code = status_code
-        """The HTTP status the route answers with (404 → 204, 400 → 400, else 502)."""
-
-
-def _endpoint_slots(prefix: str, header: EntityHeaderLite | None) -> dict[str, str | None]:
+def _endpoint_slots(prefix: str, header: EntityHeaderLite | None) -> dict[str, Any]:
     """The four ``*_entity_*``/``*_process_*`` slots of one relation endpoint (LM-02).
 
     A process fills its ``*_process_*`` slots and nulls its ``*_entity_*`` ones;

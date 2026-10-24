@@ -4,7 +4,7 @@ import { AureliusTraceErrorHandler } from "aurelius-atlas-observability";
 import { AlertsService } from "./alerts.service";
 
 /**
- * The app's `ErrorHandler` (ALR-04, DD-084): an uncaught runtime error
+ * The app's `ErrorHandler` (ALR-04, DD-172): an uncaught runtime error
  * becomes an alert, and the chain then hands the error to the
  * OpenTelemetry handler — SHL-14's telemetry is untouched, the alert is
  * appended, not substituted. Recording is guarded: alerting must never

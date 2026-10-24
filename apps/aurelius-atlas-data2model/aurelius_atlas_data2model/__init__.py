@@ -2,7 +2,7 @@
 
 Tabular data plus element/relation/view rules in, an archimate3 model string
 out — the model-extraction API the legacy lineage graph drew on, ported from
-``m4i-data2model`` without pandas (DD-109).
+``m4i-data2model`` without pandas (DD-198).
 """
 
 from aurelius_atlas_data2model.app import create_app

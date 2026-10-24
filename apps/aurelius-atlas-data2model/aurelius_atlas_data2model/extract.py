@@ -1,7 +1,7 @@
-"""The extraction engine: rows plus rules, in ar3 shape out (DTM-02..DTM-09; DD-109).
+"""The extraction engine: rows plus rules, in ar3 shape out (DTM-02..DTM-09; DD-198).
 
 The legacy chain ran this on ``m4i-analytics`` DataFrames; the port is plain Python
-over the parsed :class:`~aurelius_atlas_data2model.rules.ExtractionRequest` (DD-109).
+over the parsed :class:`~aurelius_atlas_data2model.rules.ExtractionRequest` (DD-198).
 Each function states the legacy behaviour it reproduces and cites the rule it keeps.
 """
 
@@ -13,14 +13,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
+from aurelius_atlas_data2model_client.models import ExtractionResponse, MetadataEntry
+from aurelius_atlas_data2model_client.types import ELEMENT_TYPE_LAYERS, LAYOUT_NAMES, RELATIONSHIP_SHORTHANDS
+
 from aurelius_atlas_data2model.rules import ElementRule, ExtractionRequest, RelationRule, ViewRule
-from aurelius_atlas_data2model.types import (
-    ELEMENT_TYPE_LAYERS,
-    LAYOUT_NAMES,
-    NODE_HEIGHT,
-    NODE_WIDTH,
-    RELATIONSHIP_SHORTHANDS,
-)
+from aurelius_atlas_data2model.types import NODE_HEIGHT, NODE_WIDTH
 
 MODEL_NAME = "Generated model"
 """The model name the legacy extractor hard-codes (``ArchimateModel('Generated model')``)."""
@@ -29,10 +26,10 @@ SCRIPT_NAME = "Model Extractor API"
 """The ``created_by`` provenance the legacy extractor stamps on every metadata entry."""
 
 ROW_SPACING = 95
-"""Vertical distance between node tops in the native layout: node height 55 + a 40 gap (DV-15)."""
+"""Vertical distance between node tops in the native layout: node height 55 + a 40 gap (DV-68)."""
 
 RANK_SPACING = 320
-"""Horizontal distance between ranks in the native layout: node width 120 + a 200 gap (DV-15)."""
+"""Horizontal distance between ranks in the native layout: node width 120 + a 200 gap (DV-68)."""
 
 _INVERTED_TAGS = frozenset({"ar3_Access", "ar3_Specialization"})
 """The relationship tags whose direction the legacy layouts inverted (``_prepare_model``)."""
@@ -190,7 +187,7 @@ def _view_node_ids(rows: list[dict[str, Any]], rule: ViewRule, elements: dict[st
     The legacy scans each node rule's column (non-null, first per value) in rule
     order; an empty collection is the legacy's ``None`` — the whole model. Preset
     node coordinates (``x``/``x_key`` in a view node rule) are ignored: the layout
-    is native (DV-15).
+    is native (DV-68).
     """
     ids: list[str] = []
     for node_rule in rule.view_nodes:
@@ -234,7 +231,7 @@ def _view_edge_ids(
 
 
 def _ranks(node_ids: list[str], edges: list[_Edge]) -> dict[str, int]:
-    """Each node's rank: the longest path from an edge source, cycles bounded (DV-15).
+    """Each node's rank: the longest path from an edge source, cycles bounded (DV-68).
 
     The legacy graphviz layout ranked with dot; the inversion the legacy layouts
     applied (``_prepare_model``) applies to the ranking edges here: writes and
@@ -266,7 +263,7 @@ def _ranks(node_ids: list[str], edges: list[_Edge]) -> dict[str, int]:
 
 
 def _coordinates(node_ids: list[str], edges: list[_Edge], layout: str) -> dict[str, tuple[int, int]]:
-    """The native deterministic layout (DTM-08, DV-15).
+    """The native deterministic layout (DTM-08, DV-68).
 
     ``archimate_process`` ranks left to right (graphviz ``rankdir=LR``);
     ``archimate_hierarchical`` ranks bottom to top (``rankdir=BT``). Nodes stack by
@@ -347,12 +344,12 @@ def _name_of(rule: ViewRule, row: dict[str, Any] | None) -> str:
     return rule.view_name_prefix + "nan"
 
 
-def extract(request: ExtractionRequest) -> dict[str, Any]:
+def extract(request: ExtractionRequest) -> ExtractionResponse:
     """Run the extraction: the legacy ``extract`` endpoint's body, pandas-free (DTM-01).
 
     :param request: the parsed ``POST /extract`` body
-    :returns: ``{"metadata": [...], "model": "<ar3 JSON string>"}`` — the model is a
-        JSON string inside the JSON body, as the legacy answer is
+    :returns: the ``{metadata, model}`` answer as the client library's model (CL-20) —
+        the model is a JSON string inside the JSON body, as the legacy answer is
     """
     rows = request.data
     elements = {rule.id: rule for rule in request.rules.elements}
@@ -398,7 +395,10 @@ def extract(request: ExtractionRequest) -> dict[str, Any]:
             organizations.append(organization)
 
     model = _ar3_model(nodes, edges, diagrams, organizations)
-    return {"metadata": metadata, "model": json.dumps(model)}
+    return ExtractionResponse(
+        metadata=[MetadataEntry.model_validate(entry) for entry in metadata],
+        model=json.dumps(model),
+    )
 
 
 def _view_groups(

@@ -1,0 +1,633 @@
+name: Relationships are created, read, updated and deleted, and go with their ends' purge
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/RelationshipREST.java
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipStoreV2.java#create
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipStoreV2.java#update
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipStoreV2.java#deleteById
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipStoreV2.java#validateRelationship
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapEdgeToAtlasRelationship
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v1/DeleteHandlerV1.java#deleteVertex
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasRelationshipDefStoreV2.java#deleteByName
+rules:
+    - REL-04
+    - REL-05
+    - REL-06
+    - REL-07
+    - REL-08
+    - REL-09
+    - REL-10
+covers:
+    - aurelius_atlas_server.routes.relationship.create
+    - aurelius_atlas_server.routes.relationship.update
+    - aurelius_atlas_server.routes.relationship.get_by_id
+    - aurelius_atlas_server.routes.relationship.delete_by_id
+stages:
+    - name: create two entity types and a relationship type between them, named for this run
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_ra_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+                  - name: scenario_rb_{run}
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isUnique: true
+                          isIndexable: true
+              relationshipDefs:
+                  - name: scenario_rel_{run}
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: ONE_TO_TWO
+                    endDef1:
+                        type: scenario_ra_{run}
+                        name: bs
+                        cardinality: SET
+                    endDef2:
+                        type: scenario_rb_{run}
+                        name: as
+                        cardinality: SET
+                    attributeDefs:
+                        - name: weight
+                          typeName: int
+                          isOptional: true
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ra_{run}
+                    description: scenario_ra_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - &id001
+                          name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: bs
+                          typeName: array<scenario_rb_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_rel_{run}
+                          isLegacyAttribute: false
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_rb_{run}
+                    description: scenario_rb_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - *id001
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs:
+                        - name: as
+                          typeName: array<scenario_ra_{run}>
+                          isOptional: true
+                          cardinality: SET
+                          valuesMinCount: -1
+                          valuesMaxCount: -1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          relationshipTypeName: scenario_rel_{run}
+                          isLegacyAttribute: false
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_rel_{run}
+                    description: scenario_rel_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: weight
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    relationshipCategory: ASSOCIATION
+                    propagateTags: ONE_TO_TWO
+                    endDef1:
+                        type: scenario_ra_{run}
+                        name: bs
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    endDef2:
+                        type: scenario_rb_{run}
+                        name: as
+                        isContainer: false
+                        cardinality: SET
+                        isLegacyAttribute: false
+                    category: RELATIONSHIP
+                    createdBy: admin
+                    updatedBy: admin
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+              - $.relationshipDefs[0].guid
+              - $.relationshipDefs[0].createTime
+              - $.relationshipDefs[0].updateTime
+          deviations:
+              - id: DV-06
+                path: $.entityDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[0].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].createdBy
+                absent: true
+              - id: DV-06
+                path: $.entityDefs[1].updatedBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].createdBy
+                absent: true
+              - id: DV-06
+                path: $.relationshipDefs[0].updatedBy
+                absent: true
+    - name: create one entity of each
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - typeName: scenario_ra_{run}
+                    guid: "-1"
+                    attributes:
+                        qualifiedName: a_{run}
+                  - typeName: scenario_rb_{run}
+                    guid: "-2"
+                    attributes:
+                        qualifiedName: b_{run}
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_ra_{run}
+                        attributes:
+                            qualifiedName: a_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: a_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                        classifications: []
+                      - typeName: scenario_rb_{run}
+                        attributes:
+                            qualifiedName: b_{run}
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: b_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                        classifications: []
+              guidAssignments:
+                  "-1": a new GUID
+                  "-2": a new GUID
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+          save:
+              a: $.guidAssignments['-1']
+              b: $.guidAssignments['-2']
+    - name: relate them; the type's tag propagation is taken, the given one only checked
+      request:
+          method: POST
+          url: /api/atlas/v2/relationship
+          json:
+              typeName: scenario_rel_{run}
+              end1:
+                  guid: "{a}"
+              end2:
+                  typeName: scenario_rb_{run}
+                  uniqueAttributes:
+                      qualifiedName: b_{run}
+              attributes:
+                  weight: 3
+      response:
+          status: 200
+          json:
+              typeName: scenario_rel_{run}
+              attributes:
+                  weight: 3
+              guid: a new GUID
+              provenanceType: 0
+              end1: &id002
+                  guid: "{a}"
+                  typeName: scenario_ra_{run}
+                  uniqueAttributes:
+                      qualifiedName: a_{run}
+              end2: &id003
+                  guid: "{b}"
+                  typeName: scenario_rb_{run}
+                  uniqueAttributes:
+                      qualifiedName: b_{run}
+              label: r:scenario_rel_{run}
+              propagateTags: ONE_TO_TWO
+              status: ACTIVE
+              createdBy: admin
+              updatedBy: admin
+              createTime: 0
+              updateTime: 0
+              version: 0
+              propagatedClassifications: []
+              blockedPropagatedClassifications: []
+          volatile:
+              - $.guid
+              - $.createTime
+              - $.updateTime
+          deviations: &id004
+              - id: DV-15
+                path: $.createdBy
+                absent: true
+              - id: DV-15
+                path: $.updatedBy
+                absent: true
+          save:
+              rel: $.guid
+    - name: relating them again with the same label is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/relationship
+          json:
+              typeName: scenario_rel_{run}
+              end1:
+                  guid: "{a}"
+              end2:
+                  guid: "{b}"
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-004
+              errorMessage: relationship scenario_rel_{run} already exists between entities {a} and {b}
+    - name: an end of the wrong type is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/relationship
+          json:
+              typeName: scenario_rel_{run}
+              end1:
+                  guid: "{a}"
+              end2:
+                  guid: "{a}"
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-036
+              errorMessage: "invalid relationshipDef: scenario_rel_{run}: end type 1: scenario_rb_{run}, end type 2: scenario_ra_{run}"
+    - name: read it
+      request:
+          method: GET
+          url: /api/atlas/v2/relationship/guid/{rel}
+      response:
+          status: 200
+          json:
+              relationship:
+                  typeName: scenario_rel_{run}
+                  attributes:
+                      weight: 3
+                  guid: "{rel}"
+                  provenanceType: 0
+                  end1: *id002
+                  end2: *id003
+                  label: r:scenario_rel_{run}
+                  propagateTags: ONE_TO_TWO
+                  status: ACTIVE
+                  createdBy: admin
+                  updatedBy: admin
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  propagatedClassifications: []
+                  blockedPropagatedClassifications: []
+          volatile:
+              - $.relationship.createTime
+              - $.relationship.updateTime
+          deviations:
+              - id: DV-15
+                path: $.relationship.createdBy
+                absent: true
+              - id: DV-15
+                path: $.relationship.updatedBy
+                absent: true
+    - name: read it with the headers of its ends
+      request:
+          method: GET
+          url: /api/atlas/v2/relationship/guid/{rel}
+          params:
+              extendedInfo: "true"
+      response:
+          status: 200
+          json:
+              relationship:
+                  typeName: scenario_rel_{run}
+                  attributes:
+                      weight: 3
+                  guid: "{rel}"
+                  provenanceType: 0
+                  end1: *id002
+                  end2: *id003
+                  label: r:scenario_rel_{run}
+                  propagateTags: ONE_TO_TWO
+                  status: ACTIVE
+                  createdBy: admin
+                  updatedBy: admin
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  propagatedClassifications: []
+                  blockedPropagatedClassifications: []
+              referredEntities:
+                  "{a}":
+                      typeName: scenario_ra_{run}
+                      attributes:
+                          qualifiedName: a_{run}
+                      guid: "{a}"
+                      status: ACTIVE
+                      displayText: a_{run}
+                      classificationNames: []
+                      meaningNames: []
+                      meanings: []
+                      isIncomplete: false
+                      labels: []
+                  "{b}":
+                      typeName: scenario_rb_{run}
+                      attributes:
+                          qualifiedName: b_{run}
+                      guid: "{b}"
+                      status: ACTIVE
+                      displayText: b_{run}
+                      classificationNames: []
+                      meaningNames: []
+                      meanings: []
+                      isIncomplete: false
+                      labels: []
+          volatile:
+              - $.relationship.createTime
+              - $.relationship.updateTime
+          deviations:
+              - id: DV-15
+                path: $.relationship.createdBy
+                absent: true
+              - id: DV-15
+                path: $.relationship.updatedBy
+                absent: true
+    - name: update its attribute
+      request:
+          method: PUT
+          url: /api/atlas/v2/relationship
+          json:
+              guid: "{rel}"
+              propagateTags: ONE_TO_TWO
+              attributes:
+                  weight: 5
+      response:
+          status: 200
+          json:
+              typeName: scenario_rel_{run}
+              attributes:
+                  weight: 5
+              guid: "{rel}"
+              provenanceType: 0
+              end1: *id002
+              end2: *id003
+              label: r:scenario_rel_{run}
+              propagateTags: ONE_TO_TWO
+              status: ACTIVE
+              createdBy: admin
+              updatedBy: admin
+              createTime: 0
+              updateTime: 0
+              version: 0
+              propagatedClassifications: []
+              blockedPropagatedClassifications: []
+          volatile:
+              - $.createTime
+              - $.updateTime
+          deviations: *id004
+    - name: its type may not change
+      request:
+          method: PUT
+          url: /api/atlas/v2/relationship
+          json:
+              guid: "{rel}"
+              typeName: scenario_ra_{run}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-400-00-06A
+              errorMessage:
+                  change of relationship type is not permitted. relationship-guid={rel}, current-type=scenario_rel_{run},
+                  new-type=scenario_ra_{run}
+    - name: delete it
+      request:
+          method: DELETE
+          url: /api/atlas/v2/relationship/guid/{rel}
+      response:
+          status: 204
+    - name: a deleted relationship is read as deleted
+      request:
+          method: GET
+          url: /api/atlas/v2/relationship/guid/{rel}
+      response:
+          status: 200
+          json:
+              relationship:
+                  typeName: scenario_rel_{run}
+                  attributes:
+                      weight: 5
+                  guid: "{rel}"
+                  provenanceType: 0
+                  end1: *id002
+                  end2: *id003
+                  label: r:scenario_rel_{run}
+                  propagateTags: ONE_TO_TWO
+                  status: DELETED
+                  createdBy: admin
+                  updatedBy: admin
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  propagatedClassifications: []
+                  blockedPropagatedClassifications: []
+          volatile:
+              - $.relationship.createTime
+              - $.relationship.updateTime
+          deviations:
+              - id: DV-15
+                path: $.relationship.createdBy
+                absent: true
+              - id: DV-15
+                path: $.relationship.updatedBy
+                absent: true
+    - name: and cannot be deleted again
+      request:
+          method: DELETE
+          url: /api/atlas/v2/relationship/guid/{rel}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-00F
+              errorMessage: "Attempting to delete a relationship which is already deleted : {rel}"
+    - name: the relationship type is in use while the relationship exists
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_rel_{run}
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-002
+              errorMessage: Given type scenario_rel_{run} has references
+    - name: delete both entities
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/bulk
+          params:
+              guid:
+                  - "{a}"
+                  - "{b}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  DELETE:
+                      - typeName: scenario_ra_{run}
+                        attributes:
+                            qualifiedName: a_{run}
+                        guid: "{a}"
+                        status: ACTIVE
+                        displayText: a_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_rb_{run}
+                        attributes:
+                            qualifiedName: b_{run}
+                        guid: "{b}"
+                        status: ACTIVE
+                        displayText: b_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+    - name: purging them removes the relationship too
+      request:
+          method: PUT
+          url: /api/atlas/admin/purge
+          json:
+              - "{a}"
+              - "{b}"
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  PURGE:
+                      - typeName: scenario_ra_{run}
+                        attributes:
+                            qualifiedName: a_{run}
+                        guid: "{a}"
+                        status: DELETED
+                        displayText: a_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                        classifications: []
+                      - typeName: scenario_rb_{run}
+                        attributes:
+                            qualifiedName: b_{run}
+                        guid: "{b}"
+                        status: DELETED
+                        displayText: b_{run}
+                        classificationNames: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                        classifications: []
+    - name: so it is not found
+      request:
+          method: GET
+          url: /api/atlas/v2/relationship/guid/{rel}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-00C
+              errorMessage: Given relationship guid {rel} is invalid/not found
+    - name: delete the relationship type
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_rel_{run}
+      response:
+          status: 204
+    - name: delete one entity type
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_ra_{run}
+      response:
+          status: 204
+    - name: and the other
+      request:
+          method: DELETE
+          url: /api/atlas/v2/types/typedef/name/scenario_rb_{run}
+      response:
+          status: 204

@@ -9,7 +9,7 @@ import by a unique name (the auth library's tests set the pattern).
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 
 class FakeUpstream:
@@ -24,14 +24,14 @@ class FakeUpstream:
         self.handler: Callable[[httpx.Request], httpx.Response] = lambda _request: httpx.Response(500)
         self.requests: list[httpx.Request] = []
 
-    def client(self) -> httpx.Client:
-        """A client whose transport records and delegates to :attr:`handler`."""
+    def transport(self) -> httpx.MockTransport:
+        """A transport that records requests and delegates to :attr:`handler`."""
 
-        def transport(request: httpx.Request) -> httpx.Response:
+        def handler(request: httpx.Request) -> httpx.Response:
             self.requests.append(request)
             return self.handler(request)
 
-        return httpx.Client(transport=httpx.MockTransport(transport))
+        return httpx.MockTransport(handler)
 
     def of(self, path: str) -> list[httpx.Request]:
         """The recorded requests whose URL path matches ``path``."""

@@ -18,7 +18,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   `serve` target chains `decrypt` → `docker-build` → dependency `serve`. The
   server's native OTLP rides the collector's **legacy leg**
   (`https://otel-collector:4320`, shared token — the issuer cannot present a
-  Keycloak JWT at its own cold boot, DD-107; JVM truststore
+  Keycloak JWT at its own cold boot, DD-196; JVM truststore
   `/certs/truststore.p12` via `JAVA_OPTS`; Quarkus' gRPC sender ignores
   `OTEL_EXPORTER_OTLP_CERTIFICATE`).
 - The Keycloak **metadata Postgres** is covered by the slice's
@@ -30,7 +30,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 - Dual listeners (ADR 039): `http://keycloak.localhost:8080` (dev browser) and
   `https://keycloak.localhost:8443` (E2E/CI, certs from `nx certgen`). Every
   automated mint — E2E suites, all slice pullers, the apps' OTLP ingest — uses
-  `:8443` (DD-113), so the listener a token's `iss` carries is uniform across
+  `:8443` (DD-202), so the listener a token's `iss` carries is uniform across
   producers; the collector validates both listeners. The
   issuer each client uses must match the auth settings the FastAPI example
   validates and the frontend's `/config.json` advertises — change them
@@ -70,7 +70,7 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
   en-US/nl-NL), `https://localhost:18443` (example e2e) and
   `https://localhost:18444` (webapp e2e's fixed host ports). Keep them in
   sync when ports change. The client's `defaultClientScopes` include the
-  realm's `otel-ingest` scope (DD-103): its audience mapper stamps
+  realm's `otel-ingest` scope (DD-193): its audience mapper stamps
   `aud: otel-collector` on user tokens, which is what the OTel collector's
   browser-leg OIDC receiver requires (`azp` stays `aurelius`, so the APIs'
   azp-or-aud token validation is unaffected). Two Keycloak gotchas learned
@@ -83,11 +83,11 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
       (`DELETE /admin/realms/master/clients/<id>` is too blunt — recreate the
       stack or PUT via the admin API) before a changed import takes effect.
       Import strategy is `IGNORE_EXISTING` (`KC-SERVICES0030`): adding the
-      `otel-ingest` scope to the `aurelius` client (DD-103) applied only on
+      `otel-ingest` scope to the `aurelius` client (DD-193) applied only on
       `docker compose down -v && up -d` (fresh DB); tokens minted before that
       carry no `aud`, which the collector's OIDC receiver rejects — the first
       suspect when telemetry 401s on a long-lived dev Keycloak.
-- The `otel-*` **ingest clients** (DD-107, per-service telemetry identity):
+- The `otel-*` **ingest clients** (DD-196, per-service telemetry identity):
   `otel-atlas-server`, `otel-elasticsearch`, `otel-keycloak`, `otel-postgres` —
   confidential, service accounts only (every flow off), `defaultClientScopes:
 ["basic", "otel-ingest", "roles"]` so their tokens carry `aud: otel-collector`
@@ -98,7 +98,7 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
   per-service leg (4317/4319) accepts their client-credentials JWTs and stamps
   `azp` as `otel.ingest.client`. **Rotation**: bump
   `OTEL_INGEST_CLIENT_SECRET` in every consumer `.env` (the three slice pullers,
-  the Atlas server — list at DD-107) **and** recreate the Keycloak stack (the
+  the Atlas server — list at DD-196) **and** recreate the Keycloak stack (the
   import applies only on a fresh DB — `docker compose down -v && up -d`, the
   `IGNORE_EXISTING` rule above applies to client secrets too), then restart the
   producers. Adding/renaming an `otel-*` client has the same rule: a running

@@ -4,11 +4,11 @@ import { AURELIUS_METER_PROVIDER, AURELIUS_WEB_TRACER_PROVIDER } from "aurelius-
 import { persisted, Persisted, readPreference, TELEMETRY_KEY } from "./user-preference";
 
 /**
- * The telemetry owner (SPL-11, DD-070, DD-072): the browser telemetry
+ * The telemetry owner (SPL-11, DD-158, DD-160): the browser telemetry
  * switch. The stored value gates the SDK at bootstrap — `app.config.ts`
  * builds the trace/metric providers only when it is on
  * ({@link TelemetryService.storedEnabled}). Switching it **off** stops the
- * exports immediately (DD-070: the SDK's one clean direction — the
+ * exports immediately (DD-158: the SDK's one clean direction — the
  * provider's `shutdown` flushes and closes the exporter); switching it
  * **on** stores the choice, and the SDK — assembled at startup — needs a
  * reload. The optional injections return `null` when telemetry was off at
@@ -31,7 +31,7 @@ export class TelemetryService {
     private readonly meterProvider = inject(AURELIUS_METER_PROVIDER, { optional: true });
 
     /**
-     * Store the choice. Off stops the exporters now (DD-070); on is
+     * Store the choice. Off stops the exporters now (DD-158); on is
      * effective after a reload, which the panel states (SPL-11).
      * @param enabled the new state
      */

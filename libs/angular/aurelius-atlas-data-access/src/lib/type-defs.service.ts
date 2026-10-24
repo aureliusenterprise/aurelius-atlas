@@ -39,7 +39,7 @@ export type TypeDefKind = keyof typeof KIND_PATHS;
  * the lookups, searches, and create/update/delete of `TypesREST`. The wire shapes are
  * {@link AtlasTypesDef} and friends (APC-03); a non-2xx answer carries the typed Atlas
  * error body (APC-04 — see `atlas-error.ts`). Every URL composes from the injected
- * {@link API_BASE_URL} with the `/atlas` prefix intact (APC-01, DD-050).
+ * {@link API_BASE_URL} with the `/atlas` prefix intact (APC-01, DD-139).
  */
 @Injectable({
     providedIn: "root",
@@ -75,7 +75,7 @@ export class TypeDefsService {
 
     /**
      * The definition of any kind with that name (TYR-01) — the legacy
-     * `getTypeDefByName`/`getTypeByName` pair, one method (DD-051).
+     * `getTypeDefByName`/`getTypeByName` pair, one method (DD-140).
      * @param name the type name
      * @returns the definition, its kind in `category`
      */

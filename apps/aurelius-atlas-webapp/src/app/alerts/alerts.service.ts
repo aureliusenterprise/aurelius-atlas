@@ -28,13 +28,13 @@ let nextGroupId = 0;
  * (ALR-04), the HTTP reporter (ALR-05), and any feature slice's own
  * notice — and grouping happens here, so no caller merges anything.
  *
- * Grouping is a quiet window (ALR-03, DD-083): an alert whose key
+ * Grouping is a quiet window (ALR-03, DD-171): an alert whose key
  * (severity + source + message) matches the newest group's merges into
  * it while the window is open (`count` +1, `lastSeen` moves); after the
  * gap the burst is history and a new group starts, so the feed shows
  * bursts as bursts. The store is capped — the oldest group is evicted —
  * and in-memory: alerts are session events, not preferences (the
- * browser-scoped stores are DD-073's lane, this is not one).
+ * browser-scoped stores are DD-161's lane, this is not one).
  */
 @Injectable({ providedIn: "root" })
 export class AlertsService {

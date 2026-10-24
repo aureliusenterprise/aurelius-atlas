@@ -10,7 +10,7 @@
 @use "bulma/bulma";
 
 /*
- * The Aurelius brand on Bulma 1 (SHM-01/03/04/06, DD-059) — emitted after
+ * The Aurelius brand on Bulma 1 (SHM-01/03/04/06, DD-148) — emitted after
  * Bulma so it wins the cascade against Bulma's :root, and outside the
  * `:root:not([data-theme])` scheme machinery: light and dark follow the OS
  * (SHM-01), the brand colours do not.
@@ -27,7 +27,7 @@
         --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
     }
 
-    // The accent ramp (SHM-04, DD-063). $primary is deliberately NOT here:
+    // The accent ramp (SHM-04, DD-152). $primary is deliberately NOT here:
     // the legacy theme never overrode it, the demo highlights the landing's
     // icons in Bulma's own teal #00d1b2 — Bulma 1's default, kept. Only its
     // invert is pinned: the legacy findColorInvert puts white ink on the
@@ -57,7 +57,7 @@
     }
 
     /*
-     * The legacy (Bulma 0.9.4) body metrics (SHM-03, DD-059): the system
+     * The legacy (Bulma 0.9.4) body metrics (SHM-03, DD-148): the system
      * stack, 16px, line-height 1.5, weight 400, #4a4a4a ink on a white
      * page — what the legacy app ships, and the reference the webapp is
      * measured against. Bulma 1's defaults (Inter, 1rem, the scheme ink)
@@ -80,7 +80,7 @@
     --bulma-navbar-height: 4.25rem;
 
     /*
-     * The legacy (Bulma 0.9.4) text ramp (SHM-03, DD-062): Bulma 1 re-tinted
+     * The legacy (Bulma 0.9.4) text ramp (SHM-03, DD-151): Bulma 1 re-tinted
      * its greys 221 degrees (text #4a5568, text-strong #2e333d) and moved the
      * weights (title 800, strong 600, button 500), so pinning the body alone
      * left every heading, box, content and navbar-adjacent ink off the legacy
@@ -104,22 +104,22 @@
     --bulma-text-weak-base: #7a7a7a;
 
     // The legacy strong is 0.9.4's bold 700 — the demo's navbar locale
-    // <strong> measures 700; Bulma 1 dropped it to semibold (SHM-03, DD-062).
+    // <strong> measures 700; Bulma 1 dropped it to semibold (SHM-03, DD-151).
     --bulma-strong-weight: 700;
 }
 
 /*
- * The dark ink ramp (DD-068). The :root block above out-cascades Bulma's
+ * The dark ink ramp (DD-156). The :root block above out-cascades Bulma's
  * own dark scheme blocks (equal specificity, later source), so dark mode
  * inherited the light ink — grey text on dark surfaces. Emitted after
  * :root, this ramp re-pins the ink chain to Bulma's dark-scheme
- * lightnesses (text 71%, strong 93%, weak 53%) over the DD-062 neutral
+ * lightnesses (text 71%, strong 93%, weak 53%) over the DD-151 neutral
  * hue — #b5b5b5 / #ededed / #878787, ~9:1 on the 9% surface — and hands
  * the body ink/background back to the scheme tokens. Emitted on both of
  * Bulma's dark hosts (its themes/_index.scss pattern): the explicit
  * `[data-theme=dark]` and the OS-dark `:root:not([data-theme])`.
  *
- * The chrome: the navbar follows the scheme (DD-080 — the slate band
+ * The chrome: the navbar follows the scheme (DD-168 — the slate band
  * mixin below); the footer stays pinned (SHM-07: the blue/white reads
  * the same in either scheme). The accent values stay pinned too
  * (SHM-04); only the text-role link follows Bulma's dark adaptation.
@@ -137,12 +137,12 @@
 
     // The link lightness: #0073dd inks ~3.9:1 on the 9% surface; Bulma's
     // own dark adaptation (link-on-scheme-l, 73%) lands ~7:1 on the same
-    // hue (DD-068).
+    // hue (DD-156).
     --bulma-link-l: 73%;
 }
 
-// The `.content` ink the brand hard-pins for the legacy ramp (DD-062)
-// follows the scheme the same way (DD-068).
+// The `.content` ink the brand hard-pins for the legacy ramp (DD-151)
+// follows the scheme the same way (DD-156).
 @mixin dark-content-ink {
     color: var(--bulma-text);
 
@@ -171,7 +171,7 @@
 }
 
 /*
- * The dark navbar — the slate band (DD-080, the user's choice after the
+ * The dark navbar — the slate band (DD-168, the user's choice after the
  * logo was measured): in dark mode the navbar leaves the pinned light
  * (#f5f5f5) for a neutral slate, #72757d — hsl(224, 4%, 47%), the faint
  * cool cast of $blue, one step under the wordmark's 3:1 floor. The mark
@@ -183,18 +183,18 @@
  * tried read as a defect).
  *
  * The bar's chrome composes on the slate: ink #000 (5.6:1 — the navbar
- * items and the hover plate both keep it, DD-063's hover rule already
+ * items and the hover plate both keep it, DD-152's hover rule already
  * pins #000 and the slate's lighter plate keeps it legible), hover/
- * active the light plate (Bulma's +8%/+12% deltas — the DD-063 deltas
+ * active the light plate (Bulma's +8%/+12% deltas — the DD-152 deltas
  * inverted for a dark band: the light band's plate darkens, the slate's
  * lightens), the gear's `is-active` the white plate (selected 100%/0%,
- * DD-063's pair). The `is-dark` Documentation button flips to black
+ * DD-152's pair). The `is-dark` Documentation button flips to black
  * ink/border — its pinned #363636 rides at 2.5:1 on the slate; its
  * hover (the #363636 plate, $dark-invert ink) is untouched. The account
  * dropdown stays the scheme's own plate (dark in dark) — Bulma composes
  * it from the scheme tokens, the legacy dropdown idiom.
  *
- * Emitted on both of Bulma's dark hosts, like DD-068's ramp. Specificity
+ * Emitted on both of Bulma's dark hosts, like DD-156's ramp. Specificity
  * 0,2,0 beats the `.navbar` chrome block (0,1,0), so it out-cascades the
  * light pins it replaces.
  */
@@ -239,7 +239,7 @@
 .navbar {
     // The legacy navbar ink is the body ink — the demo measures rgb(74,
     // 74, 74) on the navbar links, not Bulma 1's tinted chain and not the
-    // 0.9.4 default rgba($black, 0.7) (SHM-03/04, DD-062). The navbar's
+    // 0.9.4 default rgba($black, 0.7) (SHM-03/04, DD-151). The navbar's
     // <strong> (the locale badge) renders in the same ink — the demo
     // measures #4a4a4a bold, not the 0.9.4 text-strong default.
     --bulma-navbar-item-color: #4a4a4a;
@@ -252,11 +252,11 @@
         --bulma-#{$token}-l: #{color.channel($value, "lightness", $space: hsl)};
     }
 
-    // Hover/active chrome (SHM-04, DD-063): the demo's navbar links hover
+    // Hover/active chrome (SHM-04, DD-152): the demo's navbar links hover
     // and activate at the band grey with black ink (.navbar-link:hover
     // measures rgb(245,245,245)/#000). Bulma 1 has no hover-colour token
     // — the plate composes hsl(navbar-h/s, item-background-l + delta, a),
-    // so the channels are neutralised (the DD-062 pattern) and the delta
+    // so the channels are neutralised (the DD-151 pattern) and the delta
     // set to the band grey's 96% lightness; the active/selected pair lands
     // on the selected channels. The hover ink has no token at all and
     // rides on the rule below.
@@ -269,7 +269,7 @@
     --bulma-navbar-item-selected-background-l: 100%;
     --bulma-navbar-item-selected-color-l: 0%;
 
-    // The burger ink (SHM-04, DD-064): Bulma 1 derives it from link (the
+    // The burger ink (SHM-04, DD-153): Bulma 1 derives it from link (the
     // Aurelius blue) — 0.9.4 defaults it to the navbar ink, the demo's
     // grey. The hover/active plate composes the burger channels at 10 % /
     // 20 % alpha (0.9.4's rgba($navbar-burger-color, .1) — black over the
@@ -279,18 +279,18 @@
     --bulma-burger-s: 0%;
     --bulma-burger-l: 0%;
 
-    // The dropdown chevron (SHM-04, DD-064): the legacy theme pins
+    // The dropdown chevron (SHM-04, DD-153): the legacy theme pins
     // $navbar-dropdown-arrow to black — Bulma 1 derives it from link (the
     // Aurelius blue).
     --bulma-navbar-dropdown-arrow: #000;
 
     // The dropdown ink composes h/s from the (tinted) scheme with the text
-    // lightness; neutralized, it resolves to #4a4a4a like the demo (DD-062).
+    // lightness; neutralized, it resolves to #4a4a4a like the demo (DD-151).
     --bulma-navbar-dropdown-item-h: 0deg;
     --bulma-navbar-dropdown-item-s: 0%;
 }
 
-// The mobile navbar (SHM-04, DD-064): 0.9.4 blends the burger menu's
+// The mobile navbar (SHM-04, DD-153): 0.9.4 blends the burger menu's
 // dropdowns into the menu band (`.navbar-dropdown` transparent, items
 // transparent, no top padding — Bulma 1's dropdown-item plate rule is not
 // media-scoped, so its items render as white tiles on the grey band).
@@ -311,7 +311,7 @@
     }
 }
 
-// The hover ink (SHM-04, DD-063): Bulma 1 dropped 0.9.4's
+// The hover ink (SHM-04, DD-152): Bulma 1 dropped 0.9.4's
 // navbar-item-hover-color token (links keep their ink and only the plate
 // changes), so the demo's black hover ink — 0.9.4's default, measured on
 // .navbar-link:hover — rides on a rule mirroring Bulma's plate triggers.
@@ -330,7 +330,7 @@
 }
 
 /*
- * The legacy type ramp beyond the body (SHM-03, DD-062). Bulma 1 scopes
+ * The legacy type ramp beyond the body (SHM-03, DD-151). Bulma 1 scopes
  * these tokens on the components, so the 0.9.4 values land there: the demo
  * measures the title at 600/#363636 (Bulma 1 ships 800), buttons at weight
  * 400 (Bulma 1 ships 500), and `.content` at the body ink #4a4a4a with

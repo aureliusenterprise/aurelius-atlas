@@ -6,7 +6,7 @@ import { SectionStat, SectionStats } from "./section-stats.component";
 /**
  * The section count bar: a heading-link and a count per section, the
  * Aurelius pattern above the details screen's sections. Clicking a
- * heading emits `itemClicked(target)` — the app smooth-scrolls (DD-101).
+ * heading emits `itemClicked(target)` — the app smooth-scrolls (DD-191).
  */
 const meta: Meta<SectionStats> = {
     component: SectionStats,
@@ -38,7 +38,7 @@ const host = (args: Record<string, unknown>) => ({
 /**
  * The governance-quality bar: three stats, each heading a jump link to
  * its section, the counts above the fold. Clicking a heading emits its
- * target (DD-066's pattern — the lib emits, the app scrolls).
+ * target (DD-154's pattern — the lib emits, the app scrolls).
  */
 export const Primary: Story = {
     args: {
@@ -58,7 +58,7 @@ export const Primary: Story = {
 
 /**
  * The default-details bar: a single Properties stat, the shape the 7.6
- * skeleton's inline bar becomes when the wiring increment lands (DD-102).
+ * skeleton's inline bar becomes when the wiring increment lands (DD-192).
  */
 export const SingleStat: Story = {
     args: {

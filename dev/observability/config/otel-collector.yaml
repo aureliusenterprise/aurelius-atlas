@@ -1,5 +1,5 @@
 receivers:
-    # Three ingest legs, credential-typed (DD-103, DD-107). TLS (below) proves
+    # Three ingest legs, credential-typed (DD-193, DD-196). TLS (below) proves
     # which collector you reach on all of them; the auth extension proves who
     # writes. The contrib image has no compositeauth extension, so a port
     # carries exactly one authenticator — the legs are separate ports by
@@ -18,7 +18,7 @@ receivers:
                     key_file: /certs/otel-collector-key.pem
                 auth:
                     authenticator: oidc
-    # The per-service leg (DD-107, CIA-06): headless producers with a Keycloak
+    # The per-service leg (DD-196, CIA-06): headless producers with a Keycloak
     # identity — the three slice metrics-pullers (oauth2client extension) and
     # the Atlas server (the in-app refresh shim) — present client-credentials
     # JWTs minted for their otel-* realm clients. The SAME oidc extension as
@@ -42,7 +42,7 @@ receivers:
                     key_file: /certs/otel-collector-key.pem
                 auth:
                     authenticator: oidc
-    # The legacy leg (DD-107): the two producers that cannot present a
+    # The legacy leg (DD-196): the two producers that cannot present a
     # Keycloak JWT — Keycloak's native OTLP (the issuer cannot mint its own
     # token at cold boot) and the FastAPI example (static-header SDK, 60s
     # tokens) — keep 7.17's shared ingest token (bearertokenauth, CIA-10).
@@ -71,7 +71,7 @@ processors:
             - action: upsert
               key: deployment.environment.name
               value: development
-            # CIA-05 (DD-105): the OIDC verifier keeps the verified token's
+            # CIA-05 (DD-194): the OIDC verifier keeps the verified token's
             # claims in the request context under their raw JWT names —
             # Keycloak's subject claim is `sub`, so the path is
             # auth.claims.sub (the extension README's `subject` example fits
@@ -81,18 +81,18 @@ processors:
             # pushes carry no auth context: the upsert lands an empty
             # attribute, so those producers stay unattributed (enduser.id=""),
             # by design. Service-account pushes carry the client's UUID `sub`
-            # here; transform/identity (below) clears it (CIA-09, DD-107).
+            # here; transform/identity (below) clears it (CIA-09, DD-196).
             - action: upsert
               key: enduser.id
               from_context: auth.claims.sub
-            # CIA-09 (DD-107): the verified token's azp (authorized party) is
+            # CIA-09 (DD-196): the verified token's azp (authorized party) is
             # the minting client — per-service identity on the per-service
             # leg (otel-postgres, …), `aurelius` on the browser leg. Empty on
-            # the legacy leg (no OIDC context, the DD-105 empty-upsert rule).
+            # the legacy leg (no OIDC context, the DD-194 empty-upsert rule).
             - action: upsert
               key: otel.ingest.client
               from_context: auth.claims.azp
-    # CIA-09 (DD-107): a service-account push must not wear a user identity.
+    # CIA-09 (DD-196): a service-account push must not wear a user identity.
     # The service-account sub is a client UUID, not a person — on pushes from
     # an otel-* client, clear the enduser.id the sub-upsert above stamped, so
     # human and machine identity stay distinguishable (enduser.id=<sub> +
@@ -111,14 +111,14 @@ processors:
             - context: resource
               statements:
                   - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
-    # The metrics leg of CIA-05 (DD-105): the prometheus exporter keeps only
+    # The metrics leg of CIA-05 (DD-194): the prometheus exporter keeps only
     # a few resource attributes as labels (service.name -> exported_job) and
     # drops the rest, so the stamped enduser.id would never reach Prometheus.
     # Promote it onto every datapoint, where the exporter turns it into the
     # enduser_id label — panels can group by user. Service-leg metrics carry
-    # the empty enduser.id (DD-107: cleared by transform/identity, stamped
+    # the empty enduser.id (DD-196: cleared by transform/identity, stamped
     # with otel.ingest.client), so producer series get one constant
-    # enduser_id="" label — no cardinality growth. DD-107 extends the
+    # enduser_id="" label — no cardinality growth. DD-196 extends the
     # promotion: otel.ingest.client rides the same hop (label
     # otel_ingest_client) — where per-service attribution becomes queryable.
     transform/user_labels:
@@ -137,7 +137,7 @@ exporters:
         endpoint: http://tempo:4318
     prometheus:
         endpoint: 0.0.0.0:9464
-        # OTel SDKs like logfire aggregate histograms exponentially; the
+        # OTel SDKs aggregate histograms exponentially; the
         # classic text format would flatten them to a lone +Inf bucket
         # (histogram_quantile then always NaN). Emit them as Prometheus
         # native histograms so p95 panels work for every producer.
@@ -152,7 +152,7 @@ extensions:
     bearertokenauth:
         tokens:
             - ${env:OTEL_COLLECTOR_INGEST_TOKEN}
-    # Ingest validator (DD-103, browser leg; DD-107, per-service leg): verifies
+    # Ingest validator (DD-193, browser leg; DD-196, per-service leg): verifies
     # the presented token against the issuer's JWKS and requires the
     # otel-collector audience the realm's otel-ingest scope mints. The
     # `providers` shape is the extension's current schema (the flat
@@ -161,7 +161,7 @@ extensions:
     # — this is one realm with one signing key served on two URLs (ADR 039's
     # dual listener), not two trust domains.
     #
-    # Why both (DD-113): the `iss` a token carries is the listener that minted
+    # Why both (DD-202): the `iss` a token carries is the listener that minted
     # it, and the listener is baked into each producer's container env at
     # creation, so any producer/collector issuer mix that is not all-:8080 or
     # all-:8443 401s the leg and silently drops telemetry (the ESD-06

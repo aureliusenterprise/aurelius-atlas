@@ -1,9 +1,11 @@
 [project]
 dependencies = [
     "aurelius-atlas-auth",
+    "aurelius-atlas-data2model-client",
     "aurelius-atlas-otel",
-    "fastapi>=0.141.1",
-    "logfire[fastapi]>=5.2.0",
+    "fastapi>=0.162.0",
+    "opentelemetry-instrumentation-fastapi>=0.65b0",
+    "opentelemetry-instrumentation-httpx>=0.65b0",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.15.0",
     "uvicorn[standard]>=0.54.0",
@@ -25,6 +27,9 @@ asyncio_mode = "auto"
 required_plugins = ["pytest-asyncio"]
 
 [tool.uv.sources.aurelius-atlas-auth]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-data2model-client]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-otel]

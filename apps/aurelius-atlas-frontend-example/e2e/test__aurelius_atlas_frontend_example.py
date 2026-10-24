@@ -67,7 +67,7 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, base_url: str, user_t
     An OTLP/HTTP POST to the collector answers at /v1/traces with a
     protobuf-level status; if the proxy did not forward, nginx would answer
     502 (unresolvable upstream) or 404 (no location). The collector's browser
-    leg demands the signed-in user's token (DD-103, CIA-02) and the proxy
+    leg demands the signed-in user's token (DD-193, CIA-02) and the proxy
     passes the Authorization header through untouched — reaching the
     collector (any of those statuses, never 401) proves the passthrough.
     """
@@ -83,7 +83,7 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, base_url: str, user_t
 def test__otel_proxy_passes_authorization_through(page: Page, base_url: str) -> None:
     """The /otel/ proxy injects nothing: a token-less push is the collector's 401 (CIA-01, CIA-02).
 
-    The browser leg authenticates the user (DD-103), so a push without a
+    The browser leg authenticates the user (DD-193), so a push without a
     bearer rides the proxy all the way to the OIDC receiver and comes back
     401 — the proxy is a pipe, not a credential. (The signed-in SPA attaches
     the user token itself, app.config.ts.)

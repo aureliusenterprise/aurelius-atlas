@@ -72,7 +72,7 @@ def test__locale_routes_fall_back_to_localized_app(page: Page, root_url: str, lo
     assert response.status == 200
     assert "text/html" in response.headers["content-type"]
     # The base tag's void-element serialisation is `>` (beasties) or `/>`
-    # (Angular raw, DD-060) — accept both.
+    # (Angular raw, DD-149) — accept both.
     assert re.search(rf'<base href="/{locale}/"\s*/?>', body)
     assert f'lang="{locale}"' in body
 
@@ -121,9 +121,9 @@ def test__unknown_path_falls_back_to_the_app(authenticated: Page, base_url: str)
 
 
 def test__api_proxy_forwards_to_the_atlas_server(page: Page, root_url: str) -> None:
-    """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-050).
+    """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-139).
 
-    The real Aurelius server (DD-053) answers the admin version endpoint
+    The real Aurelius server (DD-142) answers the admin version endpoint
     through nginx -> TLS -> server -> Elasticsearch, so the response proves
     the whole data path and that no proxy rewrites the /api prefix the client
     composes into its URLs.
@@ -154,7 +154,7 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_t
     An OTLP/HTTP POST to the collector answers at /v1/traces with a
     protobuf-level status; if the proxy did not forward, nginx would answer
     502 (unresolvable upstream) or 404 (no location). The collector's browser
-    leg demands the signed-in user's token (DD-103) and the proxy passes the
+    leg demands the signed-in user's token (DD-193) and the proxy passes the
     Authorization header through untouched — reaching the collector (any of
     those statuses, never 401) proves the passthrough.
     """
@@ -170,7 +170,7 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_t
 def test__otel_proxy_passes_authorization_through(page: Page, root_url: str) -> None:
     """The /otel/ proxy injects nothing: a token-less push is the collector's 401 (CIA-01, CIA-02).
 
-    The browser leg authenticates the user (DD-103), so a push without a
+    The browser leg authenticates the user (DD-193), so a push without a
     bearer rides the proxy all the way to the OIDC receiver and comes back
     401 — the proxy is a pipe, not a credential. (The signed-in SPA attaches
     the user token itself, app.config.ts.)
@@ -218,7 +218,7 @@ def test__collector_accepts_a_user_token_on_the_browser_leg(page: Page, user_tok
 
 
 def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: str) -> None:
-    """A browser-leg push carries the token's `sub` onto the telemetry (CIA-05, DD-105).
+    """A browser-leg push carries the token's `sub` onto the telemetry (CIA-05, DD-194).
 
     The collector's OIDC receiver keeps the verified claims in the request
     context and the resource processor copies ``auth.claims.sub`` to the
@@ -295,7 +295,7 @@ def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: s
 def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, ingest_token: str) -> None:
     """The service credential does not open the browser leg (CIA-01).
 
-    The legs are distinct proofs (DD-103): the shared ingest token is not a
+    The legs are distinct proofs (DD-193): the shared ingest token is not a
     JWT the OIDC receiver can verify, so the push is 401 — attribution comes
     from user tokens only, and a leaked service secret cannot forge
     user-attributed telemetry.
@@ -312,7 +312,7 @@ def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, inge
 def test__collector_rejects_the_shared_token_on_the_service_leg(page: Page, ingest_token: str) -> None:
     """The shared token does not open the per-service leg (CIA-06, CIA-08).
 
-    The per-service leg (4319) is an OIDC receiver now (DD-107): the shared
+    The per-service leg (4319) is an OIDC receiver now (DD-196): the shared
     ingest token is not a JWT the extension can verify, so the push is 401 —
     the legs are credential-typed, and a leaked shared secret can no longer
     write anonymous telemetry.
@@ -343,7 +343,7 @@ def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: s
 
 
 def test__collector_accepts_the_dev_plaintext_issuer(page: Page, plaintext_service_token: str) -> None:
-    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-113).
+    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-202).
 
     Keycloak stamps iss from the listener that served the mint, so this
     token's iss is the dev plaintext listener — what the human dev browser
@@ -443,7 +443,7 @@ def test__collector_accepts_the_shared_ingest_token(page: Page, ingest_token: st
 
     The producers that cannot present a Keycloak JWT — Keycloak's native
     OTLP, the FastAPI example (static-header SDK, 60s tokens) — keep 7.17's
-    shared-token mechanism here (DD-107); an empty protobuf body answers 200
+    shared-token mechanism here (DD-196); an empty protobuf body answers 200
     once authenticated. (The 7.17 form of this test rode 4319, which is
     OIDC-only now — CIA-08 moves the shared token off it, proved by
     test__collector_rejects_the_shared_token_on_the_service_leg.)
@@ -513,7 +513,7 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
 
     The screen exists before its API does: the requests recorded across a
     reload of the landing must contain no /api call — the search affordances
-    that would need one are deferred (DD-054).
+    that would need one are deferred (DD-143).
     """
     api_requests: list[str] = []
     authenticated.on("request", lambda request: api_requests.append(request.url))
@@ -587,7 +587,7 @@ def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Pa
 
     panel.locator('a[hreflang="nl-NL"]').click()
 
-    # The drawer segment rides the URL through the locale reload (DD-078's
+    # The drawer segment rides the URL through the locale reload (DD-166's
     # URL-borne open state): match the locale tree prefix, not the tail.
     authenticated.wait_for_url(re.compile(r"/nl-NL/search/browse"))
     card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
@@ -650,7 +650,7 @@ def test__body_uses_the_legacy_type_and_ink(authenticated: Page) -> None:
 
 
 def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
-    """Every ink and weight the landing renders, measured against the demo (SHM-03, DD-062).
+    """Every ink and weight the landing renders, measured against the demo (SHM-03, DD-151).
 
     Bulma 1 re-tinted its greys and moved the weights (title 800, strong
     600, button 500); pinning the body alone left the ramp off the legacy
@@ -674,7 +674,7 @@ def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
     # The navbar chrome: links in the body ink, the dropdown items at
     # Bulma's 14px, buttons at weight 400. The locale <strong> the demo
     # measured (700/#4a4a4a) left the navbar with the language dropdown
-    # (7.14); its DD-062 pin — the legacy strong weight — is asserted on
+    # (7.14); its DD-151 pin — the legacy strong weight — is asserted on
     # the :root token the ramp rides.
     assert authenticated.locator(".navbar-link").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
     strong_weight = authenticated.evaluate(
@@ -713,7 +713,7 @@ def test__chrome_bands_carry_the_aurelius_palette(authenticated: Page) -> None:
 
 
 def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
-    """The Bulma accents render the demo's palette (SHM-04, DD-063).
+    """The Bulma accents render the demo's palette (SHM-04, DD-152).
 
     The legacy theme mapped its Bootstrap-style palette onto Bulma's
     accents — $blue to link, cyan/green/yellow/red to info/success/
@@ -754,7 +754,7 @@ def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
 
 
 def test__burger_menu_matches_the_legacy_mobile_chrome(authenticated: Page) -> None:
-    """The mobile burger menu renders the legacy chrome (SHM-04, DD-064).
+    """The mobile burger menu renders the legacy chrome (SHM-04, DD-153).
 
     Bulma 1 tints the burger from link (the Aurelius blue), leaves the
     burger menu's dropdowns as white plates on the grey band (its
@@ -833,7 +833,7 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
     """data-theme=light keeps the app light when the OS prefers dark (SHM-01).
 
     Bulma 1 follows ``prefers-color-scheme``; the legacy (Bulma 0.9.4) was
-    light-only, so the document root pins the light scheme (DD-059).
+    light-only, so the document root pins the light scheme (DD-148).
     """
     context = browser.new_context(color_scheme="dark", ignore_https_errors=True)
     page = context.new_page()
@@ -850,7 +850,7 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
         band = page.locator(".is-tall-container")
         footer = page.locator("footer.footer")
 
-        # The band is the scheme-following surface (DD-079, `.has-background`):
+        # The band is the scheme-following surface (DD-167, `.has-background`):
         # under the light pin it is Bulma 1's light scheme-bis — the legacy
         # #f5f5f5 band is the navbar's (SHM-04), the content band follows the
         # scheme (rgb(243, 244, 246) = hsl(221, 14%, 96%)).
@@ -871,7 +871,7 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
 def test__details_skeleton_renders_at_the_deep_link(authenticated: Page, root_url: str) -> None:
     """A direct visit to /search/details/<guid> renders the skeleton, localized (DET-07, DET-01).
 
-    The URL is the screen's whole state (DD-096): the skeleton renders at
+    The URL is the screen's whole state (DD-186): the skeleton renders at
     the deep link with no entity behind it — server 2.3 is planned — and
     the chrome strings ride the bridge in both locales (DET-04).
     """

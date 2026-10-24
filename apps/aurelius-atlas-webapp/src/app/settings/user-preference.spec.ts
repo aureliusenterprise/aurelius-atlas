@@ -1,9 +1,9 @@
 /**
- * The persistence seam (SPL-09, DD-072): `UserPreference` is the only code
+ * The persistence seam (SPL-09, DD-160): `UserPreference` is the only code
  * touching localStorage, and it reads and writes its key with the
  * validation each owner supplies. Corruption and a denied storage
  * (private mode) fall back to the initial value — the settings never
- * brick the app (DD-073: a UX convenience, not a data store).
+ * brick the app (DD-161: a UX convenience, not a data store).
  */
 import {
     PAGE_SIZE_KEY,
@@ -19,7 +19,7 @@ describe("user-preference (SPL-09)", () => {
     beforeEach(() => localStorage.clear());
     afterEach(() => localStorage.clear());
 
-    it("names the browser-scoped keys the spec pins (SPL-09, DD-073)", () => {
+    it("names the browser-scoped keys the spec pins (SPL-09, DD-161)", () => {
         // The theme keeps DarkModeService's existing key; the rest share the
         // aurelius-atlas.settings. prefix. Keys carry no user identity.
         expect(THEME_KEY).toBe("data-theme");

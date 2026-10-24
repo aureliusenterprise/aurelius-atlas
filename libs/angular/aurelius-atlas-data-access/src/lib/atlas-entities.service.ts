@@ -10,12 +10,12 @@ import type { AtlasEntityWithExtInfo } from "./atlas-entity";
  * is typed from the Apache Atlas 2.4.0 source (see `atlas-entity.ts`); the
  * endpoint itself is increment 2.3's surface — against today's server (admin
  * and types only) the call answers 404, and the specs assert the request,
- * not a 200 (DD-051's honesty rule, DD-097).
+ * not a 200 (DD-140's honesty rule, DD-187).
  *
  * Every URL composes from the injected {@link API_BASE_URL} with the
- * `/atlas` prefix intact (APC-01, DD-050) — the server API is the webapp's
- * one data plane (ADR 054, DD-098). No screen calls this service until the
- * 2.3+7.6 wiring increment (DET-02, DD-096).
+ * `/atlas` prefix intact (APC-01, DD-139) — the server API is the webapp's
+ * one data plane (ADR 054, DD-188). No screen calls this service until the
+ * 2.3+7.6 wiring increment (DET-02, DD-186).
  */
 @Injectable({
     providedIn: "root",

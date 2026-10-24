@@ -76,7 +76,7 @@ describe("DetailsNavigation", () => {
         expect(document.activeElement).not.toBe(button());
     });
 
-    it("localises the label from the caller (UIC-20, DD-047)", () => {
+    it("localises the label from the caller (UIC-20, DD-136)", () => {
         host.label.set("Onderdelen");
         host.toggleLabel.set("navigatie");
         fixture.detectChanges();

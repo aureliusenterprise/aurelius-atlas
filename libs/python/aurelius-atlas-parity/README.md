@@ -41,7 +41,9 @@ stages:
 - **The body is compared exactly**: the same keys, arrays in order, `null` is not "absent", `true` is
   not `1`. Only `volatile` paths skip a value (the field must still be there).
 - **`save`** keeps a value for later stages; `"{guid}"` takes it with its JSON type, `/x/{guid}` writes
-  it into the text, `{{` and `}}` are literal braces.
+  it into the text, also into an object key, `{{` and `}}` are literal braces.
+- **`{run}`** is saved before the first stage: a value unique to each run, for names a scenario creates in a
+  store that keeps them (DD-055).
 - **`deviations`** turn the Atlas expectation into the Aurelius answer, each with its id from
   [Deviations](../../../docs/architecture/conversion/deviations.md).
 - **Paths** are the JSONPath subset `$`, `.name`, `['name']`, `[n]` and `[*]`. Quote them in YAML
@@ -55,7 +57,7 @@ decides whether the requests go to the application in-process or to a running se
 ```python
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
 
@@ -66,5 +68,5 @@ async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
 ```
 
 Each scenario is one test, named by its path below the directory. Its `rules` and `covers` become a
-`covers` marker, and the plugin records its endpoints and deviations, so the traceability check and the
-test report of [aurelius-atlas-trace](../aurelius-atlas-trace/README.md) see it.
+`covers` marker, and the plugin records its endpoints and deviations, so the check and the
+test report of [aurelius-atlas-trace](../aurelius-atlas-trace/README.md) see them when run locally.

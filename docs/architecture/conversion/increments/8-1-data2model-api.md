@@ -6,7 +6,7 @@
 | Author     | Aurelius Atlas maintainers                                                                                                                                   |
 | Date       | 2026-10-23                                                                                                                                                   |
 | ADRs       | 055 (auxiliary APIs are a named data surface), 051 (increments), 049 (traceability), 052 (parity cites the reference; here the reference is Aurelius source) |
-| Design log | DD-108 (foundation), DD-109 (no pandas: pydantic rules, plain rows), DD-043 (audience-scoped roles), DV-15 (native layout)                                   |
+| Design log | DD-197 (foundation), DD-209 (provider/route layout), DD-198 (no pandas: pydantic rules, plain rows), DD-132 (audience-scoped roles), DV-68 (native layout)   |
 
 ## Objective
 
@@ -19,10 +19,10 @@ per-record metadata. The legacy chain is `lineage_model → data2model /extract`
 (8.2 ports the caller).
 
 The legacy implementation is a Flask app on `m4i-analytics` (pandas, graphviz,
-bokeh). Per DV-15 the analytics library is **not** ported: the ar3 JSON is
+bokeh). Per DV-68 the analytics library is **not** ported: the ar3 JSON is
 built natively, and the `archimate_process` graphviz layout is replaced by a
 deterministic native left-to-right layout — coordinates only need to be
-numbers to the parser (DV-15). The port adds **no pandas** (DD-109): the
+numbers to the parser (DV-68). The port adds **no pandas** (DD-198): the
 request rules are pydantic models, the tabular data stays a plain list of row
 maps, and the extraction is plain Python — the legacy's pandas DataFrame was
 its representation, not part of the browser contract. The **browser contract**
@@ -38,7 +38,7 @@ source, container and e2e (Keycloak-protected, real tokens).
 Out of scope: the caller (`lineage_model`, 8.2), the webapp lineage screen
 (7.x webapp track), the legacy `/parse_dataset` endpoint (file upload to
 pandas — its only caller is the legacy model-editor app, not the lineage
-chain; not ported), the `m4i-analytics` library (DV-15).
+chain; not ported), the `m4i-analytics` library (DV-68).
 
 ## Contracts and Rules
 
@@ -59,11 +59,11 @@ and `m4i-analytics-extensions/m4i-graphviz-layouts` (layout names).
 | DTM-05 | Model-wide, nodes and edges are deduplicated by `id` keeping the **last** occurrence, at the kept row's position, across all rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `data2model.py` `drop_duplicates(subset=['id'], keep='last')`                                                                                             | `test__duplicate_ids_keep_the_last_row`                                                                                                | —                                                                                                                            |
 | DTM-06 | A view whose `view_layout` is a known layout (`archimate_process` → left-to-right, `archimate_hierarchical` → bottom-to-top) is generated; a view with an unknown layout is ignored — no view, no metadata; `id_type: "static"` produces one view ided by `id_value`, named by `view_name_value`                                                                                                                                                                                                                                                                                                                                                                 | `data2model.py` `supported_layouts` filter; `parse_view` static branch                                                                                    | `test__a_view_with_an_unknown_layout_is_ignored_entirely` `test__a_static_view_takes_its_id_and_name_from_the_rule`                    | —                                                                                                                            |
 | DTM-07 | A view's nodes are the ids collected from its `view_nodes` rules (each rule scans its `id_key` column: non-null, first per id, in rule order), intersected with the model nodes in model order; empty `view_edges` means every model edge between the view's nodes, in model order                                                                                                                                                                                                                                                                                                                                                                               | `parse_view` view_nodes/view_edges scan; `generate_view` `isin` filters                                                                                   | `test__view_nodes_are_collected_by_rule_and_intersected_with_the_model`                                                                | —                                                                                                                            |
-| DTM-08 | Node coordinates come from a deterministic native layout (DV-15): ranks by longest path from edge sources, left-to-right `x = rank * 320`, `y` stacked by `95` and centred per rank, rounded to integers; every view node is `w = 120`, `h = 55`                                                                                                                                                                                                                                                                                                                                                                                                                 | `ArchimateProcessLayout.get_coordinates` (graphviz `rankdir=LR`), `generate_view` `node_width/node_height`                                                | `test__the_layout_is_left_to_right_by_dependency_rank`                                                                                 | DV-15: positions are the native layering, not graphviz's; the parser contract (numeric coordinates) holds                    |
+| DTM-08 | Node coordinates come from a deterministic native layout (DV-68): ranks by longest path from edge sources, left-to-right `x = rank * 320`, `y` stacked by `95` and centred per rank, rounded to integers; every view node is `w = 120`, `h = 55`                                                                                                                                                                                                                                                                                                                                                                                                                 | `ArchimateProcessLayout.get_coordinates` (graphviz `rankdir=LR`), `generate_view` `node_width/node_height`                                                | `test__the_layout_is_left_to_right_by_dependency_rank`                                                                                 | DV-68: positions are the native layering, not graphviz's; the parser contract (numeric coordinates) holds                    |
 | DTM-09 | The ar3 string is `{"ar3_model": {...}}` with `@identifier` = the model name, `ar3_name`, `ar3_elements.ar3_element[]` (`@identifier`, `@xsi_type`, `ar3_name[{@xml_lang:"en",value}]`), `ar3_relationships.ar3_relationship[]` (+ `@source`/`@target`), `ar3_views.ar3_diagrams.ar3_view[]` (`@xsi_type: "ar3_Diagram"`, `ar3_node[]` with `@identifier: "<view>-<node id>--<i>"`, `@x/@y/@w/@h`, `@elementRef`, `@xsi_type: "ar3_Element"`, `ar3_connection[]` with `@source/@target` = view-node ids, `@relationshipRef`, `@xsi_type: "ar3_Relationship"`), and `ar3_organizations` folders `Other` / `Relations` / `Views` (node folder = layer capitalised) | `ArchimateUtils.to_JSON` (`format_element`, `format_relationship`, `format_view`, `format_organizations`), `generate_view` (`format_node`, `format_edge`) | `test__the_model_string_follows_the_ar3_shape` `test__organizations_group_nodes_relations_and_views`                                   | —                                                                                                                            |
 | DTM-10 | Every endpoint requires a valid Keycloak bearer token (`aurelius-atlas-auth`, AUX-05); `/extract` is read-only, so no write role is required; a missing or invalid token is `401`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | legacy `@requires_auth` (decorator commented out in dev, present in the deployed service)                                                                 | `test__a_missing_token_is_rejected` `test__a_token_minted_for_another_audience_is_rejected`                                            | —                                                                                                                            |
 | DTM-11 | A body that is not a JSON object, a body whose rules fail validation (unknown `concept_type` / `relationship_type`, a missing required key, a dangling rule reference), is answered `400` with an Atlas-shaped error body; an empty body behaves as `{data: [], rules: {}}` — metadata `[]` and the empty model skeleton                                                                                                                                                                                                                                                                                                                                         | legacy raises `ValueError`/`KeyError` (500)                                                                                                               | `test__a_malformed_body_is_rejected` `test__an_unknown_concept_type_is_rejected` `test__an_empty_body_yields_the_empty_model_skeleton` | The legacy answered 500 on malformed input; a 400 is the stated contract                                                     |
-| DTM-12 | The request's `rules` parse as pydantic rule models (elements, relations, views); the tabular `data` stays a plain list of row maps — the port adds no pandas (DD-109)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | legacy `DataFrame(data)` and the `m4i-analytics` Definition adapters (representation only)                                                                | `test__rules_are_pydantic_models`                                                                                                      | —                                                                                                                            |
+| DTM-12 | The request's `rules` parse as pydantic rule models (elements, relations, views); the tabular `data` stays a plain list of row maps — the port adds no pandas (DD-198)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | legacy `DataFrame(data)` and the `m4i-analytics` Definition adapters (representation only)                                                                | `test__rules_are_pydantic_models`                                                                                                      | —                                                                                                                            |
 
 ### Reference types
 
@@ -92,25 +92,27 @@ as data, not as the enum machinery.
 
 ## Deviations (recorded in `deviations.md`)
 
-- **DV-15** (design-level, recorded in 8.0): the ar3 model is built natively,
+- **DV-68** (design-level, recorded in 8.0): the ar3 model is built natively,
   not by `m4i-analytics`; coordinates are the deterministic LR layering, not
-  graphviz positions. The port is pandas-free (DD-109) — the ar3 string's
+  graphviz positions. The port is pandas-free (DD-198) — the ar3 string's
   shape and the `{model, metadata}` body are unchanged.
-- **DV-17**: a null element name yields `''`, not the legacy `'nan'` string
+- **DV-70**: a null element name yields `''`, not the legacy `'nan'` string
   (DTM-02).
-- **DV-18**: malformed input is `400`, not the legacy `500` (DTM-11).
-- **DV-19**: the answer's content type is `application/json`, not Flask's
+- **DV-79**: malformed input is `400`, not the legacy `500` (DTM-11).
+- **DV-71**: the answer's content type is `application/json`, not Flask's
   `text/html` (DTM-01).
 
 ## Test list
 
 - Unit: `apps/aurelius-atlas-data2model/tests/test__extract.py` (the DTM
-  rules), `test__app.py` (settings/liveness wiring).
+  rules), `test__aurelius_atlas_data2model_app.py` (settings/liveness wiring),
+  `test__…_providers_auth.py`/`test__…_providers_telemetry.py`/`test__…_routes.py`
+  (the DD-209 providers and route factories, on the fake issuer).
 - Scenario (parity, read from Aurelius source — ADR 052 applied to the
   Aurelius reference): `scenarios/lineage/extract.scenario.yaml` — the 8.2
   caller's fixed rules with a two-relation lineage payload, the expected
   `{model, metadata}` body read from the legacy chain's shape (coordinates
-  masked volatile, the native layout carried as DV-15).
+  masked volatile, the native layout carried as DV-68).
 - E2E: `e2e/` — real container, Keycloak-minted token; 401 unauthenticated,
   200 with the lineage rules; collector leg exercised by the e2e stack.
 

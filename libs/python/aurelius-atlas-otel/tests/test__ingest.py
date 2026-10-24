@@ -1,4 +1,4 @@
-"""Unit tests for the OTLP ingest credential shim (7.18, DD-107, CIA-07)."""
+"""Unit tests for the OTLP ingest credential shim (7.18, DD-196, CIA-07)."""
 
 from __future__ import annotations
 
@@ -27,6 +27,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 if TYPE_CHECKING:
     from urllib.request import Request
+
+    from opentelemetry.exporter.http.transport._requests import RequestsHTTPTransport
 
 TOKEN_URL = "http://keycloak.localhost:8080/realms/master/protocol/openid-connect/token"  # noqa: S105  # a URL constant, not a secret (S105 fires on the _URL name)
 
@@ -190,5 +192,8 @@ def test__build_otlp_pipeline_wires_the_ingest_session_into_both_exporters(monke
     metric_exporter = cast("OTLPMetricExporter", reader._exporter)  # noqa: SLF001  # the wiring seam under test
     assert span_exporter._endpoint == "https://otel-collector:4319/v1/traces"  # noqa: SLF001  # the wiring seam under test
     assert metric_exporter._endpoint == "https://otel-collector:4319/v1/metrics"  # noqa: SLF001
-    assert isinstance(span_exporter._session, _IngestSession)  # noqa: SLF001
-    assert metric_exporter._session is span_exporter._session  # noqa: SLF001  # one session, one token source
+    # OTel 1.45 moved the session from the exporter onto its transport (DD-178).
+    span_session = cast("RequestsHTTPTransport", span_exporter._client._transport)._session  # noqa: SLF001
+    metric_session = cast("RequestsHTTPTransport", metric_exporter._client._transport)._session  # noqa: SLF001
+    assert isinstance(span_session, _IngestSession)
+    assert metric_session is span_session  # one session, one token source

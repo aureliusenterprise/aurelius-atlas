@@ -7,6 +7,8 @@ services:
             # ${VAR:?} guards: Nx injects the project .env into the task environment; a missing value
             # would otherwise only show as a settings error inside the started container.
             AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            # The scenarios check what propagation produces, so it happens in the request (DD-081).
+            AURELIUS_ATLAS_SERVER_TASKS_ENABLED: "false"
             # The dev store, reached on its network by its service name (in its certificate).
             AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
             AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
@@ -15,12 +17,12 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
-            # OTLP ingest identity (7.18, DD-107): the server exports through
-            # its own pipeline (otel_ingest.py), minting client-credentials
+            # OTLP ingest identity (7.18, DD-196): the server exports through
+            # its own pipeline (aurelius-atlas-otel), minting client-credentials
             # JWTs as otel-atlas-server for the per-service leg — the OIDC
             # receiver on :4319 answers the shared token 401 (CIA-08), so the
             # 7.17 static OTEL_EXPORTER_* pair is gone. The mint rides the TLS
-            # :8443 listener (DD-113): every per-service producer mints there,
+            # :8443 listener (DD-202): every per-service producer mints there,
             # the collector validates both listeners, so no suite order can
             # split mint issuer from validator. Nx injects the project .env, a
             # missing secret fails the start.

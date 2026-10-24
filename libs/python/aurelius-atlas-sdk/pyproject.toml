@@ -1,5 +1,5 @@
 [project]
-dependencies = ["httpx>=0.28.1"]
+dependencies = ["httpx2>=2.0.0"]
 description = "This library provides common utilities for Aurelius projects."
 name = "aurelius-atlas-sdk"
 requires-python = ">=3.14"
@@ -7,15 +7,15 @@ version = "0.6.1"
 
 [project.optional-dependencies]
 # Floor only; no ceiling so consumers can track current boto3.
-aws = ["boto3>=1.43.113", "types-boto3[full]>=1.43.113"]
+aws = ["boto3>=1.43.116", "types-boto3[full]>=1.43.116"]
 azure = ["msal>=1.39.0"]
 full = [
-    "boto3>=1.43.113",
+    "boto3>=1.43.116",
     "coloredlogs>=15.0.1",
     "msal>=1.39.0",
     "psycopg[binary]>=3.3.6",
     "testcontainers>=4.15.0",
-    "types-boto3[full]>=1.43.113",
+    "types-boto3[full]>=1.43.116",
     "trustme>=1.1",
 ]
 logging = ["coloredlogs>=15.0.1"]

@@ -5,13 +5,13 @@ import { TypeName } from "../type-name/type-name.component";
 
 /**
  * The Bulma card behind every Aurelius details screen (`models4insight-details-card`),
- * ported as a pure shell (DD-066): the legacy card pulled the entity from a
+ * ported as a pure shell (DD-154): the legacy card pulled the entity from a
  * details service, chose a per-type body via `cardsByType`/`ngComponentOutlet`,
  * and navigated on a title click. Here the title, badge, body and quality
  * column are inputs and content projection, and a title click emits
  * `entityClicked` — routing is the app's (7.6).
  *
- * The type-name badge is the `type-name` component (DD-100 — 7.13's
+ * The type-name badge is the `type-name` component (DD-190 — 7.13's
  * inlining reversed): the card passes its badge inputs through, and
  * UIC-12's rendered output is the extraction's regression proof.
  */
@@ -100,7 +100,7 @@ export class EntityCard {
     });
 
     /**
-     * Emits the guid when the title is activated. The app routes; the lib does not (DD-066).
+     * Emits the guid when the title is activated. The app routes; the lib does not (DD-154).
      */
     readonly entityClicked = output<string>();
 

@@ -11,7 +11,7 @@ import { Routes } from "@angular/router";
  * 7.6 adds the details skeleton (DET-01): `details/:guid`, the Aurelius
  * `details` module's `:id` child, deep-linkable and empty-state — the URL
  * is the screen's whole state until the 2.3 wiring increment feeds it
- * (DD-096).
+ * (DD-186).
  */
 export const SEARCH_ROUTES: Routes = [
     { path: "", redirectTo: "browse", pathMatch: "full" },

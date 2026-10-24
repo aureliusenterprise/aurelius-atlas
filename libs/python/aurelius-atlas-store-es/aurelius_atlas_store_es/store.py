@@ -6,6 +6,7 @@ from elasticsearch import ApiError, AsyncElasticsearch, TransportError
 
 from .errors import StoreUnavailableError, UnsupportedVersionError
 from .health import HealthReport, HealthStatus, check_health
+from .serializer import serializers
 from .settings import StoreSettings
 
 LOGGER = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ class ElasticsearchStore:
             ca_certs=str(self._settings.ca_certs_path),
             verify_certs=True,
             request_timeout=self._settings.request_timeout,
+            serializers=serializers(),
         )
 
         try:

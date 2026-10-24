@@ -4,9 +4,9 @@ services:
     otel-collector:
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
-        # The OIDC extension discovers JWKS at extension start (DD-103): the
+        # The OIDC extension discovers JWKS at extension start (DD-193): the
         # collector exits 1 while Keycloak is still booting, and the boot
-        # order makes that window structural (DD-106) — keycloak (and the
+        # order makes that window structural (DD-195) — keycloak (and the
         # other slice composes) attach this stack's network as external, so
         # Nx's implicitDependencies/^up chain and the e2e conftest fixtures
         # all start observability FIRST. The restart window carries the
@@ -27,7 +27,7 @@ services:
             # nx decrypt) for the interpolation; a missing value fails the
             # start loudly rather than booting an open-ingest collector.
             OTEL_COLLECTOR_INGEST_TOKEN: ${OTEL_COLLECTOR_INGEST_TOKEN:?}
-            # (DD-113) The OIDC validator's issuers are fixed in
+            # (DD-202) The OIDC validator's issuers are fixed in
             # config/otel-collector.yaml — both dev Keycloak listeners, the
             # TLS one CA-pinned — so there is no issuer env to inject here:
             # no suite can flip the collector into a world its producers'
@@ -44,7 +44,7 @@ services:
             # never for the network. Producers inside compose stacks reach the
             # collector over service DNS, not these ports. 4318 is the browser
             # leg (OIDC), 4317/4319 the per-service leg (gRPC/HTTP, client
-            # JWTs, DD-107), 4320/4321 the legacy leg (gRPC/HTTP, shared
+            # JWTs, DD-196), 4320/4321 the legacy leg (gRPC/HTTP, shared
             # token — Keycloak-native, the FastAPI example). The prometheus
             # exporter (:9464) is scraped by Prometheus inside this network
             # and needs no publish at all.
@@ -58,7 +58,7 @@ services:
             - ./certs:/certs:ro
             # The shared dev CA (every project's mkcert CA is the same root):
             # the OIDC extension pins it as issuer_ca_path when discovering
-            # JWKS from the Keycloak TLS :8443 listener (DD-113). Path is
+            # JWKS from the Keycloak TLS :8443 listener (DD-202). Path is
             # fixed so the collector config refers to it without env.
             - ../../apps/aurelius-atlas-webapp/certs:/dev-ca:ro
 

@@ -1,0 +1,34 @@
+{
+  "baseEntityGuid": "00000000-0000-4000-8000-000000000001",
+  "lineageDepth": 3,
+  "lineageDirection": "BOTH",
+  "guidEntityMap": {
+    "00000000-0000-4000-8000-000000000001": {
+      "guid": "00000000-0000-4000-8000-000000000001",
+      "typeName": "kafka_topic",
+      "displayText": "Ingest Topic"
+    },
+    "00000000-0000-4000-8000-000000000002": {
+      "guid": "00000000-0000-4000-8000-000000000002",
+      "typeName": "m4i_generic_process",
+      "displayText": "Load Job"
+    },
+    "00000000-0000-4000-8000-000000000003": {
+      "guid": "00000000-0000-4000-8000-000000000003",
+      "typeName": "hive_table",
+      "displayText": "Sales Table"
+    }
+  },
+  "relations": [
+    {
+      "fromEntityId": "00000000-0000-4000-8000-000000000001",
+      "relationshipId": "rel-1",
+      "toEntityId": "00000000-0000-4000-8000-000000000002"
+    },
+    {
+      "fromEntityId": "00000000-0000-4000-8000-000000000002",
+      "relationshipId": "rel-2",
+      "toEntityId": "00000000-0000-4000-8000-000000000003"
+    }
+  ]
+}

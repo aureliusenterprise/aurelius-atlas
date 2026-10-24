@@ -1,4 +1,4 @@
-"""The app's settings, read once at start-up from the environment (VE-05, DD-108)."""
+"""The app's settings, read once at start-up from the environment (VE-05, DD-197)."""
 
 from pathlib import Path
 from typing import Literal, Self
@@ -13,7 +13,7 @@ DEFAULT_PORT = 21003
 """The app's port: the third auxiliary API, above lineage-model's 21002."""
 
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
-"""Levels both logfire and uvicorn know."""
+"""Levels both uvicorn and the OTel console accept."""
 
 TLS_PAIR_ERROR = (
     f"{ENV_PREFIX}TLS_CERT_FILE and {ENV_PREFIX}TLS_KEY_FILE must both be set, or both be unset, to configure TLS"
@@ -23,9 +23,9 @@ TLS_PAIR_ERROR = (
 class ValidateEntitySettings(BaseSettings):
     """How the app runs, who issues its tokens, and where its telemetry goes.
 
-    The mock has no upstreams (VE-01, DV-14): the settings set is the same
+    The mock has no upstreams (VE-01, DV-67): the settings set is the same
     shape as the other auxiliary apps minus the proxy targets, so the dev
-    deployment and the container image stay uniform (DD-112).
+    deployment and the container image stay uniform (DD-201).
     """
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra="ignore")
@@ -59,18 +59,18 @@ class ValidateEntitySettings(BaseSettings):
     """PEM CA verifying the issuer's TLS; unset uses the system trust store."""
 
     otel_token_url: HttpUrl | None = None
-    """The issuer's token endpoint for the OTLP ingest credential (DD-107, DD-108): with
+    """The issuer's token endpoint for the OTLP ingest credential (DD-196, DD-197): with
     ``otel_client_secret`` set, the app exports OTLP through its own pipeline; unset, it
     exports no OTLP (console only)."""
 
     otel_client_id: str = "otel-validate-entity"
-    """The ingest realm client the app mints for (DD-108)."""
+    """The ingest realm client the app mints for (DD-197)."""
 
     otel_client_secret: SecretStr | None = None
     """The secret of ``otel_client_id``; never shown in logs."""
 
     otel_endpoint: str = "https://localhost:4319"
-    """The collector's per-service-leg HTTP base for the OTLP export (DD-107)."""
+    """The collector's per-service-leg HTTP base for the OTLP export (DD-196)."""
 
     otel_ca_file: FilePath | None = None
     """PEM CA verifying the collector's TLS for the OTLP export; unset uses the system trust store."""

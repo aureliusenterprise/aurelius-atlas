@@ -2,7 +2,7 @@ import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server.settings import ENV_PREFIX
@@ -13,7 +13,7 @@ from fastapi import FastAPI
 
 @pytest.fixture(autouse=True)
 def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Start every test from a clean environment (DD-110).
+    """Start every test from a clean environment (DD-199).
 
     ``nx test`` injects the project's ``.env`` into the task's environment, and
     pydantic-settings reads it: the dev values — TLS material and the
@@ -37,7 +37,10 @@ def ca_file(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def settings(ca_file: Path, tmp_path: Path) -> ServerSettings:
-    """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16)."""
+    """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16).
+
+    Propagation happens in the request (TSK-08), so responses show it at once; the task tests turn tasks on.
+    """
     return ServerSettings.model_validate(
         {
             "elasticsearch_hosts": ["https://localhost:9200"],
@@ -45,6 +48,7 @@ def settings(ca_file: Path, tmp_path: Path) -> ServerSettings:
             "elasticsearch_ca_certs": ca_file,
             "revision": "abc123",
             "models_dir": tmp_path / "no-models",
+            "tasks_enabled": False,
         }
     )
 

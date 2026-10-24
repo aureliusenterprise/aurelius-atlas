@@ -48,3 +48,20 @@ async def typedef_index(dev_store: ElasticsearchStore) -> AsyncGenerator[str]:
     alias = f"aurelius-atlas-typedefs-e2e-{uuid4().hex[:12]}"
     yield alias
     await dev_store.client.indices.delete(index=f"{alias}-000001", ignore_unavailable=True)
+
+
+@pytest.fixture
+async def entity_prefix(dev_store: ElasticsearchStore) -> AsyncGenerator[str]:
+    """An alias prefix of its own for one test's entity indices, deleted with them afterwards."""
+    prefix = f"aurelius-atlas-e2e-{uuid4().hex[:12]}"
+    yield prefix
+    for name in (
+        "entities",
+        "unique-values",
+        "entity-journal",
+        "relationships",
+        "classifications",
+        "tasks",
+        "entity-audits",
+    ):
+        await dev_store.client.indices.delete(index=f"{prefix}-{name}-000001", ignore_unavailable=True)

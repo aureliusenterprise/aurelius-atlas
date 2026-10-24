@@ -6,9 +6,10 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import dotenv
-import httpx
+import httpx2 as httpx
 import pytest
 import pytest_asyncio
+from aurelius_atlas_validate_entity_client import ValidateEntityClient
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from testcontainers.compose import DockerCompose
@@ -30,7 +31,10 @@ class Settings(BaseSettings):
     """The public realm client the tokens are minted for (the webapp's client, the app's audience)."""
 
     username: str
+    """The dev user the tokens are minted for."""
+
     password: SecretStr
+    """The dev user's password; never shown in logs."""
 
     model_config = SettingsConfigDict(
         # Same prefix as the application's settings: the project .env Nx injects
@@ -74,7 +78,7 @@ def token(keycloak: DockerCompose, settings: Settings) -> str:
 
     The public `aurelius` client's password grant (import/master.json): the
     token carries azp `aurelius`, the audience the app accepts — the audience
-    of the webapp tokens the browser's editor sends (AUX-04, DV-24).
+    of the webapp tokens the browser's editor sends (AUX-04, DV-75).
     """
     port = keycloak.get_service_port("keycloak", 8443)
     deadline = time.monotonic() + MINT_TIMEOUT_SECONDS
@@ -136,3 +140,15 @@ async def anonymous_client(app_url: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running app over HTTPS, without a token (the 401 path)."""
     async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as client:
         yield client
+
+
+@pytest_asyncio.fixture(loop_scope="function")
+async def api(app_url: str, token: str) -> AsyncIterator[ValidateEntityClient]:
+    """The typed validate-entity client for the running app over HTTPS (CL-40).
+
+    The fixture builds the httpx pool (the dev CA, no auth header — the client
+    adds the bearer per call, CL-03) and closes it, the owner-closes rule of
+    CL-02; the minted realm token is the client's token source.
+    """
+    async with httpx.AsyncClient(base_url=app_url, verify=ssl.create_default_context(cafile=str(CA_FILE))) as http:
+        yield ValidateEntityClient(http, token)

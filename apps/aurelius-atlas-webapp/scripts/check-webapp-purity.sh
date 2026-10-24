@@ -8,7 +8,7 @@
 # state in a bare BehaviorSubject (signals are the state primitive).
 #
 # It greps the webapp *and* the Angular libraries the webapp builds from
-# source (DD-042, DD-048), so ported code cannot carry a construct the app
+# source (DD-131, DD-137), so ported code cannot carry a construct the app
 # itself is banned from.
 #
 # Patterns match *usage* (imports, decorators, directives, `new`), so prose in

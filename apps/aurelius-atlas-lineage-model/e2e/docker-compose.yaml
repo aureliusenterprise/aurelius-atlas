@@ -1,11 +1,11 @@
 name: aurelius-atlas-lineage-model-e2e
 
-# The 8.2 chain (DD-111): the app under test, the real 8.1 data2model, and a
+# The 8.2 chain (DD-200): the app under test, the real 8.1 data2model, and a
 # canned-file fixture Atlas. The fixture answers GET /v2/lineage/<guid> from
 # files under fixtures/ (python http.server maps the URL path to the file), so
 # the app's upstream calls run over real HTTP between containers; the graph
 # then flows through the real extraction. The 5.1 slice replaces the fixture
-# with the server (DV-16).
+# with the server (DV-69).
 services:
     fixture-atlas:
         image: dhi.io/python:3.14-alpine3.24
@@ -22,7 +22,7 @@ services:
                     "CMD",
                     "python3",
                     "-c",
-                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/v2/lineage/e-in', timeout=5).close()",
+                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/v2/lineage/00000000-0000-4000-8000-000000000001', timeout=5).close()",
                 ]
             interval: 5s
             timeout: 5s
@@ -47,12 +47,12 @@ services:
             # webapp's token (LM-04), whose audience is `aurelius` (AUX-04).
             AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
             AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
-            # OTLP ingest identity (DD-107, DD-108): as in the 8.1 suite, the
-            # mint rides the TLS :8443 issuer (DD-113: every per-service
+            # OTLP ingest identity (DD-196, DD-197): as in the 8.1 suite, the
+            # mint rides the TLS :8443 issuer (DD-202: every per-service
             # producer mints there; the collector validates both listeners),
             # the export goes to the collector's TLS :4319 on the dev
             # observability network. The secret is the shared dev ingest
-            # secret (DD-107): this suite's environment carries it under the
+            # secret (DD-196): this suite's environment carries it under the
             # lineage-model prefix.
             AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_ID: otel-data2model
@@ -96,8 +96,8 @@ services:
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /certs/ca.pem
             AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL: http://fixture-atlas:21000
             AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL: https://aurelius-atlas-data2model:21001
-            # OTLP ingest identity (DD-107, DD-108): otel-lineage-model mints
-            # at the TLS :8443 issuer (DD-113), exports to the collector's
+            # OTLP ingest identity (DD-196, DD-197): otel-lineage-model mints
+            # at the TLS :8443 issuer (DD-202), exports to the collector's
             # TLS :4319.
             AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
             AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_ID: otel-lineage-model

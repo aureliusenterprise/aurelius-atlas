@@ -12,36 +12,40 @@ dev = [
     "aurelius-atlas-auth",
     "aurelius-atlas-core",
     "aurelius-atlas-data2model",
+    "aurelius-atlas-data2model-client",
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
+    "aurelius-atlas-lineage-model-client",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
     "aurelius-atlas-sdk[full]",
     "aurelius-atlas-server",
+    "aurelius-atlas-server-client",
     "aurelius-atlas-store-es[testing]",
     "aurelius-atlas-trace",
     "aurelius-atlas-typesystem",
     "aurelius-atlas-validate-entity",
+    "aurelius-atlas-validate-entity-client",
     "aurelius-atlas-vulnerability-report",
     "alembic>=1.18",
     "mike",
-    "mkdocstrings>=1.0",
-    "mkdocstrings-python>=2.0",
+    "mkdocstrings>=1.0.8",
+    "mkdocstrings-python>=2.0.10",
     "playwright>=1.64.0",
     "pre-commit>=4.7.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.1",
     "pydantic-avro>=0.9.0",
-    "pydantic-settings>=2.10.1",
+    "pydantic-settings>=2.16.1",
     "pymdown-extensions>=12.2",
     "pyright>=1.1.403",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.2.1",
-    "pytest-mock>=3.14.1",
+    "pytest-mock>=3.17.0",
     "pytest-playwright>=0.10.0",
     "pytest-sugar>=1.0.0",
     "python-dotenv>=1.2.4",
@@ -70,6 +74,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-data2model]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-data2model-client]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-example]
 workspace = true
 
@@ -83,6 +90,9 @@ workspace = true
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-lineage-model]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-lineage-model-client]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-model]
@@ -100,6 +110,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-server]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-server-client]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-store-es]
 workspace = true
 
@@ -110,6 +123,9 @@ workspace = true
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-validate-entity]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-validate-entity-client]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-vulnerability-report]
@@ -124,14 +140,18 @@ members = [
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
     "libs/python/aurelius-atlas-core",
+    "libs/python/aurelius-atlas-data2model-client",
     "libs/python/aurelius-atlas-example",
+    "libs/python/aurelius-atlas-lineage-model-client",
     "libs/python/aurelius-atlas-model",
     "libs/python/aurelius-atlas-otel",
     "libs/python/aurelius-atlas-parity",
     "libs/python/aurelius-atlas-sdk",
+    "libs/python/aurelius-atlas-server-client",
     "libs/python/aurelius-atlas-store-es",
     "libs/python/aurelius-atlas-trace",
     "libs/python/aurelius-atlas-typesystem",
+    "libs/python/aurelius-atlas-validate-entity-client",
     "reports/aurelius-atlas-license-report",
     "reports/aurelius-atlas-vulnerability-report",
 ]
@@ -152,7 +172,7 @@ exclude-subpackages = ["testing"]
 specs = "docs/architecture/conversion/increments"
 
 [tool.pyright]
-exclude = [".venv"]
+exclude = [".venv", "site", "coverage", "tmp", "**/dist", "**/target"]
 pythonVersion = "3.14"
 reportUnnecessaryTypeIgnoreComment = "error"
 typeCheckingMode = "standard"
@@ -160,10 +180,27 @@ venv = ".venv"
 venvPath = "."
 
 # pytest's conftest dir lands on sys.path at collection; pyright needs the same
-# view for the app tests' helper-module imports (the 8.2 fake upstream).
+# view for the app tests' helper-module imports (the 8.2 fake upstream, the 8.4
+# client recorders).
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-lineage-model/tests"]
 root = "apps/aurelius-atlas-lineage-model"
+
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["libs/python/aurelius-atlas-server-client/tests"]
+root = "libs/python/aurelius-atlas-server-client"
+
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["libs/python/aurelius-atlas-data2model-client/tests"]
+root = "libs/python/aurelius-atlas-data2model-client"
+
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["libs/python/aurelius-atlas-lineage-model-client/tests"]
+root = "libs/python/aurelius-atlas-lineage-model-client"
+
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["libs/python/aurelius-atlas-validate-entity-client/tests"]
+root = "libs/python/aurelius-atlas-validate-entity-client"
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "module"

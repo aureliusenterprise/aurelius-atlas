@@ -25,7 +25,7 @@ server {
     #   - style-src 'unsafe-inline': @angular/build inlines critical CSS as a
     #     <style> tag in index.html (no hash available at config time).
     #   - script-src 'self' + the theme pre-render hash: the build ships one
-    #     inline script — the data-theme bootstrap (DD-071) — whose sha256
+    #     inline script — the data-theme bootstrap (DD-159) — whose sha256
     #     rides here (the silent-check-sso hash precedent). Recompute with
     #     the example app's recipe if the script's bytes change.
     #   - connect-src/frame-src add the Keycloak origins (7.3, APC-05):
@@ -62,7 +62,7 @@ server {
 
     # Same-origin reverse proxies for the backend API and the OTLP collector,
     # mirroring the dev-server proxy (proxy.conf.json). The /api prefix is
-    # forwarded INTACT (DD-050): the Atlas server serves its routes under
+    # forwarded INTACT (DD-139): the Atlas server serves its routes under
     # /api/atlas/..., and the client composes `${apiBaseUrl}/atlas/...` from
     # config — a rewriting proxy would double-strip the prefix. The /otel
     # prefix is stripped, as the collector serves /v1/traces at its root.
@@ -111,8 +111,8 @@ server {
     # proxy passes the Authorization header through untouched (nginx's
     # default — no proxy_set_header here) to the collector's OIDC receiver,
     # which validates issuer, signature and the otel-collector audience
-    # (DD-103, CIA-01/02). A logged-out push has no token and is answered
-    # 401 — accepted, the telemetry gate is the login (DD-103).
+    # (DD-193, CIA-01/02). A logged-out push has no token and is answered
+    # 401 — accepted, the telemetry gate is the login (DD-193).
     location /otel/ {
         set $otel_upstream ${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM};
         rewrite ^/otel(/.*)$ $1 break;

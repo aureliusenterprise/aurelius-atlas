@@ -1,133 +1,124 @@
-"""The FastAPI application: settings, auth, telemetry, the ``/`` lineage route (LM-01, LM-08, DD-108)."""
+"""The composition root: settings in, application out (LM-01, LM-08, LM-09, DD-197, DD-207).
 
-import logging
+The app is a stateless proxy: no store, no cache (the legacy's dev ``@cached`` is
+not ported), no start-up work beyond the telemetry. Everything it collaborates
+with is built elsewhere and wired here — the factories in ``providers/`` (the
+verifier, the upstreams, the telemetry) and the routers in ``routes/`` —
+so this module says only *which* collaborators the app has, never *how* they
+work (the shape the FastAPI example app keeps, DD-207/DD-208).
+
+The seams stay the tests' (DD-200): ``auth``/``atlas``/``d2m`` are injectable.
+The app builds each injected-out client's ``httpx.AsyncClient`` from its settings
+and closes the pools it built when the app stops; an injected client brings its
+own pool (DD-205).
+"""
+
+from collections.abc import AsyncGenerator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from importlib.metadata import version
-from typing import Annotated
 
-import httpx
-import logfire
-from aurelius_atlas_auth import AuthConfig, KeycloakAuth
-from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline
-from fastapi import FastAPI, Query, Request, Response
+import httpx2 as httpx
+from aurelius_atlas_auth import KeycloakAuth
+from aurelius_atlas_data2model_client.client import Data2ModelClient
+from aurelius_atlas_server_client.client import AtlasClient
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from aurelius_atlas_lineage_model.lineage import (
-    LINEAGE_RULES,
-    Direction,
-    LineageInfo,
-    UpstreamError,
-    flatten_relations,
+from aurelius_atlas_lineage_model.errors import UpstreamError, atlas_error
+from aurelius_atlas_lineage_model.globals import BAD_GATEWAY, BAD_REQUEST, LOGGER, NAME
+from aurelius_atlas_lineage_model.providers import (
+    atlas_breaker,
+    build_auth,
+    build_upstreams,
+    configure_telemetry,
+    d2m_breaker,
 )
+from aurelius_atlas_lineage_model.routes import HEALTH, build_router
 from aurelius_atlas_lineage_model.settings import LineageModelSettings
-
-NAME = "aurelius-atlas-lineage-model"
-LOGGER = logging.getLogger(NAME)
-
-OK = 200
-"""The status of a successful upstream call (LM-01, LM-04)."""
-
-BAD_REQUEST = 400
-"""The status of a query the app will not process (LM-07, DV-20, DV-21)."""
-
-NOT_FOUND = 404
-"""The upstream's answer for a guid it has no lineage for (LM-05)."""
-
-BAD_GATEWAY = 502
-"""The status of a failing upstream (LM-07, DV-22)."""
-
-DEFAULT_DEPTH = 3
-"""The lineage depth the legacy defaults to when the query omits it (LM-01)."""
-
-UPSTREAM_TIMEOUT_SECONDS = 10.0
-"""How long an upstream call may take before the app gives up on it."""
-
-ATLAS_ERROR_CODE = "ATLAS-400-00-029"
-"""Atlas's code for a request it will not process; the 8.x apps reuse it (DTM-11 family)."""
 
 
 def create_app(
     settings: LineageModelSettings,
     auth: KeycloakAuth | None = None,
-    http: httpx.Client | None = None,
+    atlas: AtlasClient | None = None,
+    d2m: Data2ModelClient | None = None,
 ) -> FastAPI:
-    """Build the application.
+    """Build the application: the providers, the routes, the error contract, the telemetry.
+
+    Each upstream rides its own circuit breaker (LM-11, 8.5, DD-206), built by
+    the upstreams' factory: repeated outages (5xx, transport — LM-13) open the
+    circuit and the 502 of LM-12 arrives without calling the upstream, until
+    the half-open trial closes it again (LM-14).
 
     Args:
         settings: The app's settings.
         auth: The token verifier; by default one built from the settings. Injectable for
             tests, which point it at a fake issuer.
-        http: The client for the upstream calls (LM-04); by default one built from the
-            settings. Injectable for tests, which point it at a mock transport (DD-111).
-
-    The app is a stateless proxy: no store, no cache (the legacy's dev ``@cached`` is
-    not ported), no start-up work beyond the telemetry (DD-108).
+        atlas: The client for the Atlas lineage feed (LM-04); by default one built from
+            the settings. Injectable for tests, which point it at a mock transport.
+        d2m: The client for the data2model extraction (LM-04); same seam as ``atlas``.
     """
-    verifier = auth if auth is not None else _auth(settings)
-    client = http if http is not None else _http(settings)
+    verifier = auth if auth is not None else build_auth(settings)
+    atlas_client, d2m_client, upstream_pools = build_upstreams(settings, atlas, d2m)
 
-    app = FastAPI(title=NAME, version=version(NAME), docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(
+        title=NAME,
+        version=version(NAME),
+        lifespan=_lifespan(upstream_pools),
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     app.state.settings = settings
     app.state.auth = verifier
-    app.state.http = client
+    app.state.atlas = atlas_client
+    app.state.d2m = d2m_client
+    app.state.atlas_breaker = atlas_breaker(settings)
+    app.state.d2m_breaker = d2m_breaker(settings)
 
-    atlas_root = str(settings.atlas_base_url).rstrip("/")
-    extract_url = f"{str(settings.data2model_url).rstrip('/')}/extract"
+    app.include_router(build_router(verifier))
+    app.include_router(HEALTH)
+    _setup_error_handlers(app)
+    configure_telemetry(app, settings)
+    return app
 
-    @app.get("/liveness", status_code=204)
-    def liveness() -> None:
-        """The container healthcheck: 204 while the process serves (no auth)."""
 
-    @app.get("/", dependencies=[verifier.require_auth])
-    def lineage_model(
-        guid: str,
-        depth: Annotated[int, Query(ge=1)] = DEFAULT_DEPTH,
-        direction: Direction = "BOTH",
-        token: Annotated[str, verifier.require_bearer] = "",
-    ) -> Response:
-        """Flatten the entity's lineage and extract its model (LM-01).
+def _lifespan(pools: list[httpx.AsyncClient]) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
+    """The app's lifespan: serve, then close the httpx pools the app built (DD-205)."""
 
-        The token is verified for this app's audience (LM-08, DV-23) and the caller's
-        raw token is forwarded to both upstreams (LM-04) — the legacy's design: the
-        upstream services accept the browser's own token.
-        """
-        headers = {"authorization": f"Bearer {token}"}
-        answer = client.get(
-            f"{atlas_root}/v2/lineage/{guid}",
-            params={"depth": depth, "direction": direction},
-            headers=headers,
-        )
-        if answer.status_code == NOT_FOUND:
-            LOGGER.info("No lineage for guid %s", guid)
-            return Response(status_code=204)
-        _check_lineage_answer(answer)
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
+        yield
+        for pool in pools:
+            await pool.aclose()
 
-        info = LineageInfo.model_validate_json(answer.content)
-        if not info.relations:
-            LOGGER.info("Lineage for guid %s has no relations", guid)
-            return Response(status_code=204)
+    return lifespan
 
-        rows = flatten_relations(info)
-        extracted = client.post(extract_url, json={"data": rows, "rules": LINEAGE_RULES}, headers=headers)
-        if extracted.status_code != OK:
-            raise UpstreamError(BAD_GATEWAY, "the model extraction failed")
-        return Response(content=extracted.content, status_code=OK, media_type="application/json")
+
+def _setup_error_handlers(app: FastAPI) -> None:
+    """The app's error contract: the upstream statuses mapped, the query rejections shaped.
+
+    Kept at the root because the mapping is the app's own contract (LM-05,
+    LM-07, LM-12, DV-72..DV-80), not any collaborator's: the body shape is
+    ``errors.atlas_error``, the statuses are the route's documented ones.
+    """
 
     @app.exception_handler(UpstreamError)
     def upstream_error(_request: Request, error: UpstreamError) -> JSONResponse:
         """The upstream's status, mapped: 400 stays 400, anything else is a 502 (LM-05, LM-07)."""
         LOGGER.warning("Upstream failure, answered %s: %s", error.status_code, error)
-        return _atlas_error(error.status_code, str(error))
+        return atlas_error(error.status_code, str(error))
 
     @app.exception_handler(httpx.RequestError)
     def upstream_unreachable(_request: Request, error: httpx.RequestError) -> JSONResponse:
-        """An upstream that cannot be reached is a gateway failure (LM-07, DV-22)."""
+        """An upstream that cannot be reached is a gateway failure (LM-07, DV-80)."""
         LOGGER.warning("Upstream %s unreachable: %s", error.request.url, error)
-        return _atlas_error(BAD_GATEWAY, "the lineage service is unreachable")
+        return atlas_error(BAD_GATEWAY, "the lineage service is unreachable")
 
     @app.exception_handler(RequestValidationError)
     def validation_error(_request: Request, error: RequestValidationError) -> JSONResponse:
-        """A query the app will not process is a 400 with an Atlas-shaped error body (LM-07, DV-20, DV-21).
+        """A query the app will not process is a 400 with an Atlas-shaped error body (LM-07, DV-72, DV-73).
 
         The legacy let ``int()``, ``Enum()`` and a literal-``None`` guid crash
         Flask — a 500; the port states 400.
@@ -135,75 +126,4 @@ def create_app(
         first = error.errors()[0] if error.errors() else {}
         message = f"invalid lineage request: {first.get('msg', 'malformed query')}"
         LOGGER.info("Rejected lineage request: %s", message)
-        return _atlas_error(BAD_REQUEST, message)
-
-    # Telemetry (DD-107, DD-108): the app owns its OTLP export through the shared
-    # pipeline — a client-credentials JWT as otel-lineage-model, refreshed per export;
-    # unset settings mean console-only (AUX-03).
-    ingest = _ingest_pipeline(settings)
-    logfire.configure(
-        send_to_logfire=False,
-        service_name=NAME,
-        service_version=app.version,
-        min_level=settings.log_level,
-        console=logfire.ConsoleOptions(min_log_level=settings.log_level),
-        **(
-            {
-                "additional_span_processors": [ingest[0]],
-                "metrics": logfire.MetricsOptions(additional_readers=[ingest[1]]),
-            }
-            if ingest is not None
-            else {}
-        ),
-    )
-    logfire.instrument_fastapi(app)
-    LOGGER.setLevel(settings.log_level.upper())
-    return app
-
-
-def _check_lineage_answer(answer: httpx.Response) -> None:
-    """Map a lineage-fetch answer that is not a success to its status (LM-05, LM-07)."""
-    if answer.status_code == BAD_REQUEST:
-        raise UpstreamError(BAD_REQUEST, "the lineage service rejected the request")
-    if answer.status_code != OK:
-        raise UpstreamError(BAD_GATEWAY, "the lineage service failed")
-
-
-def _atlas_error(status_code: int, message: str) -> JSONResponse:
-    """The Atlas-shaped error body on the given status (LM-07)."""
-    return JSONResponse(status_code=status_code, content={"errorCode": ATLAS_ERROR_CODE, "errorMessage": message})
-
-
-def _auth(settings: LineageModelSettings) -> KeycloakAuth:
-    """The app's token verifier, mapped from the settings (LM-08)."""
-    return KeycloakAuth(
-        AuthConfig(
-            server_url=str(settings.auth_server_url),
-            realm=settings.auth_realm,
-            audience=settings.auth_audience,
-            ca_file=str(settings.auth_ca_file) if settings.auth_ca_file else None,
-        )
-    )
-
-
-def _http(settings: LineageModelSettings) -> httpx.Client:
-    """The client for the upstream calls: a bounded timeout, the issuer's CA for TLS (DD-111)."""
-    ca_file = str(settings.auth_ca_file) if settings.auth_ca_file else True
-    return httpx.Client(timeout=UPSTREAM_TIMEOUT_SECONDS, verify=ca_file)
-
-
-def _ingest_pipeline(settings: LineageModelSettings) -> IngestPipeline | None:
-    """The app-owned OTLP export for the per-service ingest leg (DD-107, DD-108).
-
-    None when the ingest credential is not configured (console-only telemetry).
-    """
-    if settings.otel_token_url is None or settings.otel_client_secret is None:
-        return None
-    source = ClientCredentialsTokenSource(
-        token_url=str(settings.otel_token_url),
-        client_id=settings.otel_client_id,
-        client_secret=settings.otel_client_secret.get_secret_value(),
-        ca_file=str(settings.otel_ca_file) if settings.otel_ca_file else None,
-    )
-    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
-    return build_otlp_pipeline(settings.otel_endpoint, ca_file, source)
+        return atlas_error(BAD_REQUEST, message)

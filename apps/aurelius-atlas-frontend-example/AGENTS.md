@@ -26,7 +26,7 @@ rules live in the root `AGENTS.md`.
 - The bearer token is attached to `/api/*` requests via `includeBearerTokenInterceptor`.
 - The OTLP exporters attach the user's own token through the
   `createAureliusOtelIngestAuth` headers factory (aurelius-atlas-observability,
-  DD-103); `/otel` passes `Authorization` through and the
+  DD-193); `/otel` passes `Authorization` through and the
   collector validates it via OIDC — logged-out pushes 401 by design.
 
 ## Wiring Checklist

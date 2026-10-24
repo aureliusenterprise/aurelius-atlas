@@ -2,7 +2,7 @@
  * The language owner (SPL-06, SPL-10): SHC-04's semantics moved from the
  * header dropdown into the settings panel, and the locale-href computation
  * moved with it (the header spec's SHC-04 assertions live here now). The
- * locale builds are separate bundles (DD-039), so this service stores
+ * locale builds are separate bundles (DD-128), so this service stores
  * nothing — it is the navigation seam.
  */
 import { TestBed } from "@angular/core/testing";

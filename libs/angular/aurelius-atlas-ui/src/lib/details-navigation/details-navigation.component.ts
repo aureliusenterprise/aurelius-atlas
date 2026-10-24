@@ -8,11 +8,11 @@ import { faBars, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
  * `menu`, so a details screen's section links stay reachable while
  * scrolling (UIC-18).
  *
- * The shell is presentational: the label arrives as an input (DD-047) and
+ * The shell is presentational: the label arrives as an input (DD-136) and
  * the `li` items are projected content — their hrefs are the app's
  * anchors, and the Aurelius `DetailsNavigationItem` directive
  * (smooth-scroll, a third-party dep) stays app-side, wiring the items the
- * shell renders (DD-101). The toggle's open state is the component's:
+ * shell renders (DD-191). The toggle's open state is the component's:
  * Bulma's CSS does the rest.
  */
 @Component({

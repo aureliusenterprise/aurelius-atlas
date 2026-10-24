@@ -10,7 +10,7 @@ import { GovernanceResponsibilitiesInfoModal } from "./governance-responsibiliti
  *
  * The Aurelius card also carried a `simple-search-input` (by name/e-mail)
  * and an "explore" button; both are search navigation and deferred to the
- * search slice (BRW-06, DD-054) — the card's search/exploring *text* stays,
+ * search slice (BRW-06, DD-143) — the card's search/exploring *text* stays,
  * as the landing copy the Aurelius screen shows before any search exists.
  */
 @Component({

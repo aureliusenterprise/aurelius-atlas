@@ -1,6 +1,7 @@
 # aurelius-atlas-trace
 
-The traceability check and test report (ADR 049, DD-009 to DD-011). This file covers wiring specific
+The traceability check and test report (ADR 049, DD-009 to DD-011) — local tools since DD-215,
+run by choice, not CI steps. This file covers wiring specific
 to this lib; workspace-wide rules live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
 
 ## Layout
@@ -24,8 +25,8 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and `libs/python/
   that scenario deviation ids are checked against).
 - `tools/plugins/python.ts`: the `ci` configuration of `test` and `e2e` passes `--junitxml` and
   `--trace-json` next to the coverage options.
-- `.github/workflows/ci.yaml`: `check` in the `validate` job; `report` and the `test-report` artifact in
-  the `test` job.
+- `.github/workflows/ci.yaml`: nothing — CI dropped `check` and `report` in DD-215; the commands
+  are local only.
 
 ## Commands
 
@@ -46,4 +47,6 @@ uv run aurelius-atlas-trace check
 
 ## Removal
 
-Not removable while ADR 049 stands: CI's `validate` and `test` jobs call it.
+Removable as a slice: CI no longer calls it (DD-215, ADR 056). What keeps it today is the
+`covers` marker convention — removing the lib means stripping the marker from every test and the
+`--trace-json` flag from the `ci` test configuration in `tools/plugins/python.ts`.

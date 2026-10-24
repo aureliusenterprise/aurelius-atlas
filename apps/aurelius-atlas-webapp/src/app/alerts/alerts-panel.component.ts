@@ -14,16 +14,16 @@ import { AlertsService } from "./alerts.service";
  * ALR-12), the feed renders what the store holds (ALR-03).
  *
  * Like the settings panel, it is a routed component in the `drawer` aux
- * outlet (SPL-14's shape, DD-078, ALR-01): the bell navigates to it,
+ * outlet (SPL-14's shape, DD-166, ALR-01): the bell navigates to it,
  * dismissal navigates away, and the outlet segment rides the URL — so
  * the language switch's full-page navigation (SPL-06) reloads the same
  * page with the drawer open. The one named outlet swaps drawers: opening
  * alerts replaces the settings panel and vice versa.
  *
- * Opening the drawer is reading it (ALR-12, DD-090): an effect marks
+ * Opening the drawer is reading it (ALR-12, DD-180): an effect marks
  * every group read while the panel lives, re-marking as a live feed
  * lands new arrivals. Which severities the bar hides is view state
- * (DD-090): the store keeps counting all of them, the chips show the
+ * (DD-180): the store keeps counting all of them, the chips show the
  * totals — filtering the rows must not empty the bar's own numbers.
  */
 @Component({
@@ -111,7 +111,7 @@ export class AlertsPanel {
     };
 
     /**
-     * The drawer's dismissal (ALR-01, DD-078's pattern): navigate the
+     * The drawer's dismissal (ALR-01, DD-166's pattern): navigate the
      * `drawer` outlet away.
      */
     protected close(): void {

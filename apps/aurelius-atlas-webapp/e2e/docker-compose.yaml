@@ -25,7 +25,7 @@ services:
             - atlas
             - observability
 
-    # The real Atlas server behind the nginx /api/ proxy (DD-053): the chain
+    # The real Atlas server behind the nginx /api/ proxy (DD-142): the chain
     # nginx -> TLS -> server -> Elasticsearch answers /api/atlas/admin/version,
     # so the proxy test proves the whole data path, not just nginx config.
     # Mirrors apps/aurelius-atlas-server/e2e/docker-compose.yaml; the certs are
@@ -59,8 +59,8 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
-            # OTLP ingest identity (7.18, DD-107): the server exports through
-            # its own pipeline (otel_ingest.py), minting client-credentials
+            # OTLP ingest identity (7.18, DD-196): the server exports through
+            # its own pipeline (aurelius-atlas-otel), minting client-credentials
             # JWTs as otel-atlas-server for the per-service leg — the OIDC
             # receiver on :4319 answers the shared token 401 (CIA-08), so the
             # 7.17 static OTEL_EXPORTER_* trio is gone. The mint goes to the

@@ -32,7 +32,7 @@ services:
             DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
             # The otel-* ingest clients' secret placeholder in
             # import/master.json resolves from this container's env (the
-            # replace-placeholders flag, DD-107) — same mechanism as the dev
+            # replace-placeholders flag, DD-196) — same mechanism as the dev
             # user passwords above.
             OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
@@ -61,14 +61,14 @@ services:
             KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/keycloak-key.pem
             # OpenTelemetry native configuration
             OTEL_SERVICE_NAME: keycloak
-            # The legacy leg (DD-107): Keycloak is the OIDC issuer, so it
+            # The legacy leg (DD-196): Keycloak is the OIDC issuer, so it
             # cannot present a Keycloak-minted JWT at its own cold boot
-            # (DD-103's chicken-and-egg, scoped to exactly this by DD-107).
+            # (DD-193's chicken-and-egg, scoped to exactly this by DD-196).
             # Its native OTLP (gRPC) rides the shared ingest token on the
             # legacy leg (4320; the FastAPI example is its only other user).
             OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
-            # The collector requires the shared ingest token (DD-103, CIA-04);
+            # The collector requires the shared ingest token (DD-193, CIA-04);
             # Quarkus' OTLP sender honours the standard headers env var.
             OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
             OTEL_TRACES_SAMPLER: parentbased_traceidratio
@@ -146,7 +146,7 @@ services:
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
-        # startup (DD-107): the collector's DD-106 restart pattern, applied
+        # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
         # their export.
         restart: on-failure:15
@@ -155,14 +155,14 @@ services:
             # collector expands ${env:...} in its config.
             KEYCLOAK_DATABASE_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
             KEYCLOAK_DATABASE_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
-            # Per-service ingest identity (7.18, DD-107): the puller mints
+            # Per-service ingest identity (7.18, DD-196): the puller mints
             # client-credentials JWTs as the otel-keycloak realm client —
             # the oauth2client extension in config/metrics-puller.yaml
             # (mint, cache, refresh). The secret placeholder in the realm
             # import resolves from the same value.
             OTEL_INGEST_CLIENT_ID: otel-keycloak
             OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            # The mint target is the Keycloak TLS listener, literal (DD-113):
+            # The mint target is the Keycloak TLS listener, literal (DD-202):
             # the iss a token carries is the listener that minted it, and this
             # value is baked into the container at creation — an env default
             # let suite start-order mix mint issuer with collector validator

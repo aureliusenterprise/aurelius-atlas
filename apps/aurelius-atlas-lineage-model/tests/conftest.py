@@ -2,7 +2,7 @@
 
 The fake issuer is the 8.0 auth library's test double (AUX-01..05 are tested at
 home, in ``aurelius-atlas-auth``). The fake upstream is the Atlas lineage feed
-and the data2model ``/extract`` the app proxies to (DD-111): a ``MockTransport``
+and the data2model ``/extract`` the app proxies to (DD-200): a ``MockTransport``
 recording every request and answering from a handler each test sets.
 """
 
@@ -14,12 +14,14 @@ import time
 from collections.abc import AsyncIterator, Callable, Iterator
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import jwt
 import pytest
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
+from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_lineage_model import LineageModelSettings, create_app
 from aurelius_atlas_lineage_model.settings import ENV_PREFIX
+from aurelius_atlas_server_client.client import AtlasClient
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fake_upstream import FakeUpstream
 from fastapi import FastAPI
@@ -40,7 +42,7 @@ public_key = private_key.public_key()
 
 @pytest.fixture(autouse=True)
 def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Start every test from a clean environment (DD-110).
+    """Start every test from a clean environment (DD-199).
 
     ``nx test`` injects the project's ``.env`` into the task's environment, and
     pydantic-settings reads it: the dev values — TLS material as
@@ -119,8 +121,16 @@ def auth() -> Iterator[KeycloakAuth]:
 
 @pytest.fixture
 def app(settings: LineageModelSettings, auth: KeycloakAuth, upstream: FakeUpstream) -> FastAPI:
-    """The application, verifying tokens against the fake issuer and calling the fake upstream."""
-    return create_app(settings, auth=auth, http=upstream.client())
+    """The application, verifying tokens against the fake issuer and calling the fake upstream.
+
+    Both upstream clients speak through an externally built httpx client on the
+    fake's recording transport (DD-200's seam, typed with the 8.4 clients, built
+    outside per DD-205); the token source is a placeholder — each request runs
+    ``with_token`` with the caller's own.
+    """
+    atlas = AtlasClient(httpx.AsyncClient(base_url=ATLAS, transport=upstream.transport()), "test-token")
+    d2m = Data2ModelClient(httpx.AsyncClient(base_url=DATA2MODEL, transport=upstream.transport()), "test-token")
+    return create_app(settings, auth=auth, atlas=atlas, d2m=d2m)
 
 
 @pytest.fixture

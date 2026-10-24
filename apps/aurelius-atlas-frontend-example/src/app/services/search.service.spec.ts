@@ -178,4 +178,37 @@ describe("SearchService", () => {
 
         expect(refreshSpy).toHaveBeenCalledOnce();
     });
+
+    it("discards a late answer for a superseded query (DD-214)", async () => {
+        // switchMap's whole point: queries answer out of order, and a slow
+        // answer for an old query must never overwrite the current one.
+        const first$ = new Subject<PaginatedResponse<Entity>>();
+        const second$ = new Subject<PaginatedResponse<Entity>>();
+        const firstResponse: PaginatedResponse<Entity> = {
+            data: [{ guid: "1", name: "A", description: "desc" }],
+            total: 1,
+        };
+        const secondResponse: PaginatedResponse<Entity> = {
+            data: [{ guid: "2", name: "B", description: "desc" }],
+            total: 1,
+        };
+
+        vi.spyOn(entitiesService, "findAll").mockReturnValueOnce(first$).mockReturnValueOnce(second$);
+
+        service.query.set("A");
+        await vi.advanceTimersByTimeAsync(FLUSH_MS); // first search in flight
+
+        service.query.set("B");
+        await vi.advanceTimersByTimeAsync(FLUSH_MS); // switchMap replaces it
+
+        // The superseded query answers late, out of order: discarded.
+        first$.next(firstResponse);
+        await vi.advanceTimersByTimeAsync(FLUSH_MS);
+        expect(service.entities()).toEqual({ total: 0, data: [] });
+
+        // The current query's answer wins.
+        second$.next(secondResponse);
+        await vi.advanceTimersByTimeAsync(FLUSH_MS);
+        expect(service.entities()).toEqual(secondResponse);
+    });
 });

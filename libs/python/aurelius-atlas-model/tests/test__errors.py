@@ -1,7 +1,18 @@
 """Atlas error codes and messages (TRG-15), copied from ``AtlasErrorCode`` of Apache Atlas 2.4.0."""
 
+import math
+from datetime import UTC, datetime
+from decimal import Decimal
+
 import pytest
-from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string, message_format
+from aurelius_atlas_model.errors import (
+    AtlasError,
+    AtlasErrorCode,
+    java_date_string,
+    java_double_string,
+    java_string,
+    message_format,
+)
 
 
 @pytest.mark.covers("aurelius_atlas_model.errors.AtlasErrorCode.message", rules=["TRG-15"])
@@ -43,6 +54,10 @@ def test__an_error_code_fills_its_template_in_order() -> None:
         (AtlasErrorCode.CLASSIFICATIONDEF_ENTITYTYPES_NOT_PARENTS_SUBSET, 400, "ATLAS-400-00-054"),
         (AtlasErrorCode.INVALID_QUERY_PARAM_LENGTH, 400, "ATLAS-400-00-057"),
         (AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, 400, "ATLAS-400-00-081"),
+        (AtlasErrorCode.INVALID_TIMEBOUNDRY_TIMEZONE, 400, "ATLAS-400-00-085"),
+        (AtlasErrorCode.INVALID_TIMEBOUNDRY_START_TIME, 400, "ATLAS-400-00-086"),
+        (AtlasErrorCode.INVALID_TIMEBOUNDRY_END_TIME, 400, "ATLAS-400-00-087"),
+        (AtlasErrorCode.INVALID_TIMEBOUNDRY_DATERANGE, 400, "ATLAS-400-00-088"),
         (AtlasErrorCode.PATCH_MISSING_RELATIONSHIP_LABEL, 400, "ATLAS-400-00-08B"),
         (AtlasErrorCode.BUSINESS_METADATA_DEF_ATTRIBUTE_TYPE_INVALID, 400, "ATLAS-400-00-094"),
         (AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE, 400, "ATLAS-400-00-09E"),
@@ -114,3 +129,40 @@ def test__atlas_apostrophe_is_dropped_as_java_drops_it() -> None:
 def test__parameters_are_written_as_java_writes_them(value: object, expected: str) -> None:
     """``String.valueOf`` of null, booleans, strings, numbers, collections and maps."""
     assert java_string(value) == expected
+
+
+@pytest.mark.covers("aurelius_atlas_model.errors.java_double_string", rules=["VAL-09"])
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (1.0, "1.0"),
+        (0.001, "0.001"),
+        (0.0001, "1.0E-4"),
+        (9999999.0, "9999999.0"),
+        (1e7, "1.0E7"),
+        (-12345678.9, "-1.23456789E7"),
+        (1e23, "1.0E23"),
+        (0.0, "0.0"),
+        (-0.0, "-0.0"),
+        (math.nan, "NaN"),
+        (math.inf, "Infinity"),
+        (-math.inf, "-Infinity"),
+    ],
+)
+def test__doubles_are_written_as_double_to_string(value: float, expected: str) -> None:
+    """``Double.toString``: plain from 10^-3 to 10^7, else ``d.dddE<n>``."""
+    assert java_double_string(value) == expected
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_model.errors.java_date_string", "aurelius_atlas_model.errors.java_string", rules=["VAL-09"]
+)
+def test__dates_and_decimals_are_written_as_java_writes_them() -> None:
+    """``Date.toString`` in UTC; ``BigDecimal.toString`` keeps the scale."""
+    epoch = datetime(1970, 1, 1, tzinfo=UTC)
+
+    assert java_date_string(epoch) == "Thu Jan 01 00:00:00 UTC 1970"
+    assert (
+        java_string([Decimal("1.10"), Decimal("1E+3"), 2.5e10, epoch])
+        == "[1.10, 1E+3, 2.5E10, Thu Jan 01 00:00:00 UTC 1970]"
+    )

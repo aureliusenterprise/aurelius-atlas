@@ -12,7 +12,7 @@
         -->
         <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <!-- NOSONAR S1077: the backdrop is the pointer path by design; Escape on the dialog is the keyboard path. -->
-        <div class="modal-background" (click)="onBackdropClick()"></div>
+        <div class="modal-background" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
         <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <!-- The Escape handler catches keydowns bubbling from the dialog's
              focused descendants; the container itself needs no focus, and a

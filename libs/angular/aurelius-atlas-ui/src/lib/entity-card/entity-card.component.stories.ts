@@ -225,7 +225,7 @@ export const OnDark: Story = {
         // the play() asserts the ink of whichever one is active.
         const dark = document.documentElement.dataset["theme"] !== "light";
         if (dark) {
-            // Bulma's dark surface, the DD-068 ink: title #ededed, body #b5b5b5.
+            // Bulma's dark surface, the DD-156 ink: title #ededed, body #b5b5b5.
             await expect(canvasElement.querySelector(".card")).toHaveStyle({
                 "background-color": "rgb(20, 22, 26)",
             });

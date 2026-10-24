@@ -20,7 +20,7 @@ The production topology is the deployment arrangement's subject —
   else needs a path: the store serves only the catalogue service, and the collector receives
   signals without the system calling back through it. Reaching the collector's ingest ports is
   not enough to write to them — the browser leg accepts only Keycloak user tokens, the service
-  leg only the shared ingest token (DD-103).
+  leg only the shared ingest token (DD-193).
 
 ## Development and CI
 

@@ -5,7 +5,7 @@ Note:
     Please install the `azure` extra to use this module.
 """
 
-import httpx
+import httpx2 as httpx
 import msal
 
 

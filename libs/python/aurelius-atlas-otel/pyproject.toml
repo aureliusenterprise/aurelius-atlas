@@ -1,5 +1,11 @@
 [project]
-dependencies = ["opentelemetry-exporter-otlp-proto-http>=1.44.0", "opentelemetry-sdk>=1.44.0", "requests>=2.34.2"]
+dependencies = [
+    "opentelemetry-exporter-otlp-proto-http>=1.44.0",
+    "opentelemetry-instrumentation-logging>=0.65b0",
+    "opentelemetry-instrumentation-system-metrics>=0.65b0",
+    "opentelemetry-sdk>=1.44.0",
+    "requests>=2.34.2",
+]
 description = "The OTLP ingest credential: a refresh-ahead client-credentials token source and the app-owned OTLP export pipeline."
 name = "aurelius-atlas-otel"
 requires-python = ">=3.14"

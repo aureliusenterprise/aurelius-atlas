@@ -7,7 +7,7 @@ import { DetailsNavigation } from "./details-navigation.component";
  * The sticky section navigation: a round toggle at the bottom-right
  * opens an upward Bulma dropdown holding the menu — the details screen's
  * section links, projected by the caller. The scroll behaviour the items
- * anchor is app-side (DD-101).
+ * anchor is app-side (DD-191).
  */
 const meta: Meta<DetailsNavigation> = {
     component: DetailsNavigation,
@@ -57,7 +57,7 @@ export const Primary: Story = {
 /**
  * The menu with the section links a populated details screen carries —
  * the items are caller markup, so the app's anchors and directives ride
- * them unchanged (DD-101).
+ * them unchanged (DD-191).
  */
 export const WithSections: Story = {
     args: {

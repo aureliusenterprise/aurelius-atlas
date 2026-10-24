@@ -19,11 +19,11 @@ export interface SectionStat {
  * The Aurelius section count bar: the `nav.level` of heading-links with
  * counts the legacy details screens repeat — one stat above the
  * properties accordion (`default-details`), three above the
- * governance-quality sections (`gov-quality-details`) (UIC-19, DD-102).
+ * governance-quality sections (`gov-quality-details`) (UIC-19, DD-192).
  *
  * A heading click emits `itemClicked(target)` — the legacy
  * `DetailsNavigationItem` directive's anchor, turned into an emit
- * (DD-066's pattern). The anchor's `#target` href is the plain-jump
+ * (DD-154's pattern). The anchor's `#target` href is the plain-jump
  * keyboard path; the app's directive smooth-scrolls when it wires them.
  */
 @Component({
@@ -40,7 +40,7 @@ export class SectionStats {
 
     /**
      * Emits the target of a clicked heading. The app scrolls; the lib
-     * does not (DD-101's split).
+     * does not (DD-191's split).
      */
     readonly itemClicked = output<string>();
 

@@ -38,7 +38,7 @@ through `nx serve`/`nx up`. Components that speak no OTLP (databases) arrive
 via a slice-owned `metrics-puller` sidecar in postgres and keycloak. The OTLP
 receivers serve TLS only — exporters trust the local CA (each project's
 `certs/`, `nx certgen`) — and authenticate the writer in three credential-typed
-legs (DD-103, DD-107): the browser leg (4318) validates the signed-in user's
+legs (DD-193, DD-196): the browser leg (4318) validates the signed-in user's
 Keycloak token (OIDC, audience `otel-collector`), the per-service leg
 (4317/4319) validates client-credentials JWTs from the `otel-*` realm clients
 (the pullers' `oauth2client` extension, the Atlas server's refresh shim), and
@@ -47,7 +47,7 @@ the legacy leg (4320/4321) demands the shared ingest token
 that cannot present a Keycloak JWT (Keycloak's native OTLP, the FastAPI
 example). A bearer works on exactly one leg. The verified writer is stamped on
 the telemetry (`enduser.id` from `sub`, `otel.ingest.client` from `azp`,
-DD-105/DD-107). The browser-facing UI ports (Grafana, Prometheus) stay
+DD-194/DD-196). The browser-facing UI ports (Grafana, Prometheus) stay
 plaintext on a developer machine (ADR 039).
 
 Dashboards are file-provisioned from `config/grafana/dashboards/` — one per

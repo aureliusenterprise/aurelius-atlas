@@ -3,14 +3,14 @@
   Every control writes through the SettingsService facade (SPL-10); the
   panel stores nothing itself.
 
-  i18n ids are the shell.settings.* dictionary paths (DD-039 bridge,
+  i18n ids are the shell.settings.* dictionary paths (DD-128 bridge,
   SHC-07 pattern). Strings bound into component inputs live in TypeScript
   as $localize (BRW-02), so only plain text carries markers here —
-  descriptions are comments, never `id|description` suffixes (DD-055).
+  descriptions are comments, never `id|description` suffixes (DD-144).
 -->
 <aurelius-atlas-ui-drawer [(active)]="active" [title]="title" [ariaLabel]="closeLabel" (cancelRequested)="close()">
     <div class="settings-section">
-        <!-- Appearance: the theme select (SPL-03, DD-076) — the ui-lib
+        <!-- Appearance: the theme select (SPL-03, DD-164) — the ui-lib
              Select as a plain dropdown (searchVisible off); its label is
              the section heading. -->
         <aurelius-atlas-ui-select
@@ -26,7 +26,7 @@
     <div class="settings-section">
         <!-- Language: full-page navigation, not a stored setting (SPL-06, SHC-04). The
              links are not a form control, so the group carries the heading
-             through aria-labelledby (DD-081). -->
+             through aria-labelledby (DD-169). -->
         <p class="label" id="settings-language-heading">
             <!-- Language. -->
             <span i18n="@@shell.settings.language">Language</span>
@@ -86,8 +86,8 @@
     </div>
 
     <div class="settings-section">
-        <!-- Telemetry toggle (SPL-11, DD-070). The checkbox is a plain control on
-             the section grid: the label above is its accessible name (DD-081). -->
+        <!-- Telemetry toggle (SPL-11, DD-158). The checkbox is a plain control on
+             the section grid: the label above is its accessible name (DD-169). -->
         <label class="label" for="settings-telemetry">
             <!-- Usage telemetry. -->
             <span i18n="@@shell.settings.telemetry">Usage telemetry</span>
@@ -107,7 +107,7 @@
     </div>
 
     <div class="settings-section">
-        <!-- About: the build (SPL-12, DD-077). App and server share one
+        <!-- About: the build (SPL-12, DD-165). App and server share one
              version under the Nx release strategy — one release, one
              number — so the section shows the app version alone. -->
         <p class="label">

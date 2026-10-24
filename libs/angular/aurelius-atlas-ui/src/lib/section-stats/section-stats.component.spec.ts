@@ -42,7 +42,7 @@ describe("SectionStats", () => {
         expect(anchors[2].getAttribute("href")).toBe("#properties-details");
     });
 
-    it("renders the caller's count as text (UIC-19, DD-102)", () => {
+    it("renders the caller's count as text (UIC-19, DD-192)", () => {
         fixture.componentRef.setInput("items", [{ label: "Properties", target: "properties-details", count: "0" }]);
         fixture.detectChanges();
 
@@ -56,7 +56,7 @@ describe("SectionStats", () => {
         expect(fixture.nativeElement.querySelectorAll(".level-item")).toHaveLength(1);
     });
 
-    it("emits itemClicked with the target, cancelling the fragment jump (UIC-19, DD-066)", () => {
+    it("emits itemClicked with the target, cancelling the fragment jump (UIC-19, DD-154)", () => {
         fixture.componentRef.setInput("items", items);
         fixture.detectChanges();
         const clicked: string[] = [];

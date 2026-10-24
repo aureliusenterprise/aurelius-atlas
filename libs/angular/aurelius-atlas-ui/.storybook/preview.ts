@@ -1,4 +1,4 @@
-// The chrome strings in component templates (DD-047) compile to `$localize`
+// The chrome strings in component templates (DD-136) compile to `$localize`
 // calls; the app builds load `@angular/localize/init` as a polyfill, so
 // stories need the same global here.
 import "@angular/localize/init";

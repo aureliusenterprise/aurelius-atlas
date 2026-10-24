@@ -30,7 +30,8 @@ import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { bearerTokenConfig, initialize, keycloakInitOptions } from "./app.config";
+import { bearerTokenConfig, initialize, keycloakInitOptions, metricsUrl } from "./app.config";
+import { parseAppConfig } from "./config";
 import { TELEMETRY_KEY, TIMEZONE_KEY } from "./settings/user-preference";
 
 const configPayload = {
@@ -147,7 +148,7 @@ describe("app providers (7.3)", () => {
         expect(providesToken(providers, AURELIUS_METER_PROVIDER)).toBe(true);
     });
 
-    it("assembles no SDK providers when the stored switch is off (SPL-11, DD-070)", async () => {
+    it("assembles no SDK providers when the stored switch is off (SPL-11, DD-158)", async () => {
         // Off at bootstrap = the SDK is never assembled (the gate skips
         // both provide calls). The token probe, not an HTTP call: with the
         // SDK absent, the OTLP interceptor's tracer injection is the
@@ -217,7 +218,7 @@ describe("app providers (7.3)", () => {
             .map((entry) => ({ path: entry, text: readFileSync(join(appDir, entry), "utf8") }));
 
         // APC-07 bans the legacy periodic updateToken loop. Not even the
-        // 7.17 ingest seam (DD-103) refreshes here: its on-demand
+        // 7.17 ingest seam (DD-193) refreshes here: its on-demand
         // updateToken(30) lives in aurelius-atlas-observability's
         // createAureliusOtelIngestAuth, keyed to OTLP exports — the app
         // tree carries no refresh call site at all.
@@ -225,5 +226,33 @@ describe("app providers (7.3)", () => {
 
         expect(sources.length).toBeGreaterThan(0);
         expect(refreshCallers.map((source) => source.path)).toEqual([]);
+    });
+
+    it("metricsUrl prefers the explicit endpoint (SHL-14)", () => {
+        const cfg = parseAppConfig({
+            ...configPayload,
+            otelMetricsExporterUrl: "https://m.example:4318/v1/metrics",
+        });
+
+        expect(metricsUrl(cfg)).toBe("https://m.example:4318/v1/metrics");
+    });
+
+    it("metricsUrl derives it from the traces endpoint (SHL-14)", () => {
+        const cfg = parseAppConfig(configPayload);
+
+        expect(metricsUrl(cfg)).toBe("/otel/v1/metrics");
+    });
+
+    it("initialize fails loudly when /config.json answers 500 (SHL-02)", async () => {
+        // The app initializer awaits initialize(); a config failure rejects
+        // bootstrap, so the operator sees the error instead of a silently
+        // dead UI (SHL-02: config boot is fail-fast, never defaults).
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => new Response("upstream exploded", { status: 500, statusText: "Server Error" })),
+        );
+
+        await expect(initialize()).rejects.toThrow(/Failed to load app config \(\/config\.json\): 500 Server Error/);
+        vi.unstubAllGlobals();
     });
 });

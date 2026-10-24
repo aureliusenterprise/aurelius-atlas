@@ -1,6 +1,7 @@
 # Add files here to ignore them from prettier formatting
-/dist
+**/dist
 /coverage
+/site
 /.nx/cache
 /.nx/workspace-data
 **/CHANGELOG.md
@@ -14,7 +15,7 @@ uv.lock
 /libs/python/aurelius-atlas-core/tests/fixtures/*.json
 
 # Aurelius dictionaries vendored as test fixtures, kept byte-identical to the
-# reference checkout (DD-039) — and the XLIFF catalogues generated from them
+# reference checkout (DD-128) — and the XLIFF catalogues generated from them
 # (tools/generate-legacy-catalogue.mjs). Prettier trims trailing spaces, which
 # would silently change translated strings: "quality. \n\n" != "quality.\n\n".
 /apps/aurelius-atlas-webapp/tests/fixtures/*.json

@@ -3,23 +3,33 @@
 Ported from ``org.apache.atlas.model.typedef`` of Apache Atlas 2.4.0. Field names are snake_case in Python and
 the Java getter names in JSON (TDM-01). The normalisations the Java setters and constructors apply run as
 validators, so they hold for request bodies and for models built in code alike.
+
+The TDM-nn rule each class and field ports is cited in the increment spec, not in
+class docstrings or field descriptions: those are public and end up in the OpenAPI
+schema, where decision ids mean nothing to a client.
 """
 
 from collections.abc import Callable, Iterable
-from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Any, ClassVar, Self
 
 from pydantic import (
     AfterValidator,
-    BaseModel,
     BeforeValidator,
-    ConfigDict,
     Field,
-    PlainSerializer,
     computed_field,
 )
-from pydantic.alias_generators import to_camel
+
+from aurelius_atlas_model.base import (
+    AtlasModel,
+    JavaBool,
+    JavaInt,
+    NameSet,
+    OptionalNameSet,
+    Timestamp,
+    empty_when_null,
+    null_when_empty,
+)
 
 ATLAS_TYPE_BOOLEAN = "boolean"
 ATLAS_TYPE_BYTE = "byte"
@@ -135,77 +145,6 @@ class PropagateTags(StrEnum):
     BOTH = "BOTH"
 
 
-_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
-_MILLISECOND = timedelta(milliseconds=1)
-
-
-def _read_epoch_millis(value: object) -> object:
-    """Read a number or a string of digits as epoch milliseconds; leave other values to Pydantic (DD-022)."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int | float):
-        return _EPOCH + value * _MILLISECOND
-    if isinstance(value, str) and value.isdigit():
-        return _EPOCH + int(value) * _MILLISECOND
-    return value
-
-
-def _as_utc(value: datetime) -> datetime:
-    """Read a date-time without a zone as UTC, as Jackson's ``StdDateFormat`` does."""
-    return value.replace(tzinfo=UTC) if value.tzinfo is None else value
-
-
-def _write_epoch_millis(value: datetime) -> int:
-    return (value - _EPOCH) // _MILLISECOND
-
-
-type Timestamp = Annotated[
-    datetime,
-    BeforeValidator(_read_epoch_millis),
-    AfterValidator(_as_utc),
-    PlainSerializer(_write_epoch_millis, return_type=int, when_used="json"),
-]
-"""A ``java.util.Date``: an aware datetime, written as epoch milliseconds (TDM-05)."""
-
-
-def _null_as(default: object) -> Callable[[object], object]:
-    def read(value: object) -> object:
-        return default if value is None else value
-
-    return read
-
-
-type JavaBool = Annotated[bool, BeforeValidator(_null_as(default=False))]
-"""A Java ``boolean``: an explicit null reads as false (TDM-10)."""
-
-type JavaInt = Annotated[int, BeforeValidator(_null_as(default=0))]
-"""A Java ``int``: an explicit null reads as 0 (TDM-10)."""
-
-
-def _empty_when_null(value: object) -> object:
-    return [] if value is None else value
-
-
-def _unique(names: list[str]) -> list[str]:
-    """Keep each name once, in first-seen order (TDM-09, DD-021)."""
-    return list(dict.fromkeys(names))
-
-
-def _unique_or_null(names: list[str] | None) -> list[str] | None:
-    return None if names is None else _unique(names)
-
-
-def _null_when_empty[T](values: list[T] | None) -> list[T] | None:
-    return values or None
-
-
-type NameSet = Annotated[list[str], BeforeValidator(_empty_when_null), AfterValidator(_unique)]
-"""A Java ``Set<String>`` that is never null (TDM-06, TDM-09)."""
-
-type OptionalNameSet = Annotated[list[str] | None, AfterValidator(_unique_or_null)]
-"""A Java ``Set<String>`` that may be null (TDM-09)."""
-
-
 def _keep_last_by[T](values: list[T], key: Callable[[T], str | None]) -> list[T]:
     """Keep the last of the values with the same key, compared without case, at its own position.
 
@@ -229,28 +168,15 @@ def _equal_ignoring_case(left: str | None, right: str | None) -> bool:
     return left.lower() == right.lower()
 
 
-class AtlasModel(BaseModel):
-    """The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020)."""
-
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        validate_by_alias=True,
-        validate_by_name=True,
-        validate_assignment=True,
-        extra="ignore",
-        coerce_numbers_to_str=True,
-    )
-
-    def to_json(self) -> dict[str, Any]:
-        """The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02)."""
-        return self.model_dump(mode="json", by_alias=True, exclude_none=True)
-
-
 class AtlasConstraintDef(AtlasModel):
     """A constraint on an attribute, such as ``ownedRef`` or ``inverseRef``."""
 
-    type: str | None = None
-    params: dict[str, Any] | None = None
+    type: str | None = Field(default=None, description="The constraint type name, e.g. ``ownedRef``.")
+
+    params: dict[str, Any] | None = Field(
+        default=None,
+        description="The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
+    )
 
     def is_constraint_type(self, name: str | None) -> bool:
         """Whether this constraint is of type ``name``, compared without case."""
@@ -262,24 +188,81 @@ class AtlasConstraintDef(AtlasModel):
 
 
 class AtlasAttributeDef(AtlasModel):
-    """An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10)."""
+    """An attribute of a struct, classification, entity, relationship or business metadata type.
 
-    name: str | None = None
-    type_name: str | None = None
-    is_optional: JavaBool = False
-    cardinality: Cardinality | None = Cardinality.SINGLE
-    values_min_count: JavaInt = COUNT_NOT_SET
-    values_max_count: JavaInt = COUNT_NOT_SET
-    is_unique: JavaBool = False
-    is_indexable: JavaBool = False
-    include_in_notification: JavaBool = False
-    default_value: str | None = None
-    description: str | None = None
-    search_weight: JavaInt = DEFAULT_SEARCH_WEIGHT
-    index_type: IndexType | None = None
-    constraints: Annotated[list[AtlasConstraintDef] | None, AfterValidator(_null_when_empty)] = None
-    options: dict[str, str] | None = None
-    display_name: str | None = None
+    A null cardinality, an explicit null boolean, and an empty constraint list are
+    normalised on read, as the Java setters do.
+    """
+
+    name: str | None = Field(default=None, description="The attribute name, unique within its type.")
+
+    type_name: str | None = Field(
+        default=None,
+        description="The attribute's type: a primitive or built-in name, an array/map type name, "
+        "or the name of a defined type.",
+    )
+
+    is_optional: JavaBool = Field(default=False, description="Whether an entity may omit the attribute.")
+
+    cardinality: Cardinality | None = Field(
+        default=Cardinality.SINGLE,
+        description="How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE.",
+    )
+
+    values_min_count: JavaInt = Field(
+        default=COUNT_NOT_SET,
+        description="The least number of values a LIST/SET attribute must hold; -1 means unset.",
+    )
+
+    values_max_count: JavaInt = Field(
+        default=COUNT_NOT_SET,
+        description="The most number of values a LIST/SET attribute may hold; -1 means unlimited.",
+    )
+
+    is_unique: JavaBool = Field(
+        default=False,
+        description="Whether the attribute's value is unique across the entities of its type.",
+    )
+
+    is_indexable: JavaBool = Field(default=False, description="Whether the attribute is searchable.")
+
+    include_in_notification: JavaBool = Field(
+        default=False,
+        description="Whether the attribute's value is carried in change notifications.",
+    )
+
+    default_value: str | None = Field(
+        default=None,
+        description="The value an entity gets for the attribute when it omits one.",
+    )
+
+    description: str | None = Field(default=None, description="A description of the attribute.")
+
+    search_weight: JavaInt = Field(
+        default=DEFAULT_SEARCH_WEIGHT,
+        description="The attribute's weight in search scoring, 1 to 10; -1 means unset.",
+    )
+
+    index_type: IndexType | None = Field(
+        default=None,
+        description="How a string attribute is indexed: DEFAULT or STRING.",
+    )
+
+    constraints: Annotated[list[AtlasConstraintDef] | None, AfterValidator(null_when_empty)] = Field(
+        default=None,
+        description="The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. "
+        "An empty list is written back as null.",
+    )
+
+    options: dict[str, str] | None = Field(
+        default=None,
+        description="Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
+    )
+
+    display_name: str | None = Field(
+        default=None,
+        description="The name shown for the attribute in UIs; the name itself when unset.",
+    )
 
     def get_option(self, name: str) -> str | None:
         """The value of option ``name``, or None."""
@@ -311,7 +294,7 @@ def _keep_last_attributes(attributes: list[AtlasAttributeDef]) -> list[AtlasAttr
 
 
 type AttributeDefs = Annotated[
-    list[AtlasAttributeDef], BeforeValidator(_empty_when_null), AfterValidator(_keep_last_attributes)
+    list[AtlasAttributeDef], BeforeValidator(empty_when_null), AfterValidator(_keep_last_attributes)
 ]
 """``attributeDefs``: never null, one definition per name (TDM-06, TDM-07)."""
 
@@ -326,19 +309,44 @@ class AtlasBaseTypeDef(AtlasModel):
 
     CATEGORY: ClassVar[TypeCategory]
 
-    guid: str | None = None
-    created_by: str | None = None
-    updated_by: str | None = None
-    create_time: Timestamp | None = None
-    update_time: Timestamp | None = None
-    version: int | None = None
-    name: str | None = None
-    description: str | None = None
-    type_version: str | None = None
-    service_type: str | None = None
-    options: dict[str, str] | None = None
+    guid: str | None = Field(default=None, description="The server-assigned guid of the type definition.")
 
-    @computed_field
+    created_by: str | None = Field(default=None, description="The user who created the type.")
+
+    updated_by: str | None = Field(default=None, description="The user who last updated the type.")
+
+    create_time: Timestamp | None = Field(
+        default=None,
+        description="When the type was created, in epoch milliseconds.",
+    )
+
+    update_time: Timestamp | None = Field(
+        default=None,
+        description="When the type was last updated, in epoch milliseconds.",
+    )
+
+    version: int | None = Field(default=None, description="The version of the type definition.")
+
+    name: str | None = Field(default=None, description="The unique name of the type.")
+
+    description: str | None = Field(default=None, description="A description of the type.")
+
+    type_version: str | None = Field(
+        default=None,
+        description="The version string of the type, used by typedef patches.",
+    )
+
+    service_type: str | None = Field(
+        default=None,
+        description="The service the type belongs to; built-in types use ``atlas_core``.",
+    )
+
+    options: dict[str, str] | None = Field(
+        default=None,
+        description="Extension options of the type, e.g. ``applicableEntityTypes``.",
+    )
+
+    @computed_field(description="The kind of this type definition, fixed by its type: never read from input.")
     @property
     def category(self) -> TypeCategory:
         """The kind of this type definition, fixed by its class; never read from input (TDM-04)."""
@@ -356,9 +364,11 @@ class AtlasBaseTypeDef(AtlasModel):
 class AtlasEnumElementDef(AtlasModel):
     """One value of an enum type."""
 
-    value: str | None = None
-    description: str | None = None
-    ordinal: int | None = None
+    value: str | None = Field(default=None, description="The enum value, unique within its type.")
+
+    description: str | None = Field(default=None, description="A description of the enum value.")
+
+    ordinal: int | None = Field(default=None, description="The position of the value in the enum.")
 
 
 def _element_value(element: AtlasEnumElementDef) -> str | None:
@@ -375,9 +385,16 @@ class AtlasEnumDef(AtlasBaseTypeDef):
     CATEGORY: ClassVar[TypeCategory] = TypeCategory.ENUM
 
     element_defs: Annotated[
-        list[AtlasEnumElementDef], BeforeValidator(_empty_when_null), AfterValidator(_keep_last_elements)
-    ] = Field(default_factory=list)
-    default_value: str | None = None
+        list[AtlasEnumElementDef], BeforeValidator(empty_when_null), AfterValidator(_keep_last_elements)
+    ] = Field(
+        default_factory=list,
+        description="The values of the enum; one element per value, the last given for a value wins.",
+    )
+
+    default_value: str | None = Field(
+        default=None,
+        description="The value an entity gets for a missing attribute of this enum type.",
+    )
 
     def get_element(self, value: str | None) -> AtlasEnumElementDef | None:
         """The element with ``value``, compared without case, or None (TDM-16)."""
@@ -402,7 +419,10 @@ class AtlasStructDef(AtlasBaseTypeDef):
 
     CATEGORY: ClassVar[TypeCategory] = TypeCategory.STRUCT
 
-    attribute_defs: AttributeDefs = Field(default_factory=list)
+    attribute_defs: AttributeDefs = Field(
+        default_factory=list,
+        description="The attributes of the type; one definition per name, the last given for a name wins.",
+    )
 
     def get_attribute(self, name: str | None) -> AtlasAttributeDef | None:
         """The attribute definition named ``name``, compared without case, or None (TDM-16)."""
@@ -437,10 +457,20 @@ class AtlasClassificationDef(AtlasStructDef):
 
     CATEGORY: ClassVar[TypeCategory] = TypeCategory.CLASSIFICATION
 
-    super_types: NameSet = Field(default_factory=list)
-    entity_types: NameSet = Field(default_factory=list)
-    sub_types: OptionalNameSet = None
-    """Derived from the super types of all classifications; ignored on create and update."""
+    super_types: NameSet = Field(
+        default_factory=list,
+        description="The classifications this one extends.",
+    )
+
+    entity_types: NameSet = Field(
+        default_factory=list,
+        description="The entity types the classification may be applied to.",
+    )
+
+    sub_types: OptionalNameSet = Field(
+        default=None,
+        description="The classifications extending this one; derived by the server, ignored on create and update.",
+    )
 
     def has_super_type(self, name: str) -> bool:
         """Whether ``name`` is a super type, compared exactly (TDM-16)."""
@@ -470,8 +500,15 @@ class AtlasClassificationDef(AtlasStructDef):
 class AtlasRelationshipAttributeDef(AtlasAttributeDef):
     """An entity attribute that a relationship type adds; read-only, derived from the relationship types."""
 
-    relationship_type_name: str | None = None
-    is_legacy_attribute: JavaBool = False
+    relationship_type_name: str | None = Field(
+        default=None,
+        description="The name of the relationship type that adds this attribute.",
+    )
+
+    is_legacy_attribute: JavaBool = Field(
+        default=False,
+        description="Whether the attribute comes from a legacy relationship end definition.",
+    )
 
 
 class AtlasEntityDef(AtlasStructDef):
@@ -479,13 +516,26 @@ class AtlasEntityDef(AtlasStructDef):
 
     CATEGORY: ClassVar[TypeCategory] = TypeCategory.ENTITY
 
-    super_types: NameSet = Field(default_factory=list)
-    sub_types: OptionalNameSet = None
-    """Derived from the super types of all entity types; ignored on create and update."""
-    relationship_attribute_defs: list[AtlasRelationshipAttributeDef] | None = None
-    """Derived from the relationship types that refer to this one; ignored on create and update."""
-    business_attribute_defs: dict[str, list[AtlasAttributeDef]] | None = None
-    """Derived from the business metadata types that apply to this one; ignored on create and update."""
+    super_types: NameSet = Field(
+        default_factory=list,
+        description="The entity types this one extends.",
+    )
+
+    sub_types: OptionalNameSet = Field(
+        default=None,
+        description="The entity types extending this one; derived by the server, ignored on create and update.",
+    )
+
+    relationship_attribute_defs: list[AtlasRelationshipAttributeDef] | None = Field(
+        default=None,
+        description="The attributes added by relationship types; derived by the server, ignored on create and update.",
+    )
+
+    business_attribute_defs: dict[str, list[AtlasAttributeDef]] | None = Field(
+        default=None,
+        description="The attributes of the business metadata types that apply to this one, keyed by "
+        "business metadata type name; derived by the server, ignored on create and update.",
+    )
 
     def has_super_type(self, name: str) -> bool:
         """Whether ``name`` is a super type, compared exactly (TDM-16)."""
@@ -501,26 +551,65 @@ class AtlasEntityDef(AtlasStructDef):
 
 
 class AtlasRelationshipEndDef(AtlasModel):
-    """One end of a relationship type: the entity type there and the attribute it gets (TDM-12)."""
+    """One end of a relationship type: the entity type there and the attribute it gets."""
 
-    type: str | None = None
-    name: str | None = None
-    is_container: JavaBool = False
-    cardinality: Cardinality | None = Cardinality.SINGLE
-    is_legacy_attribute: JavaBool = False
-    description: str | None = None
+    type: str | None = Field(
+        default=None,
+        description="The name of the entity type at this end of the relationship.",
+    )
+
+    name: str | None = Field(
+        default=None,
+        description="The name of the attribute this end adds to the entity type.",
+    )
+
+    is_container: JavaBool = Field(
+        default=False,
+        description="Whether the entity at this end owns the entities at the other end.",
+    )
+
+    cardinality: Cardinality | None = Field(
+        default=Cardinality.SINGLE,
+        description="How many entities sit at this end: SINGLE, LIST, or SET.",
+    )
+
+    is_legacy_attribute: JavaBool = Field(
+        default=False,
+        description="Whether the attribute this end defines already exists on the entity type.",
+    )
+
+    description: str | None = Field(default=None, description="A description of this end of the relationship.")
 
 
 class AtlasRelationshipDef(AtlasStructDef):
-    """A relationship type between two entity types (TDM-12)."""
+    """A relationship type between two entity types."""
 
     CATEGORY: ClassVar[TypeCategory] = TypeCategory.RELATIONSHIP
 
-    relationship_category: RelationshipCategory | None = None
-    relationship_label: str | None = None
-    propagate_tags: PropagateTags | None = None
-    end_def1: AtlasRelationshipEndDef | None = None
-    end_def2: AtlasRelationshipEndDef | None = None
+    relationship_category: RelationshipCategory | None = Field(
+        default=None,
+        description="How the two ends depend on each other: ASSOCIATION, AGGREGATION, or COMPOSITION.",
+    )
+
+    relationship_label: str | None = Field(
+        default=None,
+        description="The label of the relationship; the type name when unset.",
+    )
+
+    propagate_tags: PropagateTags | None = Field(
+        default=None,
+        description="The direction in which classifications propagate over the relationship.",
+    )
+
+    end_def1: AtlasRelationshipEndDef | None = Field(
+        default=None,
+        description="The first end of the relationship.",
+    )
+
+    end_def2: AtlasRelationshipEndDef | None = Field(
+        default=None,
+        description="The second end of the relationship.",
+    )
 
 
 class AtlasBusinessMetadataDef(AtlasStructDef):
@@ -532,10 +621,13 @@ class AtlasBusinessMetadataDef(AtlasStructDef):
 class AtlasTypeDefHeader(AtlasModel):
     """The identity of a type definition, as ``/v2/types/typedefs/headers`` lists it."""
 
-    guid: str | None = None
-    name: str | None = None
-    service_type: str | None = None
-    category: TypeCategory | None = None
+    guid: str | None = Field(default=None, description="The guid of the type definition.")
+
+    name: str | None = Field(default=None, description="The name of the type.")
+
+    service_type: str | None = Field(default=None, description="The service the type belongs to.")
+
+    category: TypeCategory | None = Field(default=None, description="The kind of the type.")
 
     @classmethod
     def of(cls, typedef: AtlasBaseTypeDef) -> Self:
@@ -548,14 +640,37 @@ def _has_name(typedefs: list[Any] | None, name: str) -> bool:
 
 
 class AtlasTypesDef(AtlasModel):
-    """Type definitions of every kind: the body of ``/v2/types/typedefs`` (TDM-13)."""
+    """Type definitions of every kind: the body of ``/v2/types/typedefs``."""
 
-    enum_defs: list[AtlasEnumDef] | None = Field(default_factory=list)
-    struct_defs: list[AtlasStructDef] | None = Field(default_factory=list)
-    classification_defs: list[AtlasClassificationDef] | None = Field(default_factory=list)
-    entity_defs: list[AtlasEntityDef] | None = Field(default_factory=list)
-    relationship_defs: list[AtlasRelationshipDef] | None = Field(default_factory=list)
-    business_metadata_defs: list[AtlasBusinessMetadataDef] | None = Field(default_factory=list)
+    enum_defs: list[AtlasEnumDef] | None = Field(
+        default_factory=list,
+        description="The enum types.",
+    )
+
+    struct_defs: list[AtlasStructDef] | None = Field(
+        default_factory=list,
+        description="The struct types.",
+    )
+
+    classification_defs: list[AtlasClassificationDef] | None = Field(
+        default_factory=list,
+        description="The classification types.",
+    )
+
+    entity_defs: list[AtlasEntityDef] | None = Field(
+        default_factory=list,
+        description="The entity types.",
+    )
+
+    relationship_defs: list[AtlasRelationshipDef] | None = Field(
+        default_factory=list,
+        description="The relationship types.",
+    )
+
+    business_metadata_defs: list[AtlasBusinessMetadataDef] | None = Field(
+        default_factory=list,
+        description="The business metadata types.",
+    )
 
     def is_empty(self) -> bool:
         """Whether every list is empty or null (TDM-17)."""

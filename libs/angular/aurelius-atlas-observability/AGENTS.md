@@ -16,7 +16,7 @@ covers wiring specific to this lib; workspace-wide rules live in the root
   a belt-and-braces flush; `service.instance.id` is generated so the collector
   emits `target_info` and resource attributes become Prometheus labels.
 - `src/lib/opentelemetry-ingest-auth.ts` — `createAureliusOtelIngestAuth()`, the
-  OTLP ingest-credential seam (DD-103): the exporter `headers` factory reading
+  OTLP ingest-credential seam (DD-193): the exporter `headers` factory reading
   the user's Keycloak token, with `attach` binding it to the live client. The
   app wires both ends — the factory into its exporter construction, `attach`
   into a `provideAppInitializer` right after `provideKeycloak`. Keycloak is the

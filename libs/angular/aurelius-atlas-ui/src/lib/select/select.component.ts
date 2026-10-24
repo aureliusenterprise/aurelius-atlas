@@ -10,16 +10,16 @@ let nextSelectId = 0;
 /**
  * The legacy Aurelius select field (`models4insight-select`), ported without
  * its reactive form, the `ControlShell` wrapper, or the embedded
- * `SearchModalComponent` (DD-067): the value lives in a `model()`, the shell
+ * `SearchModalComponent` (DD-155): the value lives in a `model()`, the shell
  * markup (label, addons, required help) is inlined, and the search button —
  * the Aurelius modal opener — emits `searchRequested` for the app to handle
  * (7.7 wires the repository-fed modal).
  *
  * The legacy `compareWith` default (lodash `isEqual`) becomes strict
- * equality (DD-067): option identity is the option row, so callers pass
+ * equality (DD-155): option identity is the option row, so callers pass
  * stable objects. Chrome strings — label, null/no-data messages, required
  * help, search accessible name — are caller-supplied inputs carrying the
- * legacy English defaults (DD-047, UIC-15).
+ * legacy English defaults (DD-136, UIC-15).
  */
 @Component({
     selector: "aurelius-atlas-ui-select",
@@ -103,7 +103,7 @@ export class Select<T extends Record<string, unknown> = Record<string, unknown>>
     /**
      * Show the search button — the legacy modal opener, on by default as
      * in Aurelius. Off, the field is a plain labelled dropdown (the
-     * settings panel's theme picker, DD-076), and the addons layout
+     * settings panel's theme picker, DD-164), and the addons layout
      * collapses with the button.
      */
     readonly searchVisible = input(true);
@@ -116,7 +116,7 @@ export class Select<T extends Record<string, unknown> = Record<string, unknown>>
 
     /**
      * Emits when the search button is activated — the legacy
-     * `activateSearchModal`, turned into an emit (DD-067).
+     * `activateSearchModal`, turned into an emit (DD-155).
      */
     readonly searchRequested = output<void>();
 
@@ -175,7 +175,7 @@ export class Select<T extends Record<string, unknown> = Record<string, unknown>>
     /**
      * The control's value: the selected row's index as a string, `''` for
      * the placeholder option — the native-select counterpart of the
-     * legacy `ngValue`/`compareWith` pair (DD-067).
+     * legacy `ngValue`/`compareWith` pair (DD-155).
      * @returns The option value string.
      */
     protected controlValue(): string {

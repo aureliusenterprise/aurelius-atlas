@@ -78,7 +78,7 @@ export function keycloakInitOptions(): KeycloakInitOptions {
 /**
  * The bearer-token interceptor config (APC-06, DD-004): the token rides every
  * same-origin `/api` call — the Atlas API — and nothing else. The server ignores it
- * until 6.1; sending it from day one is the stated pre-6.1 condition (DD-052).
+ * until 6.1; sending it from day one is the stated pre-6.1 condition (DD-141).
  */
 export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }];
 
@@ -89,17 +89,17 @@ export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }];
  * telemetry (SHL-14): traces, metrics with Core Web Vitals, uncaught errors as
  * span events, and `traceparent` propagation on HTTP calls — all through
  * `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
- * clickstream paths (DD-040). Increment 7.3 adds the auth wiring (DD-044):
+ * clickstream paths (DD-129). Increment 7.3 adds the auth wiring (DD-133):
  * Keycloak with check-sso + silent-SSO (APC-05) and the bearer-token
  * interceptor on `/api` (APC-06, DD-004's in-memory token store), replacing the
- * Aurelius `libs/authentication` wholesale (DD-052) — the same provider set the
+ * Aurelius `libs/authentication` wholesale (DD-141) — the same provider set the
  * example app proves.
  * @returns The {@link ApplicationConfig} to bootstrap with.
  */
 export async function initialize(): Promise<ApplicationConfig> {
     const config = await loadConfig();
     const sessionResource = createAureliusSessionResource();
-    // The OTLP credential seam (DD-103, aurelius-atlas-observability): the
+    // The OTLP credential seam (DD-193, aurelius-atlas-observability): the
     // exporters read the user's token through its headers factory, lazily —
     // per export, from the live Keycloak client the gate's initializer
     // attaches below. No ordering is read into that attach: the factory
@@ -111,10 +111,10 @@ export async function initialize(): Promise<ApplicationConfig> {
             provideBrowserGlobalErrorListeners(),
             // Uncaught errors (window.onerror + unhandledrejection) become
             // exception events on the active span, or a standalone error
-            // span — and, above it (ALR-04, DD-084), an alert in the drawer.
+            // span — and, above it (ALR-04, DD-172), an alert in the drawer.
             // The chain records first, then delegates: SHL-14 is untouched.
             { provide: ErrorHandler, useFactory: alertsErrorHandlerFactory },
-            // The telemetry gate (SPL-11, DD-070): the stored switch decides
+            // The telemetry gate (SPL-11, DD-158): the stored switch decides
             // at bootstrap. Off = no providers at all — the interceptor falls
             // back to the no-op global tracer; TelemetryService's optional
             // token injections return null exactly then. On = the SDK is
@@ -124,7 +124,7 @@ export async function initialize(): Promise<ApplicationConfig> {
                       provideAureliusOpenTelemetry({
                           exporter: new OTLPTraceExporter({
                               url: config.otelExporterUrl,
-                              // The user token rides every push (DD-103):
+                              // The user token rides every push (DD-193):
                               // the OTLP leg is outside HttpClient, so the
                               // bearer interceptor above cannot cover it.
                               headers: ingestAuth.headers,
@@ -140,7 +140,7 @@ export async function initialize(): Promise<ApplicationConfig> {
                           name: "aurelius-atlas-webapp",
                           resource: sessionResource,
                       }),
-                      // The seam's other end (DD-103, CIA-02): the live
+                      // The seam's other end (DD-193, CIA-02): the live
                       // Keycloak client — the same DI instance the bearer
                       // interceptor reads — into the headers factory. Inside
                       // the gate: with telemetry off there is no exporter to
@@ -154,7 +154,7 @@ export async function initialize(): Promise<ApplicationConfig> {
             // takes effect on reload, which the settings panel states.
             { provide: DATE_PIPE_DEFAULT_TIMEZONE, useFactory: () => TimezoneService.storedTimezone() },
             // The REST client composes every URL from this base — the Aurelius
-            // deployment-proxy coupling is not ported (APC-01, DD-050).
+            // deployment-proxy coupling is not ported (APC-01, DD-139).
             provideApiBaseUrl(config.apiBaseUrl),
             // check-sso + silent-SSO: an existing SSO session signs in without a
             // click; the root guard (routes.ts) redirects everyone else (APC-05).
@@ -164,7 +164,7 @@ export async function initialize(): Promise<ApplicationConfig> {
             }),
             // Bearer token on every /api call (APC-06, DD-004). The server
             // ignores it until 6.1; sending it from day one is the stated
-            // pre-6.1 condition (DD-052), and refresh is keycloak-angular's —
+            // pre-6.1 condition (DD-141), and refresh is keycloak-angular's —
             // the legacy updateToken loop is not ported (APC-07).
             {
                 provide: INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
@@ -181,7 +181,7 @@ export async function initialize(): Promise<ApplicationConfig> {
             // browser and server spans join one trace (ADR 016); the bearer
             // interceptor adds the Keycloak token to /api (APC-06); the alerts
             // reporter watches /api responses and records 5xx/network failures
-            // as alerts, re-throwing untouched (ALR-05, DD-085).
+            // as alerts, re-throwing untouched (ALR-05, DD-173).
             provideHttpClient(
                 withXhr(),
                 withInterceptors([

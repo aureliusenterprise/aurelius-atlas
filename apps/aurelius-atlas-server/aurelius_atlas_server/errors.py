@@ -6,6 +6,7 @@ The errors themselves live in ``aurelius_atlas_model.errors`` (DD-023) and are r
 import logging
 from typing import Any
 
+from aurelius_atlas_model import codec
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -19,9 +20,13 @@ ATLAS_JSON_MEDIA_TYPE = "application/json; charset=UTF-8"
 
 
 class AtlasJSONResponse(JSONResponse):
-    """A JSON response with the Atlas media type (SRV-05)."""
+    """A JSON response with the Atlas media type (SRV-05), written by Atlas's JSON codec (VAL-01, DD-039)."""
 
     media_type = ATLAS_JSON_MEDIA_TYPE
+
+    def render(self, content: Any) -> bytes:  # noqa: ANN401 - any JSON value
+        """Decimals keep their digits and dates are epoch milliseconds, as Jackson writes them."""
+        return codec.dumps(content)
 
 
 async def atlas_error_handler(_request: Request, error: Exception) -> AtlasJSONResponse:

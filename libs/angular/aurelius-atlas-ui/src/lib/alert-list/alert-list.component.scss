@@ -3,7 +3,7 @@
  * colour, padding, and the delete button come from Bulma — this sheet
  * carries the rhythm and the count chip.
  *
- * The chip's pair is pinned (DD-088), not Bulma's `is-light`: the brand
+ * The chip's pair is pinned (DD-176), not Bulma's `is-light`: the brand
  * pins the `light` plate outside Bulma's scheme machinery (SHM-04),
  * while Bulma's dark theme re-pins `light`'s invert — a scheme-following
  * ink — so in dark mode the tag painted white ink on the brand's white
@@ -33,7 +33,7 @@
  * ring dot. The dot rides in the row's own ink (currentColor) so it is
  * visible on every severity plate — a severity-coloured dot would vanish
  * on its own colour — with a hairline ring in the plate lifting it off
- * the background (the badge's idiom, DD-080).
+ * the background (the badge's idiom, DD-168).
  */
 .aurelius-alert-unread .aurelius-alert-message {
     font-weight: 700;

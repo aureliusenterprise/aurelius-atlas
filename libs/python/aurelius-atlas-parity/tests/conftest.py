@@ -2,7 +2,7 @@ import textwrap
 from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_parity.testing import SampleApp
 

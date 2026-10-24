@@ -52,7 +52,7 @@ describe("PropertiesItem", () => {
         expect(anchors[0].getAttribute("href")).toBe("#");
     });
 
-    it("emits itemClicked with the link guid (UIC-13, DD-066)", () => {
+    it("emits itemClicked with the link guid (UIC-13, DD-154)", () => {
         set([{ guid: "g1", displayText: "Owner" }]);
         const clicked: string[] = [];
         fixture.componentInstance.itemClicked.subscribe((guid) => clicked.push(guid));
@@ -68,7 +68,7 @@ describe("PropertiesItem", () => {
         expect(fixture.nativeElement.querySelector("div").textContent.trim()).toBe("N/A");
     });
 
-    it("names the empty label from the caller (DD-047)", () => {
+    it("names the empty label from the caller (DD-136)", () => {
         fixture.componentRef.setInput("emptyLabel", "Geen");
         set([]);
 

@@ -31,10 +31,10 @@ const host = (args: Record<string, unknown>) => ({ props: args, template });
 
 /**
  * The panel closed behind an "Open settings" button: the play() opens it,
- * checks the title, the projected content and the slide-in (DD-074), and
+ * checks the title, the projected content and the slide-in (DD-162), and
  * closes it with the header's close button. `toBeNull` does not poll, so
  * the closed assertions wait out the 200ms exit animation, which is what
- * removes the layer (DD-074).
+ * removes the layer (DD-162).
  */
 export const Primary: Story = {
     args: {
@@ -49,7 +49,7 @@ export const Primary: Story = {
         const dialog = canvas.getByRole("dialog", { name: "Settings" });
         await expect(dialog).toBeInTheDocument();
         await expect(within(dialog).getByText("Appearance")).toBeInTheDocument();
-        // The panel slides in from the right edge (DD-074); Angular scopes
+        // The panel slides in from the right edge (DD-162); Angular scopes
         // the keyframe name, so match it unanchored.
         expect(getComputedStyle(dialog).animationName).toMatch(/aurelius-drawer-in/);
 
@@ -77,9 +77,9 @@ export const EscapeCloses: Story = {
 
         await userEvent.keyboard("{Escape}");
         // Focus returns to the button that opened the panel (SPL-02) —
-        // at once, while the panel is still sliding out (DD-074).
+        // at once, while the panel is still sliding out (DD-162).
         await expect(canvasElement.ownerDocument.activeElement).toBe(opener);
-        // The layer goes when the exit animation ends (DD-074).
+        // The layer goes when the exit animation ends (DD-162).
         await waitFor(() => expect(canvas.queryByRole("dialog")).toBeNull());
     },
     render: host,
@@ -87,7 +87,7 @@ export const EscapeCloses: Story = {
 
 /**
  * The panel on the dark theme: the surface and ink follow Bulma's dark
- * scheme (the brand's dark ink ramp, DD-068). It opens dark — the toolbar
+ * scheme (the brand's dark ink ramp, DD-156). It opens dark — the toolbar
  * Theme switch (top bar) flips it to light or Auto at any time.
  */
 export const OnDark: Story = {
@@ -126,7 +126,7 @@ const actionsTemplate = `
 `;
 
 /**
- * The head's action slot (DD-088): content carrying `drawer-actions`
+ * The head's action slot (DD-176): content carrying `drawer-actions`
  * projects between the title and the close button, so the escape hatch
  * (Clear all on an alerts feed) rides the sticky head and a long body
  * never buries it. The play() checks the slot's order in the head.

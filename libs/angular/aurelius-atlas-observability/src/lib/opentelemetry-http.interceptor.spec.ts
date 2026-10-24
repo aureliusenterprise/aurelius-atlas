@@ -1,12 +1,23 @@
-import { HttpClient, HttpEvent, HttpEventType, provideHttpClient, withInterceptors } from "@angular/common/http";
+import {
+    HttpClient,
+    HttpEvent,
+    HttpEventType,
+    HttpRequest,
+    provideHttpClient,
+    withInterceptors,
+} from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { combineLatest } from "rxjs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { aureliusOpenTelemetryHttpInterceptor, setSpanStatusFromEvent } from "./opentelemetry-http.interceptor";
+import {
+    aureliusOpenTelemetryHttpInterceptor,
+    injectTraceIdHeader,
+    setSpanStatusFromEvent,
+} from "./opentelemetry-http.interceptor";
 import { provideAureliusOpenTelemetry } from "./opentelemetry.provider";
-import { Span, SpanStatusCode } from "@opentelemetry/api";
+import { context, Span, SpanStatusCode } from "@opentelemetry/api";
 
 describe("OpenTelemetry HTTP Interceptor", () => {
     let httpClient: HttpClient;
@@ -470,6 +481,15 @@ describe("OpenTelemetry HTTP Interceptor", () => {
 
             expect(mockSpan.setAttribute).not.toHaveBeenCalled();
             expect(mockSpan.setStatus).not.toHaveBeenCalled();
+        });
+
+        it("passes the request through unchanged without an active span", () => {
+            const request = new HttpRequest("GET", "/api/test");
+
+            const result = injectTraceIdHeader(request, context.active());
+
+            expect(result).toBe(request);
+            expect(result.headers.has("X-Trace-Id")).toBe(false);
         });
     });
 });

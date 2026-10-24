@@ -1,7 +1,7 @@
 from functools import cache
 from typing import Annotated, cast
 
-import httpx
+import httpx2 as httpx
 import jwt
 from cachetools import TTLCache, cached
 from cachetools.keys import hashkey
@@ -21,11 +21,12 @@ auth_scheme = HTTPBearer(auto_error=True)
 
 
 class OpenIdConfig(BaseModel):
-    """OpenID configuration settings."""
+    """The parts of an OpenID provider's discovery document this app reads."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="ignore")
 
     jwks_uri: HttpUrl
+    """The URL of the provider's JSON Web Key Set, used to verify bearer tokens."""
 
 
 @cache

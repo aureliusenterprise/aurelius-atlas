@@ -7,7 +7,7 @@ import { TelemetryService } from "./telemetry.service";
 import { TimezoneService } from "./timezone.service";
 
 /**
- * The settings facade (SPL-10, DD-072): one injectable the settings panel
+ * The settings facade (SPL-10, DD-160): one injectable the settings panel
  * consumes, exposing each category's signal and setter and delegating to
  * exactly one owner service per category. The facade stores nothing — the
  * owners own their signals and storage; `UserPreference` is the only code
@@ -71,7 +71,7 @@ export class SettingsService {
 
     /**
      * Switch telemetry (SPL-11): off stops the exports now, on is effective
-     * after a reload (DD-070).
+     * after a reload (DD-158).
      * @param enabled the new state
      */
     setTelemetry(enabled: boolean): void {

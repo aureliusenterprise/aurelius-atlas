@@ -1,7 +1,7 @@
-"""The fixed governance-quality mock document (VE-02, DV-14, DD-112).
+"""The fixed governance-quality mock document (VE-02, DV-67, DD-201).
 
 The legacy ``m4i-validate-entity`` service is a mock: it accepts the entity,
-never reads it, and answers this constant (ADR 055, DV-14). The document is
+never reads it, and answers this constant (ADR 055, DV-67). The document is
 the webapp's editor contract — the ``AppSearchResult<GovQualitySearchObject>``
 cards its governance panel renders (``libs/atlas/api::GovQualityApi``) — so it
 is ported verbatim, as data: the legacy's ``doc-…`` ids, ``raw`` strings,

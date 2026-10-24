@@ -8,7 +8,7 @@ import { AlertList } from "./alert-list.component";
  * notifications, newest first, a burst chip on merged repeats, and
  * per-row dismissal. The component is presentational — stories supply
  * the groups the app's store would produce. Clearing the feed is the
- * caller's action, placed in the drawer's head (DD-088).
+ * caller's action, placed in the drawer's head (DD-176).
  */
 const meta: Meta<AlertList> = {
     component: AlertList,
@@ -50,7 +50,7 @@ const dismissed: string[] = [];
 
 /**
  * The full feed: three rows, the severity colours (danger/warning/info,
- * DD-063), burst chips on the merged rows, the unread markers on the two
+ * DD-152), burst chips on the merged rows, the unread markers on the two
  * unread rows (ALR-12: bold message, ring dot), the time line, and
  * per-row dismissal — the play() dismisses the error row and sees the
  * output.
@@ -96,7 +96,7 @@ export const Primary: Story = {
 
 /**
  * The empty state: a centered line and no rows (ALR-07). The list never
- * carries a clear control — that action rides the drawer head (DD-088).
+ * carries a clear control — that action rides the drawer head (DD-176).
  */
 export const Empty: Story = {
     args: {

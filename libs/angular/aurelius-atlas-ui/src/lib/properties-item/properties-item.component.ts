@@ -19,7 +19,7 @@ export interface PropertiesItemLink {
  * nothing — the legacy component's three-way `defineTypes` split.
  *
  * The legacy anchors navigated to `search/details/{guid}`; these emit
- * `itemClicked` and the app routes (DD-066, same reasoning as the card).
+ * `itemClicked` and the app routes (DD-154, same reasoning as the card).
  */
 @Component({
     selector: "aurelius-atlas-ui-properties-item",

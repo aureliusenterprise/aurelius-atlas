@@ -6,7 +6,7 @@ import { AtlasEntitiesService } from "./atlas-entities.service";
 import type { AtlasEntityWithExtInfo } from "./atlas-entity";
 
 /**
- * The entity-by-GUID read, asserted on the wire (DET-03, DD-097): the
+ * The entity-by-GUID read, asserted on the wire (DET-03, DD-187): the
  * request (method, path, encoding, the APC-01 base url) and the DTO mapping.
  * The endpoint is server 2.3's surface — today it answers 404, so every
  * scenario here is an `expectOne` plus a synthetic `flush`: honest against
@@ -69,7 +69,7 @@ describe("AtlasEntitiesService (DET-03)", () => {
         req.flush({});
     });
 
-    it("composes from the injected API_BASE_URL, not a hard-coded host (APC-01, DD-098)", () => {
+    it("composes from the injected API_BASE_URL, not a hard-coded host (APC-01, DD-188)", () => {
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
@@ -85,7 +85,7 @@ describe("AtlasEntitiesService (DET-03)", () => {
             .flush({});
     });
 
-    it("surfaces the Atlas error body on a 404, honest against today's server (APC-04, DD-097)", () => {
+    it("surfaces the Atlas error body on a 404, honest against today's server (APC-04, DD-187)", () => {
         let status = 0;
         service.getEntityByGuid("missing").subscribe({
             error: (error) => {

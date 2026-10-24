@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { ClassificationChip } from "./classification-chip.component";
 
-/** The host projects the sources slot — the content the chip must render (DD-099). */
+/** The host projects the sources slot — the content the chip must render (DD-189). */
 @Component({
     imports: [ClassificationChip],
     template: `
@@ -69,7 +69,7 @@ describe("ClassificationChip", () => {
         expect([...tags()].at(-1)!.hasAttribute("title")).toBe(false);
     });
 
-    it("renders the lead as the kind's word — the term chip (UIC-16, DD-099)", () => {
+    it("renders the lead as the kind's word — the term chip (UIC-16, DD-189)", () => {
         host.leadLabel.set("Term");
         host.leadColor.set("is-info");
         fixture.detectChanges();
@@ -99,7 +99,7 @@ describe("ClassificationChip", () => {
         expect(trigger.querySelector(".icon svg")).toBeTruthy();
     });
 
-    it("projects the caller's sources rows into the dropdown (UIC-16, DD-099)", () => {
+    it("projects the caller's sources rows into the dropdown (UIC-16, DD-189)", () => {
         host.propagated.set(true);
         fixture.detectChanges();
 
@@ -108,7 +108,7 @@ describe("ClassificationChip", () => {
         expect(rows[0].textContent).toBe("Source entity");
     });
 
-    it("localises the origin line from the caller (UIC-20, DD-047)", () => {
+    it("localises the origin line from the caller (UIC-20, DD-136)", () => {
         host.propagated.set(true);
         host.originLabel.set("komt voor uit de volgende bronnen:");
         fixture.detectChanges();

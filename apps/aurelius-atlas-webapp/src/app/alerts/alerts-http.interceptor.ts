@@ -8,7 +8,7 @@ import { AlertsService } from "./alerts.service";
 const API_URL = /\/api\//;
 
 /**
- * The HTTP error reporter (ALR-05, DD-085): a failed `/api` call becomes
+ * The HTTP error reporter (ALR-05, DD-173): a failed `/api` call becomes
  * an error alert — the `5xx` responses and the network failures (status
  * 0, a request that never got a response). `4xx` stays silent: a client
  * error is the calling feature's own business (its form validation, its

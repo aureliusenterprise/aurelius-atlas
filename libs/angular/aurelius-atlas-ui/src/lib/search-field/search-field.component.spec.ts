@@ -32,7 +32,7 @@ describe("SearchField", () => {
         expect(fixture.nativeElement.querySelector("button.button.is-success")).toBeNull();
     });
 
-    it("shows the caller placeholder (DD-047)", () => {
+    it("shows the caller placeholder (DD-136)", () => {
         fixture.componentRef.setInput("placeholder", "Search...");
         fixture.detectChanges();
 
@@ -103,7 +103,7 @@ describe("SearchField", () => {
         expect(fixture.nativeElement.querySelector("button.delete")).toBeNull();
     });
 
-    it("names the icon buttons from the caller's labels (DD-047)", () => {
+    it("names the icon buttons from the caller's labels (DD-136)", () => {
         fixture.componentRef.setInput("submitLabel", "Zoeken");
         fixture.componentRef.setInput("query", "branch");
         fixture.componentRef.setInput("clearLabel", "Wissen");

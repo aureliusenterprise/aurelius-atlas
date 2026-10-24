@@ -8,7 +8,7 @@ export type SortDirection = "asc" | "desc";
 /**
  * Declares one header cell of `aurelius-atlas-ui-sortable-table`, projected
  * as an `ng-template` whose content becomes the `<th>` text — the ported
- * form of the Aurelius config object's `displayName` (DD-046): column names
+ * form of the Aurelius config object's `displayName` (DD-135): column names
  * are caller-localised content, not a component string.
  *
  * A column is sortable when `sortBy` names the row property to sort, and
@@ -48,7 +48,7 @@ export class TableColumn {
 /**
  * Marker for the `ng-template` that renders one table row: its context is
  * the row, so `<ng-template aurelius-atlas-ui-table-row let-row>` projects
- * the `<td>` cells — the Aurelius shell's row `TemplateRef` (DD-046).
+ * the `<td>` cells — the Aurelius shell's row `TemplateRef` (DD-135).
  */
 @Directive({
     selector: "[aurelius-atlas-ui-table-row]",

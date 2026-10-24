@@ -5,7 +5,7 @@
  * build (see `build.configurations.development.assets` in `project.json`). Each
  * deployment serves its own `config.json`, so the same image can target any
  * environment. The Aurelius `environments/environment.ts` is not ported — this
- * is the settings channel (ADR 018, DD-041, SHL-10).
+ * is the settings channel (ADR 018, DD-130, SHL-10).
  */
 export interface AppConfig {
     /**

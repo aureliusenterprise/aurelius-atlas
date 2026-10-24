@@ -22,7 +22,10 @@ from aurelius_atlas_model.typedef import (
     Cardinality,
     TypeCategory,
 )
+from aurelius_atlas_typesystem.builtin import IntType
+from aurelius_atlas_typesystem.hierarchy_type import name_of
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from aurelius_atlas_typesystem.struct_type import contained_type
 from aurelius_atlas_typesystem.types import (
     ArrayType,
     AtlasType,
@@ -70,8 +73,8 @@ def struct_type(registry: TypeRegistry, name: str) -> StructType:
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types.StructType.attribute",
-    "aurelius_atlas_typesystem.types.StructType.attribute_type",
+    "aurelius_atlas_typesystem.struct_type.StructType.attribute",
+    "aurelius_atlas_typesystem.struct_type.StructType.attribute_type",
     rules=["TRG-10", "TRG-13"],
 )
 def test__attributes_resolve_their_types() -> None:
@@ -148,8 +151,8 @@ def test__a_classification_as_map_key_is_not_checked() -> None:
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types.qualified_attribute_name",
-    "aurelius_atlas_typesystem.types.AtlasType.type_for_attribute",
+    "aurelius_atlas_typesystem.attribute.qualified_attribute_name",
+    "aurelius_atlas_typesystem.atlas_type.AtlasType.type_for_attribute",
     rules=["TRG-11"],
 )
 def test__attributes_have_qualified_names() -> None:
@@ -165,9 +168,9 @@ def test__attributes_have_qualified_names() -> None:
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types.EntityType.type_for_attribute",
-    "aurelius_atlas_typesystem.types.ArrayType.type_for_attribute",
-    "aurelius_atlas_typesystem.types.MapType.type_for_attribute",
+    "aurelius_atlas_typesystem.entity_type.EntityType.type_for_attribute",
+    "aurelius_atlas_typesystem.array_type.ArrayType.type_for_attribute",
+    "aurelius_atlas_typesystem.map_type.MapType.type_for_attribute",
     rules=["TRG-11"],
 )
 def test__entity_types_are_held_as_object_ids() -> None:
@@ -217,7 +220,7 @@ def inverse(type_name: str, params: dict[str, Any] | None) -> AtlasAttributeDef:
     )
 
 
-@pytest.mark.covers("aurelius_atlas_typesystem.types.referenced_entity_type", rules=["TRG-12"])
+@pytest.mark.covers("aurelius_atlas_typesystem.struct_type.referenced_entity_type", rules=["TRG-12"])
 def test__owned_and_inverse_references_are_resolved_and_linked() -> None:
     """A valid ``ownedRef`` and its ``inverseRef``: flags, the inverse name and, in phase 2, the inverse attribute."""
     registry = resolve(
@@ -302,8 +305,8 @@ def test__unique_attributes_are_those_defined_unique() -> None:
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_typesystem.types.EnumType.element",
-    "aurelius_atlas_typesystem.types.EnumType.element_by_ordinal",
+    "aurelius_atlas_typesystem.enum_type.EnumType.element",
+    "aurelius_atlas_typesystem.enum_type.EnumType.element_by_ordinal",
     rules=["TRG-14"],
 )
 def test__an_enum_type_finds_elements_by_value_and_ordinal() -> None:
@@ -376,3 +379,19 @@ def test__every_kind_resolves_its_own_attributes(typedef: AtlasStructDef) -> Non
     assert type_.category is typedef.category
     assert isinstance(type_.attribute_type("a"), BuiltInType)
     assert not isinstance(type_, EntityType) or type_.type_for_attribute().type_name == "objectid"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_typesystem.struct_type.contained_type",
+    "aurelius_atlas_typesystem.hierarchy_type.name_of",
+    rules=["TRG-11"],
+)
+def test__the_type_an_array_or_map_holds_and_a_type_s_name() -> None:
+    """The element of an array, the value of a map, else the type itself; a type's name, or a name as it is."""
+    int_type = IntType()
+    struct = StructType(AtlasStructDef(name="s"))
+
+    assert contained_type(ArrayType("int", element_type=int_type)) is int_type
+    assert contained_type(MapType("string", "int", value_type=int_type)) is int_type
+    assert contained_type(int_type) is int_type
+    assert (name_of(struct), name_of("t"), name_of(None)) == ("s", "t", None)

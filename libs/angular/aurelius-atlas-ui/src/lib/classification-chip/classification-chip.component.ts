@@ -12,10 +12,10 @@ import { faAngleDoubleRight, faHashtag } from "@fortawesome/free-solid-svg-icons
  * The legacy `ClassificationService` (type-definition lookup by name) and
  * `ClassificationSourceService` (the repository-fed source rows) are data
  * wiring: name, description and `propagated` arrive as inputs, and the
- * propagation dropdown's sources are caller-projected (DD-099). The
+ * propagation dropdown's sources are caller-projected (DD-189). The
  * glossary-term chip (`models4insight-term`) is the same atom with the
  * kind's label as lead and `is-info` — colour is an input, not a twin
- * component (DD-099).
+ * component (DD-189).
  */
 @Component({
     selector: "aurelius-atlas-ui-classification-chip",
@@ -51,7 +51,7 @@ export class ClassificationChip {
 
     /**
      * The lead tag's colour class: `is-primary` for classifications,
-     * `is-info` for the term chip (DD-099).
+     * `is-info` for the term chip (DD-189).
      */
     readonly leadColor = input("is-primary");
 
@@ -92,12 +92,12 @@ export class ClassificationChip {
     readonly originLabel = input<string | undefined>(undefined);
 
     /**
-     * The Aurelius English strings behind the optional labels (DD-047).
+     * The Aurelius English strings behind the optional labels (DD-136).
      */
     protected readonly propagatedLabelDefault = "Is propagated";
 
     /**
-     * The Aurelius English origin line (DD-047).
+     * The Aurelius English origin line (DD-136).
      */
     protected readonly originLabelDefault = "originates from the following sources:";
 }

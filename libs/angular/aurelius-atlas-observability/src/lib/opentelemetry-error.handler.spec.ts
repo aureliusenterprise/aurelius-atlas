@@ -57,6 +57,21 @@ describe("AureliusTraceErrorHandler", () => {
         expect(spans[0].events[0]?.attributes?.["exception.message"]).toBe("string failure");
     });
 
+    it("serialises an object throwable into the exception message", () => {
+        new AureliusTraceErrorHandler().handleError({ status: 503, detail: "gateway down" });
+        const spans = exporter.getFinishedSpans();
+        expect(spans[0].events[0]?.attributes?.["exception.message"]).toBe('{"status":503,"detail":"gateway down"}');
+    });
+
+    it("labels a non-serialisable throwable instead of stringifying it", () => {
+        const cyclic: Record<string, unknown> = { name: "loop" };
+        cyclic["self"] = cyclic;
+
+        new AureliusTraceErrorHandler().handleError(cyclic);
+        const spans = exporter.getFinishedSpans();
+        expect(spans[0].events[0]?.attributes?.["exception.message"]).toBe("non-serialisable uncaught error");
+    });
+
     it("never throws out of handleError", () => {
         vi.spyOn(trace, "getTracer").mockImplementation(() => {
             throw new Error("telemetry exploded");

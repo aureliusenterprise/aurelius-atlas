@@ -1,5 +1,5 @@
 [project]
-dependencies = ["httpx>=0.28.1", "pydantic>=2.14.1", "pytest>=8.4.1", "pyyaml>=6.0.3"]
+dependencies = ["httpx2>=2.0.0", "pydantic>=2.14.1", "pytest>=8.4.1", "pyyaml>=6.0.3"]
 description = "Parity scenarios for Aurelius Atlas: the scenario format, the runner and the comparison."
 name = "aurelius-atlas-parity"
 requires-python = ">=3.14"
