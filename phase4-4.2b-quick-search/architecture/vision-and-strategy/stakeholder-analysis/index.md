@@ -11,7 +11,7 @@ Whom Aurelius Atlas serves, and what each of them needs the system to be.
 | Migrating Atlas users | Existing clients and integrations keep working; behaviour differences disclosed | ADR 046, [deviations](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/conversion/deviations/index.md>), export/import in 6.3 |
 | Security and compliance reviewers | Identity, authorization, audit trail, encryption with named owners | Phase 6, [security tree](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/platform/security/index.md>) |
 | Catalogue operators | Run the whole system on one machine; one store to back up; loud failure | ADR 006, ADR 047, [resilience tree](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/platform/resilience/index.md>) |
-| The maintaining team | Every rule has a spec and a test; decisions are recorded where made | ADR 049, ADR 051, this ledger |
+| The maintaining team | Every rule has a spec and a test; decisions are recorded where made | ADR 051, ADR 056, this ledger |
 | AI coding agents | Nearest-first instructions, specs as the source of behaviour | ADR 022, per-project `AGENTS.md` |
 
 > [!NOTE]

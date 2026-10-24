@@ -84,19 +84,23 @@ One scenario file (SCN-01).
       "description": "A deliberate difference from the Atlas response, with its recorded deviation (SCN-12).",
       "properties": {
         "id": {
+          "description": "The recorded deviation id, e.g. 'DV-07'.",
           "pattern": "^DV-\\d{2,3}$",
           "title": "Id",
           "type": "string"
         },
         "path": {
-          "$ref": "#/$defs/PathText"
+          "$ref": "#/$defs/PathText",
+          "description": "The JSON path of the response part that differs."
         },
         "value": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The value Aurelius Atlas answers there."
         },
         "absent": {
           "default": false,
+          "description": "Whether Aurelius Atlas answers without this path at all.",
           "title": "Absent",
           "type": "boolean"
         }
@@ -119,7 +123,8 @@ One scenario file (SCN-01).
       "properties": {
         "json": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The body, as a JSON value."
         },
         "text": {
           "anyOf": [
@@ -131,9 +136,11 @@ One scenario file (SCN-01).
             }
           ],
           "default": null,
+          "description": "The body, as plain text.",
           "title": "Text"
         },
         "method": {
+          "description": "The HTTP method to send.",
           "enum": [
             "GET",
             "POST",
@@ -147,6 +154,7 @@ One scenario file (SCN-01).
           "type": "string"
         },
         "url": {
+          "description": "The request path, starting with '/'.",
           "pattern": "^/",
           "title": "Url",
           "type": "string"
@@ -165,6 +173,7 @@ One scenario file (SCN-01).
               }
             ]
           },
+          "description": "The query parameters; a list value repeats the parameter.",
           "title": "Params",
           "type": "object"
         },
@@ -172,6 +181,7 @@ One scenario file (SCN-01).
           "additionalProperties": {
             "type": "string"
           },
+          "description": "The request headers.",
           "title": "Headers",
           "type": "object"
         }
@@ -189,7 +199,8 @@ One scenario file (SCN-01).
       "properties": {
         "json": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The body, as a JSON value."
         },
         "text": {
           "anyOf": [
@@ -201,9 +212,11 @@ One scenario file (SCN-01).
             }
           ],
           "default": null,
+          "description": "The body, as plain text.",
           "title": "Text"
         },
         "status": {
+          "description": "The expected HTTP status code.",
           "maximum": 599,
           "minimum": 100,
           "title": "Status",
@@ -213,10 +226,12 @@ One scenario file (SCN-01).
           "additionalProperties": {
             "type": "string"
           },
+          "description": "The response headers that must match.",
           "title": "Headers",
           "type": "object"
         },
         "volatile": {
+          "description": "JSON paths whose value is not compared, e.g. generated guids and times.",
           "items": {
             "$ref": "#/$defs/PathText"
           },
@@ -224,6 +239,7 @@ One scenario file (SCN-01).
           "type": "array"
         },
         "save": {
+          "description": "JSON paths to save for later stages, keyed by the name later stages substitute.",
           "patternProperties": {
             "^[A-Za-z_]\\w*$": {
               "$ref": "#/$defs/PathText"
@@ -233,6 +249,7 @@ One scenario file (SCN-01).
           "type": "object"
         },
         "deviations": {
+          "description": "The expected differences from the Atlas response, each with its deviation id.",
           "items": {
             "$ref": "#/$defs/Deviation"
           },
@@ -260,13 +277,16 @@ One scenario file (SCN-01).
             }
           ],
           "default": null,
+          "description": "The name of the stage, for failure messages.",
           "title": "Name"
         },
         "request": {
-          "$ref": "#/$defs/Request"
+          "$ref": "#/$defs/Request",
+          "description": "What the stage sends."
         },
         "response": {
-          "$ref": "#/$defs/Response"
+          "$ref": "#/$defs/Response",
+          "description": "What the stage expects back."
         }
       },
       "required": [
@@ -281,24 +301,27 @@ One scenario file (SCN-01).
   "description": "One scenario file (SCN-01).",
   "properties": {
     "id": {
+      "description": "The path below the scenario directory without the suffix; set when the file is read (SCN-04).",
       "title": "Id",
       "type": "string"
     },
     "name": {
+      "description": "The name of the scenario.",
       "minLength": 1,
       "title": "Name",
       "type": "string"
     },
     "source": {
+      "description": "Where in Atlas 2.4.0 the expectation was read: files, classes, methods.",
       "items": {
-        "minLength": 1,
-        "type": "string"
+        "$ref": "#/$defs/PathText"
       },
       "minItems": 1,
       "title": "Source",
       "type": "array"
     },
     "rules": {
+      "description": "The rule ids of the increment specs this scenario checks (SCN-14).",
       "items": {
         "type": "string"
       },
@@ -306,6 +329,7 @@ One scenario file (SCN-01).
       "type": "array"
     },
     "covers": {
+      "description": "The public functions the scenario's tests name (SCN-14).",
       "items": {
         "type": "string"
       },
@@ -313,6 +337,7 @@ One scenario file (SCN-01).
       "type": "array"
     },
     "stages": {
+      "description": "The stages, run in order.",
       "items": {
         "$ref": "#/$defs/Stage"
       },
@@ -336,7 +361,7 @@ Fields:
 
 - `id` (`str`)
 - `name` (`str`)
-- `source` (`list[str]`)
+- `source` (`list[PathText]`)
 - `rules` (`list[str]`)
 - `covers` (`list[str]`)
 - `stages` (`list[Stage]`)
@@ -347,13 +372,15 @@ Fields:
 covers: list[str]
 ```
 
+The public functions the scenario's tests name (SCN-14).
+
 #### id
 
 ```
 id: str
 ```
 
-The path below the scenario directory without the suffix, set when the file is read (SCN-04).
+The path below the scenario directory without the suffix; set when the file is read (SCN-04).
 
 #### model\_config
 
@@ -367,25 +394,31 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 name: str
 ```
 
+The name of the scenario.
+
 #### rules
 
 ```
 rules: list[str]
 ```
 
+The rule ids of the increment specs this scenario checks (SCN-14).
+
 #### source
 
 ```
-source: list[str]
+source: list[PathText]
 ```
 
-Where in Atlas 2.4.0 the expectation was read: files, classes, methods or Atlas test fixtures.
+Where in Atlas 2.4.0 the expectation was read: files, classes, methods.
 
 #### stages
 
 ```
 stages: list[Stage]
 ```
+
+The stages, run in order.
 
 #### \_\_str\_\_
 
@@ -598,19 +631,23 @@ A deliberate difference from the Atlas response, with its recorded deviation (SC
   "description": "A deliberate difference from the Atlas response, with its recorded deviation (SCN-12).",
   "properties": {
     "id": {
+      "description": "The recorded deviation id, e.g. 'DV-07'.",
       "pattern": "^DV-\\d{2,3}$",
       "title": "Id",
       "type": "string"
     },
     "path": {
-      "$ref": "#/$defs/PathText"
+      "$ref": "#/$defs/PathText",
+      "description": "The JSON path of the response part that differs."
     },
     "value": {
       "$ref": "#/$defs/JsonValue",
-      "default": null
+      "default": null,
+      "description": "The value Aurelius Atlas answers there."
     },
     "absent": {
       "default": false,
+      "description": "Whether Aurelius Atlas answers without this path at all.",
       "title": "Absent",
       "type": "boolean"
     }
@@ -641,11 +678,15 @@ Validators:
 absent: bool = False
 ```
 
+Whether Aurelius Atlas answers without this path at all.
+
 #### id
 
 ```
 id: str
 ```
+
+The recorded deviation id, e.g. 'DV-07'.
 
 #### json\_path
 
@@ -667,11 +708,15 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 path: PathText
 ```
 
+The JSON path of the response part that differs.
+
 #### value
 
 ```
 value: JsonValue = None
 ```
+
+The value Aurelius Atlas answers there.
 
 ### Request
 
@@ -691,7 +736,8 @@ What a stage sends.
   "properties": {
     "json": {
       "$ref": "#/$defs/JsonValue",
-      "default": null
+      "default": null,
+      "description": "The body, as a JSON value."
     },
     "text": {
       "anyOf": [
@@ -703,9 +749,11 @@ What a stage sends.
         }
       ],
       "default": null,
+      "description": "The body, as plain text.",
       "title": "Text"
     },
     "method": {
+      "description": "The HTTP method to send.",
       "enum": [
         "GET",
         "POST",
@@ -719,6 +767,7 @@ What a stage sends.
       "type": "string"
     },
     "url": {
+      "description": "The request path, starting with '/'.",
       "pattern": "^/",
       "title": "Url",
       "type": "string"
@@ -737,6 +786,7 @@ What a stage sends.
           }
         ]
       },
+      "description": "The query parameters; a list value repeats the parameter.",
       "title": "Params",
       "type": "object"
     },
@@ -744,6 +794,7 @@ What a stage sends.
       "additionalProperties": {
         "type": "string"
       },
+      "description": "The request headers.",
       "title": "Headers",
       "type": "object"
     }
@@ -792,17 +843,23 @@ Whether the body is JSON.
 headers: dict[str, str]
 ```
 
+The request headers.
+
 #### json\_body
 
 ```
 json_body: JsonValue = None
 ```
 
+The body, as a JSON value.
+
 #### method
 
 ```
 method: Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 ```
+
+The HTTP method to send.
 
 #### model\_config
 
@@ -816,17 +873,23 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 params: dict[str, str | list[str]]
 ```
 
+The query parameters; a list value repeats the parameter.
+
 #### text
 
 ```
 text: str | None = None
 ```
 
+The body, as plain text.
+
 #### url
 
 ```
 url: str
 ```
+
+The request path, starting with '/'.
 
 ### Response
 
@@ -844,19 +907,23 @@ What a stage expects back: the Atlas response, adjusted by its deviations.
       "description": "A deliberate difference from the Atlas response, with its recorded deviation (SCN-12).",
       "properties": {
         "id": {
+          "description": "The recorded deviation id, e.g. 'DV-07'.",
           "pattern": "^DV-\\d{2,3}$",
           "title": "Id",
           "type": "string"
         },
         "path": {
-          "$ref": "#/$defs/PathText"
+          "$ref": "#/$defs/PathText",
+          "description": "The JSON path of the response part that differs."
         },
         "value": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The value Aurelius Atlas answers there."
         },
         "absent": {
           "default": false,
+          "description": "Whether Aurelius Atlas answers without this path at all.",
           "title": "Absent",
           "type": "boolean"
         }
@@ -879,7 +946,8 @@ What a stage expects back: the Atlas response, adjusted by its deviations.
   "properties": {
     "json": {
       "$ref": "#/$defs/JsonValue",
-      "default": null
+      "default": null,
+      "description": "The body, as a JSON value."
     },
     "text": {
       "anyOf": [
@@ -891,9 +959,11 @@ What a stage expects back: the Atlas response, adjusted by its deviations.
         }
       ],
       "default": null,
+      "description": "The body, as plain text.",
       "title": "Text"
     },
     "status": {
+      "description": "The expected HTTP status code.",
       "maximum": 599,
       "minimum": 100,
       "title": "Status",
@@ -903,10 +973,12 @@ What a stage expects back: the Atlas response, adjusted by its deviations.
       "additionalProperties": {
         "type": "string"
       },
+      "description": "The response headers that must match.",
       "title": "Headers",
       "type": "object"
     },
     "volatile": {
+      "description": "JSON paths whose value is not compared, e.g. generated guids and times.",
       "items": {
         "$ref": "#/$defs/PathText"
       },
@@ -914,6 +986,7 @@ What a stage expects back: the Atlas response, adjusted by its deviations.
       "type": "array"
     },
     "save": {
+      "description": "JSON paths to save for later stages, keyed by the name later stages substitute.",
       "patternProperties": {
         "^[A-Za-z_]\\w*$": {
           "$ref": "#/$defs/PathText"
@@ -923,6 +996,7 @@ What a stage expects back: the Atlas response, adjusted by its deviations.
       "type": "object"
     },
     "deviations": {
+      "description": "The expected differences from the Atlas response, each with its deviation id.",
       "items": {
         "$ref": "#/$defs/Deviation"
       },
@@ -961,6 +1035,8 @@ Validators:
 deviations: list[Deviation]
 ```
 
+The expected differences from the Atlas response, each with its deviation id.
+
 #### has\_json
 
 ```
@@ -975,11 +1051,15 @@ Whether the body is JSON.
 headers: dict[str, str]
 ```
 
+The response headers that must match.
+
 #### json\_body
 
 ```
 json_body: JsonValue = None
 ```
+
+The body, as a JSON value.
 
 #### model\_config
 
@@ -993,11 +1073,15 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 save: dict[str, PathText]
 ```
 
+JSON paths to save for later stages, keyed by the name later stages substitute.
+
 #### status
 
 ```
 status: int
 ```
+
+The expected HTTP status code.
 
 #### text
 
@@ -1005,11 +1089,15 @@ status: int
 text: str | None = None
 ```
 
+The body, as plain text.
+
 #### volatile
 
 ```
 volatile: list[PathText]
 ```
+
+JSON paths whose value is not compared, e.g. generated guids and times.
 
 ### Scenario
 
@@ -1027,19 +1115,23 @@ One scenario file (SCN-01).
       "description": "A deliberate difference from the Atlas response, with its recorded deviation (SCN-12).",
       "properties": {
         "id": {
+          "description": "The recorded deviation id, e.g. 'DV-07'.",
           "pattern": "^DV-\\d{2,3}$",
           "title": "Id",
           "type": "string"
         },
         "path": {
-          "$ref": "#/$defs/PathText"
+          "$ref": "#/$defs/PathText",
+          "description": "The JSON path of the response part that differs."
         },
         "value": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The value Aurelius Atlas answers there."
         },
         "absent": {
           "default": false,
+          "description": "Whether Aurelius Atlas answers without this path at all.",
           "title": "Absent",
           "type": "boolean"
         }
@@ -1062,7 +1154,8 @@ One scenario file (SCN-01).
       "properties": {
         "json": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The body, as a JSON value."
         },
         "text": {
           "anyOf": [
@@ -1074,9 +1167,11 @@ One scenario file (SCN-01).
             }
           ],
           "default": null,
+          "description": "The body, as plain text.",
           "title": "Text"
         },
         "method": {
+          "description": "The HTTP method to send.",
           "enum": [
             "GET",
             "POST",
@@ -1090,6 +1185,7 @@ One scenario file (SCN-01).
           "type": "string"
         },
         "url": {
+          "description": "The request path, starting with '/'.",
           "pattern": "^/",
           "title": "Url",
           "type": "string"
@@ -1108,6 +1204,7 @@ One scenario file (SCN-01).
               }
             ]
           },
+          "description": "The query parameters; a list value repeats the parameter.",
           "title": "Params",
           "type": "object"
         },
@@ -1115,6 +1212,7 @@ One scenario file (SCN-01).
           "additionalProperties": {
             "type": "string"
           },
+          "description": "The request headers.",
           "title": "Headers",
           "type": "object"
         }
@@ -1132,7 +1230,8 @@ One scenario file (SCN-01).
       "properties": {
         "json": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The body, as a JSON value."
         },
         "text": {
           "anyOf": [
@@ -1144,9 +1243,11 @@ One scenario file (SCN-01).
             }
           ],
           "default": null,
+          "description": "The body, as plain text.",
           "title": "Text"
         },
         "status": {
+          "description": "The expected HTTP status code.",
           "maximum": 599,
           "minimum": 100,
           "title": "Status",
@@ -1156,10 +1257,12 @@ One scenario file (SCN-01).
           "additionalProperties": {
             "type": "string"
           },
+          "description": "The response headers that must match.",
           "title": "Headers",
           "type": "object"
         },
         "volatile": {
+          "description": "JSON paths whose value is not compared, e.g. generated guids and times.",
           "items": {
             "$ref": "#/$defs/PathText"
           },
@@ -1167,6 +1270,7 @@ One scenario file (SCN-01).
           "type": "array"
         },
         "save": {
+          "description": "JSON paths to save for later stages, keyed by the name later stages substitute.",
           "patternProperties": {
             "^[A-Za-z_]\\w*$": {
               "$ref": "#/$defs/PathText"
@@ -1176,6 +1280,7 @@ One scenario file (SCN-01).
           "type": "object"
         },
         "deviations": {
+          "description": "The expected differences from the Atlas response, each with its deviation id.",
           "items": {
             "$ref": "#/$defs/Deviation"
           },
@@ -1203,13 +1308,16 @@ One scenario file (SCN-01).
             }
           ],
           "default": null,
+          "description": "The name of the stage, for failure messages.",
           "title": "Name"
         },
         "request": {
-          "$ref": "#/$defs/Request"
+          "$ref": "#/$defs/Request",
+          "description": "What the stage sends."
         },
         "response": {
-          "$ref": "#/$defs/Response"
+          "$ref": "#/$defs/Response",
+          "description": "What the stage expects back."
         }
       },
       "required": [
@@ -1224,24 +1332,27 @@ One scenario file (SCN-01).
   "description": "One scenario file (SCN-01).",
   "properties": {
     "id": {
+      "description": "The path below the scenario directory without the suffix; set when the file is read (SCN-04).",
       "title": "Id",
       "type": "string"
     },
     "name": {
+      "description": "The name of the scenario.",
       "minLength": 1,
       "title": "Name",
       "type": "string"
     },
     "source": {
+      "description": "Where in Atlas 2.4.0 the expectation was read: files, classes, methods.",
       "items": {
-        "minLength": 1,
-        "type": "string"
+        "$ref": "#/$defs/PathText"
       },
       "minItems": 1,
       "title": "Source",
       "type": "array"
     },
     "rules": {
+      "description": "The rule ids of the increment specs this scenario checks (SCN-14).",
       "items": {
         "type": "string"
       },
@@ -1249,6 +1360,7 @@ One scenario file (SCN-01).
       "type": "array"
     },
     "covers": {
+      "description": "The public functions the scenario's tests name (SCN-14).",
       "items": {
         "type": "string"
       },
@@ -1256,6 +1368,7 @@ One scenario file (SCN-01).
       "type": "array"
     },
     "stages": {
+      "description": "The stages, run in order.",
       "items": {
         "$ref": "#/$defs/Stage"
       },
@@ -1279,7 +1392,7 @@ Fields:
 
 - `id` (`str`)
 - `name` (`str`)
-- `source` (`list[str]`)
+- `source` (`list[PathText]`)
 - `rules` (`list[str]`)
 - `covers` (`list[str]`)
 - `stages` (`list[Stage]`)
@@ -1290,13 +1403,15 @@ Fields:
 covers: list[str]
 ```
 
+The public functions the scenario's tests name (SCN-14).
+
 #### id
 
 ```
 id: str
 ```
 
-The path below the scenario directory without the suffix, set when the file is read (SCN-04).
+The path below the scenario directory without the suffix; set when the file is read (SCN-04).
 
 #### model\_config
 
@@ -1310,25 +1425,31 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 name: str
 ```
 
+The name of the scenario.
+
 #### rules
 
 ```
 rules: list[str]
 ```
 
+The rule ids of the increment specs this scenario checks (SCN-14).
+
 #### source
 
 ```
-source: list[str]
+source: list[PathText]
 ```
 
-Where in Atlas 2.4.0 the expectation was read: files, classes, methods or Atlas test fixtures.
+Where in Atlas 2.4.0 the expectation was read: files, classes, methods.
 
 #### stages
 
 ```
 stages: list[Stage]
 ```
+
+The stages, run in order.
 
 #### \_\_str\_\_
 
@@ -1366,19 +1487,23 @@ One request and the response it must get.
       "description": "A deliberate difference from the Atlas response, with its recorded deviation (SCN-12).",
       "properties": {
         "id": {
+          "description": "The recorded deviation id, e.g. 'DV-07'.",
           "pattern": "^DV-\\d{2,3}$",
           "title": "Id",
           "type": "string"
         },
         "path": {
-          "$ref": "#/$defs/PathText"
+          "$ref": "#/$defs/PathText",
+          "description": "The JSON path of the response part that differs."
         },
         "value": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The value Aurelius Atlas answers there."
         },
         "absent": {
           "default": false,
+          "description": "Whether Aurelius Atlas answers without this path at all.",
           "title": "Absent",
           "type": "boolean"
         }
@@ -1401,7 +1526,8 @@ One request and the response it must get.
       "properties": {
         "json": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The body, as a JSON value."
         },
         "text": {
           "anyOf": [
@@ -1413,9 +1539,11 @@ One request and the response it must get.
             }
           ],
           "default": null,
+          "description": "The body, as plain text.",
           "title": "Text"
         },
         "method": {
+          "description": "The HTTP method to send.",
           "enum": [
             "GET",
             "POST",
@@ -1429,6 +1557,7 @@ One request and the response it must get.
           "type": "string"
         },
         "url": {
+          "description": "The request path, starting with '/'.",
           "pattern": "^/",
           "title": "Url",
           "type": "string"
@@ -1447,6 +1576,7 @@ One request and the response it must get.
               }
             ]
           },
+          "description": "The query parameters; a list value repeats the parameter.",
           "title": "Params",
           "type": "object"
         },
@@ -1454,6 +1584,7 @@ One request and the response it must get.
           "additionalProperties": {
             "type": "string"
           },
+          "description": "The request headers.",
           "title": "Headers",
           "type": "object"
         }
@@ -1471,7 +1602,8 @@ One request and the response it must get.
       "properties": {
         "json": {
           "$ref": "#/$defs/JsonValue",
-          "default": null
+          "default": null,
+          "description": "The body, as a JSON value."
         },
         "text": {
           "anyOf": [
@@ -1483,9 +1615,11 @@ One request and the response it must get.
             }
           ],
           "default": null,
+          "description": "The body, as plain text.",
           "title": "Text"
         },
         "status": {
+          "description": "The expected HTTP status code.",
           "maximum": 599,
           "minimum": 100,
           "title": "Status",
@@ -1495,10 +1629,12 @@ One request and the response it must get.
           "additionalProperties": {
             "type": "string"
           },
+          "description": "The response headers that must match.",
           "title": "Headers",
           "type": "object"
         },
         "volatile": {
+          "description": "JSON paths whose value is not compared, e.g. generated guids and times.",
           "items": {
             "$ref": "#/$defs/PathText"
           },
@@ -1506,6 +1642,7 @@ One request and the response it must get.
           "type": "array"
         },
         "save": {
+          "description": "JSON paths to save for later stages, keyed by the name later stages substitute.",
           "patternProperties": {
             "^[A-Za-z_]\\w*$": {
               "$ref": "#/$defs/PathText"
@@ -1515,6 +1652,7 @@ One request and the response it must get.
           "type": "object"
         },
         "deviations": {
+          "description": "The expected differences from the Atlas response, each with its deviation id.",
           "items": {
             "$ref": "#/$defs/Deviation"
           },
@@ -1542,13 +1680,16 @@ One request and the response it must get.
         }
       ],
       "default": null,
+      "description": "The name of the stage, for failure messages.",
       "title": "Name"
     },
     "request": {
-      "$ref": "#/$defs/Request"
+      "$ref": "#/$defs/Request",
+      "description": "What the stage sends."
     },
     "response": {
-      "$ref": "#/$defs/Response"
+      "$ref": "#/$defs/Response",
+      "description": "What the stage expects back."
     }
   },
   "required": [
@@ -1578,17 +1719,23 @@ model_config = ConfigDict(extra='forbid', frozen=True)
 name: str | None = None
 ```
 
+The name of the stage, for failure messages.
+
 #### request
 
 ```
 request: Request
 ```
 
+What the stage sends.
+
 #### response
 
 ```
 response: Response
 ```
+
+What the stage expects back.
 
 ### read\_scenario
 

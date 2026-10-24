@@ -8,7 +8,7 @@ This page states how Aurelius Atlas is tested: the layers the gate stands on, an
 | --- | --- |
 | Unit | Functions and modules in isolation, milliseconds-fast, offline; the store is a stand-in client |
 | Parity scenarios | REST behaviour equals Apache Atlas 2.4.0 — expectations read from its source and its own tests, each citing where (ADR 052) |
-| Traceability | Every public function and every specified rule id is named by a test ([ADR 049](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>)) |
+| Naming convention | Every public function and every specified rule id is named by a test marker, as a review pointer — not a gate ([ADR 056](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)) |
 | E2E (backend) | The **built image** against real services over TLS ([ADR 010](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>), [ADR 012](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/012-validation-runs-against-real-services/index.md>)) |
 | E2E (frontend) | Critical user flows through the real browser stack |
 | Visual | Visual regressions of the shared UI library — template slice, leaves with it (DD-019) |
@@ -28,13 +28,13 @@ The current stack, named once as evidence: [pytest](<https://docs.pytest.org/en/
 The gate is what protects production: no change reaches `main` — and nothing is released — without it. The stages, in the order they run:
 
 1. **Quality** — formatting, linting, markdown, secret scanning.
-2. **Traceability** — every function and rule named by a test, from collected markers, no run.
-3. **Test + E2E** — the affected projects, secrets decrypted first, images built, real services started.
-4. **Evidence** — one report page per change with results, coverage, and the rule/function trace ([ADR 049](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>)).
-5. **Artifact + inventory + scan** — the image, its contents inventory ([ADR 033](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/033-shipped-artifacts-carry-a-contents-inventory/index.md>)), a vulnerability scan.
-6. **Analysis** — code quality and security of the affected projects.
+2. **Test + E2E** — the affected projects, secrets decrypted first, images built, real services started. The executed results are the evidence: a change merges when its tests pass ([ADR 056](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)).
+3. **Artifact + inventory + scan** — the image, its contents inventory ([ADR 033](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/033-shipped-artifacts-carry-a-contents-inventory/index.md>)), a vulnerability scan.
+4. **Analysis** — code quality and security of the affected projects.
 
-Merge requires all affected stages green; the evidence report is what reviewers read. The pipeline definition is in the repository's CI configuration.
+Merge requires all affected stages green; the test results and coverage are what reviewers read. The pipeline definition is in the repository's CI configuration.
+
+Coverage is measured in every `-c ci` test run and uploaded to the analysis stage: SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **quality gate is the coverage gate** — there is deliberately no second coverage flag in the pipeline. The last full review of what the suites prove — coverage baselines and non-happy-flow representativeness per project — is the [Test Suite Review](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/platform/delivery/testing-review/index.md>) ([DD-214](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/conversion/design-log/#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments>)).
 
 ## Indicators
 
@@ -57,7 +57,8 @@ Each is measured from the system's own records: the failure rate from deployment
 ## Pointers
 
 - Commands, conventions, flaky triage: [Testing guide](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/contributor-guide/testing/index.md>)
-- Gates and evidence: [ADR 014](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/index.md>), [ADR 015](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/015-a-change-answers-for-what-it-caused/index.md>), [ADR 049](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>)
+- Coverage baselines and the hardening plan: [Test Suite Review](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/platform/delivery/testing-review/index.md>)
+- Gates and evidence: [ADR 014](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/014-the-gate-is-defined-once-and-runs-everywhere/index.md>), [ADR 015](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/015-a-change-answers-for-what-it-caused/index.md>), [ADR 056](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)
 - Realism: [ADR 010](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/010-the-unit-validated-is-the-unit-that-ships/index.md>), [ADR 012](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/012-validation-runs-against-real-services/index.md>)
 - Parity method: [ADR 052](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source/index.md>), the [parity library](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/api-reference/libs/python/aurelius-atlas-parity/index.md>)
 - Per-project commands: each project's `AGENTS.md`

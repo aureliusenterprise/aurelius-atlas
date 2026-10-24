@@ -8,7 +8,7 @@ The production topology is the deployment arrangement's subject — [deployment]
 
 - **Every path TLS with certificate verification** against the deployment's own CA ([data encryption](<https://aureliusenterprise.github.io/phase4-4.2b-quick-search/architecture/platform/security/data-encryption/index.md>)). The plaintext listeners developers see exist only in the development arrangement, as named relaxations.
 - **Discovery by DNS name, with the service names present in the certificates.** Services reach each other by name, not IP — verification is of the name in the certificate, so an address that connects can still be rejected.
-- **The catalogue service reaches the store and the signal collector; browsers reach the catalogue service** for the API and the UI, **and the identity provider** for sign-in. Nothing else needs a path: the store serves only the catalogue service, and the collector receives signals without the system calling back through it.
+- **The catalogue service reaches the store and the signal collector; browsers reach the catalogue service** for the API and the UI, **and the identity provider** for sign-in. Nothing else needs a path: the store serves only the catalogue service, and the collector receives signals without the system calling back through it. Reaching the collector's ingest ports is not enough to write to them — the browser leg accepts only Keycloak user tokens, the service leg only the shared ingest token (DD-193).
 
 ## Development and CI
 
