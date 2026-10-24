@@ -1,7 +1,7 @@
 # 4.2b Quick search and suggestions
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#146](https://github.com/aureliusenterprise/aurelius-atlas/pull/146)
 - **Records:** DD-093, DD-094, DV-50, DV-51; relies on DD-087 to DD-092
 
 The second part of increment 4.2 (DD-091): quick search, as Atlas's `EntityDiscoveryService.quickSearch`
