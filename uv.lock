@@ -480,8 +480,8 @@ requires-dist = [
     { name = "testcontainers", marker = "extra == 'testing'", specifier = ">=4.15.0" },
     { name = "trustme", marker = "extra == 'full'", specifier = ">=1.1" },
     { name = "trustme", marker = "extra == 'testing'", specifier = ">=1.1" },
-    { name = "types-boto3", extras = ["full"], marker = "extra == 'aws'", specifier = ">=1.43.115" },
-    { name = "types-boto3", extras = ["full"], marker = "extra == 'full'", specifier = ">=1.43.115" },
+    { name = "types-boto3", extras = ["full"], marker = "extra == 'aws'", specifier = ">=1.43.116" },
+    { name = "types-boto3", extras = ["full"], marker = "extra == 'full'", specifier = ">=1.43.116" },
 ]
 provides-extras = ["aws", "azure", "full", "logging", "postgresql", "testing"]
 
