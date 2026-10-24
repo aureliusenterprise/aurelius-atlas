@@ -342,6 +342,27 @@ def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: s
     assert response.status == 401
 
 
+def test__collector_accepts_the_dev_plaintext_issuer(page: Page, plaintext_service_token: str) -> None:
+    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-113).
+
+    Keycloak stamps iss from the listener that served the mint, so this
+    token's iss is the dev plaintext listener — what the human dev browser
+    presents (ADR 039). The collector's oidc extension lists both listeners
+    as providers precisely so this issuer verifies on the per-service leg,
+    which every automated producer uses: the mint is standardized on the
+    TLS :8443 listener, and the :8080 provider is the human-browser half
+    of the accepted posture. "not 401" is the point (the user_token
+    fixture's positive-control rule).
+    """
+    response = page.request.post(
+        f"https://{COLLECTOR_HOST}:{SERVICE_PORT}/v1/traces",
+        data=b"",
+        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {plaintext_service_token}"},
+    )
+
+    assert response.status in (200, 202, 400, 415)
+
+
 def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> None:
     """A client-credentials JWT authenticates the per-service leg, stamped by client (CIA-06, CIA-07, CIA-09).
 

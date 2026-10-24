@@ -152,27 +152,39 @@ extensions:
     bearertokenauth:
         tokens:
             - ${env:OTEL_COLLECTOR_INGEST_TOKEN}
-    # Browser-leg validator: verifies the user access token the proxies pass
-    # through, against the issuer's JWKS, and requires the otel-collector
-    # audience the realm's otel-ingest scope mints (DD-103). The `providers`
-    # shape is the extension's current schema (the flat single-provider keys
-    # are deprecated). Keys come via OIDC *discovery* on the issuer URL (this
-    # schema has no separate JWKS URL), so the issuer URL must match the
-    # `iss` claim of the tokens the browser carries — env-injected (compose):
-    # the dev Keycloak speaks plaintext on :8080 (ADR 039's named relaxation),
-    # the e2e suites override with their TLS :8443 issuer (the webapp e2e
-    # conftest's env). Discovery runs at extension start: Keycloak must be up
-    # (restart policy on the collector covers the dev start race) and
-    # `keycloak.localhost` resolvable (extra_hosts in docker-compose.yaml —
-    # :8443 is loopback-published, host DNS cannot resolve it).
-    # issuer_ca_path is unset/empty on the plaintext dev listener; the e2e
-    # stack points it at the shared mkcert CA (mounted at /dev-ca from the
-    # webapp's copy — same CA material across the workspace).
+    # Ingest validator (DD-103, browser leg; DD-107, per-service leg): verifies
+    # the presented token against the issuer's JWKS and requires the
+    # otel-collector audience the realm's otel-ingest scope mints. The
+    # `providers` shape is the extension's current schema (the flat
+    # single-provider keys are deprecated) and is a list: the validator accepts
+    # a token from ANY provider, so both of the dev Keycloak's listeners verify
+    # — this is one realm with one signing key served on two URLs (ADR 039's
+    # dual listener), not two trust domains.
+    #
+    # Why both (DD-113): the `iss` a token carries is the listener that minted
+    # it, and the listener is baked into each producer's container env at
+    # creation, so any producer/collector issuer mix that is not all-:8080 or
+    # all-:8443 401s the leg and silently drops telemetry (the ESD-06
+    # starvation). Listing both providers removes the failure mode: minting is
+    # standardized on the TLS :8443 listener (every test and every slice
+    # puller), the plaintext :8080 listener stays validated for the human dev
+    # browser, which cannot enroll the mkcert CA (ADR 039's relaxation). The
+    # audience is enforced per provider; the keys are discovered per issuer.
+    #
+    # issuer_ca_path: unset on the plaintext listener, pinned to the shared
+    # mkcert CA on the TLS one (mounted at /dev-ca from the webapp's copy —
+    # same CA material across the workspace). Discovery runs at extension
+    # start: Keycloak must be up (restart policy on the collector covers the
+    # dev start race) and `keycloak.localhost` resolvable (extra_hosts in
+    # docker-compose.yaml — :8443 is loopback-published, host DNS cannot
+    # resolve it).
     oidc:
         providers:
-            - issuer_url: ${env:OTEL_COLLECTOR_OIDC_ISSUER}
+            - issuer_url: http://keycloak.localhost:8080/realms/master
               audience: otel-collector
-              issuer_ca_path: ${env:OTEL_COLLECTOR_OIDC_CA_FILE}
+            - issuer_url: https://keycloak.localhost:8443/realms/master
+              audience: otel-collector
+              issuer_ca_path: /dev-ca/ca.pem
 
 service:
     extensions: [health_check, bearertokenauth, oidc]

@@ -13,7 +13,9 @@ Part of the template **spine**.
 | postgres-keycloak | Postgres (internal, TLS-only)   | —          | Keycloak's own database    |
 
 - Two listeners (ADR 039): plaintext `http://keycloak.localhost:8080` for the dev
-  browser, and TLS `https://keycloak.localhost:8443` used by E2E/CI. Both issuers
+  browser, and TLS `https://keycloak.localhost:8443` used by E2E/CI — and by every
+  automated token mint (E2E suites, the slice metrics-pullers, the apps' OTLP
+  ingest: DD-113 keeps all producers on one issuer). Both issuers
   are what Keycloak advertises (`KC_HOSTNAME=keycloak.localhost`).
 - Its database connects with `sslmode=verify-full` against the local CA (`nx certgen`).
 - Realm/client definitions are imported from `import/master.json` on startup —

@@ -3,11 +3,12 @@
 - **Status:** in progress
 - **Pull request:** [#119](https://github.com/aureliusenterprise/aurelius-atlas/pull/119)
 - **Records:** DD-107 (per-service ingest identity: Keycloak client-credentials
-  JWTs on the service leg, azp-stamped); supersedes the service-leg half of
-  DD-103 (user JWTs on the browser leg, the loopback pinning, and the
-  shared-token mechanism all stand); extends ADR 039 and ADR 034; relies on
-  CIA-01..05 (7.17 — the two legs, the OIDC extension, the `otel-ingest` scope,
-  the DD-105 stamping, the DD-106 boot race)
+  JWTs on the service leg, azp-stamped), DD-113 (one issuer world: producers
+  mint on the TLS listener, the collector validates both); supersedes the
+  service-leg half of DD-103 (user JWTs on the browser leg, the loopback
+  pinning, and the shared-token mechanism all stand); extends ADR 039 and
+  ADR 034; relies on CIA-01..05 (7.17 — the two legs, the OIDC extension, the
+  `otel-ingest` scope, the DD-105 stamping, the DD-106 boot race)
 
 ## Scope
 
@@ -26,8 +27,12 @@ telemetry push. It delivers:
   the shared dev client secret `${OTEL_INGEST_CLIENT_SECRET}` placeholder in
   the realm import (the dev-users' pattern, `replace-placeholders`).
 - The collector's **per-service leg**: `otlp/services` (gRPC 4317 + HTTP 4319)
-  swaps `bearertokenauth` for the **`oidc` extension** (same issuer, CA,
-  audience as the browser leg — one issuer, one extension, both legs).
+  swaps `bearertokenauth` for the **`oidc` extension** (same extension, CA,
+  audience as the browser leg — one validator, both legs). The extension's
+  `providers` list accepts **both** dev Keycloak listeners (DD-113: a token's
+  `iss` is the listener that minted it; every automated producer mints at the
+  TLS `:8443` listener, the plaintext `:8080` provider stays for the human
+  dev browser, ADR 039).
   A new **`otlp/legacy`** receiver pair (gRPC 4320 + HTTP 4321,
   `bearertokenauth`, loopback-published) keeps 7.17's shared-token
   mechanism for the producers that cannot present a Keycloak JWT (below).
@@ -71,13 +76,14 @@ telemetry.
 
 ## Semantics
 
-| Id     | Rule                                                                                                                                                                                                                                                                                                                         |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CIA-06 | The per-service leg (4317 gRPC / 4319 HTTP, OIDC) rejects a push with no token, the shared ingest token, a token from an untrusted issuer, or a token without the `otel-collector` audience (401 / `Unauthenticated`), and accepts a client-credentials JWT minted for an `otel-*` realm client.                             |
-| CIA-07 | Every graduated producer presents its own client's JWT: the three pullers (their `oauth2client` extension) and the Atlas server (the refresh shim) keep exporting through the suite windows — a producer whose client id, secret, or token URL is misconfigured exports nothing (401 at the receiver, visible in its logs).  |
-| CIA-08 | The legs are credential-typed, not identity-typed: the shared token never reaches an OIDC leg (401) and a JWT never reaches the legacy leg (401); a user token presented on the service leg is accepted and stamped `azp=aurelius` (accepted posture: authenticated + attributed is the bar, every push carries its writer). |
-| CIA-09 | The collector stamps the verified writer: service-account pushes carry `otel.ingest.client` = the client id and `enduser.id=""`; user pushes carry `otel.ingest.client="aurelius"` and `enduser.id=<sub>`; legacy-leg pushes carry neither (empty upsert, DD-105's rule, unchanged).                                         |
-| CIA-10 | The legacy leg (4320 gRPC / 4321 HTTP, `bearertokenauth`) is loopback-published like every OTLP port (CIA-03 extended); Keycloak-native and the FastAPI example keep exporting on it with the shared token (CIA-04's surviving half).                                                                                        |
+| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CIA-06 | The per-service leg (4317 gRPC / 4319 HTTP, OIDC) rejects a push with no token, the shared ingest token, a token from an untrusted issuer, or a token without the `otel-collector` audience (401 / `Unauthenticated`), and accepts a client-credentials JWT minted for an `otel-*` realm client.                                                                                                                                            |
+| CIA-07 | Every graduated producer presents its own client's JWT: the three pullers (their `oauth2client` extension) and the Atlas server (the refresh shim) keep exporting through the suite windows — a producer whose client id, secret, or token URL is misconfigured exports nothing (401 at the receiver, visible in its logs).                                                                                                                 |
+| CIA-08 | The legs are credential-typed, not identity-typed: the shared token never reaches an OIDC leg (401) and a JWT never reaches the legacy leg (401); a user token presented on the service leg is accepted and stamped `azp=aurelius` (accepted posture: authenticated + attributed is the bar, every push carries its writer).                                                                                                                |
+| CIA-09 | The collector stamps the verified writer: service-account pushes carry `otel.ingest.client` = the client id and `enduser.id=""`; user pushes carry `otel.ingest.client="aurelius"` and `enduser.id=<sub>`; legacy-leg pushes carry neither (empty upsert, DD-105's rule, unchanged).                                                                                                                                                        |
+| CIA-10 | The legacy leg (4320 gRPC / 4321 HTTP, `bearertokenauth`) is loopback-published like every OTLP port (CIA-03 extended); Keycloak-native and the FastAPI example keep exporting on it with the shared token (CIA-04's surviving half).                                                                                                                                                                                                       |
+| CIA-11 | The OIDC legs (browser + per-service) accept a token from **either** dev Keycloak listener — the TLS `:8443` `iss` every automated producer mints at (DD-113), and the plaintext `:8080` `iss` the human dev browser carries (ADR 039) — and reject a token from any other issuer (401). The mint target is fixed in each producer's compose/env as a literal, never suite-flipped, so no suite start-order can starve another's telemetry. |
 
 ## Java origin
 
@@ -103,6 +109,11 @@ credential-typed legs — are recorded in DD-107.
       shared token on 4319 answers 401 (CIA-06, CIA-08)
     - `test__collector_rejects_a_jwt_on_the_legacy_leg` — a service JWT on
       4321 answers 401 (CIA-08)
+    - `test__collector_accepts_the_dev_plaintext_issuer` — a
+      client-credentials JWT minted from the plaintext :8080 listener is
+      accepted on the per-service leg (4319): the collector's second OIDC
+      provider validates the dev listener's iss, so the mint standardization
+      on :8443 (DD-113) keeps the human browser's issuer valid (CIA-11)
     - `test__collector_accepts_the_shared_ingest_token` — **updated**: the
       legacy leg (4321) accepts the shared token (CIA-10; the 7.17 form
       tested 4319, now an OIDC port)

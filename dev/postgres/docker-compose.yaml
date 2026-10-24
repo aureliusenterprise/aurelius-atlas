@@ -65,8 +65,15 @@ services:
             # (mint, cache, refresh).
             OTEL_INGEST_CLIENT_ID: otel-postgres
             OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            OTEL_INGEST_TOKEN_URL: ${OTEL_INGEST_TOKEN_URL:-http://keycloak.localhost:8080/realms/master/protocol/openid-connect/token}
-            OTEL_INGEST_CA_FILE: ${OTEL_INGEST_CA_FILE:-}
+            # The mint target is the Keycloak TLS listener, literal (DD-113):
+            # the iss a token carries is the listener that minted it, and this
+            # value is baked into the container at creation — an env default
+            # let suite start-order mix mint issuer with collector validator
+            # (the ESD-06 401 starvation). The collector validates both
+            # listeners; every producer mints here, so one world, no flip.
+            # CA: this slice's certs/ (the shared mkcert root, same material).
+            OTEL_INGEST_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            OTEL_INGEST_CA_FILE: /certs/ca.pem
         extra_hosts:
             # The mint target: this slice has no Keycloak of its own, so
             # keycloak.localhost is the dev Keycloak's published listener on

@@ -74,17 +74,18 @@ rules live in the root `AGENTS.md`.
   `OTEL_EXPORTER_OTLP_CERTIFICATE` (Keycloak instead needs the JVM truststore
   in `JAVA_OPTS`). The `oidc` extension is configured in its current
   `providers` shape (`issuer_url` + `issuer_ca_path` per provider; the flat
-  top-level single-provider keys are deprecated) and discovers JWKS from the
-  issuer URL, so
-  `OTEL_COLLECTOR_OIDC_ISSUER` must match the `iss` claim the browser tokens
-  carry (dev `:8080`, e2e `:8443`; the webapp e2e `conftest.py` overrides the
-  env per suite) and `OTEL_COLLECTOR_OIDC_CA_FILE` (empty = no pin on the
-  plaintext dev listener) points at the shared mkcert CA, mounted from
-  `apps/aurelius-atlas-webapp/certs`. Discovery is a startup dependency on
-  Keycloak, and the container gets `keycloak.localhost:host-gateway` since
-  `:8443` is loopback-published. The per-service producers mint from the SAME
-  issuer pair: the slice pullers read `OTEL_INGEST_TOKEN_URL`/`OTEL_INGEST_CA_FILE`
-  (their compose defaults, the e2e conftests flip them with the collector).
+  top-level single-provider keys are deprecated), fixed in
+  `config/otel-collector.yaml` with **no env injection** (DD-113): it lists
+  both dev Keycloak listeners — TLS `:8443` (CA-pinned to the shared mkcert
+  root, mounted at `/dev-ca`) and plaintext `:8080` — because a token's `iss`
+  is the listener that minted it and a non-matching validator 401s the leg
+  silently. Every automated producer mints at `:8443` (the slice composes
+  carry it as a literal); the `:8080` provider exists for the human dev
+  browser only (ADR 039), which cannot enroll the CA. Do not re-introduce
+  issuer env: the suite-level flip convention it enabled made telemetry
+  starve on shared stacks (ESD-06, DD-113). Discovery is a startup dependency
+  on Keycloak, and the container gets `keycloak.localhost:host-gateway` since
+  `:8443` is loopback-published.
 - Consumers started via `nx serve`: the FastAPI example (OTLP, legacy leg :4321),
   Keycloak (`implicitDependencies` here; native OTLP on the legacy leg :4320,
   its puller on the per-service leg :4317), the Atlas server (`nx serve` chains
