@@ -1,0 +1,221 @@
+name: Entities are searched by their classifications, the classifications' attributes, or for none
+source:
+    - repository/src/main/java/org/apache/atlas/discovery/SearchContext.java#getClassificationNames
+    - repository/src/main/java/org/apache/atlas/discovery/SearchContext.java#filterStructTypes
+    - repository/src/main/java/org/apache/atlas/discovery/ClassificationSearchProcessor.java
+    - repository/src/main/java/org/apache/atlas/discovery/SearchProcessor.java#buildTraitPredict
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchUsingBasic
+rules: [CSR-01, CSR-02, CSR-03, CSR-04]
+covers:
+    - aurelius_atlas_server.routes.discovery.search_with_parameters
+    - aurelius_atlas_server.routes.discovery.search_using_basic
+stages:
+    - name: create a table type and a classification type with a level, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              classificationDefs:
+                  - name: scenario_ctag_{run}
+                    attributeDefs:
+                        - { name: level, typeName: int, isOptional: true }
+              entityDefs:
+                  - name: scenario_ctable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ctag_{run}
+                    description: scenario_ctag_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: level
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: admin
+                    updatedBy: admin
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ctable_{run}
+                    description: scenario_ctable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.classificationDefs[*].guid
+              - $.classificationDefs[*].createTime
+              - $.classificationDefs[*].updateTime
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+    - name: create two tables
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - { typeName: "scenario_ctable_{run}", guid: "-1", attributes: { qualifiedName: "ct1_{run}" } }
+                  - { typeName: "scenario_ctable_{run}", guid: "-2", attributes: { qualifiedName: "ct2_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_ctable_{run}
+                        attributes: { qualifiedName: "ct1_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: ct1_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_ctable_{run}
+                        attributes: { qualifiedName: "ct2_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: ct2_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID, "-2": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+          save:
+              first: $.guidAssignments['-1']
+              second: $.guidAssignments['-2']
+    - name: classify the first at level 3
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{first}/classifications
+          json: [{ typeName: "scenario_ctag_{run}", attributes: { level: 3 } }]
+      response:
+          status: 204
+    - name: the tables with the classification at level 3 or more, uncounted
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json:
+              typeName: scenario_ctable_{run}
+              classification: scenario_ctag_{run}
+              tagFilters: { attributeName: level, operator: ">=", attributeValue: "3" }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  typeName: scenario_ctable_{run}
+                  classification: scenario_ctag_{run}
+                  tagFilters: { attributeName: level, operator: ">=", attributeValue: "3" }
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+              entities:
+                  - typeName: scenario_ctable_{run}
+                    attributes: { qualifiedName: "ct1_{run}" }
+                    guid: "{first}"
+                    status: ACTIVE
+                    displayText: ct1_{run}
+                    classificationNames: ["scenario_ctag_{run}"]
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: -1
+    - name: the tables without classifications, by query parameters
+      request:
+          method: GET
+          url: /api/atlas/v2/search/basic
+          params: { typeName: "scenario_ctable_{run}", classification: _NOT_CLASSIFIED }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  typeName: scenario_ctable_{run}
+                  classification: _NOT_CLASSIFIED
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+              entities:
+                  - typeName: scenario_ctable_{run}
+                    attributes: { qualifiedName: "ct2_{run}" }
+                    guid: "{second}"
+                    status: ACTIVE
+                    displayText: ct2_{run}
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 1
+    - name: an unknown classification
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json: { classification: "no_such_tag_{run}" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-046
+              errorMessage: "no_such_tag_{run}: Unknown/invalid classification"

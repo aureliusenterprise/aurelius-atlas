@@ -43,7 +43,9 @@ every operation that attaches or propagates classifications, recorded in Atlas's
 `bulk/headers` (DD-085, DD-086). Since
 [4.1a](../../../docs/architecture/conversion/increments/4-1-entity-search.md): the search fields every entity
 document carries, and basic search for entities by type, attribute filters, sort and paging, as one query the
-entity documents answer (DD-087 to DD-089).
+entity documents answer (DD-087 to DD-089). Since
+[4.1b](../../../docs/architecture/conversion/increments/4-1-classification-search.md): search by
+classification and tag filters (DD-090).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -136,6 +138,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.search_context
 
 ::: aurelius_atlas_core.entity_search_processor
+
+::: aurelius_atlas_core.classification_search_processor
 
 ::: aurelius_atlas_core.discovery_service
 

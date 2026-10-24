@@ -6,7 +6,7 @@ Elasticsearch with reserved unique values, conditional writes and a journal (DD-
 
 import time
 import uuid
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -202,6 +202,10 @@ class EntityStore:
             if isinstance(document, StoredRelationship)
         }
 
+    async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
+        """The classification instances of these types, or of every type for None (DD-090)."""
+        return await self._documents.classifications_of_types(type_names)
+
     async def search(self, query: SearchQuery) -> tuple[list[StoredEntity], int]:
         """The entities of a search query's page, and how many match it in all (DD-089)."""
         return await self._documents.search(query)
@@ -246,7 +250,8 @@ class EntityStore:
         _check_removals(changes, linked)
         kept = [change for change in changes if not change.remove]
         removed = [change for change in changes if change.remove]
-        entities = [self._stamped(change.entity, write_id) for change in kept]
+        instances = await self._listed_instances(kept, linked)
+        entities = [self._stamped(change.entity, write_id, instances) for change in kept]
         before = await self._documents.get([change.entity.guid for change in changes if change.expected is not None])
         for change in changes:
             current = before.get(change.entity.guid)
@@ -350,14 +355,35 @@ class EntityStore:
             raise EntityWriteError(UNKNOWN_ENTITY_TYPE_ERROR.format(type=entity.type_name))
         return entity_type
 
-    def _stamped(self, entity: StoredEntity, write_id: str) -> StoredEntity:
+    async def _listed_instances(
+        self, kept: Sequence[EntityChange], linked: _LinkedChanges
+    ) -> dict[str, StoredClassification]:
+        """The classification instances the written entities list, as the write leaves them (DD-090)."""
+        instances = {
+            document.guid: document
+            for document, _, remove in linked.get(LinkedKind.CLASSIFICATION, [])
+            if not remove and isinstance(document, StoredClassification)
+        }
+        missing = [
+            guid for change in kept for guid in change.entity.classification_guids or [] if guid not in instances
+        ]
+        if missing:
+            found = await self._documents.get_linked(LinkedKind.CLASSIFICATION, list(dict.fromkeys(missing)))
+            instances.update(
+                {guid: document for guid, (document, _) in found.items() if isinstance(document, StoredClassification)}
+            )
+        return instances
+
+    def _stamped(
+        self, entity: StoredEntity, write_id: str, instances: Mapping[str, StoredClassification]
+    ) -> StoredEntity:
         """The entity as written: the write's id, the GUIDs its references name and its search fields.
 
-        DD-046, DD-057, DD-088.
+        DD-046, DD-057, DD-088, DD-090.
         """
         entity_type = self._entity_type(entity)
         references = entity.reference_guids(entity_type) or None
-        search = search_fields(entity, entity_type)
+        search = search_fields(entity, entity_type, instances)
         return entity.model_copy(update={"write_id": write_id, "references": references, "search": search})
 
     def _key_changes(

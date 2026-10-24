@@ -174,6 +174,7 @@ async def test__filtered_sorted_and_requested_attributes_must_be_the_types(store
     "aurelius_atlas_core.entity_search_processor.EntitySearchProcessor.query",
     "aurelius_atlas_core.search_query.matches",
     "aurelius_atlas_core.search_query.selects",
+    "aurelius_atlas_core.entity_search_processor.SearchFilters.filter",
     rules=["SRC-05"],
 )
 @pytest.mark.parametrize(
@@ -378,16 +379,15 @@ async def test__headers_carry_requested_and_filtered_attributes_and_referred_ent
 
 @pytest.mark.covers(f"{S}", rules=["SRC-03"])
 async def test__parameters_not_supported_yet_and_no_type_are_refused(store: EntityStore) -> None:
-    """``classification``, ``query`` and ``termName`` until 4.1b, 4.2 and 5.2; no type at all (DV-46)."""
+    """``query`` and ``termName`` until 4.2 and 5.2; no type at all (DV-46)."""
     messages = []
-    for body in ({"typeName": "w_item", "classification": "c"}, {"query": "x"}, {"termName": "t"}, {}):
+    for body in ({"query": "x"}, {"termName": "t"}, {}):
         with pytest.raises(AtlasError) as failed:
             await search(store, **body)
         messages.append((failed.value.code, failed.value.message))
 
-    assert messages[:3] == [
-        (AtlasErrorCode.BAD_REQUEST, "Search by classification is not supported yet"),
+    assert messages[:2] == [
         (AtlasErrorCode.BAD_REQUEST, "Search by query is not supported yet"),
         (AtlasErrorCode.BAD_REQUEST, "Search by termName is not supported yet"),
     ]
-    assert messages[3][0] is AtlasErrorCode.INVALID_SEARCH_PARAMS
+    assert messages[2][0] is AtlasErrorCode.INVALID_SEARCH_PARAMS

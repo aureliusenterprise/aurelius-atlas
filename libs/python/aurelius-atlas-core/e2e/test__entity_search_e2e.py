@@ -8,12 +8,13 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
+from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_model.discovery import SearchParameters
-from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo
+from aurelius_atlas_model.instance import AtlasClassification, AtlasEntitiesWithExtInfo
 from aurelius_atlas_store_es import ElasticsearchStore
 
 # The async fixtures run on the module loop (asyncio_default_fixture_loop_scope); so must async tests.
@@ -72,3 +73,52 @@ async def test__items_are_searched_by_their_typed_fields_on_elasticsearch(
     assert sorted(await names(**item_type, entityFilters=where("__state", "=", "ACTIVE"))) == ["i1", "i2", "i3"]
     assert await names(typeName="s_ref", includeSubTypes=False) == []
     assert len(await names(typeName="_ALL_ENTITY_TYPES", limit=2)) == 2
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.classification_search_processor.ClassificationSearchProcessor.criterion",
+    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classifications_of_types",
+    rules=["CSR-02", "CSR-03", "CSR-05"],
+)
+async def test__entities_are_searched_by_classification_on_elasticsearch(
+    dev_store: ElasticsearchStore, entity_prefix: str
+) -> None:
+    """Attached and propagated, by wildcard ignoring case, by tag filters, and none."""
+    store = EntityStore(
+        sample_registry(classifications=True), ElasticsearchEntityDocuments(dev_store.client, prefix=entity_prefix)
+    )
+    await store.prepare()
+    process = {
+        "typeName": "p_process",
+        "guid": "-p",
+        "attributes": {"qualifiedName": "p@cs"},
+        "relationshipAttributes": {"inputs": [{"guid": "-a"}], "outputs": [{"guid": "-b"}]},
+    }
+    created = await EntityWriter(store).create_or_update(
+        AtlasEntitiesWithExtInfo.model_validate(
+            {
+                "entities": [
+                    {"typeName": "p_data", "guid": "-a", "attributes": {"qualifiedName": "a@cs"}},
+                    {"typeName": "p_data", "guid": "-b", "attributes": {"qualifiedName": "b@cs"}},
+                    {"typeName": "p_data", "guid": "-c", "attributes": {"qualifiedName": "c@cs"}},
+                    process,
+                ]
+            }
+        )
+    )
+    guids = created.guid_assignments or {}
+    await EntityClassifications(store).add_classifications(
+        guids["-a"], [AtlasClassification.model_validate({"typeName": "c_pii", "attributes": {"level": 4}})]
+    )
+    service = EntityDiscoveryService(store)
+
+    async def names(**body: Any) -> list[str]:  # noqa: ANN401 - Atlas JSON
+        found = (await service.search_with_parameters(SearchParameters.model_validate(body))).to_json()
+        return sorted(entity["attributes"]["qualifiedName"] for entity in found.get("entities", []))
+
+    level = {"attributeName": "level", "operator": ">", "attributeValue": "3"}
+    assert await names(classification="c_pii") == ["a@cs", "b@cs", "p@cs"]
+    assert await names(classification="C_P*", typeName="p_data") == ["a@cs", "b@cs"]
+    assert await names(classification="c_pii", tagFilters=level) == ["a@cs", "b@cs", "p@cs"]
+    assert await names(classification="_NOT_CLASSIFIED", typeName="p_data") == ["c@cs"]
+    assert await names(typeName="p_data", entityFilters=where("__classificationNames", "=", "c_pii")) == ["a@cs"]

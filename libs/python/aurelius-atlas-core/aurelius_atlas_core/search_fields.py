@@ -26,9 +26,11 @@ from aurelius_atlas_model.typedef import (
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.atlas_type import AtlasType, resolved
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
+from aurelius_atlas_typesystem.classification_type import CLASSIFICATION_ROOT, ClassificationType
 from aurelius_atlas_typesystem.entity_type import ENTITY_ROOT, EntityType
 from aurelius_atlas_typesystem.enum_type import EnumType
 
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 KEYWORD, LONG, DOUBLE, BOOLEAN = "keyword", "long", "double", "boolean"
@@ -54,6 +56,13 @@ LABEL_DELIMITER = "|"
 
 INCOMPLETE_ENTITY_VALUE = 1
 """``INCOMPLETE_ENTITY_VALUE``: ``__isIncomplete`` of a shell entity; a complete one has none."""
+
+TRAIT_NAMES = f"{KEYWORD}.__traitNames"
+PROPAGATED_TRAIT_NAMES = f"{KEYWORD}.__propagatedTraitNames"
+"""``__traitNames`` and ``__propagatedTraitNames``: the type names of an entity's attached and propagated
+classifications, as Atlas keeps them on the vertex (DD-090)."""
+CLASSIFICATION_GUIDS = f"{KEYWORD}.__classificationGuids"
+"""The classification instances an entity lists, for tag filters (DD-090); no attribute names it."""
 
 
 def kind_of(attribute_type: AtlasType) -> str | None:
@@ -95,13 +104,44 @@ _SYSTEM: dict[str, Callable[[StoredEntity], Any]] = {
 """The system attributes an entity has a value of, read from its own fields."""
 
 
-def search_fields(entity: StoredEntity, entity_type: EntityType) -> dict[str, Any]:
-    """The entity's search fields: its attributes' values and its system attributes', those without one left out."""
+def search_fields(
+    entity: StoredEntity,
+    entity_type: EntityType,
+    classifications: Mapping[str, StoredClassification] | None = None,
+) -> dict[str, Any]:
+    """The entity's search fields: its attributes' values, its system attributes' and its classifications' names,
+    those without one left out; ``classifications`` holds the instances it lists (CSR-05, DD-090).
+    """  # noqa: D205 - one sentence
     fields: dict[str, Any] = {}
     for name, read in _SYSTEM.items():
         _put(fields, ENTITY_ROOT.all_attributes[name], read(entity))
     for attribute in entity_type.all_attributes.values():
         _put(fields, attribute, entity.attributes.get(attribute.qualified_name))
+    listed = [found for guid in entity.classification_guids or [] if (found := (classifications or {}).get(guid))]
+    attached = [found.type_name for found in listed if found.entity_guid == entity.guid]
+    propagated = [found.type_name for found in listed if found.entity_guid != entity.guid]
+    _put(fields, ENTITY_ROOT.all_attributes["__classificationNames"], labels_value(attached))
+    _put(fields, ENTITY_ROOT.all_attributes["__propagatedClassificationNames"], labels_value(propagated))
+    for name, values in (
+        (TRAIT_NAMES, attached),
+        (PROPAGATED_TRAIT_NAMES, propagated),
+        (CLASSIFICATION_GUIDS, entity.classification_guids),
+    ):
+        if values:
+            fields[name] = list(values)
+    return fields
+
+
+def classification_fields(instance: StoredClassification, classification_type: ClassificationType) -> dict[str, Any]:
+    """The search fields of a classification instance, as tag filters test them: its attributes' values, its type
+    name and its entity's status (CSR-03, DD-090).
+    """  # noqa: D205 - one sentence
+    fields: dict[str, Any] = {}
+    _put(fields, CLASSIFICATION_ROOT.all_attributes["__typeName"], instance.type_name)
+    status = instance.entity_status
+    _put(fields, CLASSIFICATION_ROOT.all_attributes["__entityStatus"], None if status is None else status.value)
+    for name, attribute in classification_type.all_attributes.items():
+        _put(fields, attribute, instance.attributes.get(str(name)))
     return fields
 
 

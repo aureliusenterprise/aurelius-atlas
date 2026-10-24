@@ -6,7 +6,7 @@ Atlas's ``EntitySearchProcessor`` with the filter handling of ``SearchProcessor`
 """
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -27,8 +27,9 @@ from aurelius_atlas_model.typedef import (
 )
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
-from aurelius_atlas_typesystem.entity_type import EntityType
+from aurelius_atlas_typesystem.struct_type import StructType
 
+from aurelius_atlas_core.classification_search_processor import ClassificationSearchProcessor
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.search_context import MARKER_END, SearchContext
 from aurelius_atlas_core.search_fields import BOOLEAN, KEYWORD, LABEL_DELIMITER, LONG, field_name
@@ -80,13 +81,16 @@ class EntitySearchProcessor:
         self.next_offset: int | None = None
         """The offset of the next page when paging by marker; ``-1`` after the last."""
 
-    def query(self) -> SearchQuery:
-        """The search as a query of the entity documents (DD-089).
+    async def query(self, store: EntityStore) -> SearchQuery:
+        """The search as a query of the entity documents, with its classifications' criterion (DD-089, DD-090).
 
         Raises:
             AtlasError: ``BAD_REQUEST`` for a filter value that is not of its attribute's type (DV-46).
         """
         parameters = self._context.parameters
+        entities: Sequence[StructType] = self._context.entity_types
+        filters = SearchFilters(self._clock)
+        classifications = await ClassificationSearchProcessor(self._context, filters).criterion(store)
         first = self._context.first_type
         sort_attribute = None if first is None or not parameters.sort_by else first.attribute(parameters.sort_by)
         sort_field = None if sort_attribute is None else field_name(sort_attribute)
@@ -94,7 +98,7 @@ class EntitySearchProcessor:
         return SearchQuery(
             type_names=self._context.type_names,
             active_only=parameters.exclude_deleted_entities,
-            filter=self._filter(parameters.entity_filters),
+            filter=_all_of(filters.filter(parameters.entity_filters, entities), classifications),
             sort_field=sort_field,
             descending=parameters.sort_order is SortOrder.DESCENDING,
             offset=parameters.offset if marker is None else marker,
@@ -103,24 +107,35 @@ class EntitySearchProcessor:
 
     async def execute(self, store: EntityStore) -> list[StoredEntity]:
         """``execute``: the page of matching entities; with a marker, also the next page's offset (SRC-07, SRC-08)."""
-        query = self.query()
+        query = await self.query(store)
         found, self.result_count = await store.search(query)
+        if self._context.has_tag_filters:
+            self.result_count = -1  # ClassificationSearchProcessor.getResultCount without an entity index query
         if self._context.marker is not None:
             self.next_offset = MARKER_END if len(found) < query.size else query.offset + len(found)
         return found
 
-    def _filter(self, criteria: FilterCriteria | None) -> Filter | None:
-        """A filter, criteria without a predicate left out, as ``toInMemoryPredicate`` builds it (SRC-05)."""
+
+class SearchFilters:
+    """Filters as search query criteria; ``clock`` is now in epoch milliseconds, for named time ranges."""
+
+    def __init__(self, clock: Callable[[], int]) -> None:
+        self._clock = clock
+
+    def filter(self, criteria: FilterCriteria | None, types: Sequence[StructType]) -> Filter | None:
+        """A filter on attributes of ``types``, criteria without a predicate left out, as ``toInMemoryPredicate``
+        builds it; a criterion on an attribute several types define matches any of them (SRC-05, CSR-03).
+        """  # noqa: D205 - one sentence
         if criteria is None:
             return None
         if criteria.condition is not None and criteria.criterion:
-            children = [found for child in criteria.criterion if (found := self._filter(child)) is not None]
+            children = [found for child in criteria.criterion if (found := self.filter(child, types)) is not None]
             return Group(criteria.condition, tuple(children)) if children else None
         if not criteria.attribute_name:
             return None
         criteria_of_types: dict[Criterion, None] = {}
-        for entity_type in self._context.entity_types:
-            found = self._criterion(entity_type, criteria)
+        for struct_type in types:
+            found = self._criterion(struct_type, criteria)
             if found is not None:
                 criteria_of_types[found] = None
         tests = list(criteria_of_types)
@@ -128,9 +143,9 @@ class EntitySearchProcessor:
             return None
         return tests[0] if len(tests) == 1 else Group(Condition.OR, tuple(tests))
 
-    def _criterion(self, entity_type: EntityType, criteria: FilterCriteria) -> Criterion | None:
+    def _criterion(self, struct_type: StructType, criteria: FilterCriteria) -> Criterion | None:
         name = str(criteria.attribute_name)
-        attribute = entity_type.attribute(name)
+        attribute = struct_type.attribute(name)
         field = None if attribute is None else field_name(attribute)
         operator, value = criteria.operator, criteria.attribute_value
         if attribute is None or field is None or operator is None:
@@ -176,6 +191,13 @@ class EntitySearchProcessor:
         if len(parts) != 2:  # noqa: PLR2004 - a start and an end
             raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_VALUE.format(value=value, name=attribute.name))
         return _parsed(attribute, parts[0]), _parsed(attribute, parts[1])
+
+
+def _all_of(*filters: Filter | None) -> Filter | None:
+    present = tuple(found for found in filters if found is not None)
+    if not present:
+        return None
+    return present[0] if len(present) == 1 else Group(Condition.AND, present)
 
 
 def _array_test(field: str, kind: str, operator: Operator, value: str | None) -> Criterion:
