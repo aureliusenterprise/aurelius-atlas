@@ -1,8 +1,8 @@
-"""E2E fixtures: the 8.2 chain — the app image, the real data2model, the fixture Atlas (DD-111).
+"""E2E fixtures: the 8.2 chain — the app image, the real data2model, the fixture Atlas (DD-200).
 
 The compose file starts three services: the app under test, the 8.1 data2model
 image, and a canned-file fixture Atlas (a ``python -m http.server`` over
-``e2e/fixtures``, DD-111). Tokens are minted from the dev Keycloak for the
+``e2e/fixtures``, DD-200). Tokens are minted from the dev Keycloak for the
 public ``aurelius`` client — the audience the chain forwards (AUX-04) — and
 both apps verify them against the issuer's TLS :8443 listener.
 """

@@ -1,4 +1,4 @@
-"""Keycloak bearer-token authentication for Aurelius Atlas services (8.0, DD-108).
+"""Keycloak bearer-token authentication for Aurelius Atlas services (8.0, DD-197).
 
 Ported from the template's FastAPI example (the workspace's reference for the
 pattern: ``apps/aurelius-atlas-fastapi-example/.../providers/auth.py``),
@@ -88,7 +88,7 @@ class _LoggingListener(CircuitBreakerListener):
 
 
 def _tls_context(config: AuthConfig) -> ssl.SSLContext:
-    """The issuer client's TLS material as an ``ssl.SSLContext`` (DD-122).
+    """The issuer client's TLS material as an ``ssl.SSLContext`` (DD-211).
 
     httpx2 deprecates ``verify=<path>`` in favour of a context. With a CA file the
     context is rooted at that CA alone — the same trust httpx's ``verify=<path>``

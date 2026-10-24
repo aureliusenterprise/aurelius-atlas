@@ -56,7 +56,7 @@ Needs Docker: `serve` (Keycloak/Postgres/observability), `e2e`.
 - New routes need both a unit test in `tests/routes/` and coverage in `e2e/`.
 - Custom OTel metrics go in `providers/metrics.py` and register through the
   native `metrics.get_meter()` (observable gauges) after `setup_telemetry()`
-  in `app.py` (`register_sse_metric()`, DD-121). The SSE gauge exists because FastAPI's
+  in `app.py` (`register_sse_metric()`, DD-210). The SSE gauge exists because FastAPI's
   auto-instrumentation has no route label on `http_server.active_requests` and
   counts whole SSE stream lifetimes in the duration histogram; the FastAPI
   dashboard therefore excludes `/sse` from Request Duration and In-Flight

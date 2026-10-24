@@ -1,4 +1,4 @@
-"""The async client for the lineage-model API (CL-01..CL-05, CL-30; DD-114, DD-115, DD-116).
+"""The async client for the lineage-model API (CL-01..CL-05, CL-30; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally
 built ``httpx.AsyncClient`` and a token source, reading no environment variables
@@ -43,7 +43,7 @@ class LineageModelClientError(RuntimeError):
         self.status_code = status_code
         """The HTTP status the API answered with."""
         self.error_code = error_code
-        """The ``errorCode`` of the Atlas-shaped body, when it parsed (DV-55/DV-56/DV-22)."""
+        """The ``errorCode`` of the Atlas-shaped body, when it parsed (DV-72/DV-73/DV-80)."""
         self.error_message = error_message
         """The ``errorMessage`` of the Atlas-shaped body, when it parsed."""
         detail = f"{error_code}: {error_message}" if error_code else f"HTTP {status_code}"
@@ -63,7 +63,7 @@ def _bearer(token: TokenSource) -> dict[str, str]:
 
 
 class LineageModelClient:
-    """The client for one lineage-model service (CL-30, DD-114, DD-116).
+    """The client for one lineage-model service (CL-30, DD-203, DD-205).
 
     Args:
         http: The ``httpx.AsyncClient`` to speak through, built by the caller —
@@ -88,8 +88,8 @@ class LineageModelClient:
         :returns: the model document, or ``None`` for the empty answer of LM-05/LM-06 (204).
 
         Raises:
-            LineageModelClientError: The API answered 4xx/5xx (400 is DV-55/DV-56,
-                502 is DV-22 — both with the Atlas-shaped body).
+            LineageModelClientError: The API answered 4xx/5xx (400 is DV-72/DV-73,
+                502 is DV-80 — both with the Atlas-shaped body).
         """
         response = await self._http.get(
             "",

@@ -1,4 +1,4 @@
-"""The ar3 writer's layout constants (DTM-08, DTM-09) — the extraction engine's own (DD-114).
+"""The ar3 writer's layout constants (DTM-08, DTM-09) — the extraction engine's own (DD-203).
 
 The contract's validation tables (``ELEMENT_TYPE_LAYERS``, ``RELATIONSHIP_SHORTHANDS``,
 ``LAYOUT_NAMES``) moved to ``aurelius-atlas-data2model-client`` with the rule models

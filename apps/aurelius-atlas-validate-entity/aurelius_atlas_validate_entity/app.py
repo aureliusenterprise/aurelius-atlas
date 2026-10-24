@@ -1,15 +1,15 @@
-"""The composition root: settings in, application out (VE-01, VE-03, DD-108, DD-120).
+"""The composition root: settings in, application out (VE-01, VE-03, DD-197, DD-209).
 
-The app is the legacy mock (DV-50, DD-112): the entity body is never read and
+The app is the legacy mock (DV-67, DD-201): the entity body is never read and
 the answer is the fixed document (VE-01) — no store, no upstream, no cache
 (the legacy's dev ``@cached`` is not ported), no start-up work beyond the
 telemetry. Everything it collaborates with is built elsewhere and wired here —
 the factories in ``providers/`` (the verifier, the telemetry) and the routers
 in ``routes/`` — so this module says only *which* collaborators the app has,
 never *how* they work (the shape the FastAPI example app keeps,
-DD-118/DD-119/DD-120).
+DD-207/DD-208/DD-209).
 
-The seam stays the tests' (DD-112): ``auth`` is injectable.
+The seam stays the tests' (DD-201): ``auth`` is injectable.
 """
 
 from importlib.metadata import version

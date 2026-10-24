@@ -3,7 +3,7 @@
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-auth)
 
 Keycloak bearer-token authentication shared by the Aurelius Atlas services
-(8.0, DD-108): OIDC discovery, JWKS verification and the write-role gate.
+(8.0, DD-197): OIDC discovery, JWKS verification and the write-role gate.
 
 ## Installation
 

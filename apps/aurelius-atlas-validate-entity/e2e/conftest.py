@@ -78,7 +78,7 @@ def token(keycloak: DockerCompose, settings: Settings) -> str:
 
     The public `aurelius` client's password grant (import/master.json): the
     token carries azp `aurelius`, the audience the app accepts — the audience
-    of the webapp tokens the browser's editor sends (AUX-04, DV-58).
+    of the webapp tokens the browser's editor sends (AUX-04, DV-75).
     """
     port = keycloak.get_service_port("keycloak", 8443)
     deadline = time.monotonic() + MINT_TIMEOUT_SECONDS

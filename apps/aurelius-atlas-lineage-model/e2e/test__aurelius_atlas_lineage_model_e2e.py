@@ -1,6 +1,6 @@
 """E2E: the 8.2 chain — the container, a Keycloak-minted token, the real data2model, the fixture Atlas.
 
-The chain (DD-111): GET / fetches the canned graph from the fixture Atlas,
+The chain (DD-200): GET / fetches the canned graph from the fixture Atlas,
 flattens it, and extracts the model through the real 8.1 data2model container,
 forwarding the caller's bearer token (LM-04). The answer must equal the bytes
 the scenario fixture carries — the 8.1 engine's own output for the same rows —
@@ -20,7 +20,7 @@ from aurelius_atlas_lineage_model_client import LineageModelClient
 
 # Tempo's query API on the dev observability stack (its publishes are
 # loopback-pinned, CIA-03): the chain-stitch probe reads the caller's trace
-# back through it to prove both containers answered inside one trace (DD-121).
+# back through it to prove both containers answered inside one trace (DD-210).
 TEMPO_HOST = "127.0.0.1"
 TEMPO_PORT = 3200
 
@@ -28,7 +28,7 @@ CANNED_EXTRACT = Path(__file__).parents[1] / "scenarios" / "fixtures" / "graph.e
 """The 8.1 engine's answer for the canned graph's rows, generated with the fixtures."""
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
-"""The canned graph's root: the fixed UUID the fixture file is named for (DV-61)."""
+"""The canned graph's root: the fixed UUID the fixture file is named for (DV-78)."""
 
 
 async def _fetch_trace(trace_id: str) -> str | None:
@@ -81,7 +81,7 @@ async def test__liveness_answers_anonymously(anonymous_client: httpx.AsyncClient
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-04"])
 async def test__the_chain_shares_one_trace_with_the_caller(client: httpx.AsyncClient) -> None:
-    """The caller's traceparent rides the chain: both containers answer in ONE trace (DD-121).
+    """The caller's traceparent rides the chain: both containers answer in ONE trace (DD-210).
 
     The probe: mint a trace id, GET / with it as W3C ``traceparent``, then read
     the trace back from Tempo (the webapp suite's api/traces/ pattern). The

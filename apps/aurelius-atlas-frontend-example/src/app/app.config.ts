@@ -62,7 +62,7 @@ export function metricsUrl(config: AppConfig): string {
 export async function initialize(): Promise<ApplicationConfig> {
     const config = await loadConfig();
     const sessionResource = createAureliusSessionResource();
-    // The OTLP credential seam (DD-103, aurelius-atlas-observability): the
+    // The OTLP credential seam (DD-193, aurelius-atlas-observability): the
     // exporters read the user's token through its headers factory, lazily —
     // per export, from the live Keycloak client the initializer below
     // attaches. No ordering is read into that attach: the factory resolves
@@ -79,7 +79,7 @@ export async function initialize(): Promise<ApplicationConfig> {
             provideAureliusOpenTelemetry({
                 exporter: new OTLPTraceExporter({
                     url: config.otelExporterUrl,
-                    // The user token rides every push (DD-103): the OTLP
+                    // The user token rides every push (DD-193): the OTLP
                     // leg is outside HttpClient, so the bearer interceptor
                     // below cannot cover it.
                     headers: ingestAuth.headers,
@@ -103,7 +103,7 @@ export async function initialize(): Promise<ApplicationConfig> {
                     silentCheckSsoRedirectUri: globalThis.location.origin + "/silent-check-sso.html",
                 },
             }),
-            // The seam's other end (DD-103, CIA-02): the live Keycloak
+            // The seam's other end (DD-193, CIA-02): the live Keycloak
             // client — the same DI instance the bearer interceptor reads —
             // into the headers factory.
             provideAppInitializer(() => ingestAuth.attach(inject(Keycloak))),

@@ -6,7 +6,7 @@ tag, and for elements the layer that organises them (``ArchimateModel.organize``
 relationships the type attributes the ar3 writer emits — and drops the enum machinery.
 
 The tables are the request contract's validation domain (DTM-11), so they live with the
-contract in this library (CL-20, DD-114); the ar3 writer's layout constants stayed in the
+contract in this library (CL-20, DD-203); the ar3 writer's layout constants stayed in the
 app's engine.
 """
 

@@ -1,4 +1,4 @@
-"""Unit tests for the telemetry factories: the ingest leg, the native provider wiring (DD-107, DD-108, DD-121)."""
+"""Unit tests for the telemetry factories: the ingest leg, the native provider wiring (DD-196, DD-197, DD-210)."""
 
 from typing import Any
 from unittest.mock import Mock
@@ -28,19 +28,19 @@ def _otel_settings(**overrides: Any) -> LineageModelSettings:  # noqa: ANN401  #
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.providers.telemetry.ingest_pipeline", rules=["LM-10"])
 def test__no_ingest_credential_means_console_only(settings: LineageModelSettings) -> None:
-    """Without the ingest secret there is no OTLP leg: the app exports no OTLP (AUX-03, DD-121)."""
+    """Without the ingest secret there is no OTLP leg: the app exports no OTLP (AUX-03, DD-210)."""
     assert ingest_pipeline(settings) is None
 
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.providers.telemetry.ingest_pipeline", rules=["LM-10"])
 def test__one_half_of_the_credential_is_no_credential() -> None:
-    """A token URL without the secret builds no leg — the pair is the setting (DD-107)."""
+    """A token URL without the secret builds no leg — the pair is the setting (DD-196)."""
     assert ingest_pipeline(_otel_settings(otel_client_secret=None)) is None
 
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.providers.telemetry.ingest_pipeline", rules=["LM-10"])
 def test__the_credential_builds_the_export_leg() -> None:
-    """With the pair set, the pipeline is the (span processor, metric reader) pair for the providers (DD-107)."""
+    """With the pair set, the pipeline is the (span processor, metric reader) pair for the providers (DD-196)."""
     pipeline = ingest_pipeline(_otel_settings())
 
     assert pipeline is not None
@@ -55,7 +55,7 @@ def test__the_credential_builds_the_export_leg() -> None:
 def test__the_leg_rides_the_provider_configuration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The configured leg travels to the providers as the span processor and metric reader (DD-108, DD-121)."""
+    """The configured leg travels to the providers as the span processor and metric reader (DD-197, DD-210)."""
     calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
     monkeypatch.setattr(
         "aurelius_atlas_lineage_model.providers.telemetry.setup_telemetry",
@@ -74,7 +74,7 @@ def test__the_leg_rides_the_provider_configuration(
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.providers.telemetry.configure_telemetry", rules=["LM-10"])
 def test__the_chain_upstreams_are_instrumented(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The httpx instrumentor is wired, so the caller's traceparent rides the chain (DD-121)."""
+    """The httpx instrumentor is wired, so the caller's traceparent rides the chain (DD-210)."""
     httpx_instrumentor = Mock()
     monkeypatch.setattr("aurelius_atlas_lineage_model.providers.telemetry.setup_telemetry", Mock())
     monkeypatch.setattr("aurelius_atlas_lineage_model.providers.telemetry.FastAPIInstrumentor", Mock())

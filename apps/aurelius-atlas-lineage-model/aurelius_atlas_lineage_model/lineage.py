@@ -1,7 +1,7 @@
 """The flattening and the fixed rules document (LM-02..LM-04), on the client library's models.
 
 The lineage body models — ``LineageInfo``, ``EntityHeaderLite``, ``LineageRelation``,
-``Direction`` — moved to ``aurelius-atlas-server-client`` by increment 8.4 (DD-114,
+``Direction`` — moved to ``aurelius-atlas-server-client`` by increment 8.4 (DD-203,
 CL-12): they are the ``v2/lineage/{guid}`` contract of the Atlas API. This module
 re-exports them so the app's import path stays, and keeps what the app *is*: the
 flattening (``flatten_relations``, ``PROCESS_TYPES``) and the fixed rules document
@@ -10,7 +10,7 @@ flattening (``flatten_relations``, ``PROCESS_TYPES``) and the fixed rules docume
 The reference is the Aurelius source: ``fmt_lineage_relation``, the ``rules``
 dict and ``process_types`` in
 ``backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py``.
-Per DD-109 the models are pydantic (the upstream JSON is parsed at the
+Per DD-198 the models are pydantic (the upstream JSON is parsed at the
 boundary), the rows are plain dicts, and no pandas is involved.
 """
 

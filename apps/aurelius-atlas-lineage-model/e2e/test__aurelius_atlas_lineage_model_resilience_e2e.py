@@ -1,7 +1,7 @@
-"""E2E: the chain's upstream outage (9.1, RSL-02, DD-125) — a real container down.
+"""E2E: the chain's upstream outage (9.1, RSL-02, DD-214) — a real container down.
 
 8.5/8.6 prove the outage paths in-process with a fake transport; this file
-stops the fixture Atlas container of the running 8.2 chain (DD-111). The
+stops the fixture Atlas container of the running 8.2 chain (DD-200). The
 app's real httpx call then hits a refused connection and answers the
 Atlas-shaped 502 (LM-12's transport handler, app.py's RequestError arm) —
 over real Docker networking, not a mocked socket. Starting the fixture back
@@ -35,7 +35,7 @@ RECOVERY_DEADLINE_SECONDS = 90
 """How long the chain may take to answer the canned graph after the restart."""
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
-"""The canned graph's root (the fixtures file's name, DV-61)."""
+"""The canned graph's root (the fixtures file's name, DV-78)."""
 
 
 def _stack_container(service: str) -> Container:

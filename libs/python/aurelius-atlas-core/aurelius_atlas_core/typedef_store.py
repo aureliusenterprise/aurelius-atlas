@@ -7,6 +7,7 @@ patch, written with the patch's change (DD-031).
 """
 
 import asyncio
+import functools
 import json
 import re
 import time
@@ -511,6 +512,10 @@ class TypedefStore:
 
         await self._change(apply)
 
+    def patches(self) -> list[AtlasPatch]:
+        """The patch records, sorted by id as Java compares strings (``AtlasPatchRegistry.getAllPatches``, ENS-10)."""
+        return sorted(self._stored.patches.values(), key=functools.cmp_to_key(_compare_patch_ids))
+
     async def delete_type_by_name(self, name: str) -> None:
         """Delete the definition named ``name`` (``deleteTypeByName``, TDS-09).
 
@@ -929,3 +934,7 @@ def _edges(typedef: AtlasBaseTypeDef, *, relationships: bool) -> set[str]:
     if isinstance(typedef, AtlasClassificationDef):
         targets |= set(typedef.entity_types)
     return targets
+
+
+def _compare_patch_ids(left: AtlasPatch, right: AtlasPatch) -> int:
+    return java_compare(str(left.id), str(right.id))

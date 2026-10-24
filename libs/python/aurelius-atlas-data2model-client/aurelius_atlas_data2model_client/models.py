@@ -1,4 +1,4 @@
-"""The ``/extract`` request contract as pydantic models (DTM-01, DTM-11, DTM-12; DD-109).
+"""The ``/extract`` request contract as pydantic models (DTM-01, DTM-11, DTM-12; DD-198).
 
 The legacy chain built these from ``m4i-analytics`` dict adapters (``ConceptDefinition``
 and subclasses, ``**kwargs``-tolerant); the port states the same fields as pydantic
@@ -10,7 +10,7 @@ The legacy adapters normalise ``None`` prefixes/keys to ``''`` — the lineage c
 sends nulls for them — so the string fields accept ``None`` and normalise to ``''``;
 extra keys (``alias``, ``description``, ``include``, …) are ignored, as the ``**kwargs``
 did. The tabular ``data`` stays a plain list of row maps: the columns are the rules'
-keys, so the rows are a mapping, not a model (DD-109).
+keys, so the rows are a mapping, not a model (DD-198).
 """
 
 from __future__ import annotations
@@ -288,7 +288,7 @@ class MetadataEntry(BaseModel):
 
 
 # DTM-01; CL-20. The model is a JSON *string* inside the JSON body, as the
-# legacy answer is (DV-51); ``model_validate_json`` of it is the caller's
+# legacy answer is (DV-68); ``model_validate_json`` of it is the caller's
 # ar3 document.
 class ExtractionResponse(BaseModel):
     """The ``POST /extract`` answer: ``{metadata: […], model: "<ar3 JSON string>"}``."""

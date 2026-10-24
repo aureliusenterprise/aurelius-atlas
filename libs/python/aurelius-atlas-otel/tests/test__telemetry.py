@@ -1,4 +1,4 @@
-"""Unit tests for the native provider setup (DD-121): the legs, the install guard, the log bridge."""
+"""Unit tests for the native provider setup (DD-210): the legs, the install guard, the log bridge."""
 
 from __future__ import annotations
 
@@ -106,14 +106,15 @@ def test__the_env_leg_adds_standard_otlp_exporters(monkeypatch: pytest.MonkeyPat
     exporters = [cast("OTLPMetricExporter", r._exporter) for r in readers]  # noqa: SLF001  # the wiring seam under test
     assert [type(e).__name__ for e in exporters] == ["OTLPMetricExporter"]
     # The SDK reads the standard env: the legacy leg's static shared bearer rides as a header.
-    assert exporters[0]._headers.get("authorization") == "Bearer shared-token"  # noqa: SLF001
+    # OTel 1.45 moved the resolved headers from the exporter onto its client (DD-178).
+    assert exporters[0]._client._headers.get("authorization") == "Bearer shared-token"  # noqa: SLF001
     tracer_provider.shutdown()
     meter_provider.shutdown()
 
 
 @pytest.mark.covers("aurelius_atlas_otel.telemetry.build_providers", rules=["CIA-07"])
 def test__the_process_metrics_ride_the_meter_provider(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The per-process/CPython instruments register on the built meter provider (DD-121)."""
+    """The per-process/CPython instruments register on the built meter provider (DD-210)."""
     instrumentor = Mock()
     monkeypatch.setattr("aurelius_atlas_otel.telemetry.SystemMetricsInstrumentor", instrumentor)
 
@@ -124,7 +125,7 @@ def test__the_process_metrics_ride_the_meter_provider(monkeypatch: pytest.Monkey
     names = set(ctor_kwargs["config"])
     assert "process.cpu.time" in names
     assert "cpython.gc.collections" in names
-    assert not [n for n in names if n.startswith("system.")], "the host-wide set stays off (DD-121)"
+    assert not [n for n in names if n.startswith("system.")], "the host-wide set stays off (DD-210)"
     wire = instrumentor.return_value.instrument.call_args.kwargs
     assert wire["meter_provider"] is meter_provider
     meter_provider.shutdown()

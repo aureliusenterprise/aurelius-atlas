@@ -27,7 +27,7 @@ def test__the_validate_router_carries_the_endpoint_and_its_gate(auth: KeycloakAu
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.routes.build_router", rules=["VE-03"])
 def test__the_gate_is_the_injected_verifier(auth: KeycloakAuth) -> None:
-    """The router guards with the verifier it is given — the composition root's, not its own (DD-112)."""
+    """The router guards with the verifier it is given — the composition root's, not its own (DD-201)."""
     (route,) = _routes(build_router(auth))
     gates = {str(dependency.call) for dependency in route.dependant.dependencies}
 
@@ -36,7 +36,7 @@ def test__the_gate_is_the_injected_verifier(auth: KeycloakAuth) -> None:
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.routes.health.liveness", rules=["VE-04"])
 def test__the_health_router_is_the_anonymous_liveness_check() -> None:
-    """The container healthcheck: GET /liveness answers 204, with no dependency to verify (VE-04, DV-59)."""
+    """The container healthcheck: GET /liveness answers 204, with no dependency to verify (VE-04, DV-76)."""
     (route,) = _routes(HEALTH)
 
     assert route.path == "/liveness"

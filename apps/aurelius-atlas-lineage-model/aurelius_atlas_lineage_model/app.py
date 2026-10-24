@@ -1,16 +1,16 @@
-"""The composition root: settings in, application out (LM-01, LM-08, LM-09, DD-108, DD-118).
+"""The composition root: settings in, application out (LM-01, LM-08, LM-09, DD-197, DD-207).
 
 The app is a stateless proxy: no store, no cache (the legacy's dev ``@cached`` is
 not ported), no start-up work beyond the telemetry. Everything it collaborates
 with is built elsewhere and wired here — the factories in ``providers/`` (the
 verifier, the upstreams, the telemetry) and the routers in ``routes/`` —
 so this module says only *which* collaborators the app has, never *how* they
-work (the shape the FastAPI example app keeps, DD-118/DD-119).
+work (the shape the FastAPI example app keeps, DD-207/DD-208).
 
-The seams stay the tests' (DD-111): ``auth``/``atlas``/``d2m`` are injectable.
+The seams stay the tests' (DD-200): ``auth``/``atlas``/``d2m`` are injectable.
 The app builds each injected-out client's ``httpx.AsyncClient`` from its settings
 and closes the pools it built when the app stops; an injected client brings its
-own pool (DD-116).
+own pool (DD-205).
 """
 
 from collections.abc import AsyncGenerator, Callable
@@ -46,7 +46,7 @@ def create_app(
 ) -> FastAPI:
     """Build the application: the providers, the routes, the error contract, the telemetry.
 
-    Each upstream rides its own circuit breaker (LM-11, 8.5, DD-117), built by
+    Each upstream rides its own circuit breaker (LM-11, 8.5, DD-206), built by
     the upstreams' factory: repeated outages (5xx, transport — LM-13) open the
     circuit and the 502 of LM-12 arrives without calling the upstream, until
     the half-open trial closes it again (LM-14).
@@ -85,7 +85,7 @@ def create_app(
 
 
 def _lifespan(pools: list[httpx.AsyncClient]) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
-    """The app's lifespan: serve, then close the httpx pools the app built (DD-116)."""
+    """The app's lifespan: serve, then close the httpx pools the app built (DD-205)."""
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
@@ -100,7 +100,7 @@ def _setup_error_handlers(app: FastAPI) -> None:
     """The app's error contract: the upstream statuses mapped, the query rejections shaped.
 
     Kept at the root because the mapping is the app's own contract (LM-05,
-    LM-07, LM-12, DV-55..DV-22), not any collaborator's: the body shape is
+    LM-07, LM-12, DV-72..DV-80), not any collaborator's: the body shape is
     ``errors.atlas_error``, the statuses are the route's documented ones.
     """
 
@@ -112,13 +112,13 @@ def _setup_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(httpx.RequestError)
     def upstream_unreachable(_request: Request, error: httpx.RequestError) -> JSONResponse:
-        """An upstream that cannot be reached is a gateway failure (LM-07, DV-22)."""
+        """An upstream that cannot be reached is a gateway failure (LM-07, DV-80)."""
         LOGGER.warning("Upstream %s unreachable: %s", error.request.url, error)
         return atlas_error(BAD_GATEWAY, "the lineage service is unreachable")
 
     @app.exception_handler(RequestValidationError)
     def validation_error(_request: Request, error: RequestValidationError) -> JSONResponse:
-        """A query the app will not process is a 400 with an Atlas-shaped error body (LM-07, DV-55, DV-56).
+        """A query the app will not process is a 400 with an Atlas-shaped error body (LM-07, DV-72, DV-73).
 
         The legacy let ``int()``, ``Enum()`` and a literal-``None`` guid crash
         Flask — a 500; the port states 400.

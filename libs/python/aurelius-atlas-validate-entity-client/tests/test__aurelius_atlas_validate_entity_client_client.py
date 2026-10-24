@@ -1,4 +1,4 @@
-"""The ValidateEntityClient against the recording transport (CL-01..CL-05, CL-40; DD-115, DD-116).
+"""The ValidateEntityClient against the recording transport (CL-01..CL-05, CL-40; DD-204, DD-205).
 
 Every call answers from the externally provided httpx client the test hands in —
 its transport is a recorder, no socket opens (CL-02); each test names the methods
@@ -71,7 +71,7 @@ async def test__an_empty_token_travels_unauthenticated(recorder: Recorder) -> No
     rules=["CL-02"],
 )
 async def test__the_pool_is_the_builders_to_close(recorder: Recorder) -> None:
-    """The client has no close: it serves until its builder closes the pool (CL-02, DD-116)."""
+    """The client has no close: it serves until its builder closes the pool (CL-02, DD-205)."""
     http = httpx.AsyncClient(base_url="https://validate-entity.test", transport=recorder.transport())
     client = ValidateEntityClient(http, "tok")
     borrowed = client.with_token("caller-token")

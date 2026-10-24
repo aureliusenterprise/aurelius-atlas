@@ -87,7 +87,7 @@ export const Loading: Story = {
 /**
  * A propagated classification: the third tag (angle-double-right) is the
  * hoverable trigger; its dropdown lists the sources the app projected —
- * rows the chip does not own (DD-099).
+ * rows the chip does not own (DD-189).
  */
 export const Propagated: Story = {
     args: {
@@ -108,7 +108,7 @@ export const Propagated: Story = {
 
 /**
  * The glossary-term chip: the same atom with the kind's word as lead and
- * the info colour (DD-099) — a twin input set, not a twin component.
+ * the info colour (DD-189) — a twin input set, not a twin component.
  */
 export const Term: Story = {
     args: {

@@ -4,8 +4,11 @@ Every layer raises ``AtlasError``; the server answers it with Atlas's error body
 ``org.apache.atlas.AtlasErrorCode`` of Apache Atlas 2.4.0 as an increment first raises them.
 """
 
+import math
 import re
 from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
+from decimal import Decimal
 from enum import Enum
 
 _PLACEHOLDER = re.compile(r"\{(\d+)\}")
@@ -31,7 +34,9 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-012",
         "Cardinality of attribute {0}.{1} requires a list or set type",
     )
+    ATTRIBUTE_UNIQUE_INVALID = (400, "ATLAS-400-00-013", "Type {0} with unique attribute {1} does not exist")
     TYPE_NAME_INVALID = (400, "ATLAS-400-00-014", "Type {0} with name {1} does not exist")
+    TYPE_CATEGORY_INVALID = (400, "ATLAS-400-00-015", "Type Category {0} is invalid")
     PATCH_NOT_APPLICABLE_FOR_TYPE = (400, "ATLAS-400-00-016", "{0} - invalid patch for type {1}")
     PATCH_FOR_UNKNOWN_TYPE = (400, "ATLAS-400-00-017", "{0} - patch references unknown type {1}")
     PATCH_INVALID_DATA = (400, "ATLAS-400-00-018", "{0} - patch data is invalid for type {1}")
@@ -43,6 +48,7 @@ class AtlasErrorCode(Enum):
             "space, or '_' characters"
         ),
     )
+    INVALID_PARAMETERS = (400, "ATLAS-400-00-01A", "invalid parameters: {0}")
     CONSTRAINT_INVERSE_REF_ATTRIBUTE_INVALID_TYPE = (
         400,
         "ATLAS-400-00-01C",
@@ -63,9 +69,23 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-01F",
         "{0}.{1}: invalid {2} constraint. Attribute {3} is not an entity type",
     )
+    INVALID_OBJECT_ID = (400, "ATLAS-400-00-021", "ObjectId is not valid {0}")
+    UNKNOWN_TYPENAME = (400, "ATLAS-400-00-00A", "{0}: Unknown/invalid typename")
+    UNKNOWN_CLASSIFICATION = (400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification")
+    UNKNOWN_ATTRIBUTE = (400, "ATLAS-400-00-023", "Attribute {0} not found for type {1}")
     SYSTEM_TYPE = (400, "ATLAS-400-00-024", "{0} is a System-type")
+    INVALID_STRUCT_VALUE = (400, "ATLAS-400-00-025", "not a valid struct value {0}")
+    ATTRIBUTE_UPDATE_NOT_SUPPORTED = (400, "ATLAS-400-00-027", "{0}.{1} : attribute update not supported")
     INVALID_VALUE = (400, "ATLAS-400-00-028", "invalid value: {0}")
     BAD_REQUEST = (400, "ATLAS-400-00-029", "{0}")
+    INVALID_SEARCH_PARAMS = (
+        400,
+        "ATLAS-400-00-047",
+        (
+            "No search parameter was found. One of the following MUST be specified in the request; typeName, "
+            "classification, termName or queryText"
+        ),
+    )
     MISSING_MANDATORY_ATTRIBUTE = (400, "ATLAS-400-00-02B", "Mandatory field {0}.{1} has empty/null value")
     RELATIONSHIPDEF_DOUBLE_CONTAINERS = (
         400,
@@ -98,6 +118,12 @@ class AtlasErrorCode(Enum):
         "relationshipDef {0} cannot have a LIST cardinality on an end",
     )
     RELATIONSHIPDEF_INVALID_END_TYPE = (400, "ATLAS-400-00-035", "relationshipDef {0} has invalid end type {1}")
+    RELATIONSHIPDEF_INVALID = (400, "ATLAS-400-00-044", "Invalid relationshipDef: {0}")
+    INVALID_RELATIONSHIP_END_TYPE = (
+        400,
+        "ATLAS-400-00-036",
+        "invalid relationshipDef: {0}: end type 1: {1}, end type 2: {2}",
+    )
     RELATIONSHIPDEF_INVALID_END1_UPDATE = (
         400,
         "ATLAS-400-00-037",
@@ -146,15 +172,91 @@ class AtlasErrorCode(Enum):
         ),
     )
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
+    INVALID_ENTITY_FOR_CLASSIFICATION = (
+        400,
+        "ATLAS-400-00-055",
+        (
+            "Entity (guid=\u2018{0}\u2018,typename=\u2018{1}\u2018) cannot be classified by Classification "
+            "\u2018{2}\u2018, because \u2018{1}\u2018 is not in the ClassificationDef's restrictions."
+        ),
+    )
     ATTRIBUTE_TYPE_INVALID = (
         400,
         "ATLAS-400-00-081",
         "{0}.{1}: invalid attribute type. Attribute cannot be of type classification",
     )
+    INVALID_TIMEBOUNDRY_TIMEZONE = (400, "ATLAS-400-00-085", "Invalid timezone {0}")
+    INVALID_TIMEBOUNDRY_START_TIME = (400, "ATLAS-400-00-086", "Invalid startTime {0}")
+    INVALID_TIMEBOUNDRY_END_TIME = (400, "ATLAS-400-00-087", "Invalid endTime {0}")
+    INVALID_TIMEBOUNDRY_DATERANGE = (
+        400,
+        "ATLAS-400-00-088",
+        "Invalid dateRange: startTime {0} must be before endTime {1}",
+    )
+    RELATIONSHIP_UPDATE_END_CHANGE_NOT_ALLOWED = (
+        404,
+        "ATLAS-400-00-069",
+        (
+            "change of relationship end is not permitted. relationship-type={0}, relationship-guid={1}, "
+            "end-guid={2}, updated-end-guid={3}"
+        ),
+    )
+    RELATIONSHIP_UPDATE_TYPE_CHANGE_NOT_ALLOWED = (
+        404,
+        "ATLAS-400-00-06A",
+        "change of relationship type is not permitted. relationship-guid={0}, current-type={1}, new-type={2}",
+    )
+    RELATIONSHIP_END_IS_NULL = (400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL")
+    CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY = (
+        400,
+        "ATLAS-400-00-06B",
+        "Update to classification {0} is not allowed from propagated entity",
+    )
+    CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY = (
+        400,
+        "ATLAS-400-00-06D",
+        "Classification {0} is not associated with entity",
+    )
+    PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED = (
+        400,
+        "ATLAS-400-00-089",
+        "Removal of classification {0}, which is propagated from entity {1}, is not supported",
+    )
+    PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY = (
+        400,
+        "ATLAS-400-00-070",
+        "Propagated classification {0} is not associated with entity {2}, it is associated with entity {1}",
+    )
+    INVALID_CLASSIFICATION_PARAMS = (
+        400,
+        "ATLAS-400-00-06F",
+        "Invalid classification parameters passed for {0} operation for entity: {1}",
+    )
     PATCH_MISSING_RELATIONSHIP_LABEL = (
         400,
         "ATLAS-400-00-08B",
         "{0} - must include relationship label for type {1}",
+    )
+    INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH = (
+        400,
+        "ATLAS-400-00-08C",
+        "Invalid key: {0} in custom attribute, key size should not be greater than 50",
+    )
+    INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS = (
+        400,
+        "ATLAS-400-00-08D",
+        "Invalid key: {0} in custom attribute, key should only contain alphanumeric characters, '_' or '-'",
+    )
+    INVALID_LABEL_LENGTH = (400, "ATLAS-400-00-08F", "Invalid label: {0}, label size should not be greater than {1}")
+    INVALID_LABEL_CHARACTERS = (
+        400,
+        "ATLAS-400-00-090",
+        "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'",
+    )
+    INVALID_PROPAGATION_TYPE = (
+        400,
+        "ATLAS-400-00-091",
+        "Invalid propagation {0} for relationship-type={1}. Default value is {2}",
     )
     APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED = (
         400,
@@ -184,8 +286,46 @@ class AtlasErrorCode(Enum):
     )
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     TYPE_GUID_NOT_FOUND = (404, "ATLAS-404-00-002", "Given type guid {0} was invalid")
+    NO_CLASSIFICATIONS_FOUND_FOR_ENTITY = (404, "ATLAS-404-00-003", "No classifications associated with entity: {0}")
+    INSTANCE_GUID_NOT_FOUND = (404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found")
+    CLASSIFICATION_NOT_FOUND = (404, "ATLAS-404-00-008", "Given classification {0} was invalid")
+    INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND = (
+        404,
+        "ATLAS-404-00-009",
+        "Instance {0} with unique attribute {1} does not exist",
+    )
+    INSTANCE_CRUD_INVALID_PARAMS = (
+        404,
+        "ATLAS-404-00-007",
+        "Invalid instance creation/updation parameters passed : {0}",
+    )
+    REFERENCED_ENTITY_NOT_FOUND = (404, "ATLAS-404-00-00A", "Referenced entity {0} is not found")
+    RELATIONSHIP_GUID_NOT_FOUND = (404, "ATLAS-404-00-00C", "Given relationship guid {0} is invalid/not found")
+    RELATIONSHIP_CRUD_INVALID_PARAMS = (
+        404,
+        "ATLAS-404-00-00D",
+        "Invalid relationship creation/updation parameters passed : {0}",
+    )
+    RELATIONSHIP_ALREADY_DELETED = (
+        404,
+        "ATLAS-404-00-00F",
+        "Attempting to delete a relationship which is already deleted : {0}",
+    )
+    DELETE_TAG_PROPAGATION_NOT_ALLOWED = (
+        406,
+        "ATLAS-406-00-001",
+        (
+            "Classification delete is not allowed; Add/Update classification propagation is in progress for "
+            "classification: {0} and entity: {1}. Please try again"
+        ),
+    )
     TYPE_ALREADY_EXISTS = (409, "ATLAS-409-00-001", "Given type {0} already exists")
     TYPE_HAS_REFERENCES = (409, "ATLAS-409-00-002", "Given type {0} has references")
+    RELATIONSHIP_ALREADY_EXISTS = (
+        409,
+        "ATLAS-409-00-004",
+        "relationship {0} already exists between entities {1} and {2}",
+    )
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")
     INTERNAL_ERROR = (500, "ATLAS-500-00-001", "Internal server error {0}")
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK = (
@@ -208,8 +348,57 @@ class AtlasErrorCode(Enum):
         return message_format(self.template, *params)
 
 
+def java_double_string(value: float) -> str:
+    """``Double.toString``: plain from 10^-3 to 10^7, else ``d.dddE<n>``; ``NaN`` and ``Infinity`` (VAL-09).
+
+    The digits are Python's shortest ones, which are Java's for all but a few subnormal values.
+    """
+    if math.isnan(value):
+        return "NaN"
+    if math.isinf(value):
+        return "Infinity" if value > 0 else "-Infinity"
+    if value == 0:
+        return "-0.0" if math.copysign(1.0, value) < 0 else "0.0"
+    if _PLAIN_DOUBLE_MIN <= abs(value) < _PLAIN_DOUBLE_MAX:
+        text = repr(value)
+        return text if "." in text else f"{text}.0"
+    _, digits, exponent = Decimal(repr(abs(value))).normalize().as_tuple()
+    text = "".join(map(str, digits))
+    power = len(text) - 1 + int(exponent)
+    sign = "-" if value < 0 else ""
+    return f"{sign}{text[0]}.{text[1:] or '0'}E{power}"
+
+
+_PLAIN_DOUBLE_MIN = 1e-3
+_PLAIN_DOUBLE_MAX = 1e7
+
+
+def java_date_string(value: datetime) -> str:
+    """``Date.toString`` in UTC: ``Thu Jan 01 00:00:00 UTC 1970`` (VAL-09)."""
+    return value.astimezone(UTC).strftime("%a %b %d %H:%M:%S UTC %Y")
+
+
 def java_string(value: object) -> str:
-    """``String.valueOf``: ``null``, ``true``, ``[a, b]`` for collections and ``{k=v}`` for maps (THY-13)."""
+    """``String.valueOf``: ``null``, ``true``, ``[a, b]`` for collections and ``{k=v}`` for maps (THY-13).
+
+    A double is written as ``Double.toString``, a decimal as ``BigDecimal.toString`` and a date as
+    ``Date.toString`` (VAL-09); a model with a ``java_string`` method as that method writes it (EWR-05).
+    """
+    scalar = _java_scalar(value)
+    if scalar is not None:
+        return scalar
+    own = getattr(value, "java_string", None)
+    if callable(own):
+        return str(own())
+    if isinstance(value, Mapping):
+        return "{" + ", ".join(f"{java_string(key)}={java_string(item)}" for key, item in value.items()) + "}"
+    if isinstance(value, Iterable):
+        return "[" + ", ".join(java_string(item) for item in value) + "]"
+    return str(value)
+
+
+def _java_scalar(value: object) -> str | None:
+    """Java's text of a null, boolean, string, double or date; None for anything else."""
     match value:
         case None:
             return "null"
@@ -217,12 +406,12 @@ def java_string(value: object) -> str:
             return "true" if value else "false"
         case str():
             return value
-        case Mapping():
-            return "{" + ", ".join(f"{java_string(key)}={java_string(item)}" for key, item in value.items()) + "}"
-        case Iterable():
-            return "[" + ", ".join(java_string(item) for item in value) + "]"
+        case float():
+            return java_double_string(value)
+        case datetime():
+            return java_date_string(value)
         case _:
-            return str(value)
+            return None
 
 
 def message_format(template: str, *params: object) -> str:
@@ -259,3 +448,11 @@ class AtlasError(Exception):
         self.message = code.message(*params)
         self.cause = cause
         super().__init__(self.message)
+
+    @classmethod
+    def of_message(cls, code: AtlasErrorCode, message: str) -> AtlasError:
+        """``AtlasBaseException(String)``: an error whose message is the text itself, not the code's template."""
+        error = cls(code)
+        error.message = message
+        error.args = (message,)
+        return error

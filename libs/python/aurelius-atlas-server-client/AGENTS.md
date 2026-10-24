@@ -1,6 +1,6 @@
 # aurelius-atlas-server-client
 
-The Atlas metadata API contract and async client (8.4, DD-114, DD-115).
+The Atlas metadata API contract and async client (8.4, DD-203, DD-204).
 This file covers wiring specific to this lib; workspace-wide rules live in the
 root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 
@@ -17,7 +17,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 - Registered in root `pyproject.toml` (members, dev group, `uv.sources`).
 - Apps build the client in `create_app` — `AtlasClient(http, token)` over an
   `httpx2.AsyncClient` of their own, whose **pool they close** in the lifespan
-  (the client exposes no close, DD-116); the token
+  (the client exposes no close, DD-205); the token
   source is `str | Callable[[], str]` — a route forwarding the caller's token
   uses `with_token(token)` per request (shares the pool, closes nothing).
 - The `get_lineage` server route lands with 5.1; the paths here already mirror

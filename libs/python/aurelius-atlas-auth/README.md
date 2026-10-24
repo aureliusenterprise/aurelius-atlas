@@ -1,7 +1,7 @@
 # aurelius-atlas-auth
 
 Keycloak bearer-token authentication for the Aurelius Atlas services (8.0,
-DD-108): OIDC discovery, JWKS verification (RS256, kid, issuer, azp/aud
+DD-197): OIDC discovery, JWKS verification (RS256, kid, issuer, azp/aud
 audience) and the write-role gate. Ported from the template's FastAPI
 example, reshaped as a per-service object so each application owns one
 `KeycloakAuth` built from its own settings. This file covers wiring specific

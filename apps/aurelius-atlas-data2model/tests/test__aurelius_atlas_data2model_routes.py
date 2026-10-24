@@ -28,7 +28,7 @@ def test__the_extract_router_carries_the_endpoint_and_its_gate(auth: KeycloakAut
 
 @pytest.mark.covers("aurelius_atlas_data2model.routes.build_router", rules=["DTM-10"])
 def test__the_gate_is_the_injected_verifier(auth: KeycloakAuth) -> None:
-    """The router guards with the verifier it is given — the composition root's, not its own (DD-111)."""
+    """The router guards with the verifier it is given — the composition root's, not its own (DD-200)."""
     (route,) = _routes(build_router(auth))
     gates = {str(dependency.call) for dependency in route.dependant.dependencies}
 

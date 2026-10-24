@@ -1,8 +1,8 @@
-# Malformed lineage queries (8.6, DD-125): the legacy reads the query with
+# Malformed lineage queries (8.6, DD-214): the legacy reads the query with
 # Flask's params.get and crashes on what it cannot use — a missing guid fetches
-# the literal string "None" (upstream 404, answered 204; DV-56), an
+# the literal string "None" (upstream 404, answered 204; DV-73), an
 # out-of-range depth or unknown direction raises int()/Enum() (Flask 500;
-# DV-55). Aurelius Atlas validates the query at the boundary (LM-07): the
+# DV-72). Aurelius Atlas validates the query at the boundary (LM-07): the
 # pydantic messages below are the wire contract, captured from the app. The
 # fake upstream answers these stages' calls from the graph fixtures, but no
 # stage ever reaches it — every request is rejected before the lineage fetch.
@@ -24,10 +24,10 @@ stages:
               content-type: application/json
           json: {}
           deviations:
-              - id: DV-56
+              - id: DV-73
                 path: $.errorCode
                 value: ATLAS-400-00-029
-              - id: DV-56
+              - id: DV-73
                 path: $.errorMessage
                 value: "invalid lineage request: Field required"
     - name: A depth of zero is 400, not the legacy's 500
@@ -43,10 +43,10 @@ stages:
               content-type: application/json
           json: {}
           deviations:
-              - id: DV-55
+              - id: DV-72
                 path: $.errorCode
                 value: ATLAS-400-00-029
-              - id: DV-55
+              - id: DV-72
                 path: $.errorMessage
                 value: "invalid lineage request: Input should be greater than or equal to 1"
     - name: A direction outside the enum is 400, not the legacy's 500
@@ -62,9 +62,9 @@ stages:
               content-type: application/json
           json: {}
           deviations:
-              - id: DV-55
+              - id: DV-72
                 path: $.errorCode
                 value: ATLAS-400-00-029
-              - id: DV-55
+              - id: DV-72
                 path: $.errorMessage
                 value: "invalid lineage request: Input should be 'BOTH', 'INPUT' or 'OUTPUT'"

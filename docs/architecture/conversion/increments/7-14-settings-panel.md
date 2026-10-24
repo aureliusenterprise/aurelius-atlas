@@ -17,7 +17,7 @@ this slice inherits. It is a **new feature**, not a port: neither the Apache Atl
 dashboards nor the legacy Aurelius shell has a settings control (verified in
 `.scratch/aurelius`'s `libs/shell` header and `dashboardv2`'s `Header.html` — the
 legacy header's right side is Documentation, language and account, and no theme or
-settings control exists). DV-48 records it as a deliberate addition.
+settings control exists). DV-65 records it as a deliberate addition.
 
 ## Scope
 
@@ -55,7 +55,7 @@ Not in scope:
 | Pagination wired to the page-size setting                                             | 7.6/7.7 — the screens that paginate                              |
 | The navbar search bar (the header's other right-side control)                         | 7.4 (DD-145)                                                     |
 | Runtime language switching (in-page string swap)                                      | none — one build per locale is the design (DD-128)               |
-| Retiring the example app (it keeps its own header, and the `dark-mode` widget's home) | 7.10 (DV-47)                                                     |
+| Retiring the example app (it keeps its own header, and the `dark-mode` widget's home) | 7.10 (DV-64)                                                     |
 
 ## Semantics
 
@@ -91,10 +91,10 @@ Nothing is ported. The precedents the design leans on:
 
 ## Deviations
 
-- **DV-48 (new feature):** Aurelius Atlas ships a settings panel; Apache Atlas 2.4.0
+- **DV-65 (new feature):** Aurelius Atlas ships a settings panel; Apache Atlas 2.4.0
   has none (its user-facing preferences live in the dashboard's `UserSettings`
   redux store, not in the header, and are not part of the REST contract). The panel
-  is part of Aurelius's own interface (ADR 053, DV-47's framing), not a port, and
+  is part of Aurelius's own interface (ADR 053, DV-64's framing), not a port, and
   touches no Atlas endpoint.
 - **DD-159 supersedes SHM-01's mechanism** (7.12): the html `data-theme="light"` pin
   is removed because it is read as an explicit choice and would outrank a stored

@@ -126,7 +126,7 @@ The mechanisms that make the posture checkable (R2, R5), all part of the spine:
 - **Services.** The FastAPI example serves HTTPS and verifies Keycloak and the
   store against the CA. The OpenTelemetry collector's OTLP receivers are TLS,
   and every exporter in the arrangement trusts the CA. TLS proves the channel;
-  the receivers additionally require a credential (DD-103): server-side
+  the receivers additionally require a credential (DD-193): server-side
   producers present a shared ingest token as a bearer token on the service
   leg, and browsers push their own Keycloak user token on the browser leg
   (validated via OIDC), passed through the `/otel/` proxies untouched — ingest

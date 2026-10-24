@@ -67,7 +67,7 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
   loop (APC-07) and never store tokens outside keycloak-js's own memory (DD-004).
   The OTLP exporters are the one non-`/api` authenticated leg: they ride the
   user's own token through `createAureliusOtelIngestAuth`'s headers factory
-  (aurelius-atlas-observability, DD-103) —
+  (aurelius-atlas-observability, DD-193) —
   the collector's browser receiver validates it via OIDC; token-less (logged-out)
   pushes 401 by design.
 - Every new component gets a Storybook story (7.2 wires the ui library pattern);

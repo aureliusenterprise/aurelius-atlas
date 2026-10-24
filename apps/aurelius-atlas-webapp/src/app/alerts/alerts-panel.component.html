@@ -1,16 +1,16 @@
 <!--
   The alerts panel body (ALR-01, ALR-06, ALR-07, ALR-11), carried by the
-  ui-lib drawer. The inbox bar rides the drawer's subhead slot (DD-090):
+  ui-lib drawer. The inbox bar rides the drawer's subhead slot (DD-180):
   a full-width strip below the head, outside the scrolling body, so a
   long feed never pushes it away. The chips count the store (totals per
   severity, ALR-11); a chip toggles its severity in the feed, and the
-  clear-all action is a member of the same button group (DD-092), the
+  clear-all action is a member of the same button group (DD-182), the
   strip's last segment.
 
   The feed is the ui-lib AlertList, wired to the filtered rows: the
   panel's `visible` signal applies the chips' filter (ALR-11), dismissal
   writes through the store (ALR-06). Opening the drawer marks the feed
-  read (ALR-12, DD-090) — the effect in the panel's constructor.
+  read (ALR-12, DD-180) — the effect in the panel's constructor.
 
   i18n ids are the shell.alerts.* dictionary paths (DD-128 bridge,
   SHC-07 pattern). Strings bound into component inputs live in TypeScript

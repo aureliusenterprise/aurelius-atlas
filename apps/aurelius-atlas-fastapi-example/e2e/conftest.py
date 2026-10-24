@@ -329,7 +329,7 @@ def keycloak_client(keycloak: DockerCompose, settings: Settings) -> KeycloakOpen
         # python-keycloak hands `verify` to BOTH requests (sync, str-only) and
         # httpx (async, deprecates str) — a context breaks requests, a path
         # warns in httpx. The path is the working side; the warning is
-        # python-keycloak's own (DD-122).
+        # python-keycloak's own (DD-211).
         verify=str(CA_FILE),
     )
 

@@ -17,7 +17,32 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   models directory and the nine typedef patch actions
 - `aurelius_atlas_core/models/` — `addons/models` of Atlas 2.4.0, byte for byte: never edit, reformat or
   re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar)
-- `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` for unit tests
+- `aurelius_atlas_core/entity_store.py` — `EntityStore`: GUIDs, reads by GUID and unique attributes,
+  all-or-nothing writes through the journal, recovery and the type usage check (DD-043 to DD-048)
+- `aurelius_atlas_core/relationship_store.py` — `RelationshipStore` (`AtlasRelationshipStoreV2`) and the checks
+  and creation an entity write shares; `relationship_mapper.py` (`RelationshipMapper`) maps relationship
+  attributes onto relationships in memory; `graph_helper.py` holds `GraphHelper`'s edge lookups over an entity's
+  relationships
+- `aurelius_atlas_core/transaction_view.py` — `TransactionView`: the store as a write request has changed it,
+  which the delete handlers read (through `EntityView`) to delete the owned entities an update drops (DD-068)
+- `aurelius_atlas_core/entity_classifications.py` — `EntityClassifications`: the classification methods of
+  `AtlasEntityStoreV2` and `EntityGraphMapper`; `stored_classification.py` holds the stored instance (DD-070)
+- `aurelius_atlas_core/tag_propagation.py` — `TagPropagation`: classification propagation over a request's view,
+  whose entity changes the caller writes with the request (DD-075, DD-077), or the tasks it defers them to
+- `aurelius_atlas_core/entity_change_notifier.py` — `EntityChangeNotifier`: prunes a writer's response and tells
+  its listeners; `entity_audit_listener.py` records audit events, `entity_audit_repository.py` keeps and lists
+  them (DD-082 to DD-084); `testing/memory.py` has `InMemoryEntityAuditRepository`
+- `aurelius_atlas_core/discovery_service.py` — `EntityDiscoveryService`: basic search; `search_context.py`
+  checks it, `entity_search_processor.py` turns it into a `SearchQuery` (`search_query.py`, also its in-memory
+  meaning), which the entity documents answer over the search fields of `search_fields.py` (DD-088, DD-089);
+  `classification_search_processor.py` adds the classification criterion (DD-090)
+- `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
+  and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
+  stored task
+- `aurelius_atlas_core/entity_documents.py` — `EntityDocuments` and its Elasticsearch implementation: the entity,
+  unique value and journal indices; `stored_entity.py` (`StoredEntity`) and `unique_key.py` (`UniqueKey`)
+- `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` and `MemoryEntityDocuments` (with injected
+  failures and crashes) for unit tests
 - `tests/` — TDS-01 to TDS-13 and MDL-01 to MDL-15 on the in-memory document and the fake client;
   `tests/fixtures/` holds Atlas's `0010-base_model.json`, unchanged and skipped by the hooks
 - `e2e/` — the store on the dev Elasticsearch, each test on an alias of its own

@@ -8,7 +8,7 @@ import { TypeName } from "./type-name.component";
  * The type badge: the entity type's icon (coloured by its type class) and
  * name, with the alias overriding the name and an optional base-type
  * suffix. The details header's type line, the card badge, the
- * propagated-sources rows, and 7.7's editor all render this (DD-100).
+ * propagated-sources rows, and 7.7's editor all render this (DD-190).
  */
 const meta: Meta<TypeName> = {
     component: TypeName,

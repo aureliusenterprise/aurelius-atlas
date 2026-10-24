@@ -68,7 +68,7 @@ SonarQube receives each project's `coverage.xml` / `lcov.info`, and its **qualit
 coverage gate** — there is deliberately no second coverage flag in the pipeline.
 The last full review of what the suites prove — coverage baselines and non-happy-flow
 representativeness per project — is the [Test Suite Review](./testing-review.md)
-([DD-125](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
+([DD-214](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
 
 ## Indicators
 

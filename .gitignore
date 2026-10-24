@@ -67,6 +67,9 @@ db.sqlite3-journal
 
 # Flask stuff:
 instance/
+# ...but not the Atlas entity models (org.apache.atlas.model.instance, DD-037) and their tests
+!libs/python/aurelius-atlas-model/aurelius_atlas_model/instance/
+!libs/python/aurelius-atlas-model/tests/instance/
 .webassets-cache
 
 # Scrapy stuff:

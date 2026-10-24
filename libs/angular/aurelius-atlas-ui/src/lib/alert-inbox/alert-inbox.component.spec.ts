@@ -43,14 +43,14 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
 
         // The chip's parts: its label, its total tag (ALR-11). The
         // unread dot's sr-only label is the chip's fourth part, tested
-        // on its own below. The ramp order is calm to urgent (DD-092).
+        // on its own below. The ramp order is calm to urgent (DD-182).
         const labels = chips().map((c) => c.querySelector("span")?.textContent.trim());
         expect(labels.join(", ")).toMatchInlineSnapshot('"Info, Warnings, Errors"');
         const totals = chips().map((c) => c.querySelector(".aurelius-alert-inbox-count")?.textContent.trim());
         expect(totals.join(", ")).toMatchInlineSnapshot('"1, 1, 2"');
     });
 
-    it("rides each chip in its severity's class (ALR-11, DD-092)", () => {
+    it("rides each chip in its severity's class (ALR-11, DD-182)", () => {
         fixture.componentRef.setInput("alerts", feed());
         fixture.detectChanges();
 
@@ -90,7 +90,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         ];
         expect(dots).toHaveLength(2); // warning (w1) and error (e2), inbox order
         // The dot rides the chip's ink (the scss) — the chip's face is
-        // the severity's colour now (DD-092), a ramp-coloured dot would
+        // the severity's colour now (DD-182), a ramp-coloured dot would
         // ride its own colour. The dot is decorative; the sr-only label
         // carries the meaning.
         expect(dots[0].closest("button")?.textContent).toContain("Warnings");
@@ -127,15 +127,15 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(severities).toEqual(["warning"]);
     });
 
-    it("keeps the bar whole when every severity is hidden (ALR-11, DD-095)", () => {
+    it("keeps the bar whole when every severity is hidden (ALR-11, DD-185)", () => {
         fixture.componentRef.setInput("alerts", feed());
         fixture.detectChanges();
 
-        // No show-all control (DD-095): appearing at full filtering,
+        // No show-all control (DD-185): appearing at full filtering,
         // it inserted a fourth expanded segment and the chips jumped
         // narrower — jarring on every toggle to the fully-hidden
         // state. The way back is a chip, which stays clickable while
-        // hidden (only a void chip is disabled, DD-094).
+        // hidden (only a void chip is disabled, DD-184).
         fixture.componentRef.setInput("hidden", ["error", "warning", "info"]);
         fixture.detectChanges();
 
@@ -170,7 +170,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         );
     });
 
-    it("greys out a severity with no alerts (ALR-11, DD-094)", () => {
+    it("greys out a severity with no alerts (ALR-11, DD-184)", () => {
         fixture.componentRef.setInput("alerts", [
             group({ id: "e1", severity: "error", message: "GET /api/x 500" }),
             group({ id: "i1", severity: "info", message: "Saved" }),
@@ -196,7 +196,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(severities).toEqual([]);
     });
 
-    it("counts an empty feed as three void severities (ALR-11, DD-094)", () => {
+    it("counts an empty feed as three void severities (ALR-11, DD-184)", () => {
         fixture.componentRef.setInput("alerts", []);
         fixture.detectChanges();
 
@@ -211,7 +211,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(chips().every((c) => c.disabled)).toBe(true);
     });
 
-    it("compacts the count badge so every segment is one height (DD-093)", () => {
+    it("compacts the count badge so every segment is one height (DD-183)", () => {
         fixture.componentRef.setInput("alerts", feed());
         fixture.detectChanges();
 
@@ -227,7 +227,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         expect(style.lineHeight).toBe("1");
     });
 
-    it("projects the caller's action into the strip (DD-090)", async () => {
+    it("projects the caller's action into the strip (DD-180)", async () => {
         @Component({
             imports: [AlertInbox],
             template: `<aurelius-atlas-ui-alert-inbox>
@@ -244,7 +244,7 @@ describe("AlertInbox (ALR-11, ALR-12)", () => {
         const clear = group.querySelector(".aurelius-alert-clear");
         expect(clear?.textContent.trim()).toBe("Clear all");
         // The caller's contract: the action joins the bar as an expanded
-        // member of the addons group, the strip's last segment (DD-092).
+        // member of the addons group, the strip's last segment (DD-182).
         expect(clear?.classList.contains("is-expanded")).toBe(true);
     });
 });

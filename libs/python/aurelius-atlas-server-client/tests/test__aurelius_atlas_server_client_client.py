@@ -1,4 +1,4 @@
-"""The AtlasClient against the recording transport (CL-01..CL-05, CL-11; DD-115, DD-116).
+"""The AtlasClient against the recording transport (CL-01..CL-05, CL-11; DD-204, DD-205).
 
 Every call answers from the externally provided httpx client the test hands in —
 its transport is a recorder, no socket opens (CL-02); each test names the methods
@@ -32,7 +32,7 @@ from server_recorder import Recorder
 VERSION: dict[str, Any] = {"Version": "4.1.0", "Revision": "abc1234", "Name": "Aurelius Atlas", "Description": "d"}
 TYPES_DEF: dict[str, Any] = {"enumDefs": [{"name": "e1", "category": "ENUM"}]}
 E_1 = UUID("00000000-0000-4000-8000-000000000001")
-"""A fixed entity guid, the shape every lineage call carries (DV-61)."""
+"""A fixed entity guid, the shape every lineage call carries (DV-78)."""
 LINEAGE: dict[str, Any] = {
     "guidEntityMap": {str(E_1): {"guid": str(E_1), "typeName": "hive_table", "displayText": "T"}},
     "relations": [],
@@ -360,7 +360,7 @@ async def test__a_non_2xx_answer_raises_the_library_error(recorder: Recorder) ->
 
 @pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.version", rules=["CL-05"])
 async def test__an_unreachable_server_propagates_httpxs_own_error(recorder: Recorder) -> None:
-    """The client maps nothing: a transport failure is ``httpx``'s, the app's job (CL-05, DV-22)."""
+    """The client maps nothing: a transport failure is ``httpx``'s, the app's job (CL-05, DV-80)."""
     recorder.handler = lambda _request: (_ for _ in ()).throw(httpx.ConnectError("refused"))
 
     with pytest.raises(httpx.ConnectError):

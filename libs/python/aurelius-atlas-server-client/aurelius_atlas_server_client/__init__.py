@@ -1,4 +1,4 @@
-"""The Aurelius Atlas server API as a contract and a client (increment 8.4, DD-114).
+"""The Aurelius Atlas server API as a contract and a client (increment 8.4, DD-203).
 
 The wire contract of the Atlas metadata API the server routes answer — the admin
 endpoints, the typedef endpoints and the ``v2/lineage/{guid}`` body — as pydantic

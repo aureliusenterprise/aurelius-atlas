@@ -19,7 +19,7 @@ from fake_upstream import FakeUpstream
 from fastapi import FastAPI
 from httpx2 import ASGITransport, AsyncClient
 
-# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-61).
+# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-78).
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
 P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
 E_OUT = UUID("00000000-0000-4000-8000-000000000003")
@@ -64,7 +64,7 @@ def _breaker_app(settings: Any, auth: Any, upstream: FakeUpstream, **overrides: 
     """An app with breaker settings overridden — the trip tests need a small fail_max (LM-15).
 
     The clients ride on the recording transport, as the conftest's app fixture
-    wires them (DD-111's seam); only the breaker settings differ.
+    wires them (DD-200's seam); only the breaker settings differ.
     """
     transport = upstream.transport()
     return create_app(
@@ -165,7 +165,7 @@ async def test__the_app_closes_the_pools_it_built(
     upstream: FakeUpstream,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The lifespan closes the pools the app built — nobody else's (DD-116).
+    """The lifespan closes the pools the app built — nobody else's (DD-205).
 
     The app's pool factory is pinned to the fake transport, and the fixture's
     settings carry the upstreams as pydantic ``HttpUrl``s — their ``str()`` ends
@@ -352,7 +352,7 @@ async def test__the_half_open_trial_reopens_the_circuit_on_failure(
 
 
 # ---------------------------------------------------------------------------
-# LM-07 (DV-22) — a transport failure is the app's 502, not a crash
+# LM-07 (DV-80) — a transport failure is the app's 502, not a crash
 # ---------------------------------------------------------------------------
 
 
@@ -376,7 +376,7 @@ async def test__an_unreachable_atlas_is_a_502_not_a_crash(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """The fetch's transport failure (connect refused) is the handler's 502 Atlas body (LM-07, DV-22)."""
+    """The fetch's transport failure (connect refused) is the handler's 502 Atlas body (LM-07, DV-80)."""
     _refusing_upstream(upstream, f"/v2/lineage/{E_IN}")
 
     response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
@@ -391,7 +391,7 @@ async def test__an_unreachable_extract_is_a_502(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """The extract leg's transport failure rides the same handler: 502, the fetch succeeded (LM-07, DV-22)."""
+    """The extract leg's transport failure rides the same handler: 502, the fetch succeeded (LM-07, DV-80)."""
     _refusing_upstream(upstream, "/extract")
 
     response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
@@ -411,7 +411,7 @@ async def test__a_hanging_upstream_times_out_to_a_502(
 
     The MockTransport does not enforce the pool's timeout, so the handler raises
     what the bound raises at a real socket: the app's contract is the answer
-    (502, DV-22), the bound's firing is httpx's tested behaviour.
+    (502, DV-80), the bound's firing is httpx's tested behaviour.
     """
     timed_out = f"timed out after {UPSTREAM_TIMEOUT_SECONDS}s"
 

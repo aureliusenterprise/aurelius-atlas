@@ -1,0 +1,48 @@
+name: An entity GUID that no entity has is not found, alone or in bulk
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getById
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getHeaderById
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#getByGuids
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#getEntityVertex
+    - intg/src/main/java/org/apache/atlas/AtlasErrorCode.java#INSTANCE_GUID_NOT_FOUND
+rules: [ERD-02, ERD-07, ERD-10]
+covers:
+    - aurelius_atlas_server.routes.entity.get_by_id
+    - aurelius_atlas_server.routes.entity.get_header_by_id
+    - aurelius_atlas_server.routes.entity.get_by_guids
+stages:
+    - name: the entity
+      request: { method: GET, url: /api/atlas/v2/entity/guid/scenario-no-such-guid }
+      response:
+          status: 404
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: Given instance guid scenario-no-such-guid is invalid/not found
+    - name: its header
+      request: { method: GET, url: /api/atlas/v2/entity/guid/scenario-no-such-guid/header }
+      response:
+          status: 404
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: Given instance guid scenario-no-such-guid is invalid/not found
+    - name: in bulk
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/bulk
+          params: { guid: [scenario-no-such-guid, scenario-nor-this] }
+      response:
+          status: 404
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: Given instance guid scenario-no-such-guid is invalid/not found
+    - name: in bulk without a guid
+      request: { method: GET, url: /api/atlas/v2/entity/bulk }
+      response:
+          status: 404
+          headers: { content-type: "application/json; charset=UTF-8" }
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: Given instance guid [] is invalid/not found

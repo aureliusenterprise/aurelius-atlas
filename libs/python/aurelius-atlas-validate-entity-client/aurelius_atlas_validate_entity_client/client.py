@@ -1,4 +1,4 @@
-"""The async client for the validate-entity API (CL-01..CL-05, CL-40; DD-114, DD-115, DD-116).
+"""The async client for the validate-entity API (CL-01..CL-05, CL-40; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally
 built ``httpx.AsyncClient`` and a token source, reading no environment variables
@@ -10,7 +10,7 @@ lifecycle. Tests pass one built on a
 (CL-03); ``ValidateEntityClientError`` rises on a non-2xx answer (CL-04);
 ``httpx``'s own error propagates on an unreachable upstream (CL-05).
 
-``validate`` posts any mapping — the endpoint never reads the body (VE-01, DD-112),
+``validate`` posts any mapping — the endpoint never reads the body (VE-01, DD-201),
 so the request is not a model — and parses the fixed governance document into a
 :class:`~aurelius_atlas_validate_entity_client.models.ValidationResponse` (CL-40).
 """
@@ -62,7 +62,7 @@ def _bearer(token: TokenSource) -> dict[str, str]:
 
 
 class ValidateEntityClient:
-    """The client for one validate-entity service (CL-40, DD-114, DD-116).
+    """The client for one validate-entity service (CL-40, DD-203, DD-205).
 
     Args:
         http: The ``httpx.AsyncClient`` to speak through, built by the caller —

@@ -1,4 +1,4 @@
-"""The OTLP ingest credential for the collector's per-service leg (7.18, DD-107, CIA-07).
+"""The OTLP ingest credential for the collector's per-service leg (7.18, DD-196, CIA-07).
 
 The collector's per-service leg (4317 gRPC / 4319 HTTP) accepts only Keycloak
 client-credentials JWTs minted for the service's realm client
@@ -8,10 +8,10 @@ and the dev realm's access token lives 60s — a bearer JWT in a static header
 expires a minute in. So the app owns the OTLP export: a refresh-ahead token
 source feeds a ``requests.Session`` that injects a fresh bearer header on
 every OTLP request, handed to app-built exporters whose processor/reader
-``setup_telemetry`` installs on the process's providers (DD-121).
+``setup_telemetry`` installs on the process's providers (DD-210).
 
 Extracted from the Atlas server's ``otel_ingest`` module so every service on
-the leg shares one credential (8.0, DD-108); the server keeps the settings
+the leg shares one credential (8.0, DD-197); the server keeps the settings
 mapping, this library owns the mechanism.
 
 No new dependency: the session rides the ``requests`` the OTLP exporter
@@ -69,7 +69,7 @@ class ClientCredentialsTokenSource:
 
         On mint failure with no usable token, ``None`` — the request then goes
         out header-less and the collector's 401 is the visible failure
-        (DD-107: no silent fallback).
+        (DD-196: no silent fallback).
         """
         with self._lock:
             if self._token is not None and time.time() < self._expires_at - REFRESH_AHEAD_SECONDS:
@@ -123,7 +123,7 @@ def build_otlp_pipeline(
     ca_file: str | None,
     token_source: ClientCredentialsTokenSource,
 ) -> IngestPipeline:
-    """The app-owned OTLP export (DD-107): a trace processor + metric reader.
+    """The app-owned OTLP export (DD-196): a trace processor + metric reader.
 
     The exporters inject the bearer header per export through the ingest
     session.

@@ -20,7 +20,7 @@ def test__http_client_verifies_with_system_trust_without_ca_file(settings_plaint
 
 
 def test__http_client_verifies_with_configured_ca_file(settings_http_ca: Mock) -> None:
-    """A configured CA bundle roots the client's TLS context (DD-122)."""
+    """A configured CA bundle roots the client's TLS context (DD-211)."""
     with (
         patch("aurelius_atlas_fastapi_example.providers.http.httpx.Client") as client_class,
         patch("aurelius_atlas_fastapi_example.providers.http.ssl.create_default_context") as make_context,

@@ -1,9 +1,9 @@
 # 9.1 Targeted resilience e2e
 
 - **Status:** in progress
-- **Pull request:** — (follows the review of 2026-10-24, DD-125)
-- **Records:** RSL-01..03 (minted here); DD-125 (the review that scoped this);
-  cites 7.7 (ALR-05), 7.3 (APC-05/10), 8.2/8.5 (LM-04, LM-12), DD-111, DD-117,
+- **Pull request:** — (follows the review of 2026-10-24, DD-214)
+- **Records:** RSL-01..03 (minted here); DD-214 (the review that scoped this);
+  cites 7.7 (ALR-05), 7.3 (APC-05/10), 8.2/8.5 (LM-04, LM-12), DD-200, DD-206,
   DD-153, DD-173
 
 ## Scope
@@ -36,7 +36,7 @@ failure surface, each ≤ 2 minutes:
 It does **not** deliver: chaos testing, sustained-outage behaviour, the
 circuit-breaker-open e2e (8.5's unit suite owns it; one outage event is one
 failure, and opening needs five), Elasticsearch-loss scenarios (the server
-spine's deferred backlog, DD-125), or any production-code change.
+spine's deferred backlog, DD-214), or any production-code change.
 
 ## Rule definitions
 
@@ -55,7 +55,7 @@ spine's deferred backlog, DD-125), or any production-code change.
   badge, drawer feed row naming `Request failed: GET /api/... 502`. Recovery
   is the same stack's readiness probe (the conftest's version-endpoint poll,
   ATLAS_SERVER_HOST_PORT) after `container.start()`.
-- **RSL-02** (8.2 LM-04/05, 8.5 LM-12, DD-111): the app calls the fixture
+- **RSL-02** (8.2 LM-04/05, 8.5 LM-12, DD-200): the app calls the fixture
   Atlas over the compose network; a stopped container answers connection
   refused, the app's `httpx.RequestError` handler answers the Atlas 502 body
   (`errorCode` ATLAS-500-00-001 family, DD-20's 8.x shape). The container
@@ -71,11 +71,11 @@ spine's deferred backlog, DD-125), or any production-code change.
 
 No Java twin: Apache Atlas' webapp ships no resilience e2e (the legacy suite
 is integration-level, `webapp/src/test`). The scenarios follow the review
-(DD-125) category 3 and the Aurelius shell/chain rules cited above.
+(DD-214) category 3 and the Aurelius shell/chain rules cited above.
 
 ## Deviations
 
-None new. The outage answers ride the accepted 8.x shapes (DV-60's breaker
+None new. The outage answers ride the accepted 8.x shapes (DV-77's breaker
 502, the SRV-04 error body) — cited, not restated.
 
 ## Acceptance

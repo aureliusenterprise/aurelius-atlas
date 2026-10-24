@@ -7,7 +7,7 @@ from aurelius_atlas_lineage_model.globals import ATLAS_ERROR_CODE
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.errors.atlas_error", rules=["LM-07"])
 def test__the_error_body_is_the_atlas_shape() -> None:
-    """The Atlas error code and message on the given status (DV-22's body, the legacy's code)."""
+    """The Atlas error code and message on the given status (DV-80's body, the legacy's code)."""
     response = atlas_error(502, "the lineage service failed")
 
     assert response.status_code == 502

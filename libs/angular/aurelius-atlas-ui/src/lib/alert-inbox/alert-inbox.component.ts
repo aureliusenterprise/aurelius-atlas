@@ -6,10 +6,10 @@ import type { AlertGroup, AlertSeverity, AlertSeverityCount } from "../alert-lis
 /**
  * The inbox bar above the alert feed (ALR-11): a full-width Bulma
  * button group with one chip per severity, in inbox order — `info`,
- * `warning`, `error`, the ramp calm to urgent (DD-092) — each showing
+ * `warning`, `error`, the ramp calm to urgent (DD-182) — each showing
  * how many groups of that severity the feed holds, beside the caller's
  * clear-all action, every segment an expanded member of the joined
- * group (DD-090, DD-092). A chip toggles its severity in
+ * group (DD-180, DD-182). A chip toggles its severity in
  * the feed and rides that severity's pinned fill while shown (an
  * unpressed chip is plain, "off" needs no colour); it carries a dot
  * while that severity has unread groups (ALR-12), so the bar answers
@@ -22,10 +22,10 @@ import type { AlertGroup, AlertSeverity, AlertSeverityCount } from "../alert-lis
  *
  * A severity with no alerts greys out: its chip is disabled, unpressed,
  * and takes no fill — there is nothing to show and nothing to toggle
- * (DD-094).
+ * (DD-184).
  *
  * With every severity hidden the chips are all "off" and the feed
- * shows its empty state; there is no show-all control (DD-095) — the
+ * shows its empty state; there is no show-all control (DD-185) — the
  * way back is a chip, which stays clickable while hidden. Labels are
  * caller inputs with English defaults (the {@link Drawer}'s
  * `ariaLabel` pattern) — the lib keeps no translation dependency and
@@ -79,7 +79,7 @@ export class AlertInbox {
 
     /**
      * Whether a severity's chip is on: it has alerts and the feed does
-     * not hide it. An empty severity is never on (DD-094) — a filter
+     * not hide it. An empty severity is never on (DD-184) — a filter
      * with nothing to show is not showing it, so the chip takes no
      * severity fill and reads grey (the {@link isVoid} state).
      * @param count one severity's counts
@@ -92,7 +92,7 @@ export class AlertInbox {
     /**
      * Whether a severity's chip is void: the feed holds no alert of it,
      * so the chip is disabled — greyed, and inert, since filtering
-     * nothing has nothing to toggle (DD-094).
+     * nothing has nothing to toggle (DD-184).
      * @param count one severity's counts
      * @returns whether the chip is disabled
      */

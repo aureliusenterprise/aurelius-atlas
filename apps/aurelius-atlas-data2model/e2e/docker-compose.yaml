@@ -22,10 +22,10 @@ services:
             AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: master
             AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: ${AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE:?}
             AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
-            # OTLP ingest identity (DD-107, DD-108): the app exports through
+            # OTLP ingest identity (DD-196, DD-197): the app exports through
             # its own pipeline, minting client-credentials JWTs as
             # otel-data2model for the per-service leg (:4319). The mint rides
-            # the TLS :8443 listener (DD-113): every per-service producer
+            # the TLS :8443 listener (DD-202): every per-service producer
             # mints there and the collector validates both listeners, so no
             # suite order can split mint issuer from validator.
             AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token

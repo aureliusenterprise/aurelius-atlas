@@ -4,7 +4,7 @@ from enum import StrEnum
 
 from pydantic import Field
 
-from aurelius_atlas_model.typedef import AtlasModel
+from aurelius_atlas_model.base import AtlasModel
 
 TYPEDEF_PATCH_TYPE = "TYPEDEF_PATCH"
 """The ``type`` of a typedef patch's record (``AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE``)."""

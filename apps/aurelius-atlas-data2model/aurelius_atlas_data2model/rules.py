@@ -1,4 +1,4 @@
-"""The ``/extract`` request contract, imported from its client library (CL-07, DD-114).
+"""The ``/extract`` request contract, imported from its client library (CL-07, DD-203).
 
 The rule models moved to ``aurelius-atlas-data2model-client`` by increment 8.4 —
 the library owns the contract, the app imports it, and this module keeps the app's

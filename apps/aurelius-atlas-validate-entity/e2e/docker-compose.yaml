@@ -17,15 +17,15 @@ services:
             # caller's bearer token against it (VE-03). The audience is the dev
             # realm's public `aurelius` client — the webapp's client id, the
             # audience the browser's tokens carry (AUX-04); the suite mints its
-            # test tokens for it, as the editor's caller sends them (DV-58).
+            # test tokens for it, as the editor's caller sends them (DV-75).
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://keycloak.localhost:8443/
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: master
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: ${AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE:?}
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /certs/ca.pem
-            # OTLP ingest identity (DD-107, DD-108): the app exports through
+            # OTLP ingest identity (DD-196, DD-197): the app exports through
             # its own pipeline, minting client-credentials JWTs as
             # otel-validate-entity for the per-service leg (:4319). The mint
-            # rides the TLS :8443 listener (DD-113): every per-service
+            # rides the TLS :8443 listener (DD-202): every per-service
             # producer mints there and the collector validates both
             # listeners, so no suite order can split mint issuer from
             # validator.

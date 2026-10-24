@@ -1,8 +1,8 @@
 # aurelius-atlas-otel
 
 The OTLP ingest credential and the native OTel provider setup of the
-collector's per-service leg (7.18, DD-107, DD-121), extracted from the Atlas
-server so every service on the leg shares one mechanism (8.0, DD-108). This
+collector's per-service leg (7.18, DD-196, DD-210), extracted from the Atlas
+server so every service on the leg shares one mechanism (8.0, DD-197). This
 file covers wiring specific to this lib; workspace-wide rules live in the root
 `AGENTS.md` and `libs/python/AGENTS.md`.
 
@@ -22,7 +22,7 @@ file covers wiring specific to this lib; workspace-wide rules live in the root
   from the environment. Each app maps its own `AURELIUS_ATLAS_*_OTEL_*` settings
   into the pipeline (see the server's `_ingest_pipeline`). The one environment
   read is the standard `OTEL_EXPORTER_OTLP_ENDPOINT` switch that turns on the
-  env leg (DD-121: the legacy shared-token producer, CIA-10) — a
+  env leg (DD-210: the legacy shared-token producer, CIA-10) — a
   third-party-runtime name, bare by workspace rule.
 - The rules it keeps (CIA-07) are specified by the 7.18 spec
   (`docs/architecture/conversion/increments/7-18-collector-ingest-identity.md`).
@@ -43,5 +43,5 @@ uv run pytest libs/python/aurelius-atlas-otel/tests
 
 ## Removal
 
-Not removable while the per-service leg (DD-107) stands: the server's export
+Not removable while the per-service leg (DD-196) stands: the server's export
 depends on it.

@@ -1,9 +1,9 @@
-"""E2E: targeted resilience (9.1, RSL-01/RSL-03, DD-125) — real-container failures.
+"""E2E: targeted resilience (9.1, RSL-01/RSL-03, DD-214) — real-container failures.
 
 The unit suites fake the outage (a stopping transport, an erroring
 HttpTestingController); this file stops the real container. Two scenarios,
 one per visible failure surface, each bounded by the polls inside (the
-review's 2-minute budget, DD-125):
+review's 2-minute budget, DD-214):
 
 - the Atlas server down: nginx's /api/ proxy answers 502 (the resolver's 10s
   cache, e2e/config/nginx.conf), and the shell surfaces the outage the way

@@ -20,10 +20,10 @@ import { AlertsService } from "./alerts.service";
  * page with the drawer open. The one named outlet swaps drawers: opening
  * alerts replaces the settings panel and vice versa.
  *
- * Opening the drawer is reading it (ALR-12, DD-090): an effect marks
+ * Opening the drawer is reading it (ALR-12, DD-180): an effect marks
  * every group read while the panel lives, re-marking as a live feed
  * lands new arrivals. Which severities the bar hides is view state
- * (DD-090): the store keeps counting all of them, the chips show the
+ * (DD-180): the store keeps counting all of them, the chips show the
  * totals — filtering the rows must not empty the bar's own numbers.
  */
 @Component({

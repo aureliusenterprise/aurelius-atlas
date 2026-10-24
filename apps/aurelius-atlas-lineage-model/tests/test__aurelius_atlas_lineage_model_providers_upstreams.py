@@ -1,4 +1,4 @@
-"""Unit tests for the upstream factories: pools, breakers, clients (LM-11, LM-13, LM-15, DD-116)."""
+"""Unit tests for the upstream factories: pools, breakers, clients (LM-11, LM-13, LM-15, DD-205)."""
 
 import httpx2 as httpx
 import pytest
@@ -16,7 +16,7 @@ from aurelius_atlas_server_client.client import AtlasClient, AtlasClientError
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.providers.upstreams.upstream_http", rules=["LM-10"])
 async def test__the_pool_serves_the_base_url_it_is_given(settings: LineageModelSettings) -> None:
-    """The pool speaks to one upstream, with the call bound of DD-111 (the standalone container's pool)."""
+    """The pool speaks to one upstream, with the call bound of DD-200 (the standalone container's pool)."""
     pool = upstream_http(settings, settings.atlas_base_url)
     try:
         assert str(pool.base_url) == "http://atlas.test/"
@@ -62,7 +62,7 @@ def test__an_upstream_4xx_is_a_fact_everything_else_is_not(error: BaseException,
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.providers.upstreams.build_upstreams", rules=["LM-11"])
 def test__the_injected_clients_bring_their_own_pools(settings: LineageModelSettings) -> None:
-    """An injected pair travels through untouched, and the app owns no pool of them (DD-116)."""
+    """An injected pair travels through untouched, and the app owns no pool of them (DD-205)."""
     transport = httpx.MockTransport(lambda _request: httpx.Response(500))
     atlas = AtlasClient(httpx.AsyncClient(base_url="http://atlas.test", transport=transport), "")
     d2m = Data2ModelClient(httpx.AsyncClient(base_url="http://data2model.test", transport=transport), "")
@@ -78,7 +78,7 @@ def test__the_injected_clients_bring_their_own_pools(settings: LineageModelSetti
 def test__the_upstreams_built_from_settings_own_their_pools(
     settings: LineageModelSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """With no injected clients the factory builds both pools, and reports them for the lifespan (DD-116)."""
+    """With no injected clients the factory builds both pools, and reports them for the lifespan (DD-205)."""
     built: list[httpx.AsyncClient] = []
     real = httpx.AsyncClient
 

@@ -10,11 +10,11 @@ Introduced by increment 8.2. The app is a proxy with a flattener: it calls the
 Atlas `v2/lineage` feed and the 8.1 data2model API, forwarding the caller's
 bearer token to both, and answers the extraction verbatim
 ([spec](../../docs/architecture/conversion/increments/8-2-lineage-model-api.md)).
-Each upstream is guarded by its own circuit breaker (increment 8.5, DV-60):
+Each upstream is guarded by its own circuit breaker (increment 8.5, DV-77):
 repeated outages open the circuit and the 502 arrives fast, without calling the
 upstream, until a half-open trial closes it again
 ([spec](../../docs/architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md)).
-The code follows the workspace's example-app layout (DD-118, DD-119): the
+The code follows the workspace's example-app layout (DD-207, DD-208): the
 collaborators built by `providers/`, the endpoints in `routes/` (the lineage
 route composes the fetch → flatten → extract flow), and a thin composition
 root in `app.py`.
@@ -36,5 +36,5 @@ npx nx test aurelius-atlas-lineage-model -c ci
 npx nx e2e aurelius-atlas-lineage-model     # the chain: app + real data2model + fixture Atlas
 ```
 
-The Atlas lineage feed is the server's (5.1, DV-52); until it lands, the e2e
-chain points the app at a canned-file fixture Atlas (DD-111).
+The Atlas lineage feed is the server's (5.1, DV-69); until it lands, the e2e
+chain points the app at a canned-file fixture Atlas (DD-200).

@@ -6,7 +6,7 @@
 | Author     | Aurelius Atlas maintainers                                                                                                                                                       |
 | Date       | 2026-10-23                                                                                                                                                                       |
 | ADRs       | 055 (auxiliary APIs are a named data surface), 051 (increments), 049 (traceability), 052 (parity cites the reference; here the reference is Aurelius source)                     |
-| Design log | DD-108 (foundation), DD-120 (provider/route layout), DD-110 (test env), DD-112 (the mock body as module data, the injectable verifier), DV-50 (the app ships as the legacy mock) |
+| Design log | DD-197 (foundation), DD-209 (provider/route layout), DD-199 (test env), DD-201 (the mock body as module data, the injectable verifier), DV-67 (the app ships as the legacy mock) |
 
 ## Objective
 
@@ -14,20 +14,20 @@ Port the legacy Aurelius `m4i-validate-entity` service — the entity
 governance-quality endpoint the webapp's editor calls while a record is
 being edited — to a FastAPI app: `apps/aurelius-atlas-validate-entity`.
 
-The legacy service **is a mock** (DV-50): `POST /` accepts the entity,
+The legacy service **is a mock** (DV-67): `POST /` accepts the entity,
 never reads it, and answers a fixed governance-quality document — four
 cards (`dataEntity`, `definition`, `domainLead`, `name`), each a list of
 `gov_quality`-shaped items with a compliance flag. The browser's editor
 renders those cards; the compliance verdicts are canned. Increment 8.3
-ships that mock contract verbatim, with the workspace's auth (DD-108) and
-observability (DD-107): the browser contract is kept, real validation is a
-future server rule (DV-50).
+ships that mock contract verbatim, with the workspace's auth (DD-197) and
+observability (DD-196): the browser contract is kept, real validation is a
+future server rule (DV-67).
 
 `POST /` answers `200 application/json` with the mock document for any
 request body; the body is not parsed (the legacy ignores it, and the port
 keeps that). `GET /` requires a valid Keycloak bearer token, verified for
 this app's audience — not the legacy's `transparent=True` pass-through
-(DV-58). The app has no upstreams: unlike 8.2's chain, nothing is
+(DV-75). The app has no upstreams: unlike 8.2's chain, nothing is
 forwarded.
 
 The legacy is a Flask app on `m4i_backend_core` (gunicorn, `WSGI_PORT`
@@ -41,7 +41,7 @@ In scope: the app (settings, app factory, `POST /`, liveness), the mock
 document as module data, unit tests, a parity scenario, container and e2e
 (Keycloak-protected).
 
-Out of scope: real governance validation (DV-50 — a future server rule),
+Out of scope: real governance validation (DV-67 — a future server rule),
 the webapp governance cards (7.x track), the `gov_quality` ElasticSearch
 engine the mock's `_meta.engine` name echoes (the document names it; the
 app does not call it).
@@ -60,11 +60,11 @@ The reference for every rule is the Aurelius source (ADR 055 R4):
 
 | ID    | Rule                                                                                                                                                                                                                                                                                                                             | Legacy source                                                                    | Enforced by                                                                                 | Deviation                                          |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| VE-01 | `POST /` answers `200 application/json` with the fixed mock document verbatim, for any request body — the entity is accepted and ignored (the mock's whole contract, DV-50); malformed/absent bodies answer the same document                                                                                                    | `mock_response()` (`json.dumps(output)`, the body never read)                    | `test__the_mock_document_is_returned_verbatim` `test__any_body_is_accepted`                 | —                                                  |
+| VE-01 | `POST /` answers `200 application/json` with the fixed mock document verbatim, for any request body — the entity is accepted and ignored (the mock's whole contract, DV-67); malformed/absent bodies answer the same document                                                                                                    | `mock_response()` (`json.dumps(output)`, the body never read)                    | `test__the_mock_document_is_returned_verbatim` `test__any_body_is_accepted`                 | —                                                  |
 | VE-02 | The mock document is the legacy `output` dict ported verbatim as data: the four keys `dataEntity`/`definition`/`domainLead`/`name`, each `{items: [one gov_quality-shaped item], isNonCompliant}`; the items carry the legacy's `doc-…` ids, `raw` values, `Attribute - <key>` names, and `_meta.engine` `atlas-dev-gov-quality` | the `output` dict                                                                | `test__the_mock_document_is_the_legacy_output`                                              | —                                                  |
-| VE-03 | `POST /` requires a valid Keycloak bearer token verified for this app's audience (`aurelius-atlas-auth`, AUX-05) — not the legacy's transparent pass-through; a missing/invalid token is `401`; nothing is forwarded (no upstreams)                                                                                              | `@requires_auth(transparent=True)` (no validation)                               | `test__a_missing_token_is_rejected` `test__a_token_minted_for_another_audience_is_rejected` | DV-58 (full validation, DD-108 convention)         |
-| VE-04 | `GET /liveness` answers `204` without auth (the container healthcheck)                                                                                                                                                                                                                                                           | `m4i_backend_core/shared::register` — `GET /heartbeat` → `200 {"success": true}` | `test__liveness_needs_no_token`                                                             | DV-59 (the 8.x route/status, not `/heartbeat` 200) |
-| VE-05 | Settings (env prefix `AURELIUS_ATLAS_VALIDATE_ENTITY_`): port defaults to 21003, TLS is configured by the cert/key pair, the auth block is required (DD-108 shape)                                                                                                                                                               | `conf.py` / the shared core's settings                                           | `test__the_settings_are_read_from_prefixed_variables` (settings suite)                      | —                                                  |
+| VE-03 | `POST /` requires a valid Keycloak bearer token verified for this app's audience (`aurelius-atlas-auth`, AUX-05) — not the legacy's transparent pass-through; a missing/invalid token is `401`; nothing is forwarded (no upstreams)                                                                                              | `@requires_auth(transparent=True)` (no validation)                               | `test__a_missing_token_is_rejected` `test__a_token_minted_for_another_audience_is_rejected` | DV-75 (full validation, DD-197 convention)         |
+| VE-04 | `GET /liveness` answers `204` without auth (the container healthcheck)                                                                                                                                                                                                                                                           | `m4i_backend_core/shared::register` — `GET /heartbeat` → `200 {"success": true}` | `test__liveness_needs_no_token`                                                             | DV-76 (the 8.x route/status, not `/heartbeat` 200) |
+| VE-05 | Settings (env prefix `AURELIUS_ATLAS_VALIDATE_ENTITY_`): port defaults to 21003, TLS is configured by the cert/key pair, the auth block is required (DD-197 shape)                                                                                                                                                               | `conf.py` / the shared core's settings                                           | `test__the_settings_are_read_from_prefixed_variables` (settings suite)                      | —                                                  |
 
 ### The mock document shape
 
@@ -84,7 +84,7 @@ parity scenario a whole-body comparison with no volatile fields.
 - `aurelius_atlas_validate_entity.mock.MOCK_VALIDATION` — the document, as
   module data.
 - `create_app(settings, auth=None)` — `auth` is the shared verifier
-  (injectable for tests, DD-112).
+  (injectable for tests, DD-201).
 - Settings (env prefix `AURELIUS_ATLAS_VALIDATE_ENTITY_`): `host`, `port`
   (21003), `log_level`, `tls_cert_file`/`tls_key_file`, `auth_server_url`,
   `auth_realm`, `auth_audience`, `auth_ca_file`, `otel_token_url`,
@@ -93,12 +93,12 @@ parity scenario a whole-body comparison with no volatile fields.
 
 ## Deviations (recorded in `deviations.md`)
 
-- **DV-58**: the endpoint fully verifies the bearer token for its audience
-  (AUX-05, DD-108), not the legacy's `transparent=True` pass-through
-  (VE-03; DV-57's pattern, with no forwarding — the app has no upstreams).
-- **DV-59**: the healthcheck is `GET /liveness` → `204`, not the legacy core's
+- **DV-75**: the endpoint fully verifies the bearer token for its audience
+  (AUX-05, DD-197), not the legacy's `transparent=True` pass-through
+  (VE-03; DV-74's pattern, with no forwarding — the app has no upstreams).
+- **DV-76**: the healthcheck is `GET /liveness` → `204`, not the legacy core's
   `GET /heartbeat` → `200 {"success": true}` (VE-04) — the route, status and
-  empty body of every 8.x app's container healthcheck (DD-108 family).
+  empty body of every 8.x app's container healthcheck (DD-197 family).
 
 ## Test list
 
@@ -106,7 +106,7 @@ parity scenario a whole-body comparison with no volatile fields.
   (VE-01/02/03/04 wiring on the fake issuer, the mock document verbatim),
   `test__aurelius_atlas_validate_entity_settings.py` (VE-05),
   `test__aurelius_atlas_validate_entity_providers_auth.py`/
-  `test__…_providers_telemetry.py`/`test__…_routes.py` (the DD-120 providers and
+  `test__…_providers_telemetry.py`/`test__…_routes.py` (the DD-209 providers and
   route factories, on the fake issuer),
   `test__…___main__.py`.
 - Scenario (parity, read from Aurelius source): `scenarios/validation/

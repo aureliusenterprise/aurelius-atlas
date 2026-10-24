@@ -2,7 +2,7 @@
 
 The client's token is minted for the dev realm; the fixture Atlas and the real
 data2model answer the app's upstream calls inside the compose network, so the
-scenario passes over the full chain (DD-111).
+scenario passes over the full chain (DD-200).
 """
 
 from pathlib import Path

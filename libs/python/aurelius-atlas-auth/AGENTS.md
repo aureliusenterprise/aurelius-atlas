@@ -1,7 +1,7 @@
 # aurelius-atlas-auth
 
 Keycloak bearer-token authentication shared by the Aurelius Atlas services
-(8.0, DD-108). This file covers wiring specific to this lib; workspace-wide
+(8.0, DD-197). This file covers wiring specific to this lib; workspace-wide
 rules live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
 
 ## Layout

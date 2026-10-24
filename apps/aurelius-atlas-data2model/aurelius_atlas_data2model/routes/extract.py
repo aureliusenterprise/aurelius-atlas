@@ -1,7 +1,7 @@
 """The extraction endpoint (DTM-01): rows and rules in, the ar3 model out.
 
 The route is the app's one use case and composes it directly, as the example
-app's routes compose theirs (DD-119's shape): the extraction engine is a pure
+app's routes compose theirs (DD-208's shape): the extraction engine is a pure
 module function, so the route calls it and answers its bytes — no
 ``response_model`` filtering, the body and the answer are the client
 library's models (CL-07, CL-50).
@@ -22,7 +22,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     """The extraction router, gated by the app's verifier (DTM-10).
 
     The gate is the verifier the composition root was built with — the
-    router holds none of its own (DD-111's seam, DD-120).
+    router holds none of its own (DD-200's seam, DD-209).
     """
     router = APIRouter(tags=[EXTRACT])
 

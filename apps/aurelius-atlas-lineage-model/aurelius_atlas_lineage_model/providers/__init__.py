@@ -1,8 +1,8 @@
-"""Factories for the app's collaborators: auth, the upstreams, telemetry (DD-118, DD-119).
+"""Factories for the app's collaborators: auth, the upstreams, telemetry (DD-207, DD-208).
 
 Each factory builds one collaborator from the settings and nothing else — the
 composition root (``app.py``) calls them, and tests replace them by injection
-(DD-111's seam). No factory reads the environment: settings in, object out.
+(DD-200's seam). No factory reads the environment: settings in, object out.
 """
 
 from .auth import build_auth

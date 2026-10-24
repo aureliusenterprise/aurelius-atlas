@@ -1,4 +1,4 @@
-"""The async client for the data2model API (CL-01..CL-05, CL-21; DD-114, DD-115, DD-116).
+"""The async client for the data2model API (CL-01..CL-05, CL-21; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally
 built ``httpx.AsyncClient`` and a token source, reading no environment variables
@@ -27,7 +27,7 @@ type TokenSource = str | Callable[[], str]
 """Where the bearer token comes from: a fixed token, or a callable that yields one (CL-03)."""
 
 DEFAULT_TIMEOUT_SECONDS = 10.0
-"""The suggested request timeout, seconds — for the httpx client an app builds (DD-111's bound)."""
+"""The suggested request timeout, seconds — for the httpx client an app builds (DD-200's bound)."""
 
 EXTRACT_PATH = "extract"
 """The extraction endpoint of the data2model app (DTM-01), relative to the base URL (CL-01)."""
@@ -63,7 +63,7 @@ def _bearer(token: TokenSource) -> dict[str, str]:
 
 
 class Data2ModelClient:
-    """The client for one data2model service (CL-21, DD-114, DD-116).
+    """The client for one data2model service (CL-21, DD-203, DD-205).
 
     Args:
         http: The ``httpx.AsyncClient`` to speak through, built by the caller —

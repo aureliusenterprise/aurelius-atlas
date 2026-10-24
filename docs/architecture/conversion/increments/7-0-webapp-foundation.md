@@ -89,7 +89,7 @@ meta,components,services,utils}`, `dashboards/{domains,mockups}`
 
 ## Deviations
 
-- **DV-47**: Aurelius Atlas serves a web interface of its own design once 7.10 lands, where Apache
+- **DV-64**: Aurelius Atlas serves a web interface of its own design once 7.10 lands, where Apache
   Atlas 2.4.0 serves its two dashboards. The REST contract is unaffected; the parity harness keeps
   reading the Atlas dashboards as the reference. Added to
   [Deviations](../deviations.md).

@@ -1,4 +1,4 @@
-"""The LineageModelClient against the recording transport (CL-01..CL-05, CL-30; DD-115, DD-116).
+"""The LineageModelClient against the recording transport (CL-01..CL-05, CL-30; DD-204, DD-205).
 
 Every call answers from the externally provided httpx client the test hands in —
 its transport is a recorder, no socket opens (CL-02); each test names the methods
@@ -16,7 +16,7 @@ from lm_recorder import Recorder
 from pydantic import ValidationError
 
 E_1 = UUID("00000000-0000-4000-8000-000000000001")
-"""A fixed entity guid, the shape every lineage query carries (DV-61)."""
+"""A fixed entity guid, the shape every lineage query carries (DV-78)."""
 
 ANSWER = {"model": '{"ar3_model": {}}', "metadata": [{"id": str(E_1), "data": {}}]}
 ERROR_BODY = {"errorCode": "ATLAS-400-00-029", "errorMessage": "invalid lineage request"}
@@ -71,7 +71,7 @@ async def test__an_empty_token_travels_unauthenticated(recorder: Recorder) -> No
     rules=["CL-02"],
 )
 async def test__the_pool_is_the_builders_to_close(recorder: Recorder) -> None:
-    """The client has no close: it serves until its builder closes the pool (CL-02, DD-116)."""
+    """The client has no close: it serves until its builder closes the pool (CL-02, DD-205)."""
     http = httpx.AsyncClient(base_url="https://lineage-model.test", transport=recorder.transport())
     client = LineageModelClient(http, "tok")
     borrowed = client.with_token("caller-token")
@@ -111,11 +111,11 @@ async def test__the_empty_answer_is_none(recorder: Recorder) -> None:
 
 @pytest.mark.covers("aurelius_atlas_lineage_model_client.client.LineageModelClient.get", rules=["CL-04"])
 async def test__a_rejected_query_raises_with_the_status_and_the_error_body(recorder: Recorder) -> None:
-    """The DV-55/DV-56 400, with the Atlas-shaped body in the error (CL-04)."""
+    """The DV-72/DV-73 400, with the Atlas-shaped body in the error (CL-04)."""
     recorder.answer(400, ERROR_BODY)
 
     with pytest.raises(LineageModelClientError) as raised:
-        await _client(recorder).get(E_1, direction=cast("Direction", "SIDEWAYS"))  # the DV-55 query, through the client
+        await _client(recorder).get(E_1, direction=cast("Direction", "SIDEWAYS"))  # the DV-72 query, through the client
 
     assert raised.value.status_code == 400
     assert raised.value.error_code == "ATLAS-400-00-029"
@@ -124,7 +124,7 @@ async def test__a_rejected_query_raises_with_the_status_and_the_error_body(recor
 
 @pytest.mark.covers("aurelius_atlas_lineage_model_client.client.LineageModelClient.get", rules=["CL-04"])
 async def test__a_server_outage_answer_carries_the_status_and_the_fields(recorder: Recorder) -> None:
-    """The app's 502 with the Atlas body (DV-22): the status and fields, in the error (CL-04)."""
+    """The app's 502 with the Atlas body (DV-80): the status and fields, in the error (CL-04)."""
     recorder.answer(502, ERROR_BODY)
 
     with pytest.raises(LineageModelClientError) as raised:

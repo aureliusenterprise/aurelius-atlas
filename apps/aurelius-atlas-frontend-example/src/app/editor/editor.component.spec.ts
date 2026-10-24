@@ -138,10 +138,10 @@ describe("Editor", () => {
     });
 
     // The failure trio below runs against a real HttpClient +
-    // HttpTestingController (DD-125): no spy on the service under test, so
+    // HttpTestingController (DD-214): no spy on the service under test, so
     // the failure travels the same path the app's users take.
 
-    it("keeps the entity open when the server rejects a save (DD-125)", async () => {
+    it("keeps the entity open when the server rejects a save (DD-214)", async () => {
         const httpMock = TestBed.inject(HttpTestingController);
         const entity = { description: "desc", guid: "g", name: "n", time_created: null, time_modified: null };
 
@@ -166,7 +166,7 @@ describe("Editor", () => {
         expect(entityService.entity()).toEqual(entity);
     });
 
-    it("surfaces the status when the server rejects a delete (DD-125)", async () => {
+    it("surfaces the status when the server rejects a delete (DD-214)", async () => {
         const httpMock = TestBed.inject(HttpTestingController);
 
         const deleting = component.delete("gone-guid");
@@ -184,7 +184,7 @@ describe("Editor", () => {
         expect(status).toBe(404);
     });
 
-    it("sends nothing when the name is over the limit (DD-125)", async () => {
+    it("sends nothing when the name is over the limit (DD-214)", async () => {
         const httpMock = TestBed.inject(HttpTestingController);
         const entity = { description: "desc", guid: "g", name: "short", time_created: null, time_modified: null };
 

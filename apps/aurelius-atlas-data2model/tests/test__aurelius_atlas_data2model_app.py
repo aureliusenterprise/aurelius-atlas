@@ -189,7 +189,7 @@ async def test__an_empty_body_yields_the_empty_model_skeleton(
 
 @pytest.mark.covers("aurelius_atlas_data2model.app.create_app")
 def test__the_app_publishes_no_openapi_docs_or_redoc(settings: Data2ModelSettings, auth: KeycloakAuth) -> None:
-    """The auxiliary API publishes no OpenAPI, docs, or redoc (DD-108, as the server)."""
+    """The auxiliary API publishes no OpenAPI, docs, or redoc (DD-197, as the server)."""
     app = create_app(settings, auth=auth)
     assert app.openapi_url is None
     assert app.docs_url is None

@@ -1,13 +1,13 @@
 # 7.19 Frontend failure UX
 
 - **Status:** in progress
-- **Pull request:** — (follows the review of 2026-10-24, DD-125)
-- **Records:** DD-125 (the review that scoped this); cites 7.1, 7.3, 7.7, 7.14, 7.16, 7.17
+- **Pull request:** — (follows the review of 2026-10-24, DD-214)
+- **Records:** DD-214 (the review that scoped this); cites 7.1, 7.3, 7.7, 7.14, 7.16, 7.17
 
 ## Scope
 
-Test-completeness, no new rule ids (DD-125): the frontend's failure semantics
-are stated (APC-04, SHL-02, SPL-03/04, SHL-14, DD-103) with unproven paths.
+Test-completeness, no new rule ids (DD-214): the frontend's failure semantics
+are stated (APC-04, SHL-02, SPL-03/04, SHL-14, DD-193) with unproven paths.
 The review measured the frontend's systematic hole: only 7 of 71 webapp-side
 specs assert an HTTP error, `admin.service` and `entities.service` have zero
 failure tests, and the observability lib sits at 67% branch. This increment
@@ -24,7 +24,7 @@ closes the measured holes:
   the interceptor's no-traceId and status-less-`HttpErrorResponse` branches,
   the ingest-auth token-less authenticated session, and a **new
   `opentelemetry-session.spec.ts`** for the storage-denied branches (SHL-14,
-  DD-103).
+  DD-193).
 - `aurelius-atlas-webapp` — `app.config.spec.ts` gains `initialize()`'s loud
   failure when `/config.json` answers non-2xx (SHL-02's other half — today
   only the success path runs) and `metricsUrl`'s two branches; the header's
@@ -61,11 +61,11 @@ errorCause}` as the typed Atlas body — the matrix names each service method
 - **SPL-03 / SPL-04** (7-14): the toggle's title states the current theme and
   a click cycles `auto → dark → light`; the component renders the service's
   mode (the service's storage/persistence tests are 7.14's).
-- **SHL-14 / DD-103 / CIA-02** (7.16–7.17): the observability branch holes —
+- **SHL-14 / DD-193 / CIA-02** (7.16–7.17): the observability branch holes —
   each named by its own spec (metrics options, resource merge, pagehide
   flush, exception conversions, traceparent skip, token-less session,
   storage-denied session id).
-- (no rule id — the example app ships no increment spec, DD-125): the
+- (no rule id — the example app ships no increment spec, DD-214): the
   editor's failing save/delete, the form's validation gate, the search
   service's out-of-order response. Tests carry plain names.
 
@@ -93,7 +93,7 @@ Unit (Vitest, run per project; ids in `it()` titles per the webapp convention):
   appended: the same three, over `createOrUpdate`/`delete`/`findAll`/`findOne`,
   each asserting `atlasErrorFrom` types the body (APC-04).
 - `libs/angular/aurelius-atlas-observability/src/lib/` — appended specs
-  naming the branch (SHL-14, DD-103): provider `resource` merge; metrics
+  naming the branch (SHL-14, DD-193): provider `resource` merge; metrics
   `webVitals: false`, custom interval, pagehide flush; error handler
   string/serialisable/non-serialisable conversions and the no-active-span
   span; interceptor no-traceId passthrough and status-less error; ingest-auth

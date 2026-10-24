@@ -1,4 +1,4 @@
-"""The Aurelius Atlas data2model API as a contract and a client (increment 8.4, DD-114).
+"""The Aurelius Atlas data2model API as a contract and a client (increment 8.4, DD-203).
 
 The wire contract of ``POST /extract`` — the tabular rows, the element/relation/view
 rules document, and the ``{model, metadata}`` answer — as pydantic models, and an

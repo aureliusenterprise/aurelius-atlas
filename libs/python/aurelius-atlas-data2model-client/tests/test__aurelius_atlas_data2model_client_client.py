@@ -1,4 +1,4 @@
-"""The Data2ModelClient against the recording transport (CL-01..CL-04, CL-21; DD-115, DD-116).
+"""The Data2ModelClient against the recording transport (CL-01..CL-04, CL-21; DD-204, DD-205).
 
 Every call answers from the externally provided httpx client the test hands in —
 its transport is a recorder, no socket opens (CL-02); each test names the methods
@@ -69,7 +69,7 @@ async def test__an_empty_token_travels_unauthenticated(recorder: Recorder) -> No
     rules=["CL-02"],
 )
 async def test__the_pool_is_the_builders_to_close(recorder: Recorder) -> None:
-    """The client has no close: it serves until its builder closes the pool (CL-02, DD-116)."""
+    """The client has no close: it serves until its builder closes the pool (CL-02, DD-205)."""
     http = httpx.AsyncClient(base_url="https://data2model.test", transport=recorder.transport())
     client = Data2ModelClient(http, "tok")
     borrowed = client.with_token("caller-token")
@@ -125,7 +125,7 @@ async def test__an_unparsable_error_body_still_carries_the_status(recorder: Reco
 
 @pytest.mark.covers("aurelius_atlas_data2model_client.client.Data2ModelClient.extract", rules=["CL-05"])
 async def test__an_unreachable_service_propagates_httpxs_own_error(recorder: Recorder) -> None:
-    """The client maps nothing: a transport failure is ``httpx``'s, the app's job (CL-05, DV-22)."""
+    """The client maps nothing: a transport failure is ``httpx``'s, the app's job (CL-05, DV-80)."""
     recorder.handler = lambda _request: (_ for _ in ()).throw(httpx.ConnectError("refused"))
 
     with pytest.raises(httpx.ConnectError):

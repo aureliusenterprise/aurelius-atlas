@@ -1,4 +1,4 @@
-"""Unit tests for the auth factory: the verifier the settings describe (VE-03, DD-108)."""
+"""Unit tests for the auth factory: the verifier the settings describe (VE-03, DD-197)."""
 
 from pathlib import Path
 

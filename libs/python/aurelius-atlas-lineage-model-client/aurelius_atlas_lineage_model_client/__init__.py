@@ -1,4 +1,4 @@
-"""The Aurelius Atlas lineage-model API as a contract and a client (increment 8.4, DD-114).
+"""The Aurelius Atlas lineage-model API as a contract and a client (increment 8.4, DD-203).
 
 The wire contract of the 8.2 app — ``GET /?guid=&depth=&direction=`` in, the
 data2model ``{model, metadata}`` passthrough out — as pydantic models, and an async

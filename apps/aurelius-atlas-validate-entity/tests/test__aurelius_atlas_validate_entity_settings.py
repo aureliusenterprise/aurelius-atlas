@@ -1,4 +1,4 @@
-"""Unit tests for the app's settings (VE-05, DD-108)."""
+"""Unit tests for the app's settings (VE-05, DD-197)."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def test__the_settings_are_read_from_prefixed_variables(environment: pytest.Monk
     assert settings.auth_audience == "aurelius-atlas-validate-entity"
     assert settings.otel_client_id == "otel-validate-entity"
     assert settings.otel_endpoint == "https://localhost:4319"
-    # The ingest secret's value never appears in the repr (DD-107).
+    # The ingest secret's value never appears in the repr (DD-196).
     environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET", "s3cr3t")
     assert "s3cr3t" not in repr(ValidateEntitySettings())  # pyright: ignore[reportCallIssue]
 

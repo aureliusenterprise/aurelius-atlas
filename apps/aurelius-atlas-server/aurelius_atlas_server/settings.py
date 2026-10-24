@@ -54,6 +54,19 @@ class ServerSettings(BaseSettings):
     """How long the server answers from its type registry before it checks for another process's type change
     (TDS-13, DD-029)."""
 
+    delete_type: Literal["soft", "hard"] = "soft"
+    """How entities are deleted unless a request chooses: ``atlas.DeleteHandlerV1.impl`` (EDL-04, DD-059)."""
+
+    delete_type_override: bool = False
+    """Whether a request's ``deleteType`` chooses: ``atlas.rest.enable.delete.type.override`` (EDL-04, DD-059)."""
+
+    tasks_enabled: bool = True
+    """Whether propagation is deferred to tasks a worker runs after the request: ``atlas.tasks.enabled`` (TSK-02,
+    DD-081)."""
+
+    task_poll_seconds: float = Field(default=10.0, gt=0)
+    """How often the worker looks for tasks other processes recorded or left behind (DD-080)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
 
@@ -71,21 +84,21 @@ class ServerSettings(BaseSettings):
 
     otel_token_url: HttpUrl | None = None
     """The issuer's token endpoint for the OTLP ingest credential (7.18,
-    DD-107): with ``otel_client_secret`` set, the server exports OTLP through
+    DD-196): with ``otel_client_secret`` set, the server exports OTLP through
     the app-owned pipeline (the collector's per-service leg accepts only
     client-credentials JWTs); unset, the server exports no OTLP (console
     only). The OTel env vars (``OTEL_EXPORTER_OTLP_*``) are deliberately not
-    read: the 60s dev token cannot ride a static header (DD-107)."""
+    read: the 60s dev token cannot ride a static header (DD-196)."""
 
     otel_client_id: str = "otel-atlas-server"
-    """The ingest realm client the server mints for (7.18, DD-107)."""
+    """The ingest realm client the server mints for (7.18, DD-196)."""
 
     otel_client_secret: SecretStr | None = None
     """The secret of ``otel_client_id``; never shown in logs."""
 
     otel_endpoint: str = "https://localhost:4319"
     """The collector's per-service-leg HTTP base for the OTLP export
-    (7.18, DD-107); the dev compose overrides with the service DNS name."""
+    (7.18, DD-196); the dev compose overrides with the service DNS name."""
 
     otel_ca_file: FilePath | None = None
     """PEM CA verifying the collector's TLS for the OTLP export; unset uses

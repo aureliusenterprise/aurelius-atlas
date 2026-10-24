@@ -489,7 +489,7 @@ def test__a_dynamic_view_name_comes_from_its_key_column() -> None:
 
 @pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06"])
 def test__a_dynamic_view_name_without_its_key_column_is_the_legacy_nan() -> None:
-    """The name column absent from the group's first row renders 'nan' — the legacy's pandas %s (DV-53)."""
+    """The name column absent from the group's first row renders 'nan' — the legacy's pandas %s (DV-70)."""
     ar3 = _model(
         _request(
             [{"eid": "a", "g": "g1"}],
@@ -502,7 +502,7 @@ def test__a_dynamic_view_name_without_its_key_column_is_the_legacy_nan() -> None
 
 @pytest.mark.covers("aurelius_atlas_data2model.extract.extract", rules=["DTM-06", "DTM-08"])
 def test__the_hierarchical_layout_ranks_bottom_to_top() -> None:
-    """archimate_hierarchical stacks ranks on y (0, -320, -640), x centring the rank (DTM-08, DV-51)."""
+    """archimate_hierarchical stacks ranks on y (0, -320, -640), x centring the rank (DTM-08, DV-68)."""
     rules: dict[str, Any] = {
         "elements": [
             {"id": "src", "concept_type": "lineage_dataset", "id_key": "eid"},
@@ -584,7 +584,7 @@ def test__a_view_without_edge_rules_holds_every_edge_between_its_nodes() -> None
     """An empty selection is None — every model edge between the view's nodes (DTM-07).
 
     The row whose rid1 is null is a model edge ided ``'nan'`` (the legacy's pandas
-    ``%s`` of the null, DV-53's family) — and the whole-model selection includes it.
+    ``%s`` of the null, DV-70's family) — and the whole-model selection includes it.
     """
     ar3 = _model(_request(_TWO_RELATION_ROWS, _view_with_edges([])))
     view = ar3["ar3_model"]["ar3_views"]["ar3_diagrams"]["ar3_view"][0]

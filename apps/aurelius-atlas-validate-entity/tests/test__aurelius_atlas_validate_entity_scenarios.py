@@ -2,7 +2,7 @@
 
 The mock answers a constant, so a scenario is a whole-body comparison: the
 caller's entity payload in, the legacy's ``output`` dict out, byte equality,
-with no volatile fields and no upstream to stub (DV-50).
+with no volatile fields and no upstream to stub (DV-67).
 """
 
 from collections.abc import Callable

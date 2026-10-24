@@ -1,7 +1,7 @@
 # aurelius-atlas-lineage-model-client
 
-The lineage-model API as a contract and a client (8.4, DD-114, DD-115,
-DD-116): the query parameters of `GET /v2/lineage` and the model-document
+The lineage-model API as a contract and a client (8.4, DD-203, DD-204,
+DD-205): the query parameters of `GET /v2/lineage` and the model-document
 response, plus an async `LineageModelClient` over `httpx2`. The
 `aurelius-atlas-lineage-model` app
 imports its own contract from here — one source of truth for both sides of the
@@ -23,7 +23,7 @@ in the root `AGENTS.md` and `libs/python/AGENTS.md`.
   vocabulary has one definition, never duplicated.
 - The app owns the pool: build the `httpx2.AsyncClient` (base URL, TLS, timeout)
   and `LineageModelClient(http, token)` in `create_app`, close the **pool** in
-  the lifespan's shutdown — the client exposes no close of its own (DD-116). A
+  the lifespan's shutdown — the client exposes no close of its own (DD-205). A
   `with_token(...)` wrapper shares the pool and closes nothing.
 - The rules it keeps (CL-01..CL-05, CL-30) are specified by the 8.4 spec
   (`docs/architecture/conversion/increments/8-4-api-client-libraries.md`).
@@ -32,7 +32,7 @@ in the root `AGENTS.md` and `libs/python/AGENTS.md`.
 
 - Libraries read no env vars: the app builds the `httpx2.AsyncClient` from its
   own settings (TLS, timeout) and passes it in with the token source (CL-01,
-  DD-116). The request path is relative to its base URL, so the app's URL
+  DD-205). The request path is relative to its base URL, so the app's URL
   passes through as given — no trailing-slash trimming.
 - A no-lineage answer is HTTP 204 — the client returns `None`, not a model
   (CL-30); the app's route maps that to its own 204.

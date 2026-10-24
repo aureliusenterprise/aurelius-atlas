@@ -90,13 +90,13 @@ def create_app(settings: Settings) -> FastAPI:
 
     setup_routes(app)
 
-    # Telemetry (DD-121): native OTel providers. This producer rides the
+    # Telemetry (DD-210): native OTel providers. This producer rides the
     # legacy shared-token leg (CIA-10): the env-driven OTLP export —
     # endpoint, CA, static bearer — is standard SDK env configuration, read
-    # by setup_telemetry's env leg (DD-107: its per-service graduation is
+    # by setup_telemetry's env leg (DD-196: its per-service graduation is
     # deferred). The W3C traceparent headers the Angular frontend injects
     # (aurelius-atlas-observability interceptor) are joined by the native
-    # propagators by default. Debug runs also print to stdout (DD-121).
+    # propagators by default. Debug runs also print to stdout (DD-210).
     setup_telemetry(
         app.title,
         app.version,

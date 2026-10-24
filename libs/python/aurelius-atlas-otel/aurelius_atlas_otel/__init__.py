@@ -1,4 +1,4 @@
-"""The OTLP ingest credential shared by Aurelius Atlas services (7.18, DD-107, DD-108)."""
+"""The OTLP ingest credential shared by Aurelius Atlas services (7.18, DD-196, DD-197)."""
 
 from aurelius_atlas_otel.ingest import (
     REFRESH_AHEAD_SECONDS,

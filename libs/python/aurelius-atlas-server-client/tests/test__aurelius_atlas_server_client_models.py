@@ -1,4 +1,4 @@
-"""The admin and error shapes of the server contract (CL-10; DD-114).
+"""The admin and error shapes of the server contract (CL-10; DD-203).
 
 The typedef bodies are ``aurelius-atlas-model``'s, reused whole — there is
 nothing to restate here for them (CL-10); these tests cover the shapes that

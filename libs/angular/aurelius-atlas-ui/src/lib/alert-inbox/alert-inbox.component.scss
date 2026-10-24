@@ -4,9 +4,9 @@
  * full-width row, the severity fills, the count tag, and the unread dot.
  * The projected Clear all is a member of the same group, `is-expanded`
  * like the chips, so the strip reads as one joined bar of equal
- * segments (DD-090, DD-092).
+ * segments (DD-180, DD-182).
  *
- * A pressed chip rides its severity's colour (DD-092): the fills are
+ * A pressed chip rides its severity's colour (DD-182): the fills are
  * DD-152's pinned ramp, fixed in both schemes like the badge's dot
  * (DD-168) and the footer's pair (SHM-07). Bulma's own `.button.is-*`
  * fills are scheme-following token tints, and the brand pins the
@@ -69,7 +69,7 @@
  * own content box, and Bulma's `.tag` is a 2em-tall control: at the
  * small button's font that is 1.5rem over a 1.125rem line — the badge
  * stretched the chips a step above the projected action (measured
- * live, DD-093). Compacted to the button's scale — line-height 1,
+ * live, DD-183). Compacted to the button's scale — line-height 1,
  * hairline vertical padding, under the 1.125rem line — every member of
  * the group computes to the plain small-button height, and the joined
  * bar is one height (the group's flex stretch keeps them equal).
@@ -86,7 +86,7 @@
 /*
  * The unread dot (ALR-12): the chip's own ink (currentColor) with a
  * hairline ring in the chip's plate — the badge's idiom (DD-168). The
- * ramp's colour is the chip's whole face now (DD-092), so a ramp-
+ * ramp's colour is the chip's whole face now (DD-182), so a ramp-
  * coloured dot would ride its own colour and vanish; the ink dot keeps
  * a clear edge on every fill and on the plain chip.
  */

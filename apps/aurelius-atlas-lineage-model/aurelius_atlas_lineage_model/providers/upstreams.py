@@ -1,8 +1,8 @@
-"""The upstream factories: the httpx pools, the circuit breakers, the clients (DD-116, DD-117).
+"""The upstream factories: the httpx pools, the circuit breakers, the clients (DD-205, DD-206).
 
-The pools are built here and owned by the app's lifespan (DD-116): an injected
+The pools are built here and owned by the app's lifespan (DD-205): an injected
 client keeps its own pool and appears in no list. The breakers are the app's
-resilience policy, not the client libraries' (DD-116 keeps the libs
+resilience policy, not the client libraries' (DD-205 keeps the libs
 transport-only), with pybreaker's documented shapes: the callable ``exclude``
 predicate and a logging listener.
 """
@@ -46,10 +46,10 @@ def is_upstream_fact(error: BaseException) -> bool:
 
 
 def upstream_http(settings: LineageModelSettings, base_url: HttpUrl) -> httpx.AsyncClient:
-    """The httpx pool for one upstream, for the standalone container (DD-114, DD-116).
+    """The httpx pool for one upstream, for the standalone container (DD-203, DD-205).
 
     The issuer's CA is the TLS material, ``UPSTREAM_TIMEOUT_SECONDS`` the call bound
-    (DD-111); the bearer token is a placeholder the route rebinds per request, and the
+    (DD-200); the bearer token is a placeholder the route rebinds per request, and the
     client normalises the base URL, so it passes through as the settings state it.
     """
     ca_file = settings.auth_ca_file
@@ -70,7 +70,7 @@ def d2m_breaker(settings: LineageModelSettings) -> CircuitBreaker:
 
 
 def _breaker(settings: LineageModelSettings, name: str) -> CircuitBreaker:
-    """One upstream's breaker: pybreaker's documented callable ``exclude`` and listener (DD-117)."""
+    """One upstream's breaker: pybreaker's documented callable ``exclude`` and listener (DD-206)."""
     return CircuitBreaker(
         name=f"lineage_model_{name}",
         fail_max=settings.breaker_fail_max,
@@ -85,7 +85,7 @@ def build_upstreams(
     atlas: AtlasClient | None = None,
     d2m: Data2ModelClient | None = None,
 ) -> tuple[AtlasClient, Data2ModelClient, list[httpx.AsyncClient]]:
-    """The upstream clients, and the pools the app itself built (DD-116).
+    """The upstream clients, and the pools the app itself built (DD-205).
 
     An injected client brings its own pool and appears in no list — its builder
     closes it, not the app. The token is a placeholder the route rebinds per

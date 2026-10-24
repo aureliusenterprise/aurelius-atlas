@@ -35,7 +35,7 @@ The increment ledger for this track is the 7.x series:
   events, and `traceparent` propagated on HTTP calls — all through
   `aurelius-atlas-observability`, replacing the Aurelius Google Analytics and
   clickstream paths (DD-129). Exports carry the signed-in user's Keycloak
-  token (DD-103): the collector's browser leg validates it via OIDC, so
+  token (DD-193): the collector's browser leg validates it via OIDC, so
   telemetry is attributed; logged-out pushes are rejected (accepted loss)
 
 Not wired yet by design: the navbar's search bar and nav buttons (7.4, DD-140),

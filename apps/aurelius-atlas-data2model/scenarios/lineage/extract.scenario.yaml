@@ -2,7 +2,7 @@
 # backend/m4i-lineage-model), over a two-relation lineage. The response is the
 # legacy contract (ADR 052 read from the Aurelius source): the {model, metadata}
 # body and the ar3 model string. The model's node coordinates are the native LR
-# layout, not graphviz positions (DV-51): the baseline masks every coordinate
+# layout, not graphviz positions (DV-68): the baseline masks every coordinate
 # (volatile) and the deviation carries the Aurelius model, x = rank * 320.
 name: The lineage caller's payload extracts the lineage diagram
 source:
@@ -218,6 +218,6 @@ stages:
           volatile:
               - $.model
           deviations:
-              - id: DV-51
+              - id: DV-68
                 path: $.model
                 value: '{"ar3_model": {"@identifier": "Generated model", "ar3_name": [{"@xml_lang": "en", "value": "Generated model"}], "ar3_elements": {"ar3_element": [{"@identifier": "e-in", "@xsi_type": "lineage_dataset", "ar3_name": [{"@xml_lang": "en", "value": "Ingest Topic"}]}, {"@identifier": "p-load", "@xsi_type": "lineage_process", "ar3_name": [{"@xml_lang": "en", "value": "Load Job"}]}, {"@identifier": "e-out", "@xsi_type": "lineage_dataset", "ar3_name": [{"@xml_lang": "en", "value": "Sales Table"}]}]}, "ar3_relationships": {"ar3_relationship": [{"@identifier": "rel-1", "@target": "p-load", "@source": "e-in", "@xsi_type": "lineage_relation", "ar3_name": [{"@xml_lang": "en", "value": ""}]}, {"@identifier": "rel-2", "@target": "e-out", "@source": "p-load", "@xsi_type": "lineage_relation", "ar3_name": [{"@xml_lang": "en", "value": ""}]}]}, "ar3_views": {"ar3_diagrams": {"ar3_view": [{"@identifier": "lineage_view", "@xsi_type": "ar3_Diagram", "ar3_node": [{"@identifier": "lineage_view-e-in--0", "@x": 0, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "e-in", "@xsi_type": "ar3_Element"}, {"@identifier": "lineage_view-p-load--1", "@x": 320, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "p-load", "@xsi_type": "ar3_Element"}, {"@identifier": "lineage_view-e-out--2", "@x": 640, "@y": 0, "@w": 120, "@h": 55, "@elementRef": "e-out", "@xsi_type": "ar3_Element"}], "ar3_connection": [{"@identifier": "lineage_view-rel-1--0", "@source": "lineage_view-e-in--0", "@target": "lineage_view-p-load--1", "@relationshipRef": "rel-1", "@xsi_type": "ar3_Relationship"}, {"@identifier": "lineage_view-rel-2--1", "@source": "lineage_view-p-load--1", "@target": "lineage_view-e-out--2", "@relationshipRef": "rel-2", "@xsi_type": "ar3_Relationship"}], "ar3_name": [{"@xml_lang": "en", "value": "Lineage"}]}]}}, "ar3_organizations": [{"ar3_item": [{"ar3_label": [{"@xml_lang": "en", "value": "Other"}], "ar3_item": [{"@identifierRef": "e-in"}, {"@identifierRef": "p-load"}, {"@identifierRef": "e-out"}]}, {"ar3_label": [{"@xml_lang": "en", "value": "Relations"}], "ar3_item": [{"@identifierRef": "rel-1"}, {"@identifierRef": "rel-2"}]}, {"ar3_label": [{"@xml_lang": "en", "value": "Views"}], "ar3_item": [{"@identifierRef": "lineage_view"}]}]}]}}'

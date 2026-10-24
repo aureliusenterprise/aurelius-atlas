@@ -95,4 +95,4 @@ the new product speaks — before the search slice (7.4) decides by omission.
   record does not stand in their way. The workspace's `EntitiesService` in
   `aurelius-atlas-data-access` is the FastAPI example's CRUD/SSE client — a
   template example, not a second data plane; it retires with the examples at
-  7.10 (DV-47, DD-019).
+  7.10 (DV-64, DD-019).

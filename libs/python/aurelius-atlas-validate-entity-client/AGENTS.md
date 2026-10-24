@@ -1,6 +1,6 @@
 # aurelius-atlas-validate-entity-client
 
-The validate-entity API contract and async client (8.4, DD-114, DD-115, DD-116).
+The validate-entity API contract and async client (8.4, DD-203, DD-204, DD-205).
 This file covers wiring specific to this lib; workspace-wide rules live in the
 root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 

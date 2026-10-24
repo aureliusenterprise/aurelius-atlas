@@ -32,7 +32,7 @@ def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPa
     assert store.ca_certs_path == ca_file
     # The password's value never appears in the repr (SecretStr masks; the
     # quoted form is what a leaked value would look like — the bare token
-    # would also match field names like otel_client_secret, DD-107).
+    # would also match field names like otel_client_secret, DD-196).
     assert "'secret'" not in repr(settings)
 
 

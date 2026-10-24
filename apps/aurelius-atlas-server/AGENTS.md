@@ -12,11 +12,15 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   the models of `models_dir` through `ModelLoader` (MDL-16); `app.state.type_registry` and
   `app.state.typedef_store` hold them. Tests set `models_dir` to an empty directory (`tests/conftest.py`),
   since Atlas's models take seconds to load; only the MDL-16 test loads them
+- `aurelius_atlas_server/task_worker.py` — `TaskWorker`: started by the lifespan when `tasks_enabled`, woken
+  by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
+  server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
+  turns them on and runs on the module loop, where the lifespan started the worker
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
-- OTLP ingest (DD-107) lives in the shared `aurelius-atlas-otel` lib (DD-108):
+- OTLP ingest (DD-196) lives in the shared `aurelius-atlas-otel` lib (DD-197):
   `app.py::_ingest_pipeline` maps `ServerSettings.otel_*` into
   `build_otlp_pipeline`, installed by the lib's `setup_telemetry` on the
-  native OTel providers (DD-121: the app owns its export; the static env
+  native OTel providers (DD-210: the app owns its export; the static env
   headers cannot carry a 60s JWT)
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
@@ -35,11 +39,11 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 ## Wiring Checklist
 
 - `project.json` — `implicitDependencies` and `serve` `dependsOn` (dev Elasticsearch,
-  **dev Keycloak**, observability, the dashboard build — Keycloak joins for DD-107: the
+  **dev Keycloak**, observability, the dashboard build — Keycloak joins for DD-196: the
   OTLP export mints its ingest JWT from the issuer, so `serve` needs it up).
   `docker-build` and `docker-publish` repeat the plugin's `dependsOn` and add the dashboard
   build: the plugin only chains the dependencies' `docker-build`, which the dashboard has not.
-- OTLP export is app-owned (DD-107): `ServerSettings.otel_*` (`otel_token_url`,
+- OTLP export is app-owned (DD-196): `ServerSettings.otel_*` (`otel_token_url`,
   `otel_client_id`=`otel-atlas-server`, `otel_client_secret`,
   `otel_endpoint`=`https://localhost:4319`, `otel_ca_file`) — **not** the
   `OTEL_EXPORTER_*` env (static headers cannot carry the dev realm's 60s token).
@@ -52,7 +56,7 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   the built dashboards (`aurelius-atlas-dashboard/dist`).
 - `e2e/docker-compose.yaml` — the image on the dev store's network, reached as `elasticsearch:9200`.
   Its OTLP export uses the shim settings; the mint rides the TLS `:8443`
-  issuer, pinned to `/certs/ca.pem` (DD-113: every producer mints there, the
+  issuer, pinned to `/certs/ca.pem` (DD-202: every producer mints there, the
   collector validates both listeners), so the server needs `extra_hosts:
 keycloak.localhost:host-gateway` and the `otel-atlas-server` client imported
   (a long-lived dev Keycloak needs a recreate for a new client — see

@@ -16,7 +16,7 @@ def _bearer(token: str) -> dict[str, str]:
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-01"])
 async def test__the_mock_document_is_returned_verbatim(client: httpx.AsyncClient, token: Callable[..., str]) -> None:
-    """200 application/json with the mock document, byte for byte (VE-01, DV-50)."""
+    """200 application/json with the mock document, byte for byte (VE-01, DV-67)."""
     entity = {"guid": "e-in", "typeName": "kafka_topic", "attributes": {"name": "Ingest Topic"}}
 
     response = await client.post("/", json=entity, headers=_bearer(token()))
@@ -72,7 +72,7 @@ def test__the_mock_document_is_the_legacy_output() -> None:
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-03"])
 async def test__a_missing_token_is_rejected(client: httpx.AsyncClient) -> None:
-    """No bearer credential is a 401 (VE-03, DV-58) — the legacy's transparent auth accepted any."""
+    """No bearer credential is a 401 (VE-03, DV-75) — the legacy's transparent auth accepted any."""
     response = await client.post("/", json={})
 
     assert response.status_code == 401
@@ -92,7 +92,7 @@ async def test__a_token_minted_for_another_audience_is_rejected(
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-04"])
 async def test__liveness_needs_no_token(client: httpx.AsyncClient) -> None:
-    """The container healthcheck answers 204, anonymous (VE-04, DV-59)."""
+    """The container healthcheck answers 204, anonymous (VE-04, DV-76)."""
     response = await client.get("/liveness")
 
     assert response.status_code == 204
@@ -100,7 +100,7 @@ async def test__liveness_needs_no_token(client: httpx.AsyncClient) -> None:
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-01"])
 async def test__a_megabyte_body_still_answers_the_mock(client: httpx.AsyncClient, token: Callable[..., str]) -> None:
-    """The body is never read, so its size is not a constraint: a megabyte answers the mock (VE-01, DV-50)."""
+    """The body is never read, so its size is not a constraint: a megabyte answers the mock (VE-01, DV-67)."""
     huge = b"[" + b'{"attribute": "x"},' * 30_000 + b"{}]"
 
     response = await client.post(
@@ -126,7 +126,7 @@ async def test__a_body_without_a_content_type_still_answers_the_mock(
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app")
 async def test__the_mock_route_is_post_only(client: httpx.AsyncClient, token: Callable[..., str]) -> None:
-    """A GET on the mock route is a 405: the legacy endpoint is POST-only (DV-50).
+    """A GET on the mock route is a 405: the legacy endpoint is POST-only (DV-67).
 
     No rule states it — the framework does; the test names the route for ADR 049.
     """

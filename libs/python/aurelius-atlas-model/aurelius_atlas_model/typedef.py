@@ -10,20 +10,26 @@ schema, where decision ids mean nothing to a client.
 """
 
 from collections.abc import Callable, Iterable
-from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Any, ClassVar, Self
 
 from pydantic import (
     AfterValidator,
-    BaseModel,
     BeforeValidator,
-    ConfigDict,
     Field,
-    PlainSerializer,
     computed_field,
 )
-from pydantic.alias_generators import to_camel
+
+from aurelius_atlas_model.base import (
+    AtlasModel,
+    JavaBool,
+    JavaInt,
+    NameSet,
+    OptionalNameSet,
+    Timestamp,
+    empty_when_null,
+    null_when_empty,
+)
 
 ATLAS_TYPE_BOOLEAN = "boolean"
 ATLAS_TYPE_BYTE = "byte"
@@ -139,77 +145,6 @@ class PropagateTags(StrEnum):
     BOTH = "BOTH"
 
 
-_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
-_MILLISECOND = timedelta(milliseconds=1)
-
-
-def _read_epoch_millis(value: object) -> object:
-    """Read a number or a string of digits as epoch milliseconds; leave other values to Pydantic (DD-022)."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int | float):
-        return _EPOCH + value * _MILLISECOND
-    if isinstance(value, str) and value.isdigit():
-        return _EPOCH + int(value) * _MILLISECOND
-    return value
-
-
-def _as_utc(value: datetime) -> datetime:
-    """Read a date-time without a zone as UTC, as Jackson's ``StdDateFormat`` does."""
-    return value.replace(tzinfo=UTC) if value.tzinfo is None else value
-
-
-def _write_epoch_millis(value: datetime) -> int:
-    return (value - _EPOCH) // _MILLISECOND
-
-
-type Timestamp = Annotated[
-    datetime,
-    BeforeValidator(_read_epoch_millis),
-    AfterValidator(_as_utc),
-    PlainSerializer(_write_epoch_millis, return_type=int, when_used="json"),
-]
-"""A ``java.util.Date``: an aware datetime, written as epoch milliseconds (TDM-05)."""
-
-
-def _null_as(default: object) -> Callable[[object], object]:
-    def read(value: object) -> object:
-        return default if value is None else value
-
-    return read
-
-
-type JavaBool = Annotated[bool, BeforeValidator(_null_as(default=False))]
-"""A Java ``boolean``: an explicit null reads as false (TDM-10)."""
-
-type JavaInt = Annotated[int, BeforeValidator(_null_as(default=0))]
-"""A Java ``int``: an explicit null reads as 0 (TDM-10)."""
-
-
-def _empty_when_null(value: object) -> object:
-    return [] if value is None else value
-
-
-def _unique(names: list[str]) -> list[str]:
-    """Keep each name once, in first-seen order (TDM-09, DD-021)."""
-    return list(dict.fromkeys(names))
-
-
-def _unique_or_null(names: list[str] | None) -> list[str] | None:
-    return None if names is None else _unique(names)
-
-
-def _null_when_empty[T](values: list[T] | None) -> list[T] | None:
-    return values or None
-
-
-type NameSet = Annotated[list[str], BeforeValidator(_empty_when_null), AfterValidator(_unique)]
-"""A Java ``Set<String>`` that is never null (TDM-06, TDM-09)."""
-
-type OptionalNameSet = Annotated[list[str] | None, AfterValidator(_unique_or_null)]
-"""A Java ``Set<String>`` that may be null (TDM-09)."""
-
-
 def _keep_last_by[T](values: list[T], key: Callable[[T], str | None]) -> list[T]:
     """Keep the last of the values with the same key, compared without case, at its own position.
 
@@ -231,27 +166,6 @@ def _equal_ignoring_case(left: str | None, right: str | None) -> bool:
     if left is None or right is None:
         return left is right
     return left.lower() == right.lower()
-
-
-class AtlasModel(BaseModel):
-    """The base of every Atlas model.
-
-    Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to strings),
-    and validation on assignment — the Jackson conventions of the Java models.
-    """
-
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        validate_by_alias=True,
-        validate_by_name=True,
-        validate_assignment=True,
-        extra="ignore",
-        coerce_numbers_to_str=True,
-    )
-
-    def to_json(self) -> dict[str, Any]:
-        """The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02)."""
-        return self.model_dump(mode="json", by_alias=True, exclude_none=True)
 
 
 class AtlasConstraintDef(AtlasModel):
@@ -334,7 +248,7 @@ class AtlasAttributeDef(AtlasModel):
         description="How a string attribute is indexed: DEFAULT or STRING.",
     )
 
-    constraints: Annotated[list[AtlasConstraintDef] | None, AfterValidator(_null_when_empty)] = Field(
+    constraints: Annotated[list[AtlasConstraintDef] | None, AfterValidator(null_when_empty)] = Field(
         default=None,
         description="The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. "
         "An empty list is written back as null.",
@@ -380,7 +294,7 @@ def _keep_last_attributes(attributes: list[AtlasAttributeDef]) -> list[AtlasAttr
 
 
 type AttributeDefs = Annotated[
-    list[AtlasAttributeDef], BeforeValidator(_empty_when_null), AfterValidator(_keep_last_attributes)
+    list[AtlasAttributeDef], BeforeValidator(empty_when_null), AfterValidator(_keep_last_attributes)
 ]
 """``attributeDefs``: never null, one definition per name (TDM-06, TDM-07)."""
 
@@ -471,7 +385,7 @@ class AtlasEnumDef(AtlasBaseTypeDef):
     CATEGORY: ClassVar[TypeCategory] = TypeCategory.ENUM
 
     element_defs: Annotated[
-        list[AtlasEnumElementDef], BeforeValidator(_empty_when_null), AfterValidator(_keep_last_elements)
+        list[AtlasEnumElementDef], BeforeValidator(empty_when_null), AfterValidator(_keep_last_elements)
     ] = Field(
         default_factory=list,
         description="The values of the enum; one element per value, the last given for a value wins.",

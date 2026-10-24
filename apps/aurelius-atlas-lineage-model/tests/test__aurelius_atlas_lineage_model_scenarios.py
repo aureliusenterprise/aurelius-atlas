@@ -1,6 +1,6 @@
 """Parity scenarios: the legacy proxy's contract, read from the Aurelius source (ADR 052, ADR 055).
 
-Each scenario is served by the fake upstream (DD-111) answering from the
+Each scenario is served by the fake upstream (DD-200) answering from the
 generated fixtures: the canned Atlas lineage for the graph's root, and the
 canned data2model extraction — the 8.1 engine's own bytes for the same rows.
 The app's answer must match the expected response in full: the proxy answers
@@ -22,7 +22,7 @@ SCENARIOS = Path(__file__).parents[1] / "scenarios"
 FIXTURES = SCENARIOS / "fixtures"
 
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
-"""The fixture graph's root entity: the fixed UUID of 8.2's fixtures (DV-61)."""
+"""The fixture graph's root entity: the fixed UUID of 8.2's fixtures (DV-78)."""
 
 
 def _bearer(token: str) -> dict[str, str]:

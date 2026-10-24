@@ -6,7 +6,7 @@
 | Author     | Aurelius Atlas maintainers                                                                                                                                   |
 | Date       | 2026-10-23                                                                                                                                                   |
 | ADRs       | 055 (auxiliary APIs are a named data surface), 051 (increments), 049 (traceability), 052 (parity cites the reference; here the reference is Aurelius source) |
-| Design log | DD-108 (foundation), DD-110 (test env), DD-111 (proxy app: injectable upstream, canned-file fixture Atlas), DV-52 (stubbed data path)                        |
+| Design log | DD-197 (foundation), DD-199 (test env), DD-200 (proxy app: injectable upstream, canned-file fixture Atlas), DV-69 (stubbed data path)                        |
 
 ## Objective
 
@@ -22,7 +22,7 @@ rules to data2model `/extract` (8.1), returning that response body verbatim —
 the `{model, metadata}` document the lineage screen consumes. The chain is
 `webapp → lineage_model → data2model /extract`.
 
-Per DV-52 the **data path is stubbed until the server's lineage feed (5.1)**:
+Per DV-69 the **data path is stubbed until the server's lineage feed (5.1)**:
 the Atlas base URL is a setting, no increment blocks on 5.1, and the tests
 use canned lineage fixtures. The **caller's bearer token is forwarded** to
 both upstream calls — the legacy's token-passing design (the caller is the
@@ -30,8 +30,8 @@ browser's own token; 8.1 records why that makes `aurelius` the audience).
 
 The legacy is a Flask app on `m4i-atlas-core` (`get_lineage_by_guid`,
 `LineageInfo` dataclasses, `requests.post` to data2model). The port follows
-DD-109: pydantic models parse the upstream lineage at the boundary, rows are
-plain dicts, and the HTTP client is injectable for tests (DD-111).
+DD-198: pydantic models parse the upstream lineage at the boundary, rows are
+plain dicts, and the HTTP client is injectable for tests (DD-200).
 
 ## Scope
 
@@ -60,16 +60,16 @@ The reference for every rule is the Aurelius source (ADR 055 R4):
 
 | ID    | Rule                                                                                                                                                                                                                                                                                                                                                                                                                               | Legacy source                                                                                            | Enforced by                                                                                                                                                                                                                                                            | Deviation                                                      |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| LM-01 | `GET /` takes `guid` (a UUID, required — DV-61), `depth` (int, default 3) and `direction` (`BOTH`/`INPUT`/`OUTPUT`, default `BOTH`); on success it answers `200 application/json` with the data2model body `{model, metadata}` verbatim (the lineage screen's document)                                                                                                                                                            | `lineage_model()` (`return response.text`)                                                               | `test__the_extract_body_is_returned_verbatim`                                                                                                                                                                                                                          | —                                                              |
+| LM-01 | `GET /` takes `guid` (a UUID, required — DV-78), `depth` (int, default 3) and `direction` (`BOTH`/`INPUT`/`OUTPUT`, default `BOTH`); on success it answers `200 application/json` with the data2model body `{model, metadata}` verbatim (the lineage screen's document)                                                                                                                                                            | `lineage_model()` (`return response.text`)                                                               | `test__the_extract_body_is_returned_verbatim`                                                                                                                                                                                                                          | —                                                              |
 | LM-02 | Each lineage relation flattens to one 12-column row `{id, from_entity_id/name/type, from_process_id/name/type, to_entity_id/name/type, to_process_id/name/type}`: the relation's `relationshipId` is `id`; an endpoint whose `typeName` is in the process family fills its `*_process_*` slots (entity slots null), every other type fills its `*_entity_*` slots (process slots null); values are `guid`/`displayText`/`typeName` | `fmt_lineage_relation`                                                                                   | `test__a_process_endpoint_fills_the_process_slots` `test__an_entity_endpoint_fills_the_entity_slots`                                                                                                                                                                   | —                                                              |
 | LM-03 | The process family is the seven legacy `m4i_*_process` type names, ported as data verbatim                                                                                                                                                                                                                                                                                                                                         | `lineage_model.py` `process_types`                                                                       | `test__the_process_family_is_the_legacy_list`                                                                                                                                                                                                                          | —                                                              |
 | LM-04 | The extraction body is `{"data": rows, "rules": LINEAGE_RULES}` with the fixed rules document (4 element, 2 relation, 1 static `lineage_view`/`Lineage`/`archimate_process` view) ported verbatim, POSTed to `{data2model_url}/extract` carrying the caller's bearer token; the fetch is `GET {atlas_base_url}/v2/lineage/{guid}?depth&direction` carrying it too                                                                  | the `rules` dict; `post(... headers={'Authorization': f'bearer {access_token}'})`; `get_lineage_by_guid` | `test__the_extract_request_carries_the_rows_and_fixed_rules` `test__both_upstream_calls_carry_the_callers_token`                                                                                                                                                       | Forwarding is `Authorization: Bearer <token>` (canonical case) |
-| LM-05 | An upstream lineage `404` (unknown guid) is answered `204` with an empty body; an upstream lineage `400` is answered `400` (the port adds the Atlas error body)                                                                                                                                                                                                                                                                    | `lineage_model()` 404 → `('', 204)`, 400 → `abort(400)`                                                  | `test__an_unknown_guid_is_204` `test__an_upstream_bad_request_is_400`                                                                                                                                                                                                  | 400 gains the Atlas-shaped error body (DV-18 family)           |
+| LM-05 | An upstream lineage `404` (unknown guid) is answered `204` with an empty body; an upstream lineage `400` is answered `400` (the port adds the Atlas error body)                                                                                                                                                                                                                                                                    | `lineage_model()` 404 → `('', 204)`, 400 → `abort(400)`                                                  | `test__an_unknown_guid_is_204` `test__an_upstream_bad_request_is_400`                                                                                                                                                                                                  | 400 gains the Atlas-shaped error body (DV-79 family)           |
 | LM-06 | A lineage whose `relations` are empty is answered `204` with an empty body (no extract call, no empty model)                                                                                                                                                                                                                                                                                                                       | `len(lineage.relations) == 0` → `('', 204)`                                                              | `test__a_lineage_without_relations_is_204`                                                                                                                                                                                                                             | —                                                              |
-| LM-07 | An upstream failure that is not the 404/400 of the lineage fetch — a 5xx, a lineage body naming a guid absent from `guidEntityMap`, a failing `/extract` — is answered `502` with the Atlas error body; a missing `depth`/`direction`/`guid` query problem is `400` with the same body, not a 500 from `int()`/`Enum()`/a literal-`None` guid fetch                                                                                | uncaught `ValueError`/`KeyError`/`ClientResponseError`/`raise_for_status` (Flask 500)                    | `test__an_upstream_server_failure_is_502` `test__a_lineage_with_a_dangling_guid_is_502` `test__a_failing_extract_is_502` `test__an_invalid_direction_is_400` `test__a_non_numeric_depth_is_400` `test__a_missing_guid_is_400` `test__a_guid_that_is_not_a_uuid_is_400` | DV-55, DV-56, DV-22, DV-61                                     |
-| LM-08 | `GET /` requires a valid Keycloak bearer token verified for this app's audience (`aurelius-atlas-auth`, AUX-05) — not the legacy's transparent pass-through; a missing/invalid token is `401`; the token forwarded upstream is the caller's raw token                                                                                                                                                                              | `@requires_auth(transparent=True)` (no validation)                                                       | `test__a_missing_token_is_rejected` `test__a_token_minted_for_another_audience_is_rejected`                                                                                                                                                                            | DV-57 (full validation, DD-108 convention)                     |
+| LM-07 | An upstream failure that is not the 404/400 of the lineage fetch — a 5xx, a lineage body naming a guid absent from `guidEntityMap`, a failing `/extract` — is answered `502` with the Atlas error body; a missing `depth`/`direction`/`guid` query problem is `400` with the same body, not a 500 from `int()`/`Enum()`/a literal-`None` guid fetch                                                                                | uncaught `ValueError`/`KeyError`/`ClientResponseError`/`raise_for_status` (Flask 500)                    | `test__an_upstream_server_failure_is_502` `test__a_lineage_with_a_dangling_guid_is_502` `test__a_failing_extract_is_502` `test__an_invalid_direction_is_400` `test__a_non_numeric_depth_is_400` `test__a_missing_guid_is_400` `test__a_guid_that_is_not_a_uuid_is_400` | DV-72, DV-73, DV-80, DV-78                                     |
+| LM-08 | `GET /` requires a valid Keycloak bearer token verified for this app's audience (`aurelius-atlas-auth`, AUX-05) — not the legacy's transparent pass-through; a missing/invalid token is `401`; the token forwarded upstream is the caller's raw token                                                                                                                                                                              | `@requires_auth(transparent=True)` (no validation)                                                       | `test__a_missing_token_is_rejected` `test__a_token_minted_for_another_audience_is_rejected`                                                                                                                                                                            | DV-74 (full validation, DD-197 convention)                     |
 | LM-09 | `GET /liveness` answers `204` without auth (the container healthcheck)                                                                                                                                                                                                                                                                                                                                                             | the shared core module's liveness                                                                        | `test__liveness_needs_no_token`                                                                                                                                                                                                                                        | —                                                              |
-| LM-10 | Settings (env prefix `AURELIUS_ATLAS_LINEAGE_MODEL_`): `atlas_base_url` and `data2model_url` are required HttpUrls, port defaults to 21002, TLS is configured by the cert/key pair (DD-108 shape)                                                                                                                                                                                                                                  | `conf.py` required keys `atlas.server.url`, `data2model.server.url`                                      | `test__the_settings_are_read_from_prefixed_variables` (settings suite)                                                                                                                                                                                                 | —                                                              |
+| LM-10 | Settings (env prefix `AURELIUS_ATLAS_LINEAGE_MODEL_`): `atlas_base_url` and `data2model_url` are required HttpUrls, port defaults to 21002, TLS is configured by the cert/key pair (DD-197 shape)                                                                                                                                                                                                                                  | `conf.py` required keys `atlas.server.url`, `data2model.server.url`                                      | `test__the_settings_are_read_from_prefixed_variables` (settings suite)                                                                                                                                                                                                 | —                                                              |
 
 ### Upstream lineage shape
 
@@ -77,7 +77,7 @@ The fetch consumes Atlas's `v2/lineage/{guid}` camelCase JSON —
 `{guidEntityMap: {guid: {guid, typeName, displayText, …}}, relations:
 [{fromEntityId, relationshipId, toEntityId}], …}` — parsed as pydantic
 models with extra fields ignored (the legacy's `dataclasses_json` shape);
-only the fields the flattening reads are declared (DD-109).
+only the fields the flattening reads are declared (DD-198).
 
 ## Data contracts
 
@@ -88,7 +88,7 @@ only the fields the flattening reads are declared (DD-109).
   `LineageRelation` (pydantic), `PROCESS_TYPES`, `LINEAGE_RULES` (the fixed
   document), `flatten_relations(info) -> list[dict]`.
 - `create_app(settings, auth=None, http=None)` — `http` is the upstream
-  `httpx.Client` (injectable for tests, DD-111); production builds one with
+  `httpx.Client` (injectable for tests, DD-200); production builds one with
   a timeout, TLS CA from the auth settings.
 - Settings (env prefix `AURELIUS_ATLAS_LINEAGE_MODEL_`): `host`, `port`
   (21002), `log_level`, `tls_cert_file`/`tls_key_file`, `auth_server_url`,
@@ -98,19 +98,19 @@ only the fields the flattening reads are declared (DD-109).
 
 ## Deviations (recorded in `deviations.md`)
 
-- **DV-55**: an invalid `depth`/`direction` is `400`, not the legacy's Flask
+- **DV-72**: an invalid `depth`/`direction` is `400`, not the legacy's Flask
   `ValueError` → 500 (LM-07).
-- **DV-56**: a missing `guid` is `400`, not the legacy's fetch of the literal
+- **DV-73**: a missing `guid` is `400`, not the legacy's fetch of the literal
   guid `None` (→ upstream 404 → 204) (LM-07).
-- **DV-22**: upstream failures beyond the lineage 404/400 (5xx, dangling
+- **DV-80**: upstream failures beyond the lineage 404/400 (5xx, dangling
   guid, failing `/extract`) are `502` with the Atlas error body, not uncaught
   exceptions → Flask 500 (LM-07).
-- **DV-57**: the endpoint fully verifies the bearer token for its audience
-  (AUX-05, DD-108), not the legacy's `transparent=True` pass-through;
+- **DV-74**: the endpoint fully verifies the bearer token for its audience
+  (AUX-05, DD-197), not the legacy's `transparent=True` pass-through;
   browser tokens (azp `aurelius`) pass both.
-- **DV-61**: the `guid` is a `UUID` on every typed surface (route, client
+- **DV-78**: the `guid` is a `UUID` on every typed surface (route, client
   models, `LineageInfo`), not the legacy's opaque string — a non-UUID guid is
-  the `400` of DV-56 before any upstream call (LM-01, LM-07, DD-124).
+  the `400` of DV-73 before any upstream call (LM-01, LM-07, DD-213).
 
 ## Test list
 
@@ -122,10 +122,10 @@ only the fields the flattening reads are declared (DD-109).
 - Scenario (parity, read from Aurelius source): `scenarios/lineage/graph.scenario.yaml`
   — the caller's fixed rules over the 8.1 scenario's two-relation lineage;
   the canned `/extract` answer is the 8.1-verified model document, so the
-  expected body is full equality (no volatile — DV-51 is inside the canned answer).
+  expected body is full equality (no volatile — DV-68 is inside the canned answer).
 - E2E: `e2e/` — real container, Keycloak-minted token, the **real**
   data2model container, and a canned-file fixture Atlas (dhi.io Python
-  `http.server`, DD-111); 401 anonymous, 200 chain, 204 unknown guid.
+  `http.server`, DD-200); 401 anonymous, 200 chain, 204 unknown guid.
 
 ## Acceptance criteria
 

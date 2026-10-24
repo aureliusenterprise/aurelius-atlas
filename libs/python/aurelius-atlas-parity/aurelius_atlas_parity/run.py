@@ -2,6 +2,7 @@
 
 import json
 import re
+import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,9 @@ SAVE_NOT_ONE_ERROR = "save {name}: {path} matches {count} values in the response
 NOT_JSON_ERROR = "the body is not JSON: {body!r}"
 NO_DIRECTORY_ERROR = "{directory} is not a directory of scenarios"
 FAILURE_HEADER = "scenario {scenario}, stage {number} ({name}): {endpoint}"
+
+RUN = "run"
+"""The name every scenario run starts with: a value unique to the run, in letters and digits (SCN-16, DD-055)."""
 
 
 class ScenarioFailedError(AssertionError):
@@ -56,13 +60,14 @@ def substitute(value: Any, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a
     """Replace ``{name}`` by saved values in every string of a JSON value (SCN-06).
 
     A string that is exactly ``{name}`` becomes the saved value with its JSON type; elsewhere the value is
-    written into the string. ``{{`` and ``}}`` stand for literal braces.
+    written into the string. Object keys are strings, so a value written into one is its text. ``{{`` and ``}}``
+    stand for literal braces.
 
     Raises:
         KeyError: A name was not saved by an earlier stage.
     """
     if isinstance(value, dict):
-        return {key: substitute(item, saved) for key, item in value.items()}
+        return {_key(key, saved): substitute(item, saved) for key, item in value.items()}
     if isinstance(value, list):
         return [substitute(item, saved) for item in value]
     if not isinstance(value, str):
@@ -80,6 +85,13 @@ def substitute(value: Any, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a
     return _PLACEHOLDER.sub(replace, value)
 
 
+def _key(key: Any, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a JSON object key
+    if not isinstance(key, str):
+        return key
+    found = substitute(key, saved)
+    return found if isinstance(found, str) else json.dumps(found)
+
+
 def _saved(name: str, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - any JSON value
     if name not in saved:
         raise KeyError(UNKNOWN_NAME_ERROR.format(name=name, saved=", ".join(saved) or "nothing"))
@@ -87,7 +99,7 @@ def _saved(name: str, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - any JS
 
 
 async def run_scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
-    """Run a scenario's stages in order through the client (SCN-05).
+    """Run a scenario's stages in order through the client (SCN-05); ``{run}`` is unique to the run (SCN-16).
 
     Args:
         scenario: The scenario, as ``load_scenarios`` gives it.
@@ -97,7 +109,7 @@ async def run_scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
         ScenarioFailedError: A stage's response differs from its expectation, or the stage cannot run; later
             stages do not run.
     """
-    saved: dict[str, Any] = {}
+    saved: dict[str, Any] = {RUN: uuid.uuid4().hex}
     for number, stage in enumerate(scenario.stages, start=1):
         differences: list[str | Difference]
         try:

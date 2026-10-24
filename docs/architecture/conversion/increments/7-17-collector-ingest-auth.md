@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** [#119](https://github.com/aureliusenterprise/aurelius-atlas/pull/119)
-- **Records:** DD-103 (the two-leg ingest proof: user JWTs for browsers, a
+- **Records:** DD-193 (the two-leg ingest proof: user JWTs for browsers, a
   shared token for services); extends ADR 039 (TLS proves the channel, the
   credential proves the writer) and ADR 034 (the one collection point); relies
   on SHL-11 (the proxy paths), SHL-14 and SPL-11 (the telemetry the proxies
@@ -14,7 +14,7 @@
 The OTel collector's OTLP receivers stop accepting anonymous writes. It delivers:
 
 - Two ingest legs on `dev/observability`'s collector, each with its own proof
-  of the writer (DD-103):
+  of the writer (DD-193):
     - the **browser leg** (HTTP 4318) authenticates the signed-in user through
       the collector's `oidc` extension: Keycloak issuer, signature, and the
       `otel-collector` audience. A push with no token, a token from another
@@ -48,8 +48,8 @@ The OTel collector's OTLP receivers stop accepting anonymous writes. It delivers
 
 It explicitly does not deliver: per-service identities on the service leg (one
 shared secret for headless writers; Keycloak-JWT ingest for them stays a
-future option, DD-103), pre-login browser telemetry (the login is the
-telemetry gate — accepted, DD-103), token rotation machinery, production
+future option, DD-193), pre-login browser telemetry (the login is the
+telemetry gate — accepted, DD-193), token rotation machinery, production
 deployment manifests, or auth on the collector's internal telemetry (:8888,
 scraped in-network).
 
@@ -76,7 +76,7 @@ None against Apache Atlas (no Atlas behaviour is touched; the increment is
 platform-side). The deliberate posture choices — user JWTs on the browser leg
 over a shared secret, a shared secret on the service leg over per-service
 identity, the accepted loss of pre-login telemetry, loopback pinning — are
-recorded in DD-103, not in `deviations.md` (which tracks Atlas-parity deltas).
+recorded in DD-193, not in `deviations.md` (which tracks Atlas-parity deltas).
 
 ## Acceptance
 
@@ -99,7 +99,7 @@ recorded in DD-103, not in `deviations.md` (which tracks Atlas-parity deltas).
       pushed with a user token comes back from Tempo with the token's `sub` on
       its resource attributes as `enduser.id` (trace-by-id read-back,
       `GET /api/traces/<id>?encoding=json`): the identity rode the data into
-      the queryable backend (CIA-05, DD-105; webapp suite)
+      the queryable backend (CIA-05, DD-194; webapp suite)
     - `test__collector_rejects_the_shared_token_on_the_browser_leg` — the
       service credential on the browser leg answers 401: the legs stay
       distinct proofs (CIA-01)
@@ -115,7 +115,7 @@ recorded in DD-103, not in `deviations.md` (which tracks Atlas-parity deltas).
 - Unit (vitest, `aurelius-atlas-observability`): `createAureliusOtelIngestAuth`
   sends the bearer token of an authenticated session, nothing for a signed-out
   one or before the client attaches, and the current token when refresh fails
-  (CIA-02, DD-103).
+  (CIA-02, DD-193).
 - Run: the dev stack (`nx up aurelius-atlas-dev-observability`) plus the
   producer slices; `curl --cacert dev/observability/certs/ca.pem` to
   `https://127.0.0.1:4318/v1/traces` answers 401 with no header and with the

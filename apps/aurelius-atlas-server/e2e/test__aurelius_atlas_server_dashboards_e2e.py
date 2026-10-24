@@ -96,7 +96,7 @@ async def _fetch_trace(trace_id: str) -> str | None:
 
 @pytest.mark.covers(rules=["CIA-07"])
 async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient) -> None:
-    """elasticsearch-py's native OTel spans ride the server trace (DD-121, DD-107).
+    """elasticsearch-py's native OTel spans ride the server trace (DD-210, DD-196).
 
     elasticsearch-py >= 8.13 emits a span per store operation on the global
     tracer, on by default; ``setup_telemetry`` installs that tracer, so the

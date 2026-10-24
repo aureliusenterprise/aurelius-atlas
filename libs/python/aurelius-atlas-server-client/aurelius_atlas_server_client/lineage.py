@@ -1,8 +1,8 @@
 """The Atlas ``v2/lineage/{guid}`` body, as the server client's contract (CL-12, LM-04).
 
-Moved here from ``aurelius_atlas_lineage_model.lineage`` by increment 8.4 (DD-114):
+Moved here from ``aurelius_atlas_lineage_model.lineage`` by increment 8.4 (DD-203):
 the body is the *server's* answer — the Aurelius ``LineageInfo`` wire shape of
-``libs/m4i-atlas-core`` (ADR 055 R4), stated as pydantic (DD-109) so the serving
+``libs/m4i-atlas-core`` (ADR 055 R4), stated as pydantic (DD-198) so the serving
 side (5.1's lineage feed) and every calling side (8.2 today) validate one class.
 
 The *flattening* is not here: ``PROCESS_TYPES``, ``LINEAGE_RULES`` and

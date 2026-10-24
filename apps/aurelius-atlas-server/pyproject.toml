@@ -7,7 +7,7 @@ dependencies = [
     "fastapi>=0.162.0",
     "opentelemetry-instrumentation-fastapi>=0.65b0",
     "pydantic>=2.14.1",
-    "pydantic-settings>=2.15.0",
+    "pydantic-settings>=2.16.1",
     "tzdata>=2025.2",
     "uvicorn[standard]>=0.54.0",
 ]

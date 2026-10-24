@@ -2,7 +2,7 @@
 
 The fake issuer is the 8.0 auth library's test double (AUX-01..05 are tested at
 home, in ``aurelius-atlas-auth``). The fake upstream is the Atlas lineage feed
-and the data2model ``/extract`` the app proxies to (DD-111): a ``MockTransport``
+and the data2model ``/extract`` the app proxies to (DD-200): a ``MockTransport``
 recording every request and answering from a handler each test sets.
 """
 
@@ -42,7 +42,7 @@ public_key = private_key.public_key()
 
 @pytest.fixture(autouse=True)
 def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Start every test from a clean environment (DD-110).
+    """Start every test from a clean environment (DD-199).
 
     ``nx test`` injects the project's ``.env`` into the task's environment, and
     pydantic-settings reads it: the dev values — TLS material as
@@ -124,8 +124,8 @@ def app(settings: LineageModelSettings, auth: KeycloakAuth, upstream: FakeUpstre
     """The application, verifying tokens against the fake issuer and calling the fake upstream.
 
     Both upstream clients speak through an externally built httpx client on the
-    fake's recording transport (DD-111's seam, typed with the 8.4 clients, built
-    outside per DD-116); the token source is a placeholder — each request runs
+    fake's recording transport (DD-200's seam, typed with the 8.4 clients, built
+    outside per DD-205); the token source is a placeholder — each request runs
     ``with_token`` with the caller's own.
     """
     atlas = AtlasClient(httpx.AsyncClient(base_url=ATLAS, transport=upstream.transport()), "test-token")

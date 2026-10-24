@@ -52,7 +52,7 @@ family whose backend does not exist in this workspace. The legacy chain is
 small (three services, a few hundred lines each), its contracts are
 fully readable in source, and the ar3 JSON the diagram library consumes is
 specified by the legacy parsers — a portable surface with no third-party
-dependency once `m4i-analytics` is reimplemented natively (DV-51). Leaving it
+dependency once `m4i-analytics` is reimplemented natively (DV-68). Leaving it
 unported would leave the webapp's lineage slices (7.x) permanently unwired.
 
 ## Requirements
@@ -62,7 +62,7 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.
   invents an auth path.
 - **R2 — One deployment shape.** FastAPI apps with the workspace's Docker,
   healthcheck, env-prefix, SOPS, and OTel conventions; per-service
-  `otel-<service>` ingest identities (DD-108).
+  `otel-<service>` ingest identities (DD-197).
 - **R3 — The browser contract is the legacy contract.** The JSON shapes the
   legacy services return (`{model, metadata}` for data2model, the flattened
   rows for lineage-model) are kept verbatim; the ar3 string is consumed by
@@ -82,7 +82,7 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.
 - **Keep m4i-analytics.** Port the legacy ar3 library (pandas, graphviz,
   bokeh, ~2k lines) as a workspace lib: a dependency of a retired product for
   a JSON string the webapp only needs to be ar3-shaped. Native reimplementation
-  (DV-51) keeps the browser contract and drops the tree. Refused.
+  (DV-68) keeps the browser contract and drops the tree. Refused.
 - **Server-side lineage feed first (5.1 before 8.x).** The real data path
   before the APIs: 5.1 grows lineage semantics without a consumer to specify
   them, and 8.x stays blocked. Refused — stub first (this ADR's data-path
@@ -99,8 +99,8 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.
 - The deployment topology grows three stateless containers (plus their
   OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the lineage
   data stays in the server's store (047), read through `/v2/lineage/{guid}`.
-- `deviations.md` records the deliberate divergences: DV-50 (validate-entity
-  ships as the legacy mock), DV-51 (native ar3 layout replaces m4i-analytics),
-  DV-52 (lineage source stubbed until 5.1).
+- `deviations.md` records the deliberate divergences: DV-67 (validate-entity
+  ships as the legacy mock), DV-68 (native ar3 layout replaces m4i-analytics),
+  DV-69 (lineage source stubbed until 5.1).
 - DD-140's audit note stays as history; its lineage/validate exclusion is
   superseded **by this record**, its App Search exclusion stands.

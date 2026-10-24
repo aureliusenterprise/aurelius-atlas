@@ -1,4 +1,4 @@
-"""The telemetry factories: the native OTel providers and the OTLP ingest leg (DD-107, DD-108, DD-121).
+"""The telemetry factories: the native OTel providers and the OTLP ingest leg (DD-196, DD-197, DD-210).
 
 The app owns its export through the shared ``aurelius-atlas-otel`` pipeline —
 a client-credentials JWT as ``otel-lineage-model``, refreshed per export; unset
@@ -20,7 +20,7 @@ from aurelius_atlas_lineage_model.settings import LineageModelSettings
 
 
 def ingest_pipeline(settings: LineageModelSettings) -> IngestPipeline | None:
-    """The app-owned OTLP export for the per-service ingest leg (DD-107, DD-108).
+    """The app-owned OTLP export for the per-service ingest leg (DD-196, DD-197).
 
     None when the ingest credential is not configured (console-only telemetry).
     """
@@ -40,13 +40,13 @@ def configure_telemetry(app: FastAPI, settings: LineageModelSettings) -> None:
     """Wire the app's telemetry: the native providers, the instrumentors, the log level.
 
     The ingest leg rides only when it is configured (AUX-03); ``setup_telemetry``
-    is process-global, as the other 8.x apps call it (DD-108, DD-121). Debug
-    runs also print spans to stdout (the dev console, DD-121).
+    is process-global, as the other 8.x apps call it (DD-197, DD-210). Debug
+    runs also print spans to stdout (the dev console, DD-210).
 
-    The httpx instrumentor stitches the chain (DD-121): the caller's W3C
+    The httpx instrumentor stitches the chain (DD-210): the caller's W3C
     ``traceparent`` rides the app's upstream calls (the Atlas fetch, the
     data2model extract), so the whole 8.2 chain is one trace in Tempo — the
-    instrumentor is global, the pools it wraps are the app's (DD-116).
+    instrumentor is global, the pools it wraps are the app's (DD-205).
     """
     ingest = ingest_pipeline(settings)
     setup_telemetry(

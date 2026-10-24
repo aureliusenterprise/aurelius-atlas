@@ -100,7 +100,7 @@ differences are recorded in [design-log](../design-log.md): the scope split of t
 component library (DD-134), the dissolution of component services into signal state
 (DD-135), chrome strings moving to the built-in localisation keyed by the legacy
 dictionary paths (DD-136), and the purity gate made executable over `libs/angular`
-(DD-137). No new `DV` entry: the UI swap itself is DV-47.
+(DD-137). No new `DV` entry: the UI swap itself is DV-64.
 
 ## Acceptance
 

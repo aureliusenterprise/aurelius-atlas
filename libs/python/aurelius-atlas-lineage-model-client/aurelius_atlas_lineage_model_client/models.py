@@ -1,8 +1,8 @@
-"""The request and response shapes of the lineage-model API (CL-30, LM-01/LM-04; DD-114).
+"""The request and response shapes of the lineage-model API (CL-30, LM-01/LM-04; DD-203).
 
 The ids of this module's rules stay here: ``LineageModelParams`` is LM-01's query
-(DV-55/DV-56 are its rejections), ``LineageModelResponse`` is the LM-04/LM-01
-forward of the data2model answer (DV-51's contract). Field descriptions are the
+(DV-72/DV-73 are its rejections), ``LineageModelResponse`` is the LM-04/LM-01
+forward of the data2model answer (DV-68's contract). Field descriptions are the
 public OpenAPI documentation, so they name no rule ids; the Java classes ported
 are in the increment spec.
 
@@ -29,7 +29,7 @@ MIN_DEPTH = 1
 
 
 # LM-01; CL-30. The app validates its own query parameters against these
-# constraints, and a caller builds them — the 400 of DV-55/DV-56 is a body
+# constraints, and a caller builds them — the 400 of DV-72/DV-73 is a body
 # this model rejects.
 class LineageModelParams(BaseModel):
     """The ``GET /`` query of the lineage-model API: which entity, how deep, which way."""
@@ -53,7 +53,7 @@ class LineageModelParams(BaseModel):
 
 
 # LM-01/LM-04; CL-30. The data2model body, forwarded verbatim: ``model`` is
-# the ar3 model as a JSON *string* (DV-51's contract, kept by the passthrough);
+# the ar3 model as a JSON *string* (DV-68's contract, kept by the passthrough);
 # ``metadata`` is open by the data2model contract, so a plain map.
 class LineageModelResponse(BaseModel):
     """The answer of ``GET /``: the flattened lineage as an ar3 model and its metadata."""

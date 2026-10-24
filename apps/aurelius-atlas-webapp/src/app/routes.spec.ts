@@ -60,7 +60,7 @@ describe("routes", () => {
     it("routes the details skeleton at search/details/:guid (DET-01)", async () => {
         // The Aurelius `details` module's `:id` child (DET-01): the deep
         // link is the screen's whole state until the 2.3 wiring increment
-        // feeds it (DD-096).
+        // feeds it (DD-186).
         const details = SEARCH_ROUTES.find((route) => route.path === "details/:guid");
         expect(details).toBeDefined();
 

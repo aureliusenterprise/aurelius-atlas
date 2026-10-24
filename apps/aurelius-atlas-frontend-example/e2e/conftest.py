@@ -20,12 +20,12 @@ from testcontainers.core.wait_strategies import HttpWaitStrategy
 
 CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 
-# The issuer this suite mints from (DD-103, DD-113): the e2e Keycloak serves
+# The issuer this suite mints from (DD-193, DD-202): the e2e Keycloak serves
 # HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
 # mint fixtures below and every per-service producer use it, and the
 # collector's oidc extension validates it (CA-pinned discovery, mounted at
 # /dev-ca). Standardizing the mint on :8443 is what keeps every suite in one
-# issuer world (DD-113); the plaintext :8080 listener stays validated in the
+# issuer world (DD-202); the plaintext :8080 listener stays validated in the
 # collector, for the human dev browser only (ADR 039).
 KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
 
@@ -80,7 +80,7 @@ def observability() -> DockerCompose:
     """
     Return a Docker Compose instance for the observability services.
 
-    No issuer env is set here (DD-113): the collector validates both dev
+    No issuer env is set here (DD-202): the collector validates both dev
     Keycloak listeners from its own config, and every producer — this
     suite's minted tokens included, and the keycloak stack's metrics-puller
     it starts — presents the TLS :8443 iss, so the stack boots in exactly
@@ -114,7 +114,7 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
 
     # Readiness is compose's own: start() runs ``up --wait`` and the keycloak
     # service carries a healthcheck, so the command returns when Keycloak is
-    # ready (DD-106: this is the gate that lets the collector's
+    # ready (DD-195: this is the gate that lets the collector's
     # ``restart: on-failure`` cover its OIDC-discovery boot race). No
     # testcontainers HealthcheckWaitStrategy here: the strategy reads
     # docker-py ``attrs`` the ComposeContainer wrapper does not have, and a
@@ -242,7 +242,7 @@ def session(database: Engine) -> Generator[Session]:
 
 @pytest.fixture
 def user_token(keycloak: DockerCompose, settings: Settings) -> str:
-    """A real user access token minted by the e2e Keycloak (DD-103, CIA-01/02).
+    """A real user access token minted by the e2e Keycloak (DD-193, CIA-01/02).
 
     The password grant for the dev sign-in user (the same ``aurelius`` client
     the SPA rides, ``directAccessGrantsEnabled``): the token carries the

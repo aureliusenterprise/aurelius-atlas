@@ -16,7 +16,7 @@ from aurelius_atlas_lineage_model.lineage import (
 )
 from fake_upstream import FakeUpstream
 
-# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-61).
+# The graph's entity guids: the fixed UUIDs the fixtures of 8.2 use (DV-78).
 E_IN = UUID("00000000-0000-4000-8000-000000000001")
 P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
 E_OUT = UUID("00000000-0000-4000-8000-000000000003")
@@ -275,7 +275,7 @@ async def test__an_upstream_server_failure_is_502(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """A lineage 5xx is a gateway failure: 502 with the Atlas error body (DV-22)."""
+    """A lineage 5xx is a gateway failure: 502 with the Atlas error body (DV-80)."""
     upstream.handler = lambda _request: httpx.Response(503)
 
     response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
@@ -290,7 +290,7 @@ async def test__a_lineage_with_a_dangling_guid_is_502(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """A relation naming a guid the upstream's own map lacks is a gateway failure, not a crash (DV-22)."""
+    """A relation naming a guid the upstream's own map lacks is a gateway failure, not a crash (DV-80)."""
     dangling = {
         "guidEntityMap": {str(E_IN): {"guid": str(E_IN), "typeName": "kafka_topic", "displayText": "Ingest"}},
         "relations": [
@@ -312,7 +312,7 @@ async def test__a_failing_extract_is_502(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """A data2model answer that is not a 200 is a gateway failure (DV-22)."""
+    """A data2model answer that is not a 200 is a gateway failure (DV-80)."""
     upstream.handler = lambda request: (
         upstream.json(200, LINEAGE) if request.url.path == f"/v2/lineage/{E_IN}" else httpx.Response(500)
     )
@@ -327,7 +327,7 @@ async def test__an_invalid_direction_is_400(
     client: httpx.AsyncClient,
     token: Callable[..., str],
 ) -> None:
-    """A direction outside BOTH/INPUT/OUTPUT is a client error, not the legacy's Enum crash (DV-55)."""
+    """A direction outside BOTH/INPUT/OUTPUT is a client error, not the legacy's Enum crash (DV-72)."""
     response = await client.get("/", params={"guid": str(E_IN), "direction": "SIDEWAYS"}, headers=_bearer(token()))
 
     assert response.status_code == 400
@@ -339,7 +339,7 @@ async def test__a_non_numeric_depth_is_400(
     client: httpx.AsyncClient,
     token: Callable[..., str],
 ) -> None:
-    """A depth that is not an integer is a client error, not the legacy's int() crash (DV-55)."""
+    """A depth that is not an integer is a client error, not the legacy's int() crash (DV-72)."""
     response = await client.get("/", params={"guid": str(E_IN), "depth": "deep"}, headers=_bearer(token()))
 
     assert response.status_code == 400
@@ -351,7 +351,7 @@ async def test__a_missing_guid_is_400(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """No guid is a client error, not the legacy's fetch of the literal guid None (DV-56)."""
+    """No guid is a client error, not the legacy's fetch of the literal guid None (DV-73)."""
     response = await client.get("/", headers=_bearer(token()))
 
     assert response.status_code == 400
@@ -364,7 +364,7 @@ async def test__a_guid_that_is_not_a_uuid_is_400(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """A guid outside the UUID shape is the same client error, answered before any upstream call (DV-56, DV-61)."""
+    """A guid outside the UUID shape is the same client error, answered before any upstream call (DV-73, DV-78)."""
     response = await client.get("/", params={"guid": "e-in"}, headers=_bearer(token()))
 
     assert response.status_code == 400

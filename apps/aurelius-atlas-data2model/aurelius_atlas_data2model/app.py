@@ -1,13 +1,13 @@
-"""The composition root: settings in, application out (DTM-01, DTM-10, DD-108, DD-120).
+"""The composition root: settings in, application out (DTM-01, DTM-10, DD-197, DD-209).
 
-The app is stateless: no store, no start-up work beyond the telemetry (DD-108).
+The app is stateless: no store, no start-up work beyond the telemetry (DD-197).
 Everything it collaborates with is built elsewhere and wired here — the
 factories in ``providers/`` (the verifier, the telemetry) and the routers in
 ``routes/`` — so this module says only *which* collaborators the app has,
 never *how* they work (the shape the FastAPI example app keeps,
-DD-118/DD-119/DD-120).
+DD-207/DD-208/DD-209).
 
-The seam stays the tests' (DD-111's pattern): ``auth`` is injectable.
+The seam stays the tests' (DD-200's pattern): ``auth`` is injectable.
 """
 
 from importlib.metadata import version
@@ -45,10 +45,10 @@ def create_app(settings: Data2ModelSettings, auth: KeycloakAuth | None = None) -
 
 
 def _setup_error_handlers(app: FastAPI) -> None:
-    """The app's error contract: the body rejections shaped (DTM-11, DV-18).
+    """The app's error contract: the body rejections shaped (DTM-11, DV-79).
 
     Kept at the root because the mapping is the app's own contract, not any
-    collaborator's — as on the lineage-model app (DD-118).
+    collaborator's — as on the lineage-model app (DD-207).
     """
 
     @app.exception_handler(RequestValidationError)

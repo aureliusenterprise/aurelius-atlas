@@ -58,19 +58,19 @@ services:
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
-        # startup (DD-107): the collector's DD-106 restart pattern, applied
+        # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
         # their export.
         restart: on-failure:15
         environment:
             ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
-            # Per-service ingest identity (7.18, DD-107): the puller mints
+            # Per-service ingest identity (7.18, DD-196): the puller mints
             # client-credentials JWTs as the otel-elasticsearch realm client
             # — the oauth2client extension in config/metrics-puller.yaml
             # (mint, cache, refresh).
             OTEL_INGEST_CLIENT_ID: otel-elasticsearch
             OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            # The mint target is the Keycloak TLS listener, literal (DD-113):
+            # The mint target is the Keycloak TLS listener, literal (DD-202):
             # the iss a token carries is the listener that minted it, and this
             # value is baked into the container at creation — an env default
             # let suite start-order mix mint issuer with collector validator

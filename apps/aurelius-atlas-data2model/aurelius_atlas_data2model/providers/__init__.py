@@ -1,4 +1,4 @@
-"""The factories that build the app's collaborators: auth and telemetry (DD-108, DD-120).
+"""The factories that build the app's collaborators: auth and telemetry (DD-197, DD-209).
 
 The composition root in ``app.py`` wires what these build; the routes serve
 requests. The app has no upstreams — the extraction engine is a module

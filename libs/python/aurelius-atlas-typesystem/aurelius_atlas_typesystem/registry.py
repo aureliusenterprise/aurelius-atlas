@@ -11,34 +11,22 @@ from typing import Self
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.typedef import (
-    ATLAS_TYPE_BIGDECIMAL,
-    ATLAS_TYPE_BIGINTEGER,
-    ATLAS_TYPE_BOOLEAN,
-    ATLAS_TYPE_BYTE,
-    ATLAS_TYPE_DATE,
-    ATLAS_TYPE_DOUBLE,
-    ATLAS_TYPE_FLOAT,
-    ATLAS_TYPE_INT,
-    ATLAS_TYPE_LONG,
-    ATLAS_TYPE_SHORT,
-    ATLAS_TYPE_STRING,
     AtlasBaseTypeDef,
     AtlasTypesDef,
     TypeCategory,
 )
 
+from aurelius_atlas_typesystem.array_type import ArrayType
+from aurelius_atlas_typesystem.atlas_type import AtlasType
+from aurelius_atlas_typesystem.builtin import PRIMITIVE_TYPES, ObjectIdType
+from aurelius_atlas_typesystem.enum_type import EnumType
+from aurelius_atlas_typesystem.map_type import MapType
 from aurelius_atlas_typesystem.types import (
     CLASSIFICATION_ROOT,
     ENTITY_ROOT,
-    ArrayType,
-    AtlasType,
-    BuiltInType,
     BusinessMetadataType,
     ClassificationType,
     EntityType,
-    EnumType,
-    MapType,
-    ObjectIdType,
     RelationshipType,
     StructType,
     type_of,
@@ -46,20 +34,6 @@ from aurelius_atlas_typesystem.types import (
 
 DEFAULT_LOCK_TIMEOUT_SECONDS = 15.0
 """Atlas's ``atlas.server.type.update.lock.max.wait.time.seconds`` default."""
-
-_BUILT_IN_TYPE_NAMES = (
-    ATLAS_TYPE_BOOLEAN,
-    ATLAS_TYPE_BYTE,
-    ATLAS_TYPE_SHORT,
-    ATLAS_TYPE_INT,
-    ATLAS_TYPE_LONG,
-    ATLAS_TYPE_FLOAT,
-    ATLAS_TYPE_DOUBLE,
-    ATLAS_TYPE_BIGINTEGER,
-    ATLAS_TYPE_BIGDECIMAL,
-    ATLAS_TYPE_DATE,
-    ATLAS_TYPE_STRING,
-)
 
 _KINDS = (
     TypeCategory.ENUM,
@@ -76,7 +50,7 @@ class _Definitions:
     """Every definition and type, by name and GUID (``TypeCache`` and ``TypeDefCache``)."""
 
     def __init__(self) -> None:
-        self.types_by_name: dict[str, AtlasType] = {name: BuiltInType(name) for name in _BUILT_IN_TYPE_NAMES}
+        self.types_by_name: dict[str, AtlasType] = {str(type_().type_name): type_() for type_ in PRIMITIVE_TYPES}
         self.types_by_name[ObjectIdType().type_name or ""] = ObjectIdType()
         self.types_by_guid: dict[str, AtlasType] = {}
         self.service_types: set[str] = {"atlas_core"}

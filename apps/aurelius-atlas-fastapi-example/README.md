@@ -2,7 +2,7 @@
 
 Example FastAPI backend service demonstrating the Aurelius Python service pattern:
 Keycloak-secured CRUD over a SQLModel entity, Postgres change-data-capture streamed
-to clients via SSE, and OpenTelemetry telemetry (DD-121).
+to clients via SSE, and OpenTelemetry telemetry (DD-210).
 
 Part of the template **spine**.
 

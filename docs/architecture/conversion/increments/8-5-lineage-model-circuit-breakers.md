@@ -6,14 +6,14 @@
 | Author     | Aurelius Atlas maintainers                                                                                                                                                                                                    |
 | Date       | 2026-10-23                                                                                                                                                                                                                    |
 | ADRs       | 051 (increments), 049 (traceability), 055 (auxiliary APIs are a named data surface), 037 (the system promises nothing about staying up)                                                                                       |
-| Design log | DD-108 (foundation), DD-111 (proxy app), DD-116 (clients provided externally), DD-117 (the breakers live in the app, on the `calling()` seam), DD-118 (the app's provider/route layout), DD-119 (the flow lives in the route) |
+| Design log | DD-197 (foundation), DD-200 (proxy app), DD-205 (clients provided externally), DD-206 (the breakers live in the app, on the `calling()` seam), DD-207 (the app's provider/route layout), DD-208 (the flow lives in the route) |
 
 ## Objective
 
 The 8.2 app forwards every request to two upstreams — the Atlas `v2/lineage`
 feed and the 8.1 data2model `/extract` — and when an upstream is down, every
 request pays for it: a full connect/timeout attempt, on the app's pool, for
-every caller, forever. LM-07 answers those calls 502 (DV-22), which is honest
+every caller, forever. LM-07 answers those calls 502 (DV-80), which is honest
 but not protective.
 
 Guard each upstream with a **circuit breaker** (`pybreaker`, the workspace's
@@ -23,7 +23,7 @@ fail fast with the same 502, without reaching the upstream; after a reset
 timeout, one trial call probes the upstream, and success closes the circuit.
 
 The breaker is the app's resilience policy, not the wire contract: the client
-libraries of 8.4 stay transport-only (DD-116), and the response bytes, the auth
+libraries of 8.4 stay transport-only (DD-205), and the response bytes, the auth
 gate, and the LM-01..LM-10 rules are unchanged.
 
 ## Scope
@@ -32,10 +32,10 @@ In scope: two per-upstream breakers in `apps/aurelius-atlas-lineage-model`
 (the Atlas feed, the data2model extract), the open-circuit answer, the
 outage/fact counting policy, the two settings, unit tests.
 
-Out of scope: breakers in the client libraries (DD-116 keeps them
+Out of scope: breakers in the client libraries (DD-205 keeps them
 transport-only — a breaker is the caller's policy, and each caller owns its
 policy); breakers in the other aux apps (8.1 and 8.3 have no upstreams);
-bulkheads/rate limits/retries (the pool cap is DD-111's, retries are a 6.x
+bulkheads/rate limits/retries (the pool cap is DD-200's, retries are a 6.x
 platform topic); per-endpoint metrics for the breaker state (the listener
 logs state changes — a metric leg rides with the otel increments).
 
@@ -45,13 +45,13 @@ The reference is the Aurelius source (ADR 055 R4):
 `backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py` calls
 `requests.post` bare — no breaker, no retries; the legacy has no breaker
 behaviour to port, so the rules below state the workspace convention
-(the auth library's JWKS breaker, AUX-02) applied to the 8.2 chain. DV-60.
+(the auth library's JWKS breaker, AUX-02) applied to the 8.2 chain. DV-77.
 
 ### The upstream circuit breakers
 
 | Id    | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LM-11 | The app guards each upstream with its own circuit breaker (`pybreaker`): the Atlas lineage fetch and the data2model extract are counted separately, so one failing upstream never fast-fails calls bound for the healthy one (the 204 of LM-05 must keep flowing past a dead data2model). The breakers are built from the settings by the app's upstream factory (`providers/upstreams.py`, DD-118, DD-119) and exposed on `app.state`, guarding the route's calls. |
+| LM-11 | The app guards each upstream with its own circuit breaker (`pybreaker`): the Atlas lineage fetch and the data2model extract are counted separately, so one failing upstream never fast-fails calls bound for the healthy one (the 204 of LM-05 must keep flowing past a dead data2model). The breakers are built from the settings by the app's upstream factory (`providers/upstreams.py`, DD-207, DD-208) and exposed on `app.state`, guarding the route's calls. |
 | LM-12 | A circuit that is open answers `502` with the Atlas error body (the LM-07 family) **without calling the upstream** — the fast-fail is the point: no pool connection, no timeout, for every request that arrives while the circuit is open.                                                                                                                                                                                                                          |
 | LM-13 | Only outages count towards opening a circuit: an upstream `5xx` (`AtlasClientError`/`Data2ModelClientError` with status ≥ 500) and a transport failure (`httpx.RequestError`). An upstream `4xx` is a fact, not an outage — the 404 of LM-05 (answered 204) and the 400 of LM-07 (the caller's own guid) reset the failure counter, exactly as the auth library treats a 4xx from the issuer (AUX-02).                                                              |
 | LM-14 | After the reset timeout, the next call is the half-open trial: it reaches the upstream; success closes the circuit and answers normally, a failure re-opens it and answers 502 (LM-12). The trial is one call, not a probe schedule.                                                                                                                                                                                                                                |
@@ -60,27 +60,27 @@ behaviour to port, so the rules below state the workspace convention
 The app's behaviour for closed circuits is unchanged: LM-01 (verbatim answer),
 LM-05 (404 → 204), LM-07 (5xx/unreachable → 502), LM-08 (auth gate), LM-09
 (liveness) stand as specified in 8.2. The open-circuit 502 is the same wire
-shape DV-22 defines, with a message naming the fast-fail.
+shape DV-80 defines, with a message naming the fast-fail.
 
 ## Aurelius origin
 
 The legacy `m4i-lineage-model` (Flask, `requests.post` to data2model,
 `m4i-atlas-core.get_lineage_by_guid`) has no resilience device — its dev
 `aiocache` `@cached()` is not ported (8.2). The breaker is new behaviour,
-recorded as DV-60; the workspace convention it follows is
+recorded as DV-77; the workspace convention it follows is
 `aurelius-atlas-auth`'s JWKS breaker (AUX-02, same `pybreaker` dependency).
 
 ## Deviations
 
-DV-60 (`deviations.md`): the legacy has no upstream circuit breaker; the port
+DV-77 (`deviations.md`): the legacy has no upstream circuit breaker; the port
 guards each upstream with one, opening on 5xx/transport failures only.
-Technical decisions in DD-117 (`design-log.md`): the breakers live in the app
-(not the client libraries — DD-116 keeps the libs transport-only); one breaker
+Technical decisions in DD-206 (`design-log.md`): the breakers live in the app
+(not the client libraries — DD-205 keeps the libs transport-only); one breaker
 per upstream; the `pybreaker` `calling()` generator seam is the async-safe
 form (the lib's `call_async` is tornado-only and fails on this Python); the
 exclude predicate counts 4xx as facts.
 
-DV-61 (`deviations.md`, DD-124 — rides this branch, not this spec's breakers):
+DV-78 (`deviations.md`, DD-213 — rides this branch, not this spec's breakers):
 the lineage chain's `guid` is a `UUID` on every typed surface; a non-UUID guid
 is LM-07's `400` before any upstream call, so a malformed guid never reaches
 the guarded fetch.

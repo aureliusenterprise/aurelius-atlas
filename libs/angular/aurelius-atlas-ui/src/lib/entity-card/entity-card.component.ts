@@ -11,7 +11,7 @@ import { TypeName } from "../type-name/type-name.component";
  * column are inputs and content projection, and a title click emits
  * `entityClicked` — routing is the app's (7.6).
  *
- * The type-name badge is the `type-name` component (DD-100 — 7.13's
+ * The type-name badge is the `type-name` component (DD-190 — 7.13's
  * inlining reversed): the card passes its badge inputs through, and
  * UIC-12's rendered output is the extraction's regression proof.
  */

@@ -1,5 +1,5 @@
 /**
- * The browser-session id (7.13, DD-103): one random id per tab, persisted in
+ * The browser-session id (7.13, DD-193): one random id per tab, persisted in
  * `sessionStorage` so a reload keeps the journey. When storage is denied
  * (private mode, sandboxed iframe) the id still works for the current
  * document — telemetry keeps flowing, it just does not survive a reload.

@@ -59,7 +59,7 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
-            # OTLP ingest identity (7.18, DD-107): the server exports through
+            # OTLP ingest identity (7.18, DD-196): the server exports through
             # its own pipeline (aurelius-atlas-otel), minting client-credentials
             # JWTs as otel-atlas-server for the per-service leg — the OIDC
             # receiver on :4319 answers the shared token 401 (CIA-08), so the

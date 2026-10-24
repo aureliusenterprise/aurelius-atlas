@@ -1,7 +1,7 @@
-"""The extraction engine: rows plus rules, in ar3 shape out (DTM-02..DTM-09; DD-109).
+"""The extraction engine: rows plus rules, in ar3 shape out (DTM-02..DTM-09; DD-198).
 
 The legacy chain ran this on ``m4i-analytics`` DataFrames; the port is plain Python
-over the parsed :class:`~aurelius_atlas_data2model.rules.ExtractionRequest` (DD-109).
+over the parsed :class:`~aurelius_atlas_data2model.rules.ExtractionRequest` (DD-198).
 Each function states the legacy behaviour it reproduces and cites the rule it keeps.
 """
 
@@ -26,10 +26,10 @@ SCRIPT_NAME = "Model Extractor API"
 """The ``created_by`` provenance the legacy extractor stamps on every metadata entry."""
 
 ROW_SPACING = 95
-"""Vertical distance between node tops in the native layout: node height 55 + a 40 gap (DV-51)."""
+"""Vertical distance between node tops in the native layout: node height 55 + a 40 gap (DV-68)."""
 
 RANK_SPACING = 320
-"""Horizontal distance between ranks in the native layout: node width 120 + a 200 gap (DV-51)."""
+"""Horizontal distance between ranks in the native layout: node width 120 + a 200 gap (DV-68)."""
 
 _INVERTED_TAGS = frozenset({"ar3_Access", "ar3_Specialization"})
 """The relationship tags whose direction the legacy layouts inverted (``_prepare_model``)."""
@@ -187,7 +187,7 @@ def _view_node_ids(rows: list[dict[str, Any]], rule: ViewRule, elements: dict[st
     The legacy scans each node rule's column (non-null, first per value) in rule
     order; an empty collection is the legacy's ``None`` — the whole model. Preset
     node coordinates (``x``/``x_key`` in a view node rule) are ignored: the layout
-    is native (DV-51).
+    is native (DV-68).
     """
     ids: list[str] = []
     for node_rule in rule.view_nodes:
@@ -231,7 +231,7 @@ def _view_edge_ids(
 
 
 def _ranks(node_ids: list[str], edges: list[_Edge]) -> dict[str, int]:
-    """Each node's rank: the longest path from an edge source, cycles bounded (DV-51).
+    """Each node's rank: the longest path from an edge source, cycles bounded (DV-68).
 
     The legacy graphviz layout ranked with dot; the inversion the legacy layouts
     applied (``_prepare_model``) applies to the ranking edges here: writes and
@@ -263,7 +263,7 @@ def _ranks(node_ids: list[str], edges: list[_Edge]) -> dict[str, int]:
 
 
 def _coordinates(node_ids: list[str], edges: list[_Edge], layout: str) -> dict[str, tuple[int, int]]:
-    """The native deterministic layout (DTM-08, DV-51).
+    """The native deterministic layout (DTM-08, DV-68).
 
     ``archimate_process`` ranks left to right (graphviz ``rankdir=LR``);
     ``archimate_hierarchical`` ranks bottom to top (``rankdir=BT``). Nodes stack by

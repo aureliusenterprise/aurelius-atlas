@@ -7,14 +7,14 @@ import { type IconDefinition } from "@fortawesome/free-solid-svg-icons";
  * The Aurelius type-name badge (`models4insight-type-name`): icon,
  * `typeAlias ?? typeName`, and the optional base-type suffix — the shape
  * the details header, the propagated-sources rows, and 7.7's editor all
- * render (DD-100).
+ * render (DD-190).
  *
  * The legacy component read `iconsByType[typeName]`, an application index;
  * the icon and its colour class arrive as inputs here (UIC-15). The
  * legacy component's `| translate` on the names is the app's job: the
  * caller passes display strings.
  *
- * `entity-card` renders this component for its badge (DD-100) — UIC-12's
+ * `entity-card` renders this component for its badge (DD-190) — UIC-12's
  * output is the extraction's regression proof.
  */
 @Component({

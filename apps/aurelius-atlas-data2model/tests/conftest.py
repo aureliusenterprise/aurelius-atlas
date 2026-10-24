@@ -35,7 +35,7 @@ public_key = private_key.public_key()
 
 @pytest.fixture(autouse=True)
 def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Start every test from a clean environment (DD-110).
+    """Start every test from a clean environment (DD-199).
 
     ``nx test`` injects the project's ``.env`` into the task's environment, and
     pydantic-settings reads it: the dev values — TLS material as

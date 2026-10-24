@@ -21,7 +21,7 @@ export interface OtelIngestAuthClient {
 }
 
 /**
- * The OTLP ingest credential (7.17, DD-103, CIA-02): the signed-in user's
+ * The OTLP ingest credential (7.17, DD-193, CIA-02): the signed-in user's
  * Keycloak access token, attached to every OTLP push so the collector's OIDC
  * receiver attributes the telemetry to that user and rejects token-less pushes.
  *
@@ -39,7 +39,7 @@ export interface OtelIngestAuthClient {
  * initializer has resolved — register a `provideAppInitializer` right after
  * `provideKeycloak` (app initializers run in registration order, so the token
  * state is settled when this attaches). A signed-out tab yields no header —
- * the collector answers 401, the accepted pre-login telemetry loss (DD-103).
+ * the collector answers 401, the accepted pre-login telemetry loss (DD-193).
  */
 export interface AureliusOtelIngestAuth {
     /**
@@ -74,7 +74,7 @@ export function createAureliusOtelIngestAuth(): AureliusOtelIngestAuth {
                 await client.updateToken(30);
             } catch {
                 // Refresh failed (session gone): send the current token; the
-                // collector rejects it, visible as a 401 in devtools (DD-103).
+                // collector rejects it, visible as a 401 in devtools (DD-193).
             }
 
             const headers: Record<string, string> = {};

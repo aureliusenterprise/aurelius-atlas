@@ -1,4 +1,4 @@
-"""The telemetry factories: the native OTel providers and the OTLP ingest leg (DD-107, DD-108, DD-120, DD-121).
+"""The telemetry factories: the native OTel providers and the OTLP ingest leg (DD-196, DD-197, DD-209, DD-210).
 
 The app owns its export through the shared ``aurelius-atlas-otel`` pipeline —
 a client-credentials JWT as ``otel-data2model``, refreshed per export; unset
@@ -20,7 +20,7 @@ from aurelius_atlas_data2model.settings import Data2ModelSettings
 
 
 def ingest_pipeline(settings: Data2ModelSettings) -> IngestPipeline | None:
-    """The app-owned OTLP export for the per-service ingest leg (DD-107, DD-108).
+    """The app-owned OTLP export for the per-service ingest leg (DD-196, DD-197).
 
     None when the ingest credential is not configured (console-only telemetry).
     """
@@ -40,10 +40,10 @@ def configure_telemetry(app: FastAPI, settings: Data2ModelSettings) -> None:
     """Wire the app's telemetry: the native providers, the instrumentors, the log level.
 
     The ingest leg rides only when it is configured (AUX-03); ``setup_telemetry``
-    is process-global, as the other 8.x apps call it (DD-108, DD-121). Debug
-    runs also print spans to stdout (the dev console, DD-121). The httpx
+    is process-global, as the other 8.x apps call it (DD-197, DD-210). Debug
+    runs also print spans to stdout (the dev console, DD-210). The httpx
     instrumentor covers the issuer calls the auth library makes (verification,
-    JWKS) so every HTTP call of the process is visible (DD-121).
+    JWKS) so every HTTP call of the process is visible (DD-210).
     """
     ingest = ingest_pipeline(settings)
     setup_telemetry(

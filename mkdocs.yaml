@@ -195,6 +195,24 @@ nav:
                       - 1.4 Typedef store: architecture/conversion/increments/1-4-typedef-store.md
                       - 1.5 Built-in models and patches: architecture/conversion/increments/1-5-builtin-models.md
                       - 1.6 Types REST: architecture/conversion/increments/1-6-types-rest.md
+                      - 2.1a Entity models: architecture/conversion/increments/2-1-entity-models.md
+                      - 2.1b Value types: architecture/conversion/increments/2-1-value-types.md
+                      - 2.1c Entity validation: architecture/conversion/increments/2-1-entity-validation.md
+                      - 2.2 Entity store: architecture/conversion/increments/2-2-entity-store.md
+                      - 2.3 Entity read REST: architecture/conversion/increments/2-3-entity-read-rest.md
+                      - 2.4 Entity write REST: architecture/conversion/increments/2-4-entity-write-rest.md
+                      - 2.5 Delete semantics: architecture/conversion/increments/2-5-delete-semantics.md
+                      - 3.1a Relationship instances: architecture/conversion/increments/3-1-relationship-instances.md
+                      - 3.1b Relationship attributes: architecture/conversion/increments/3-1-relationship-attributes.md
+                      - 3.2 Ownership cascades: architecture/conversion/increments/3-2-ownership-cascades.md
+                      - 3.3a Direct classifications: architecture/conversion/increments/3-3-direct-classifications.md
+                      - 3.3b Bulk classifications: architecture/conversion/increments/3-3-bulk-classifications.md
+                      - 3.4a Classification propagation: architecture/conversion/increments/3-4-classification-propagation.md
+                      - 3.4b Propagation tasks: architecture/conversion/increments/3-4-propagation-tasks.md
+                      - 3.5a Entity audit: architecture/conversion/increments/3-5-entity-audit.md
+                      - 3.5b Classification audit: architecture/conversion/increments/3-5-classification-audit.md
+                      - 4.1a Entity search: architecture/conversion/increments/4-1-entity-search.md
+                      - 4.1b Classification search: architecture/conversion/increments/4-1-classification-search.md
                       - 7.0 Webapp foundation (umbrella): architecture/conversion/increments/7-0-webapp-foundation.md
                       - 7.1 Webapp shell and localisation: architecture/conversion/increments/7-1-webapp-shell.md
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md

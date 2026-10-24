@@ -26,7 +26,7 @@ _ENTITY: dict[str, object] = {
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-03"])
 async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient) -> None:
-    """The container, on the dev issuer: no bearer token is a 401 (VE-03, DV-58)."""
+    """The container, on the dev issuer: no bearer token is a 401 (VE-03, DV-75)."""
     response = await anonymous_client.post("/", json=_ENTITY)
     assert response.status_code == 401
 
@@ -45,7 +45,7 @@ async def test__the_mock_document_travels_over_https(api: ValidateEntityClient) 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-01"])
 async def test__a_malformed_body_still_answers_the_mock(client: httpx.AsyncClient) -> None:
-    """The body is never read: malformed JSON answers the mock too (VE-01, DV-50)."""
+    """The body is never read: malformed JSON answers the mock too (VE-01, DV-67)."""
     response = await client.post(
         "/",
         content=b"not json {",

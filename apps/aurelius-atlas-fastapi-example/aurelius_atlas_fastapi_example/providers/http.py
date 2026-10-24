@@ -15,7 +15,7 @@ HTTP_TIMEOUT = 5.0
 def http_client(settings: Settings) -> Generator[httpx.Client]:
     """Return an HTTP client for making requests to external services."""
     # httpx2 rides the OS trust store and ignores SSL_CERT_FILE, so pass the CA
-    # explicitly as a context when the environment ships a private CA (DD-122).
+    # explicitly as a context when the environment ships a private CA (DD-211).
     context = (
         ssl.create_default_context(cafile=str(settings.auth_ca_file))
         if settings.auth_ca_file

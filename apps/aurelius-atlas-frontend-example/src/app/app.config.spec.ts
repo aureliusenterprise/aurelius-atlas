@@ -1,5 +1,5 @@
 /**
- * The example app's boot pair (DD-125, mirrors the webapp's 7.19 spec):
+ * The example app's boot pair (DD-214, mirrors the webapp's 7.19 spec):
  * `initialize()` assembles its providers from a served `/config.json`, and a
  * non-2xx answer fails the boot loudly — an unreachable config is an
  * operator-visible failure, never a silently half-configured UI.
@@ -14,7 +14,7 @@ const configPayload = {
     otelExporterUrl: "/otel/v1/traces",
 };
 
-describe("example app boot (DD-125)", () => {
+describe("example app boot (DD-214)", () => {
     afterEach(() => vi.unstubAllGlobals());
 
     it("assembles the provider set from a served /config.json", async () => {

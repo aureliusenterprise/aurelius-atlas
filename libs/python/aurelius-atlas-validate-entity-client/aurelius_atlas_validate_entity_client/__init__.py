@@ -1,9 +1,9 @@
-"""The Aurelius Atlas validate-entity API as a contract and a client (increment 8.4, DD-114).
+"""The Aurelius Atlas validate-entity API as a contract and a client (increment 8.4, DD-203).
 
 The wire contract of the 8.3 app — ``POST /`` with an entity in, the fixed
-governance-quality document out (DV-50's mock) — as pydantic models, and an async
+governance-quality document out (DV-67's mock) — as pydantic models, and an async
 client for it. The entity body stays a plain mapping: the mock never reads it
-(VE-01, DD-112), so a request model would invent a contract the endpoint does not
+(VE-01, DD-201), so a request model would invent a contract the endpoint does not
 have; the *response* is the browser's card contract, and that is modelled (CL-40).
 """
 

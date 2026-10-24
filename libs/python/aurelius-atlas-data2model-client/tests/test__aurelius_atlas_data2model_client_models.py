@@ -1,7 +1,7 @@
 """The rules family and the extract shapes, as the client lib owns them (CL-20).
 
 The models moved here from 8.1's app module; the DTM-11 validation is the
-request contract, stated once for both sides of the wire (DD-114).
+request contract, stated once for both sides of the wire (DD-203).
 """
 
 from typing import Any
@@ -139,7 +139,7 @@ def test__the_request_defaults_to_the_empty_extraction() -> None:
 
 @pytest.mark.covers(rules=["CL-20"])
 def test__the_response_states_the_answer_the_apps_send() -> None:
-    """``{metadata: [{id, data}], model: "<ar3 JSON string>"}`` — the model is a string (DV-51)."""
+    """``{metadata: [{id, data}], model: "<ar3 JSON string>"}`` — the model is a string (DV-68)."""
     response = ExtractionResponse.model_validate(
         {"metadata": [{"id": "n-1", "data": {"created_by": "dataset"}}], "model": '{"ar3_model": {}}', "extra": 1}
     )

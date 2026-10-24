@@ -74,11 +74,11 @@ const alerts: AlertGroup[] = [
 
 /**
  * The full bar, in inbox order (info, warning, error — the ramp, calm
- * to urgent, DD-092): three severity-coloured chips with totals, the
+ * to urgent, DD-182): three severity-coloured chips with totals, the
  * unread dots on the severities with unread groups (warning, error),
  * every chip pressed (nothing hidden). The play() toggles the warning
  * chip off and sees the output. The caller's clear-all action joins the
- * bar as an expanded member (DD-090, DD-092) — the host test in the
+ * bar as an expanded member (DD-180, DD-182) — the host test in the
  * spec covers the projection.
  */
 export const Primary: Story = {
@@ -92,7 +92,7 @@ export const Primary: Story = {
         const chips = [...(canvasElement.querySelectorAll(".aurelius-alert-inbox-chip") as NodeListOf<HTMLElement>)];
         expect(chips).toHaveLength(3);
         expect(chips.map((c) => c.getAttribute("aria-pressed"))).toEqual(["true", "true", "true"]);
-        // The pressed chips ride their severity's fill (DD-092).
+        // The pressed chips ride their severity's fill (DD-182).
         expect(chips.map((c) => [...c.classList].find((k) => k.startsWith("is-sev-")))).toEqual([
             "is-sev-info",
             "is-sev-warning",
@@ -131,7 +131,7 @@ export const Filtered: Story = {
 };
 
 /**
- * Every filter off: the chips are all flat, the bar unchanged (DD-095
+ * Every filter off: the chips are all flat, the bar unchanged (DD-185
  * — no show-all control appears; the bar's shape never shifts). The
  * way back is a chip: play() clicks info and sees the toggle output.
  */
@@ -153,7 +153,7 @@ export const AllHidden: Story = {
 
 /**
  * The empty feed: the bar keeps its shape, every count zero — and every
- * chip reads grey, disabled (DD-094): a filter with nothing to show has
+ * chip reads grey, disabled (DD-184): a filter with nothing to show has
  * nothing to toggle. (In the app the bar shows at the store's first
  * alert; the story renders the component bare.)
  */

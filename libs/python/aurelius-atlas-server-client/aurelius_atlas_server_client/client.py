@@ -1,4 +1,4 @@
-"""The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-114, DD-115, DD-116).
+"""The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-203, DD-204, DD-205).
 
 One client per server: constructed from an externally built ``httpx.AsyncClient``
 and a token source, reading no environment variables (CL-01) — the app builds the
@@ -7,12 +7,12 @@ paths are relative, appended to that client's base URL, so a URL with a trailing
 slash — the ``str()`` of a pydantic ``HttpUrl`` — works as given (CL-01); the
 builder closes the pool, the API client never touches its lifecycle. Because the
 client arrives from outside, tests hand over one built on a ``MockTransport`` and
-no socket opens (CL-02, the DD-111 seam made async). Every request carries
+no socket opens (CL-02, the DD-200 seam made async). Every request carries
 ``authorization: Bearer <token>`` from the token source (CL-03); a non-2xx answer
 raises :class:`AtlasClientError` with the status and the server's
 ``{errorCode, errorMessage}`` when the body parses (CL-04); an unreachable upstream
 propagates as ``httpx``'s own error — mapping it to an HTTP status is the app's job
-(LM-07's DV-22), not the client's (CL-05).
+(LM-07's DV-80), not the client's (CL-05).
 
 The paths mirror the server's routes verbatim: ``routes/admin.py`` under
 ``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, and the
@@ -298,7 +298,7 @@ def _parse_def(payload: dict[str, Any]) -> AtlasBaseTypeDef:
 
 
 class AtlasClient:
-    """The client for one Atlas metadata server (CL-11, DD-114, DD-116).
+    """The client for one Atlas metadata server (CL-11, DD-203, DD-205).
 
     Args:
         http: The ``httpx.AsyncClient`` to speak through, built by the caller —

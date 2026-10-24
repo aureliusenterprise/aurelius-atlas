@@ -136,7 +136,7 @@ describe("Drawer", () => {
         expect(head.querySelector(".delete")).toBeTruthy();
     });
 
-    it("projects drawer-subhead content between the head and the body (DD-090)", () => {
+    it("projects drawer-subhead content between the head and the body (DD-180)", () => {
         const hosted = TestBed.createComponent(SubheadHostComponent);
         hosted.detectChanges();
         hosted.componentInstance.drawer.open();

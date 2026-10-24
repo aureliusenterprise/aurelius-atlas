@@ -3,7 +3,7 @@
 The route is the app's one use case and composes it directly, as the example
 app's routes compose theirs: it takes the upstream clients and their circuit
 breakers from the app state (wired by ``app.py``), guards each upstream call
-with pybreaker's documented ``calling()`` seam (LM-11, DD-117), and maps each
+with pybreaker's documented ``calling()`` seam (LM-11, DD-206), and maps each
 failure to the :class:`UpstreamError` of the status the caller gets (LM-05,
 LM-07, LM-12) — the root's handlers turn it into the Atlas-shaped answer.
 """
@@ -38,10 +38,10 @@ LINEAGE = "lineage"
 
 
 def build_router(auth: KeycloakAuth) -> APIRouter:
-    """The lineage router, gated by the app's verifier (LM-08, DV-57).
+    """The lineage router, gated by the app's verifier (LM-08, DV-74).
 
     The upstreams are read from the app state at call time, so the router
-    holds none of its own — the composition root wires them (DD-111's seam).
+    holds none of its own — the composition root wires them (DD-200's seam).
     """
     router = APIRouter(tags=[LINEAGE])
 
@@ -55,7 +55,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     ) -> Response:
         """Flatten the entity's lineage and extract its model (LM-01).
 
-        The token is verified for this app's audience (LM-08, DV-57) and
+        The token is verified for this app's audience (LM-08, DV-74) and
         forwarded raw to both upstreams (LM-04) — the legacy's design: the
         upstream services accept the browser's own token. An empty graph (no
         lineage, no relations) is the 204 of LM-05/LM-06; failures arrive as
@@ -81,7 +81,7 @@ async def _fetch(  # noqa: PLR0913, PLR0917 - the guarded call's own parts: clie
     The feed's 404 is the empty graph (LM-05): the answer is None, not a
     failure — the route turns it into the 204. The open circuit (LM-12) and
     the other failures arrive as ``UpstreamError``, in the status to answer.
-    The ``calling()`` generator seam is pybreaker's async-safe form (DD-117).
+    The ``calling()`` generator seam is pybreaker's async-safe form (DD-206).
     """
     try:
         with breaker.calling():

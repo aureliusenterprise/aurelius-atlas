@@ -4,7 +4,7 @@ A workspace-wide review of every test suite: coverage, and — the part a covera
 number cannot show — **representativeness**: do the tests cover the non-happy
 flows as well as the happy ones? The methodology and the layers are
 [Testing](./testing.md); this page records what the review found and what it
-committed to build next ([DD-125](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
+committed to build next ([DD-214](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
 
 Coverage is reported to SonarQube, whose quality gate is the enforcement
 ([Testing](./testing.md) step 6). This page carries measured baselines as
@@ -25,7 +25,7 @@ Unit counts are test functions (an `it.each` expands to more at runtime);
 | server          | 29 + 11 scenarios | 4 + 11 scenarios (Chromium) | 98.6% | 400 / 404 / 409, ES-red readiness, store-unreachable boot              | a store failure **mid-request** surfacing as a raw 500, not an Atlas body                         |
 | data2model      | 47                | 3 + 1 scenario              | 92.1% | 401, body-shape 400, rule-ref 400                                      | view-edge selection and dynamic views are at 0% — a whole documented feature (DTM-06/07) untested |
 | lineage-model   | 56                | 5 + 1 scenario              | 98.7% | 502 / 204, breaker open / half-open, fail-before-call (the best suite) | the transport-failure handler and the data2model-side fast-fail are the two uncovered lines       |
-| validate-entity | 25                | 4 + 1 scenario              | 99.3% | 401, any-body-accepted (DV-50)                                         | a mock app: 405 and oversized body only                                                           |
+| validate-entity | 25                | 4 + 1 scenario              | 99.3% | 401, any-body-accepted (DV-67)                                         | a mock app: 405 and oversized body only                                                           |
 | fastapi-example | 102               | 21                          | —     | 401/403/503, SSE cancellation, breaker                                 | template code: out of scope (see [Scope](#scope-and-exemptions))                                  |
 
 ### Python libraries

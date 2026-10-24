@@ -154,7 +154,7 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_t
     An OTLP/HTTP POST to the collector answers at /v1/traces with a
     protobuf-level status; if the proxy did not forward, nginx would answer
     502 (unresolvable upstream) or 404 (no location). The collector's browser
-    leg demands the signed-in user's token (DD-103) and the proxy passes the
+    leg demands the signed-in user's token (DD-193) and the proxy passes the
     Authorization header through untouched — reaching the collector (any of
     those statuses, never 401) proves the passthrough.
     """
@@ -170,7 +170,7 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_t
 def test__otel_proxy_passes_authorization_through(page: Page, root_url: str) -> None:
     """The /otel/ proxy injects nothing: a token-less push is the collector's 401 (CIA-01, CIA-02).
 
-    The browser leg authenticates the user (DD-103), so a push without a
+    The browser leg authenticates the user (DD-193), so a push without a
     bearer rides the proxy all the way to the OIDC receiver and comes back
     401 — the proxy is a pipe, not a credential. (The signed-in SPA attaches
     the user token itself, app.config.ts.)
@@ -218,7 +218,7 @@ def test__collector_accepts_a_user_token_on_the_browser_leg(page: Page, user_tok
 
 
 def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: str) -> None:
-    """A browser-leg push carries the token's `sub` onto the telemetry (CIA-05, DD-105).
+    """A browser-leg push carries the token's `sub` onto the telemetry (CIA-05, DD-194).
 
     The collector's OIDC receiver keeps the verified claims in the request
     context and the resource processor copies ``auth.claims.sub`` to the
@@ -295,7 +295,7 @@ def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: s
 def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, ingest_token: str) -> None:
     """The service credential does not open the browser leg (CIA-01).
 
-    The legs are distinct proofs (DD-103): the shared ingest token is not a
+    The legs are distinct proofs (DD-193): the shared ingest token is not a
     JWT the OIDC receiver can verify, so the push is 401 — attribution comes
     from user tokens only, and a leaked service secret cannot forge
     user-attributed telemetry.
@@ -312,7 +312,7 @@ def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, inge
 def test__collector_rejects_the_shared_token_on_the_service_leg(page: Page, ingest_token: str) -> None:
     """The shared token does not open the per-service leg (CIA-06, CIA-08).
 
-    The per-service leg (4319) is an OIDC receiver now (DD-107): the shared
+    The per-service leg (4319) is an OIDC receiver now (DD-196): the shared
     ingest token is not a JWT the extension can verify, so the push is 401 —
     the legs are credential-typed, and a leaked shared secret can no longer
     write anonymous telemetry.
@@ -343,7 +343,7 @@ def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: s
 
 
 def test__collector_accepts_the_dev_plaintext_issuer(page: Page, plaintext_service_token: str) -> None:
-    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-113).
+    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-202).
 
     Keycloak stamps iss from the listener that served the mint, so this
     token's iss is the dev plaintext listener — what the human dev browser
@@ -443,7 +443,7 @@ def test__collector_accepts_the_shared_ingest_token(page: Page, ingest_token: st
 
     The producers that cannot present a Keycloak JWT — Keycloak's native
     OTLP, the FastAPI example (static-header SDK, 60s tokens) — keep 7.17's
-    shared-token mechanism here (DD-107); an empty protobuf body answers 200
+    shared-token mechanism here (DD-196); an empty protobuf body answers 200
     once authenticated. (The 7.17 form of this test rode 4319, which is
     OIDC-only now — CIA-08 moves the shared token off it, proved by
     test__collector_rejects_the_shared_token_on_the_service_leg.)
@@ -871,7 +871,7 @@ def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Bro
 def test__details_skeleton_renders_at_the_deep_link(authenticated: Page, root_url: str) -> None:
     """A direct visit to /search/details/<guid> renders the skeleton, localized (DET-07, DET-01).
 
-    The URL is the screen's whole state (DD-096): the skeleton renders at
+    The URL is the screen's whole state (DD-186): the skeleton renders at
     the deep link with no entity behind it — server 2.3 is planned — and
     the chrome strings ride the bridge in both locales (DET-04).
     """

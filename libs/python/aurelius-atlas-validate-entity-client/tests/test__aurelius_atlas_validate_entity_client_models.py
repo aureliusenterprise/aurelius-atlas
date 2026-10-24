@@ -1,4 +1,4 @@
-"""The governance-quality document, as the client lib owns it (CL-40; DD-114).
+"""The governance-quality document, as the client lib owns it (CL-40; DD-203).
 
 The card the 8.3 mock answers — the editor's contract (VE-02) — stated once so
 the app's constant and a caller's parse validate one model.
@@ -64,7 +64,7 @@ def test__every_leaf_is_a_raw_wrapper() -> None:
 
 @pytest.mark.covers(rules=["CL-40"])
 def test__the_meta_keeps_the_engines_record() -> None:
-    """``_meta``: the engine, the score, the document id (the mock's DV-50 values)."""
+    """``_meta``: the engine, the score, the document id (the mock's DV-67 values)."""
     meta = GovQualityMeta.model_validate({"engine": "atlas-dev-gov-quality", "score": 1, "id": "doc-1"})
 
     assert meta.engine == "atlas-dev-gov-quality"

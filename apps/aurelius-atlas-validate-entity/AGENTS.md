@@ -6,23 +6,23 @@ live in the root `AGENTS.md`.
 
 ## Layout
 
-The app follows the workspace's example-app layout (DD-118/DD-119's shape,
-DD-120): providers build collaborators, routes serve requests, `app.py` wires.
+The app follows the workspace's example-app layout (DD-207/DD-208's shape,
+DD-209): providers build collaborators, routes serve requests, `app.py` wires.
 
 - `aurelius_atlas_validate_entity/app.py` — the composition root: `create_app(settings,
 auth=None)` builds the verifier, mounts the routers, and configures the telemetry.
-  `auth` is injectable for tests (DD-112).
+  `auth` is injectable for tests (DD-201).
 - `aurelius_atlas_validate_entity/globals.py` — `NAME`, `LOGGER`, the healthcheck
   status (VE-04)
 - `aurelius_atlas_validate_entity/providers/` — `auth.py` (`build_auth`, the shared
-  `aurelius-atlas-auth` verifier mapped from the settings, DD-108) and `telemetry.py`
+  `aurelius-atlas-auth` verifier mapped from the settings, DD-197) and `telemetry.py`
   (`ingest_pipeline`/`configure_telemetry` — the app-owned OTLP leg, the shared
-  `aurelius-atlas-otel` lib: `otel-validate-entity`, DD-107/DD-108)
+  `aurelius-atlas-otel` lib: `otel-validate-entity`, DD-196/DD-197)
 - `aurelius_atlas_validate_entity/routes/` — `validate.py` (`build_router(auth)`: the
   gated `POST /` answering the fixed mock, VE-01) and `health.py` (the anonymous
   `/liveness`)
 - `aurelius_atlas_validate_entity/mock.py` — `MOCK_VALIDATION`: the legacy's `output`
-  dict verbatim, as data (VE-02, DV-50, DD-112). The ids, `raw` strings, names and
+  dict verbatim, as data (VE-02, DV-67, DD-201). The ids, `raw` strings, names and
   verdicts are the webapp governance cards' contract — changing them is a visible
   contract change, not a refactor.
 - `aurelius_atlas_validate_entity/settings.py` — `ValidateEntitySettings`
@@ -48,17 +48,17 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
 - `project.json` — `serve` depends on dev Keycloak (tokens) + observability (the OTLP
   leg); `test`/`build`/`docker-*`/`decrypt` are inferred by `tools/plugins/python.ts`.
   No `e2e` override: the suite is this app alone (no upstream chain, unlike 8.2).
-- Auth is the shared lib (`aurelius-atlas-auth`, DD-108): `auth.require_auth` on the
+- Auth is the shared lib (`aurelius-atlas-auth`, DD-197): `auth.require_auth` on the
   route; nothing is forwarded (the app has no upstreams). Audience `aurelius` (the
   webapp's client id, AUX-04): the browser calls this endpoint with its own token, so
-  this app verifies tokens for that audience (VE-03, DV-58).
-- OTLP export is app-owned (DD-107/DD-108): `otel_*` settings, `otel-validate-entity`
-  client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-121).
-- Every HTTP call is visible (DD-121): `HTTPX2ClientInstrumentor` covers the httpx2
+  this app verifies tokens for that audience (VE-03, DV-75).
+- OTLP export is app-owned (DD-196/DD-197): `otel_*` settings, `otel-validate-entity`
+  client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-210).
+- Every HTTP call is visible (DD-210): `HTTPX2ClientInstrumentor` covers the httpx2
   calls the auth library makes to the issuer (token verification, JWKS fetch),
   so even the JWKS request appears as a client span in Tempo.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-validate-entity` after changing
-  `.env`); `OTEL_CLIENT_SECRET` mirrors the server's `OTEL_INGEST_CLIENT_SECRET` (DD-107).
+  `.env`); `OTEL_CLIENT_SECRET` mirrors the server's `OTEL_INGEST_CLIENT_SECRET` (DD-196).
 - `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`. The SANs
   cover the compose service name, so the in-network TLS calls verify (e2e).
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled), nonroot,

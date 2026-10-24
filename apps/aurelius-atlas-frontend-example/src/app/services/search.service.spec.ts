@@ -179,7 +179,7 @@ describe("SearchService", () => {
         expect(refreshSpy).toHaveBeenCalledOnce();
     });
 
-    it("discards a late answer for a superseded query (DD-125)", async () => {
+    it("discards a late answer for a superseded query (DD-214)", async () => {
         // switchMap's whole point: queries answer out of order, and a slow
         // answer for an old query must never overwrite the current one.
         const first$ = new Subject<PaginatedResponse<Entity>>();

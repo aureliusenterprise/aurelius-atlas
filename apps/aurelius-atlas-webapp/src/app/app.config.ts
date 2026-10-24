@@ -99,7 +99,7 @@ export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }];
 export async function initialize(): Promise<ApplicationConfig> {
     const config = await loadConfig();
     const sessionResource = createAureliusSessionResource();
-    // The OTLP credential seam (DD-103, aurelius-atlas-observability): the
+    // The OTLP credential seam (DD-193, aurelius-atlas-observability): the
     // exporters read the user's token through its headers factory, lazily —
     // per export, from the live Keycloak client the gate's initializer
     // attaches below. No ordering is read into that attach: the factory
@@ -124,7 +124,7 @@ export async function initialize(): Promise<ApplicationConfig> {
                       provideAureliusOpenTelemetry({
                           exporter: new OTLPTraceExporter({
                               url: config.otelExporterUrl,
-                              // The user token rides every push (DD-103):
+                              // The user token rides every push (DD-193):
                               // the OTLP leg is outside HttpClient, so the
                               // bearer interceptor above cannot cover it.
                               headers: ingestAuth.headers,
@@ -140,7 +140,7 @@ export async function initialize(): Promise<ApplicationConfig> {
                           name: "aurelius-atlas-webapp",
                           resource: sessionResource,
                       }),
-                      // The seam's other end (DD-103, CIA-02): the live
+                      // The seam's other end (DD-193, CIA-02): the live
                       // Keycloak client — the same DI instance the bearer
                       // interceptor reads — into the headers factory. Inside
                       // the gate: with telemetry off there is no exporter to

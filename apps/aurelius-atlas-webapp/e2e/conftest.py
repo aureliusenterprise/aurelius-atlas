@@ -32,7 +32,7 @@ ATLAS_SERVER_HOST_PORT = 18445
 # The dev collector (dev/observability, started by the observability fixture).
 # Its publishes are loopback-pinned (CIA-03), so the direct-ingest tests below
 # reach it on 127.0.0.1; the certificate carries the "otel-collector" SAN, so
-# that is the TLS server hostname. The shared ingest token (DD-103) is Nx's
+# that is the TLS server hostname. The shared ingest token (DD-193) is Nx's
 # injected dev default from the project .env.
 OBSERVABILITY_PROJECT = "aurelius-atlas-dev-observability"
 COLLECTOR_HOST = "127.0.0.1"
@@ -43,24 +43,24 @@ COLLECTOR_TLS_NAME = "otel-collector"
 
 # Tempo's query API on the same stack (compose publishes :3200): the
 # attribution probe reads back through it — TraceQL resource predicates
-# prove the collector stamped the user onto the telemetry (CIA-05, DD-105).
+# prove the collector stamped the user onto the telemetry (CIA-05, DD-194).
 TEMPO_HOST = "127.0.0.1"
 TEMPO_PORT = 3200
-DEFAULT_INGEST_TOKEN = "otel-dev-ingest-token"  # noqa: S105  # the public dev default, not a secret (DD-103)
-DEFAULT_INGEST_CLIENT_SECRET = "kbTROtW6-P6ibQ7iAovsceJceRz39HpQ"  # noqa: S105  # the public dev default, not a secret (DD-107)
+DEFAULT_INGEST_TOKEN = "otel-dev-ingest-token"  # noqa: S105  # the public dev default, not a secret (DD-193)
+DEFAULT_INGEST_CLIENT_SECRET = "kbTROtW6-P6ibQ7iAovsceJceRz39HpQ"  # noqa: S105  # the public dev default, not a secret (DD-196)
 
-# The issuer this suite mints from (DD-103, DD-113): the e2e Keycloak serves
+# The issuer this suite mints from (DD-193, DD-202): the e2e Keycloak serves
 # HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
 # mint fixtures below and every per-service producer use it, and the
 # collector's oidc extension validates it (CA-pinned discovery, mounted at
 # /dev-ca). Standardizing the mint on :8443 is what keeps every suite in one
-# issuer world (DD-113); the plaintext :8080 listener stays validated in the
+# issuer world (DD-202); the plaintext :8080 listener stays validated in the
 # collector, for the human dev browser only (ADR 039).
 KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
 
 # The dev plaintext listener (ADR 039, the collector's second provider): the
 # mint the human dev browser does, and the mint the CIA-11 fixture below
-# reproduces, to prove the collector accepts that iss too (DD-113).
+# reproduces, to prove the collector accepts that iss too (DD-202).
 KEYCLOAK_DEV_ISSUER = "http://keycloak.localhost:8080/realms/master"
 
 
@@ -102,7 +102,7 @@ def observability() -> DockerCompose:
     """
     Return a Docker Compose instance for the observability services.
 
-    No issuer env is set here (DD-113): the collector validates both dev
+    No issuer env is set here (DD-202): the collector validates both dev
     Keycloak listeners from its own config, and every producer — this
     suite's minted tokens included — presents the TLS :8443 iss, so the
     stack boots in exactly one world no matter who started it first.
@@ -139,7 +139,7 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
 
     # Readiness is compose's own: start() runs ``up --wait`` and the keycloak
     # service carries a healthcheck, so the command returns when Keycloak is
-    # ready (DD-106: this is the gate that lets the collector's
+    # ready (DD-195: this is the gate that lets the collector's
     # ``restart: on-failure`` cover its OIDC-discovery boot race). No
     # testcontainers HealthcheckWaitStrategy here: the strategy reads
     # docker-py ``attrs`` the ComposeContainer wrapper does not have, and a
@@ -157,7 +157,7 @@ def elasticsearch(observability: DockerCompose) -> DockerCompose:
     this fixture guarantees it (and the observability network it attaches).
     The slice's metrics-puller mints its ingest JWT at boot on the suite's
     TLS :8443 issuer — the compose's literal, same issuer this suite mints
-    and the collector validates (DD-113), so no re-start with flipped env
+    and the collector validates (DD-202), so no re-start with flipped env
     is needed anymore.
 
     Note: like the observability/keycloak fixtures, this starts the stack
@@ -270,7 +270,7 @@ def browser_context_args(browser_context_args: dict) -> dict:  # noqa: ARG001
 
 @pytest.fixture(scope="session")
 def ingest_token() -> str:
-    """The shared collector ingest token the task environment carries (DD-103).
+    """The shared collector ingest token the task environment carries (DD-193).
 
     Nx injects the project ``.env`` into the e2e task (the ``decrypt``
     dependency); the dev default is the fallback so a bare pytest run outside
@@ -281,7 +281,7 @@ def ingest_token() -> str:
 
 @pytest.fixture
 def user_token(keycloak: DockerCompose, settings: Settings) -> str:
-    """A real user access token minted by the e2e Keycloak (DD-103, CIA-01/02).
+    """A real user access token minted by the e2e Keycloak (DD-193, CIA-01/02).
 
     The password grant for the dev sign-in user (the same ``aurelius`` client
     the SPA rides, ``directAccessGrantsEnabled``): the token carries the
@@ -311,7 +311,7 @@ def user_token(keycloak: DockerCompose, settings: Settings) -> str:
 
 @pytest.fixture
 def service_token(keycloak: DockerCompose) -> str:
-    """A client-credentials token for the otel-atlas-server ingest client (DD-107, CIA-06/07).
+    """A client-credentials token for the otel-atlas-server ingest client (DD-196, CIA-06/07).
 
     The same grant the graduated producers present on the per-service leg:
     the realm's confidential ``otel-atlas-server`` client (import/master.json,
@@ -341,7 +341,7 @@ def service_token(keycloak: DockerCompose) -> str:
 
 @pytest.fixture
 def plaintext_service_token(keycloak: DockerCompose) -> str:
-    """A client-credentials token minted from the plaintext :8080 listener (CIA-11, DD-113).
+    """A client-credentials token minted from the plaintext :8080 listener (CIA-11, DD-202).
 
     Keycloak stamps ``iss`` from the listener that served the mint, so this
     token carries ``iss=http://keycloak.localhost:8080/realms/master`` — the
@@ -372,7 +372,7 @@ def collector_container(observability: DockerCompose) -> Container:  # noqa: ARG
 
     Found by compose labels rather than name, mirroring how the fixture above
     starts it. ``observability`` guarantees the stack is up. The collector
-    crash-loops until Keycloak answers its OIDC discovery (DD-103/DD-106) and
+    crash-loops until Keycloak answers its OIDC discovery (DD-193/DD-195) and
     the restart policy brings it back, so the fixture polls for the settled
     state — running with its port bindings in place — rather than reading the
     container mid-restart (a restarting container reports no bindings).

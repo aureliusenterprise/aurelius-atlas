@@ -11,7 +11,7 @@ from sqlalchemy import URL
 DEVELOPMENT = "development"
 
 type LogLevel = Literal["trace", "debug", "info", "notice", "warn", "warning", "error", "fatal"]
-"""The lowest level of log record the app emits (the set the logfire shell accepted, DD-121)."""
+"""The lowest level of log record the app emits (the set the logfire shell accepted, DD-210)."""
 
 # libpq sslmode values that do not verify the server certificate; unusable outside development.
 _UNVERIFIED_SSLMODES = ("disable", "allow", "prefer")
