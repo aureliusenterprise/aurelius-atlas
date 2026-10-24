@@ -12,8 +12,9 @@ from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.suggestions_provider import SuggestionsProvider
 from aurelius_atlas_core.testing.entity_samples import sample_registry
-from aurelius_atlas_model.discovery import SearchParameters
+from aurelius_atlas_model.discovery import QuickSearchParameters, SearchParameters
 from aurelius_atlas_model.instance import AtlasClassification, AtlasEntitiesWithExtInfo
 from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_store_es import ElasticsearchStore
@@ -188,3 +189,56 @@ async def test__entities_are_found_by_free_text_on_elasticsearch(
     assert [found["entity"]["attributes"]["qualifiedName"] for found in full_text["fullTextResult"]] == ["d1", "d2"]
     assert full_text["approximateCount"] == 2
     assert full_text["fullTextResult"][0]["score"] > full_text["fullTextResult"][1]["score"] > 0
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms",
+    "aurelius_atlas_core.discovery_service.EntityDiscoveryService.quick_search",
+    rules=["QSR-02", "QSR-03", "QSR-04", "SUG-01"],
+)
+async def test__quick_search_counts_facets_and_suggests_terms_on_elasticsearch(
+    dev_store: ElasticsearchStore, entity_prefix: str
+) -> None:
+    """Facets aggregate the keyword fields of every match; suggestions the analysed words of the text sub-fields."""
+    registry = sample_registry()
+    with registry.update() as transient:
+        transient.add_types(
+            AtlasTypesDef.model_validate(
+                {
+                    "entityDefs": [
+                        {
+                            "name": "Asset",
+                            "serviceType": "q_core",
+                            "attributeDefs": [
+                                {"name": "qualifiedName", "typeName": "string", "isUnique": True, "searchWeight": 10},
+                                {"name": "name", "typeName": "string", "isOptional": True, "searchWeight": 10},
+                                {"name": "owner", "typeName": "string", "isOptional": True, "indexType": "STRING"},
+                            ],
+                        },
+                        {"name": "q_table", "superTypes": ["Asset"], "serviceType": "q_db"},
+                    ]
+                }
+            )
+        )
+    store = EntityStore(registry, ElasticsearchEntityDocuments(dev_store.client, prefix=entity_prefix))
+    await store.prepare()
+
+    def table(name: str, owner: str) -> dict[str, Any]:
+        attributes = {"qualifiedName": f"{name}@q", "name": name, "owner": owner}
+        return {"typeName": "q_table", "guid": f"-{name}", "attributes": attributes}
+
+    tables = [table("Plum One", "ann"), table("plum two", "Ann Lee"), table("pear", "ann")]
+    await EntityWriter(store).create_or_update(AtlasEntitiesWithExtInfo.model_validate({"entities": tables}))
+
+    found = (await EntityDiscoveryService(store).quick_search(QuickSearchParameters(query="plu", limit=1))).to_json()
+    suggested = (await SuggestionsProvider(store).suggestions("p", None)).to_json()
+
+    assert found["searchResults"]["approximateCount"] == 2
+    assert len(found["searchResults"]["entities"]) == 1
+    assert found["aggregationMetrics"] == {
+        "__typeName": [{"name": "q_table", "count": 2}],
+        "__state": [{"name": "ACTIVE", "count": 2}],
+        "Asset.owner": [{"name": "Ann Lee", "count": 1}, {"name": "ann", "count": 1}],
+        "ServiceType": [{"name": "q_db", "count": 2}],
+    }
+    assert suggested["suggestions"] == ["plum", "pear"]

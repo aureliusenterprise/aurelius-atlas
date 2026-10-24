@@ -2,7 +2,7 @@
 
 Atlas's ``EntityDiscoveryService.searchWithParameters`` and ``searchWithSearchContext`` with
 ``QueryParams.getNormalizedParams``, for the entity search of 4.1a (DD-087), with the free text of 4.2a and
-``searchUsingFullTextQuery`` (DD-091).
+``searchUsingFullTextQuery`` (DD-091), and the quick search of 4.2b.
 """
 
 from collections.abc import Iterable
@@ -11,8 +11,10 @@ from typing import Any
 from aurelius_atlas_model.discovery import (
     AtlasFullTextResult,
     AtlasQueryType,
+    AtlasQuickSearchResult,
     AtlasSearchResult,
     AttributeSearchResult,
+    QuickSearchParameters,
     SearchParameters,
 )
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
@@ -26,7 +28,8 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_search_processor import EntitySearchProcessor
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.free_text import TextQuery, basic_query, weighted_fields
+from aurelius_atlas_core.free_text import TextQuery, basic_query, has_tokenize_char, weighted_fields
+from aurelius_atlas_core.search_aggregator import SearchAggregator
 from aurelius_atlas_core.search_context import SearchContext, encode_marker
 from aurelius_atlas_core.search_fields import field_name
 from aurelius_atlas_core.search_query import SearchQuery
@@ -61,6 +64,33 @@ class EntityDiscoveryService:
         parameters = parameters.model_copy(deep=True)
         if parameters.query:
             parameters.query = basic_query(parameters.query)
+        result, _ = await self._search_with_search_context(parameters, ())
+        return result
+
+    async def quick_search(self, parameters: QuickSearchParameters) -> AtlasQuickSearchResult:
+        """``quickSearch``: a basic search of the parameters, ``*`` appended to a query without a tokenising
+        character, and its facets (QSR-02 to QSR-04).
+
+        Raises:
+            AtlasError: As ``search_with_parameters`` does.
+        """  # noqa: D205 - one sentence
+        query = parameters.query
+        if query and not has_tokenize_char(query):
+            query = f"{query}*"
+        search = parameters.model_copy(update={"query": query}).search_parameters()
+        aggregator = SearchAggregator(self._store.registry)
+        result, counts = await self._search_with_search_context(search, tuple(aggregator.fields.values()))
+        return AtlasQuickSearchResult(search_results=result, aggregation_metrics=aggregator.aggregated_metrics(counts))
+
+    async def _search_with_search_context(
+        self, parameters: SearchParameters, facets: tuple[str, ...]
+    ) -> tuple[AtlasSearchResult, dict[str, list[tuple[str, int]]]]:
+        """``searchWithSearchContext``: the answer to the parameters, and the counts of ``facets`` (DD-093).
+
+        Raises:
+            AtlasError: As ``SearchContext`` checks; ``INVALID_SEARCH_PARAMS`` for a search of no type,
+                classification or query (DV-46).
+        """
         context = SearchContext(parameters, self._store.registry)
         if not context.entity_types and context.classification_mode is None and context.text is None:
             raise AtlasError(AtlasErrorCode.INVALID_SEARCH_PARAMS)
@@ -68,15 +98,15 @@ class EntityDiscoveryService:
             query_type=AtlasQueryType.BASIC, query_text=parameters.query, search_parameters=parameters
         )
         parameters.limit, parameters.offset = normalized(parameters.limit, parameters.offset)
-        processor = EntitySearchProcessor(context, self._store.now)
+        processor = EntitySearchProcessor(context, self._store.now, facets)
         found = await processor.execute(self._store)
         result.approximate_count = processor.result_count
         result.next_marker = encode_marker(parameters, processor.next_offset)
         if context.exclude_header_attributes():
             result.attributes = _table(context, found)
-            return result
-        await self._headers(context, found, result)
-        return result
+        else:
+            await self._headers(context, found, result)
+        return result, processor.facets
 
     async def search_using_full_text(
         self, query: str, *, exclude_deleted_entities: bool, limit: int, offset: int
