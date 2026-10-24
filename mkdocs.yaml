@@ -208,6 +208,7 @@ nav:
                       - 8.0 Auxiliary API foundation: architecture/conversion/increments/8-0-auxiliary-api-foundation.md
                       - 8.1 data2model API: architecture/conversion/increments/8-1-data2model-api.md
                       - 8.2 lineage-model API: architecture/conversion/increments/8-2-lineage-model-api.md
+                      - 8.3 validate-entity API: architecture/conversion/increments/8-3-validate-entity-api.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

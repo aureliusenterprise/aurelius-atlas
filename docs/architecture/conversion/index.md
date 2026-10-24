@@ -100,7 +100,7 @@ Status values: _planned_, _in progress_, _in review_, _done_.
 | 8.0  | Auxiliary API foundation        | Shared foundation for the ADR 055 data surface: `aurelius-atlas-otel` + `aurelius-atlas-auth` libs, per-service ingest clients (AUX-01..05, DD-108)  | Aurelius server `otel_ingest`, FastAPI example app                                        | in progress |
 | 8.1  | data2model API                  | Legacy `/extract` as a FastAPI app: archimate rows in, ar3 model string out, native layout (ADR 055, DV-15)                                          | Aurelius `m4i-data2model`, `m4i-analytics`                                                | planned     |
 | 8.2  | lineage-model API               | Legacy lineage flattening as a FastAPI app: Atlas lineage in, archimate rows out; source stubbed until 5.1 (ADR 055, DV-16)                          | Aurelius `m4i-lineage-model`                                                              | planned     |
-| 8.3  | validate-entity API             | Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-14)                                                             | Aurelius `m4i-validate-entity`                                                            | planned     |
+| 8.3  | validate-entity API             | Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-14)                                                             | Aurelius `m4i-validate-entity`                                                            | in progress |
 
 ## After phase 0
 

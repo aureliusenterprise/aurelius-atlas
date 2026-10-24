@@ -24,6 +24,7 @@ dev = [
     "aurelius-atlas-store-es[testing]",
     "aurelius-atlas-trace",
     "aurelius-atlas-typesystem",
+    "aurelius-atlas-validate-entity",
     "aurelius-atlas-vulnerability-report",
     "alembic>=1.18",
     "mike",
@@ -108,6 +109,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-typesystem]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-validate-entity]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-vulnerability-report]
 workspace = true
 
@@ -115,6 +119,7 @@ workspace = true
 members = [
     "apps/aurelius-atlas-data2model",
     "apps/aurelius-atlas-lineage-model",
+    "apps/aurelius-atlas-validate-entity",
     "apps/aurelius-atlas-fastapi-example",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",

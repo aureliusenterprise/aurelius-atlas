@@ -1,0 +1,5 @@
+{
+    "services": {
+        "aurelius-atlas-validate-entity": ["aurelius-atlas-validate-entity", "localhost", "127.0.0.1"]
+    }
+}
