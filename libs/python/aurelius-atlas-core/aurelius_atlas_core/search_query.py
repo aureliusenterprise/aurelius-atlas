@@ -7,7 +7,8 @@ documents and the tests read it.
 """
 
 import re
-from collections.abc import Collection, Mapping
+from collections import Counter
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -96,6 +97,8 @@ class SearchQuery:
     tie_break: tuple[str, ...] = field(default=(CREATE_TIME_FIELD, GUID_FIELD))
     text: TextQuery | None = None
     """Free text the entities must match, the best match first when no sort field is given (FTX-02, FTX-04)."""
+    facets: tuple[str, ...] = ()
+    """Search fields whose values to count over every matching entity (DD-093)."""
 
 
 @dataclass(frozen=True)
@@ -105,6 +108,24 @@ class SearchHits:
     entities: list[StoredEntity]
     total: int
     scores: list[float] = field(default_factory=list)
+    facets: dict[str, list[tuple[str, int]]] = field(default_factory=dict)
+    """Per facet field, its values and how many matching entities hold each, most first, then by value."""
+
+
+FACET_SIZE = 100
+"""Solr's default ``facet.limit``: the most values a facet answers (DD-093)."""
+
+
+def facet_counts(found: Sequence[Mapping[str, Any]], names: Sequence[str]) -> dict[str, list[tuple[str, int]]]:
+    """The facets of the matching entities' search fields, as a ``terms`` aggregation counts them (QSR-03)."""
+    counts: dict[str, list[tuple[str, int]]] = {}
+    for name in names:
+        tally: Counter[str] = Counter()
+        for fields in found:
+            value = fields.get(name)
+            tally.update({str(item) for item in (value if isinstance(value, list) else [value]) if item is not None})
+        counts[name] = sorted(tally.items(), key=lambda item: (-item[1], item[0]))[:FACET_SIZE]
+    return counts
 
 
 def selects(query: SearchQuery, fields: Mapping[str, Any]) -> bool:

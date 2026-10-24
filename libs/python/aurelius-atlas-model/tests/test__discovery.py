@@ -1,7 +1,7 @@
 """Basic search's models (SRC-01), read from ``org.apache.atlas.model.discovery`` of Atlas 2.4.0."""
 
 import pytest
-from aurelius_atlas_model.discovery import AtlasSearchResult, Operator, SearchParameters
+from aurelius_atlas_model.discovery import AtlasSearchResult, Operator, QuickSearchParameters, SearchParameters
 from aurelius_atlas_model.instance import AtlasEntityHeader
 
 D = "aurelius_atlas_model.discovery"
@@ -58,3 +58,22 @@ def test__a_search_result_counts_minus_one_and_keeps_an_entity_once() -> None:
 
     assert [header.guid for header in result.entities or []] == ["b", "a"]
     assert AtlasSearchResult().to_json() == {"approximateCount": -1}
+
+
+@pytest.mark.covers(f"{D}.QuickSearchParameters.search_parameters", rules=["QSR-02"])
+def test__quick_search_parameters_are_a_basic_search_without_sub_types() -> None:
+    """``createSearchParameters``: the fields both have; ``includeSubTypes`` false unless given."""
+    quick = QuickSearchParameters.model_validate({"query": "q", "typeName": "t", "limit": 3, "sortBy": "name"})
+
+    assert quick.search_parameters().to_json() == {
+        "query": "q",
+        "typeName": "t",
+        "sortBy": "name",
+        "excludeDeletedEntities": False,
+        "includeClassificationAttributes": False,
+        "includeSubTypes": False,
+        "includeSubClassifications": True,
+        "excludeHeaderAttributes": False,
+        "limit": 3,
+        "offset": 0,
+    }

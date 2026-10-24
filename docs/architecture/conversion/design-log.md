@@ -128,6 +128,8 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-090](#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them)                      | A classification search finds instances first, then the entities listing them                        | 4.1           | Proposed         |
 | [DD-091](#dd-091-free-text-is-split-from-quick-search)                                                              | Free text is split from quick search                                                                 | 4.2           | Proposed         |
 | [DD-092](#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights)                | String search fields carry an analysed text sub-field, searched with Atlas's weights                 | 4.2           | Proposed         |
+| [DD-093](#dd-093-facets-are-aggregations-of-the-searchs-own-query)                                                  | Facets are aggregations of the search's own query                                                    | 4.2           | Proposed         |
+| [DD-094](#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields)                                         | Suggestions are terms aggregations of the text sub-fields                                            | 4.2           | Proposed         |
 | [DD-126](#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place)                                | The webapp is a new project, not the Aurelius app upgraded in place                                  | 7.0           | Proposed         |
 | [DD-127](#dd-127-signals-replace-the-custom-store-each-slice-owns-its-state)                                        | Signals replace the custom store; each slice owns its state                                          | 7.0           | Proposed         |
 | [DD-128](#dd-128-aurelius-dictionaries-become-xliff-migrated-whole-with-the-json-as-fixture)                        | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                         | 7.1           | Proposed         |
@@ -2160,6 +2162,48 @@ not keep to the fields weighted 8 or more. `query_string`: closer to `edismax`, 
 
 **Consequences.** Fields mapped before 4.2a have no text sub-field; an entity index created before needs
 creating again.
+
+### DD-093. Facets are aggregations of the search's own query
+
+- **Status:** Proposed
+- **Increment:** 4.2
+- **Date:** 2026-10-24
+
+**Decision.** Quick search counts its facets with `terms` aggregations over the `keyword` search fields of
+`__typeName`, `__state` and `Asset.owner`, in the same Elasticsearch request as the page of results: the query
+of the search, unpaged, at most 100 values each, ordered by count and then by value. `ServiceType` is added up
+from the `__typeName` counts with the registry's types. The in-memory documents count the same.
+
+**Reason.** Atlas facets the Solr query its `AtlasSolrQueryBuilder` rebuilds from the same query, types,
+filters and state as the search; aggregating the search's own query counts exactly the entities found, without
+a second translation of the filters. 100 is Solr's default `facet.limit`.
+
+**Alternatives.** A second request for the counts: one more round trip for the same query.
+
+**Consequences.** Facets count what the search query matches, classification criteria included, which quick
+search does not take.
+
+### DD-094. Suggestions are terms aggregations of the text sub-fields
+
+- **Status:** Proposed
+- **Increment:** 4.2
+- **Date:** 2026-10-24
+
+**Decision.** The text sub-field of DD-092 enables `fielddata`. Suggestions are, for each field weighted 8 or
+more (or the one named), a `terms` aggregation of its text sub-field over every entity document, of the 5
+terms matching the prefix, most documents first; the fields' terms are then summed and the top 5 kept. The
+in-memory documents count the words of the same fields.
+
+**Reason.** Atlas reads Solr's terms component on the fields with `terms.limit` 5 and adds up the frequencies;
+a terms aggregation is the Elasticsearch reading of a field's terms and their document frequencies. The
+`_terms_enum` API knows no frequencies, and keyword fields hold whole values, not words.
+
+**Alternatives.** A completion suggester: a field of its own per attribute, suggesting whole values. Terms of
+the keyword fields: values, not words, and only case-sensitive prefixes.
+
+**Consequences.** Fielddata of a text sub-field is loaded into the heap the first time it is aggregated, which
+suggestions limit to the few fields weighted 8 or more. Fields mapped before 4.2b have no fielddata; an entity
+index created before needs creating again.
 
 ### DD-126. The webapp is a new project, not the Aurelius app upgraded in place
 
