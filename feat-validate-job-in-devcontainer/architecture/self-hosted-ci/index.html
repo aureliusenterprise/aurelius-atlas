@@ -20,7 +20,7 @@
         <link rel="prev" href="../platform/delivery/deployment/">
       
       
-        <link rel="next" href="../platform/observability/">
+        <link rel="next" href="../self-hosted-ci-decision/">
       
       
         
@@ -6588,6 +6588,8 @@
       
         
       
+        
+      
     
     
     
@@ -6962,6 +6964,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../self-hosted-ci-decision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Self-hosted CI Decision
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -7823,6 +7852,8 @@
       
         
       
+        
+      
     
     
     
@@ -7856,7 +7887,9 @@
 
 <h1 id="self-hosted-ci-on-gke">Self-hosted CI on GKE<a class="headerlink" href="#self-hosted-ci-on-gke" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p><strong>Status</strong>: plan. Phase 0 (the hosted bridge) is merged; Phase 1 is next.
+<p><strong>Status</strong>: plan (cost/benefit decision doc:
+<a href="../self-hosted-ci-decision/">self-hosted-ci-decision.md</a>). Phase 0 (the
+hosted bridge) is merged; Phase 1 is next.
 Scope: moving the <code>ci</code> job of <code>.github/workflows/ci.yaml</code> from GitHub-hosted
 runners to self-hosted runners on GKE, run by Actions Runner Controller
 (ARC). The <code>publish</code> workflow (the dev container image itself) stays on
@@ -7864,7 +7897,9 @@ hosted runners - it is the low-frequency builder of the thing the self-hosted
 runners consume. (The plan originally targeted AKS; the Azure subscription's
 quota history moved it to GKE, where the rest of the Aurelius Atlas dev
 resources live. ARC itself is unchanged - the swap is node pool, storage
-class, and auth plugin.)</p>
+class, and auth plugin. Target: the <strong>existing <code>atlas-dev</code> Standard cluster</strong>
+(europe-west1) - verified Standard mode, privileged pods admitted; no new
+cluster, no GKE control-plane fee.)</p>
 </blockquote>
 <h2 id="why">Why<a class="headerlink" href="#why" title="Permanent link">&para;</a></h2>
 <p>The bridge (ADR 011 parity + <code>devcontainers/ci</code>) proved on hosted runners:</p>
@@ -7909,7 +7944,7 @@ moving everything else; the pull is what Shape A removes.</p>
     ARC --&gt;|creates per job| POD[runner pod&lt;br/&gt;ephemeral]
     subgraph NODE[GKE node pool: n2-standard-8 spot, PD-SSD boot disk]
         POD
-        FS[Filestore PVC&lt;br/&gt;.container-cache uv/npm/pre-commit]
+        FS[PD cache PVC&lt;br/&gt;.container-cache uv/npm/pre-commit]
     end
     POD --&gt;|docker API&lt;br/&gt;unix socket, shared volume| DIND[dind sidecar&lt;br/&gt;privileged, per pod]
     DIND --&gt;|sibling containers| DC[dev container&lt;br/&gt;atlas-ci-runner:main&lt;br/&gt;pulled per pod, ~101s warm]
@@ -7977,7 +8012,7 @@ NetworkPolicy, and treating every pod on that pool as untrusted.</p>
 <tr>
 <td>uv/npm/pre-commit caches</td>
 <td><code>container-cache</code> key, restore/save</td>
-<td>Filestore PVC mounted at the <strong>same paths</strong> (<code>.container-cache/</code>)</td>
+<td>PD PVC mounted at the <strong>same paths</strong> (<code>.container-cache/</code>)</td>
 <td>zero pipeline change - the <code>UV_CACHE_DIR</code>/<code>npm_config_cache</code>/<code>PRE_COMMIT_HOME</code> env already points there; volume = incremental, no 10 GB cap, no save step</td>
 </tr>
 <tr>
@@ -8028,15 +8063,19 @@ inject a privileged <code>docker:dind</code> sidecar per runner pod, sharing
 <code>DOCKER_HOST</code>; extra sidecar config - resources, the <code>/var/lib/docker</code>
 emptyDir on the node's SSD - merges in <code>template.spec.containers</code>). A
 taint + nodeSelector (<code>ci=true</code>) keeps CI pods alone on the dedicated pool.
-The toolchain caches are a Cloud Native Storage / Filestore PVC
-(<code>ReadWriteMany</code>) bound into the dev container at the exact <code>.container-cache</code>
-paths the composite action's env vars already use - the same content,
-volume-backed instead of GitHub-cache-backed, so the pipeline itself does not
-change.</p>
+The toolchain caches are a PVC bound into the dev container at the exact
+<code>.container-cache</code> paths the composite action's env vars already use - the
+same content, volume-backed instead of GitHub-cache-backed, so the pipeline
+itself does not change. Phase 1 uses the cluster-default PD class
+(<code>standard-rwo</code>, RWO - fine while canaries are serial; the Filestore API
+cannot be enabled in this project). If parallel jobs land on separate nodes,
+Phase 2 gives each node its own PD copy (the caches are content-addressed,
+so correctness survives).</p>
 <div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>container<span class="w"> </span>node-pools<span class="w"> </span>create<span class="w"> </span>cipool<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--cluster<span class="w"> </span>&lt;gke&gt;<span class="w"> </span>--location<span class="w"> </span>&lt;region&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cluster<span class="w"> </span>atlas-dev<span class="w"> </span>--location<span class="w"> </span>europe-west1<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--machine-type<span class="w"> </span>n2-standard-8<span class="w"> </span>--spot<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--enable-autoscaling<span class="w"> </span>--min-nodes<span class="w"> </span><span class="m">0</span><span class="w"> </span>--max-nodes<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--disk-type<span class="w"> </span>pd-ssd<span class="w"> </span>--disk-size<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--node-taints<span class="w"> </span><span class="nv">ci</span><span class="o">=</span>true:NoSchedule<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--workload-metadata-disabled
 </code></pre></div>
@@ -8105,24 +8144,26 @@ in ~3 minutes, without spending test minutes on cluster bugs.</p>
   K8s-native test namespaces. Bigger lift, no privileged daemon.</li>
 <li><strong>Spot preemption</strong> = job requeue, not corruption; registry cache makes
   reruns cheap. If preemptions get frequent, drop <code>--spot</code>.</li>
-<li><strong>Filestore/NFS latency</strong> for uv/npm caches: measure in Phase 2; the
-  escape hatch is one PVC per node (no cross-node sharing, <code>ReadWriteOnce</code>)<ul>
-<li>the caches are content-addressed, so correctness survives.</li>
-</ul>
-</li>
+<li><strong>PD (RWO) cache volume</strong>: Phase 1 serial-canary shape; a job pinned to a
+  second node starts cold (rebuilds uv/npm caches, minutes). Filestore RWX
+  is blocked by the project's billing-account service policy; the
+  content-addressed caches make per-node copies safe.</li>
 <li><strong>ARC + <code>actions/cache</code></strong>: not available for private repos on self-hosted -
   which is why the plan moves caches to volumes rather than proxying the
   cache API. Do not re-add a cache proxy casually.</li>
 <li><strong>Retention</strong>: <code>buildcache-*</code> tags need a GHCR cleanup policy (already a
   follow-up from the registry-cache switch) - GKE removes the hosted-only
   excuse.</li>
+<li><strong>Shared cluster</strong>: CI pods share <code>atlas-dev</code>'s control plane with the
+  dev workloads. ARC's control-plane load is small (ephemeral pods, repo
+  scope); the taint keeps CI compute off the dev pool, and dev pods (no
+  <code>ci</code> toleration) never land on the CI pool. The privileged-dind blast
+  radius is the CI node pool's nodes.</li>
 <li><strong>Cost guard</strong>: <code>maxRunners 3</code>, pool <code>max 3</code>, spot, scale-to-zero.
   Steady-state estimate: an 18-minute run on n2-standard-8 spot ≈ $0.10, vs
   ~$0.32 hosted per run today - before counting the cache egress and queue
-  waits the hosted pool adds.</li>
-<li><strong>GCP project</strong>: GKE lands in the project that hosts the other Aurelius
-  Atlas dev resources; the cluster/region names get recorded in
-  <code>infra/arc/README.md</code> when Phase 1 provisions them.</li>
+  waits the hosted pool adds. The GKE cluster fee is <strong>not</strong> charged to CI -
+  atlas-dev already pays it.</li>
 </ul>
 <h2 id="decisions-to-record">Decisions to record<a class="headerlink" href="#decisions-to-record" title="Permanent link">&para;</a></h2>
 <p>When Phase 1 starts, add an ADR (successor to the CI bridge decision):
