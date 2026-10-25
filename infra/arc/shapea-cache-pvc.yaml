@@ -1,0 +1,33 @@
+# Toolchain cache for the SHAPE A scale set (infra/arc/arc-shapea-values.yaml).
+#
+# Deliberately SEPARATE from atlas-toolchain-cache (Shape B): both scale sets
+# run during the canary period, and a shared RWO PD would (a) detach/attach
+# stall jobs when the two scale sets' pods land on different nodes and
+# (b) force fsGroup chown flip-flops (Shape B pods use fsGroup 1001, Shape A
+# 1000 - OnRootMismatch re-chowns the whole volume on every alternating
+# mount). Retire this claim with Shape B (helm uninstall atlas-ci) and the
+# PD cost returns to zero.
+#
+# Layout (created setgid by the cache-init init container):
+#   .ci-cache/uv, npm, pre-commit  -> mounted at /var/cache/ci/* (subPath)
+#   .ci-cache/docker               -> mounted at /var/lib/docker (dockerd's
+#                                     image store: compose base images for
+#                                     e2e survive the per-pod wipe)
+#   / (volume root)                -> the runner's work volume (warm checkout:
+#                                     actions/checkout fetches into the
+#                                     existing repo; `git clean` still wipes
+#                                     node_modules, the caches below make
+#                                     that cheap again)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: atlas-shapea-cache
+    namespace: arc-runners
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: standard-rwo
+    volumeMode: Filesystem
+    resources:
+        requests:
+            storage: 50Gi

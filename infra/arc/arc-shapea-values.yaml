@@ -60,10 +60,40 @@ template:
             runAsUser: 1000 # vscode
             runAsGroup: 999 # docker (socket group)
             supplementalGroups: [999]
-            # Makes the work volume vscode-writable on (re-)mount. emptyDir
-            # is world-writable by default; kept for the PVC swap.
+            # The work PVC root becomes group-writable for vscode on
+            # (re-)mount. OnRootMismatch: recursive chown only when the
+            # volume root's perms change - never on warm pods (the default,
+            # Always, chowns the whole 50 Gi volume on every start).
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
+        # Creates the cache dirs setgid group-999 (the docker group = the
+        # runner's runAsGroup, so every file uv/npm/pre-commit/dockerd write
+        # under them inherits gid 999 and all can write). Mirrors Shape B's
+        # cache-init; 999 not 1001 because THIS scale set's user is uid 1000
+        # with group 999. Runs as root: dockerd also creates bind-mount
+        # sources root:root without it.
+        initContainers:
+            - name: cache-init
+              image: ghcr.io/actions/actions-runner:latest
+              securityContext:
+                  runAsUser: 0
+                  runAsGroup: 0
+              command:
+                  - /bin/bash
+                  - -c
+                  - |
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker
+                      chgrp -R 999 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
+              resources:
+                  requests:
+                      cpu: 10m
+                      memory: 32Mi
+                  limits:
+                      cpu: 500m
+                      memory: 128Mi
+              volumeMounts:
+                  - name: work
+                    mountPath: /work
         containers:
             - name: runner
               # Shape A canary tag: CI_SHAPEA_IMAGE_TAG repo var (set to
@@ -88,6 +118,12 @@ template:
                       export NX_DAEMON=true
                       export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
                       export SOPS_AGE_KEY_FILE=/home/runner/_work/aurelius-atlas/aurelius-atlas/secrets/keys.txt
+                      # Toolchain caches = the PVC subPaths mounted below,
+                      # OUTSIDE the checkout (Shape B lesson: inside it, the
+                      # root-owned mount roots break the next git clean).
+                      export UV_CACHE_DIR=/var/cache/ci/uv
+                      export npm_config_cache=/var/cache/ci/npm
+                      export PRE_COMMIT_HOME=/var/cache/ci/pre-commit
                       # docker-in-docker feature containerEnv:
                       export DOCKER_BUILDKIT=1
                       # Where the runner puts job workspaces (the work
@@ -103,14 +139,29 @@ template:
                   # The chart does NOT auto-mount `work` in default mode
                   # (the dind/kubernetes-mode helpers add it; default mode
                   # passes fields verbatim), so mount it explicitly at the
-                  # runner's convention.
+                  # runner's convention. The PVC root = the work dir, so
+                  # the checkout (under _work/aurelius-atlas/) and the
+                  # tool cache persist: warm `git fetch` checkouts.
                   - name: work
                     mountPath: /home/runner/_work
-                  # dockerd's image store (the dev container image bakes
-                  # its layers under /var/lib/docker; the node disk backs
-                  # it, like Shape B's dind sidecar).
-                  - name: dind-storage
+                  # Toolchain caches (PVC subPaths, pre-created setgid by
+                  # cache-init). Must match the exports in the command.
+                  - name: work
+                    mountPath: /var/cache/ci/uv
+                    subPath: .ci-cache/uv
+                  - name: work
+                    mountPath: /var/cache/ci/npm
+                    subPath: .ci-cache/npm
+                  - name: work
+                    mountPath: /var/cache/ci/pre-commit
+                    subPath: .ci-cache/pre-commit
+                  # dockerd's image store ON THE PVC: compose base images
+                  # (e2e), pulled base layers, etc. survive the per-pod
+                  # wipe. ext4 on a PD supports overlayfs (NFS would not -
+                  # Filestore is not used here).
+                  - name: work
                     mountPath: /var/lib/docker
+                    subPath: .ci-cache/docker
               resources:
                   # Sized for the full pipeline fan-out target (dev-compose
                   # caps ~8.75 Gi + runner overhead); requests stay low so
@@ -124,16 +175,10 @@ template:
                       cpu: "6"
                       memory: 11Gi
         volumes:
-            # The runner's work dir: RUNNER_WORKSPACE above points here
-            # (checkout + step scratch + tool cache). emptyDir for the
-            # canary - the cache bridge to the toolchain PVC is the next
-            # increment once the canary is green (Shape A needs volumes for
-            # /var/cache/ci + the docker image store, mirroring Shape B's
-            # CI_CACHE_MOUNTS).
+            # One claim for everything (shapea-cache-pvc.yaml): the work
+            # dir (checkout + tool cache), the .ci-cache/* subPaths above
+            # (caches), and the docker image store. Separate from Shape B's
+            # atlas-toolchain-cache on purpose - see the PVC's header.
             - name: work
-              emptyDir: {}
-            # dockerd's image store. emptyDir (node disk) = a cold image
-            # store per pod; the docker-save bridge to the PVC is the same
-            # next increment as the cache bridge above.
-            - name: dind-storage
-              emptyDir: {}
+              persistentVolumeClaim:
+                  claimName: atlas-shapea-cache
