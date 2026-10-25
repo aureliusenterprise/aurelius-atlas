@@ -183,9 +183,13 @@ to revert. Full detail: [self-hosted-ci.md](self-hosted-ci.md).
 - **C - Dedicated Standard cluster**: the €70/mo scenario - unnecessary now
   (atlas-dev is Standard). Revisit only if CI's blast radius on a shared
   cluster becomes unacceptable.
-- **D - Shape A later** (runner pod = the dev container image, no dind):
-  removes the 8.3 GB per-pod pull (containerd caches per node) and the
-  privileged sidecar. Phase 3, after A is boring.
+- **D - Shape A** (runner pod = the dev container image, no dind sidecar):
+  removes the 8.3 GB per-pod pull (the image is the pod's own container,
+  containerd caches it per node) and the devcontainers/ci layer. **Canary
+  live 2026-10-25** - `ci-shapea.yaml` on the `atlas-ci-shapea` scale set
+  (privileged in-image dockerd, `ci-runner` feature bakes the runner
+  binaries); Shape B (`atlas-ci`) keeps serving `ci` until the canary
+  repeats green and the cache bridge lands.
 
 ## Decision asks
 

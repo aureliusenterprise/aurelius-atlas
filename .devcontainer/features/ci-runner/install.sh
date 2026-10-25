@@ -59,4 +59,16 @@ chown -R "$CI_USER" "$RUNNER_HOME"
 # (the docker-in-docker feature) then run.sh. Nothing to do for the
 # developer container: the image ships no entrypoint, so the dev
 # container keeps the CLI's defaults and the runner sits idle.
-"${RUNNER_HOME}/config.sh" --version
+#
+# Build-time gate: the binaries must exist and be executable. (NOT
+# config.sh --version: the runner refuses to run under sudo, and the
+# devcontainer feature-build environment sets SUDO_* - run 40212522218.
+# smoke.sh asserts `config.sh --version` as the dev user, where it
+# works.)
+for f in run.sh config.sh bin/Runner.Listener bin/Runner.Worker bin/Runner.PluginHost; do
+    [ -x "${RUNNER_HOME}/${f}" ] || {
+        echo "ci-runner: ${RUNNER_HOME}/${f} is missing - corrupt tarball?" >&2
+        exit 1
+    }
+done
+echo "ci-runner: installed v${VERSION} (${RUNNER_HOME}, owner ${CI_USER})"
