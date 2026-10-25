@@ -71,6 +71,11 @@ jobs:
                   disk-cleanup: ${{ vars.CI_DISK_CLEANUP || 'true' }}
                   use-actions-cache: ${{ vars.CI_USE_ACTIONS_CACHE || 'true' }}
                   cache-mounts: ${{ vars.CI_CACHE_MOUNTS }}
+                  # Set only on self-hosted (the flag-day): on hosted, the
+                  # dind daemon's layer cache per job is irrelevant (the
+                  # Actions cache service + GHCR pull-through cover it) and
+                  # /home/runner/_work/.ci-cache does not exist.
+                  image-cache-dir: ${{ vars.CI_IMAGE_CACHE_DIR }}
                   # Unset (hosted) -> the action's default in-workspace paths,
                   # which the actions/cache steps restore/save. Self-hosted ->
                   # set CI_CACHE_ENV to the PVC cache targets OUTSIDE the

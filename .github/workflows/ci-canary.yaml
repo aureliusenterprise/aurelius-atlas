@@ -38,6 +38,7 @@ jobs:
                   disk-cleanup: "false"
                   use-actions-cache: "false"
                   cache-mounts: ${{ vars.CI_CACHE_MOUNTS }}
+                  image-cache-dir: /home/runner/_work/.ci-cache/docker
                   # Mirrors CI_CACHE_MOUNTS targets: /work (the PVC) is the
                   # runner's _work dir, bind-mounted into the container at
                   # /var/cache/ci - OUTSIDE the checkout, so the next run's

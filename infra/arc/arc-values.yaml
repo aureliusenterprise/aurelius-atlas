@@ -63,7 +63,7 @@ template:
                   - -c
                   - |
                       rm -rf /work/aurelius-atlas/aurelius-atlas/.container-cache
-                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker
                       chgrp -R 1001 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
               resources:
                   requests:

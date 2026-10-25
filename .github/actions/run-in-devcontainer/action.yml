@@ -49,6 +49,17 @@ inputs:
             root:root and the next checkout's `git clean -ffdx` cannot remove
             them (EACCES, run 40201875108).
         default: ""
+    image-cache-dir:
+        description: >
+            Host-side directory (on the runner's persistent work volume) used
+            to bridge the per-job dind image store across pods. Self-hosted
+            only (empty on hosted): the job's docker:dind sidecar starts
+            empty, so the dev container image (~8 GB) pulls cold every job;
+            with a directory here, the first job `docker save`s it and later
+            jobs `docker load` from the volume (PD I/O, ~90 s vs a multi-minute
+            registry pull). devcontainers/ci still `docker pull`s and verifies
+            the tag: the load makes that a manifest check + delta download.
+        default: ""
 
 outputs:
     ui-affected:
@@ -111,6 +122,34 @@ runs:
                   ${{ github.workspace }}/.container-cache/pre-commit
               key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
               restore-keys: container-cache-${{ runner.os }}-
+
+        - name: Load the dev container image from the cache volume
+          # Self-hosted warm start (see image-cache-dir). A tag change is
+          # self-healing: devcontainers/ci pulls the delta on top of the
+          # loaded image, and the save step refreshes the tar.
+          if: inputs.image-cache-dir != ''
+          shell: bash
+          env:
+              IMG: ghcr.io/aureliusenterprise/atlas-ci-runner:${{ inputs.image-tag }}
+              DIR: ${{ inputs.image-cache-dir }}
+          run: |
+              if docker image inspect "$IMG" >/dev/null 2>&1; then exit 0; fi
+              if [ -f "$DIR/image.tar" ]; then
+                  echo "loading $IMG from $DIR/image.tar"
+                  docker load -i "$DIR/image.tar"
+              fi
+
+        - name: Save the dev container image to the cache volume
+          if: inputs.image-cache-dir != '' && !cancelled()
+          shell: bash
+          env:
+              IMG: ghcr.io/aureliusenterprise/atlas-ci-runner:${{ inputs.image-tag }}
+              DIR: ${{ inputs.image-cache-dir }}
+          run: |
+              [ -f "$DIR/image.tar" ] && exit 0
+              docker image inspect "$IMG" >/dev/null 2>&1 || exit 0
+              mkdir -p "$DIR"
+              docker save -o "$DIR/image.tar.tmp" "$IMG" && mv "$DIR/image.tar.tmp" "$DIR/image.tar"
 
         - name: Resolve container cache env
           # An empty input (hosted default) keeps the in-workspace cache
