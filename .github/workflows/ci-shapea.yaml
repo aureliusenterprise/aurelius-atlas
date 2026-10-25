@@ -30,8 +30,21 @@ jobs:
         timeout-minutes: 30
 
         steps:
+            # clean: false + the scripted clean below = warm-tree checkout.
+            # The work dir is the Shape A PVC, so actions/checkout's default
+            # `git clean -ffdx` wipes node_modules/.venv every job and npm/uv
+            # re-link 1965 packages from cache (~60s, run 40217052112). The
+            # excludes keep the installed trees warm; everything else is
+            # still wiped, so coverage/reports/dist never leak between jobs.
             - name: Checkout code
               uses: actions/checkout@v6
+              with:
+                  clean: false
+
+            - name: Clean previous checkout (keep warm trees)
+              run: |
+                  git add -A
+                  git clean -ffdx -e node_modules -e .venv -e secrets/keys.txt
 
             # Image sanity: the baked toolchains + in-container dockerd.
             # `docker info` is the Shape A proof - the docker-in-docker
