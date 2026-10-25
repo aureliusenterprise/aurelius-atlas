@@ -117,9 +117,9 @@ jobs:
               with:
                   fetch-depth: 0
 
-            # Images build on the dev container's DinD daemon; the buildx
-            # type=gha cache (tools/plugins/docker.ts) needs the job's runtime
-            # token, exposed into the container via the runtime-token step.
+            # Images build on the dev container's DinD daemon; layer cache is
+            # registry-backed (GHCR buildcache tags, tools/plugins/docker.ts),
+            # so no job runtime token is needed.
             # Build and scan share ONE container run: the scan reads the
             # images from the daemon that built them, and a second container
             # would start with an empty one.
@@ -130,7 +130,6 @@ jobs:
                   dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   ghcr-login: "true"
-                  use-runtime-token: "true"
                   docker-image-cache: "true"
                   disk-cleanup: "true"
                   run-cmd: |
