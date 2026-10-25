@@ -1,0 +1,62 @@
+# TEMPORARY forensics (PR 150): the e2e databases boot on hosted runners,
+# on Shape B, and in this devcontainer (proved locally: down -v + prune +
+# up --wait = healthy), but a FRESH postgres container on the CI daemon
+# exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
+# elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
+# daemon-level permission anomalies, repro-free so far. This job boots
+# the same stack on the same runner as the pipeline and captures the
+# daemon/container facts the artifacts can't reach (the runner pod dies
+# with the job). Delete after diagnosis.
+name: CI Debug (Shape A forensics)
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    debug:
+        runs-on: atlas-ci-shapea
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Daemon facts
+              run: |
+                  echo "### docker info (security)"
+                  docker info 2>&1 | grep -iE "server version|security|userns|rootless|storage|cgroup" || true
+                  echo "### /etc/docker/daemon.json"
+                  cat /etc/docker/daemon.json 2>/dev/null || echo "(none)"
+                  echo "### subuid/subgid"
+                  cat /etc/subuid /etc/subgid 2>/dev/null || echo "(none)"
+                  echo "### tmp mounts (host side)"
+                  mount | grep -E " /tmp | /var/lib/docker | /var/lib/containerd " || true
+                  echo "### id / kernel"
+                  id
+                  uname -a
+
+            - name: Reproduce postgres boot
+              run: |
+                  cd dev/observability && docker compose up -d
+                  cd ../postgres
+                  docker compose up -d 2>&1 | tail -5
+                  sleep 10
+                  docker compose ps
+                  echo "### postgres logs"
+                  docker compose logs postgres 2>&1 | grep -vE "metrics|otelcol" | tail -10
+                  echo "### container facts"
+                  C=$(docker compose ps -q postgres)
+                  docker inspect "$C" \
+                      --format 'CMD={{json .Config.Cmd}}
+                      ENTRY={{json .Config.Entrypoint}}
+                      USER={{.Config.User}}
+                      SECOPT={{json .HostConfig.SecurityOpt}}
+                      PRIV={{.HostConfig.Privileged}}
+                      TMP={{json .HostConfig.Tmpfs}}
+                      MOUNTS={{json .Mounts}}'
+                  echo "### inside the container: /tmp perms"
+                  docker exec "$C" ls -ld /tmp /tmp/atlas-certs.* 2>&1 || true
+                  docker exec "$C" id 2>&1 || true
+                  docker exec "$C" sh -c 'mktemp -d /tmp/atlas-certs.XXXXXX; echo rc=$?' 2>&1 || true
+                  docker exec "$C" cat /proc/mounts 2>&1 | grep -E " /tmp| / " || true
