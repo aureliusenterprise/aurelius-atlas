@@ -23,7 +23,7 @@ case "${1:-status}" in
             --machine-type e2-small --num-nodes 1 \
             --enable-autoscaling --min-nodes 1 --max-nodes 2 \
             --disk-type pd-balanced --disk-size 50 \
-            --workload-metadata-disabled
+            --workload-metadata=DISABLED
         ;;
     controller)
         # Cluster-scoped; one per cluster.
@@ -40,7 +40,7 @@ case "${1:-status}" in
             --enable-autoscaling --min-nodes 0 --max-nodes 3 \
             --disk-type pd-ssd --disk-size 200 \
             --node-taints "ci=true:NoSchedule" \
-            --workload-metadata-disabled
+            --workload-metadata=DISABLED
         ;;
     scale-set)
         # Needs the atlas-arc-auth secret + the PVC (see README); labels the

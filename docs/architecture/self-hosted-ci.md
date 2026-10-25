@@ -134,7 +134,7 @@ gcloud container node-pools create cipool \
     --enable-autoscaling --min-nodes 0 --max-nodes 3 \
     --disk-type pd-ssd --disk-size 200 \
     --node-taints ci=true:NoSchedule \
-    --workload-metadata-disabled
+    --workload-metadata=DISABLED
 ```
 
 `n2-standard-8` (8 vCPU / 32 GiB): the pipeline peaks near 6 vCPU (test

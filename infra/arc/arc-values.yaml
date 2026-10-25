@@ -15,44 +15,53 @@ containerMode:
 
 template:
     spec:
-        nodeSelector:
-            ci: "true"
-        tolerations:
-            - key: ci
-              operator: Equal
-              value: "true"
-              effect: NoSchedule
+        # Phase 1 (canary on atlas-dev's existing default pool): no
+        # nodeSelector/tolerations - the canary requests below fit the
+        # default pool's headroom (nodes: 3.92 CPU / 13.9 Gi allocatable,
+        # 1.5-4.6 Gi requested). Phase 2 (full pipeline: test fan-out peaks
+        # ~6 vCPU / ~30 GB - does NOT fit a 13.9 Gi node) re-enables the
+        # dedicated tainted spot pool:
+        # nodeSelector:
+        #     ci: "true"
+        # tolerations:
+        #     - key: ci
+        #       operator: Equal
+        #       value: "true"
+        #       effect: NoSchedule
         containers:
             # The job container (ARC stock runner image, from the chart).
+            # Phase 1 sizing: the canary is validate-only (~1 CPU, ~2 Gi).
             - name: runner
               resources:
                   requests:
-                      cpu: "2"
-                      memory: 8Gi
+                      cpu: 500m
+                      memory: 2Gi
                   limits:
-                      cpu: "8"
-                      memory: 24Gi
+                      cpu: "2"
+                      memory: 6Gi
             # The dind sidecar (injected by containerMode.type=dind; the chart
             # merges this entry into it). Privileged is set by the chart - the
-            # dev container needs it (docker-in-docker feature), so this pool
-            # is CI-only. Its image store lives on the node SSD (emptyDir),
-            # wiped per job.
+            # dev container needs it (docker-in-docker feature). Its image
+            # store lives on the node disk (emptyDir), wiped per job - the
+            # 8.3 GB atlas-ci-runner image fits the 100 GB GKE boot disk.
             - name: dind
               resources:
                   requests:
-                      cpu: "2"
-                      memory: 8Gi
+                      cpu: 500m
+                      memory: 2Gi
                   limits:
-                      cpu: "8"
-                      memory: 16Gi
+                      cpu: "2"
+                      memory: 6Gi
               volumeMounts:
                   - name: dind-scratch
                     mountPath: /var/lib/docker
         volumes:
             - name: dind-scratch
               emptyDir: {}
-            # Shared toolchain cache (uv/npm/pre-commit), same paths the
-            # composite action's env vars point at - see CI_CACHE_MOUNTS.
-            - name: atlas-toolchain-cache
-              persistentVolumeClaim:
-                  claimName: atlas-toolchain-cache
+            # Phase 2: shared toolchain cache (uv/npm/pre-commit) at the
+            # composite action's env-var paths - see CI_CACHE_MOUNTS. Needs
+            # the PVC (toolchain-cache-pvc.yaml); a missing claim blocks
+            # scheduling, so it is wired only when the pool is.
+            # - name: atlas-toolchain-cache
+            #   persistentVolumeClaim:
+            #       claimName: atlas-toolchain-cache
