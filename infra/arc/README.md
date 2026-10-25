@@ -180,3 +180,8 @@ Canary gate: green on the pool, repeated; then the cache bridge (PVC mounts
 for `/var/cache/ci/*` + the docker image store, mirroring `CI_CACHE_MOUNTS`)
 is the next increment before the full `ci` job flips. Rollback:
 `helm uninstall atlas-ci-shapea -n arc-runners` (Shape B is untouched).
+
+Measured (first green, run 40214518758, node-warm image): job **3m35s**
+(queue 9s) vs 9m10s-9m42s for the same validate-only gate on Shape B - the
+setup tax (image pull, devcontainer build, sibling container) disappears.
+First pull on a fresh node: 2m17s (2.84 GB compressed), paid once per node.
