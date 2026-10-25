@@ -1,15 +1,11 @@
-# TEMPORARY Shape A forensics (PR 150) — round 8: the ES privilege matrix.
+# TEMPORARY Shape A forensics (PR 150) — round 9: ES fatal REASONS.
 #
-# The e2e Elasticsearch node dies at bootstrap on the CI daemon: the JVM
-# writes /proc/self/coredump_filter unconditionally (Elasticsearch.java
-# initializeNatives), and on the COS 6.12.105 node kernel procfs hands a
-# uid-1000 process a root-owned 644 coredump_filter (R5/R7) — EACCES, fatal.
-# Root is refused by the JVM ("can not run elasticsearch as root", verified
-# locally); R7's --privileged-as-uid-1000 did NOT bypass the gate. The
-# gate is a procfs ptrace_may_access + DAC check, so the minimal candidates
-# are capabilities: CAP_SYS_PTRACE (bypasses ptrace_may_access on the proc
-# open) and CAP_DAC_OVERRIDE (bypasses the write's DAC check). Full boots,
-# grep the log for "started" (healthy) vs the coredump fatal.
+# Round 8: every privilege variant (plain, SYS_PTRACE, DAC_OVERRIDE, both,
+# privileged) exits with "fatal exception while booting Elasticsearch" —
+# the probe truncated the message, so the reason per variant is unknown
+# (e-priv's is expected to be "can not run elasticsearch as root"; the
+# others: coredump_filter AccessDeniedException, or a SYS_BOOT/seccomp
+# refusal the caps introduce). Print each container's error.message.
 # Remove once the e2e databases boot in ci.yaml.
 name: CI Debug (Shape A forensics)
 
@@ -28,12 +24,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            # A full single-node boot; report started vs the coredump fatal.
-            - name: Elasticsearch privilege matrix
+            - name: Elasticsearch fatal reasons
               continue-on-error: true
               run: |
                   ES=dhi.io/elasticsearch:9.5-debian13
-                  boot() { # name, extra flags...
+                  boot() {
                       local name="$1"; shift
                       docker rm -f "$name" >/dev/null 2>&1 || true
                       docker run -d --name "$name" \
@@ -43,21 +38,26 @@ jobs:
                           -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
                           "$@" "$ES" >/dev/null 2>&1
                   }
-                  probe() { # name -> prints started/fatal
+                  probe() {
                       local name="$1"
-                      local line
-                      line=$(docker logs "$name" 2>&1 |
-                          grep -oE '"message":"[^"]*(coredump|AccessDenied|started on|can not run elasticsearch as root|fatal exception)[^"]*"' |
-                          head -1)
-                      echo "### $name: ${line:-<no signal yet>} (state=$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null))"
+                      echo "### $name (state=$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null))"
+                      docker logs "$name" 2>&1 |
+                          grep -oE '"error\.(type|message)":"[^"]*"' |
+                          head -4
                   }
+                  echo "### node security facts"
+                  cat /sys/kernel/security/lsm 2>/dev/null; echo
+                  cat /sys/module/apparmor/parameters/enabled 2>/dev/null || echo "apparmor: (absent)"
+                  uname -r
+                  echo "### ES uid-1000 process facts (image user, plain)"
+                  docker run --rm --entrypoint sh "$ES" -c 'ls -l /proc/self/coredump_filter; grep -E "CapEff|Seccomp|NoNewPrivs" /proc/self/status; id' 2>&1
                   boot e-plain
                   boot e-sysptrace --cap-add SYS_PTRACE
                   boot e-dacoverride --cap-add DAC_OVERRIDE
                   boot e-both --cap-add SYS_PTRACE --cap-add DAC_OVERRIDE
                   boot e-priv --privileged
-                  echo "waiting 60s for bootstrap..."
-                  sleep 60
+                  echo "waiting 45s..."
+                  sleep 45
                   probe e-plain
                   probe e-sysptrace
                   probe e-dacoverride
