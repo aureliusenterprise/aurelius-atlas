@@ -83,7 +83,16 @@ template:
                   - -c
                   - |
                       mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd
-                      chgrp -R 999 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
+                      # NON-recursive on purpose: the tree is multi-GB
+                      # (containerd alone ~5 GB), and `chgrp -R`/`chmod -R`
+                      # over it made every pod boot take minutes - init
+                      # never finished before the controller recycled the
+                      # pod (observed 19:01-19:07, jobs stuck queued).
+                      # The setgid top dirs make every NEW file inherit
+                      # gid 999 + group-writability; existing files were
+                      # already created under those dirs.
+                      chgrp 999 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
+                      chmod 2775 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
                       # BuildKit metadata (/var/lib/docker/buildkit) pairs
                       # with containerd's snapshot store (the layer
                       # snapshots ARE containerd snapshots - "buildkit-
