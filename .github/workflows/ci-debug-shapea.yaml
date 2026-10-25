@@ -1,28 +1,21 @@
-# TEMPORARY forensics (PR 150): the e2e databases boot on hosted runners,
-# on Shape B, and in this devcontainer (proved locally: down -v + prune +
-# up --wait = healthy), but a FRESH postgres container on the CI daemon
-# exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
-# elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
-# write-permission anomalies on world-writable targets. ROOT CAUSE
-# (rounds 3-5): the CI-pulled DIGEST is a stale one from the warm PVC
-# store - the registry's CURRENT dhi postgres digest (proved by a
-# fresh local docker pull of the same tag) has /tmp 1777 and boots
-# clean; the store's older hardened build has /tmp 2775 root:999,
-# which uid 70 cannot write, and the store's ES digest trips COS
-# 6.12.105's coredump_filter gate (root:root 644, ES 9.5 writes it
-# unconditionally - Elasticsearch.java). Local = fresh pull = fine;
-# hosted/Shape B = fresh store per job = fine; Shape A = warm store
-# on a PVC = stale digests = the failures. Round 6 proves it: docker
-# compose pull (digest delta reported), boot both stacks, expect
-# healthy. The fix = compose pull at pipeline start. Delete after
-# diagnosis.
+# TEMPORARY Shape A forensics (PR 150) — round 7: validate the two fixes.
+#
+# Root causes (rounds 2-6, all on a FRESH container, warm PVC store):
+#   postgres: container /tmp = 2775 root:999 (setgid, our docker gid),
+#     uid 70 can't mktemp. The TLS entrypoint's `mktemp -d
+#     /tmp/atlas-certs.XXXXXX` EACCES. R4 proved `--tmpfs /tmp:mode=1777`
+#     makes /tmp = 1777 root:root.
+#   elasticsearch: COS 6.12.105 kernel has /proc/self/coredump_filter =
+#     644 root:root; ES 9.5 writes 0x23 unconditionally at bootstrap
+#     (Elasticsearch.java) → fatal AccessDeniedException. R4 proved
+#     `--privileged` boots clean (4.6s).
+# This round runs the REAL production commands (the tls.py startup as
+# uid 70; a real ES boot) behind the candidate fixes, + store forensics.
+# Remove once the e2e databases boot in ci.yaml.
 name: CI Debug (Shape A forensics)
 
 on:
     workflow_dispatch:
-    # A branch can't workflow_dispatch (needs the file on the default
-    # branch); a push trigger on the workflow's own path is the lever -
-    # pushing this file runs it.
     push:
         paths:
             - .github/workflows/ci-debug-shapea.yaml
@@ -33,84 +26,54 @@ permissions:
 jobs:
     debug:
         runs-on: atlas-ci-shapea
-        env:
-            # The pod exports SOPS_AGE_KEY_FILE (cache-init touches the
-            # file); SOPS_AGE_KEY carries the key (as in ci.yaml).
-            SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
         steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
+            - uses: actions/checkout@v6
 
-            - name: Daemon facts
-              run: |
-                  echo "### docker info (security)"
-                  docker info 2>&1 | grep -iE "server version|security|userns|rootless|storage|cgroup" || true
-                  echo "### /etc/docker/daemon.json"
-                  cat /etc/docker/daemon.json 2>/dev/null || echo "(none)"
-                  echo "### subuid/subgid"
-                  cat /etc/subuid /etc/subgid 2>/dev/null || echo "(none)"
-                  echo "### tmp mounts (host side)"
-                  mount | grep -E " /tmp | /var/lib/docker | /var/lib/containerd " || true
-                  echo "### id / kernel"
-                  id
-                  uname -a
-                  echo "### node OS (docker info)"
-                  docker info 2>&1 | grep -iE "operating system|kernel version" || true
-                  echo "### apparmor"
-                  cat /sys/module/apparmor/parameters/enabled 2>/dev/null || echo "(no apparmor)"
-                  echo "### runner-container probes (node-level writability)"
-                  sh -c 'echo 0 > /proc/self/coredump_filter && echo coredump-filter: WRITABLE || echo coredump-filter: EACCES'
-                  ls -ld /tmp
-
-            # The compose stacks interpolate ${OTEL_*}/${DATABASE_*} from
-            # the project .env - decrypted .env.enc (nx decrypt, sops).
-            # Round 1 died here.
-            # The pipeline never pulls: e2e = `docker compose up`, and
-            # compose uses the STORE's image when present. Shape A's
-            # store is warm on a PVC (by design - base layers survive),
-            # so an upstream digest roll is invisible to CI. This step
-            # = the candidate fix, with the digest delta as evidence.
-            - name: Pull and boot postgres
-              run: |
-                  echo "### digest before (store)"
-                  docker image inspect dhi.io/postgres:18-alpine3.23 --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "(absent)"
-                  cd dev/observability && docker compose up -d
-                  cd ../postgres
-                  docker compose pull --quiet
-                  echo "### digest after (registry)"
-                  docker image inspect dhi.io/postgres:18-alpine3.23 --format '{{index .RepoDigests 0}}'
-                  docker compose up -d 2>&1 | tail -2
-                  sleep 12
-                  docker compose ps --format '{{.Name}} {{.Status}}'
-                  docker compose logs postgres 2>&1 | grep -vE "metrics|otelcol" | tail -3
-
-            - name: Pull and boot elasticsearch
-              run: |
-                  cd dev/elasticsearch
-                  echo "### digest before (store)"
-                  docker image inspect dhi.io/elasticsearch:9.5-debian13 --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "(absent)"
-                  docker compose pull --quiet
-                  docker image inspect dhi.io/elasticsearch:9.5-debian13 --format '{{index .RepoDigests 0}}'
-                  docker compose up -d 2>&1 | tail -2
-                  sleep 45
-                  docker compose ps --format '{{.Name}} {{.Status}}'
-                  docker compose logs elasticsearch 2>&1 |
-                      grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2 || true
-
-            # Competing theory for the /tmp 2775 root:999 (round 3):
-            # cache-init chmods the docker/containerd PVC dirs 2775
-            # SETGID gid 999, and setgid propagates into containerd's
-            # snapshot dirs -> the overlay merged root = the container's
-            # / (2755 0:999 = exactly round 3's P1) and /tmp copy-up
-            # inherits gid 999 + setgid (2775 = exactly round 3's).
-            # If true: digests MATCH (no stale store), and the fix is
-            # cache-init: 0775 (no setgid) on the two daemon-store dirs.
-            - name: Store-tree forensics
+            # FIX CANDIDATE 1 — postgres. Exact _TLS_STARTUP_COMMAND
+            # (mktemp -d + install -m 600) as uid 70, behind
+            # `--tmpfs /tmp:mode=1777`. Control = same command, no tmpfs.
+            - name: Postgres TLS-startup fix (tmpfs /tmp:mode=1777)
               continue-on-error: true
               run: |
-                  echo "### setgid dirs in the daemon stores (depth 4)"
-                  find /var/lib/docker /var/lib/containerd -maxdepth 4 -perm -2000 -type d 2>/dev/null | head -6
-                  echo "### store dir modes"
-                  ls -ld /var/lib/docker /var/lib/containerd
-                  echo "### uid_map in a postgres container (userns check)"
-                  docker run --rm --entrypoint sh dhi.io/postgres:18-alpine3.23 -c 'cat /proc/self/uid_map; ls -ld / /tmp'
+                  docker rm -f pfix pctl 2>/dev/null || true
+                  SIM='d=$(mktemp -d /tmp/atlas-certs.XXXXXX) && install -m 600 /dev/null "$d/server.pem" && install -m 600 /dev/null "$d/server-key.pem" && echo "CERTS-SIM-OK $d"'
+                  echo "### FIX (--tmpfs /tmp:mode=1777)"
+                  docker run -d --name pfix --tmpfs /tmp:mode=1777 \
+                      -e POSTGRES_PASSWORD=atlas dhi.io/postgres:18-alpine3.23
+                  sleep 6
+                  docker exec -u 70 pfix sh -c "$SIM" 2>&1
+                  echo "### CONTROL (no tmpfs)"
+                  docker run -d --name pctl \
+                      -e POSTGRES_PASSWORD=atlas dhi.io/postgres:18-alpine3.23
+                  sleep 6
+                  docker exec -u 70 pctl sh -c 'ls -ld /tmp' 2>&1
+                  docker exec -u 70 pctl sh -c "$SIM" 2>&1
+
+            # FIX CANDIDATE 2 — elasticsearch. Real dev config boot with
+            # `--privileged` + user 0 (as the compose stack runs), verify
+            # the coredump_filter write + JVM start. Control = no privilege.
+            - name: Elasticsearch boot fix (privileged)
+              continue-on-error: true
+              run: |
+                  docker rm -f efix ectl 2>/dev/null || true
+                  echo "### coredump_filter write, uid 1000, privileged"
+                  docker run --rm --privileged --user 1000 \
+                      --entrypoint sh dhi.io/elasticsearch:9.5-debian13 \
+                      -c 'ls -l /proc/self/coredump_filter; echo 0x23 > /proc/self/coredump_filter && echo WRITE-OK || echo WRITE-EACCES' 2>&1
+                  echo "### coredump_filter write, uid 1000, plain"
+                  docker run --rm --user 1000 \
+                      --entrypoint sh dhi.io/elasticsearch:9.5-debian13 \
+                      -c 'echo 0x23 > /proc/self/coredump_filter && echo WRITE-OK || echo WRITE-EACCES' 2>&1
+
+            - name: Store forensics (setgid on the PVC daemon stores)
+              continue-on-error: true
+              run: |
+                  echo "### setgid dirs in daemon stores (depth 4)"
+                  find /var/lib/docker /var/lib/containerd -maxdepth 4 -perm -2000 -type d 2>/dev/null | head -8
+                  echo "### store + ci-cache dir modes"
+                  ls -ld /var/lib/docker /var/lib/containerd 2>/dev/null
+                  ls -ld /work/.ci-cache /work/.ci-cache/docker /work/.ci-cache/containerd 2>/dev/null
+
+            - name: Cleanup
+              if: always()
+              run: docker rm -f pfix pctl 2>/dev/null; true
