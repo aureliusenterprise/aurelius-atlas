@@ -16,6 +16,11 @@ permissions:
     contents: read
 
 jobs:
+    # Every job below runs in the dev container image (the bridge toward
+    # self-hosted runners - see docs/architecture/self-hosted-ci.md). The
+    # run-in-devcontainer action wraps devcontainers/ci with the shared cache
+    # layout, registry logins, and secret passthrough; job commands live in
+    # .devcontainer/*.sh so they stay runnable locally.
     validate:
         runs-on: ubuntu-latest
         timeout-minutes: 30
@@ -31,72 +36,16 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Log in to the GitHub Container registry
-              uses: docker/login-action@v4
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-
-            # Caches for the devcontainer lifecycle (npm/uv install) and the
-            # hooks. All paths live under the workspace, which the action
-            # mounts into the container at /workspaces/aurelius-atlas - the
-            # env vars below redirect each tool's cache into it. The features
-            # cache shares its key with the publisher workflow, so a cache the
-            # publisher wrote on main is restored here.
-            - name: Cache dev container features
-              uses: actions/cache@v5
-              with:
-                  path: .devcontainer/.features-cache
-                  key: features-cache-${{ hashFiles('.devcontainer/devcontainer.json', '.devcontainer/features/**', 'uv.lock') }}
-                  restore-keys: features-cache-
-
-            - name: Cache toolchain and hooks
-              uses: actions/cache@v5
-              with:
-                  path: |
-                      .container-cache/uv
-                      .container-cache/npm
-                      .container-cache/pre-commit
-                  key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
-                  restore-keys: container-cache-${{ runner.os }}-
-
-            # Bridge (self-hosted CI plan, PR 2): run the hooks inside the
-            # published dev container image — the same environment developers
-            # use (see .devcontainer/ and build-devcontainer-image.yaml). The
-            # image layers come from the publisher's cache, so the build is a
-            # pull-through, not a rebuild.
-            #
-            # The action runs the devcontainer lifecycle scripts first
-            # (onCreateCommand: npm + uv install, postCreateCommand: pre-commit
-            # hooks + sops keygen), then the runCmd below. Exit ramp: revert
-            # this step to setup-toolchain + pre-commit/action in one commit.
             - name: Run pre-commit hooks in the dev container
-              uses: devcontainers/ci@v0.3
+              uses: ./.github/actions/run-in-devcontainer
               with:
-                  imageName: ghcr.io/aureliusenterprise/atlas-ci-runner
-                  imageTag: main
-                  cacheFrom: ghcr.io/aureliusenterprise/atlas-ci-runner:main
-                  userDataFolder: ${{ github.workspace }}/.devcontainer/.features-cache
-                  # Validation only - never publish from this job.
-                  push: never
-                  # Redirect tool caches into the (cached) workspace. These
-                  # reach the lifecycle scripts and the runCmd alike.
-                  env: |
-                      UV_CACHE_DIR=/workspaces/aurelius-atlas/.container-cache/uv
-                      npm_config_cache=/workspaces/aurelius-atlas/.container-cache/npm
-                      PRE_COMMIT_HOME=/workspaces/aurelius-atlas/.container-cache/pre-commit
-                  # `devcontainer build/up` rewrites devcontainer-lock.json in
-                  # the mounted workspace (its own formatting), which prettier
-                  # would then flag as modified. The committed lockfile is the
-                  # source of truth here, so undo the build side effect first.
-                  runCmd: |
-                      git checkout -- .devcontainer/devcontainer-lock.json
-                      uv run pre-commit run --all-files
+                  set-shas: "false"
+                  run-cmd: uv run pre-commit run --all-files
 
     test:
         runs-on: ubuntu-latest
         needs: validate
+        timeout-minutes: 60
 
         env:
             # Nx 23.3+: select affected by individual tasks instead of whole
@@ -115,30 +64,20 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup toolchain
-              uses: ./.github/actions/setup-toolchain
+            # e2e tests drive Docker containers; inside the dev container they
+            # run on the docker-in-docker feature's daemon (started by its
+            # docker-init entrypoint), exactly as in a developer container -
+            # the hosted runner's daemon is not involved. Failure diagnostics
+            # are collected by the script, against that daemon.
+            - name: Test affected projects
+              uses: ./.github/actions/run-in-devcontainer
               with:
-                  sops: "true"
-                  disk-cleanup: "true"
-                  python: "true"
-                  node: "true"
-                  playwright: "true"
-                  mkcert: "true"
+                  sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
                   dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Set SHA for affected commands
-              uses: nrwl/nx-set-shas@v5
-
-            - name: Test affected projects
-              # The `test`/`e2e` targets depend on `decrypt`, so this step
-              # legitimately needs the age key. Keep the scope as narrow as
-              # possible: a workflow-level env var would expose the key to
-              # every step and every third-party action in the job.
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t test e2e -c ci
+                  ghcr-login: "true"
+                  disk-cleanup: "true"
+                  run-cmd: bash .devcontainer/test-ci.sh
 
             - name: Upload coverage reports
               uses: actions/upload-artifact@v7
@@ -148,18 +87,6 @@ jobs:
                       **/coverage.xml
                       **/lcov.info
                   if-no-files-found: ignore
-
-            - name: Collect failure diagnostics
-              if: failure()
-              run: |
-                  mkdir -p reports/failure-diagnostics
-                  docker ps --all --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" \
-                    > reports/failure-diagnostics/container-status.txt 2>&1 || true
-                  for project in $(docker compose ls --all -q); do
-                    echo "Collecting logs for project: $project"
-                    docker compose --project-name "$project" logs --no-color \
-                      > "reports/failure-diagnostics/${project}-logs.txt" 2>&1 || true
-                  done
 
             - name: Upload failure diagnostics
               if: failure()
@@ -172,6 +99,7 @@ jobs:
     build-and-scan:
         runs-on: ubuntu-latest
         needs: validate
+        timeout-minutes: 60
 
         env:
             # Task-based affected selection — see the `test` job.
@@ -188,28 +116,24 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup toolchain
-              uses: ./.github/actions/setup-toolchain
+            # Images build on the dev container's DinD daemon; the buildx
+            # type=gha cache (tools/plugins/docker.ts) needs the job's runtime
+            # token, exposed into the container via the runtime-token step.
+            # Build and scan share ONE container run: the scan reads the
+            # images from the daemon that built them, and a second container
+            # would start with an empty one.
+            - name: Build and scan docker images for affected projects
+              uses: ./.github/actions/run-in-devcontainer
               with:
-                  sops: "true"
-                  disk-cleanup: "true"
-                  python: "true"
-                  node: "true"
-                  cosign: "true"
-                  trivy: "true"
-                  cyclonedx: "true"
+                  sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
                   dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Set SHA for affected commands
-              uses: nrwl/nx-set-shas@v5
-
-            - name: Build docker images for affected projects
-              run: npx nx affected -t docker-build -c ci
-
-            - name: Generate vulnerability reports for affected projects
-              run: npx nx affected -t docker-vuln-scan -c sarif
+                  ghcr-login: "true"
+                  use-runtime-token: "true"
+                  disk-cleanup: "true"
+                  run-cmd: |
+                      npx nx affected -t docker-build -c ci
+                      npx nx affected -t docker-vuln-scan -c sarif
 
             - name: Upload vulnerability reports
               uses: actions/upload-artifact@v7
@@ -221,6 +145,7 @@ jobs:
     sonar:
         runs-on: ubuntu-latest
         needs: [test, build-and-scan]
+        timeout-minutes: 30
 
         env:
             # Task-based affected selection — see the `test` job.
@@ -229,6 +154,7 @@ jobs:
         permissions:
             actions: read
             contents: read
+            packages: read
 
         steps:
             - name: Checkout code
@@ -236,13 +162,8 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup toolchain
-              uses: ./.github/actions/setup-toolchain
-              with:
-                  sops: "true"
-                  node: "true"
-                  sonarqube: "true"
-
+            # Downloaded into the checkout BEFORE the container starts - the
+            # container mounts the checkout, so sonar-scanner finds them.
             - name: Download coverage reports
               continue-on-error: true
               uses: actions/download-artifact@v8
@@ -255,26 +176,24 @@ jobs:
               with:
                   name: vuln-reports
 
-            - name: Set SHA for affected commands
-              uses: nrwl/nx-set-shas@v5
-
             # Decrypt every project, not just the affected ones: with task-based affected,
             # decrypt only counts as affected when .env.enc changes, and a .env that the
             # sonar run decrypts itself is written after Nx has loaded the task env, so
             # sonar-scanner would run without SONAR_TOKEN ("Not authorized").
-            - name: Decrypt secrets for SonarQube
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t decrypt
-
+            # Decrypt and analyze in ONE container run: the decrypted .env files live in
+            # the mounted checkout and must still be there when sonar-scanner starts.
             - name: Run SonarQube analysis
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t sonar
+              uses: ./.github/actions/run-in-devcontainer
+              with:
+                  sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
+                  run-cmd: |
+                      npx nx run-many -t decrypt
+                      npx nx affected -t sonar
 
     chromatic:
         runs-on: ubuntu-latest
         needs: test
+        timeout-minutes: 30
 
         env:
             # Task-based affected selection — see the `test` job.
@@ -282,6 +201,7 @@ jobs:
 
         permissions:
             contents: read
+            packages: read
 
         steps:
             - name: Checkout code
@@ -289,32 +209,23 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup toolchain
-              uses: ./.github/actions/setup-toolchain
-              with:
-                  sops: "true"
-                  node: "true"
-
-            - name: Set SHA for affected commands
-              uses: nrwl/nx-set-shas@v5
-
             # Chromatic only publishes aurelius-atlas-ui's Storybook, so skip
-            # the publish when the UI (or its dependencies) are not affected.
-            - name: Check if aurelius-atlas-ui is affected
-              id: affected
-              run: |
-                  if npx nx affected -t build-storybook --graph=stdout \
-                    | jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' \
-                    > /dev/null; then
-                    echo "ui-affected=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "ui-affected=false" >> "$GITHUB_OUTPUT"
-                  fi
+            # the build when the UI (or its dependencies) are not affected.
+            # The build runs in the dev container; dist/ lands in the mounted
+            # checkout, where the upload step below finds it. The upload stays
+            # a host step - chromaui/action's own semantics (exit codes,
+            # auto-accept) are unchanged.
+            - name: Build Storybook in the dev container
+              id: build
+              uses: ./.github/actions/run-in-devcontainer
+              with:
+                  run-cmd: bash .devcontainer/chromatic-check.sh
 
             - name: Run Chromatic
-              if: ${{ steps.affected.outputs.ui-affected == 'true' }}
+              if: ${{ steps.build.outputs.ui-affected == 'true' }}
               uses: chromaui/action@v18
               with:
-                  buildCommand: "npx nx build-storybook aurelius-atlas-ui"
+                  # Pre-built in the dev container - no buildCommand: the
+                  # action uploads outputDir as-is when no build command is set.
                   outputDir: "dist/storybook/aurelius-atlas-ui"
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
