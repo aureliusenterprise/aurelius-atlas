@@ -49,6 +49,19 @@ case "${1:-status}" in
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
             --namespace arc-runners -f "$HERE/arc-values.yaml"
         ;;
+    scale-set-shapea)
+        # Shape A canary (arc-shapea-values.yaml): the job container IS the
+        # dev container image. Needs atlas-arc-auth + atlas-ghcr-pull (the
+        # GHCR pull secret, see README "Shape A"). Separate release/label
+        # (atlas-ci-shapea) so the Shape B scale set keeps serving ci.
+        # CI_SHAPEA_IMAGE_TAG selects the image tag (default main; the
+        # build workflow publishes sha-<full-sha> for branch builds).
+        TAG="${CI_SHAPEA_IMAGE_TAG:-main}"
+        helm upgrade --install atlas-ci-shapea \
+            oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
+            --namespace arc-runners -f "$HERE/arc-shapea-values.yaml" \
+            --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${TAG}"
+        ;;
     status)
         kubectl -n arc-runners get autoscalingrunnerset,secrets,pvc,pods -o wide
         ;;

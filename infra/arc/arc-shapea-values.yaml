@@ -1,0 +1,139 @@
+# ARC gha-runner-scale-set - SHAPE A canary (docs/architecture/self-hosted-ci.md).
+# Release name: atlas-ci-shapea, namespace: arc-runners.
+#
+# Shape A = "the job runs IN the dev container image": the runner pod's job
+# container IS ghcr.io/aureliusenterprise/atlas-ci-runner (the dev container,
+# built by build-devcontainer-image.yaml; branch builds publish a
+# sha-<full-sha> tag, main publishes :main). The ci-shapea workflow has
+# direct steps - no devcontainers/ci action, no sibling container, no
+# per-job image pull.
+#
+# How the pieces fit (verified against chart 0.15.1 templates + the baked
+# feature scripts):
+#   - containerMode omitted => "default" mode: the chart passes every field
+#     of the "runner" container through verbatim and injects nothing (no
+#     dind sidecar, no k8s container hooks). Docker-in-docker is IN the
+#     image: the docker-in-docker feature baked dockerd +
+#     /usr/local/share/docker-init.sh (starts dockerd as root via the
+#     image's passwordless sudo, waits for `docker info`, then exec "$@"),
+#     and the ci-runner feature baked the Actions runner binaries at
+#     /opt/actions-runner (owned by vscode). The command chains them.
+#   - Steps run directly on this container's filesystem: the runner's
+#     RunMode=docker only spawns a job container for jobs that request a
+#     `container:` - ci-shapea.yaml requests none.
+#   - The image ships NO entrypoint/user (the devcontainer CLI injects
+#     those for developers), so command + runAs* are explicit here.
+#     uid 1000 = the image's vscode (sudoers.d entry, owns
+#     /opt/actions-runner); gid/supplemental 999 = the docker group -
+#     dockerd's socket is root:docker 0660 by default, and k8s drops the
+#     image user's supplementary groups, so they must be declared.
+#   - privileged: the docker-in-docker feature's own
+#     devcontainer-feature.json says the same for developer containers;
+#     dockerd needs iptables, cgroup nesting, and overlay mounts.
+githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
+githubConfigSecret: atlas-arc-auth
+runnerScaleSetName: atlas-ci-shapea
+minRunners: 0
+# Separate scale set from atlas-ci (Shape B): the RWO cache PD never
+# attaches to two pods, and the full ci job keeps running on Shape B while
+# this canary proves Shape A.
+maxRunners: 1
+
+# runs-on: atlas-ci-shapea (ci-shapea.yaml hardcodes it - a canary targets
+# its pool explicitly, like ci-canary.yaml does for atlas-ci).
+scaleSetLabels:
+    - atlas-ci-shapea
+
+template:
+    spec:
+        # Pull atlas-ci-runner (private GHCR package) - see README "Shape A"
+        # for the one-liner that creates it from the CI PAT.
+        imagePullSecrets:
+            - name: atlas-ghcr-pull
+        # devcontainer.json runArgs: --add-host=keycloak.localhost:127.0.0.1
+        # (e2e tests resolve the local Keycloak by that name).
+        hostAliases:
+            - ip: 127.0.0.1
+              hostnames:
+                  - keycloak.localhost
+        securityContext:
+            runAsUser: 1000 # vscode
+            runAsGroup: 999 # docker (socket group)
+            supplementalGroups: [999]
+            # Makes the work volume vscode-writable on (re-)mount. emptyDir
+            # is world-writable by default; kept for the PVC swap.
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        containers:
+            - name: runner
+              # Shape A canary tag: CI_SHAPEA_IMAGE_TAG repo var (set to
+              # sha-<full-sha> after the branch build publishes it);
+              # :main = fallback once the ci-runner feature lands on main.
+              image: ghcr.io/aureliusenterprise/atlas-ci-runner:main
+              securityContext:
+                  privileged: true # dockerd (see header)
+              command:
+                  - /bin/bash
+                  - -c
+                  - |
+                      set -e
+                      # Baked toolchains live outside k8s' minimal PATH
+                      # (the devcontainer CLI injects them for developers,
+                      # and login files are skipped for `bash -c`), so
+                      # assemble them explicitly: nvm node, /usr/local/bin
+                      # (sops, kubectl, helm, trivy, gcloud, npm -g nx),
+                      # py-utils uv, sdkman java.
+                      export PATH="/usr/local/share/nvm/versions/node/$(ls /usr/local/share/nvm/versions/node | tail -1)/bin:/usr/local/bin:/usr/local/py-utils/bin:/usr/local/sdkman/bin:/usr/local/sdkman/candidates/java/current/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+                      # devcontainer.json containerEnv, injected verbatim:
+                      export NX_DAEMON=true
+                      export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
+                      export SOPS_AGE_KEY_FILE=/home/runner/_work/aurelius-atlas/aurelius-atlas/secrets/keys.txt
+                      # docker-in-docker feature containerEnv:
+                      export DOCKER_BUILDKIT=1
+                      # Where the runner puts job workspaces (the work
+                      # volume below; HOME is /home/vscode in this image,
+                      # so the default _work under $HOME would miss the
+                      # volume).
+                      export RUNNER_WORKSPACE=/home/runner/_work
+                      export RUNNER_CACHE_DIR=/home/runner/_work/_tool_cache
+                      # docker-init.sh: starts dockerd (privileged), waits
+                      # for `docker info`, then exec "$@" = the runner.
+                      exec /usr/local/share/docker-init.sh /opt/actions-runner/run.sh
+              volumeMounts:
+                  # The chart does NOT auto-mount `work` in default mode
+                  # (the dind/kubernetes-mode helpers add it; default mode
+                  # passes fields verbatim), so mount it explicitly at the
+                  # runner's convention.
+                  - name: work
+                    mountPath: /home/runner/_work
+                  # dockerd's image store (the dev container image bakes
+                  # its layers under /var/lib/docker; the node disk backs
+                  # it, like Shape B's dind sidecar).
+                  - name: dind-storage
+                    mountPath: /var/lib/docker
+              resources:
+                  # Sized for the full pipeline fan-out target (dev-compose
+                  # caps ~8.75 Gi + runner overhead); requests stay low so
+                  # the canary schedules on the default pool's headroom
+                  # (n2-standard-8, 13.9 Gi allocatable - Shape B's
+                  # ceiling).
+                  requests:
+                      cpu: "1"
+                      memory: 4Gi
+                  limits:
+                      cpu: "6"
+                      memory: 11Gi
+        volumes:
+            # The runner's work dir: RUNNER_WORKSPACE above points here
+            # (checkout + step scratch + tool cache). emptyDir for the
+            # canary - the cache bridge to the toolchain PVC is the next
+            # increment once the canary is green (Shape A needs volumes for
+            # /var/cache/ci + the docker image store, mirroring Shape B's
+            # CI_CACHE_MOUNTS).
+            - name: work
+              emptyDir: {}
+            # dockerd's image store. emptyDir (node disk) = a cold image
+            # store per pod; the docker-save bridge to the PVC is the same
+            # next increment as the cache bridge above.
+            - name: dind-storage
+              emptyDir: {}

@@ -73,6 +73,12 @@ docker compose version | head -1
 docker info --format 'docker daemon: {{.ServerVersion}}' ||
     fail "docker daemon is not reachable inside the container"
 
+# Shape A (infra/arc/arc-shapea-values.yaml): this image runs directly as the
+# ARC runner pod's job container, so the runner binaries must be baked.
+[ -x /opt/actions-runner/run.sh ] ||
+    fail "/opt/actions-runner/run.sh is missing - the ci-runner feature did not bake the runner"
+printf '%-16s %s\n' "runner:" "$(/opt/actions-runner/config.sh --version 2>&1 | tail -1)"
+
 # Playwright browsers are baked by the playwright-browsers feature. The baked
 # version MUST match the version uv.lock pins, or tests fail with a cryptic
 # "browser not found" at runtime.

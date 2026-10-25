@@ -1,0 +1,15 @@
+{
+    "description": "Bake the Actions runner binaries (run.sh + bin/Runner) into the image so the Shape A runner pod (infra/arc/arc-shapea-values.yaml) can start this image directly. Harmless in developer containers.",
+    "id": "ci-runner",
+    "installsAfter": ["ghcr.io/devcontainers/features/common-utils"],
+    "name": "GitHub Actions Runner",
+    "options": {
+        "version": {
+            "default": "2.338.1",
+            "description": "actions/runner release to install (linux-x64).",
+            "proposals": ["2.338.1", "latest"],
+            "type": "string"
+        }
+    },
+    "version": "1.0.0"
+}

@@ -140,6 +140,7 @@
         }
     },
     "features": {
+        "./features/ci-runner": {},
         "./features/google-cloud-cli": {
             "installGkeGcloudAuthPlugin": true,
             "version": "latest"

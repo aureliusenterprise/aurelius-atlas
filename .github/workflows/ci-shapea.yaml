@@ -1,0 +1,64 @@
+name: CI Shape A (GKE, direct dev container)
+
+# Shape A canary: the runner pod's job container IS the dev container image
+# (ghcr.io/aureliusenterprise/atlas-ci-runner - built by
+# build-devcontainer-image.yaml). No devcontainers/ci action, no sibling
+# container, no per-job image pull: the steps below run directly in the
+# image developers use, via in-container dockerd (privileged pod).
+# This is the goal state from docs/architecture/self-hosted-ci-decision.md;
+# ci-canary.yaml (Shape B: devcontainers/ci on the stock runner) is the
+# baseline it is compared against.
+#
+# Gate: the toolchain/lifecycle/validate steps below go green on the GKE
+# pool; then the ci job's devcontainers/ci wrapper can be retired here.
+# Manual + branch-push triggered (workflow_dispatch needs the file on the
+# default branch, which PR 150 has not merged yet). Delete in Phase 3.
+
+on:
+    workflow_dispatch:
+    push:
+        branches: [feat/validate-job-in-devcontainer]
+
+permissions:
+    contents: read
+
+jobs:
+    shapea:
+        # The Shape A scale set (infra/arc/arc-shapea-values.yaml). Hard-
+        # coded, not CI_RUNS_ON: a canary targets its pool explicitly.
+        runs-on: atlas-ci-shapea
+        timeout-minutes: 30
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            # Image sanity: the baked toolchains + in-container dockerd.
+            # `docker info` is the Shape A proof - the docker-in-docker
+            # feature's docker-init.sh (the container command) started
+            # dockerd before run.sh, so the daemon answers here.
+            - name: Toolchain sanity
+              run: |
+                  node --version
+                  python3 --version
+                  uv --version
+                  docker info --format 'docker daemon: {{.ServerVersion}}'
+
+            # The devcontainer lifecycle scripts, run directly: onCreateCommand
+            # (npm.sh, uv.sh) then postCreateCommand (pre-commit.sh, sops.sh).
+            # Running the developer scripts verbatim IS the Shape A contract -
+            # if these drift from devcontainer.json, the canary lies.
+            - name: Install dependencies
+              run: |
+                  bash .devcontainer/npm.sh
+                  bash .devcontainer/uv.sh
+
+            - name: Lifecycle hooks
+              run: |
+                  bash .devcontainer/pre-commit.sh
+                  bash .devcontainer/sops.sh
+
+            # Same gate as ci-canary.yaml, so the two shapes measure the
+            # same work: validate-only, ~the cost of phase 1 of the ci job.
+            - name: Validate
+              run: uv run pre-commit run --all-files

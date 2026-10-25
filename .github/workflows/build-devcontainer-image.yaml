@@ -91,16 +91,23 @@ jobs:
               uses: devcontainers/ci@v0.3
               with:
                   imageName: ghcr.io/aureliusenterprise/atlas-ci-runner
-                  imageTag: main
+                  # main pushes (and the weekly rebuild) publish :main, the
+                  # devcontainers/ci cache image. Feature-branch pushes publish
+                  # a per-commit tag sha-<full-sha> - that is the Shape A
+                  # canary image (infra/arc/arc-shapea-values.yaml runs it
+                  # directly as the runner pod's job container; the canary
+                  # points at the tag via CI_SHAPEA_IMAGE_TAG).
+                  imageTag: ${{ github.ref == 'refs/heads/main' && 'main' || format('sha-{0}', github.sha) }}
                   userDataFolder: ${{ github.workspace }}/.devcontainer/.features-cache
                   # Reuse the published image's layers; the first build after a
                   # cache miss rebuilds from the base image.
                   cacheFrom: ghcr.io/aureliusenterprise/atlas-ci-runner:main
                   cacheTo: ghcr.io/aureliusenterprise/atlas-ci-runner:main
-                  # Publish on push events and manual dispatches; the ref filter
-                  # keeps `main` as the only publisher, so PR builds validate
-                  # without touching the shared cache image.
+                  # Publish on push events and manual dispatches. main keeps
+                  # the :main cache image; other refs publish only their own
+                  # sha-<sha> tag, so PR builds validate without touching the
+                  # shared cache image.
                   push: filter
-                  refFilterForPush: refs/heads/main
+                  refFilterForPush: ${{ github.ref == 'refs/heads/main' && 'refs/heads/main' || github.ref }}
                   eventFilterForPush: ""
                   runCmd: bash .devcontainer/smoke.sh

@@ -131,3 +131,52 @@ Notes:
   ~weekly (hash-keyed), acceptable for now; a second volume mount is the
   escape hatch if it hurts.
 - **Rollback**: `helm uninstall atlas-ci -n arc-runners` + delete variables.
+
+## Shape A - jobs run IN the dev container image (canary)
+
+The goal state from the decision doc: the runner pod's job container **is**
+`ghcr.io/aureliusenterprise/atlas-ci-runner` (the dev container), so CI steps
+run directly in the developer image - no `devcontainers/ci`, no sibling
+container, no per-job 8.3 GB image pull. The `atlas-ci` scale set above is
+**Shape B** (stock runner + devcontainers/ci) and keeps serving the full `ci`
+job while this canary proves Shape A.
+
+Pieces (each verified against chart 0.15.1 / the baked feature scripts):
+
+- `ci-runner` devcontainer feature (`.devcontainer/features/ci-runner`) bakes
+  the Actions runner binaries at `/opt/actions-runner` (vscode-owned). Harmless
+  in developer containers - nothing launches them there.
+- The `docker-in-docker` feature (already present) bakes `dockerd` +
+  `/usr/local/share/docker-init.sh`, which starts the daemon then
+  `exec "$@"` - the pod command chains it to `run.sh`. The pod is
+  **privileged** (the feature's own manifest says the same for dev containers).
+- `arc-shapea-values.yaml`: default containerMode (the chart passes the
+  container through verbatim - registration env comes from the controller),
+  `runAsUser: 1000` (vscode) + docker group 999 (k8s drops the image user's
+  supplementary groups; dockerd's socket is `root:docker` 0660), `work` +
+  `dind-storage` emptyDirs, label `atlas-ci-shapea`, `maxRunners: 1`.
+- `.github/workflows/ci-shapea.yaml`: direct steps (toolchain sanity with a
+  real `docker info`, the devcontainer lifecycle scripts, pre-commit).
+
+Deploy loop (from the dev container, kube context on atlas-dev):
+
+```bash
+# One-time: GHCR pull secret for the private package (PAT needs
+# write:packages too - the image is private). Recreate on PAT rotation:
+TOK=$(tr -d '\n' < ~/atlas-arc-pat.txt)
+AUTH=$(printf '%s:%s' "$(gh api user -q .login)" "$TOK" | base64 -w0)
+kubectl -n arc-runners create secret generic atlas-ghcr-pull \
+    --type=kubernetes.io/dockerconfigjson \
+    --from-literal=".dockerconfigjson={\"auths\":{\"ghcr.io\":{\"auth\":\"$AUTH\"}}}"
+
+# Image: push a commit that touches .devcontainer/** -> the build workflow
+# publishes atlas-ci-runner:sha-<full-sha> (branch builds publish their own
+# tag; main publishes :main). Then:
+CI_SHAPEA_IMAGE_TAG=sha-<full-sha> ./install.sh scale-set-shapea
+gh workflow run ci-shapea.yaml --ref feat/validate-job-in-devcontainer
+```
+
+Canary gate: green on the pool, repeated; then the cache bridge (PVC mounts
+for `/var/cache/ci/*` + the docker image store, mirroring `CI_CACHE_MOUNTS`)
+is the next increment before the full `ci` job flips. Rollback:
+`helm uninstall atlas-ci-shapea -n arc-runners` (Shape B is untouched).
