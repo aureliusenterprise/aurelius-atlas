@@ -3,19 +3,19 @@
 # up --wait = healthy), but a FRESH postgres container on the CI daemon
 # exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
 # elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
-# write-permission anomalies on world-writable targets. ROOT CAUSES
-# (round 3): (1) the dhi hardened postgres digest rolled to /tmp=2775
-# root:999 - uid 70 cannot write /tmp; FIX VALIDATED (round 4 P2):
-# tmpfs /tmp mode=1777 -> all writes OK. (2) kernel 6.12.105+ (COS,
-# dumpability-inheritance series): docker container processes are
-# non-dumpable there, and coredump_filter writes require dumpable ->
-# ES 9.5's unconditional bootstrap write (Elasticsearch.java) is fatal
-# as uid 1000. Round-4 kills: /proc bind (runc proc-safety),
-# fs.suid_dumpable=1 (no effect). ES refuses to run as root (upstream
-# check), so the remaining lever is PRIVILEGED: capabilities preserved
-# -> the kernel gate passes. Round 5: E1 full ES boot as image user +
-# --privileged, E2 same plain (expected fatal), E3 root-refusal check.
-# Delete after diagnosis.
+# write-permission anomalies on world-writable targets. ROOT CAUSE
+# (rounds 3-5): the CI-pulled DIGEST is a stale one from the warm PVC
+# store - the registry's CURRENT dhi postgres digest (proved by a
+# fresh local docker pull of the same tag) has /tmp 1777 and boots
+# clean; the store's older hardened build has /tmp 2775 root:999,
+# which uid 70 cannot write, and the store's ES digest trips COS
+# 6.12.105's coredump_filter gate (root:root 644, ES 9.5 writes it
+# unconditionally - Elasticsearch.java). Local = fresh pull = fine;
+# hosted/Shape B = fresh store per job = fine; Shape A = warm store
+# on a PVC = stale digests = the failures. Round 6 proves it: docker
+# compose pull (digest delta reported), boot both stacks, expect
+# healthy. The fix = compose pull at pipeline start. Delete after
+# diagnosis.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -65,48 +65,52 @@ jobs:
             # The compose stacks interpolate ${OTEL_*}/${DATABASE_*} from
             # the project .env - decrypted .env.enc (nx decrypt, sops).
             # Round 1 died here.
-            # FIX CANDIDATES. P = postgres tmpfs (validated P2 round
-            # 4). E = ES boot privilege matrix. || true everywhere.
-            - name: Postgres fix probes
-              continue-on-error: true
+            # The pipeline never pulls: e2e = `docker compose up`, and
+            # compose uses the STORE's image when present. Shape A's
+            # store is warm on a PVC (by design - base layers survive),
+            # so an upstream digest roll is invisible to CI. This step
+            # = the candidate fix, with the digest delta as evidence.
+            - name: Pull and boot postgres
               run: |
-                  PG=dhi.io/postgres:18-alpine3.23
-                  PROBE='id; ls -ld /tmp; mktemp -d /tmp/atlas-certs.XXXXXX && echo mktemp:OK || echo mktemp:EACCES; install -m 600 /etc/hostname /tmp/srv.pem && echo install:OK || echo install:EACCES'
-                  echo "### P1: facts on the CI digest"
-                  docker run --rm --entrypoint sh $PG -c "$PROBE" || true
-                  echo "### P2: tmpfs mode=1777 (candidate fix)"
-                  docker run --rm --tmpfs /tmp:mode=1777,exec --entrypoint sh $PG -c "$PROBE" || true
+                  echo "### digest before (store)"
+                  docker image inspect dhi.io/postgres:18-alpine3.23 --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "(absent)"
+                  cd dev/observability && docker compose up -d
+                  cd ../postgres
+                  docker compose pull --quiet
+                  echo "### digest after (registry)"
+                  docker image inspect dhi.io/postgres:18-alpine3.23 --format '{{index .RepoDigests 0}}'
+                  docker compose up -d 2>&1 | tail -2
+                  sleep 12
+                  docker compose ps --format '{{.Name}} {{.Status}}'
+                  docker compose logs postgres 2>&1 | grep -vE "metrics|otelcol" | tail -3
 
-            - name: Elasticsearch privilege probes
+            - name: Pull and boot elasticsearch
+              run: |
+                  cd dev/elasticsearch
+                  echo "### digest before (store)"
+                  docker image inspect dhi.io/elasticsearch:9.5-debian13 --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "(absent)"
+                  docker compose pull --quiet
+                  docker image inspect dhi.io/elasticsearch:9.5-debian13 --format '{{index .RepoDigests 0}}'
+                  docker compose up -d 2>&1 | tail -2
+                  sleep 45
+                  docker compose ps --format '{{.Name}} {{.Status}}'
+                  docker compose logs elasticsearch 2>&1 |
+                      grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2 || true
+
+            # Competing theory for the /tmp 2775 root:999 (round 3):
+            # cache-init chmods the docker/containerd PVC dirs 2775
+            # SETGID gid 999, and setgid propagates into containerd's
+            # snapshot dirs -> the overlay merged root = the container's
+            # / (2755 0:999 = exactly round 3's P1) and /tmp copy-up
+            # inherits gid 999 + setgid (2775 = exactly round 3's).
+            # If true: digests MATCH (no stale store), and the fix is
+            # cache-init: 0775 (no setgid) on the two daemon-store dirs.
+            - name: Store-tree forensics
               continue-on-error: true
               run: |
-                  ES=dhi.io/elasticsearch:9.5-debian13
-                  ENV='-e discovery.type=single-node -e xpack.security.enabled=false -e cluster.name=probe -e ELASTIC_PASSWORD=probe -e ES_JAVA_OPTS=-Xms512m -Xmx512m'
-                  echo "### E0: coredump_filter owner+write, default vs seccomp=unconfined (the docker default seccomp profile blocks prctl(PR_SET_DUMPABLE); procfs coredump_filter ownership follows dumpability)"
-                  docker run --rm --entrypoint sh $ES -c 'ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo DEFAULT-SECCOMP:WRITABLE || echo DEFAULT-SECCOMP:EACCES' 2>&1 | tail -2
-                  docker run --rm --security-opt seccomp=unconfined --entrypoint sh $ES -c 'ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo UNCONFINED:WRITABLE || echo UNCONFINED:EACCES' 2>&1 | tail -2
-                  echo "### E0b: RLIMIT_CORE=0 theory - COS runs containers with core limit 0; kernels 6.11+ mark RLIMIT_CORE=0 processes NON-DUMPABLE (procfs coredump_filter -> root:root 644). ulimit -c unlimited should restore writability:"
-                  docker run --rm --ulimit core=0:0 --entrypoint sh $ES -c 'ulimit -c; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo CORE0:WRITABLE || echo CORE0:EACCES' 2>&1 | tail -3
-                  docker run --rm --ulimit core=-1:-1 --entrypoint sh $ES -c 'ulimit -c; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo COREINF:WRITABLE || echo COREINF:EACCES' 2>&1 | tail -3
-                  echo "### E1: image user + --privileged (full boot)"
-                  docker run -d --name e1 $ENV --privileged $ES >/dev/null
-                  sleep 50
-                  docker logs e1 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started|started on)[^"]*"' | head -2
-                  docker rm -f e1 >/dev/null
-                  echo "### E1b: full boot, seccomp=unconfined (lighter than privileged)"
-                  docker run -d --name e1b $ENV --security-opt seccomp=unconfined $ES >/dev/null
-                  sleep 50
-                  docker logs e1b 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2
-                  docker rm -f e1b >/dev/null
-                  echo "### E2: image user plain (expect fatal)"
-                  docker run -d --name e2 $ENV $ES >/dev/null
-                  sleep 30
-                  docker logs e2 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2
-                  docker rm -f e2 >/dev/null
-                  echo "### E4: full boot with --ulimit core=-1 (the predicted fix)"
-                  docker run -d --name e4 $ENV --ulimit core=-1:-1 $ES >/dev/null
-                  sleep 50
-                  docker logs e4 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2
-                  docker rm -f e4 >/dev/null
-                  echo "### E3: root refusal check"
-                  docker run --rm --user 0 --entrypoint sh $ES -c 'echo root-exec-ok' 2>&1 | tail -1
+                  echo "### setgid dirs in the daemon stores (depth 4)"
+                  find /var/lib/docker /var/lib/containerd -maxdepth 4 -perm -2000 -type d 2>/dev/null | head -6
+                  echo "### store dir modes"
+                  ls -ld /var/lib/docker /var/lib/containerd
+                  echo "### uid_map in a postgres container (userns check)"
+                  docker run --rm --entrypoint sh dhi.io/postgres:18-alpine3.23 -c 'cat /proc/self/uid_map; ls -ld / /tmp'
