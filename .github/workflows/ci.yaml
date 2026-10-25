@@ -76,6 +76,7 @@ jobs:
                   dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   ghcr-login: "true"
+                  docker-image-cache: "true"
                   disk-cleanup: "true"
                   run-cmd: bash .devcontainer/test-ci.sh
 
@@ -130,10 +131,11 @@ jobs:
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   ghcr-login: "true"
                   use-runtime-token: "true"
+                  docker-image-cache: "true"
                   disk-cleanup: "true"
                   run-cmd: |
-                      npx nx affected -t docker-build -c ci
-                      npx nx affected -t docker-vuln-scan -c sarif
+                      npx nx affected -t docker-build -c ci &&
+                          npx nx affected -t docker-vuln-scan -c sarif
 
             - name: Upload vulnerability reports
               uses: actions/upload-artifact@v7
