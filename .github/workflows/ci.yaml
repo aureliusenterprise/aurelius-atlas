@@ -105,12 +105,16 @@ jobs:
             # The pipeline's storybook phase built Aurelius Atlas UI's
             # Storybook (dist/ is on the mounted checkout) and reported
             # ui-affected through the step output; publish it only then.
-            # chromaui/action's own semantics (exit codes, auto-accept) are
-            # unchanged - it uploads outputDir as-is when no buildCommand
-            # is set.
+            # buildCommand is required: chromaui/action v18 preflights a
+            # package.json build script ("build-storybook") when no build
+            # command is given, and the root package.json has none (run
+            # 40202533804: "Build script not found"). The storybook is
+            # already built in-container, so the command is a guard, not a
+            # rebuild - it fails loudly if dist/ is missing.
             - name: Run Chromatic
               if: ${{ steps.core.outputs.ui-affected == 'true' }}
               uses: chromaui/action@v18
               with:
+                  buildCommand: "test -d dist/storybook/aurelius-atlas-ui"
                   outputDir: "dist/storybook/aurelius-atlas-ui"
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
