@@ -84,6 +84,19 @@ template:
                   - |
                       mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd
                       chgrp -R 999 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
+                      # BuildKit metadata (/var/lib/docker/buildkit) pairs
+                      # with containerd's snapshot store (the layer
+                      # snapshots ARE containerd snapshots - "buildkit-
+                      # layer-snapshot-v1-*"). Both persist on this PVC
+                      # together, but a pod that dies mid-build (or an
+                      # infra change that moves one store, trial runs
+                      # 40217828572 -> 40219350705) leaves the metadata
+                      # referencing snapshots that no longer exist: every
+                      # build then dies with "parent snapshot ... does not
+                      # exist: not found". The pairing is pod-scoped, so
+                      # wipe the metadata on every boot - builds use
+                      # --cache-from type=registry, so it is disposable.
+                      rm -rf /work/.ci-cache/docker/buildkit
               resources:
                   requests:
                       cpu: 10m
