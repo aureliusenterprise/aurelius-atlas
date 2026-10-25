@@ -7865,25 +7865,27 @@ runners consume.</p>
 <p>What hosted still costs us: the 8.3 GB pull is paid <strong>per job</strong> (every runner
 is a fresh VM), the Actions cache is a 10 GB LRU pool behind Azure Front Door
 (its outage broke builds for hours), runner-minutes are billed, and queued
-PRs queue behind a pool we don't control. On AKS the image becomes a
-<strong>per-node</strong> containerd cache (paid once per node, not per run), caches become
-plain volumes, capacity is a node pool, and cost is nodes.</p>
+PRs queue behind a pool we don't control. On AKS: caches become plain
+volumes (no 10 GB cap, no AFD, no save step), capacity is a node pool we
+size, cost is spot nodes, and from <strong>Shape A</strong> (Phase 3) the image pull
+becomes a <strong>per-node</strong> containerd cache. The dind shape keeps the
+per-pod pull (GHCR warm, ~101s - the composite login step covers it) while
+moving everything else; the pull is what Shape A removes.</p>
 <h2 id="target-architecture">Target architecture<a class="headerlink" href="#target-architecture" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>flowchart LR
     GH[GitHub Actions&lt;br/&gt;workflow job] --&gt;|job token| ARC[ARC controller&lt;br/&gt;gha-runner-scale-set-controller]
     ARC --&gt;|creates per job| POD[runner pod&lt;br/&gt;ephemeral]
-    subgraph NODE[AKS node pool: D8s v5, ephemeral OS disk]
+    subgraph NODE[AKS node pool: D8s v5 spot, ephemeral OS disk]
         POD
-        CD[containerd cache&lt;br/&gt;atlas-ci-runner:main&lt;br/&gt;pulled once per node]
         AF[Azure Files PVC&lt;br/&gt;.container-cache uv/npm/pre-commit]
     end
-    POD --&gt;|docker API tcp:2376| DIND[dind sidecar&lt;br/&gt;privileged]
-    DIND --&gt;|sibling containers| DC[dev container&lt;br/&gt;atlas-ci-runner:main]
-    DC --&gt; GHCR[(GHCR&lt;br/&gt;atlas-ci-runner:main&lt;br/&gt;buildcache-* tags)]
-    CD -.pull.-&gt; GHCR</code></pre>
+    POD --&gt;|docker API&lt;br/&gt;unix socket, shared volume| DIND[dind sidecar&lt;br/&gt;privileged, per pod]
+    DIND --&gt;|sibling containers| DC[dev container&lt;br/&gt;atlas-ci-runner:main&lt;br/&gt;pulled per pod, ~101s warm]
+    DC --&gt; GHCR[(GHCR&lt;br/&gt;atlas-ci-runner:main&lt;br/&gt;buildcache-* tags)]</code></pre>
 <p>The workflow, the composite action, and <code>ci-pipeline.sh</code> stay as they are -
 that is the point of the bridge. <code>devcontainers/ci</code> inside the runner pod
-talks to the ARC dind sidecar's daemon (<code>DOCKER_HOST=tcp://localhost:2376</code>)
+talks to the ARC dind sidecar's daemon (<code>docker:dind</code>, privileged, sharing
+<code>/var/run/docker.sock</code> with the runner container - the chart's dind mode)
 and starts the dev container as a <strong>sibling</strong> on it, exactly as on a hosted
 runner. Parity with the developer container is unchanged: same CLI, same
 lifecycle scripts, same image digest.</p>
@@ -7900,9 +7902,11 @@ NetworkPolicy, and treating every pod on that pool as untrusted.</p>
   stock runner image; the pipeline runs in the dev container on the dind
   sidecar, i.e. the merged design moved machines. The dev==CI parity property
   (the reason for the bridge) survives untouched.</li>
-<li><strong>A - runner pod <em>is</em> <code>atlas-ci-runner</code></strong> (later optimisation): set the
+<li><strong>A - runner pod <em>is</em> <code>atlas-ci-runner</code></strong> (the Phase 3 prize): set the
   runner container image to the dev container image and delete
-  <code>devcontainers/ci</code> from the path - no sibling, no daemon exec. Cheaper per
+  <code>devcontainers/ci</code> from the path - no sidecar, no daemon, and the image is
+  pulled by <strong>containerd once per node</strong> (the last per-job cost falls away,
+  including the dind store's per-pod pull of the 8.3 GB image). Cheaper per
   run, but the devcontainer lifecycle scripts (<code>onCreateCommand</code>/
   <code>postCreateCommand</code>) stop running by construction and parity becomes "the
   image digest pins toolchain == dev" plus a bootstrap step. Only worth it
@@ -7947,8 +7951,8 @@ NetworkPolicy, and treating every pod on that pool as untrusted.</p>
 <tr>
 <td>dev container image</td>
 <td>pulled per job</td>
-<td>pulled per <strong>node</strong> (containerd)</td>
-<td><code>imagePullSecrets</code> (GHCR) on the pod template; node pool uses the ephemeral OS disk so containerd has room</td>
+<td>per <strong>pod</strong> on dind (node NVMe, ~101s warm; composite's GHCR login covers it), per <strong>node</strong> under Shape A</td>
+<td>none in Phases 1-2 (this is Shape A's motivation)</td>
 </tr>
 <tr>
 <td>Docker layer cache</td>
@@ -7981,62 +7985,24 @@ NetworkPolicy, and treating every pod on that pool as untrusted.</p>
 low-frequency and use the hosted cache service.</p>
 <h2 id="infrastructure">Infrastructure<a class="headerlink" href="#infrastructure" title="Permanent link">&para;</a></h2>
 <p>ARC with the Helm charts (<code>gha-runner-scale-set-controller</code> +
-<code>gha-runner-scale-set</code>), ephemeral per-job pods, GitHub App auth
-(not a PAT - App installs scope to the repo and survive rotation):</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>install<span class="w"> </span>arc<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--namespace<span class="w"> </span>arc-systems<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
-
-helm<span class="w"> </span>install<span class="w"> </span>atlas-ci-runner<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--namespace<span class="w"> </span>arc-runners<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set<span class="w"> </span><span class="nv">githubConfigUrl</span><span class="o">=</span>https://github.com/aureliusenterprise/aurelius-atlas<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set<span class="w"> </span><span class="nv">githubConfigSecret</span><span class="o">=</span>arc-atlas-runner-secrets<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set<span class="w"> </span><span class="nv">minRunners</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>--set<span class="w"> </span><span class="nv">maxRunners</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set<span class="w"> </span><span class="nv">runnerScaleSetName</span><span class="o">=</span>atlas-ci<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set<span class="w"> </span>template.spec.nodeSelector.<span class="s2">"kubernetes\.io/os"</span><span class="o">=</span>linux<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set-string<span class="w"> </span>template.spec.tolerations<span class="o">[</span><span class="m">0</span><span class="o">]</span>.key<span class="o">=</span>kubernetes.azure.com/scalesetpriority<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--set-string<span class="w"> </span>template.spec.tolerations<span class="o">[</span><span class="m">0</span><span class="o">]</span>.value<span class="o">=</span>spot<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-f<span class="w"> </span>arc-values.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
-</code></pre></div>
-<p><code>arc-values.yaml</code> carries the three load-bearing blocks:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">containerMode</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind</span>
-<span class="w">    </span><span class="nt">dockerContainerTemplate</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">securityContext</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">requests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> cpu</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> memory</span><span class="p">:</span><span class="w"> </span><span class="nv">8Gi</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">            </span><span class="nt">limits</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> cpu</span><span class="p">:</span><span class="w"> </span><span class="nv">8</span><span class="p p-Indicator">,</span><span class="nt"> memory</span><span class="p">:</span><span class="w"> </span><span class="nv">16Gi</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind-scratch</span>
-<span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/docker</span>
-<span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">containers</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runner</span>
-<span class="w">              </span><span class="nt">resources</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">requests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> cpu</span><span class="p">:</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="nt"> memory</span><span class="p">:</span><span class="w"> </span><span class="nv">16Gi</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">                  </span><span class="nt">limits</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> cpu</span><span class="p">:</span><span class="w"> </span><span class="nv">8</span><span class="p p-Indicator">,</span><span class="nt"> memory</span><span class="p">:</span><span class="w"> </span><span class="nv">24Gi</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">              </span><span class="nt">volumeMounts</span><span class="p">:</span>
-<span class="w">                  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">toolchain-cache</span>
-<span class="w">                    </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/__w/aurelius-atlas/aurelius-atlas/.container-cache</span>
-<span class="w">        </span><span class="nt">volumes</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind-scratch</span>
-<span class="w">              </span><span class="nt">emptyDir</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w"> </span><span class="c1"># wiped per job; see node pool - NVMe temp disk below</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">toolchain-cache</span>
-<span class="w">              </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
-<span class="w">                  </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">atlas-ci-toolchain-cache</span>
-</code></pre></div>
-<p>Notes: the <code>toolchain-cache</code> PVC is Azure Files (NFS, <code>ReadWriteMany</code>) so the
-uv/npm/pre-commit caches are shared across nodes and persist across pods;
-<code>/var/lib/docker</code> on an emptyDir is wiped per job - nodes have ~610 GiB of NVMe
-temp disk (D8s v5), and with the AKS <code>LocalPersistentVolume</code> preview flag
-enabled, <code>medium: LocalRaid</code> moves the sidecar's overlay onto that NVMe; ARC's
-dind template wires <code>DOCKER_HOST</code> into the runner container. Node pool:</p>
+<code>gha-runner-scale-set</code>), ephemeral per-job pods, GitHub App auth (not a PAT -
+App installs scope to the repo and survive rotation). All manifests, values,
+and the provisioning script live in <a href="../../infra/arc/"><code>infra/arc/</code></a>
+(controller, node pool, scale set, status) - this section states the shape,
+infra/arc is the source of truth for the how.</p>
+<p>The load-bearing values, in words: <code>containerMode.type: dind</code> makes ARC
+inject a privileged <code>docker:dind</code> sidecar per runner pod, sharing
+<code>/var/run/docker.sock</code> with the runner container (the chart wires
+<code>DOCKER_HOST</code>; extra sidecar config - resources, the <code>/var/lib/docker</code>
+emptyDir on the node's NVMe - merges in <code>template.spec.containers</code>). A
+taint + nodeSelector (<code>ci=true</code>) keeps CI pods alone on the dedicated pool.
+The toolchain caches are an Azure Files PVC (<code>ReadWriteMany</code>, NFS) bound
+into the dev container at the exact <code>.container-cache</code> paths the composite
+action's env vars already use - the same content, volume-backed instead of
+GitHub-cache-backed, so the pipeline itself does not change.</p>
 <div class="highlight"><pre><span></span><code>az<span class="w"> </span>aks<span class="w"> </span>nodepool<span class="w"> </span>add<span class="w"> </span>--resource-group<span class="w"> </span>&lt;rg&gt;<span class="w"> </span>--cluster-name<span class="w"> </span>&lt;aks&gt;<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--name<span class="w"> </span>cipool<span class="w"> </span>--node-vm-size<span class="w"> </span>Standard_D8s_v5<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--node-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--enable-auto-scaling<span class="w"> </span>--min-count<span class="w"> </span><span class="m">0</span><span class="w"> </span>--max-count<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--enable-auto-scaling<span class="w"> </span>--min-count<span class="w"> </span><span class="m">0</span><span class="w"> </span>--max-count<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--kubelet-disk-type<span class="w"> </span>Ephemeral<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--node-taints<span class="w"> </span><span class="s2">"ci=true:NoSchedule"</span><span class="w"> </span>--priority<span class="w"> </span>Spot<span class="w"> </span>--eviction-policy<span class="w"> </span>Delete
 </code></pre></div>
@@ -8044,13 +8010,11 @@ dind template wires <code>DOCKER_HOST</code> into the runner container. Node poo
 near 6 vCPU (test fan-out) and ~30 GB (ES + observability + buildkit). The
 pool is spot + <code>minCount 0</code>: it costs nothing between runs; a spot eviction
 mid-run is a failed job that requeues (jobs are idempotent; registry cache
-makes the rerun warm). GHCR pull secret:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>arc-runners<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>docker-registry<span class="w"> </span>atlas-ghcr<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--docker-server<span class="o">=</span>ghcr.io<span class="w"> </span>--docker-username<span class="o">=</span>&lt;bot&gt;<span class="w"> </span>--docker-password<span class="o">=</span>&lt;packages:read<span class="w"> </span>PAT&gt;
-</code></pre></div>
-<p>...referenced as <code>imagePullSecrets</code> for the node's containerd pulls of
-<code>atlas-ci-runner:main</code> (and <code>buildcache-*</code> reads, which the in-container
-<code>ghcr-login</code> step already handles with the job token).</p>
+makes the rerun warm). No image-pull secrets are needed: the runner-side
+docker client sends GHCR credentials from the composite's existing login
+step, and in-container pulls use the job-token login the same step already
+does. (Under Shape A the pull moves to containerd, and a pull secret enters
+the picture then - see infra/arc notes.)</p>
 <h2 id="phases">Phases<a class="headerlink" href="#phases" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8070,8 +8034,8 @@ makes the rerun warm). GHCR pull secret:</p>
 </tr>
 <tr>
 <td>1 - canary</td>
-<td>cluster, ARC, node pool, dind; <strong>validate-only job</strong> runs on <code>[self-hosted, atlas-ci]</code> beside hosted</td>
-<td>5 consecutive green validate runs; GHCR pull cached on node (2nd run pull &lt; 10s)</td>
+<td>cluster, ARC, node pool, dind; <strong>validate-only job</strong> runs on <code>atlas-ci</code> beside hosted</td>
+<td>5 consecutive green canary runs; dev container pull + lifecycle healthy on the dind socket</td>
 <td>delete scale set</td>
 </tr>
 <tr>

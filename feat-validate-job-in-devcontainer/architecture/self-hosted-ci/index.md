@@ -13,7 +13,7 @@ The bridge (ADR 011 parity + `devcontainers/ci`) proved on hosted runners:
 | DinD | e2e compose + docker-build run on the dev container's own daemon |
 | Layer cache | registry-backed (GHCR `buildcache-*`), survives the GitHub artifactcache outage that killed `type=gha` |
 
-What hosted still costs us: the 8.3 GB pull is paid **per job** (every runner is a fresh VM), the Actions cache is a 10 GB LRU pool behind Azure Front Door (its outage broke builds for hours), runner-minutes are billed, and queued PRs queue behind a pool we don't control. On AKS the image becomes a **per-node** containerd cache (paid once per node, not per run), caches become plain volumes, capacity is a node pool, and cost is nodes.
+What hosted still costs us: the 8.3 GB pull is paid **per job** (every runner is a fresh VM), the Actions cache is a 10 GB LRU pool behind Azure Front Door (its outage broke builds for hours), runner-minutes are billed, and queued PRs queue behind a pool we don't control. On AKS: caches become plain volumes (no 10 GB cap, no AFD, no save step), capacity is a node pool we size, cost is spot nodes, and from **Shape A** (Phase 3) the image pull becomes a **per-node** containerd cache. The dind shape keeps the per-pod pull (GHCR warm, \~101s - the composite login step covers it) while moving everything else; the pull is what Shape A removes.
 
 ## Target architecture
 
@@ -21,18 +21,16 @@ What hosted still costs us: the 8.3 GB pull is paid **per job** (every runner is
 flowchart LR
     GH[GitHub Actions<br/>workflow job] -->|job token| ARC[ARC controller<br/>gha-runner-scale-set-controller]
     ARC -->|creates per job| POD[runner pod<br/>ephemeral]
-    subgraph NODE[AKS node pool: D8s v5, ephemeral OS disk]
+    subgraph NODE[AKS node pool: D8s v5 spot, ephemeral OS disk]
         POD
-        CD[containerd cache<br/>atlas-ci-runner:main<br/>pulled once per node]
         AF[Azure Files PVC<br/>.container-cache uv/npm/pre-commit]
     end
-    POD -->|docker API tcp:2376| DIND[dind sidecar<br/>privileged]
-    DIND -->|sibling containers| DC[dev container<br/>atlas-ci-runner:main]
+    POD -->|docker API<br/>unix socket, shared volume| DIND[dind sidecar<br/>privileged, per pod]
+    DIND -->|sibling containers| DC[dev container<br/>atlas-ci-runner:main<br/>pulled per pod, ~101s warm]
     DC --> GHCR[(GHCR<br/>atlas-ci-runner:main<br/>buildcache-* tags)]
-    CD -.pull.-> GHCR
 ```
 
-The workflow, the composite action, and `ci-pipeline.sh` stay as they are - that is the point of the bridge. `devcontainers/ci` inside the runner pod talks to the ARC dind sidecar's daemon (`DOCKER_HOST=tcp://localhost:2376`) and starts the dev container as a **sibling** on it, exactly as on a hosted runner. Parity with the developer container is unchanged: same CLI, same lifecycle scripts, same image digest.
+The workflow, the composite action, and `ci-pipeline.sh` stay as they are - that is the point of the bridge. `devcontainers/ci` inside the runner pod talks to the ARC dind sidecar's daemon (`docker:dind`, privileged, sharing `/var/run/docker.sock` with the runner container - the chart's dind mode) and starts the dev container as a **sibling** on it, exactly as on a hosted runner. Parity with the developer container is unchanged: same CLI, same lifecycle scripts, same image digest.
 
 **The one privileged dependency**: the docker-in-docker feature marks the dev container `privileged: true` (it runs its own dockerd). A privileged sibling can only be created by a privileged daemon, so the ARC dind sidecar runs privileged. That is root-on-the-node by definition; it is contained by a dedicated node pool (taints + tolerations, no other workloads scheduled), a NetworkPolicy, and treating every pod on that pool as untrusted.
 
@@ -41,7 +39,7 @@ The workflow, the composite action, and `ci-pipeline.sh` stay as they are - that
 Two shapes were considered; the first keeps the parity contract:
 
 - **B - runner pod + `devcontainers/ci` (chosen)**: the runner pod is ARC's stock runner image; the pipeline runs in the dev container on the dind sidecar, i.e. the merged design moved machines. The dev==CI parity property (the reason for the bridge) survives untouched.
-- **A - runner pod *is* `atlas-ci-runner`** (later optimisation): set the runner container image to the dev container image and delete `devcontainers/ci` from the path - no sibling, no daemon exec. Cheaper per run, but the devcontainer lifecycle scripts (`onCreateCommand`/ `postCreateCommand`) stop running by construction and parity becomes "the image digest pins toolchain == dev" plus a bootstrap step. Only worth it once Phase 2 is boring.
+- **A - runner pod *is* `atlas-ci-runner`** (the Phase 3 prize): set the runner container image to the dev container image and delete `devcontainers/ci` from the path - no sidecar, no daemon, and the image is pulled by **containerd once per node** (the last per-job cost falls away, including the dind store's per-pod pull of the 8.3 GB image). Cheaper per run, but the devcontainer lifecycle scripts (`onCreateCommand`/ `postCreateCommand`) stop running by construction and parity becomes "the image digest pins toolchain == dev" plus a bootstrap step. Only worth it once Phase 2 is boring.
 
 ## What changes in the repo (Phase 1-2)
 
@@ -53,7 +51,7 @@ Small by design - the bridge was built so this is a swap, not a rewrite:
 | Disk cleanup step | deletes preinstalled toolchains | no-op (clean node) | behind the existing `disk-cleanup` input; off on AKS |
 | `actions/cache` (features/toolchain caches) | GitHub cache service (private repo + self-hosted = **unavailable**) | volumes, below | composite gates the two cache steps behind a `use-actions-cache` input; on AKS the same paths are a mounted volume and the steps are skipped |
 | uv/npm/pre-commit caches | `container-cache` key, restore/save | Azure Files PVC mounted at the **same paths** (`.container-cache/`) | zero pipeline change - the `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` env already points there; volume = incremental, no 10 GB cap, no save step |
-| dev container image | pulled per job | pulled per **node** (containerd) | `imagePullSecrets` (GHCR) on the pod template; node pool uses the ephemeral OS disk so containerd has room |
+| dev container image | pulled per job | per **pod** on dind (node NVMe, \~101s warm; composite's GHCR login covers it), per **node** under Shape A | none in Phases 1-2 (this is Shape A's motivation) |
 | Docker layer cache | registry (GHCR) | registry - unchanged | none (this is why the registry-cache switch pays off: it works from any machine) |
 | Artifacts, summaries, step outputs | GitHub | GitHub - self-hosted supported | none |
 | Secrets (`AGE_SECRET_KEY`, Docker Hub, Chromatic) | GitHub | GitHub - ARC delivers job secrets to the runner pod | none |
@@ -63,83 +61,26 @@ The publisher workflow, and every hosted-only workflow (`scan`, `publish*`, `rot
 
 ## Infrastructure
 
-ARC with the Helm charts (`gha-runner-scale-set-controller` + `gha-runner-scale-set`), ephemeral per-job pods, GitHub App auth (not a PAT - App installs scope to the repo and survive rotation):
+ARC with the Helm charts (`gha-runner-scale-set-controller` + `gha-runner-scale-set`), ephemeral per-job pods, GitHub App auth (not a PAT - App installs scope to the repo and survive rotation). All manifests, values, and the provisioning script live in [`infra/arc/`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>) (controller, node pool, scale set, status) - this section states the shape, infra/arc is the source of truth for the how.
 
-```
-helm install arc \
-    --namespace arc-systems --create-namespace \
-    oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
-
-helm install atlas-ci-runner \
-    --namespace arc-runners --create-namespace \
-    --set githubConfigUrl=https://github.com/aureliusenterprise/aurelius-atlas \
-    --set githubConfigSecret=arc-atlas-runner-secrets \
-    --set minRunners=0 --set maxRunners=3 \
-    --set runnerScaleSetName=atlas-ci \
-    --set template.spec.nodeSelector."kubernetes\.io/os"=linux \
-    --set-string template.spec.tolerations[0].key=kubernetes.azure.com/scalesetpriority \
-    --set-string template.spec.tolerations[0].value=spot \
-    -f arc-values.yaml \
-    oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
-```
-
-`arc-values.yaml` carries the three load-bearing blocks:
-
-```
-containerMode:
-    type: dind
-    dockerContainerTemplate:
-        securityContext:
-            privileged: true
-        resources:
-            requests: { cpu: 2, memory: 8Gi }
-            limits: { cpu: 8, memory: 16Gi }
-        volumeMounts:
-            - name: dind-scratch
-              mountPath: /var/lib/docker
-template:
-    spec:
-        containers:
-            - name: runner
-              resources:
-                  requests: { cpu: 4, memory: 16Gi }
-                  limits: { cpu: 8, memory: 24Gi }
-              volumeMounts:
-                  - name: toolchain-cache
-                    mountPath: /__w/aurelius-atlas/aurelius-atlas/.container-cache
-        volumes:
-            - name: dind-scratch
-              emptyDir: {} # wiped per job; see node pool - NVMe temp disk below
-            - name: toolchain-cache
-              persistentVolumeClaim:
-                  claimName: atlas-ci-toolchain-cache
-```
-
-Notes: the `toolchain-cache` PVC is Azure Files (NFS, `ReadWriteMany`) so the uv/npm/pre-commit caches are shared across nodes and persist across pods; `/var/lib/docker` on an emptyDir is wiped per job - nodes have \~610 GiB of NVMe temp disk (D8s v5), and with the AKS `LocalPersistentVolume` preview flag enabled, `medium: LocalRaid` moves the sidecar's overlay onto that NVMe; ARC's dind template wires `DOCKER_HOST` into the runner container. Node pool:
+The load-bearing values, in words: `containerMode.type: dind` makes ARC inject a privileged `docker:dind` sidecar per runner pod, sharing `/var/run/docker.sock` with the runner container (the chart wires `DOCKER_HOST`; extra sidecar config - resources, the `/var/lib/docker` emptyDir on the node's NVMe - merges in `template.spec.containers`). A taint + nodeSelector (`ci=true`) keeps CI pods alone on the dedicated pool. The toolchain caches are an Azure Files PVC (`ReadWriteMany`, NFS) bound into the dev container at the exact `.container-cache` paths the composite action's env vars already use - the same content, volume-backed instead of GitHub-cache-backed, so the pipeline itself does not change.
 
 ```
 az aks nodepool add --resource-group <rg> --cluster-name <aks> \
     --name cipool --node-vm-size Standard_D8s_v5 \
-    --node-count 1 --enable-auto-scaling --min-count 0 --max-count 3 \
+    --enable-auto-scaling --min-count 0 --max-count 3 \
     --kubelet-disk-type Ephemeral \
     --node-taints "ci=true:NoSchedule" --priority Spot --eviction-policy Delete
 ```
 
-`Standard_D8s_v5` (8 vCPU / 32 GiB / \~610 GiB NVMe temp): the pipeline peaks near 6 vCPU (test fan-out) and \~30 GB (ES + observability + buildkit). The pool is spot + `minCount 0`: it costs nothing between runs; a spot eviction mid-run is a failed job that requeues (jobs are idempotent; registry cache makes the rerun warm). GHCR pull secret:
-
-```
-kubectl -n arc-runners create secret docker-registry atlas-ghcr \
-    --docker-server=ghcr.io --docker-username=<bot> --docker-password=<packages:read PAT>
-```
-
-...referenced as `imagePullSecrets` for the node's containerd pulls of `atlas-ci-runner:main` (and `buildcache-*` reads, which the in-container `ghcr-login` step already handles with the job token).
+`Standard_D8s_v5` (8 vCPU / 32 GiB / \~610 GiB NVMe temp): the pipeline peaks near 6 vCPU (test fan-out) and \~30 GB (ES + observability + buildkit). The pool is spot + `minCount 0`: it costs nothing between runs; a spot eviction mid-run is a failed job that requeues (jobs are idempotent; registry cache makes the rerun warm). No image-pull secrets are needed: the runner-side docker client sends GHCR credentials from the composite's existing login step, and in-container pulls use the job-token login the same step already does. (Under Shape A the pull moves to containerd, and a pull secret enters the picture then - see infra/arc notes.)
 
 ## Phases
 
 | Phase | Scope | Gate to pass | Rollback |
 | --- | --- | --- | --- |
 | 0 - bridge (done) | whole pipeline in `devcontainers/ci` on hosted | merged; green 18m34s | revert workflow |
-| 1 - canary | cluster, ARC, node pool, dind; **validate-only job** runs on `[self-hosted, atlas-ci]` beside hosted | 5 consecutive green validate runs; GHCR pull cached on node (2nd run pull \< 10s) | delete scale set |
+| 1 - canary | cluster, ARC, node pool, dind; **validate-only job** runs on `atlas-ci` beside hosted | 5 consecutive green canary runs; dev container pull + lifecycle healthy on the dind socket | delete scale set |
 | 2 - pipeline | full `ci` job on AKS: volume-backed caches, `CI_RUNS_ON` flip; hosted kept warm via weekly cron run | 10 green runs across PR types; wall clock ≤ hosted (18m34s); zero secret leaks in logs | flip one variable |
 | 3 - steady state | scale pool to demand; GHCR retention for `buildcache-*`; evaluate Shape A (runner = image) and moving the publisher | 1 month, no infra tickets | \- |
 
