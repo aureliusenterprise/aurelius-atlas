@@ -16,36 +16,29 @@ permissions:
     contents: read
 
 jobs:
-    # Every job below runs in the dev container image (the bridge toward
-    # self-hosted runners - see docs/architecture/self-hosted-ci.md). The
-    # run-in-devcontainer action wraps devcontainers/ci with the shared cache
-    # layout, registry logins, and secret passthrough; job commands live in
-    # .devcontainer/*.sh so they stay runnable locally.
-    validate:
+    # Everything cheap and local runs in ONE job, inside the dev container
+    # image (the bridge toward self-hosted runners - see
+    # docs/architecture/self-hosted-ci.md), in fail-fast order:
+    #
+    #   validate -> test -> docker build + vuln scan -> storybook
+    #
+    # One container run means one 8 GB image pull, one cache restore, and one
+    # Docker daemon shared by every phase: e2e containers, built images, and
+    # reports all live on the same daemon / mounted checkout, so later phases
+    # read what earlier phases wrote (this is what lets the scan skip any
+    # image export, and sonar find the coverage reports in place).
+    #
+    # The two external services - Chromatic and SonarQube - are separate jobs
+    # gated on this one, so a change that fails validate/test/scan never
+    # reaches them.
+    ci:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 90
 
-        permissions:
-            contents: read
-            # Pull the dev container image from GHCR.
-            packages: read
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
-            - name: Run pre-commit hooks in the dev container
-              uses: ./.github/actions/run-in-devcontainer
-              with:
-                  set-shas: "false"
-                  run-cmd: uv run pre-commit run --all-files
-
-    test:
-        runs-on: ubuntu-latest
-        needs: validate
-        timeout-minutes: 60
+        outputs:
+            # Written by the pipeline's storybook phase; gates the Chromatic
+            # job below.
+            ui-affected: ${{ steps.core.outputs.ui-affected }}
 
         env:
             # Nx 23.3+: select affected by individual tasks instead of whole
@@ -56,7 +49,8 @@ jobs:
         permissions:
             actions: read
             contents: read
-            packages: read
+            # Pull the dev container image, push buildcache tags.
+            packages: write
 
         steps:
             - name: Checkout code
@@ -64,21 +58,16 @@ jobs:
               with:
                   fetch-depth: 0
 
-            # e2e tests drive Docker containers; inside the dev container they
-            # run on the docker-in-docker feature's daemon (started by its
-            # docker-init entrypoint), exactly as in a developer container -
-            # the hosted runner's daemon is not involved. Failure diagnostics
-            # are collected by the script, against that daemon.
-            - name: Test affected projects
+            - name: Run the CI pipeline in the dev container
+              id: core
               uses: ./.github/actions/run-in-devcontainer
               with:
                   sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
                   dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
                   dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
                   ghcr-login: "true"
-                  docker-image-cache: "true"
                   disk-cleanup: "true"
-                  run-cmd: bash .devcontainer/test-ci.sh
+                  run-cmd: bash .devcontainer/ci-pipeline.sh
 
             - name: Upload coverage reports
               uses: actions/upload-artifact@v7
@@ -89,6 +78,21 @@ jobs:
                       **/lcov.info
                   if-no-files-found: ignore
 
+            - name: Upload vulnerability reports
+              uses: actions/upload-artifact@v7
+              with:
+                  name: vuln-reports
+                  path: "**/vulnerabilities.sarif"
+                  if-no-files-found: ignore
+
+            - name: Upload Storybook
+              if: ${{ steps.core.outputs.ui-affected == 'true' }}
+              uses: actions/upload-artifact@v7
+              with:
+                  name: storybook
+                  path: dist/storybook/aurelius-atlas-ui
+                  if-no-files-found: error
+
             - name: Upload failure diagnostics
               if: failure()
               uses: actions/upload-artifact@v7
@@ -97,59 +101,44 @@ jobs:
                   path: reports/failure-diagnostics/
                   retention-days: 30
 
-    build-and-scan:
+    chromatic:
         runs-on: ubuntu-latest
-        needs: validate
-        timeout-minutes: 60
-
-        env:
-            # Task-based affected selection — see the `test` job.
-            NX_LEGACY_AFFECTED: "false"
+        needs: ci
+        timeout-minutes: 30
 
         permissions:
-            actions: read
             contents: read
-            packages: write
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
 
-            # Images build on the dev container's DinD daemon; layer cache is
-            # registry-backed (GHCR buildcache tags, tools/plugins/docker.ts),
-            # so no job runtime token is needed.
-            # Build and scan share ONE container run: the scan reads the
-            # images from the daemon that built them, and a second container
-            # would start with an empty one.
-            - name: Build and scan docker images for affected projects
-              uses: ./.github/actions/run-in-devcontainer
+            # The core job built Storybook only when the UI was affected and
+            # says so through its job output; the upload needs the build, so
+            # it comes back as an artifact. chromaui/action's own semantics
+            # (exit codes, auto-accept) are unchanged - it uploads outputDir
+            # as-is when no buildCommand is set.
+            - name: Download Storybook
+              if: ${{ needs.ci.outputs.ui-affected == 'true' }}
+              uses: actions/download-artifact@v8
               with:
-                  sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
-                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
-                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
-                  ghcr-login: "true"
-                  docker-image-cache: "true"
-                  disk-cleanup: "true"
-                  run-cmd: |
-                      npx nx affected -t docker-build -c ci &&
-                          npx nx affected -t docker-vuln-scan -c sarif
+                  name: storybook
+                  path: dist/storybook/aurelius-atlas-ui
 
-            - name: Upload vulnerability reports
-              uses: actions/upload-artifact@v7
+            - name: Run Chromatic
+              if: ${{ needs.ci.outputs.ui-affected == 'true' }}
+              uses: chromaui/action@v18
               with:
-                  name: vuln-reports
-                  path: "**/vulnerabilities.sarif"
-                  if-no-files-found: ignore
+                  outputDir: "dist/storybook/aurelius-atlas-ui"
+                  projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
 
     sonar:
         runs-on: ubuntu-latest
-        needs: [test, build-and-scan]
+        needs: ci
         timeout-minutes: 30
 
         env:
-            # Task-based affected selection — see the `test` job.
+            # Task-based affected selection — see the `ci` job.
             NX_LEGACY_AFFECTED: "false"
 
         permissions:
@@ -160,11 +149,10 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
 
-            # Downloaded into the checkout BEFORE the container starts - the
-            # container mounts the checkout, so sonar-scanner finds them.
+            # Coverage and vulnerability reports were written by the core job
+            # into the workspace and uploaded as artifacts - restored here so
+            # sonar-scanner finds them in the checkout.
             - name: Download coverage reports
               continue-on-error: true
               uses: actions/download-artifact@v8
@@ -177,12 +165,6 @@ jobs:
               with:
                   name: vuln-reports
 
-            # Decrypt every project, not just the affected ones: with task-based affected,
-            # decrypt only counts as affected when .env.enc changes, and a .env that the
-            # sonar run decrypts itself is written after Nx has loaded the task env, so
-            # sonar-scanner would run without SONAR_TOKEN ("Not authorized").
-            # Decrypt and analyze in ONE container run: the decrypted .env files live in
-            # the mounted checkout and must still be there when sonar-scanner starts.
             - name: Run SonarQube analysis
               uses: ./.github/actions/run-in-devcontainer
               with:
@@ -190,43 +172,3 @@ jobs:
                   run-cmd: |
                       npx nx run-many -t decrypt
                       npx nx affected -t sonar
-
-    chromatic:
-        runs-on: ubuntu-latest
-        needs: test
-        timeout-minutes: 30
-
-        env:
-            # Task-based affected selection — see the `test` job.
-            NX_LEGACY_AFFECTED: "false"
-
-        permissions:
-            contents: read
-            packages: read
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
-            # Chromatic only publishes aurelius-atlas-ui's Storybook, so skip
-            # the build when the UI (or its dependencies) are not affected.
-            # The build runs in the dev container; dist/ lands in the mounted
-            # checkout, where the upload step below finds it. The upload stays
-            # a host step - chromaui/action's own semantics (exit codes,
-            # auto-accept) are unchanged.
-            - name: Build Storybook in the dev container
-              id: build
-              uses: ./.github/actions/run-in-devcontainer
-              with:
-                  run-cmd: bash .devcontainer/chromatic-check.sh
-
-            - name: Run Chromatic
-              if: ${{ steps.build.outputs.ui-affected == 'true' }}
-              uses: chromaui/action@v18
-              with:
-                  # Pre-built in the dev container - no buildCommand: the
-                  # action uploads outputDir as-is when no build command is set.
-                  outputDir: "dist/storybook/aurelius-atlas-ui"
-                  projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}

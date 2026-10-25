@@ -26,21 +26,8 @@ inputs:
     ghcr-login:
         description: Log in to ghcr.io inside the container (private image pulls).
         default: "false"
-    use-runtime-token:
-        description: >
-            Expose the job runtime token (ACTIONS_RUNTIME_TOKEN/ACTIONS_CACHE_URL)
-            inside the container, so buildx type=gha cache works from there.
-        default: "false"
     disk-cleanup:
         description: Remove unneeded pre-installed toolchains on the runner.
-        default: "false"
-    docker-image-cache:
-        description: >
-            Share the container's Docker image store across jobs via
-            actions/cache (docker load at job start, docker save at job end).
-            The image list is discovered from the daemon, so new base images
-            enter the cache the first time any job pulls them - no list to
-            maintain. Enable for jobs that pull/run Docker images.
         default: "false"
     image-tag:
         description: Tag of the dev container image to run.
@@ -78,12 +65,6 @@ runs:
           if: inputs.set-shas == 'true'
           uses: nrwl/nx-set-shas@v5
 
-        - name: Expose GitHub runtime for the container
-          # Mints ACTIONS_RUNTIME_TOKEN/ACTIONS_CACHE_URL for buildx
-          # type=gha cache, used by docker-build inside the container.
-          if: inputs.use-runtime-token == 'true'
-          uses: crazy-max/ghaction-github-runtime@v4
-
         - name: Log in to the GitHub Container registry
           uses: docker/login-action@v4
           with:
@@ -111,20 +92,6 @@ runs:
               key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
               restore-keys: container-cache-${{ runner.os }}-
 
-        # The shared Docker image store (see the docker-image-cache input).
-        # Rolling key: the exact key never repeats, so every job restores the
-        # most recent entry saved by ANY job (restore-keys) and saves its own
-        # at the end - jobs warm each other. Tolerate cache-service outages:
-        # a missed restore/save costs time, not the job.
-        - name: Restore Docker image cache
-          if: inputs.docker-image-cache == 'true'
-          continue-on-error: true
-          uses: actions/cache@v5
-          with:
-              path: ${{ github.workspace }}/.container-cache/docker-images
-              key: docker-images-${{ runner.os }}-${{ github.run_id }}
-              restore-keys: docker-images-${{ runner.os }}-
-
         - name: Run in dev container
           id: run
           uses: devcontainers/ci@v0.3
@@ -143,9 +110,9 @@ runs:
               # Validation/build only - publishing is the publisher's job.
               push: never
               # Values set above reach the container; bare names pass through
-              # the runner environment (BASE/HEAD from nx-set-shas, the buildx
-              # runtime token, NX_LEGACY_AFFECTED, ...). Secrets deliberately
-              # arrive per-job, mirroring the per-step scoping the hosted jobs
+              # the runner environment (BASE/HEAD from nx-set-shas,
+              # NX_LEGACY_AFFECTED, ...). Secrets deliberately arrive per-job,
+              # mirroring the per-step scoping the hosted jobs
               # had - there is no host credential forwarding in CI.
               env: |
                   UV_CACHE_DIR=/workspaces/aurelius-atlas/.container-cache/uv
@@ -159,8 +126,6 @@ runs:
                   NX_BASE
                   NX_HEAD
                   NX_LEGACY_AFFECTED
-                  ACTIONS_RUNTIME_TOKEN
-                  ACTIONS_CACHE_URL
               # Registry logins happen INSIDE the container: the dev container
               # runs its own Docker daemon (the docker-in-docker feature), so
               # host-side docker logins do not apply to it. The daemon starts
@@ -179,26 +144,6 @@ runs:
                   if [ "${{ inputs.ghcr-login }}" = "true" ]; then
                       printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
                   fi
-                  if [ "${{ inputs.docker-image-cache }}" = "true" ] && [ -f .container-cache/docker-images/images.tar.gz ]; then
-                      echo "Loading shared Docker image cache..."
-                      gunzip -c .container-cache/docker-images/images.tar.gz | docker load --quiet
-                  fi
                   ${{ inputs.run-cmd }}
                   rc=$?
-                  if [ "${{ inputs.docker-image-cache }}" = "true" ]; then
-                      mkdir -p .container-cache/docker-images
-                      # Save every image the daemon now holds, minus the dev
-                      # container image itself and this repo's own builds
-                      # (project images are ephemeral build outputs, not cache
-                      # seeds). Discovery from the daemon = zero maintenance
-                      # when base images change.
-                      imgs="$(docker images --format '{{.Repository}}:{{.Tag}}' |
-                          grep -vE '^<none>|^ghcr\.io/aureliusenterprise/(aurelius-atlas-|atlas-ci-runner)|^vsc-' |
-                          sort -u)"
-                      if [ -n "$imgs" ]; then
-                          echo "Saving shared Docker image cache ($(printf '%s\n' "$imgs" | wc -l) images)..."
-                          # shellcheck disable=SC2086
-                          docker save $imgs | pigz >.container-cache/docker-images/images.tar.gz
-                      fi
-                  fi
                   exit $rc
