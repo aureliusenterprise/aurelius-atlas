@@ -8077,7 +8077,7 @@ so correctness survives).</p>
 <span class="w">    </span>--enable-autoscaling<span class="w"> </span>--min-nodes<span class="w"> </span><span class="m">0</span><span class="w"> </span>--max-nodes<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--disk-type<span class="w"> </span>pd-ssd<span class="w"> </span>--disk-size<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--node-taints<span class="w"> </span><span class="nv">ci</span><span class="o">=</span>true:NoSchedule<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--workload-metadata-disabled
+<span class="w">    </span>--workload-metadata<span class="o">=</span>DISABLED
 </code></pre></div>
 <p><code>n2-standard-8</code> (8 vCPU / 32 GiB): the pipeline peaks near 6 vCPU (test
 fan-out) and ~30 GB (ES + observability + buildkit); the boot disk is PD-SSD

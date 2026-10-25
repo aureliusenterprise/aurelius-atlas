@@ -72,7 +72,7 @@ gcloud container node-pools create cipool \
     --enable-autoscaling --min-nodes 0 --max-nodes 3 \
     --disk-type pd-ssd --disk-size 200 \
     --node-taints ci=true:NoSchedule \
-    --workload-metadata-disabled
+    --workload-metadata=DISABLED
 ```
 
 `n2-standard-8` (8 vCPU / 32 GiB): the pipeline peaks near 6 vCPU (test fan-out) and \~30 GB (ES + observability + buildkit); the boot disk is PD-SSD (the 8.3 GB image + buildkit layers need the room). The pool is spot + scale-to-zero (`min-nodes 0`): it costs nothing between runs; a spot preemption mid-run is a failed job that requeues (jobs are idempotent; registry cache makes the rerun warm). No image-pull secrets are needed: the runner-side docker client sends GHCR credentials from the composite's existing login step, and in-container pulls use the job-token login the same step already does. (Under Shape A the pull moves to containerd, and a pull secret enters the picture then - see infra/arc notes.)
