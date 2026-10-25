@@ -73,6 +73,20 @@ jobs:
                   key: features-cache-${{ hashFiles('.devcontainer/devcontainer.json', '.devcontainer/features/**', 'uv.lock') }}
                   restore-keys: features-cache-
 
+            # The runCmd container runs the devcontainer lifecycle scripts
+            # (npm install, uv sync, ...) before the smoke test - redirect
+            # those tool caches into the workspace and cache them. Shared key
+            # with the CI jobs that run in this image (ci.yaml).
+            - name: Cache toolchain and hooks
+              uses: actions/cache@v5
+              with:
+                  path: |
+                      ${{ github.workspace }}/.container-cache/uv
+                      ${{ github.workspace }}/.container-cache/npm
+                      ${{ github.workspace }}/.container-cache/pre-commit
+                  key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
+                  restore-keys: container-cache-${{ runner.os }}-
+
             - name: Build dev container image and run smoke test
               uses: devcontainers/ci@v0.3
               with:

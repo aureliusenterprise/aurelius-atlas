@@ -38,6 +38,29 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
+            # Caches for the devcontainer lifecycle (npm/uv install) and the
+            # hooks. All paths live under the workspace, which the action
+            # mounts into the container at /workspaces/aurelius-atlas - the
+            # env vars below redirect each tool's cache into it. The features
+            # cache shares its key with the publisher workflow, so a cache the
+            # publisher wrote on main is restored here.
+            - name: Cache dev container features
+              uses: actions/cache@v5
+              with:
+                  path: .devcontainer/.features-cache
+                  key: features-cache-${{ hashFiles('.devcontainer/devcontainer.json', '.devcontainer/features/**', 'uv.lock') }}
+                  restore-keys: features-cache-
+
+            - name: Cache toolchain and hooks
+              uses: actions/cache@v5
+              with:
+                  path: |
+                      .container-cache/uv
+                      .container-cache/npm
+                      .container-cache/pre-commit
+                  key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
+                  restore-keys: container-cache-${{ runner.os }}-
+
             # Bridge (self-hosted CI plan, PR 2): run the hooks inside the
             # published dev container image — the same environment developers
             # use (see .devcontainer/ and build-devcontainer-image.yaml). The
@@ -54,8 +77,15 @@ jobs:
                   imageName: ghcr.io/aureliusenterprise/atlas-ci-runner
                   imageTag: main
                   cacheFrom: ghcr.io/aureliusenterprise/atlas-ci-runner:main
+                  userDataFolder: ${{ github.workspace }}/.devcontainer/.features-cache
                   # Validation only - never publish from this job.
                   push: never
+                  # Redirect tool caches into the (cached) workspace. These
+                  # reach the lifecycle scripts and the runCmd alike.
+                  env: |
+                      UV_CACHE_DIR=/workspaces/aurelius-atlas/.container-cache/uv
+                      npm_config_cache=/workspaces/aurelius-atlas/.container-cache/npm
+                      PRE_COMMIT_HOME=/workspaces/aurelius-atlas/.container-cache/pre-commit
                   # `devcontainer build/up` rewrites devcontainer-lock.json in
                   # the mounted workspace (its own formatting), which prettier
                   # would then flag as modified. The committed lockfile is the
