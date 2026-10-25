@@ -125,7 +125,7 @@ services:
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                d=$(mktemp -d) &&
+                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) &&
                 install -m 600 /certs/postgres.pem $$d/server.pem &&
                 install -m 600 /certs/postgres-key.pem $$d/server-key.pem &&
                 exec docker-entrypoint.sh

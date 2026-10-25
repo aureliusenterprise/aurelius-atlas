@@ -48,7 +48,11 @@ _TLS_STARTUP_COMMAND = (
     # target must be born with the running user's ownership every boot -
     # fixed paths collide on a warm daemon ("File exists", run 40225940082;
     # then EACCES over a foreign-owned file, sticky /tmp, run 40228376483).
-    "d=$(mktemp -d) &&"
+    # The template is ABSOLUTE: the hardened image is alpine/busybox, whose
+    # mktemp with no template writes tmp.XXXXXX in the CWD (the postgres
+    # user's CWD is / - "mktemp: : Permission denied", run 40229842880);
+    # glibc (dev laptops) defaults to /tmp, so only CI caught this.
+    "d=$(mktemp -d /tmp/atlas-certs.XXXXXX) &&"
     " install -m 600 /certs/server.pem $d/server.pem &&"
     " install -m 600 /certs/server-key.pem $d/server-key.pem &&"
     " exec docker-entrypoint.sh -c ssl=on"

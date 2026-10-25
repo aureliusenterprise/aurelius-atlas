@@ -102,7 +102,7 @@ services:
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                d=$(mktemp -d) && install -m 600 /certs/postgres.pem $$d/server.pem && install -m 600 /certs/postgres-key.pem $$d/server-key.pem && exec docker-entrypoint.sh -c ssl=on -c ssl_cert_file=$$d/server.pem -c ssl_key_file=$$d/server-key.pem -c hba_file=/conf/pg_hba.conf
+                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) && install -m 600 /certs/postgres.pem $$d/server.pem && install -m 600 /certs/postgres-key.pem $$d/server-key.pem && exec docker-entrypoint.sh -c ssl=on -c ssl_cert_file=$$d/server.pem -c ssl_key_file=$$d/server-key.pem -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
         healthcheck:
             test:
