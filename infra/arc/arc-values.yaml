@@ -1,0 +1,58 @@
+# ARC gha-runner-scale-set for aurelius-atlas CI (docs/architecture/self-hosted-ci.md).
+# Release name: atlas-ci, namespace: arc-runners. Auth: pre-created secret.
+githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
+githubConfigSecret: atlas-arc-auth
+runnerScaleSetName: atlas-ci
+minRunners: 0
+maxRunners: 3
+
+# Jobs target the pool with runs-on: atlas-ci (see CI_RUNS_ON repo variable).
+scaleSetLabels:
+    - atlas-ci
+
+containerMode:
+    type: dind
+
+template:
+    spec:
+        nodeSelector:
+            ci: "true"
+        tolerations:
+            - key: ci
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
+        containers:
+            # The job container (ARC stock runner image, from the chart).
+            - name: runner
+              resources:
+                  requests:
+                      cpu: "2"
+                      memory: 8Gi
+                  limits:
+                      cpu: "8"
+                      memory: 24Gi
+            # The dind sidecar (injected by containerMode.type=dind; the chart
+            # merges this entry into it). Privileged is set by the chart - the
+            # dev container needs it (docker-in-docker feature), so this pool
+            # is CI-only. Its image store lives on the node NVMe (emptyDir),
+            # wiped per job.
+            - name: dind
+              resources:
+                  requests:
+                      cpu: "2"
+                      memory: 8Gi
+                  limits:
+                      cpu: "8"
+                      memory: 16Gi
+              volumeMounts:
+                  - name: dind-scratch
+                    mountPath: /var/lib/docker
+        volumes:
+            - name: dind-scratch
+              emptyDir: {}
+            # Shared toolchain cache (uv/npm/pre-commit), same paths the
+            # composite action's env vars point at - see CI_CACHE_MOUNTS.
+            - name: atlas-toolchain-cache
+              persistentVolumeClaim:
+                  claimName: atlas-toolchain-cache

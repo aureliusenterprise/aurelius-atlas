@@ -29,6 +29,13 @@ inputs:
     disk-cleanup:
         description: Remove unneeded pre-installed toolchains on the runner.
         default: "false"
+    use-actions-cache:
+        description: >
+            Restore/save the features and toolchain caches through the GitHub
+            Actions cache service. Hosted runners: yes. Self-hosted (ARC) runners:
+            the service is unavailable for private repos - mount the caches as
+            volumes at the same paths (see infra/arc) and set "false".
+        default: "true"
     image-tag:
         description: Tag of the dev container image to run.
         default: main
@@ -74,8 +81,10 @@ runs:
 
         # Caches shared with build-devcontainer-image.yaml (identical keys):
         # feature installers, and the toolchain/hook caches redirected into
-        # the workspace via the env vars on the run step below.
+        # the workspace via the env vars on the run step below. On
+        # self-hosted runners these paths are volumes (infra/arc) instead.
         - name: Cache dev container features
+          if: inputs.use-actions-cache == 'true'
           uses: actions/cache@v5
           with:
               path: ${{ github.workspace }}/.devcontainer/.features-cache
@@ -83,6 +92,7 @@ runs:
               restore-keys: features-cache-
 
         - name: Cache toolchain and hooks
+          if: inputs.use-actions-cache == 'true'
           uses: actions/cache@v5
           with:
               path: |
@@ -107,6 +117,7 @@ runs:
               imageTag: ${{ inputs.image-tag }}
               cacheFrom: ghcr.io/aureliusenterprise/atlas-ci-runner:${{ inputs.image-tag }}
               userDataFolder: ${{ github.workspace }}/.devcontainer/.features-cache
+              mounts: ${{ inputs.cache-mounts }}
               # Validation/build only - publishing is the publisher's job.
               push: never
               # Values set above reach the container; bare names pass through
