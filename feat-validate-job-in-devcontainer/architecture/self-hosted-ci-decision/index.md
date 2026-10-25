@@ -1,6 +1,6 @@
 # Decision: self-hosted CI runners on GKE (ARC) vs GitHub-hosted
 
-> **Status**: decision draft for review (thijs + colleague). 2026-10-25. Companion to [self-hosted-ci.md](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/self-hosted-ci/index.md>) (the how); this doc is the **should we**, with measured numbers. Nothing is provisioned yet.
+> **Status**: decision draft for review (thijs + colleague). 2026-10-25. Companion to [self-hosted-ci.md](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/self-hosted-ci/index.md>) (the how); this doc is the **should we**, with measured numbers. **Update (same day): the Phase 1 canary is LIVE and GREEN 5/5** on atlas-dev's existing pool - see "Phase 1 result" below. The remaining decision is only about Phase 2 (moving the full CI job: dedicated spot pool + cache PVC).
 
 ## TL;DR
 
@@ -14,6 +14,19 @@
 | Infra cost | — | **none new** - atlas-dev already pays the cluster fee |
 
 **Recommendation**: proceed (Phase 1 canary on atlas-dev, \~1 day of work, fully revertible). At our volume the cost is a wash; we buy reliability, speed headroom, and independence. The old blocker ("needs a new Standard cluster, \~€70/mo") is void - atlas-dev **is** Standard mode.
+
+## Phase 1 result (measured, 2026-10-25)
+
+The canary (validate-only, the dev container via `devcontainers/ci` on an ARC dind runner) ran **5/5 green** on atlas-dev's **existing default pool** - no new node pool, no cache PVC, requests sized to the pool's headroom:
+
+| Run | Duration | Note |
+| --- | ---: | --- |
+| cold (image built from scratch on the dind sidecar) | 9m10s | first GKE run, no cache |
+| warm (image layers reused) | 9m23s |  |
+| concurrent pair (2 jobs on the pool) | 14m35s / 14m28s | concurrency works within the node |
+| warm | 9m42s |  |
+
+Findings: the pool carries 2 concurrent jobs comfortably (requests 500m/2Gi each vs 3.92 CPU/13.9 Gi allocatable); image builds on the dind sidecar work (the 100 GB boot disk is ample); idle cost is exactly zero (`minRunners: 0`, pods scale to zero). Full-pipeline capacity (test fan-out \~6 vCPU / \~30 GB) still exceeds one node, which is why Phase 2 (dedicated tainted spot pool + cache PVC) is the open decision, not Phase 1.
 
 ## What we measured (30 days, 2026-09-25 → 10-25)
 
@@ -90,5 +103,5 @@ ARC (`actions-runner-controller`, GitHub's official chart) turns each workflow j
 
 ## Decision asks
 
-1. A vs B? (If A: we provision the tainted spot pool + ARC on atlas-dev, canary-only first - the hosted path stays live beside it.)
-2. Who creates the **GitHub App** (org owner needed, Actions: read/write, this repo only)? Key goes into a k8s secret, never git.
+1. **Phase 2**: flip the full CI job to GKE (A) or keep it hosted (B)? Phase 1 proved the mechanics on the existing pool at zero cost; the flip needs the dedicated tainted spot pool (\~$6–12/mo spot, scale 0..3) + the cache PVC (\~$5/mo) so the full pipeline (test fan-out \~6 vCPU / \~30 GB) has a node that can hold it. Revert = unset the variables + `helm uninstall`.
+2. \~\~GitHub App\~\~ resolved during Phase 1: the App (atlas-arc) is installed and ready, but runner-management APIs reject App auth on the Team plan - a classic `repo`-scoped PAT runs ARC today (90-day expiry, rotation = one `kubectl` command). The App flips back on with an Enterprise upgrade.

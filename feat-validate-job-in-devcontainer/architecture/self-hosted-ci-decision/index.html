@@ -6911,6 +6911,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phase-1-result-measured-2026-10-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Phase 1 result (measured, 2026-10-25)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-we-measured-30-days-2026-09-25-10-25" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7660,6 +7671,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phase-1-result-measured-2026-10-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Phase 1 result (measured, 2026-10-25)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-we-measured-30-days-2026-09-25-10-25" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7945,7 +7967,10 @@
 <blockquote>
 <p><strong>Status</strong>: decision draft for review (thijs + colleague). 2026-10-25.
 Companion to <a href="../self-hosted-ci/">self-hosted-ci.md</a> (the how); this doc is
-the <strong>should we</strong>, with measured numbers. Nothing is provisioned yet.</p>
+the <strong>should we</strong>, with measured numbers. <strong>Update (same day): the Phase 1
+canary is LIVE and GREEN 5/5</strong> on atlas-dev's existing pool - see
+"Phase 1 result" below. The remaining decision is only about Phase 2
+(moving the full CI job: dedicated spot pool + cache PVC).</p>
 </blockquote>
 <h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
 <table>
@@ -7993,6 +8018,47 @@ the <strong>should we</strong>, with measured numbers. Nothing is provisioned ye
 fully revertible). At our volume the cost is a wash; we buy reliability,
 speed headroom, and independence. The old blocker ("needs a new Standard
 cluster, ~€70/mo") is void - atlas-dev <strong>is</strong> Standard mode.</p>
+<h2 id="phase-1-result-measured-2026-10-25">Phase 1 result (measured, 2026-10-25)<a class="headerlink" href="#phase-1-result-measured-2026-10-25" title="Permanent link">&para;</a></h2>
+<p>The canary (validate-only, the dev container via <code>devcontainers/ci</code> on an ARC
+dind runner) ran <strong>5/5 green</strong> on atlas-dev's <strong>existing default pool</strong> - no
+new node pool, no cache PVC, requests sized to the pool's headroom:</p>
+<table>
+<thead>
+<tr>
+<th>Run</th>
+<th style="text-align: right;">Duration</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cold (image built from scratch on the dind sidecar)</td>
+<td style="text-align: right;">9m10s</td>
+<td>first GKE run, no cache</td>
+</tr>
+<tr>
+<td>warm (image layers reused)</td>
+<td style="text-align: right;">9m23s</td>
+<td></td>
+</tr>
+<tr>
+<td>concurrent pair (2 jobs on the pool)</td>
+<td style="text-align: right;">14m35s / 14m28s</td>
+<td>concurrency works within the node</td>
+</tr>
+<tr>
+<td>warm</td>
+<td style="text-align: right;">9m42s</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Findings: the pool carries 2 concurrent jobs comfortably (requests 500m/2Gi
+each vs 3.92 CPU/13.9 Gi allocatable); image builds on the dind sidecar work
+(the 100 GB boot disk is ample); idle cost is exactly zero (<code>minRunners: 0</code>,
+pods scale to zero). Full-pipeline capacity (test fan-out ~6 vCPU / ~30 GB)
+still exceeds one node, which is why Phase 2 (dedicated tainted spot pool +
+cache PVC) is the open decision, not Phase 1.</p>
 <h2 id="what-we-measured-30-days-2026-09-25-10-25">What we measured (30 days, 2026-09-25 → 10-25)<a class="headerlink" href="#what-we-measured-30-days-2026-09-25-10-25" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8174,10 +8240,16 @@ to revert. Full detail: <a href="../self-hosted-ci/">self-hosted-ci.md</a>.</p>
 </ul>
 <h2 id="decision-asks">Decision asks<a class="headerlink" href="#decision-asks" title="Permanent link">&para;</a></h2>
 <ol>
-<li>A vs B? (If A: we provision the tainted spot pool + ARC on atlas-dev,
-   canary-only first - the hosted path stays live beside it.)</li>
-<li>Who creates the <strong>GitHub App</strong> (org owner needed, Actions: read/write,
-   this repo only)? Key goes into a k8s secret, never git.</li>
+<li><strong>Phase 2</strong>: flip the full CI job to GKE (A) or keep it hosted (B)?
+   Phase 1 proved the mechanics on the existing pool at zero cost; the flip
+   needs the dedicated tainted spot pool (~$6–12/mo spot, scale 0..3) + the
+   cache PVC (~$5/mo) so the full pipeline (test fan-out ~6 vCPU / ~30 GB)
+   has a node that can hold it. Revert = unset the variables + <code>helm
+uninstall</code>.</li>
+<li>~~GitHub App~~ resolved during Phase 1: the App (atlas-arc) is installed
+   and ready, but runner-management APIs reject App auth on the Team plan -
+   a classic <code>repo</code>-scoped PAT runs ARC today (90-day expiry, rotation =
+   one <code>kubectl</code> command). The App flips back on with an Enterprise upgrade.</li>
 </ol>
 
 
