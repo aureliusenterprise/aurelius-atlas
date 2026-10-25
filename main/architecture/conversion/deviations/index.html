@@ -4020,6 +4020,8 @@
       
         
       
+        
+      
     
     
     
@@ -4925,6 +4927,33 @@
     
   
   4.2a Free text
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-2-quick-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.2b Quick search
 
     
   </span>
@@ -8038,6 +8067,22 @@ Atlas clients expect when it lands).</p>
 <td>An upstream failure is <code>502 BAD GATEWAY</code> with Atlas's error body; the caller's token is never leaked into the message</td>
 <td>A dependency that fails is a gateway condition, and a 500 from uncaught internals is an accident (LM-07)</td>
 <td>8.2</td>
+</tr>
+<tr>
+<td>DV-81</td>
+<td>Search</td>
+<td>Suggestions are the field's Solr terms: whole values for <code>indexType</code> <code>STRING</code>; ties in any order</td>
+<td>The analysed words of the text sub-field; ties by term (DD-094)</td>
+<td>One reading of every field; a stable answer</td>
+<td>4.2</td>
+</tr>
+<tr>
+<td>DV-82</td>
+<td>Search</td>
+<td>Suggestions of a field that is not a string are its encoded Solr terms</td>
+<td>There are none</td>
+<td>Encoded numbers are no suggestion to a user</td>
+<td>4.2</td>
 </tr>
 </tbody>
 </table>

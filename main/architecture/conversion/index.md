@@ -68,7 +68,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 4.1a | Entity search | `SearchParameters`, entity filters, operators, sort, paging, search fields | `EntitySearchProcessor`, `SearchContext` | in progress |
 | 4.1b | Classification search | Classification filters, wildcards, sub classifications | `ClassificationSearchProcessor` | in progress |
 | 4.2a | Free text | Free-text index, basic search `query`, `search/fulltext` | `FreeTextSearchProcessor`, `SolrIndexHelper` | in progress |
-| 4.2b | Quick search and suggestions | `search/quick` with facets, `search/suggestions` | `AtlasDiscoveryService`, `SearchAggregatorImpl` | planned |
+| 4.2b | Quick search and suggestions | `search/quick` with facets, `search/suggestions` | `AtlasDiscoveryService`, `SearchAggregatorImpl` | in progress |
 | 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | planned |
 | 4.4 | DSL execution | AST to search queries; declared unsupported forms | `GremlinQueryComposer` (replaced) | planned |
 | 4.5 | Saved searches and user profile | Saved search CRUD | `UserProfileService` | planned |
@@ -100,9 +100,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 7.18 | Collector ingest identity | Per-service ingest identity: client-credentials JWTs on the per-service leg (OIDC), azp-stamped writes, shared-token legacy leg (CIA-06..10, DD-196) | – (platform-side, extends ADR 039) | in progress |
 | 7.19 | Frontend failure UX | Test-completeness of the frontend failure paths (DD-214): the data-access error matrix, observability branch holes, config-boot failure, editor failing save/delete, out-of-order search — no new rule ids | — (proves APC-04, SHL-02/14, SPL-03/04) | in progress |
 | 8.0 | Auxiliary API foundation | Shared foundation for the ADR 055 data surface: `aurelius-atlas-otel` + `aurelius-atlas-auth` libs, per-service ingest clients (AUX-01..05, DD-108) | Aurelius server `otel_ingest`, FastAPI example app | in progress |
-| 8.1 | data2model API | Legacy `/extract` as a FastAPI app: archimate rows in, ar3 model string out, native layout (ADR 055, DV-51) | Aurelius `m4i-data2model`, `m4i-analytics` | planned |
-| 8.2 | lineage-model API | Legacy lineage flattening as a FastAPI app: Atlas lineage in, archimate rows out; source stubbed until 5.1 (ADR 055, DV-52) | Aurelius `m4i-lineage-model` | planned |
-| 8.3 | validate-entity API | Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-50) | Aurelius `m4i-validate-entity` | in progress |
+| 8.1 | data2model API | Legacy `/extract` as a FastAPI app: archimate rows in, ar3 model string out, native layout (ADR 055, DV-68) | Aurelius `m4i-data2model`, `m4i-analytics` | planned |
+| 8.2 | lineage-model API | Legacy lineage flattening as a FastAPI app: Atlas lineage in, archimate rows out; source stubbed until 5.1 (ADR 055, DV-69) | Aurelius `m4i-lineage-model` | planned |
+| 8.3 | validate-entity API | Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-67) | Aurelius `m4i-validate-entity` | in progress |
 | 8.4 | API client libraries | Contract + async client library per Python API (CL-01..50, DD-114/115): models move to the lib, the app imports its own contract | Aurelius `libs/atlas/api` (the Angular twin), 8.1-8.3 apps | in progress |
 | 8.5 | lineage-model circuit breakers | Per-upstream circuit breakers on the 8.2 chain: outages open the circuit, the open circuit fast-fails 502 (LM-11..15, DD-117, DV-60) | Aurelius `m4i-lineage-model` (bare `requests.post`, no breaker) | in progress |
 | 8.6 | Aux API failure hardening | Test-completeness of the 8.1–8.3 failure paths (DD-125): engine view/dynamic-view paths, transport-failure 502, d2m fast-fail, timeout, negative parity scenarios — no new rule ids | — (proves DTM-04/06/07, LM-07/12/13, VE-01) | in progress |
