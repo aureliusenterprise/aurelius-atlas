@@ -210,6 +210,7 @@
 - [Identity Management](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/platform/security/identity-management/index.md>)
 - [Security](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/platform/security/index.md>)
 - [Secrets Management](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/platform/security/secrets-management/index.md>)
+- [Self-hosted CI](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/self-hosted-ci/index.md>)
 - [Architecture Roadmap](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/vision-and-strategy/architecture-roadmap/index.md>)
 - [Business Objectives](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/vision-and-strategy/business-objectives/index.md>)
 - [Vision &amp;amp; Strategy](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/vision-and-strategy/index.md>)
