@@ -4,17 +4,18 @@
 # exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
 # elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
 # write-permission anomalies on world-writable targets. ROOT CAUSES
-# (round 3 matrix): (1) the dhi hardened postgres digest rolled to
-# /tmp=2775 root:999 - uid 70 cannot write /tmp at all (local digest
-# is the 1777 one - tag content differs per registry path); (2) the
-# GKE node (Ubuntu 26.04, kernel 6.12.105+) exposes /proc/self/
-# coredump_filter 644 root:root - ES 9.5 writes it unconditionally at
-# bootstrap (upstream Elasticsearch.java), fatal after the entrypoint's
-# root->1000 drop. "Databases used to start" = node auto-upgrade +
-# image roll, both recent. Candidate fixes: tmpfs /tmp mode=1777
-# (plain --tmpfs inherits the image's 2775 - round 3 B), fake
-# coredump_filter bind-mount for ES. Round 4 validates both, plus the
-# sysctl knob for the record. Delete after diagnosis.
+# (round 3): (1) the dhi hardened postgres digest rolled to /tmp=2775
+# root:999 - uid 70 cannot write /tmp; FIX VALIDATED (round 4 P2):
+# tmpfs /tmp mode=1777 -> all writes OK. (2) kernel 6.12.105+ (COS,
+# dumpability-inheritance series): docker container processes are
+# non-dumpable there, and coredump_filter writes require dumpable ->
+# ES 9.5's unconditional bootstrap write (Elasticsearch.java) is fatal
+# as uid 1000. Round-4 kills: /proc bind (runc proc-safety),
+# fs.suid_dumpable=1 (no effect). ES refuses to run as root (upstream
+# check), so the remaining lever is PRIVILEGED: capabilities preserved
+# -> the kernel gate passes. Round 5: E1 full ES boot as image user +
+# --privileged, E2 same plain (expected fatal), E3 root-refusal check.
+# Delete after diagnosis.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -64,8 +65,8 @@ jobs:
             # The compose stacks interpolate ${OTEL_*}/${DATABASE_*} from
             # the project .env - decrypted .env.enc (nx decrypt, sops).
             # Round 1 died here.
-            # FIX CANDIDATES: postgres tmpfs mode=1777; ES fake
-            # coredump_filter bind. || true everywhere.
+            # FIX CANDIDATES. P = postgres tmpfs (validated P2 round
+            # 4). E = ES boot privilege matrix. || true everywhere.
             - name: Postgres fix probes
               continue-on-error: true
               run: |
@@ -76,23 +77,36 @@ jobs:
                   echo "### P2: tmpfs mode=1777 (candidate fix)"
                   docker run --rm --tmpfs /tmp:mode=1777,exec --entrypoint sh $PG -c "$PROBE" || true
 
-            - name: Elasticsearch fix probes
+            - name: Elasticsearch privilege probes
               continue-on-error: true
               run: |
                   ES=dhi.io/elasticsearch:9.5-debian13
-                  echo 0x23 > probe-cf
-                  chmod 666 probe-cf
-                  echo "### E1: fake coredump_filter bind, as uid 1000"
-                  docker run --rm --user 1000:1000 -v "$PWD/probe-cf:/proc/1/coredump_filter" \
-                      --entrypoint bash $ES -c 'ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo E1:WRITABLE || echo E1:EACCES' || true
-                  echo "### E2: full ES boot with the bind (compose env, as user 0 like dev compose)"
-                  docker run -d --name esprobe -u 0 -v "$PWD/probe-cf:/proc/1/coredump_filter" \
-                      -e discovery.type=single-node -e xpack.security.enabled=false \
-                      -e cluster.name=probe -e ES_JAVA_OPTS="-Xms512m -Xmx512m" $ES || true
-                  sleep 45
-                  docker logs esprobe 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -3
-                  docker rm -f esprobe >/dev/null 2>&1 || true
-                  echo "### E3: sysctl knob for the record (privileged runner; node-wide, resets on reboot)"
-                  sysctl -w fs.suid_dumpable=1 2>&1 | tail -1 || true
-                  docker run --rm --user 1000:1000 --entrypoint bash $ES -c 'echo 0 > /proc/self/coredump_filter && echo E3:WRITABLE || echo E3:EACCES' || true
-                  sysctl -w fs.suid_dumpable=0 >/dev/null 2>&1 || true
+                  ENV='-e discovery.type=single-node -e xpack.security.enabled=false -e cluster.name=probe -e ELASTIC_PASSWORD=probe -e ES_JAVA_OPTS=-Xms512m -Xmx512m'
+                  echo "### E0: coredump_filter owner+write, default vs seccomp=unconfined (the docker default seccomp profile blocks prctl(PR_SET_DUMPABLE); procfs coredump_filter ownership follows dumpability)"
+                  docker run --rm --entrypoint sh $ES -c 'ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo DEFAULT-SECCOMP:WRITABLE || echo DEFAULT-SECCOMP:EACCES' 2>&1 | tail -2
+                  docker run --rm --security-opt seccomp=unconfined --entrypoint sh $ES -c 'ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo UNCONFINED:WRITABLE || echo UNCONFINED:EACCES' 2>&1 | tail -2
+                  echo "### E0b: RLIMIT_CORE=0 theory - COS runs containers with core limit 0; kernels 6.11+ mark RLIMIT_CORE=0 processes NON-DUMPABLE (procfs coredump_filter -> root:root 644). ulimit -c unlimited should restore writability:"
+                  docker run --rm --ulimit core=0:0 --entrypoint sh $ES -c 'ulimit -c; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo CORE0:WRITABLE || echo CORE0:EACCES' 2>&1 | tail -3
+                  docker run --rm --ulimit core=-1:-1 --entrypoint sh $ES -c 'ulimit -c; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo COREINF:WRITABLE || echo COREINF:EACCES' 2>&1 | tail -3
+                  echo "### E1: image user + --privileged (full boot)"
+                  docker run -d --name e1 $ENV --privileged $ES >/dev/null
+                  sleep 50
+                  docker logs e1 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started|started on)[^"]*"' | head -2
+                  docker rm -f e1 >/dev/null
+                  echo "### E1b: full boot, seccomp=unconfined (lighter than privileged)"
+                  docker run -d --name e1b $ENV --security-opt seccomp=unconfined $ES >/dev/null
+                  sleep 50
+                  docker logs e1b 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2
+                  docker rm -f e1b >/dev/null
+                  echo "### E2: image user plain (expect fatal)"
+                  docker run -d --name e2 $ENV $ES >/dev/null
+                  sleep 30
+                  docker logs e2 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2
+                  docker rm -f e2 >/dev/null
+                  echo "### E4: full boot with --ulimit core=-1 (the predicted fix)"
+                  docker run -d --name e4 $ENV --ulimit core=-1:-1 $ES >/dev/null
+                  sleep 50
+                  docker logs e4 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -2
+                  docker rm -f e4 >/dev/null
+                  echo "### E3: root refusal check"
+                  docker run --rm --user 0 --entrypoint sh $ES -c 'echo root-exec-ok' 2>&1 | tail -1
