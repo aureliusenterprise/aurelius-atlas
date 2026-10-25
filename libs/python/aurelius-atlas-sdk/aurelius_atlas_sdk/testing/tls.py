@@ -42,14 +42,18 @@ _PG_HBA_CONF = (
 )
 
 _TLS_STARTUP_COMMAND = (
-    # cp -f + chmod, not `install`: a container RESTART keeps /tmp and
-    # `install` refuses an existing destination - exit 1 on every restart
-    # (seen on a warm CI daemon, run 40225940082).
-    "cp -f /certs/server.pem /tmp/server.pem && chmod 600 /tmp/server.pem &&"
-    " cp -f /certs/server-key.pem /tmp/server-key.pem && chmod 600 /tmp/server-key.pem &&"
+    # The copy (not a direct bind-mount at the ssl paths) is Postgres' own
+    # rule: the key must be 0600 and owned by the server user, and a bind
+    # mount exposes host ownership. mktemp -d, not a fixed /tmp path: the
+    # target must be born with the running user's ownership every boot -
+    # fixed paths collide on a warm daemon ("File exists", run 40225940082;
+    # then EACCES over a foreign-owned file, sticky /tmp, run 40228376483).
+    "d=$(mktemp -d) &&"
+    " install -m 600 /certs/server.pem $d/server.pem &&"
+    " install -m 600 /certs/server-key.pem $d/server-key.pem &&"
     " exec docker-entrypoint.sh -c ssl=on"
-    " -c ssl_cert_file=/tmp/server.pem"
-    " -c ssl_key_file=/tmp/server-key.pem"
+    " -c ssl_cert_file=$d/server.pem"
+    " -c ssl_key_file=$d/server-key.pem"
     " -c hba_file=/certs/pg_hba.conf"
 )
 
