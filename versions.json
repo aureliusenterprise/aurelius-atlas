@@ -120,11 +120,6 @@
     "aliases": []
   },
   {
-    "version": "feat-devcontainer-ci-image",
-    "title": "feat-devcontainer-ci-image",
-    "aliases": []
-  },
-  {
     "version": "feat-dashboard-nginx-serving",
     "title": "feat-dashboard-nginx-serving",
     "aliases": []
