@@ -139,7 +139,6 @@ template:
                       # devcontainer.json containerEnv, injected verbatim:
                       export NX_DAEMON=true
                       export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
-                      export SOPS_AGE_KEY_FILE=/home/runner/_work/aurelius-atlas/aurelius-atlas/secrets/keys.txt
                       # Toolchain caches = the PVC subPaths mounted below,
                       # OUTSIDE the checkout (Shape B lesson: inside it, the
                       # root-owned mount roots break the next git clean).
@@ -148,44 +147,40 @@ template:
                       export PRE_COMMIT_HOME=/var/cache/ci/pre-commit
                       # docker-in-docker feature containerEnv:
                       export DOCKER_BUILDKIT=1
-                      # Where the runner puts job workspaces. The RUNNER_*
-                      # envs are ARC kubernetes-mode hook inputs - the
-                      # standalone listener IGNORES them (trial runs
-                      # 40222002858/40222495452: the JIT self-registration
-                      # defaulted WorkFolder to _work RELATIVE to the
-                      # runner root, so jobs ran in
-                      # /opt/actions-runner/_work (container layer, root
-                      # -owned) and died on "Access to the path
-                      # '/opt/actions-runner/_work/_tool' is denied").
-                      # The knob is config.sh --work, run BEFORE run.sh -
-                      # exactly what ARC's kubernetes-mode hooks do. The
-                      # controller injects ACTIONS_RUNNER_INPUT_JITCONFIG
-                      # as an ENV VAR (secretKeyRef jitToken) holding the
-                      # token STRING - not a file (run d1a37838b: an
-                      # [ -f ] guard was false, config.sh was skipped,
-                      # run.sh self-registered with the default _work).
-                      # --ephemeral is implicit: the JIT token carries it,
-                      # and run.sh needs .credentials/.runner on disk,
-                      # which config.sh writes.
-                      export RUNNER_WORKSPACE=/home/runner/_work
-                      export RUNNER_CACHE_DIR=/home/runner/_work/_tool_cache
-                      if [ ! -f /opt/actions-runner/.runner ] && [ -n "$ACTIONS_RUNNER_INPUT_JITCONFIG" ]; then
-                          /opt/actions-runner/config.sh --unattended --replace \
-                              --work /home/runner/_work \
-                              --jitconfig "$ACTIONS_RUNNER_INPUT_JITCONFIG"
-                      fi
+                      # Work folder: the JIT self-registration (the
+                      # controller's ACTIONS_RUNNER_INPUT_JITCONFIG env,
+                      # consumed by Runner.Listener) has NO relocatable
+                      # work folder - config.sh 2.338 has no --jitconfig
+                      # flag at all (pod crash loop 19:20: "Unrecognized
+                      # command-line input arguments for command
+                      # configure: 'jitconfig'"), and RUNNER_WORKSPACE is
+                      # a kubernetes-mode hook input the standalone
+                      # listener ignores. The default WorkFolder is _work
+                      # RELATIVE to the runner root, so the fix is the
+                      # ARC kubernetes-mode trick: mount the work volume
+                      # AT /opt/actions-runner/_work (volumeMounts below)
+                      # - the default then lands on the PVC. Jobs run as
+                      # uid 1000 with the volume group-writable (fsGroup),
+                      # so the old "'/opt/actions-runner/_work/_tool' is
+                      # denied" (container layer, root-owned) is gone.
+                      export SOPS_AGE_KEY_FILE=/opt/actions-runner/_work/aurelius-atlas/aurelius-atlas/secrets/keys.txt
                       # docker-init.sh: starts dockerd (privileged), waits
                       # for `docker info`, then exec "$@" = the runner.
                       exec /usr/local/share/docker-init.sh /opt/actions-runner/run.sh
               volumeMounts:
                   # The chart does NOT auto-mount `work` in default mode
                   # (the dind/kubernetes-mode helpers add it; default mode
-                  # passes fields verbatim), so mount it explicitly at the
-                  # runner's convention. The PVC root = the work dir, so
-                  # the checkout (under _work/aurelius-atlas/) and the
-                  # tool cache persist: warm `git fetch` checkouts.
+                  # passes fields verbatim), so mount it explicitly - AT
+                  # THE RUNNER ROOT'S _work (see the command comment:
+                  # the JIT registration's WorkFolder is the relative
+                  # default `_work`, relative to /opt/actions-runner).
+                  # The PVC root = the work dir, so the checkout (under
+                  # _work/aurelius-atlas/aurelius-atlas/) and the tool
+                  # cache persist: warm `git fetch` checkouts, warm
+                  # node_modules/.venv, and secrets/keys.txt survives for
+                  # SOPS_AGE_KEY_FILE.
                   - name: work
-                    mountPath: /home/runner/_work
+                    mountPath: /opt/actions-runner/_work
                   # Toolchain caches (PVC subPaths, pre-created setgid by
                   # cache-init). Must match the exports in the command.
                   - name: work
