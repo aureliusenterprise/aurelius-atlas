@@ -1,8 +1,8 @@
-name: CI Canary (AKS)
+name: CI Canary (GKE)
 
 # Phase 1 of docs/architecture/self-hosted-ci.md: prove the dev container
 # pipeline mechanics on the ARC runner pool before the real CI job moves.
-# Manual-only, runs-on the AKS pool label directly (not CI_RUNS_ON - the
+# Manual-only, runs-on the GKE pool label directly (not CI_RUNS_ON - the
 # canary exists to test that target, hosted flips are its control). The gate
 # is 5 consecutive green runs; then set the flag-day variables (infra/arc
 # README) and the ci job moves. Delete this workflow in Phase 3.
@@ -23,10 +23,10 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v6
 
-            # AKS shape: no hosted toolchains to clean, no Actions cache
+            # GKE shape: no hosted toolchains to clean, no Actions cache
             # service (private repo + self-hosted), caches via the
             # toolchain-cache PVC mounted into the container.
-            - name: Validate in the dev container on AKS
+            - name: Validate in the dev container on GKE
               uses: ./.github/actions/run-in-devcontainer
               with:
                   set-shas: "false"

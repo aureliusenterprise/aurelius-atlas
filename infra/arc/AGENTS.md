@@ -1,8 +1,8 @@
 # infra/arc
 
-ARC (Actions Runner Controller) deployment for running the `ci` job on AKS.
+ARC (Actions Runner Controller) deployment for running the `ci` job on GKE.
 Not an Nx project - plain manifests + script, applied by hand from the dev
-container (it bakes az/kubectl/helm/kubelogin via devcontainer features).
+container (it bakes gcloud/kubectl/helm via devcontainer features).
 Plan and phases:
 [`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md).
 Setup and flag-day: [`README.md`](README.md).
@@ -11,7 +11,7 @@ Setup and flag-day: [`README.md`](README.md).
 
 - `arc-values.yaml` - gha-runner-scale-set values (dind sidecar, taint/label
   to the CI node pool, resources, cache volume).
-- `toolchain-cache-pvc.yaml` - Azure Files PVC backing `.container-cache`.
+- `toolchain-cache-pvc.yaml` - Filestore PVC backing `.container-cache`.
 - `install.sh` - subcommands: `controller`, `nodepool`, `scale-set`, `status`.
 
 ## Conventions
@@ -27,4 +27,4 @@ Setup and flag-day: [`README.md`](README.md).
 ## Removal
 
 `helm uninstall atlas-ci -n arc-runners` (+ `arc` in `arc-systems`), delete
-the variables, delete the node pool. Nothing in `.github/` hard-codes AKS.
+the variables, delete the node pool. Nothing in `.github/` hard-codes GKE.

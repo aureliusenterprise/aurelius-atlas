@@ -1,7 +1,7 @@
-# AKS self-hosted CI runners (Phase 1)
+# GKE self-hosted CI runners (Phase 1)
 
 ARC (`gha-runner-scale-set`) runner pods for `aureliusenterprise/aurelius-atlas`,
-so the `ci` job runs in the dev container on AKS (plan:
+so the `ci` job runs in the dev container on GKE (plan:
 [`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md)).
 
 Layout of one job: runner pod (ARC stock runner image) + **dind sidecar**
@@ -12,12 +12,13 @@ on that sidecar - exactly the hosted-runner topology, so nothing in
 
 ## One-time setup
 
-Prereqs: an AKS cluster (>= 1.29), a GitHub App installed on the repo with
-**Actions: read/write** (not a PAT - App credentials rotate cleanly). The
-`az`/`kubectl`/`helm`/`kubelogin` CLIs come from the dev container
-(`ghcr.io/devcontainers/features/azure-cli`, `kubectl-helm-minikube`,
-`./features/kubelogin` - gated by `.devcontainer/smoke.sh`), so run these
-from inside it.
+Prereqs: a GKE cluster (>= 1.31, Filestore CSI on), a GitHub App installed on
+the repo with **Actions: read/write** (not a PAT - App credentials rotate
+cleanly). The `gcloud`/`kubectl`/`helm` CLIs come from the dev container
+(`./features/google-cloud-cli` - vendored dhoeric, with
+`installGkeGcloudAuthPlugin`; `kubectl-helm-minikube` - gated by
+`.devcontainer/smoke.sh`), so run these from inside it, after
+`gcloud auth login --no-launch-browser` + `gcloud config set project <project>`.
 
 ```bash
 # 1. Controller (cluster-scoped, one per cluster):
@@ -32,7 +33,7 @@ kubectl -n arc-runners create secret generic atlas-arc-auth \
     --from-literal=github_app_installation_id="$GITHUB_APP_INSTALLATION_ID" \
     --from-file=github_app_private_key="$GITHUB_APP_PRIVATE_KEY_FILE"
 
-# 3. Toolchain cache volume (Azure Files, shared ReadWriteMany):
+# 3. Toolchain cache volume (Filestore, shared ReadWriteMany):
 kubectl apply -f infra/arc/toolchain-cache-pvc.yaml
 
 # 4. The scale set (namespaced, per repo):
@@ -40,9 +41,10 @@ helm install atlas-ci oci://ghcr.io/actions/actions-runner-controller-charts/gha
     --namespace arc-runners -f infra/arc/arc-values.yaml
 ```
 
-The CI node pool is created by `./install.sh nodepool` (needs `--resource-group`
-/ `--cluster-name` via env) - spot D8s v5, scale 0..3, tainted so only CI pods
-land there.
+The CI node pool is created by `./install.sh nodepool` (needs `GCP_PROJECT` /
+`GKE_CLUSTER` / `GKE_LOCATION` via env) - spot n2-standard-8, scale 0..3,
+tainted so only CI pods land there. The cluster/region names get recorded
+here once Phase 1 provisions them.
 
 ## Flag day (repo side)
 

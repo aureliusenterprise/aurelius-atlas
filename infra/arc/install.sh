@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Provision the AKS side of self-hosted CI (docs/architecture/self-hosted-ci.md,
+# Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
 # Usage: ./install.sh <controller|nodepool|scale-set|status>
-# Env:   AZ_RESOURCE_GROUP, AZ_CLUSTER_NAME, AZ_NODEPOOL (default: cipool)
+# Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region), GKE_NODEPOOL (default: cipool)
 set -euo pipefail
 
-RG="${AZ_RESOURCE_GROUP:?set AZ_RESOURCE_GROUP}"
-CLUSTER="${AZ_CLUSTER_NAME:?set AZ_CLUSTER_NAME}"
-POOL="${AZ_NODEPOOL:-cipool}"
+PROJECT="${GCP_PROJECT:?set GCP_PROJECT}"
+CLUSTER="${GKE_CLUSTER:?set GKE_CLUSTER}"
+LOCATION="${GKE_LOCATION:?set GKE_LOCATION (region)}"
+POOL="${GKE_NODEPOOL:-cipool}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 case "${1:-status}" in
@@ -19,14 +20,14 @@ case "${1:-status}" in
             --namespace arc-systems --create-namespace
         ;;
     nodepool)
-        # Scale-to-zero (min 0) requires the cluster autoscaler enabled.
-        az aks nodepool add \
-            --resource-group "$RG" --cluster-name "$CLUSTER" --name "$POOL" \
-            --node-vm-size Standard_D8s_v5 \
-            --enable-auto-scaling --min-count 0 --max-count 3 \
-            --kubelet-disk-type Ephemeral \
+        # Scale-to-zero: GKE regional pools start at 1 node per zone; spot +
+        # min 0 keeps the idle cost to the controller's needs only.
+        gcloud container node-pools create "$POOL" \
+            --project "$PROJECT" --cluster "$CLUSTER" --location "$LOCATION" \
+            --machine-type n2-standard-8 --spot \
+            --enable-autoscaling --min-nodes 0 --max-nodes 3 \
             --node-taints "ci=true:NoSchedule" \
-            --priority Spot --eviction-policy Delete
+            --workload-metadata-disabled
         ;;
     scale-set)
         # Needs the atlas-arc-auth secret + the PVC (see README); labels the

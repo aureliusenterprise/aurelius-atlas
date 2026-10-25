@@ -33,9 +33,9 @@ jobs:
     # skips it), Chromatic is a host step gated on the UI-affected output -
     # and a failing pipeline fails the job, so neither is reached.
     ci:
-        # Flag-day knob for the AKS migration (docs/architecture/self-hosted-ci.md):
+        # Flag-day knob for the self-hosted migration (docs/architecture/self-hosted-ci.md):
         # set the CI_RUNS_ON repo variable to the self-hosted runner label
-        # ("atlas-ci", infra/arc) to move CI onto AKS; unset keeps hosted
+        # ("atlas-ci", infra/arc) to move CI onto GKE; unset keeps hosted
         # runners. CI_DISK_CLEANUP and CI_USE_ACTIONS_CACHE follow the same
         # flip (self-hosted nodes are clean, and the Actions cache service
         # is unavailable there for private repos - caches become volumes).

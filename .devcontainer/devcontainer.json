@@ -140,8 +140,9 @@
         }
     },
     "features": {
-        "./features/kubelogin": {
-            "version": "0.2.22"
+        "./features/google-cloud-cli": {
+            "installGkeGcloudAuthPlugin": true,
+            "version": "latest"
         },
         "./features/playwright-browsers": {
             "version": "1.64.0"
@@ -155,9 +156,6 @@
             "version": "23.3.0"
         },
         "ghcr.io/devcontainers-extra/features/sops:1": {
-            "version": "latest"
-        },
-        "ghcr.io/devcontainers/features/azure-cli:1": {
             "version": "latest"
         },
         "ghcr.io/devcontainers/features/docker-in-docker:4": {},
