@@ -13,9 +13,10 @@ on that sidecar - exactly the hosted-runner topology, so nothing in
 ## One-time setup
 
 Prereqs: the **atlas-dev Standard cluster** (europe-west1 - verified: no
-Autopilot constraints, privileged pods admitted), a GitHub App installed on
-the repo with **Actions: read/write** (not a PAT - App credentials rotate
-cleanly). The `gcloud`/`kubectl`/`helm` CLIs come from the dev container
+Autopilot constraints, privileged pods admitted) and a **classic PAT with
+the `repo` scope** in the auth secret (see "Auth" below - the GitHub App
+we also created is blocked by plan gating on this repo today). The
+`gcloud`/`kubectl`/`helm` CLIs come from the dev container
 (`./features/google-cloud-cli` - vendored dhoeric, with
 `installGkeGcloudAuthPlugin`; `kubectl-helm-minikube` - gated by
 `.devcontainer/smoke.sh`), so run these from inside it, after
@@ -35,13 +36,10 @@ commented in `arc-values.yaml` for that step.
 helm install arc oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
     --namespace arc-systems --create-namespace
 
-# 2. App auth secret (values in GITHUB_APP_ID / GITHUB_APP_INSTALLATION_ID /
-#    GITHUB_APP_PRIVATE_KEY_FILE) - needs the GitHub App first, see below:
+# 2. Auth secret (classic PAT, `repo` scope, in GITHUB_PAT - see Auth):
 kubectl create namespace arc-runners
 kubectl -n arc-runners create secret generic atlas-arc-auth \
-    --from-literal=github_app_id="$GITHUB_APP_ID" \
-    --from-literal=github_app_installation_id="$GITHUB_APP_INSTALLATION_ID" \
-    --from-file=github_app_private_key="$GITHUB_APP_PRIVATE_KEY_FILE"
+    --from-literal=github_token="$GITHUB_PAT"
 
 # 3. The scale set (namespaced, per repo):
 helm install atlas-ci oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
@@ -52,18 +50,34 @@ GCP_PROJECT=aurelius-atlas GKE_CLUSTER=atlas-dev GKE_LOCATION=europe-west1 ./ins
 kubectl apply -f infra/arc/toolchain-cache-pvc.yaml
 ```
 
-**GitHub App** (org owner, one time): open
-github.com/organizations/aureliusenterprise/settings/apps/new → name it
-`atlas-arc`, Homepage `https://github.com/aureliusenterprise/aurelius-atlas`,
-Webhook: uncheck "Active" (ARC needs no webhook), Repo permissions:
-**Actions: Read and write**, Metadata: Read-only (that is all ARC needs).
-Generate a private key, save it outside git (e.g. `~/atlas-arc.pem`, chmod 600).
-Install the App on `aureliusenterprise/aurelius-atlas` only (Install →
-"Only select repositories"). The installation id is in the install URL
-(`/settings/installations/<id>`); the app id is on the App's General page.
-`GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` /
-`GITHUB_APP_PRIVATE_KEY_FILE` then feed the secret above. The runner labels
-(`scaleSetLabels: atlas-ci`) are what `runs-on:` selects via `CI_RUNS_ON`.
+**Auth (measured 2026-10-25 on this org).** `POST
+/actions/runners/registration-token` - the call ARC reconciles with:
+
+| Credential                         | Result                                                             |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| Classic PAT (`repo`) / OAuth token | 201                                                                |
+| Fine-grained PAT (Actions: write)  | 403 (runner-management endpoints accept classic scopes only)       |
+| GitHub App (Actions: write)        | 403 (App runner endpoints need Enterprise Cloud; this org is Team) |
+
+So the secret carries a **classic PAT** (github.com/settings/tokens/new,
+`repo` scope, 90-day expiry, store outside git). Rotation:
+
+```bash
+kubectl -n arc-runners create secret generic atlas-arc-auth \
+    --from-literal=github_token="$GITHUB_PAT" \
+    --dry-run=client -o yaml | kubectl apply -f -
+```
+
+then `./install.sh scale-set`.
+
+The **atlas-arc GitHub App** (app 5466493, install 175110388, key kept
+off-git) is installed and ready for the Enterprise flip: recreate the
+secret with the three `github_app_*` keys (the chart auto-detects). Note
+the org also required **Runner groups → Default → "Allow public
+repositories"** - this repo is public, and GitHub refuses self-hosted
+registration for public repos in groups that disallow them. The
+`scaleSetLabels: atlas-ci` label is what `runs-on:` selects via
+`CI_RUNS_ON`.
 
 Cost/benefit + the option analysis:
 [`docs/architecture/self-hosted-ci-decision.md`](../../docs/architecture/self-hosted-ci-decision.md).
