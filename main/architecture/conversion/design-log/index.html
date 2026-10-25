@@ -5905,6 +5905,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-216-stacks-own-the-tls-material-they-mount" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-216 — Stacks own the TLS material they mount
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11514,6 +11525,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         DD-215 — The CI pipeline drops the traceability check and report
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-216-stacks-own-the-tls-material-they-mount" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-216 — Stacks own the TLS material they mount
       </span>
     </span>
   </a>
@@ -18247,6 +18269,64 @@ metadata for no gain; it is removable later as one slice.</p>
 published trace report is gone; reviewers read the tests and the coverage report. Increment specs
 that list <code>aurelius-atlas-trace check</code> in their "gates" describe the verification the increment
 was accepted with — they are dated records, not promises about current CI, and are not edited.</p>
+<h3 id="dd-216-stacks-own-the-tls-material-they-mount">DD-216 — Stacks own the TLS material they mount<a class="headerlink" href="#dd-216-stacks-own-the-tls-material-they-mount" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (e2e wiring; no roadmap row)</li>
+<li><strong>Date:</strong> 2026-10-25</li>
+</ul>
+<p><strong>Context.</strong> The webapp's e2e stack runs the real Atlas server behind the nginx
+<code>/api/</code> proxy (<a href="#dd-142-the-webapp-e2e-stack-runs-the-real-atlas-server-behind-the-proxy">DD-142</a>), and the
+server container mounted <code>apps/aurelius-atlas-server/certs</code> — the server project's own
+material, because its leaf carries the <code>aurelius-atlas-server</code> SAN nginx verifies against.
+The webapp's <code>e2e</code> target declared the server's <code>docker-build</code> and the dev stacks' <code>up</code>
+as <code>dependsOn</code> but not the server's <code>certgen</code>: Nx's compose plugin infers <code>certgen</code> from
+the compose <strong>owner's</strong> <code>tls.json</code> (tools/plugins/docker-compose.ts), so a sibling
+project's <code>certs/</code> mount is invisible to it. When the devcontainer was rebuilt, mkcert
+regenerated its root CA and every project self-healed its own material on its next
+<code>certgen</code> — the server's stayed signed by the old CA, its server container failed
+Elasticsearch TLS verification, exited 3 during <code>docker compose up --wait</code>, and every
+webapp e2e test errored at fixture setup.</p>
+<p><strong>Decision.</strong> The stack mounts only its owning project's certs. <code>tls.json</code> for the
+webapp gains an <code>aurelius-atlas-server</code> service (the same SANs the server project
+issues: the service name, localhost, 127.0.0.1), so the webapp's own <code>certgen</code> — already
+a <code>dependsOn</code> of <code>e2e</code> and <code>serve</code>, and auto-wired by the compose plugin's rule —
+generates the leaf the server container wears. <code>e2e/docker-compose.yaml</code> mounts
+<code>../certs</code> for it, and no cross-project <code>certgen</code> dependency is needed. The CA bundle
+is the shared mkcert root, so the server's verification of the dev Elasticsearch, the
+collector, and Keycloak is unchanged; the dev server (<code>nx serve aurelius-atlas-server</code>)
+still presents the server project's own leaf.</p>
+<p><strong>Alternatives.</strong> (a) Declare <code>{projects: ["aurelius-atlas-server"], target: "certgen"}</code>
+on the webapp's <code>e2e</code> — the pattern PR #143 used for lineage-model → data2model, and
+correct: it keeps one issuer per identity. Refused for the webapp because the mount is
+part of the webapp's e2e stack, and a stack should carry its own material: with the
+<code>dependsOn</code>, "the webapp project needs the server project's certs" is a fact recorded
+only in a mount string, and certgen stays a target whose trigger (the devcontainer
+rebuild) lives outside the project that consumes it. (b) Have <code>certgen.sh</code> refresh
+every project's material — refused: a project's target writing into other projects
+breaks the slice ownership ADR 002 relies on. (c) Teach the compose plugin to parse
+volume mounts and auto-add the owning project's <code>certgen</code> — deferred; it generalises
+the inference rule but adds plugin magic for a pattern (stacks that embed a sibling's
+image) the explicit <code>dependsOn</code>/manifest already covers.</p>
+<p><strong>Consequences.</strong> <code>nx e2e aurelius-atlas-webapp</code> is self-sufficient for TLS: a fresh
+container rebuilds the webapp's <code>certs/</code> (server leaf included) before compose starts.
+Two projects now issue a leaf for the <code>aurelius-atlas-server</code> name — the server's for
+its own stacks, the webapp's for the e2e stack — which is dev-only identity, gitignored
+and never shipped (ADR 006); <code>apps/aurelius-atlas-server/certs</code> is no longer read by
+the webapp stack. The same audit swept the workspace's other two cross-project cert
+mounts (the only ones beyond this): the observability collector pinned its OIDC
+<code>issuer_ca_path</code> to the webapp's CA copy mounted at <code>/dev-ca</code>, which no target
+produced — it now verifies the issuer against its own <code>certs/ca.pem</code> (the mkcert root
+is shared workspace-wide, byte-identical copies), so the mount and its producer
+disappear together. The lineage-model e2e stack mounted data2model's certs behind an
+explicit cross-project <code>certgen</code> <code>dependsOn</code> (PR #143 — the pattern this entry's
+alternative (a)); it now follows this entry's decision: <code>tls.json</code> gains the
+<code>aurelius-atlas-data2model</code> service, the stack mounts <code>../certs</code>,
+and the cross-project <code>certgen</code> <code>dependsOn</code> is gone (its <code>docker-build</code> stays — the
+image is data2model's artifact). After this, no compose file mounts another project's
+<code>certs/</code>: every stack's TLS material is generated by the stack owner's own <code>certgen</code>,
+matching the frontend-example, whose <code>tls.json</code> already listed all three services its
+e2e stack hosts.</p>
 
 
 
