@@ -44,19 +44,20 @@ jobs:
                   uv --version
                   docker info --format 'docker daemon: {{.ServerVersion}}'
 
-            # The devcontainer lifecycle scripts, run directly: onCreateCommand
-            # (npm.sh, uv.sh) then postCreateCommand (pre-commit.sh, sops.sh).
-            # Running the developer scripts verbatim IS the Shape A contract -
-            # if these drift from devcontainer.json, the canary lies.
+            # The devcontainer onCreateCommand scripts, run directly:
+            # npm.sh + uv.sh. Running the developer scripts verbatim IS the
+            # Shape A contract - if these drift from devcontainer.json, the
+            # canary lies. postCreateCommand is deliberately NOT run:
+            # pre-commit.sh installs git hooks (a commit-time convenience -
+            # CI runs `pre-commit run` explicitly below) and sops.sh runs
+            # `nx keygen`, a dev-machine bootstrap for the per-dev age key -
+            # in CI the key is injected through the environment (the
+            # composite passes SOPS_AGE_KEY from secrets.AGE_SECRET_KEY);
+            # keygen died on the missing key file (run 40212770321).
             - name: Install dependencies
               run: |
                   bash .devcontainer/npm.sh
                   bash .devcontainer/uv.sh
-
-            - name: Lifecycle hooks
-              run: |
-                  bash .devcontainer/pre-commit.sh
-                  bash .devcontainer/sops.sh
 
             # Same gate as ci-canary.yaml, so the two shapes measure the
             # same work: validate-only, ~the cost of phase 1 of the ci job.
