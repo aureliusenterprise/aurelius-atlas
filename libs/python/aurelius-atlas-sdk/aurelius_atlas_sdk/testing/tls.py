@@ -62,6 +62,10 @@ _TLS_STARTUP_COMMAND = (
 )
 
 
+_TLS_TMPFS: dict[str, str] = {"/tmp": "mode=1777,exec"}  # noqa: S108 - container mount target, not a host path
+"""Container tmpfs mount for the TLS startup copy (see configure_tls_postgres)."""
+
+
 def _write_tls_material(cert_dir: Path, sans: Sequence[str]) -> None:
     """Generate ephemeral TLS material for one container into ``cert_dir``.
 
@@ -137,8 +141,13 @@ def configure_tls_postgres(container: PostgresContainer, certs: TlsCertificates)
     host-owned key material it does not own, so — like dev/postgres — the
     certificates are copied into the container filesystem with strict
     permissions before startup (Postgres also refuses world-readable keys).
+    The copy lands on an explicit ``/tmp`` tmpfs: the image's own ``/tmp``
+    is 2775 root:999 (setgid, no sticky bit) in the digest a warm CI image
+    store serves, where uid 70 gets EACCES on ``mktemp -d`` (run
+    40240896184); pinning ``mode=1777`` keeps the boot independent of
+    which build the daemon happens to have cached.
     """
-    container.with_kwargs(entrypoint=["/bin/sh", "-c"])
+    container.with_kwargs(entrypoint=["/bin/sh", "-c"], tmpfs=_TLS_TMPFS)
     container.with_env("POSTGRES_HOST_AUTH_METHOD", "scram-sha-256")
     container.with_command([_TLS_STARTUP_COMMAND])
     container.with_volume_mapping(certs.directory, "/certs", "ro")

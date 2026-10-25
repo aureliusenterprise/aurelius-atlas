@@ -38,6 +38,17 @@ services:
                 -c ssl_key_file=$$d/server-key.pem
                 -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
+        # An explicit tmpfs for the certificate copy above. The image's own
+        # /tmp is not writable by the server user on every host: the digest
+        # this stack runs on Shape A (a warm image store on a PVC - see
+        # docs/architecture/self-hosted-ci.md) ships /tmp as 2775 root:999,
+        # setgid and without the sticky bit, so uid 70 gets EACCES on
+        # `mktemp -d` (run 40240896184); a current fresh pull of the same
+        # tag ships 1777 root:root and boots clean. Mounting the tmpfs
+        # explicitly pins the mode, so the boot does not depend on which
+        # build the daemon happens to have cached.
+        tmpfs:
+            - /tmp:mode=1777
         healthcheck:
             test:
                 [
