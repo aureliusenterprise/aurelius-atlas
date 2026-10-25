@@ -42,8 +42,11 @@ _PG_HBA_CONF = (
 )
 
 _TLS_STARTUP_COMMAND = (
-    "install -m 600 /certs/server.pem /tmp/server.pem &&"
-    " install -m 600 /certs/server-key.pem /tmp/server-key.pem &&"
+    # cp -f + chmod, not `install`: a container RESTART keeps /tmp and
+    # `install` refuses an existing destination - exit 1 on every restart
+    # (seen on a warm CI daemon, run 40225940082).
+    "cp -f /certs/server.pem /tmp/server.pem && chmod 600 /tmp/server.pem &&"
+    " cp -f /certs/server-key.pem /tmp/server-key.pem && chmod 600 /tmp/server-key.pem &&"
     " exec docker-entrypoint.sh -c ssl=on"
     " -c ssl_cert_file=/tmp/server.pem"
     " -c ssl_key_file=/tmp/server-key.pem"

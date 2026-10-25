@@ -16,30 +16,33 @@ permissions:
     contents: read
 
 jobs:
-    # The whole pipeline in ONE job, inside the dev container image (the
-    # bridge toward self-hosted runners - see
-    # docs/architecture/self-hosted-ci.md), in fail-fast order:
+    # The whole pipeline in ONE job, running DIRECTLY in the dev container
+    # image (ghcr.io/aureliusenterprise/atlas-ci-runner - the runner pod's
+    # job container IS that image; infra/arc). No devcontainers/ci wrapper,
+    # no sibling container, no per-job image pull: the steps below run in
+    # the image developers use, on the GKE pool (docs/architecture/
+    # self-hosted-ci.md, self-hosted-ci-decision.md option D).
+    #
+    # Fail-fast order (one container, one dockerd, one PVC work dir):
     #
     #   validate -> test -> docker build + vuln scan -> storybook -> sonar
     #
-    # One container run means one 8 GB image pull, one cache restore, and one
-    # Docker daemon shared by every phase: e2e containers, built images, and
-    # reports all live on the same daemon / mounted checkout, so later phases
-    # read what earlier phases wrote - the scan needs no image export, sonar
-    # finds coverage and sarif in place, Chromatic finds Storybook's dist/.
+    # e2e containers, built images, and reports all live on the same daemon
+    # / work volume, so later phases read what earlier phases wrote - the
+    # scan needs no image export, sonar finds coverage and sarif in place,
+    # Chromatic finds Storybook's dist/.
     #
     # External services run last and only when warranted: SonarQube is the
-    # pipeline's final in-container phase (set -e: a failing phase above
-    # skips it), Chromatic is a host step gated on the UI-affected output -
-    # and a failing pipeline fails the job, so neither is reached.
+    # pipeline's final phase (set -e: a failing phase above skips it),
+    # Chromatic is gated on the UI-affected output - and a failing pipeline
+    # fails the job, so neither is reached.
     ci:
-        # Flag-day knob for the self-hosted migration (docs/architecture/self-hosted-ci.md):
-        # set the CI_RUNS_ON repo variable to the self-hosted runner label
-        # ("atlas-ci", infra/arc) to move CI onto GKE; unset keeps hosted
-        # runners. CI_DISK_CLEANUP and CI_USE_ACTIONS_CACHE follow the same
-        # flip (self-hosted nodes are clean, and the Actions cache service
-        # is unavailable there for private repos - caches become volumes).
-        runs-on: ${{ vars.CI_RUNS_ON || 'ubuntu-latest' }}
+        # The Shape A pool (infra/arc/arc-shapea-values.yaml). Hard-coded:
+        # the pool is the dev container image, not a generic runner label;
+        # reverting to hosted runners is a git revert, not a variable flip
+        # (the CI_* flag-day variables retired with the devcontainers/ci
+        # wrapper).
+        runs-on: atlas-ci-shapea
         timeout-minutes: 60
 
         env:
@@ -49,39 +52,82 @@ jobs:
             NX_LEGACY_AFFECTED: "false"
 
         permissions:
-            actions: read
             contents: read
             # Pull the dev container image, push buildcache tags.
             packages: write
 
         steps:
+            # clean: false + the scripted clean below = warm-tree checkout.
+            # The work dir is the Shape A PVC, so actions/checkout's default
+            # `git clean -ffdx` would wipe node_modules/.venv every job and
+            # npm/uv would re-link ~2000 packages from cache (~60s). The
+            # excludes keep the installed trees (and the Nx daemon's
+            # workspace-data) warm; everything else is still wiped, so
+            # coverage/reports/dist never leak between jobs.
+            # fetch-depth 0: nx-set-shas / nx affected need history.
             - name: Checkout code
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
+                  clean: false
 
-            - name: Run the CI pipeline in the dev container
+            # -x also wipes ignored files (coverage, junit, dist, reports);
+            # the -e keeps the warm trees, the Nx daemon's workspace-data,
+            # and the age key file (SOPS_AGE_KEY_FILE points at it; sops
+            # needs the file to exist, its content is irrelevant when
+            # SOPS_AGE_KEY is set in the environment). git add -A first so
+            # checkout's reset (clean: false skips it) cannot refuse on
+            # local changes.
+            - name: Clean previous checkout (keep warm trees)
+              run: |
+                  git add -A
+                  git clean -ffdx -e node_modules -e .venv -e .nx/workspace-data -e secrets/keys.txt
+
+            # Affected baseline for nx affected. The runner exports no
+            # GITHUB_TOKEN by default, so pass it explicitly.
+            - name: Set SHAs (nx affected baseline)
+              uses: nrwl/nx-set-shas@v5
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+
+            # Dev container onCreateCommand - the pipeline needs the
+            # workspace installed (npm.sh + uv.sh verbatim, the Shape A
+            # contract). postCreateCommand scripts are deliberately not
+            # run: pre-commit.sh installs git hooks (CI runs pre-commit
+            # explicitly, in the pipeline) and sops.sh runs `nx keygen`, a
+            # dev-machine bootstrap - in CI the key arrives through the
+            # environment (SOPS_AGE_KEY below).
+            - name: Install dependencies
+              run: |
+                  bash .devcontainer/npm.sh
+                  bash .devcontainer/uv.sh
+
+            # Registry logins against the container's OWN dockerd (the
+            # docker-in-docker feature starts it at pod boot). dhi.io = the
+            # hardened base images; ghcr.io = buildcache push (needs
+            # packages:write, hence the scope on this job).
+            - name: Registry logins
+              env:
+                  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+                  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+                  GITHUB_TOKEN: ${{ github.token }}
+                  GITHUB_ACTOR: ${{ github.actor }}
+              run: |
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+            # THE pipeline: pre-commit -> nx affected -t test e2e -> docker
+            # build + vuln scan + storybook -> decrypt + sonar
+            # (.devcontainer/ci-pipeline.sh, container-agnostic). Writes
+            # ui-affected to the step output natively (no output file
+            # bridge). Cache env + PATH come from the pod's container
+            # command; SOPS_AGE_KEY decrypts the per-project .env.enc.
+            - name: Run the CI pipeline
               id: core
-              uses: ./.github/actions/run-in-devcontainer
-              with:
-                  sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
-                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
-                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
-                  ghcr-login: "true"
-                  disk-cleanup: ${{ vars.CI_DISK_CLEANUP || 'true' }}
-                  use-actions-cache: ${{ vars.CI_USE_ACTIONS_CACHE || 'true' }}
-                  cache-mounts: ${{ vars.CI_CACHE_MOUNTS }}
-                  # Set only on self-hosted (the flag-day): on hosted, the
-                  # dind daemon's layer cache per job is irrelevant (the
-                  # Actions cache service + GHCR pull-through cover it) and
-                  # /home/runner/_work/.ci-cache does not exist.
-                  image-cache-dir: ${{ vars.CI_IMAGE_CACHE_DIR }}
-                  # Unset (hosted) -> the action's default in-workspace paths,
-                  # which the actions/cache steps restore/save. Self-hosted ->
-                  # set CI_CACHE_ENV to the PVC cache targets OUTSIDE the
-                  # checkout (root:root bind roots inside it break `git clean`).
-                  cache-env: ${{ vars.CI_CACHE_ENV }}
-                  run-cmd: bash .devcontainer/ci-pipeline.sh
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: bash .devcontainer/ci-pipeline.sh
 
             - name: Upload coverage reports
               uses: actions/upload-artifact@v7
@@ -108,14 +154,14 @@ jobs:
                   retention-days: 30
 
             # The pipeline's storybook phase built Aurelius Atlas UI's
-            # Storybook (dist/ is on the mounted checkout) and reported
+            # Storybook (dist/ is on the work volume) and reported
             # ui-affected through the step output; publish it only then.
             # buildCommand is required: chromaui/action v18 preflights a
             # package.json build script ("build-storybook") when no build
             # command is given, and the root package.json has none (run
             # 40202533804: "Build script not found"). The storybook is
-            # already built in-container, so the command is a guard, not a
-            # rebuild - it fails loudly if dist/ is missing.
+            # already built, so the command is a guard, not a rebuild - it
+            # fails loudly if dist/ is missing.
             - name: Run Chromatic
               if: ${{ steps.core.outputs.ui-affected == 'true' }}
               uses: chromaui/action@v18

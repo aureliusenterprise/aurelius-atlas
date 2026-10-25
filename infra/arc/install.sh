@@ -2,8 +2,9 @@
 # Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
-# Usage: ./install.sh <cluster|controller|nodepool|scale-set|status>
-# Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region), GKE_NODEPOOL (default: cipool)
+# Usage: ./install.sh <cluster|controller|nodepool|scale-set-shapea|status>
+# Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region), GKE_NODEPOOL (default: cipool),
+#        CI_SHAPEA_IMAGE_TAG (scale-set-shapea image tag, default: main)
 set -euo pipefail
 
 PROJECT="${GCP_PROJECT:?set GCP_PROJECT}"
@@ -42,20 +43,13 @@ case "${1:-status}" in
             --node-taints "ci=true:NoSchedule" \
             --workload-metadata=DISABLED
         ;;
-    scale-set)
-        # Needs the atlas-arc-auth secret + the PVC (see README); labels the
-        # runners with atlas-ci, which runs-on selects via CI_RUNS_ON.
-        helm upgrade --install atlas-ci \
-            oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-            --namespace arc-runners -f "$HERE/arc-values.yaml"
-        ;;
     scale-set-shapea)
-        # Shape A canary (arc-shapea-values.yaml): the job container IS the
-        # dev container image. Needs atlas-arc-auth + atlas-ghcr-pull (the
-        # GHCR pull secret, see README "Shape A"). Separate release/label
-        # (atlas-ci-shapea) so the Shape B scale set keeps serving ci.
-        # CI_SHAPEA_IMAGE_TAG selects the image tag (default main; the
-        # build workflow publishes sha-<full-sha> for branch builds).
+        # The production scale set (arc-shapea-values.yaml): the job
+        # container IS the dev container image - ci.yaml runs on it
+        # directly. Needs atlas-arc-auth + atlas-ghcr-pull (the GHCR pull
+        # secret, see README). CI_SHAPEA_IMAGE_TAG selects the image tag
+        # (default main; the build workflow publishes sha-<full-sha> for
+        # branch builds).
         TAG="${CI_SHAPEA_IMAGE_TAG:-main}"
         helm upgrade --install atlas-ci-shapea \
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \

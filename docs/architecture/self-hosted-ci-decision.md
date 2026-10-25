@@ -1,10 +1,13 @@
 # Decision: self-hosted CI runners on GKE (ARC) vs GitHub-hosted
 
 > **Status**: decided and **live** (2026-10-25): Phase 1 canary green 5/5,
-> Phase 2 flipped - the full CI job runs on atlas-dev's existing pool with
-> the cache PVC, no new compute. Companion to
-> [self-hosted-ci.md](self-hosted-ci.md) (the how); this doc is
-> the **should we**, with measured numbers - kept as the decision record.
+> Phase 2 flipped (devcontainers/ci on GKE), **Phase 3 same day - Shape A**:
+> the full CI job runs **directly in the dev container image** on atlas-dev's
+> existing pool (no devcontainers/ci, no dind sidecar, no per-job image
+> pull). Companion to
+> [self-hosted-ci.md](self-hosted-ci.md) (the as-built architecture); this
+> doc is the **should we**, with measured numbers - kept as the decision
+> record.
 
 ## TL;DR
 
@@ -161,6 +164,16 @@ changes). The repo-side flip is **four variables** (`CI_RUNS_ON`,
 `CI_DISK_CLEANUP`, `CI_USE_ACTIONS_CACHE`, `CI_CACHE_MOUNTS`); delete them
 to revert. Full detail: [self-hosted-ci.md](self-hosted-ci.md).
 
+> **Superseded by Phase 3 (Shape A, live 2026-10-25)**: the pod's job
+> container **is** the dev container image (`atlas-ci-runner`, the
+> `ci-runner` devcontainer feature bakes the runner binaries, the
+> docker-in-docker feature supplies the in-image `dockerd`) - the pipeline
+> and the developer lifecycle scripts run unchanged, directly, in the image
+> developers use. The bridge topology above is retired: the composite
+> action, `CI_*` variables, and the dind sidecar are deleted (git history
+> has them); `runs-on: atlas-ci-shapea` is hard-coded in `ci.yaml` and
+> reverting to hosted is a git revert.
+
 ## Risks (honest list)
 
 - **Privileged dind = root on the CI node.** Contained by: dedicated tainted
@@ -194,12 +207,16 @@ to revert. Full detail: [self-hosted-ci.md](self-hosted-ci.md).
   cluster becomes unacceptable.
 - **D - Shape A** (runner pod = the dev container image, no dind sidecar):
   removes the 8.3 GB per-pod pull (the image is the pod's own container,
-  containerd caches it per node) and the devcontainers/ci layer. **Canary
-  green 2026-10-25** - `ci-shapea.yaml` on the `atlas-ci-shapea` scale set
-  (privileged in-image dockerd, `ci-runner` feature bakes the runner
-  binaries); the validate gate ran **3m35s vs 9m+ on Shape B** (setup tax
-  gone). Shape B (`atlas-ci`) keeps serving `ci` until the canary repeats
-  green and the cache bridge lands.
+  containerd caches it per node) and the devcontainers/ci layer.
+  **SHIPPED 2026-10-25 - this is the live shape.** The canary gate ran
+  **3m35s vs 9m+ on Shape B** (setup tax gone, 5/5 green), the cache bridge
+  (work dir + caches + containerd store on one PD PVC) brought warm validate
+  to ~81 s, and the full pipeline moved to the direct steps the same day.
+  Shape B (`atlas-ci` scale set, composite action, `CI_*` variables,
+  toolchain PVC) uninstalled; the k8s contract that took six trial runs to
+  find (containerd-on-PVC, BuildKit metadata pairing, the work volume at the
+  runner root, JIT registration details) is recorded in
+  `infra/arc/README.md`.
 
 ## Decision asks
 
@@ -213,3 +230,8 @@ to revert. Full detail: [self-hosted-ci.md](self-hosted-ci.md).
    and ready, but runner-management APIs reject App auth on the Team plan -
    a classic `repo`-scoped PAT runs ARC today (90-day expiry, rotation =
    one `kubectl` command). The App flips back on with an Enterprise upgrade.
+3. ~~**Phase 3**: adopt Shape A?~~ **Resolved 2026-10-25: yes - shipped the
+   same day.** The canary gate went 5/5 (3m35s), the cache bridge brought
+   warm validate to ~81 s, and the full pipeline moved to the direct steps;
+   Shape B uninstalled (see option D). Revert = git revert of the ci.yaml
+   flip + `helm uninstall atlas-ci-shapea`.

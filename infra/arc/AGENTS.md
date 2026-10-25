@@ -5,29 +5,33 @@ Not an Nx project - plain manifests + script, applied by hand from the dev
 container (it bakes gcloud/kubectl/helm via devcontainer features).
 Plan and phases:
 [`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md).
-Setup and flag-day: [`README.md`](README.md).
+Setup and the k8s contract: [`README.md`](README.md).
 
 ## Files
 
-- `arc-values.yaml` - gha-runner-scale-set values (dind sidecar, taint/label
-  to the CI node pool, resources, cache volume).
-- `toolchain-cache-pvc.yaml` - PD (RWO, Phase 1) cache volume backing
-  `.container-cache`; Filestore RWX blocked by project service policy.
+- `arc-shapea-values.yaml` - gha-runner-scale-set values: the job container
+  IS the dev container image (privileged, in-image dockerd, work volume
+  mounted at the runner root's `_work`, cache PVC subPaths).
+- `shapea-cache-pvc.yaml` - PD (RWO) volume: work dir + toolchain caches +
+  dockerd/containerd stores (README has the layout and the reasons).
 - `install.sh` - subcommands: `cluster`, `controller`, `nodepool`,
-  `scale-set`, `status` (`cluster` unused - target is the existing
+  `scale-set-shapea`, `status` (`cluster` unused - target is the existing
   atlas-dev Standard cluster).
 
 ## Conventions
 
-- The repo-side flip is variables only (`CI_RUNS_ON`, `CI_DISK_CLEANUP`,
-  `CI_USE_ACTIONS_CACHE`, `CI_CACHE_MOUNTS`) - never edit ci.yaml to move
-  runners; delete the variables to revert to hosted.
-- The dind sidecar is **privileged**; the `ci` taint + nodeSelector keep CI
-  pods alone on that pool.
-- After chart bumps, re-run `install.sh scale-set` (idempotent
-  `helm upgrade --install`).
+- ci.yaml hard-codes `runs-on: atlas-ci-shapea`. The old `CI_*` flag-day
+  variables (CI_RUNS_ON etc.) retired with the devcontainers/ci wrapper -
+  do not reintroduce variable-selected runners.
+- Image deploys: `CI_SHAPEA_IMAGE_TAG=sha-<full-sha> ./install.sh
+scale-set-shapea` (the build workflow publishes the tag; helm `--set`
+  redeploys the template). Idempotent after chart bumps.
+- The pod is **privileged** (in-image dockerd); treat the container command
+  and volumeMounts as one contract - README "What lives where" explains why
+  each line exists (every one is a failed trial).
 
 ## Removal
 
-`helm uninstall atlas-ci -n arc-runners` (+ `arc` in `arc-systems`), delete
-the variables, delete the node pool. Nothing in `.github/` hard-codes GKE.
+`helm uninstall atlas-ci-shapea -n arc-runners` (+ `arc` in `arc-systems`),
+delete the PVC + secrets, git-revert the ci.yaml flip. Nothing in
+`.github/` hard-codes GKE beyond `runs-on:`.

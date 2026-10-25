@@ -117,11 +117,14 @@ services:
         # The image runs as a fixed non-root user that cannot read bind-mounted
         # key material it does not own, so the certificates are copied to the
         # container filesystem with strict permissions before startup.
+        # cp -f + chmod (not `install`): a container RESTART keeps /tmp, and
+        # `install` refuses an existing destination - exit 1 on every restart
+        # (seen on a warm CI daemon, run 40225940082).
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                install -m 600 /certs/postgres.pem /tmp/server.pem &&
-                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
+                cp -f /certs/postgres.pem /tmp/server.pem && chmod 600 /tmp/server.pem &&
+                cp -f /certs/postgres-key.pem /tmp/server-key.pem && chmod 600 /tmp/server-key.pem &&
                 exec docker-entrypoint.sh
                 -c ssl=on
                 -c ssl_cert_file=/tmp/server.pem

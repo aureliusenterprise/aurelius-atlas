@@ -1,21 +1,30 @@
-# GKE self-hosted CI runners (Phases 1-2)
+# GKE self-hosted CI runners
 
-ARC (`gha-runner-scale-set`) runner pods for `aureliusenterprise/aurelius-atlas`,
-so the `ci` job runs in the dev container on GKE (plan:
-[`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md)).
+ARC (`gha-runner-scale-set`) runner pods for `aureliusenterprise/aurelius-atlas`:
+the `ci` job runs **directly in the dev container image** on GKE (plan:
+[`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md),
+decision: [`self-hosted-ci-decision.md`](../../docs/architecture/self-hosted-ci-decision.md)).
 
-Layout of one job: runner pod (ARC stock runner image) + **dind sidecar**
-(privileged `docker:dind`, unix socket at `/var/run/docker.sock` shared with
-the runner container). `devcontainers/ci` starts the dev container as a sibling
-on that sidecar - exactly the hosted-runner topology, so nothing in
-`.github/actions/run-in-devcontainer` changes.
+Layout of one job: one pod whose job container **is**
+`ghcr.io/aureliusenterprise/atlas-ci-runner` (the dev container, built by
+`.github/workflows/build-devcontainer-image.yaml`). The container command
+chains the docker-in-docker feature's `docker-init.sh` (starts an in-image
+privileged `dockerd`, then `exec "$@"`) to `/opt/actions-runner/run.sh`. No
+devcontainers/ci wrapper, no dind sidecar, no per-job image pull - the setup
+tax of the old hosted/Shape-B topology (8.3 GB pull + devcontainer build +
+sibling container, ~5 min) is structurally gone.
+
+The scale set retired 2026-10-25: the former **Shape B** bridge (stock
+`actions-runner` + dind sidecar + devcontainers/ci, `atlas-ci` release,
+`arc-values.yaml`, `toolchain-cache-pvc.yaml`, the `CI_*` flag-day variables,
+`.github/actions/run-in-devcontainer`) is fully removed - git history has it.
 
 ## One-time setup
 
 Prereqs: the **atlas-dev Standard cluster** (europe-west1 - verified: no
 Autopilot constraints, privileged pods admitted) and a **classic PAT with
-the `repo` scope** in the auth secret (see "Auth" below - the GitHub App
-we also created is blocked by plan gating on this repo today). The
+the `repo` scope** in the auth secret (see "Auth" - the GitHub App we also
+created is blocked by plan gating on this repo today). The
 `gcloud`/`kubectl`/`helm` CLIs come from the dev container
 (`./features/google-cloud-cli` - vendored dhoeric, with
 `installGkeGcloudAuthPlugin`; `kubectl-helm-minikube` - gated by
@@ -23,15 +32,6 @@ we also created is blocked by plan gating on this repo today). The
 `gcloud auth login --no-launch-browser` +
 `gcloud config set project aurelius-atlas` +
 `gcloud container clusters get-credentials atlas-dev --location europe-west1`.
-
-Phase 1 ran the **canary on the existing default pool** (nodes: 3.92 CPU /
-13.9 Gi allocatable) - gate passed 5/5, zero marginal cost. Phase 2 (live
-2026-10-25) added the **toolchain-cache PVC** and flipped the repo
-variables; the full pipeline runs on the same default pool (no new node
-pool - if it ever exceeds capacity, constrain the dev docker composes
-first, see the decision doc). The dedicated tainted spot pool stays
-documented-but-unused: uncomment the taint/selector block in
-`arc-values.yaml` to enable it.
 
 ```bash
 # 1. Controller (cluster-scoped, one per cluster) - DONE 2026-10-25:
@@ -43,13 +43,17 @@ kubectl create namespace arc-runners
 kubectl -n arc-runners create secret generic atlas-arc-auth \
     --from-literal=github_token="$GITHUB_PAT"
 
-# 3. The scale set (namespaced, per repo):
-helm install atlas-ci oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-    --namespace arc-runners -f infra/arc/arc-values.yaml
+# 3. GHCR pull secret for the private runner image (PAT needs
+#    write:packages too). Pass the RAW JSON - kubectl base64s it itself:
+TOK=$(tr -d '\n' < ~/atlas-arc-pat.txt)
+AUTH=$(printf '%s:%s' "$(gh api user -q .login)" "$TOK" | base64 -w0)
+kubectl -n arc-runners create secret generic atlas-ghcr-pull \
+    --type=kubernetes.io/dockerconfigjson \
+    --from-literal=".dockerconfigjson={\"auths\":{\"ghcr.io\":{\"auth\":\"$AUTH\"}}}"
 
-# Phase 2 (live) - cache volume:
-kubectl apply -f infra/arc/toolchain-cache-pvc.yaml
-# then `./install.sh scale-set` (work volume + cache-init in arc-values.yaml)
+# 4. The cache/work volume + the scale set:
+kubectl apply -f infra/arc/shapea-cache-pvc.yaml
+CI_SHAPEA_IMAGE_TAG=main ./install.sh scale-set-shapea
 ```
 
 **Auth (measured 2026-10-25 on this org).** `POST
@@ -70,7 +74,7 @@ kubectl -n arc-runners create secret generic atlas-arc-auth \
     --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-then `./install.sh scale-set`.
+then `./install.sh scale-set-shapea`.
 
 The **atlas-arc GitHub App** (app 5466493, install 175110388, key kept
 off-git) is installed and ready for the Enterprise flip: recreate the
@@ -78,118 +82,109 @@ secret with the three `github_app_*` keys (the chart auto-detects). Note
 the org also required **Runner groups → Default → "Allow public
 repositories"** - this repo is public, and GitHub refuses self-hosted
 registration for public repos in groups that disallow them. The
-`scaleSetLabels: atlas-ci` label is what `runs-on:` selects via
-`CI_RUNS_ON`.
+`scaleSetLabels: atlas-ci-shapea` label is what `runs-on:` selects.
 
 Cost/benefit + the option analysis:
 [`docs/architecture/self-hosted-ci-decision.md`](../../docs/architecture/self-hosted-ci-decision.md).
 
-## Flag day (repo side) - DONE 2026-10-25
-
-The five repo variables, set as live (unset any to revert that knob to
-hosted):
+## The deploy loop
 
 ```bash
-gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_RUNS_ON \
-    -f name=CI_RUNS_ON -f value=atlas-ci
-gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_DISK_CLEANUP \
-    -f name=CI_DISK_CLEANUP -f value=false
-gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_USE_ACTIONS_CACHE \
-    -f name=CI_USE_ACTIONS_CACHE -f value=false   # unavailable on self-hosted (private repos)
-gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_CACHE_MOUNTS \
-    --input - <<'EOF'   # newline-separated devcontainers/ci mounts; targets OUTSIDE the checkout
-{"value":"type=bind,source=/home/runner/_work/.ci-cache/uv,target=/var/cache/ci/uv\ntype=bind,source=/home/runner/_work/.ci-cache/npm,target=/var/cache/ci/npm\ntype=bind,source=/home/runner/_work/.ci-cache/pre-commit,target=/var/cache/ci/pre-commit"}
-EOF
-gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_CACHE_ENV \
-    --input - <<'EOF'   # container-side cache dirs = the mount targets above
-{"value":"UV_CACHE_DIR=/var/cache/ci/uv\nnpm_config_cache=/var/cache/ci/npm\nPRE_COMMIT_HOME=/var/cache/ci/pre-commit"}
-EOF
-```
-
-Deleting the variables reverts to hosted runners - no PR needed.
-
-Notes:
-
-- GHCR pulls of `atlas-ci-runner:main` carry credentials from the composite's
-  login step (the docker client sends them to the sidecar) - no
-  `imagePullSecrets` needed; the pod's own images are public.
-- **Caches live outside the checkout.** `CI_CACHE_MOUNTS` binds the PVC's
-  `.ci-cache/*` dirs (pre-created setgid 2775 by the `cache-init` init
-  container) to `/var/cache/ci/*` in the dev container, and `CI_CACHE_ENV`
-  points `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` at the same
-  paths. Mounting them _inside_ the checkout (`.container-cache/*`, as
-  first planned) breaks the next job: dockerd creates bind-mount targets as
-  root:root and `actions/checkout`'s `git clean -ffdx` then fails with
-  EACCES (run 40201875108). `cache-init` also sweeps any such stale dirs.
-  The mounts must match `CI_CACHE_ENV` exactly - a mismatch means the tools
-  see an unwritable empty dir (`/var/cache/ci` parent dirs are created
-  root-owned by dockerd, the setgid source dirs make writes work).
-- On hosted, the same cache dirs are filled by `actions/cache` instead
-  (`use-actions-cache`), at the action's default in-workspace paths.
-- The `.features-cache` dir under `.devcontainer/` is inside the checkout
-  (gitignored) and lands on the job's `work` volume - features rebuild
-  ~weekly (hash-keyed), acceptable for now; a second volume mount is the
-  escape hatch if it hurts.
-- **Rollback**: `helm uninstall atlas-ci -n arc-runners` + delete variables.
-
-## Shape A - jobs run IN the dev container image (canary)
-
-The goal state from the decision doc: the runner pod's job container **is**
-`ghcr.io/aureliusenterprise/atlas-ci-runner` (the dev container), so CI steps
-run directly in the developer image - no `devcontainers/ci`, no sibling
-container, no per-job 8.3 GB image pull. The `atlas-ci` scale set above is
-**Shape B** (stock runner + devcontainers/ci) and keeps serving the full `ci`
-job while this canary proves Shape A.
-
-Pieces (each verified against chart 0.15.1 / the baked feature scripts):
-
-- `ci-runner` devcontainer feature (`.devcontainer/features/ci-runner`) bakes
-  the Actions runner binaries at `/opt/actions-runner` (vscode-owned). Harmless
-  in developer containers - nothing launches them there.
-- The `docker-in-docker` feature (already present) bakes `dockerd` +
-  `/usr/local/share/docker-init.sh`, which starts the daemon then
-  `exec "$@"` - the pod command chains it to `run.sh`. The pod is
-  **privileged** (the feature's own manifest says the same for dev containers).
-- `arc-shapea-values.yaml`: default containerMode (the chart passes the
-  container through verbatim - registration env comes from the controller),
-  `runAsUser: 1000` (vscode) + docker group 999 (k8s drops the image user's
-  supplementary groups; dockerd's socket is `root:docker` 0660), `work` +
-  `dind-storage` emptyDirs, label `atlas-ci-shapea`, `maxRunners: 1`.
-- `.github/workflows/ci-shapea.yaml`: direct steps (toolchain sanity with a
-  real `docker info`, the devcontainer lifecycle scripts, pre-commit).
-
-Deploy loop (from the dev container, kube context on atlas-dev):
-
-```bash
-# One-time: GHCR pull secret for the private package (PAT needs
-# write:packages too - the image is private). Recreate on PAT rotation:
-TOK=$(tr -d '\n' < ~/atlas-arc-pat.txt)
-AUTH=$(printf '%s:%s' "$(gh api user -q .login)" "$TOK" | base64 -w0)
-kubectl -n arc-runners create secret generic atlas-ghcr-pull \
-    --type=kubernetes.io/dockerconfigjson \
-    --from-literal=".dockerconfigjson={\"auths\":{\"ghcr.io\":{\"auth\":\"$AUTH\"}}}"
-
 # Image: push a commit that touches .devcontainer/** -> the build workflow
-# publishes atlas-ci-runner:sha-<full-sha> (branch builds publish their own
-# tag; main publishes :main). Then:
+# publishes atlas-ci-runner:sha-<full-sha> (main publishes :main). Then:
 CI_SHAPEA_IMAGE_TAG=sha-<full-sha> ./install.sh scale-set-shapea
-gh workflow run ci-shapea.yaml --ref feat/validate-job-in-devcontainer
 ```
 
-Canary gate: green on the pool, repeated; then the cache bridge (PVC mounts
-for `/var/cache/ci/*` + the docker image store, mirroring `CI_CACHE_MOUNTS`)
-is the next increment before the full `ci` job flips. Rollback:
-`helm uninstall atlas-ci-shapea -n arc-runners` (Shape B is untouched).
+`helm upgrade --install` replaces the scale set; in-flight jobs are evicted
+(the controller drains), queued jobs requeue onto the new pods. Workflow-only
+commits don't need a redeploy - the image tag is a helm `--set`, and the
+scale set is only recreated when pod templates change.
 
-Measured (first green, run 40214518758, node-warm image): job **3m35s**
-(queue 9s) vs 9m10s-9m42s for the same validate-only gate on Shape B - the
-setup tax (image pull, devcontainer build, sibling container) disappears.
-First pull on a fresh node: 2m17s (2.84 GB compressed), paid once per node.
+## What lives where (the k8s contract, measured 2026-10-25)
 
-**Gate passed 5/5** (2026-10-25, runs 40214518758 + 40214880318 + three
-dispatches, all 3m35s-class, zero flakes). The scale set then gained the
-**cache bridge**: `shapea-cache-pvc.yaml` (dedicated 50 Gi PD - NOT shared
-with Shape B: two scale sets on one RWO disk = detach stalls + fsGroup
-chown flip-flop) backs the work dir (warm checkout), `/var/cache/ci/*`
-(uv/npm/pre-commit, setgid by cache-init), and dockerd's `/var/lib/docker`
-(compose/e2e base images survive pods).
+Every line here was a failed trial run first. The chart's **default**
+container mode (containerMode omitted) passes `template.spec` verbatim and
+injects NOTHING into the container - registration arrives via the per-pod
+secret (`ACTIONS_RUNNER_INPUT_JITCONFIG`, a secretKeyRef **env var** holding
+the JIT token string; the listener consumes it at run.sh boot). Consequences:
+
+- **Work folder**: JIT self-registration writes `WorkFolder: "_work"`
+  RELATIVE to the runner root, and there is NO relocating flag - runner
+  2.338 `config.sh` has no `--jitconfig` at all (an attempted
+  `config.sh --jitconfig` crash-looped the pods), and `RUNNER_WORKSPACE` is
+  an ARC kubernetes-mode hook input the standalone listener ignores. The fix
+  is what ARC's own hooks do: **mount the work volume AT
+  `/opt/actions-runner/_work`** - the default then lands on the PVC. (Jobs
+  on the container layer died with `Access to the path
+'/opt/actions-runner/_work/_tool' is denied` once `_work` was root-owned.)
+- **`secrets/keys.txt`**: `SOPS_AGE_KEY_FILE` points inside the work volume
+  (the checkout's `secrets/` - the file is gitignored and written by sops at
+  runtime; its content is irrelevant when `SOPS_AGE_KEY` is in the
+  environment, sops needs the FILE to exist). The clean step excludes it
+  from `git clean`.
+- **Privileged pod** (in-image dockerd, same as the feature's dev-container
+  manifest). `runAsUser: 1000` (vscode) + `runAsGroup`/`supplementalGroups:
+[999]` (docker group - k8s drops the image's supplementary groups; the
+  dockerd socket is `root:docker` 0660). `fsGroup: 1000` with
+  `fsGroupChangePolicy: OnRootMismatch` (the default `Always` chowns the
+  whole 50 Gi volume every pod boot).
+- **PATH**: k8s `bash -c` skips login files, so the container command
+  assembles the baked toolchains explicitly (nvm node glob, /usr/local/bin,
+  py-utils, sdkman) before `exec docker-init.sh run.sh`.
+- **`cache-init`** (root initContainer): creates the `.ci-cache/*` dirs,
+  chgrp 999 + chmod **2775 setgid NON-recursively** (recursive over the
+  multi-GB containerd store made every boot take minutes - the init never
+  finished, the controller recycled the pod, jobs sat queued: the
+  queue-stall incident), wipes `.ci-cache/docker/buildkit` (see the store
+  pairing below), and `chown -R 1000:999` **the checkout tree only** (e2e
+  bind mounts run as container root and write INTO the checkout - root-owned
+  dirs make the next job's checkout die `EACCES: rmdir`).
+
+## The PVC (`shapea-cache-pvc.yaml`, atlas-shapea-cache, 50 Gi RWO PD)
+
+One ext4 volume (PD - overlayfs works on it, NFS/Filestore would not),
+subPath-mounted:
+
+| Path (in pod)                       | PVC subPath            | Why                                                                                       |
+| ----------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
+| `/opt/actions-runner/_work`         | (root)                 | work dir: checkout + `_tool`/`_temp`, warm between jobs                                   |
+| `/var/cache/ci/{uv,npm,pre-commit}` | `.ci-cache/<name>`     | toolchain caches, OUTSIDE the checkout (inside = root-owned bind roots break `git clean`) |
+| `/var/lib/docker`                   | `.ci-cache/docker`     | dockerd store: compose/e2e base images survive pods                                       |
+| `/var/lib/containerd`               | `.ci-cache/containerd` | **the critical one** - see below                                                          |
+
+**Containerd's root must be volume-backed.** The image's
+`/etc/containerd/config.toml` (root=`/var/lib/containerd`) + dockerd's
+containerd-snapshotter (devcontainers/features#1642) mean every image/layer
+snapshot lives under `/var/lib/containerd`, NOT `/var/lib/docker`. Left on
+the pod root (the node's overlayfs), nested overlay mounts are rejected:
+"failed to mount /tmp/containerd-mount…: invalid argument" killed every
+e2e container and docker-build in trial run 40217828572.
+
+**BuildKit metadata and containerd snapshots are a pod-scoped pair.**
+`/var/lib/docker/buildkit` (metadata) references containerd snapshots by
+id; if the metadata outlives the snapshot store (a pod that dies
+mid-build, an infra change that moves one store - trial runs 40217828572 →
+40219350705), every build dies "parent snapshot … does not exist". cache-init
+wipes the metadata each boot; builds use `--cache-from type=registry`, so it
+is disposable.
+
+**The volume is deliberately NOT shared** with the (retired) Shape B cache:
+two scale sets on one RWO disk = detach stalls + fsGroup chown flip-flop.
+
+## Caches and warm trees (measured)
+
+- `ci.yaml` checks out with `clean: false` + `git clean -ffdx -e
+node_modules -e .venv -e .nx/workspace-data -e secrets/keys.txt`, so the
+  installed trees survive jobs (npm/uv see them complete and exit early;
+  default-clean costs ~60s of re-linking every job).
+- Validate (pre-commit) 148s cold → 77s warm; e2e/docker base layers hit
+  the containerd store; storybook/sonar artifacts land on the warm tree.
+- The uv/npm caches pay for themselves on fresh trees (downloads ~0 on GKE
+  egress; the ~60s floor is tree materialization, removed by the warm tree).
+
+## Rollback
+
+`helm uninstall atlas-ci-shapea -n arc-runners` (+ `arc` in `arc-systems`),
+delete `shapea-cache-pvc.yaml`, delete `atlas-arc-auth`/`atlas-ghcr-pull`.
+The workflow side is a git revert of the ci.yaml flip (hosted runners
+predate the variables, and the variables retired with Shape B).
