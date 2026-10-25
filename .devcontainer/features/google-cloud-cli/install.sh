@@ -14,7 +14,12 @@
 set -e
 
 GCLOUD_VERSION=${VERSION:-"latest"}
-INSTALL_GKEGCLOUDAUTH_PLUGIN="${INSTALL_GKEGCLOUDAUTH_PLUGIN:-"false"}"
+# The devcontainer CLI maps the camelCase option to INSTALL_GKE_GCLOUD_AUTH_-
+# PLUGIN (word boundaries). Upstream reads INSTALL_GKEGCLOUDAUTH_PLUGIN - a
+# name the CLI never exports - so the published feature silently skips the
+# plugin (our rebuild: gcloud in, plugin absent). Accept both.
+INSTALL_GKEGCLOUDAUTH_PLUGIN="${INSTALL_GKE_GCLOUD_AUTH_PLUGIN:-${INSTALL_GKEGCLOUDAUTH_PLUGIN:-"false"}}"
+export INSTALL_GKEGCLOUDAUTH_PLUGIN
 
 if [ "$(id -u)" -ne 0 ]; then
     echo -e 'Script must be run as root. Use sudo, su, or add "USER root" to your Dockerfile before running this script.'
