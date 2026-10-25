@@ -73,9 +73,12 @@ _DIGITS = re.compile(r"[+-]?\d+")
 class EntitySearchProcessor:
     """The entities of a search's context, paged; ``clock`` is now in epoch milliseconds, for named time ranges."""
 
-    def __init__(self, context: SearchContext, clock: Callable[[], int]) -> None:
+    def __init__(self, context: SearchContext, clock: Callable[[], int], facets: tuple[str, ...] = ()) -> None:
         self._context = context
         self._clock = clock
+        self._facets = facets
+        self.facets: dict[str, list[tuple[str, int]]] = {}
+        """The values of the search fields ``facets`` names over every matching entity, once executed (DD-093)."""
         self.result_count = -1
         """``getResultCount``: how many entities match in all, once executed."""
         self.next_offset: int | None = None
@@ -104,13 +107,14 @@ class EntitySearchProcessor:
             offset=parameters.offset if marker is None else marker,
             size=parameters.limit,
             text=self._context.text,
+            facets=self._facets,
         )
 
     async def execute(self, store: EntityStore) -> list[StoredEntity]:
         """``execute``: the page of matching entities; with a marker, also the next page's offset (SRC-07, SRC-08)."""
         query = await self.query(store)
         hits = await store.search(query)
-        found, self.result_count = hits.entities, hits.total
+        found, self.result_count, self.facets = hits.entities, hits.total, hits.facets
         if self._context.has_tag_filters:
             self.result_count = -1  # ClassificationSearchProcessor.getResultCount without an entity index query
         if self._context.marker is not None:

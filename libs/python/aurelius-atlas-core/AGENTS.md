@@ -36,7 +36,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   checks it, `entity_search_processor.py` turns it into a `SearchQuery` (`search_query.py`, also its in-memory
   meaning), which the entity documents answer over the search fields of `search_fields.py` (DD-088, DD-089);
   `classification_search_processor.py` adds the classification criterion (DD-090); `free_text.py` holds the
-  free-text fields, their weights and the in-memory matching (DD-092)
+  free-text fields, their weights and the in-memory matching (DD-092); `search_aggregator.py` (facets) and
+  `suggestions_provider.py` (suggestions) serve quick search (DD-093, DD-094)
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task

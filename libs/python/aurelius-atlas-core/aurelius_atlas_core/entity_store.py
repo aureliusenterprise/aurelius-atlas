@@ -207,8 +207,12 @@ class EntityStore:
         return await self._documents.classifications_of_types(type_names)
 
     async def search(self, query: SearchQuery) -> SearchHits:
-        """The entities of a search query's page, how many match it in all, and their scores (DD-089)."""
+        """The entities of a search query's page, how many match it in all, their scores and facets (DD-089)."""
         return await self._documents.search(query)
+
+    async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
+        """Per search field, its most frequent words beginning with ``prefix`` (DD-094)."""
+        return await self._documents.terms(fields, prefix)
 
     async def get_tasks(self, guids: Sequence[str]) -> dict[str, tuple[StoredTask, DocumentVersion]]:
         """The tasks with these GUIDs that exist, as last written (TSK-06, DD-079)."""

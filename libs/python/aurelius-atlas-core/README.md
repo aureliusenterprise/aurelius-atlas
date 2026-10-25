@@ -47,7 +47,9 @@ entity documents answer (DD-087 to DD-089). Since
 [4.1b](../../../docs/architecture/conversion/increments/4-1-classification-search.md): search by
 classification and tag filters (DD-090). Since
 [4.2a](../../../docs/architecture/conversion/increments/4-2-free-text.md): free text, weighted by the
-attributes' search weights, in basic search and full-text search (DD-091, DD-092).
+attributes' search weights, in basic search and full-text search (DD-091, DD-092). Since
+[4.2b](../../../docs/architecture/conversion/increments/4-2-quick-search.md): quick search with its facets, and
+suggestions (DD-093, DD-094).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -146,6 +148,10 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.classification_search_processor
 
 ::: aurelius_atlas_core.discovery_service
+
+::: aurelius_atlas_core.search_aggregator
+
+::: aurelius_atlas_core.suggestions_provider
 
 ::: aurelius_atlas_core.stored_relationship
 

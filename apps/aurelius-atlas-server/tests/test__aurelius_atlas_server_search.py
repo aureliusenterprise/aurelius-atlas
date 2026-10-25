@@ -171,3 +171,54 @@ async def test__a_basic_search_takes_a_query(client: httpx.AsyncClient, tables: 
     assert names(by_parameter) == ["three"]
     assert names(by_body) == ["one"]
     assert by_body["entities"][0]["guid"] == tables[0]
+
+
+@pytest.mark.covers(f"{D}.quick_search", f"{D}.validate_quick_search_parameters", rules=["QSR-01", "QSR-02", "QSR-03"])
+async def test__a_posted_quick_search_is_validated_then_answered_with_facets(
+    client: httpx.AsyncClient, tables: list[str]
+) -> None:
+    """The query as a prefix, with its facets; each invalid body fails with Atlas's message, in Atlas's order."""
+    status, found = await send(client, "POST", f"{SEARCH}/quick", json={"query": "tw", "typeName": "s_table"})
+    invalid = [
+        ({"typeName": "s_table", "offset": -1}, "Limit/offset should be non-negative"),
+        ({"query": "x", "entityFilters": {"attributeName": "name"}}, "EntityFilters specified without Type name"),
+        ({"sortBy": "name"}, "No search parameter was found."),
+        ({"query": "x", "sortBy": "name"}, "SortBy specified without Type name"),
+        ({"typeName": "s_table", "sortBy": "x" * 4097}, "Length of query param sortBy exceeds the limit"),
+        ({"query": "x" * 4097}, "Invalid query length, update"),
+    ]
+    messages = [(await send(client, "POST", f"{SEARCH}/quick", json=body))[1]["errorMessage"] for body, _ in invalid]
+
+    assert status == 200
+    assert [entity["guid"] for entity in found["searchResults"]["entities"]] == [tables[1]]
+    assert found["searchResults"]["queryText"] == "tw*"
+    assert found["aggregationMetrics"]["__typeName"] == [{"name": "s_table", "count": 1}]
+    assert [message[: len(expected)] for message, (_, expected) in zip(messages, invalid, strict=True)] == [
+        expected for _, expected in invalid
+    ]
+
+
+@pytest.mark.covers(f"{D}.quick_search_using_query", rules=["QSR-01", "QSR-02"])
+async def test__a_quick_search_by_query_parameters(client: httpx.AsyncClient, tables: list[str]) -> None:
+    """Typed, sorted and paged by parameters; only the query's length is checked."""
+    params = {"typeName": "s_table", "sortBy": "name", "sortOrder": "DESCENDING", "limit": "2", "offset": "-1"}
+    status, found = await send(client, "GET", f"{SEARCH}/quick", params=params)
+    too_long = await send(client, "GET", f"{SEARCH}/quick", params={"query": "x" * 4097})
+
+    assert status == 200
+    assert [entity["guid"] for entity in found["searchResults"]["entities"]] == [tables[1], tables[2]]
+    assert found["aggregationMetrics"]["__state"] == [{"name": "ACTIVE", "count": 3}]
+    assert too_long[1]["errorCode"] == "ATLAS-400-00-058"
+
+
+@pytest.mark.covers(f"{D}.get_suggestions", rules=["SUG-01"])
+async def test__suggestions_answer_the_prefix_and_its_terms(client: httpx.AsyncClient, tables: list[str]) -> None:
+    """Without the weighted fields of the base model, nothing; a named string field reads its words."""
+    _, default = await send(client, "GET", f"{SEARCH}/suggestions", params={"prefixString": "t"})
+    _, typed = await send(
+        client, "GET", f"{SEARCH}/suggestions", params={"prefixString": "s_", "fieldName": "__typeName"}
+    )
+
+    assert default == {"prefixString": "t", "suggestions": []}
+    assert typed == {"prefixString": "s_", "fieldName": "__typeName", "suggestions": ["s_table"]}
+    assert tables
