@@ -3,10 +3,14 @@
 # up --wait = healthy), but a FRESH postgres container on the CI daemon
 # exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
 # elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
-# daemon-level permission anomalies, repro-free so far. This job boots
-# the same stack on the same runner as the pipeline and captures the
-# daemon/container facts the artifacts can't reach (the runner pod dies
-# with the job). Delete after diagnosis.
+# write-permission anomalies on world-writable targets, repro-free so
+# far (the same sequence on this devcontainer = healthy). Round-1
+# facts: dockerd 29.9.2, Security Options: cgroupns only, daemon.json
+# empty, no userns-remap; round 1 then died on compose env
+# interpolation - the pipeline decrypts .env.enc (nx decrypt), this job
+# must too. Round 2: decrypt, boot both stacks, probe the exact writes
+# INSIDE the containers, node OS/AppArmor facts. Delete after
+# diagnosis.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -24,6 +28,10 @@ permissions:
 jobs:
     debug:
         runs-on: atlas-ci-shapea
+        env:
+            # The pod exports SOPS_AGE_KEY_FILE (cache-init touches the
+            # file); SOPS_AGE_KEY carries the key (as in ci.yaml).
+            SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v6
@@ -41,6 +49,26 @@ jobs:
                   echo "### id / kernel"
                   id
                   uname -a
+                  echo "### node OS (docker info)"
+                  docker info 2>&1 | grep -iE "operating system|kernel version" || true
+                  echo "### apparmor"
+                  cat /sys/module/apparmor/parameters/enabled 2>/dev/null || echo "(no apparmor)"
+                  echo "### runner-container probes (node-level writability)"
+                  sh -c 'echo 0 > /proc/self/coredump_filter && echo coredump-filter: WRITABLE || echo coredump-filter: EACCES'
+                  ls -ld /tmp
+
+            # The compose stacks interpolate ${OTEL_*}/${DATABASE_*} from
+            # the project .env - decrypted .env.enc (nx decrypt, sops).
+            # Round 1 died here.
+            - name: Decrypt envs
+              run: |
+                  find . -name .env.enc -not -path "*/node_modules/*" \
+                      -not -path "*/.venv/*" |
+                      while read -r f; do
+                          sops decrypt --input-type=dotenv --output-type=dotenv \
+                              --output="${f%.enc}" "$f"
+                      done
+                  grep -c . dev/observability/.env
 
             - name: Reproduce postgres boot
               run: |
@@ -61,8 +89,27 @@ jobs:
                       PRIV={{.HostConfig.Privileged}}
                       TMP={{json .HostConfig.Tmpfs}}
                       MOUNTS={{json .Mounts}}'
-                  echo "### inside the container: /tmp perms"
-                  docker exec "$C" ls -ld /tmp /tmp/atlas-certs.* 2>&1 || true
-                  docker exec "$C" id 2>&1 || true
-                  docker exec "$C" sh -c 'mktemp -d /tmp/atlas-certs.XXXXXX; echo rc=$?' 2>&1 || true
+                  echo "### inside the container: writability probes"
+                  docker exec "$C" ls -ld / /tmp 2>&1 || true
+                  docker exec "$C" sh -c 'id
+                  mktemp -d /tmp/atlas-certs.XXXXXX; echo mktemp-rc=$?
+                  echo x > /tmp/probe && echo plain-file-rc=0 || echo plain-file-rc=$?
+                  touch /probe-in-root && echo rootfs-write-rc=0 || echo rootfs-write-rc=$?' 2>&1 || true
                   docker exec "$C" cat /proc/mounts 2>&1 | grep -E " /tmp| / " || true
+
+            # ES's boot dies writing /proc/self/coredump_filter (EACCES).
+            # Same probe from the ES container, as the ES user.
+            - name: Reproduce elasticsearch boot
+              run: |
+                  cd dev/elasticsearch
+                  docker compose up -d 2>&1 | tail -3
+                  sleep 20
+                  docker compose ps --format '{{.Name}} {{.Status}}'
+                  docker compose logs elasticsearch 2>&1 |
+                      grep -oE '"message":"[^"]*(coredump|AccessDenied)[^"]*"' | head -2 || true
+                  C=$(docker compose ps -q elasticsearch)
+                  docker exec "$C" sh -c 'id
+                  echo 0 > /proc/self/coredump_filter 2>/dev/null && echo coredump: WRITABLE || echo coredump: EACCES
+                  mktemp -d /tmp/atlas-certs.XXXXXX; echo mktemp-rc=$?' 2>&1 || true
+                  docker inspect "$C" --format 'USER={{.Config.User}}
+                  SECOPT={{json .HostConfig.SecurityOpt}}' || true
