@@ -4,7 +4,10 @@ githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
 githubConfigSecret: atlas-arc-auth
 runnerScaleSetName: atlas-ci
 minRunners: 0
-maxRunners: 3
+# RWO cache (single PD): one runner at a time so the volume is never
+# attached to two nodes (a second pod on another node would stuck in
+# ContainerCreating). Serial CI is the current volume anyway.
+maxRunners: 1
 
 # Jobs target the pool with runs-on: atlas-ci (see CI_RUNS_ON repo variable).
 scaleSetLabels:
@@ -15,6 +18,16 @@ containerMode:
 
 template:
     spec:
+        # Cache dirs are group-writable + setgid (cache-init below), so the
+        # runner (uid 1001), the dind sidecar's bind-mounts (dockerd, root)
+        # and the remapped dev container all write the same files. OnRoot-
+        # Mismatch: recursive chown only when the volume root perms change -
+        # never on warm pods (the default, Always, chowns the volume every
+        # start). fsGroup lives under securityContext (top-level is pruned
+        # by the AutoscalingRunnerSet CRD schema).
+        securityContext:
+            fsGroup: 1001
+            fsGroupChangePolicy: OnRootMismatch
         # Phase 1 (canary on atlas-dev's existing default pool): no
         # nodeSelector/tolerations - the canary requests below fit the
         # default pool's headroom (nodes: 3.92 CPU / 13.9 Gi allocatable,
@@ -28,6 +41,40 @@ template:
         #       operator: Equal
         #       value: "true"
         #       effect: NoSchedule
+        # dockerd creates missing bind-mount sources root:root 0755 - the
+        # dev container (remapped to uid 1001) could not write them. This
+        # init container pre-creates the CI_CACHE_MOUNTS sources on the
+        # work volume as root:1001 mode 2775; the setgid bit then makes
+        # everything created under them (by uv, npm, pre-commit, dockerd)
+        # inherit group 1001.
+        initContainers:
+            - name: cache-init
+              image: ghcr.io/actions/actions-runner:latest
+              # root: also sweeps stale caches - dockerd creates bind-mount
+              # targets (and parents) as root:root inside the container, and
+              # uid 1001 cannot unlink those (the old in-checkout layout left
+              # .container-cache/ that broke the next checkout's git clean,
+              # run 40201875108). A root-owned wreck must not survive.
+              securityContext:
+                  runAsUser: 0
+                  runAsGroup: 0
+              command:
+                  - /bin/bash
+                  - -c
+                  - |
+                      rm -rf /work/.ci-cache /work/aurelius-atlas/aurelius-atlas/.container-cache
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit
+                      chgrp -R 1001 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
+              resources:
+                  requests:
+                      cpu: 10m
+                      memory: 32Mi
+                  limits:
+                      cpu: 500m
+                      memory: 128Mi
+              volumeMounts:
+                  - name: work
+                    mountPath: /work
         containers:
             # The job container. In dind mode the image must be EXPLICIT:
             # the chart renders init-dind-externals' image straight from
@@ -66,12 +113,13 @@ template:
             # too, kept for Phase 2 customisation). The 8.3 GB
             # atlas-ci-runner image fits the 100 GB GKE boot disk.
         volumes:
-            - name: dind-scratch
-              emptyDir: {}
-            # Phase 2: shared toolchain cache (uv/npm/pre-commit) at the
-            # composite action's env-var paths - see CI_CACHE_MOUNTS. Needs
-            # the PVC (toolchain-cache-pvc.yaml); a missing claim blocks
-            # scheduling, so it is wired only when the pool is.
-            # - name: atlas-toolchain-cache
-            #   persistentVolumeClaim:
-            #       claimName: atlas-toolchain-cache
+            # 'work' is the chart's persistent volume mounted at
+            # /home/runner/_work in BOTH the dind sidecar and the runner
+            # (dind-work-volume helper honours a user 'work' volume). It is
+            # the only path dockerd can bind-mount from that outlives a job,
+            # so the toolchain caches live under it (see CI_CACHE_MOUNTS) and
+            # survive the per-job workspace wipe. Backed by the PD PVC
+            # (toolchain-cache-pvc.yaml); a missing claim blocks scheduling.
+            - name: work
+              persistentVolumeClaim:
+                  claimName: atlas-toolchain-cache

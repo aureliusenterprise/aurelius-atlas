@@ -38,4 +38,12 @@ jobs:
                   disk-cleanup: "false"
                   use-actions-cache: "false"
                   cache-mounts: ${{ vars.CI_CACHE_MOUNTS }}
+                  # Mirrors CI_CACHE_MOUNTS targets: /work (the PVC) is the
+                  # runner's _work dir, bind-mounted into the container at
+                  # /var/cache/ci - OUTSIDE the checkout, so the next run's
+                  # `git clean -ffdx` never touches the cache dirs.
+                  cache-env: |
+                      UV_CACHE_DIR=/var/cache/ci/uv
+                      npm_config_cache=/var/cache/ci/npm
+                      PRE_COMMIT_HOME=/var/cache/ci/pre-commit
                   run-cmd: uv run pre-commit run --all-files

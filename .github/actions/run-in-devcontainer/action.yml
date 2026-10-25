@@ -39,6 +39,16 @@ inputs:
     image-tag:
         description: Tag of the dev container image to run.
         default: main
+    cache-env:
+        description: >
+            Container-side toolchain cache env as newline-separated KEY=value
+            (UV_CACHE_DIR, npm_config_cache, PRE_COMMIT_HOME). Empty = the
+            in-workspace paths the actions/cache steps restore/save (hosted).
+            On self-hosted (ARC) runners set the cache-mount targets OUTSIDE
+            the checkout - inside it, dockerd creates the bind-mount roots as
+            root:root and the next checkout's `git clean -ffdx` cannot remove
+            them (EACCES, run 40201875108).
+        default: ""
 
 outputs:
     ui-affected:
@@ -102,6 +112,25 @@ runs:
               key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
               restore-keys: container-cache-${{ runner.os }}-
 
+        - name: Resolve container cache env
+          # An empty input (hosted default) keeps the in-workspace cache
+          # paths the actions/cache steps restore/save; self-hosted runs
+          # pass PVC-backed paths outside the checkout (see input doc).
+          id: cache-env
+          shell: bash
+          env:
+              IN: ${{ inputs.cache-env }}
+          run: |
+              if [ -n "$IN" ]; then
+                  printf 'value=%s\n' "$IN" >> "$GITHUB_OUTPUT"
+              else
+                  printf 'value=%s\n' \
+                      'UV_CACHE_DIR=/workspaces/aurelius-atlas/.container-cache/uv' \
+                      'npm_config_cache=/workspaces/aurelius-atlas/.container-cache/npm' \
+                      'PRE_COMMIT_HOME=/workspaces/aurelius-atlas/.container-cache/pre-commit' \
+                      >> "$GITHUB_OUTPUT"
+              fi
+
         - name: Run in dev container
           id: run
           uses: devcontainers/ci@v0.3
@@ -126,9 +155,7 @@ runs:
               # mirroring the per-step scoping the hosted jobs
               # had - there is no host credential forwarding in CI.
               env: |
-                  UV_CACHE_DIR=/workspaces/aurelius-atlas/.container-cache/uv
-                  npm_config_cache=/workspaces/aurelius-atlas/.container-cache/npm
-                  PRE_COMMIT_HOME=/workspaces/aurelius-atlas/.container-cache/pre-commit
+                  ${{ steps.cache-env.outputs.value }}
                   SOPS_AGE_KEY
                   DOCKERHUB_USER
                   DOCKERHUB_PASSWORD
