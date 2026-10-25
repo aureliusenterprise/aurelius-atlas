@@ -185,3 +185,11 @@ Measured (first green, run 40214518758, node-warm image): job **3m35s**
 (queue 9s) vs 9m10s-9m42s for the same validate-only gate on Shape B - the
 setup tax (image pull, devcontainer build, sibling container) disappears.
 First pull on a fresh node: 2m17s (2.84 GB compressed), paid once per node.
+
+**Gate passed 5/5** (2026-10-25, runs 40214518758 + 40214880318 + three
+dispatches, all 3m35s-class, zero flakes). The scale set then gained the
+**cache bridge**: `shapea-cache-pvc.yaml` (dedicated 50 Gi PD - NOT shared
+with Shape B: two scale sets on one RWO disk = detach stalls + fsGroup
+chown flip-flop) backs the work dir (warm checkout), `/var/cache/ci/*`
+(uv/npm/pre-commit, setgid by cache-init), and dockerd's `/var/lib/docker`
+(compose/e2e base images survive pods).
