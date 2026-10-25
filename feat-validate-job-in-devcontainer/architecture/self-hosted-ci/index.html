@@ -7825,14 +7825,17 @@
   
 
 
-<h1 id="self-hosted-ci-on-aks">Self-hosted CI on AKS<a class="headerlink" href="#self-hosted-ci-on-aks" title="Permanent link">&para;</a></h1>
+<h1 id="self-hosted-ci-on-gke">Self-hosted CI on GKE<a class="headerlink" href="#self-hosted-ci-on-gke" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p><strong>Status</strong>: plan. Phase 0 (the hosted bridge) is merged; Phase 1 is next.
 Scope: moving the <code>ci</code> job of <code>.github/workflows/ci.yaml</code> from GitHub-hosted
-runners to self-hosted runners on AKS, run by Actions Runner Controller
+runners to self-hosted runners on GKE, run by Actions Runner Controller
 (ARC). The <code>publish</code> workflow (the dev container image itself) stays on
 hosted runners - it is the low-frequency builder of the thing the self-hosted
-runners consume.</p>
+runners consume. (The plan originally targeted AKS; the Azure subscription's
+quota history moved it to GKE, where the rest of the Aurelius Atlas dev
+resources live. ARC itself is unchanged - the swap is node pool, storage
+class, and auth plugin.)</p>
 </blockquote>
 <h2 id="why">Why<a class="headerlink" href="#why" title="Permanent link">&para;</a></h2>
 <p>The bridge (ADR 011 parity + <code>devcontainers/ci</code>) proved on hosted runners:</p>
@@ -7865,7 +7868,7 @@ runners consume.</p>
 <p>What hosted still costs us: the 8.3 GB pull is paid <strong>per job</strong> (every runner
 is a fresh VM), the Actions cache is a 10 GB LRU pool behind Azure Front Door
 (its outage broke builds for hours), runner-minutes are billed, and queued
-PRs queue behind a pool we don't control. On AKS: caches become plain
+PRs queue behind a pool we don't control. On GKE: caches become plain
 volumes (no 10 GB cap, no AFD, no save step), capacity is a node pool we
 size, cost is spot nodes, and from <strong>Shape A</strong> (Phase 3) the image pull
 becomes a <strong>per-node</strong> containerd cache. The dind shape keeps the
@@ -7875,9 +7878,9 @@ moving everything else; the pull is what Shape A removes.</p>
 <pre class="mermaid"><code>flowchart LR
     GH[GitHub Actions&lt;br/&gt;workflow job] --&gt;|job token| ARC[ARC controller&lt;br/&gt;gha-runner-scale-set-controller]
     ARC --&gt;|creates per job| POD[runner pod&lt;br/&gt;ephemeral]
-    subgraph NODE[AKS node pool: D8s v5 spot, ephemeral OS disk]
+    subgraph NODE[GKE node pool: n2-standard-8 spot, PD-SSD boot disk]
         POD
-        AF[Azure Files PVC&lt;br/&gt;.container-cache uv/npm/pre-commit]
+        FS[Filestore PVC&lt;br/&gt;.container-cache uv/npm/pre-commit]
     end
     POD --&gt;|docker API&lt;br/&gt;unix socket, shared volume| DIND[dind sidecar&lt;br/&gt;privileged, per pod]
     DIND --&gt;|sibling containers| DC[dev container&lt;br/&gt;atlas-ci-runner:main&lt;br/&gt;pulled per pod, ~101s warm]
@@ -7919,7 +7922,7 @@ NetworkPolicy, and treating every pod on that pool as untrusted.</p>
 <tr>
 <th>Concern</th>
 <th>Hosted (today)</th>
-<th>AKS</th>
+<th>GKE</th>
 <th>Change</th>
 </tr>
 </thead>
@@ -7934,24 +7937,24 @@ NetworkPolicy, and treating every pod on that pool as untrusted.</p>
 <td>Disk cleanup step</td>
 <td>deletes preinstalled toolchains</td>
 <td>no-op (clean node)</td>
-<td>behind the existing <code>disk-cleanup</code> input; off on AKS</td>
+<td>behind the existing <code>disk-cleanup</code> input; off on GKE</td>
 </tr>
 <tr>
 <td><code>actions/cache</code> (features/toolchain caches)</td>
 <td>GitHub cache service (private repo + self-hosted = <strong>unavailable</strong>)</td>
 <td>volumes, below</td>
-<td>composite gates the two cache steps behind a <code>use-actions-cache</code> input; on AKS the same paths are a mounted volume and the steps are skipped</td>
+<td>composite gates the two cache steps behind a <code>use-actions-cache</code> input; on GKE the same paths are a mounted volume and the steps are skipped</td>
 </tr>
 <tr>
 <td>uv/npm/pre-commit caches</td>
 <td><code>container-cache</code> key, restore/save</td>
-<td>Azure Files PVC mounted at the <strong>same paths</strong> (<code>.container-cache/</code>)</td>
+<td>Filestore PVC mounted at the <strong>same paths</strong> (<code>.container-cache/</code>)</td>
 <td>zero pipeline change - the <code>UV_CACHE_DIR</code>/<code>npm_config_cache</code>/<code>PRE_COMMIT_HOME</code> env already points there; volume = incremental, no 10 GB cap, no save step</td>
 </tr>
 <tr>
 <td>dev container image</td>
 <td>pulled per job</td>
-<td>per <strong>pod</strong> on dind (node NVMe, ~101s warm; composite's GHCR login covers it), per <strong>node</strong> under Shape A</td>
+<td>per <strong>pod</strong> on dind (node SSD, ~101s warm; composite's GHCR login covers it), per <strong>node</strong> under Shape A</td>
 <td>none in Phases 1-2 (this is Shape A's motivation)</td>
 </tr>
 <tr>
@@ -7994,27 +7997,36 @@ infra/arc is the source of truth for the how.</p>
 inject a privileged <code>docker:dind</code> sidecar per runner pod, sharing
 <code>/var/run/docker.sock</code> with the runner container (the chart wires
 <code>DOCKER_HOST</code>; extra sidecar config - resources, the <code>/var/lib/docker</code>
-emptyDir on the node's NVMe - merges in <code>template.spec.containers</code>). A
+emptyDir on the node's SSD - merges in <code>template.spec.containers</code>). A
 taint + nodeSelector (<code>ci=true</code>) keeps CI pods alone on the dedicated pool.
-The toolchain caches are an Azure Files PVC (<code>ReadWriteMany</code>, NFS) bound
-into the dev container at the exact <code>.container-cache</code> paths the composite
-action's env vars already use - the same content, volume-backed instead of
-GitHub-cache-backed, so the pipeline itself does not change.</p>
-<div class="highlight"><pre><span></span><code>az<span class="w"> </span>aks<span class="w"> </span>nodepool<span class="w"> </span>add<span class="w"> </span>--resource-group<span class="w"> </span>&lt;rg&gt;<span class="w"> </span>--cluster-name<span class="w"> </span>&lt;aks&gt;<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--name<span class="w"> </span>cipool<span class="w"> </span>--node-vm-size<span class="w"> </span>Standard_D8s_v5<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--enable-auto-scaling<span class="w"> </span>--min-count<span class="w"> </span><span class="m">0</span><span class="w"> </span>--max-count<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--kubelet-disk-type<span class="w"> </span>Ephemeral<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--node-taints<span class="w"> </span><span class="s2">"ci=true:NoSchedule"</span><span class="w"> </span>--priority<span class="w"> </span>Spot<span class="w"> </span>--eviction-policy<span class="w"> </span>Delete
+The toolchain caches are a Cloud Native Storage / Filestore PVC
+(<code>ReadWriteMany</code>) bound into the dev container at the exact <code>.container-cache</code>
+paths the composite action's env vars already use - the same content,
+volume-backed instead of GitHub-cache-backed, so the pipeline itself does not
+change.</p>
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>container<span class="w"> </span>node-pools<span class="w"> </span>create<span class="w"> </span>cipool<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cluster<span class="w"> </span>&lt;gke&gt;<span class="w"> </span>--location<span class="w"> </span>&lt;region&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--machine-type<span class="w"> </span>n2-standard-8<span class="w"> </span>--spot<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--enable-autoscaling<span class="w"> </span>--min-nodes<span class="w"> </span><span class="m">0</span><span class="w"> </span>--max-nodes<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--node-taints<span class="w"> </span><span class="nv">ci</span><span class="o">=</span>true:NoSchedule<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--workload-metadata-disabled
 </code></pre></div>
-<p><code>Standard_D8s_v5</code> (8 vCPU / 32 GiB / ~610 GiB NVMe temp): the pipeline peaks
-near 6 vCPU (test fan-out) and ~30 GB (ES + observability + buildkit). The
-pool is spot + <code>minCount 0</code>: it costs nothing between runs; a spot eviction
-mid-run is a failed job that requeues (jobs are idempotent; registry cache
-makes the rerun warm). No image-pull secrets are needed: the runner-side
-docker client sends GHCR credentials from the composite's existing login
-step, and in-container pulls use the job-token login the same step already
-does. (Under Shape A the pull moves to containerd, and a pull secret enters
-the picture then - see infra/arc notes.)</p>
+<p><code>n2-standard-8</code> (8 vCPU / 32 GiB): the pipeline peaks near 6 vCPU (test
+fan-out) and ~30 GB (ES + observability + buildkit); the boot disk is PD-SSD
+(the 8.3 GB image + buildkit layers need the room). The pool is spot +
+scale-to-zero (<code>min-nodes 0</code>): it costs nothing between runs; a spot
+preemption mid-run is a failed job that requeues (jobs are idempotent;
+registry cache makes the rerun warm). No image-pull secrets are needed: the
+runner-side docker client sends GHCR credentials from the composite's
+existing login step, and in-container pulls use the job-token login the same
+step already does. (Under Shape A the pull moves to containerd, and a pull
+secret enters the picture then - see infra/arc notes.)</p>
+<p>Auth to the control plane is <code>gcloud</code> + the <code>gke-gcloud-auth-plugin</code> exec
+credential plugin (GCP's kubelogin), baked into the dev container by
+<code>.devcontainer/features/google-cloud-cli</code> (a vendored
+<code>ghcr.io/dhoeric/features/google-cloud-cli</code> - the published copy uses the
+<code>apt-key</code> command Ubuntu 24.10 removed; see its NOTES.md) - gated by
+<code>.devcontainer/smoke.sh</code>.</p>
 <h2 id="phases">Phases<a class="headerlink" href="#phases" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8040,7 +8052,7 @@ the picture then - see infra/arc notes.)</p>
 </tr>
 <tr>
 <td>2 - pipeline</td>
-<td>full <code>ci</code> job on AKS: volume-backed caches, <code>CI_RUNS_ON</code> flip; hosted kept warm via weekly cron run</td>
+<td>full <code>ci</code> job on GKE: volume-backed caches, <code>CI_RUNS_ON</code> flip; hosted kept warm via weekly cron run</td>
 <td>10 green runs across PR types; wall clock ≤ hosted (18m34s); zero secret leaks in logs</td>
 <td>flip one variable</td>
 </tr>
@@ -8062,9 +8074,9 @@ in ~3 minutes, without spending test minutes on cluster bugs.</p>
   the node's containerd - which ARC does not support; the real fallback is
   Shape A, where the runner pod is the dev container and e2e moves to
   K8s-native test namespaces. Bigger lift, no privileged daemon.</li>
-<li><strong>Spot eviction</strong> = job requeue, not corruption; registry cache makes
-  reruns cheap. If evictions get frequent, drop <code>--priority Spot</code>.</li>
-<li><strong>Azure Files latency</strong> for uv/npm caches over NFS: measure in Phase 2; the
+<li><strong>Spot preemption</strong> = job requeue, not corruption; registry cache makes
+  reruns cheap. If preemptions get frequent, drop <code>--spot</code>.</li>
+<li><strong>Filestore/NFS latency</strong> for uv/npm caches: measure in Phase 2; the
   escape hatch is one PVC per node (no cross-node sharing, <code>ReadWriteOnce</code>)<ul>
 <li>the caches are content-addressed, so correctness survives.</li>
 </ul>
@@ -8073,16 +8085,19 @@ in ~3 minutes, without spending test minutes on cluster bugs.</p>
   which is why the plan moves caches to volumes rather than proxying the
   cache API. Do not re-add a cache proxy casually.</li>
 <li><strong>Retention</strong>: <code>buildcache-*</code> tags need a GHCR cleanup policy (already a
-  follow-up from the registry-cache switch) - AKS removes the hosted-only
+  follow-up from the registry-cache switch) - GKE removes the hosted-only
   excuse.</li>
 <li><strong>Cost guard</strong>: <code>maxRunners 3</code>, pool <code>max 3</code>, spot, scale-to-zero.
-  Steady-state estimate: an 18-minute run on D8s v5 spot ≈ $0.10, vs ~$0.32
-  hosted per run today - before counting the cache egress and queue waits
-  the hosted pool adds.</li>
+  Steady-state estimate: an 18-minute run on n2-standard-8 spot ≈ $0.10, vs
+  ~$0.32 hosted per run today - before counting the cache egress and queue
+  waits the hosted pool adds.</li>
+<li><strong>GCP project</strong>: GKE lands in the project that hosts the other Aurelius
+  Atlas dev resources; the cluster/region names get recorded in
+  <code>infra/arc/README.md</code> when Phase 1 provisions them.</li>
 </ul>
 <h2 id="decisions-to-record">Decisions to record<a class="headerlink" href="#decisions-to-record" title="Permanent link">&para;</a></h2>
 <p>When Phase 1 starts, add an ADR (successor to the CI bridge decision):
-"CI runs on self-hosted ARC runners on AKS; the dev container remains the
+"CI runs on self-hosted ARC runners on GKE; the dev container remains the
 unit of execution; the publisher and low-frequency workflows stay hosted."
 Technical notes (ARC values, volume layout, <code>CI_RUNS_ON</code> flag day) belong in
 <code>docs/architecture/conversion/design-log.md</code> as <code>DD-NNN</code> entries.</p>

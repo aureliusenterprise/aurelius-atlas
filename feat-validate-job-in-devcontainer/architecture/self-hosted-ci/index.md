@@ -1,6 +1,6 @@
-# Self-hosted CI on AKS
+# Self-hosted CI on GKE
 
-> **Status**: plan. Phase 0 (the hosted bridge) is merged; Phase 1 is next. Scope: moving the `ci` job of `.github/workflows/ci.yaml` from GitHub-hosted runners to self-hosted runners on AKS, run by Actions Runner Controller (ARC). The `publish` workflow (the dev container image itself) stays on hosted runners - it is the low-frequency builder of the thing the self-hosted runners consume.
+> **Status**: plan. Phase 0 (the hosted bridge) is merged; Phase 1 is next. Scope: moving the `ci` job of `.github/workflows/ci.yaml` from GitHub-hosted runners to self-hosted runners on GKE, run by Actions Runner Controller (ARC). The `publish` workflow (the dev container image itself) stays on hosted runners - it is the low-frequency builder of the thing the self-hosted runners consume. (The plan originally targeted AKS; the Azure subscription's quota history moved it to GKE, where the rest of the Aurelius Atlas dev resources live. ARC itself is unchanged - the swap is node pool, storage class, and auth plugin.)
 
 ## Why
 
@@ -13,7 +13,7 @@ The bridge (ADR 011 parity + `devcontainers/ci`) proved on hosted runners:
 | DinD | e2e compose + docker-build run on the dev container's own daemon |
 | Layer cache | registry-backed (GHCR `buildcache-*`), survives the GitHub artifactcache outage that killed `type=gha` |
 
-What hosted still costs us: the 8.3 GB pull is paid **per job** (every runner is a fresh VM), the Actions cache is a 10 GB LRU pool behind Azure Front Door (its outage broke builds for hours), runner-minutes are billed, and queued PRs queue behind a pool we don't control. On AKS: caches become plain volumes (no 10 GB cap, no AFD, no save step), capacity is a node pool we size, cost is spot nodes, and from **Shape A** (Phase 3) the image pull becomes a **per-node** containerd cache. The dind shape keeps the per-pod pull (GHCR warm, \~101s - the composite login step covers it) while moving everything else; the pull is what Shape A removes.
+What hosted still costs us: the 8.3 GB pull is paid **per job** (every runner is a fresh VM), the Actions cache is a 10 GB LRU pool behind Azure Front Door (its outage broke builds for hours), runner-minutes are billed, and queued PRs queue behind a pool we don't control. On GKE: caches become plain volumes (no 10 GB cap, no AFD, no save step), capacity is a node pool we size, cost is spot nodes, and from **Shape A** (Phase 3) the image pull becomes a **per-node** containerd cache. The dind shape keeps the per-pod pull (GHCR warm, \~101s - the composite login step covers it) while moving everything else; the pull is what Shape A removes.
 
 ## Target architecture
 
@@ -21,9 +21,9 @@ What hosted still costs us: the 8.3 GB pull is paid **per job** (every runner is
 flowchart LR
     GH[GitHub Actions<br/>workflow job] -->|job token| ARC[ARC controller<br/>gha-runner-scale-set-controller]
     ARC -->|creates per job| POD[runner pod<br/>ephemeral]
-    subgraph NODE[AKS node pool: D8s v5 spot, ephemeral OS disk]
+    subgraph NODE[GKE node pool: n2-standard-8 spot, PD-SSD boot disk]
         POD
-        AF[Azure Files PVC<br/>.container-cache uv/npm/pre-commit]
+        FS[Filestore PVC<br/>.container-cache uv/npm/pre-commit]
     end
     POD -->|docker API<br/>unix socket, shared volume| DIND[dind sidecar<br/>privileged, per pod]
     DIND -->|sibling containers| DC[dev container<br/>atlas-ci-runner:main<br/>pulled per pod, ~101s warm]
@@ -45,13 +45,13 @@ Two shapes were considered; the first keeps the parity contract:
 
 Small by design - the bridge was built so this is a swap, not a rewrite:
 
-| Concern | Hosted (today) | AKS | Change |
+| Concern | Hosted (today) | GKE | Change |
 | --- | --- | --- | --- |
 | `runs-on` | `ubuntu-latest` | `[self-hosted, linux, atlas-ci]` | repo config variable `CI_RUNS_ON` used in `runs-on:` - flip one variable to move the fleet, flip back to revert (flag day, per job) |
-| Disk cleanup step | deletes preinstalled toolchains | no-op (clean node) | behind the existing `disk-cleanup` input; off on AKS |
-| `actions/cache` (features/toolchain caches) | GitHub cache service (private repo + self-hosted = **unavailable**) | volumes, below | composite gates the two cache steps behind a `use-actions-cache` input; on AKS the same paths are a mounted volume and the steps are skipped |
-| uv/npm/pre-commit caches | `container-cache` key, restore/save | Azure Files PVC mounted at the **same paths** (`.container-cache/`) | zero pipeline change - the `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` env already points there; volume = incremental, no 10 GB cap, no save step |
-| dev container image | pulled per job | per **pod** on dind (node NVMe, \~101s warm; composite's GHCR login covers it), per **node** under Shape A | none in Phases 1-2 (this is Shape A's motivation) |
+| Disk cleanup step | deletes preinstalled toolchains | no-op (clean node) | behind the existing `disk-cleanup` input; off on GKE |
+| `actions/cache` (features/toolchain caches) | GitHub cache service (private repo + self-hosted = **unavailable**) | volumes, below | composite gates the two cache steps behind a `use-actions-cache` input; on GKE the same paths are a mounted volume and the steps are skipped |
+| uv/npm/pre-commit caches | `container-cache` key, restore/save | Filestore PVC mounted at the **same paths** (`.container-cache/`) | zero pipeline change - the `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` env already points there; volume = incremental, no 10 GB cap, no save step |
+| dev container image | pulled per job | per **pod** on dind (node SSD, \~101s warm; composite's GHCR login covers it), per **node** under Shape A | none in Phases 1-2 (this is Shape A's motivation) |
 | Docker layer cache | registry (GHCR) | registry - unchanged | none (this is why the registry-cache switch pays off: it works from any machine) |
 | Artifacts, summaries, step outputs | GitHub | GitHub - self-hosted supported | none |
 | Secrets (`AGE_SECRET_KEY`, Docker Hub, Chromatic) | GitHub | GitHub - ARC delivers job secrets to the runner pod | none |
@@ -63,17 +63,20 @@ The publisher workflow, and every hosted-only workflow (`scan`, `publish*`, `rot
 
 ARC with the Helm charts (`gha-runner-scale-set-controller` + `gha-runner-scale-set`), ephemeral per-job pods, GitHub App auth (not a PAT - App installs scope to the repo and survive rotation). All manifests, values, and the provisioning script live in [`infra/arc/`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>) (controller, node pool, scale set, status) - this section states the shape, infra/arc is the source of truth for the how.
 
-The load-bearing values, in words: `containerMode.type: dind` makes ARC inject a privileged `docker:dind` sidecar per runner pod, sharing `/var/run/docker.sock` with the runner container (the chart wires `DOCKER_HOST`; extra sidecar config - resources, the `/var/lib/docker` emptyDir on the node's NVMe - merges in `template.spec.containers`). A taint + nodeSelector (`ci=true`) keeps CI pods alone on the dedicated pool. The toolchain caches are an Azure Files PVC (`ReadWriteMany`, NFS) bound into the dev container at the exact `.container-cache` paths the composite action's env vars already use - the same content, volume-backed instead of GitHub-cache-backed, so the pipeline itself does not change.
+The load-bearing values, in words: `containerMode.type: dind` makes ARC inject a privileged `docker:dind` sidecar per runner pod, sharing `/var/run/docker.sock` with the runner container (the chart wires `DOCKER_HOST`; extra sidecar config - resources, the `/var/lib/docker` emptyDir on the node's SSD - merges in `template.spec.containers`). A taint + nodeSelector (`ci=true`) keeps CI pods alone on the dedicated pool. The toolchain caches are a Cloud Native Storage / Filestore PVC (`ReadWriteMany`) bound into the dev container at the exact `.container-cache` paths the composite action's env vars already use - the same content, volume-backed instead of GitHub-cache-backed, so the pipeline itself does not change.
 
 ```
-az aks nodepool add --resource-group <rg> --cluster-name <aks> \
-    --name cipool --node-vm-size Standard_D8s_v5 \
-    --enable-auto-scaling --min-count 0 --max-count 3 \
-    --kubelet-disk-type Ephemeral \
-    --node-taints "ci=true:NoSchedule" --priority Spot --eviction-policy Delete
+gcloud container node-pools create cipool \
+    --cluster <gke> --location <region> \
+    --machine-type n2-standard-8 --spot \
+    --enable-autoscaling --min-nodes 0 --max-nodes 3 \
+    --node-taints ci=true:NoSchedule \
+    --workload-metadata-disabled
 ```
 
-`Standard_D8s_v5` (8 vCPU / 32 GiB / \~610 GiB NVMe temp): the pipeline peaks near 6 vCPU (test fan-out) and \~30 GB (ES + observability + buildkit). The pool is spot + `minCount 0`: it costs nothing between runs; a spot eviction mid-run is a failed job that requeues (jobs are idempotent; registry cache makes the rerun warm). No image-pull secrets are needed: the runner-side docker client sends GHCR credentials from the composite's existing login step, and in-container pulls use the job-token login the same step already does. (Under Shape A the pull moves to containerd, and a pull secret enters the picture then - see infra/arc notes.)
+`n2-standard-8` (8 vCPU / 32 GiB): the pipeline peaks near 6 vCPU (test fan-out) and \~30 GB (ES + observability + buildkit); the boot disk is PD-SSD (the 8.3 GB image + buildkit layers need the room). The pool is spot + scale-to-zero (`min-nodes 0`): it costs nothing between runs; a spot preemption mid-run is a failed job that requeues (jobs are idempotent; registry cache makes the rerun warm). No image-pull secrets are needed: the runner-side docker client sends GHCR credentials from the composite's existing login step, and in-container pulls use the job-token login the same step already does. (Under Shape A the pull moves to containerd, and a pull secret enters the picture then - see infra/arc notes.)
+
+Auth to the control plane is `gcloud` + the `gke-gcloud-auth-plugin` exec credential plugin (GCP's kubelogin), baked into the dev container by `.devcontainer/features/google-cloud-cli` (a vendored `ghcr.io/dhoeric/features/google-cloud-cli` - the published copy uses the `apt-key` command Ubuntu 24.10 removed; see its NOTES.md) - gated by `.devcontainer/smoke.sh`.
 
 ## Phases
 
@@ -81,7 +84,7 @@ az aks nodepool add --resource-group <rg> --cluster-name <aks> \
 | --- | --- | --- | --- |
 | 0 - bridge (done) | whole pipeline in `devcontainers/ci` on hosted | merged; green 18m34s | revert workflow |
 | 1 - canary | cluster, ARC, node pool, dind; **`.github/workflows/ci-canary.yaml`** (manual) runs on `atlas-ci` beside hosted | 5 consecutive green canary runs; dev container pull + lifecycle healthy on the dind socket | delete scale set |
-| 2 - pipeline | full `ci` job on AKS: volume-backed caches, `CI_RUNS_ON` flip; hosted kept warm via weekly cron run | 10 green runs across PR types; wall clock ≤ hosted (18m34s); zero secret leaks in logs | flip one variable |
+| 2 - pipeline | full `ci` job on GKE: volume-backed caches, `CI_RUNS_ON` flip; hosted kept warm via weekly cron run | 10 green runs across PR types; wall clock ≤ hosted (18m34s); zero secret leaks in logs | flip one variable |
 | 3 - steady state | scale pool to demand; GHCR retention for `buildcache-*`; evaluate Shape A (runner = image) and moving the publisher | 1 month, no infra tickets | \- |
 
 Phase 1's validate-only job is the same canary trick as the bridge: it exercises pull, dind, lifecycle scripts, caching, and the GHCR login path, in \~3 minutes, without spending test minutes on cluster bugs.
@@ -89,14 +92,15 @@ Phase 1's validate-only job is the same canary trick as the bridge: it exercises
 ## Risks and open questions
 
 - **Privileged dind**: accepted (dedicated spot pool, per-job wipe). If that ever stops being acceptable, the fallback is DooD: the runner pod mounts the node's containerd - which ARC does not support; the real fallback is Shape A, where the runner pod is the dev container and e2e moves to K8s-native test namespaces. Bigger lift, no privileged daemon.
-- **Spot eviction** = job requeue, not corruption; registry cache makes reruns cheap. If evictions get frequent, drop `--priority Spot`.
-- **Azure Files latency** for uv/npm caches over NFS: measure in Phase 2; the escape hatch is one PVC per node (no cross-node sharing, `ReadWriteOnce`)
+- **Spot preemption** = job requeue, not corruption; registry cache makes reruns cheap. If preemptions get frequent, drop `--spot`.
+- **Filestore/NFS latency** for uv/npm caches: measure in Phase 2; the escape hatch is one PVC per node (no cross-node sharing, `ReadWriteOnce`)
 
   - the caches are content-addressed, so correctness survives.
 - **ARC + `actions/cache`**: not available for private repos on self-hosted - which is why the plan moves caches to volumes rather than proxying the cache API. Do not re-add a cache proxy casually.
-- **Retention**: `buildcache-*` tags need a GHCR cleanup policy (already a follow-up from the registry-cache switch) - AKS removes the hosted-only excuse.
-- **Cost guard**: `maxRunners 3`, pool `max 3`, spot, scale-to-zero. Steady-state estimate: an 18-minute run on D8s v5 spot ≈ $0.10, vs \~$0.32 hosted per run today - before counting the cache egress and queue waits the hosted pool adds.
+- **Retention**: `buildcache-*` tags need a GHCR cleanup policy (already a follow-up from the registry-cache switch) - GKE removes the hosted-only excuse.
+- **Cost guard**: `maxRunners 3`, pool `max 3`, spot, scale-to-zero. Steady-state estimate: an 18-minute run on n2-standard-8 spot ≈ $0.10, vs \~$0.32 hosted per run today - before counting the cache egress and queue waits the hosted pool adds.
+- **GCP project**: GKE lands in the project that hosts the other Aurelius Atlas dev resources; the cluster/region names get recorded in `infra/arc/README.md` when Phase 1 provisions them.
 
 ## Decisions to record
 
-When Phase 1 starts, add an ADR (successor to the CI bridge decision): "CI runs on self-hosted ARC runners on AKS; the dev container remains the unit of execution; the publisher and low-frequency workflows stay hosted." Technical notes (ARC values, volume layout, `CI_RUNS_ON` flag day) belong in `docs/architecture/conversion/design-log.md` as `DD-NNN` entries.
+When Phase 1 starts, add an ADR (successor to the CI bridge decision): "CI runs on self-hosted ARC runners on GKE; the dev container remains the unit of execution; the publisher and low-frequency workflows stay hosted." Technical notes (ARC values, volume layout, `CI_RUNS_ON` flag day) belong in `docs/architecture/conversion/design-log.md` as `DD-NNN` entries.
