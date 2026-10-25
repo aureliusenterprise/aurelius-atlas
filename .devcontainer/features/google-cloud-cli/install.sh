@@ -14,11 +14,14 @@
 set -e
 
 GCLOUD_VERSION=${VERSION:-"latest"}
-# The devcontainer CLI maps the camelCase option to INSTALL_GKE_GCLOUD_AUTH_-
-# PLUGIN (word boundaries). Upstream reads INSTALL_GKEGCLOUDAUTH_PLUGIN - a
-# name the CLI never exports - so the published feature silently skips the
-# plugin (our rebuild: gcloud in, plugin absent). Accept both.
-INSTALL_GKEGCLOUDAUTH_PLUGIN="${INSTALL_GKE_GCLOUD_AUTH_PLUGIN:-${INSTALL_GKEGCLOUDAUTH_PLUGIN:-"false"}}"
+# The devcontainer CLI exports options to install.sh as the UPPERCASED option
+# id - no underscores: installGkeGcloudAuthPlugin -> INSTALLGKEGCLOUDAUTHPLUGIN
+# (observed in the build log; the containers.dev "option resolution" rule).
+# Upstream dhoeric reads INSTALL_GKEGCLOUDAUTH_PLUGIN, which the CLI never
+# exports - the published feature silently skips the plugin on every install
+# (observed twice: rebuild + CI image build, gcloud in, plugin absent).
+# Accept all spellings; prefer the spec-exact one.
+INSTALL_GKEGCLOUDAUTH_PLUGIN="${INSTALLGKEGCLOUDAUTHPLUGIN:-${INSTALL_GKE_GCLOUD_AUTH_PLUGIN:-${INSTALL_GKEGCLOUDAUTH_PLUGIN:-"false"}}}"
 export INSTALL_GKEGCLOUDAUTH_PLUGIN
 
 if [ "$(id -u)" -ne 0 ]; then
