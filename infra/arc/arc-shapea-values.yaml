@@ -82,7 +82,7 @@ template:
                   - /bin/bash
                   - -c
                   - |
-                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd
                       chgrp -R 999 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
               resources:
                   requests:
@@ -162,6 +162,22 @@ template:
                   - name: work
                     mountPath: /var/lib/docker
                     subPath: .ci-cache/docker
+                  # containerd's root ON THE PVC - the critical one. The
+                  # image's /etc/containerd/config.toml starts containerd
+                  # with root=/var/lib/containerd and dockerd runs with the
+                  # containerd-snapshotter enabled (storage-driver=overlayfs,
+                  # devcontainers/features#1642), so every image/snapshot
+                  # layer lives there, NOT under /var/lib/docker. Left on
+                  # the pod root (the node's overlayfs), the overlay mounts
+                  # are nested and the kernel rejects them: trial run
+                  # 40217828572 died with "failed to mount
+                  # /tmp/containerd-mount...: invalid argument" on every
+                  # e2e container (ryuk) and docker-build. Shape B never
+                  # hit this - devcontainers/ci gives the dev container
+                  # volume-backed /var/lib/docker AND /var/lib/containerd.
+                  - name: work
+                    mountPath: /var/lib/containerd
+                    subPath: .ci-cache/containerd
               resources:
                   # Sized for the full pipeline fan-out target (dev-compose
                   # caps ~8.75 Gi + runner overhead); requests stay low so
@@ -177,8 +193,8 @@ template:
         volumes:
             # One claim for everything (shapea-cache-pvc.yaml): the work
             # dir (checkout + tool cache), the .ci-cache/* subPaths above
-            # (caches), and the docker image store. Separate from Shape B's
-            # atlas-toolchain-cache on purpose - see the PVC's header.
+            # (caches, docker store, containerd root). Separate from Shape
+            # B's atlas-toolchain-cache on purpose - see the PVC's header.
             - name: work
               persistentVolumeClaim:
                   claimName: atlas-shapea-cache
