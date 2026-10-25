@@ -2302,6 +2302,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_store.EntityStore.terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;terms
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_store.EntityStore.type_in_use" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2943,6 +2954,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;terms
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.write" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3162,6 +3184,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;terms
       </span>
     </span>
   </a>
@@ -7714,6 +7747,8 @@
       
         
       
+        
+      
     
     
     
@@ -8619,6 +8654,33 @@
     
   
   4.2a Free text
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/4-2-quick-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.2b Quick search
 
     
   </span>
@@ -11909,6 +11971,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_store.EntityStore.terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;terms
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_store.EntityStore.type_in_use" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12550,6 +12623,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;terms
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.write" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12769,6 +12853,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;terms
       </span>
     </span>
   </a>
@@ -17396,7 +17491,19 @@ Elasticsearch with reserved unique values, conditional writes and a journal (DD-
    (aurelius_atlas_core.entity_store.EntityStore.search)" href="./#aurelius_atlas_core.entity_store.EntityStore.search">search</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The entities of a search query's page, how many match it in all, and their scores (DD-089).</p>
+              <p>The entities of a search query's page, how many match it in all, their scores and facets (DD-089).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            terms
+
+
+  
+      async
+   (aurelius_atlas_core.entity_store.EntityStore.terms)" href="./#aurelius_atlas_core.entity_store.EntityStore.terms">terms</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Per search field, its most frequent words beginning with <code>prefix</code> (DD-094).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -17910,7 +18017,31 @@ while it carries the write's id, a reservation released only while the write hol
 
     <div class="doc doc-contents ">
 
-        <p>The entities of a search query's page, how many match it in all, and their scores (DD-089).</p>
+        <p>The entities of a search query's page, how many match it in all, their scores and facets (DD-089).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_store.EntityStore.terms" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">terms</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_store.EntityStore.terms" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">terms</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_store.EntityStore.terms(fields)">fields</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span> <span class="n"><span title="aurelius_atlas_core.entity_store.EntityStore.terms(prefix)">prefix</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Per search field, its most frequent words beginning with <code>prefix</code> (DD-094).</p>
 
 
     </div>
@@ -19829,6 +19960,18 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            terms
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms">terms</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Refresh the entity index, then a <code>terms</code> aggregation of each field's text sub-field (DD-094).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            write
 
 
@@ -20367,7 +20510,32 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
     <div class="doc doc-contents ">
 
         <p>Refresh the entity index, then answer the query as a <code>bool</code> query of the search fields (DD-089).</p>
-<p>Free text is a scored <code>simple_query_string</code> over the text sub-fields (DD-092).</p>
+<p>Free text is a scored <code>simple_query_string</code> over the text sub-fields (DD-092); facets are <code>terms</code>
+aggregations of the same query (DD-093).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">terms</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">terms</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms(fields)">fields</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms(prefix)">prefix</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Refresh the entity index, then a <code>terms</code> aggregation of each field's text sub-field (DD-094).</p>
 
 
     </div>
@@ -20676,7 +20844,19 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.EntityDocuments.search)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.search">search</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).</p>
+              <p>The entities of the query's page, as of now, how many match it in all, their scores, and the query's</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            terms
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.EntityDocuments.terms)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.terms">terms</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Per search field, the 5 words of every entity's text in it that begin with <code>prefix</code>, with how many</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -21174,7 +21354,33 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).</p>
+        <p>The entities of the query's page, as of now, how many match it in all, their scores, and the query's
+facets (DD-089, DD-093).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.EntityDocuments.terms" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">terms</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.EntityDocuments.terms" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">terms</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.terms(fields)">fields</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.terms(prefix)">prefix</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Per search field, the 5 words of every entity's text in it that begin with <code>prefix</code>, with how many
+entities hold each, most first, then by word (DD-094).</p>
 
 
     </div>

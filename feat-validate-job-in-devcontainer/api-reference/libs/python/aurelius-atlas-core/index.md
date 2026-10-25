@@ -706,7 +706,10 @@ Methods:
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
 - **`search`** –
 
-  The entities of a search query's page, how many match it in all, and their scores (DD-089).
+  The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+- **`terms`** –
+
+  Per search field, its most frequent words beginning with `prefix` (DD-094).
 - **`type_in_use`** –
 
   Whether an entity, relationship or classification of exactly this type exists, in any state.
@@ -857,7 +860,15 @@ The entities whose references name any of these GUIDs (EDL-10, DD-057).
 search(query: SearchQuery) -> SearchHits
 ```
 
-The entities of a search query's page, how many match it in all, and their scores (DD-089).
+The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+
+#### terms
+
+```
+terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
+```
+
+Per search field, its most frequent words beginning with `prefix` (DD-094).
 
 #### type\_in\_use
 
@@ -1388,6 +1399,9 @@ Methods:
 - **`search`** –
 
   Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+- **`terms`** –
+
+  Refresh the entity index, then a `terms` aggregation of each field's text sub-field (DD-094).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1552,7 +1566,15 @@ search(query: SearchQuery) -> SearchHits
 
 Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
 
-Free text is a scored `simple_query_string` over the text sub-fields (DD-092).
+Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093).
+
+#### terms
+
+```
+terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
+```
+
+Refresh the entity index, then a `terms` aggregation of each field's text sub-field (DD-094).
 
 #### write
 
@@ -1629,7 +1651,10 @@ Methods:
   Put back a linked document's state before a write, or delete one the write created (DD-062).
 - **`search`** –
 
-  The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
+  The entities of the query's page, as of now, how many match it in all, their scores, and the query's
+- **`terms`** –
+
+  Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1776,7 +1801,15 @@ Put back a linked document's state before a write, or delete one the write creat
 search(query: SearchQuery) -> SearchHits
 ```
 
-The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
+The entities of the query's page, as of now, how many match it in all, their scores, and the query's facets (DD-089, DD-093).
+
+#### terms
+
+```
+terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
+```
+
+Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many entities hold each, most first, then by word (DD-094).
 
 #### write
 

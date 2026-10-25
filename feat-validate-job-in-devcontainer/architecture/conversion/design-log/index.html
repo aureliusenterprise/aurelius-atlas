@@ -4916,6 +4916,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dd-093-facets-are-aggregations-of-the-searchs-own-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-093. Facets are aggregations of the search's own query
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-094. Suggestions are terms aggregations of the text sub-fields
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6109,6 +6131,8 @@
       
         
       
+        
+      
     
     
     
@@ -7014,6 +7038,33 @@
     
   
   4.2a Free text
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-2-quick-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.2b Quick search
 
     
   </span>
@@ -10571,6 +10622,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dd-093-facets-are-aggregations-of-the-searchs-own-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-093. Facets are aggregations of the search's own query
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-094. Suggestions are terms aggregations of the text sub-fields
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12292,6 +12365,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights">DD-092</a></td>
 <td>String search fields carry an analysed text sub-field, searched with Atlas's weights</td>
+<td>4.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-093-facets-are-aggregations-of-the-searchs-own-query">DD-093</a></td>
+<td>Facets are aggregations of the search's own query</td>
+<td>4.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields">DD-094</a></td>
+<td>Suggestions are terms aggregations of the text sub-fields</td>
 <td>4.2</td>
 <td>Proposed</td>
 </tr>
@@ -14411,6 +14496,40 @@ sub-field keeps each attribute's weight and its exact <code>keyword</code> for t
 not keep to the fields weighted 8 or more. <code>query_string</code>: closer to <code>edismax</code>, but a malformed query fails.</p>
 <p><strong>Consequences.</strong> Fields mapped before 4.2a have no text sub-field; an entity index created before needs
 creating again.</p>
+<h3 id="dd-093-facets-are-aggregations-of-the-searchs-own-query">DD-093. Facets are aggregations of the search's own query<a class="headerlink" href="#dd-093-facets-are-aggregations-of-the-searchs-own-query" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.2</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> Quick search counts its facets with <code>terms</code> aggregations over the <code>keyword</code> search fields of
+<code>__typeName</code>, <code>__state</code> and <code>Asset.owner</code>, in the same Elasticsearch request as the page of results: the query
+of the search, unpaged, at most 100 values each, ordered by count and then by value. <code>ServiceType</code> is added up
+from the <code>__typeName</code> counts with the registry's types. The in-memory documents count the same.</p>
+<p><strong>Reason.</strong> Atlas facets the Solr query its <code>AtlasSolrQueryBuilder</code> rebuilds from the same query, types,
+filters and state as the search; aggregating the search's own query counts exactly the entities found, without
+a second translation of the filters. 100 is Solr's default <code>facet.limit</code>.</p>
+<p><strong>Alternatives.</strong> A second request for the counts: one more round trip for the same query.</p>
+<p><strong>Consequences.</strong> Facets count what the search query matches, classification criteria included, which quick
+search does not take.</p>
+<h3 id="dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields">DD-094. Suggestions are terms aggregations of the text sub-fields<a class="headerlink" href="#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.2</li>
+<li><strong>Date:</strong> 2026-10-24</li>
+</ul>
+<p><strong>Decision.</strong> The text sub-field of DD-092 enables <code>fielddata</code>. Suggestions are, for each field weighted 8 or
+more (or the one named), a <code>terms</code> aggregation of its text sub-field over every entity document, of the 5
+terms matching the prefix, most documents first; the fields' terms are then summed and the top 5 kept. The
+in-memory documents count the words of the same fields.</p>
+<p><strong>Reason.</strong> Atlas reads Solr's terms component on the fields with <code>terms.limit</code> 5 and adds up the frequencies;
+a terms aggregation is the Elasticsearch reading of a field's terms and their document frequencies. The
+<code>_terms_enum</code> API knows no frequencies, and keyword fields hold whole values, not words.</p>
+<p><strong>Alternatives.</strong> A completion suggester: a field of its own per attribute, suggesting whole values. Terms of
+the keyword fields: values, not words, and only case-sensitive prefixes.</p>
+<p><strong>Consequences.</strong> Fielddata of a text sub-field is loaded into the heap the first time it is aggregated, which
+suggestions limit to the few fields weighted 8 or more. Fields mapped before 4.2b have no fielddata; an entity
+index created before needs creating again.</p>
 <h3 id="dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place">DD-126. The webapp is a new project, not the Aurelius app upgraded in place<a class="headerlink" href="#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Proposed</li>
