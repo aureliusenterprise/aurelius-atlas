@@ -50,6 +50,12 @@ check_cmd sops sops --version
 check_cmd trivy trivy --version
 check_cmd cyclonedx cyclonedx --version
 check_cmd mkcert mkcert --version
+# Azure/Kubernetes CLIs for the self-hosted CI infra (infra/arc).
+# az prints "azure-cli 2.x" first; kubelogin prints the git hash last.
+check_cmd az az --version
+check_cmd kubectl kubectl version --client
+check_cmd helm helm version
+check_cmd_last kubelogin kubelogin --version
 # cosign prints a banner; report the GitVersion line. sonar-scanner logs to
 # stderr; report the version token.
 command -v cosign >/dev/null 2>&1 || fail "cosign is not on PATH - the image is missing a required tool"

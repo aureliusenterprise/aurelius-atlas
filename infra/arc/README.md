@@ -12,9 +12,12 @@ on that sidecar - exactly the hosted-runner topology, so nothing in
 
 ## One-time setup
 
-Prereqs: an AKS cluster (>= 1.29), `az`, `helm`, `kubectl` pointed at it, and a
-GitHub App installed on the repo with **Actions: read/write** (not a PAT -
-App credentials rotate cleanly).
+Prereqs: an AKS cluster (>= 1.29), a GitHub App installed on the repo with
+**Actions: read/write** (not a PAT - App credentials rotate cleanly). The
+`az`/`kubectl`/`helm`/`kubelogin` CLIs come from the dev container
+(`ghcr.io/devcontainers/features/azure-cli`, `kubectl-helm-minikube`,
+`./features/kubelogin` - gated by `.devcontainer/smoke.sh`), so run these
+from inside it.
 
 ```bash
 # 1. Controller (cluster-scoped, one per cluster):

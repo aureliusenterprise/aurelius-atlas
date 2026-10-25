@@ -1,8 +1,9 @@
 # infra/arc
 
 ARC (Actions Runner Controller) deployment for running the `ci` job on AKS.
-Not an Nx project - plain manifests + script, applied by hand from a machine
-with `az`/`helm`/`kubectl`. Plan and phases:
+Not an Nx project - plain manifests + script, applied by hand from the dev
+container (it bakes az/kubectl/helm/kubelogin via devcontainer features).
+Plan and phases:
 [`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md).
 Setup and flag-day: [`README.md`](README.md).
 

@@ -140,6 +140,9 @@
         }
     },
     "features": {
+        "./features/kubelogin": {
+            "version": "0.2.22"
+        },
         "./features/playwright-browsers": {
             "version": "1.64.0"
         },
@@ -154,10 +157,18 @@
         "ghcr.io/devcontainers-extra/features/sops:1": {
             "version": "latest"
         },
+        "ghcr.io/devcontainers/features/azure-cli:1": {
+            "version": "latest"
+        },
         "ghcr.io/devcontainers/features/docker-in-docker:4": {},
         "ghcr.io/devcontainers/features/java:1": {
             "installGradle": true,
             "version": "21.0.9-tem"
+        },
+        "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+            "helm": "4.3.1",
+            "minikube": "none",
+            "version": "1.37.1"
         },
         "ghcr.io/devcontainers/features/node:2": {
             "version": "24"

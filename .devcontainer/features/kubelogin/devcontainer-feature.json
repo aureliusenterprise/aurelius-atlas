@@ -1,0 +1,14 @@
+{
+    "description": "kubectl credential plugin for Entra ID - required by AKS kubeconfigs (infra/arc, docs/architecture/self-hosted-ci.md). No official devcontainer feature exists for it.",
+    "id": "kubelogin",
+    "name": "kubelogin",
+    "options": {
+        "version": {
+            "default": "0.2.22",
+            "description": "kubelogin version to install; 'latest' follows the newest GitHub release.",
+            "proposals": ["0.2.22", "latest"],
+            "type": "string"
+        }
+    },
+    "version": "1.0.0"
+}
