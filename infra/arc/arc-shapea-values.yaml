@@ -139,12 +139,33 @@ template:
                       export PRE_COMMIT_HOME=/var/cache/ci/pre-commit
                       # docker-in-docker feature containerEnv:
                       export DOCKER_BUILDKIT=1
-                      # Where the runner puts job workspaces (the work
-                      # volume below; HOME is /home/vscode in this image,
-                      # so the default _work under $HOME would miss the
-                      # volume).
+                      # Where the runner puts job workspaces. The RUNNER_*
+                      # envs are ARC kubernetes-mode hook inputs - the
+                      # standalone listener IGNORES them (trial runs
+                      # 40222002858/40222495452: the JIT self-registration
+                      # defaulted WorkFolder to _work RELATIVE to the
+                      # runner root, so jobs ran in
+                      # /opt/actions-runner/_work (container layer, root
+                      # -owned) and died on "Access to the path
+                      # '/opt/actions-runner/_work/_tool' is denied").
+                      # run.sh/Runner.Listener have no work flag; the knob
+                      # is config.sh --work, exactly as the ARC container
+                      # hooks do it: register FIRST (the JIT token is in
+                      # ACTIONS_RUNNER_INPUT_JITCONFIG, injected by the
+                      # controller), then run.sh finds .runner and starts.
                       export RUNNER_WORKSPACE=/home/runner/_work
                       export RUNNER_CACHE_DIR=/home/runner/_work/_tool_cache
+                      # Official actions-runner image pattern (its
+                      # entrypoint.sh): register with the controller's JIT
+                      # token - ACTIONS_RUNNER_INPUT_JITCONFIG is a secret
+                      # file mounted by the controller, config.sh takes
+                      # the token as text. --work is recorded in .runner;
+                      # run.sh (below) then just starts the listener on it.
+                      if [ ! -f /opt/actions-runner/.runner ] && [ -f "$ACTIONS_RUNNER_INPUT_JITCONFIG" ]; then
+                          /opt/actions-runner/config.sh --unattended --replace \
+                              --work /home/runner/_work \
+                              --jitconfig "$(cat "$ACTIONS_RUNNER_INPUT_JITCONFIG")"
+                      fi
                       # docker-init.sh: starts dockerd (privileged), waits
                       # for `docker info`, then exec "$@" = the runner.
                       exec /usr/local/share/docker-init.sh /opt/actions-runner/run.sh
