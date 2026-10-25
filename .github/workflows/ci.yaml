@@ -16,29 +16,25 @@ permissions:
     contents: read
 
 jobs:
-    # Everything cheap and local runs in ONE job, inside the dev container
-    # image (the bridge toward self-hosted runners - see
+    # The whole pipeline in ONE job, inside the dev container image (the
+    # bridge toward self-hosted runners - see
     # docs/architecture/self-hosted-ci.md), in fail-fast order:
     #
-    #   validate -> test -> docker build + vuln scan -> storybook
+    #   validate -> test -> docker build + vuln scan -> storybook -> sonar
     #
     # One container run means one 8 GB image pull, one cache restore, and one
     # Docker daemon shared by every phase: e2e containers, built images, and
     # reports all live on the same daemon / mounted checkout, so later phases
-    # read what earlier phases wrote (this is what lets the scan skip any
-    # image export, and sonar find the coverage reports in place).
+    # read what earlier phases wrote - the scan needs no image export, sonar
+    # finds coverage and sarif in place, Chromatic finds Storybook's dist/.
     #
-    # The two external services - Chromatic and SonarQube - are separate jobs
-    # gated on this one, so a change that fails validate/test/scan never
-    # reaches them.
+    # External services run last and only when warranted: SonarQube is the
+    # pipeline's final in-container phase (set -e: a failing phase above
+    # skips it), Chromatic is a host step gated on the UI-affected output -
+    # and a failing pipeline fails the job, so neither is reached.
     ci:
         runs-on: ubuntu-latest
-        timeout-minutes: 90
-
-        outputs:
-            # Written by the pipeline's storybook phase; gates the Chromatic
-            # job below.
-            ui-affected: ${{ steps.core.outputs.ui-affected }}
+        timeout-minutes: 60
 
         env:
             # Nx 23.3+: select affected by individual tasks instead of whole
@@ -85,14 +81,6 @@ jobs:
                   path: "**/vulnerabilities.sarif"
                   if-no-files-found: ignore
 
-            - name: Upload Storybook
-              if: ${{ steps.core.outputs.ui-affected == 'true' }}
-              uses: actions/upload-artifact@v7
-              with:
-                  name: storybook
-                  path: dist/storybook/aurelius-atlas-ui
-                  if-no-files-found: error
-
             - name: Upload failure diagnostics
               if: failure()
               uses: actions/upload-artifact@v7
@@ -101,74 +89,15 @@ jobs:
                   path: reports/failure-diagnostics/
                   retention-days: 30
 
-    chromatic:
-        runs-on: ubuntu-latest
-        needs: ci
-        timeout-minutes: 30
-
-        permissions:
-            contents: read
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-
-            # The core job built Storybook only when the UI was affected and
-            # says so through its job output; the upload needs the build, so
-            # it comes back as an artifact. chromaui/action's own semantics
-            # (exit codes, auto-accept) are unchanged - it uploads outputDir
-            # as-is when no buildCommand is set.
-            - name: Download Storybook
-              if: ${{ needs.ci.outputs.ui-affected == 'true' }}
-              uses: actions/download-artifact@v8
-              with:
-                  name: storybook
-                  path: dist/storybook/aurelius-atlas-ui
-
+            # The pipeline's storybook phase built Aurelius Atlas UI's
+            # Storybook (dist/ is on the mounted checkout) and reported
+            # ui-affected through the step output; publish it only then.
+            # chromaui/action's own semantics (exit codes, auto-accept) are
+            # unchanged - it uploads outputDir as-is when no buildCommand
+            # is set.
             - name: Run Chromatic
-              if: ${{ needs.ci.outputs.ui-affected == 'true' }}
+              if: ${{ steps.core.outputs.ui-affected == 'true' }}
               uses: chromaui/action@v18
               with:
                   outputDir: "dist/storybook/aurelius-atlas-ui"
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-
-    sonar:
-        runs-on: ubuntu-latest
-        needs: ci
-        timeout-minutes: 30
-
-        env:
-            # Task-based affected selection — see the `ci` job.
-            NX_LEGACY_AFFECTED: "false"
-
-        permissions:
-            actions: read
-            contents: read
-            packages: read
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-
-            # Coverage and vulnerability reports were written by the core job
-            # into the workspace and uploaded as artifacts - restored here so
-            # sonar-scanner finds them in the checkout.
-            - name: Download coverage reports
-              continue-on-error: true
-              uses: actions/download-artifact@v8
-              with:
-                  name: coverage-reports
-
-            - name: Download vulnerability reports
-              continue-on-error: true
-              uses: actions/download-artifact@v8
-              with:
-                  name: vuln-reports
-
-            - name: Run SonarQube analysis
-              uses: ./.github/actions/run-in-devcontainer
-              with:
-                  sops-age-key: ${{ secrets.AGE_SECRET_KEY }}
-                  run-cmd: |
-                      npx nx run-many -t decrypt
-                      npx nx affected -t sonar
