@@ -57,31 +57,37 @@ jobs:
             packages: write
 
         steps:
-            # clean: false + the scripted clean below = warm-tree checkout.
-            # The work dir is the Shape A PVC, so actions/checkout's default
-            # `git clean -ffdx` would wipe node_modules/.venv every job and
-            # npm/uv would re-link ~2000 packages from cache (~60s). The
-            # excludes keep the installed trees (and the Nx daemon's
-            # workspace-data) warm; everything else is still wiped, so
-            # coverage/reports/dist never leak between jobs.
+            # Warm-tree hygiene BEFORE checkout (the work dir is the Shape A
+            # PVC - it outlives jobs, so the previous run's tree is still
+            # here): reset --hard discards tracked modifications (prettier
+            # fixes, decrypt-written .env) so actions/checkout can never be
+            # refused for "local changes would be overwritten" on a file
+            # that changed between commits; clean -ffdx then wipes untracked
+            # leftovers - coverage, junit, dist, reports/failure-diagnostics
+            # (staging them with `git add -A` would PRESERVE them: clean
+            # only removes untracked files, and the staged diagnostics then
+            # get linted/rewritten by pre-commit - run 40228013569).
+            # The -e keeps the warm trees (npm/uv re-link ~60s cold), the Nx
+            # daemon's workspace-data, and the age key file
+            # (SOPS_AGE_KEY_FILE points at it; sops needs the file to exist,
+            # its content is irrelevant when SOPS_AGE_KEY is set). Guarded:
+            # a fresh PVC has no repo yet.
+            - name: Clean warm work tree
+              run: |
+                  if [ -d .git ]; then
+                      git reset --hard HEAD
+                      git clean -ffdx -e node_modules -e .venv -e .nx/workspace-data -e secrets/keys.txt
+                  fi
+
+            # clean: false: the clean step above did the wiping (the default
+            # clean would also wipe node_modules/.venv - ~2000 packages
+            # re-linked from cache every job).
             # fetch-depth 0: nx-set-shas / nx affected need history.
             - name: Checkout code
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
                   clean: false
-
-            # -x also wipes ignored files (coverage, junit, dist, reports);
-            # the -e keeps the warm trees, the Nx daemon's workspace-data,
-            # and the age key file (SOPS_AGE_KEY_FILE points at it; sops
-            # needs the file to exist, its content is irrelevant when
-            # SOPS_AGE_KEY is set in the environment). git add -A first so
-            # checkout's reset (clean: false skips it) cannot refuse on
-            # local changes.
-            - name: Clean previous checkout (keep warm trees)
-              run: |
-                  git add -A
-                  git clean -ffdx -e node_modules -e .venv -e .nx/workspace-data -e secrets/keys.txt
 
             # Affected baseline for nx affected. The runner exports no
             # GITHUB_TOKEN by default, so pass it explicitly.
