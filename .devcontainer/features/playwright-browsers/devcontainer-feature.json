@@ -1,0 +1,18 @@
+{
+    "containerEnv": {
+        "PLAYWRIGHT_BROWSERS_PATH": "/opt/playwright-browsers"
+    },
+    "description": "Bakes Playwright browser binaries into the image so tests never download them at runtime.",
+    "id": "playwright-browsers",
+    "installsAfter": ["ghcr.io/devcontainers/features/python:1"],
+    "name": "Playwright Browsers",
+    "options": {
+        "version": {
+            "default": "1.64.0",
+            "description": "Playwright version whose browsers to install. Keep in sync with the playwright package in uv.lock; the CI image build overrides this.",
+            "proposals": ["1.64.0", "latest"],
+            "type": "string"
+        }
+    },
+    "version": "1.0.0"
+}
