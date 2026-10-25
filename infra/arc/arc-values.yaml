@@ -36,6 +36,19 @@ template:
             # Phase 1 sizing: the canary is validate-only (~1 CPU, ~2 Gi).
             - name: runner
               image: ghcr.io/actions/actions-runner:latest
+              # REQUIRED in dind mode: the chart passes command through
+              # verbatim, and the stock image's entrypoint (k8s-mode
+              # listener) exits 0 in seconds here. The chart's own dind
+              # example sets run.sh - runner then registers and waits.
+              command: ["/home/runner/run.sh"]
+              # The stock image ships Node only under /home/runner/
+              # externals/node24 (the dind-externals mount), NOT on PATH -
+              # devcontainers/ci's `npm install -g @devcontainers/cli`
+              # needs it (measured: "npm: command not found", run 40193534424).
+              env:
+                  - name: PATH
+                    value: >-
+                        /home/runner/externals/node24/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               resources:
                   requests:
                       cpu: 500m
