@@ -172,19 +172,19 @@ extensions:
     # audience is enforced per provider; the keys are discovered per issuer.
     #
     # issuer_ca_path: unset on the plaintext listener, pinned to the shared
-    # mkcert CA on the TLS one (mounted at /dev-ca from the webapp's copy —
-    # same CA material across the workspace). Discovery runs at extension
-    # start: Keycloak must be up (restart policy on the collector covers the
-    # dev start race) and `keycloak.localhost` resolvable (extra_hosts in
-    # docker-compose.yaml — :8443 is loopback-published, host DNS cannot
-    # resolve it).
+    # mkcert CA on the TLS one (the collector's own certs/, mounted at /certs
+    # — same CA material across the workspace, DD-216). Discovery runs at
+    # extension start: Keycloak must be up (restart policy on the collector
+    # covers the dev start race) and `keycloak.localhost` resolvable
+    # (extra_hosts in docker-compose.yaml — :8443 is loopback-published, host
+    # DNS cannot resolve it).
     oidc:
         providers:
             - issuer_url: http://keycloak.localhost:8080/realms/master
               audience: otel-collector
             - issuer_url: https://keycloak.localhost:8443/realms/master
               audience: otel-collector
-              issuer_ca_path: /dev-ca/ca.pem
+              issuer_ca_path: /certs/ca.pem
 
 service:
     extensions: [health_check, bearertokenauth, oidc]

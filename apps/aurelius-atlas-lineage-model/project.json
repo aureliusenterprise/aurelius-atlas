@@ -22,7 +22,6 @@
                 { "target": "certgen" },
                 { "target": "docker-build" },
                 { "dependencies": true, "target": "up" },
-                { "projects": ["aurelius-atlas-data2model"], "target": "certgen" },
                 { "projects": ["aurelius-atlas-data2model"], "target": "docker-build" }
             ]
         },

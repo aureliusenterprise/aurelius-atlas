@@ -1,5 +1,6 @@
 {
     "services": {
+        "aurelius-atlas-data2model": ["aurelius-atlas-data2model", "localhost", "127.0.0.1"],
         "aurelius-atlas-lineage-model": ["aurelius-atlas-lineage-model", "localhost", "127.0.0.1"]
     }
 }
