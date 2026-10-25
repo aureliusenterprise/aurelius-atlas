@@ -1,12 +1,18 @@
-# TEMPORARY Shape A forensics (PR 150) — round 9: ES fatal REASONS.
+# TEMPORARY Shape A forensics (PR 150) — round 10: the AppArmor verdict.
 #
-# Round 8: every privilege variant (plain, SYS_PTRACE, DAC_OVERRIDE, both,
-# privileged) exits with "fatal exception while booting Elasticsearch" —
-# the probe truncated the message, so the reason per variant is unknown
-# (e-priv's is expected to be "can not run elasticsearch as root"; the
-# others: coredump_filter AccessDeniedException, or a SYS_BOOT/seccomp
-# refusal the caps introduce). Print each container's error.message.
-# Remove once the e2e databases boot in ci.yaml.
+# Theory (rounds 5-9): the ES bootstrap writes /proc/self/coredump_filter
+# unconditionally (Files.writeString, catch -> fatal RuntimeException —
+# bytecode-verified). On Shape A that write gets EACCES for uid 1000, and
+# caps do NOT fix it (R8/R9). The node LSM order is
+# capability,lockdown,yama,loadpin,safesetid,apparmor,bpf,ima with AppArmor
+# enabled (Y). Docker's docker-default AppArmor profile denies writes under
+# /proc/**. Every environment fits: k8s runner pod = privileged =
+# apparmor unconfined (runner-side write OK, R5); CI containers =
+# docker-default (EACCES); devcontainer dind = WSL2, apparmor absent
+# (boots); hosted runners = docker seccomp-only (boots).
+# Fix candidate = apparmor=unconfined (surgical, per-service).
+# Matrix: plain, apparmor=unconfined, privileged. Full boots, 90s,
+# report the fatal reason / started. Remove after diagnosis.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -24,7 +30,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Elasticsearch fatal reasons
+            - name: Elasticsearch apparmor matrix
               continue-on-error: true
               run: |
                   ES=dhi.io/elasticsearch:9.5-debian13
@@ -42,28 +48,22 @@ jobs:
                       local name="$1"
                       echo "### $name (state=$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null))"
                       docker logs "$name" 2>&1 |
-                          grep -oE '"error\.(type|message)":"[^"]*"' |
+                          grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"' |
                           head -4
                   }
-                  echo "### node security facts"
-                  cat /sys/kernel/security/lsm 2>/dev/null; echo
-                  cat /sys/module/apparmor/parameters/enabled 2>/dev/null || echo "apparmor: (absent)"
-                  uname -r
-                  echo "### ES uid-1000 process facts (image user, plain)"
-                  docker run --rm --entrypoint sh "$ES" -c 'ls -l /proc/self/coredump_filter; grep -E "CapEff|Seccomp|NoNewPrivs" /proc/self/status; id' 2>&1
+                  echo "### AppArmor profile of a plain container"
+                  docker run --rm --entrypoint cat "$ES" /proc/self/attr/current 2>&1; echo
+                  echo "### AppArmor profile of apparmor=unconfined"
+                  docker run --rm --security-opt apparmor=unconfined --entrypoint cat "$ES" /proc/self/attr/current 2>&1; echo
                   boot e-plain
-                  boot e-sysptrace --cap-add SYS_PTRACE
-                  boot e-dacoverride --cap-add DAC_OVERRIDE
-                  boot e-both --cap-add SYS_PTRACE --cap-add DAC_OVERRIDE
+                  boot e-unconfined --security-opt apparmor=unconfined
                   boot e-priv --privileged
-                  echo "waiting 45s..."
-                  sleep 45
+                  echo "waiting 90s..."
+                  sleep 90
                   probe e-plain
-                  probe e-sysptrace
-                  probe e-dacoverride
-                  probe e-both
+                  probe e-unconfined
                   probe e-priv
 
             - name: Cleanup
               if: always()
-              run: docker rm -f e-plain e-sysptrace e-dacoverride e-both e-priv 2>/dev/null; true
+              run: docker rm -f e-plain e-unconfined e-priv 2>/dev/null; true
