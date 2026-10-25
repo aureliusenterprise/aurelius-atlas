@@ -6922,6 +6922,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phase-2-live-2026-10-25-cache-pvc-on-the-existing-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Phase 2 (live, 2026-10-25) - cache PVC on the existing pool
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-we-measured-30-days-2026-09-25-10-25" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7682,6 +7693,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#phase-2-live-2026-10-25-cache-pvc-on-the-existing-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Phase 2 (live, 2026-10-25) - cache PVC on the existing pool
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-we-measured-30-days-2026-09-25-10-25" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7965,12 +7987,11 @@
 
 <h1 id="decision-self-hosted-ci-runners-on-gke-arc-vs-github-hosted">Decision: self-hosted CI runners on GKE (ARC) vs GitHub-hosted<a class="headerlink" href="#decision-self-hosted-ci-runners-on-gke-arc-vs-github-hosted" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p><strong>Status</strong>: decision draft for review (thijs + colleague). 2026-10-25.
-Companion to <a href="../self-hosted-ci/">self-hosted-ci.md</a> (the how); this doc is
-the <strong>should we</strong>, with measured numbers. <strong>Update (same day): the Phase 1
-canary is LIVE and GREEN 5/5</strong> on atlas-dev's existing pool - see
-"Phase 1 result" below. The remaining decision is only about Phase 2
-(moving the full CI job: dedicated spot pool + cache PVC).</p>
+<p><strong>Status</strong>: decided and <strong>live</strong> (2026-10-25): Phase 1 canary green 5/5,
+Phase 2 flipped - the full CI job runs on atlas-dev's existing pool with
+the cache PVC, no new compute. Companion to
+<a href="../self-hosted-ci/">self-hosted-ci.md</a> (the how); this doc is
+the <strong>should we</strong>, with measured numbers - kept as the decision record.</p>
 </blockquote>
 <h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
 <table>
@@ -8059,6 +8080,25 @@ each vs 3.92 CPU/13.9 Gi allocatable); image builds on the dind sidecar work
 pods scale to zero). Full-pipeline capacity (test fan-out ~6 vCPU / ~30 GB)
 still exceeds one node, which is why Phase 2 (dedicated tainted spot pool +
 cache PVC) is the open decision, not Phase 1.</p>
+<h2 id="phase-2-live-2026-10-25-cache-pvc-on-the-existing-pool">Phase 2 (live, 2026-10-25) - cache PVC on the existing pool<a class="headerlink" href="#phase-2-live-2026-10-25-cache-pvc-on-the-existing-pool" title="Permanent link">&para;</a></h2>
+<p>Per the review outcome, Phase 2 ships <strong>without new compute</strong>: the full CI
+job moved to the GKE pool via the flag-day variables, on the same default
+pool, plus a 50 GB PD (RWO) cache volume. The dedicated spot pool stays
+documented in <code>infra/arc</code> (a commented block) - the first lever if the pool
+ever runs out of headroom is constraining the dev docker-compose stacks
+(Elasticsearch/Keycloak heap), not a new node pool.</p>
+<p>The cache volume is the ARC runner's <code>work</code> volume (<code>/home/runner/_work</code>),
+so it is the one path <code>dockerd</code> can bind-mount from that outlives the
+per-job workspace wipe. Caches bind to <code>/var/cache/ci/*</code> in the dev
+container - <strong>outside</strong> the checkout; inside it, dockerd's root-owned
+bind-mount roots break the next job's <code>git clean</code> (measured, runs
+40201875108/40202528986). <code>maxRunners: 1</code> keeps the RWO volume on one node;
+CI is serial today, so that costs no throughput.</p>
+<p>First measurements (canary + pipeline, this pool): warm npm install 47 s
+(vs minutes cold); uv cache serves <code>uv sync</code> from the PD within the first
+minute of container start; queueing behind a busy runner is visible (~6 min
+serialised) - acceptable at current volume, the Phase 3 levers are the spot
+pool (parallelism) and Shape A (no 8.3 GB per-pod image pull).</p>
 <h2 id="what-we-measured-30-days-2026-09-25-10-25">What we measured (30 days, 2026-09-25 → 10-25)<a class="headerlink" href="#what-we-measured-30-days-2026-09-25-10-25" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8240,12 +8280,12 @@ to revert. Full detail: <a href="../self-hosted-ci/">self-hosted-ci.md</a>.</p>
 </ul>
 <h2 id="decision-asks">Decision asks<a class="headerlink" href="#decision-asks" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Phase 2</strong>: flip the full CI job to GKE (A) or keep it hosted (B)?
-   Phase 1 proved the mechanics on the existing pool at zero cost; the flip
-   needs the dedicated tainted spot pool (~$6–12/mo spot, scale 0..3) + the
-   cache PVC (~$5/mo) so the full pipeline (test fan-out ~6 vCPU / ~30 GB)
-   has a node that can hold it. Revert = unset the variables + <code>helm
-uninstall</code>.</li>
+<li>~~<strong>Phase 2</strong>: flip the full CI job to GKE (A) or keep it hosted (B)?~~
+   <strong>Resolved 2026-10-25: flipped (A).</strong> The flag-day variables are set and
+   the full pipeline runs on the existing pool + cache PVC - no new compute
+   (the review asked for exactly this: PVC first, capacity levers only if
+   exceeded; first lever = constrain the dev docker composes, second = the
+   documented spot pool). Revert = unset the variables + <code>helm uninstall</code>.</li>
 <li>~~GitHub App~~ resolved during Phase 1: the App (atlas-arc) is installed
    and ready, but runner-management APIs reject App auth on the Team plan -
    a classic <code>repo</code>-scoped PAT runs ARC today (90-day expiry, rotation =
