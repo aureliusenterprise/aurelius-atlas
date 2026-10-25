@@ -55,12 +55,13 @@ services:
             - "127.0.0.1:4321:4321"
         volumes:
             - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+            # The project's own certs/ (certgen keeps it current): the OIDC
+            # extension pins its ca.pem as issuer_ca_path when discovering
+            # JWKS from the Keycloak TLS :8443 listener (DD-202) — every
+            # project's mkcert CA is the same root, so the collector verifies
+            # the issuer with the material it owns (DD-216). Path is fixed so
+            # the collector config refers to it without env.
             - ./certs:/certs:ro
-            # The shared dev CA (every project's mkcert CA is the same root):
-            # the OIDC extension pins it as issuer_ca_path when discovering
-            # JWKS from the Keycloak TLS :8443 listener (DD-202). Path is
-            # fixed so the collector config refers to it without env.
-            - ../../apps/aurelius-atlas-webapp/certs:/dev-ca:ro
 
     prometheus:
         image: dhi.io/prometheus:3.13-debian13

@@ -1,5 +1,6 @@
 {
     "services": {
+        "aurelius-atlas-server": ["aurelius-atlas-server", "localhost", "127.0.0.1"],
         "aurelius-atlas-webapp": ["aurelius-atlas-webapp", "localhost", "127.0.0.1"]
     }
 }

@@ -77,7 +77,8 @@ rules live in the root `AGENTS.md`.
   top-level single-provider keys are deprecated), fixed in
   `config/otel-collector.yaml` with **no env injection** (DD-202): it lists
   both dev Keycloak listeners — TLS `:8443` (CA-pinned to the shared mkcert
-  root, mounted at `/dev-ca`) and plaintext `:8080` — because a token's `iss`
+  root, the project's own `certs/ca.pem` mounted at `/certs`) and plaintext
+  `:8080` — because a token's `iss`
   is the listener that minted it and a non-matching validator 401s the leg
   silently. Every automated producer mints at `:8443` (the slice composes
   carry it as a literal); the `:8080` provider exists for the human dev

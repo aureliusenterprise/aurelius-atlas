@@ -69,7 +69,7 @@ services:
         ports:
             - 21001
         volumes:
-            - ../../aurelius-atlas-data2model/certs:/certs:ro
+            - ../certs:/certs:ro
 
     aurelius-atlas-lineage-model:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-lineage-model:local
@@ -81,7 +81,8 @@ services:
         environment:
             # The chain's upstreams, in-network: the fixture Atlas over plain
             # http, the data2model over TLS — its certificate covers the
-            # service name (tls.json), verified against the dev CA (LM-04).
+            # service name (this project's tls.json issues it for the e2e
+            # stack, DD-216), verified against the dev CA (LM-04).
             AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info
             AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-lineage-model.pem
             AURELIUS_ATLAS_LINEAGE_MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-lineage-model-key.pem
