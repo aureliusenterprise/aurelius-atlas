@@ -29,9 +29,13 @@ template:
         #       value: "true"
         #       effect: NoSchedule
         containers:
-            # The job container (ARC stock runner image, from the chart).
+            # The job container. In dind mode the image must be EXPLICIT:
+            # the chart renders init-dind-externals' image straight from
+            # this entry (helm template -> "null" otherwise, rejected by
+            # the API). :latest matches the controller's default runner.
             # Phase 1 sizing: the canary is validate-only (~1 CPU, ~2 Gi).
             - name: runner
+              image: ghcr.io/actions/actions-runner:latest
               resources:
                   requests:
                       cpu: 500m
@@ -39,22 +43,15 @@ template:
                   limits:
                       cpu: "2"
                       memory: 6Gi
-            # The dind sidecar (injected by containerMode.type=dind; the chart
-            # merges this entry into it). Privileged is set by the chart - the
-            # dev container needs it (docker-in-docker feature). Its image
-            # store lives on the node disk (emptyDir), wiped per job - the
-            # 8.3 GB atlas-ci-runner image fits the 100 GB GKE boot disk.
-            - name: dind
-              resources:
-                  requests:
-                      cpu: 500m
-                      memory: 2Gi
-                  limits:
-                      cpu: "2"
-                      memory: 6Gi
-              volumeMounts:
-                  - name: dind-scratch
-                    mountPath: /var/lib/docker
+            # The dind sidecar is chart-managed in dind mode: a native
+            # sidecar (initContainer + restartPolicy: Always, k8s >=1.29 -
+            # this cluster is 1.35) running docker:dind privileged, socket
+            # at the shared /var/run. The chart IGNORES a user "dind"
+            # container entry here (and a native sidecar cannot mount into
+            # /var/lib/docker of its own container), so no entry - and the
+            # image store lives on the node disk (dind-scratch is unused
+            # too, kept for Phase 2 customisation). The 8.3 GB
+            # atlas-ci-runner image fits the 100 GB GKE boot disk.
         volumes:
             - name: dind-scratch
               emptyDir: {}

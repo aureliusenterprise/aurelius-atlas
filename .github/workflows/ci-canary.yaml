@@ -8,7 +8,12 @@ name: CI Canary (GKE)
 # README) and the ci job moves. Delete this workflow in Phase 3.
 
 on:
+    # Push trigger (branch-scoped): workflow_dispatch needs the file on the
+    # default branch, which PR 150 has not merged yet. Repeat runs = the
+    # dispatch below, or an empty commit. Delete this workflow in Phase 3.
     workflow_dispatch:
+    push:
+        branches: [feat/validate-job-in-devcontainer]
 
 permissions:
     contents: read
