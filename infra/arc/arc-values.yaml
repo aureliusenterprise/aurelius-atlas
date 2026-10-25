@@ -62,7 +62,7 @@ template:
                   - /bin/bash
                   - -c
                   - |
-                      rm -rf /work/.ci-cache /work/aurelius-atlas/aurelius-atlas/.container-cache
+                      rm -rf /work/aurelius-atlas/aurelius-atlas/.container-cache
                       mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit
                       chgrp -R 1001 /work/.ci-cache && chmod -R 2775 /work/.ci-cache
               resources:

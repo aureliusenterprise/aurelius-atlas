@@ -1,11 +1,10 @@
 # Decision: self-hosted CI runners on GKE (ARC) vs GitHub-hosted
 
-> **Status**: decision draft for review (thijs + colleague). 2026-10-25.
-> Companion to [self-hosted-ci.md](self-hosted-ci.md) (the how); this doc is
-> the **should we**, with measured numbers. **Update (same day): the Phase 1
-> canary is LIVE and GREEN 5/5** on atlas-dev's existing pool - see
-> "Phase 1 result" below. The remaining decision is only about Phase 2
-> (moving the full CI job: dedicated spot pool + cache PVC).
+> **Status**: decided and **live** (2026-10-25): Phase 1 canary green 5/5,
+> Phase 2 flipped - the full CI job runs on atlas-dev's existing pool with
+> the cache PVC, no new compute. Companion to
+> [self-hosted-ci.md](self-hosted-ci.md) (the how); this doc is
+> the **should we**, with measured numbers - kept as the decision record.
 
 ## TL;DR
 
@@ -42,6 +41,29 @@ each vs 3.92 CPU/13.9 Gi allocatable); image builds on the dind sidecar work
 pods scale to zero). Full-pipeline capacity (test fan-out ~6 vCPU / ~30 GB)
 still exceeds one node, which is why Phase 2 (dedicated tainted spot pool +
 cache PVC) is the open decision, not Phase 1.
+
+## Phase 2 (live, 2026-10-25) - cache PVC on the existing pool
+
+Per the review outcome, Phase 2 ships **without new compute**: the full CI
+job moved to the GKE pool via the flag-day variables, on the same default
+pool, plus a 50 GB PD (RWO) cache volume. The dedicated spot pool stays
+documented in `infra/arc` (a commented block) - the first lever if the pool
+ever runs out of headroom is constraining the dev docker-compose stacks
+(Elasticsearch/Keycloak heap), not a new node pool.
+
+The cache volume is the ARC runner's `work` volume (`/home/runner/_work`),
+so it is the one path `dockerd` can bind-mount from that outlives the
+per-job workspace wipe. Caches bind to `/var/cache/ci/*` in the dev
+container - **outside** the checkout; inside it, dockerd's root-owned
+bind-mount roots break the next job's `git clean` (measured, runs
+40201875108/40202528986). `maxRunners: 1` keeps the RWO volume on one node;
+CI is serial today, so that costs no throughput.
+
+First measurements (canary + pipeline, this pool): warm npm install 47 s
+(vs minutes cold); uv cache serves `uv sync` from the PD within the first
+minute of container start; queueing behind a busy runner is visible (~6 min
+serialised) - acceptable at current volume, the Phase 3 levers are the spot
+pool (parallelism) and Shape A (no 8.3 GB per-pod image pull).
 
 ## What we measured (30 days, 2026-09-25 → 10-25)
 
@@ -167,12 +189,12 @@ to revert. Full detail: [self-hosted-ci.md](self-hosted-ci.md).
 
 ## Decision asks
 
-1. **Phase 2**: flip the full CI job to GKE (A) or keep it hosted (B)?
-   Phase 1 proved the mechanics on the existing pool at zero cost; the flip
-   needs the dedicated tainted spot pool (~$6–12/mo spot, scale 0..3) + the
-   cache PVC (~$5/mo) so the full pipeline (test fan-out ~6 vCPU / ~30 GB)
-   has a node that can hold it. Revert = unset the variables + `helm
-uninstall`.
+1. ~~**Phase 2**: flip the full CI job to GKE (A) or keep it hosted (B)?~~
+   **Resolved 2026-10-25: flipped (A).** The flag-day variables are set and
+   the full pipeline runs on the existing pool + cache PVC - no new compute
+   (the review asked for exactly this: PVC first, capacity levers only if
+   exceeded; first lever = constrain the dev docker composes, second = the
+   documented spot pool). Revert = unset the variables + `helm uninstall`.
 2. ~~GitHub App~~ resolved during Phase 1: the App (atlas-arc) is installed
    and ready, but runner-management APIs reject App auth on the Team plan -
    a classic `repo`-scoped PAT runs ARC today (90-day expiry, rotation =

@@ -1,4 +1,4 @@
-# GKE self-hosted CI runners (Phase 1)
+# GKE self-hosted CI runners (Phases 1-2)
 
 ARC (`gha-runner-scale-set`) runner pods for `aureliusenterprise/aurelius-atlas`,
 so the `ci` job runs in the dev container on GKE (plan:
@@ -24,12 +24,14 @@ we also created is blocked by plan gating on this repo today). The
 `gcloud config set project aurelius-atlas` +
 `gcloud container clusters get-credentials atlas-dev --location europe-west1`.
 
-Phase 1 runs the **canary on the existing default pool** (nodes: 3.92 CPU /
-13.9 Gi allocatable, low requests) with canary-sized requests - no new node
-pool, no cache PVC, no marginal cost. The dedicated tainted spot pool and
-the PVC are Phase 2 (the full pipeline needs ~6 vCPU / ~30 GB, which a
-13.9 Gi node cannot hold); the taint/selector and cache volume are
-commented in `arc-values.yaml` for that step.
+Phase 1 ran the **canary on the existing default pool** (nodes: 3.92 CPU /
+13.9 Gi allocatable) - gate passed 5/5, zero marginal cost. Phase 2 (live
+2026-10-25) added the **toolchain-cache PVC** and flipped the repo
+variables; the full pipeline runs on the same default pool (no new node
+pool - if it ever exceeds capacity, constrain the dev docker composes
+first, see the decision doc). The dedicated tainted spot pool stays
+documented-but-unused: uncomment the taint/selector block in
+`arc-values.yaml` to enable it.
 
 ```bash
 # 1. Controller (cluster-scoped, one per cluster) - DONE 2026-10-25:
@@ -45,9 +47,9 @@ kubectl -n arc-runners create secret generic atlas-arc-auth \
 helm install atlas-ci oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
     --namespace arc-runners -f infra/arc/arc-values.yaml
 
-# Phase 2 only - dedicated CI pool + cache volume:
-GCP_PROJECT=aurelius-atlas GKE_CLUSTER=atlas-dev GKE_LOCATION=europe-west1 ./install.sh nodepool
+# Phase 2 (live) - cache volume:
 kubectl apply -f infra/arc/toolchain-cache-pvc.yaml
+# then `./install.sh scale-set` (work volume + cache-init in arc-values.yaml)
 ```
 
 **Auth (measured 2026-10-25 on this org).** `POST
@@ -82,10 +84,10 @@ registration for public repos in groups that disallow them. The
 Cost/benefit + the option analysis:
 [`docs/architecture/self-hosted-ci-decision.md`](../../docs/architecture/self-hosted-ci-decision.md).
 
-## Flag day (repo side)
+## Flag day (repo side) - DONE 2026-10-25
 
-Once a canary job scheduled on the pool is green, flip the repo variables -
-the workflow reads them, unset means hosted:
+The five repo variables, set as live (unset any to revert that knob to
+hosted):
 
 ```bash
 gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_RUNS_ON \
@@ -95,7 +97,13 @@ gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_DISK_
 gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_USE_ACTIONS_CACHE \
     -f name=CI_USE_ACTIONS_CACHE -f value=false   # unavailable on self-hosted (private repos)
 gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_CACHE_MOUNTS \
-    -f name=CI_CACHE_MOUNTS -f value='atlas-toolchain-cache:/workspaces/aurelius-atlas/.container-cache'
+    --input - <<'EOF'   # newline-separated devcontainers/ci mounts; targets OUTSIDE the checkout
+{"value":"type=bind,source=/home/runner/_work/.ci-cache/uv,target=/var/cache/ci/uv\ntype=bind,source=/home/runner/_work/.ci-cache/npm,target=/var/cache/ci/npm\ntype=bind,source=/home/runner/_work/.ci-cache/pre-commit,target=/var/cache/ci/pre-commit"}
+EOF
+gh api -X PUT repos/aureliusenterprise/aurelius-atlas/actions/variables/CI_CACHE_ENV \
+    --input - <<'EOF'   # container-side cache dirs = the mount targets above
+{"value":"UV_CACHE_DIR=/var/cache/ci/uv\nnpm_config_cache=/var/cache/ci/npm\nPRE_COMMIT_HOME=/var/cache/ci/pre-commit"}
+EOF
 ```
 
 Deleting the variables reverts to hosted runners - no PR needed.
@@ -105,8 +113,19 @@ Notes:
 - GHCR pulls of `atlas-ci-runner:main` carry credentials from the composite's
   login step (the docker client sends them to the sidecar) - no
   `imagePullSecrets` needed; the pod's own images are public.
-- `cache-mounts` binds the PVC into the dev container; on hosted the same
-  paths are filled by `actions/cache` instead (`use-actions-cache`).
+- **Caches live outside the checkout.** `CI_CACHE_MOUNTS` binds the PVC's
+  `.ci-cache/*` dirs (pre-created setgid 2775 by the `cache-init` init
+  container) to `/var/cache/ci/*` in the dev container, and `CI_CACHE_ENV`
+  points `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` at the same
+  paths. Mounting them _inside_ the checkout (`.container-cache/*`, as
+  first planned) breaks the next job: dockerd creates bind-mount targets as
+  root:root and `actions/checkout`'s `git clean -ffdx` then fails with
+  EACCES (run 40201875108). `cache-init` also sweeps any such stale dirs.
+  The mounts must match `CI_CACHE_ENV` exactly - a mismatch means the tools
+  see an unwritable empty dir (`/var/cache/ci` parent dirs are created
+  root-owned by dockerd, the setgid source dirs make writes work).
+- On hosted, the same cache dirs are filled by `actions/cache` instead
+  (`use-actions-cache`), at the action's default in-workspace paths.
 - The `.features-cache` dir under `.devcontainer/` is inside the checkout
   (gitignored) and lands on the job's `work` volume - features rebuild
   ~weekly (hash-keyed), acceptable for now; a second volume mount is the
