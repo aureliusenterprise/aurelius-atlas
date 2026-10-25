@@ -84,6 +84,11 @@ jobs:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
                   restore-keys: ${{ runner.os }}-node-modules-
+                  # Save even when a later step fails: node_modules is
+                  # cache-worthy the moment npm ci finishes - gating the
+                  # save on a green pipeline delays the restore hit by
+                  # every failing run.
+                  save-always: true
 
             # .venv is NOT cached: uv sync is ~20s with the uv download
             # cache already on a PVC, and a restored .venv hard-codes the
