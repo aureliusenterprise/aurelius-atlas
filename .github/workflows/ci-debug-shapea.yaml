@@ -11,6 +11,12 @@ name: CI Debug (Shape A forensics)
 
 on:
     workflow_dispatch:
+    # A branch can't workflow_dispatch (needs the file on the default
+    # branch); a push trigger on the workflow's own path is the lever -
+    # pushing this file runs it.
+    push:
+        paths:
+            - .github/workflows/ci-debug-shapea.yaml
 
 permissions:
     contents: read
