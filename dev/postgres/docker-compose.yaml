@@ -3,6 +3,9 @@ name: aurelius-atlas-dev-postgres
 services:
     postgres:
         image: dhi.io/postgres:18-alpine3.23
+        # Memory cap (CI capacity): the e2e fan-out runs this stack inside
+        # the CI runner's dind daemon on a shared node.
+        mem_limit: 512m
         environment:
             # ${VAR:?} guards: empty credentials would reinitialise the data
             # volume differently or crash-loop initdb obscurely; abort
@@ -47,6 +50,7 @@ services:
         # to the dev collector, so dev/observability never learns this slice
         # exists. Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied

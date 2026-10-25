@@ -13,6 +13,11 @@ services:
 
     elasticsearch:
         image: dhi.io/elasticsearch:9.5-debian13
+        # Memory cap (CI capacity): the e2e fan-out runs this stack inside
+        # the CI runner's dind daemon on a shared node, where an uncapped
+        # JVM competes with the parallel suites. 2g = the 1g heap below plus
+        # off-heap headroom.
+        mem_limit: 2g
         depends_on:
             volume-init:
                 condition: service_completed_successfully
@@ -56,6 +61,7 @@ services:
         # the dev collector, so dev/observability never learns this project
         # exists. Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied

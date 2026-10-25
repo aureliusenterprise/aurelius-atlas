@@ -7,6 +7,11 @@ services:
         # vertx-core still at 4.5.28) and fails to start with
         # NoClassDefFoundError: io/vertx/core/net/PqcEnforcementPolicy.
         image: dhi.io/keycloak:26.7-debian13
+        # Memory cap (CI capacity): Quarkus defaults its heap to 25% of host
+        # RAM - 4 Gi on a CI runner node, for a dev realm. The -Xmx in
+        # JAVA_OPTS below fixes the heap; mem_limit caps the container
+        # (heap + metaspace + code cache).
+        mem_limit: 1g
         command:
             [
                 "start-dev",
@@ -49,7 +54,7 @@ services:
             # Quarkus' OTLP gRPC sender (Vert.x) ignores OTEL_EXPORTER_OTLP_CERTIFICATE,
             # so the local development CA is provided as the JVM truststore instead.
             # The password is the project's encrypted dev default (.env.enc).
-            JAVA_OPTS: -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
+            JAVA_OPTS: -Xms256m -Xmx512m -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
             # (replace-placeholders lets ${VAR} placeholders in import/*.json
             # resolve from this container's environment; Keycloak reads them
             # via System.getenv and leaves startup imports unsubstituted
@@ -103,6 +108,7 @@ services:
 
     postgres-keycloak:
         image: dhi.io/postgres:18-alpine3.23
+        mem_limit: 512m
         environment:
             POSTGRES_USER: ${KEYCLOAK_DATABASE_USERNAME}
             POSTGRES_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD}
@@ -144,6 +150,7 @@ services:
         # the dev collector.
         # Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied

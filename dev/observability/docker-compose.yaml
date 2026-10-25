@@ -3,6 +3,9 @@ name: aurelius-atlas-dev-observability
 services:
     otel-collector:
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        # Memory caps (CI capacity): the e2e fan-out runs this stack inside
+        # the CI runner's dind daemon on a shared node; generous for dev.
+        mem_limit: 512m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The OIDC extension discovers JWKS at extension start (DD-193): the
         # collector exits 1 while Keycloak is still booting, and the boot
@@ -65,6 +68,7 @@ services:
 
     prometheus:
         image: dhi.io/prometheus:3.13-debian13
+        mem_limit: 1g
         user: "65532"
         ulimits:
             nofile:
@@ -87,6 +91,7 @@ services:
 
     loki:
         image: dhi.io/loki:3-debian13
+        mem_limit: 1g
         user: "65532"
         ulimits:
             nofile:
@@ -101,6 +106,7 @@ services:
 
     tempo:
         image: dhi.io/tempo:3-debian13
+        mem_limit: 1g
         user: "65532"
         ulimits:
             nofile:
@@ -120,6 +126,7 @@ services:
 
     grafana:
         image: dhi.io/grafana:13-debian13
+        mem_limit: 512m
         user: "65532"
         depends_on:
             loki:
