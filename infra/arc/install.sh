@@ -2,7 +2,7 @@
 # Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
-# Usage: ./install.sh <cluster|controller|nodepool|scale-set-shapea|status>
+# Usage: ./install.sh <cluster|controller|nodepool|scale-set-shapea|cache-server|status>
 # Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region), GKE_NODEPOOL (default: cipool),
 #        CI_SHAPEA_IMAGE_TAG (scale-set-shapea image tag, default: main)
 set -euo pipefail
@@ -50,14 +50,24 @@ case "${1:-status}" in
         # secret, see README). CI_SHAPEA_IMAGE_TAG selects the image tag
         # (default main; the build workflow publishes sha-<full-sha> for
         # branch builds).
+        # NOTE: helm upgrade EVICTS in-flight runner pods (jobs die, queued
+        # jobs requeue) - deploy between runs.
         TAG="${CI_SHAPEA_IMAGE_TAG:-main}"
         helm upgrade --install atlas-ci-shapea \
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
             --namespace arc-runners -f "$HERE/arc-shapea-values.yaml" \
             --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${TAG}"
         ;;
+    cache-server)
+        # The actions/cache backend for self-hosted runners
+        # (cache-server-values.yaml, README "Cache server"). Safe to
+        # deploy any time (its own release, evicts nothing). One-time.
+        helm upgrade --install gha-cache-server \
+            oci://ghcr.io/falcondev-oss/charts/github-actions-cache-server \
+            --namespace arc-runners -f "$HERE/cache-server-values.yaml"
+        ;;
     status)
-        kubectl -n arc-runners get autoscalingrunnerset,secrets,pvc,pods -o wide
+        kubectl -n arc-runners get autoscalingrunnerset,secrets,pvc,pods,deploy,svc -o wide
         ;;
     *)
         echo "usage: $0 <cluster|controller|nodepool|scale-set|status>" >&2

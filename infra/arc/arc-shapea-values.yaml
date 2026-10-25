@@ -82,7 +82,15 @@ template:
                   - /bin/bash
                   - -c
                   - |
-                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd /work/.ci-cache/sops
+                      # sops needs SOPS_AGE_KEY_FILE to EXIST even when
+                      # SOPS_AGE_KEY carries the key; the checkout is
+                      # ephemeral (clean tree, no keys.txt exclude), so the
+                      # file lives on the cache volume. Content irrelevant
+                      # (the env key wins); cache-init owns it root:root
+                      # 644, readable by uid 1000.
+                      touch /work/.ci-cache/sops/keys.txt
+                      chmod 644 /work/.ci-cache/sops/keys.txt
                       # NON-recursive on purpose: the tree is multi-GB
                       # (containerd alone ~5 GB), and `chgrp -R`/`chmod -R`
                       # over it made every pod boot take minutes - init
@@ -136,6 +144,18 @@ template:
               image: ghcr.io/aureliusenterprise/atlas-ci-runner:main
               securityContext:
                   privileged: true # dockerd (see header)
+              env:
+                  # actions/cache -> the in-cluster cache server
+                  # (cache-server-values.yaml, README "Cache server").
+                  # ONLY honoured by the forked runner the ci-runner
+                  # feature bakes (falcondev-oss/github-actions-runner);
+                  # stock runners hard-code GitHub's results URL. The fork
+                  # also skips runner self-update while this is set
+                  # (a self-update would unpatch the binary and silently
+                  # revert caching to GitHub's central service). Trailing
+                  # slash required by the cache client.
+                  - name: CUSTOM_ACTIONS_RESULTS_URL
+                    value: http://gha-cache-server.arc-runners.svc.cluster.local:3000/
               command:
                   - /bin/bash
                   - -c
@@ -175,7 +195,12 @@ template:
                       # uid 1000 with the volume group-writable (fsGroup),
                       # so the old "'/opt/actions-runner/_work/_tool' is
                       # denied" (container layer, root-owned) is gone.
-                      export SOPS_AGE_KEY_FILE=/opt/actions-runner/_work/aurelius-atlas/aurelius-atlas/secrets/keys.txt
+                      # The checkout is EPHEMERAL (sanitized every job,
+                      # see ci.yaml), so the sops key file lives on the
+                      # cache volume - cache-init touches it every boot
+                      # (sops needs the file to EXIST; SOPS_AGE_KEY
+                      # carries the key, content irrelevant).
+                      export SOPS_AGE_KEY_FILE=/var/cache/ci/sops/keys.txt
                       # docker-init.sh: starts dockerd (privileged), waits
                       # for `docker info`, then exec "$@" = the runner.
                       exec /usr/local/share/docker-init.sh /opt/actions-runner/run.sh
@@ -185,12 +210,14 @@ template:
                   # passes fields verbatim), so mount it explicitly - AT
                   # THE RUNNER ROOT'S _work (see the command comment:
                   # the JIT registration's WorkFolder is the relative
-                  # default `_work`, relative to /opt/actions-runner).
-                  # The PVC root = the work dir, so the checkout (under
-                  # _work/aurelius-atlas/aurelius-atlas/) and the tool
-                  # cache persist: warm `git fetch` checkouts, warm
-                  # node_modules/.venv, and secrets/keys.txt survives for
-                  # SOPS_AGE_KEY_FILE.
+                  # `_work`, relative to /opt/actions-runner). The volume
+                  # exists for the runner's OWN writes (_work/_tool setup
+                  # actions, the job workspace must be uid-1000-writable -
+                  # the container layer is root-owned: "Access to the path
+                  # '/opt/actions-runner/_work/_tool' is denied"). The
+                  # checkout under it is sanitized every job: nothing in
+                  # the tree persists by design - the cache subPaths below
+                  # are the only persistent state.
                   - name: work
                     mountPath: /opt/actions-runner/_work
                   # Toolchain caches (PVC subPaths, pre-created setgid by
@@ -204,6 +231,11 @@ template:
                   - name: work
                     mountPath: /var/cache/ci/pre-commit
                     subPath: .ci-cache/pre-commit
+                  # sops key file (cache-init touches it; see the command
+                  # comment) - lives off the ephemeral checkout.
+                  - name: work
+                    mountPath: /var/cache/ci/sops
+                    subPath: .ci-cache/sops
                   # dockerd's image store ON THE PVC: compose base images
                   # (e2e), pulled base layers, etc. survive the per-pod
                   # wipe. ext4 on a PD supports overlayfs (NFS would not -

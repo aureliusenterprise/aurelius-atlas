@@ -54,6 +54,10 @@ kubectl -n arc-runners create secret generic atlas-ghcr-pull \
 # 4. The cache/work volume + the scale set:
 kubectl apply -f infra/arc/shapea-cache-pvc.yaml
 CI_SHAPEA_IMAGE_TAG=main ./install.sh scale-set-shapea
+
+# 5. The actions/cache backend for the runners (its own release, safe any
+#    time - see "Cache server"):
+./install.sh cache-server
 ```
 
 **Auth (measured 2026-10-25 on this org).** `POST
@@ -117,11 +121,11 @@ the JIT token string; the listener consumes it at run.sh boot). Consequences:
   `/opt/actions-runner/_work`** - the default then lands on the PVC. (Jobs
   on the container layer died with `Access to the path
 '/opt/actions-runner/_work/_tool' is denied` once `_work` was root-owned.)
-- **`secrets/keys.txt`**: `SOPS_AGE_KEY_FILE` points inside the work volume
-  (the checkout's `secrets/` - the file is gitignored and written by sops at
-  runtime; its content is irrelevant when `SOPS_AGE_KEY` is in the
-  environment, sops needs the FILE to exist). The clean step excludes it
-  from `git clean`.
+- **`SOPS_AGE_KEY_FILE`** = `/var/cache/ci/sops/keys.txt` (a PVC subPath
+  cache-init touches every boot). The checkout is EPHEMERAL (see
+  "Caches"), so the file cannot live in the tree's `secrets/`; its
+  content is irrelevant when `SOPS_AGE_KEY` is in the environment -
+  sops needs the FILE to exist.
 - **Privileged pod** (in-image dockerd, same as the feature's dev-container
   manifest). `runAsUser: 1000` (vscode) + `runAsGroup`/`supplementalGroups:
 [999]` (docker group - k8s drops the image's supplementary groups; the
@@ -137,20 +141,22 @@ the JIT token string; the listener consumes it at run.sh boot). Consequences:
   finished, the controller recycled the pod, jobs sat queued: the
   queue-stall incident), wipes `.ci-cache/docker/buildkit` (see the store
   pairing below), and `chown -R 1000:999` **the checkout tree only** (e2e
-  bind mounts run as container root and write INTO the checkout - root-owned
-  dirs make the next job's checkout die `EACCES: rmdir`).
+  bind mounts run as container root and write INTO the checkout; root-owned
+  dirs are ununlinkable by the uid-1000 clean - at-boot scoping keeps the
+  multi-GB caches out of the walk).
 
 ## The PVC (`shapea-cache-pvc.yaml`, atlas-shapea-cache, 50 Gi RWO PD)
 
 One ext4 volume (PD - overlayfs works on it, NFS/Filestore would not),
 subPath-mounted:
 
-| Path (in pod)                       | PVC subPath            | Why                                                                                       |
-| ----------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
-| `/opt/actions-runner/_work`         | (root)                 | work dir: checkout + `_tool`/`_temp`, warm between jobs                                   |
-| `/var/cache/ci/{uv,npm,pre-commit}` | `.ci-cache/<name>`     | toolchain caches, OUTSIDE the checkout (inside = root-owned bind roots break `git clean`) |
-| `/var/lib/docker`                   | `.ci-cache/docker`     | dockerd store: compose/e2e base images survive pods                                       |
-| `/var/lib/containerd`               | `.ci-cache/containerd` | **the critical one** - see below                                                          |
+| Path (in pod)                       | PVC subPath            | Why                                                                                                                |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `/opt/actions-runner/_work`         | (root)                 | work dir: runner `_tool`/`_temp` + job workspace (uid-1000-writable); the checkout under it is sanitized every job |
+| `/var/cache/ci/{uv,npm,pre-commit}` | `.ci-cache/<name>`     | toolchain caches, OUTSIDE the checkout (the GitHub-hosted cache model)                                             |
+| `/var/cache/ci/sops`                | `.ci-cache/sops`       | the sops key file (exists for sops; content irrelevant, key is in env)                                             |
+| `/var/lib/docker`                   | `.ci-cache/docker`     | dockerd store: compose/e2e base images survive pods                                                                |
+| `/var/lib/containerd`               | `.ci-cache/containerd` | **the critical one** - see below                                                                                   |
 
 **Containerd's root must be volume-backed.** The image's
 `/etc/containerd/config.toml` (root=`/var/lib/containerd`) + dockerd's
@@ -171,16 +177,52 @@ is disposable.
 **The volume is deliberately NOT shared** with the (retired) Shape B cache:
 two scale sets on one RWO disk = detach stalls + fsGroup chown flip-flop.
 
-## Caches and warm trees (measured)
+## Cache server (`actions/cache` for self-hosted)
 
-- `ci.yaml` checks out with `clean: false` + `git clean -ffdx -e
-node_modules -e .venv -e .nx/workspace-data -e secrets/keys.txt`, so the
-  installed trees survive jobs (npm/uv see them complete and exit early;
-  default-clean costs ~60s of re-linking every job).
-- Validate (pre-commit) 148s cold → 77s warm; e2e/docker base layers hit
-  the containerd store; storybook/sonar artifacts land on the warm tree.
-- The uv/npm caches pay for themselves on fresh trees (downloads ~0 on GKE
-  egress; the ~60s floor is tree materialization, removed by the warm tree).
+Private repos get no `actions/cache` on self-hosted runners (GitHub's
+service rejects them), so the tree used to stay warm on the work volume to
+avoid paying install per job - which leaked root-owned dirs, staged
+diagnostics and decrypted `.env` between runs. Now the tree is disposable
+(ci.yaml, "Caches" below) and `ci.yaml` caches `node_modules`/`.venv` with
+the stock `actions/cache` step against
+[`github-actions-cache-server`](https://gha-cache-server.falcondev.io)
+(MIT, `install.sh cache-server`, `cache-server-values.yaml`:
+filesystem+sqlite on its own 20 Gi PD, 90-day cleanup, LRU at 90 %).
+
+The contract has three parts - all three are required:
+
+1. **The runner is the fork** (`.devcontainer/features/ci-runner`):
+   stock `Runner.Worker.dll` hard-codes GitHub's results URL and ignores
+   `ACTIONS_RESULTS_URL`; `falcondev-oss/github-actions-runner` is a
+   drop-in (identical asset names, merges upstream) whose build honours
+   `CUSTOM_ACTIONS_RESULTS_URL`. Verified: the string exists in the
+   fork's v2.338.1 DLL, not in stock's.
+2. **`CUSTOM_ACTIONS_RESULTS_URL`** on the runner container
+   (`arc-shapea-values.yaml`) = the server's cluster DNS URL, trailing
+   slash. The fork also skips runner self-update while it is set - a
+   self-update would unpatch the binary and silently fall back to
+   GitHub's central cache (no error, caching just stops). Runner version
+   updates then become ours: bump the feature pin, rebuild the image.
+3. **OIDC auth** (server default): the runner's job token is verified
+   against `token.actions.githubusercontent.com` - per-repo cache scope,
+   no shared secret. Non-cache traffic (artifacts) passes through to
+   GitHub's results receiver, untouched.
+
+## Caches (measured) - the tree is ephemeral on purpose
+
+- `ci.yaml` checks out CLEAN (actions/checkout's default clean):
+  node_modules, .venv, dist, coverage, e2e artifacts never leak between
+  runs. The warm-tree experiment (runs 40225615871-40228013569) saved
+  ~70s of install and caused a bug family - root-owned dirs from e2e bind
+  mounts breaking checkout (EACCES rmdir), staged diagnostics surviving
+  `git clean` and failing pre-commit - so it was retired: **caches
+  persist, the tree does not**.
+- `node_modules`/`.venv` via `actions/cache` → the cache server (above),
+  keyed on the lockfiles. npm 47s / uv ~20s cold is the floor the cache
+  restores are measured against.
+- Validate (pre-commit) ~81s, e2e/docker base layers hit the containerd
+  store - cache-driven (uv/PRE_COMMIT_HOME/containerd subPaths), none
+  tree-driven.
 
 ## Rollback
 

@@ -57,37 +57,37 @@ jobs:
             packages: write
 
         steps:
-            # Warm-tree hygiene BEFORE checkout (the work dir is the Shape A
-            # PVC - it outlives jobs, so the previous run's tree is still
-            # here): reset --hard discards tracked modifications (prettier
-            # fixes, decrypt-written .env) so actions/checkout can never be
-            # refused for "local changes would be overwritten" on a file
-            # that changed between commits; clean -ffdx then wipes untracked
-            # leftovers - coverage, junit, dist, reports/failure-diagnostics
-            # (staging them with `git add -A` would PRESERVE them: clean
-            # only removes untracked files, and the staged diagnostics then
-            # get linted/rewritten by pre-commit - run 40228013569).
-            # The -e keeps the warm trees (npm/uv re-link ~60s cold), the Nx
-            # daemon's workspace-data, and the age key file
-            # (SOPS_AGE_KEY_FILE points at it; sops needs the file to exist,
-            # its content is irrelevant when SOPS_AGE_KEY is set). Guarded:
-            # a fresh PVC has no repo yet.
-            - name: Clean warm work tree
-              run: |
-                  if [ -d .git ]; then
-                      git reset --hard HEAD
-                      git clean -ffdx -e node_modules -e .venv -e .nx/workspace-data -e secrets/keys.txt
-                  fi
-
-            # clean: false: the clean step above did the wiping (the default
-            # clean would also wipe node_modules/.venv - ~2000 packages
-            # re-linked from cache every job).
+            # EPHEMERAL TREE (the GitHub-hosted model): actions/checkout's
+            # DEFAULT clean (git clean -ffdx + git reset --hard) sanitizes
+            # the previous job's tree - node_modules, .venv, coverage, dist,
+            # diagnostics all wiped. Nothing in the tree persists BY
+            # DESIGN. The warm tree saved only ~70s of install (npm 47s +
+            # uv ~20s, from caches that live on PVC subPaths OUTSIDE the
+            # tree) and caused every warm-tree bug of the Shape A trial
+            # week: root-owned dirs from e2e bind mounts breaking checkout
+            # (EACCES rmdir), staged diagnostics surviving `git clean` and
+            # failing pre-commit (40228013569), the SOPS_AGE_KEY_FILE
+            # dance. Caches outside, tree disposable.
             # fetch-depth 0: nx-set-shas / nx affected need history.
             - name: Checkout code
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
-                  clean: false
+
+            # ~47s cold npm install (measured) -> ~10s restore. Keyed on
+            # every lockfile; restore-keys fall back to the newest lock
+            # version. zstd falls back to gzip (no zstd in the runner
+            # image) - fine at this scale.
+            - name: Cache node_modules
+              uses: actions/cache@v5
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: ${{ runner.os }}-node-modules-
+
+            # .venv is NOT cached: uv sync is ~20s with the uv download
+            # cache already on a PVC, and a restored .venv hard-codes the
+            # job workdir in its script shebangs, which changes per pod.
 
             # Affected baseline for nx affected. The runner exports no
             # GITHUB_TOKEN by default, so pass it explicitly.

@@ -27,7 +27,15 @@ fi
 }
 
 TARBALL="actions-runner-linux-x64-${VERSION}.tar.gz"
-BASE="https://github.com/actions/runner/releases/download/v${VERSION}"
+# The FORK (falcondev-oss/github-actions-runner): a runner build whose
+# Runner.Worker.dll honours CUSTOM_ACTIONS_RESULTS_URL, which is how the
+# self-hosted actions/cache server (infra/arc/cache-server-values.yaml,
+# README "Cache server") receives the runner's cache traffic - stock
+# runners hard-code the GitHub results URL and ignore the env var. The
+# fork merges upstream (releases track actions/runner tags, asset names
+# identical - verified 2.338.1 byte-for-byte outside the patch); keep the
+# pin in sync with the fork's latest release, which pairs with ARC.
+BASE="https://github.com/falcondev-oss/github-actions-runner/releases/download/v${VERSION}"
 
 # Verify the published sha256 when the release ships one (best-effort:
 # the version is pinned and the download is HTTPS; config.sh --version

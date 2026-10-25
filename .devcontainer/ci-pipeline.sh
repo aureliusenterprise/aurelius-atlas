@@ -4,6 +4,8 @@
 # Fail-fast phases, cheapest first, external services last, so a change that
 # fails a local phase never reaches Chromatic or SonarQube:
 #
+#   0/5 hygiene   prune the warm daemon's containers/volumes (Shape A
+#                 parity with the hosted runners' fresh daemons)
 #   1/5 validate  pre-commit over the whole tree
 #   2/5 test      unit + e2e tests for affected projects
 #   3/5 scan      build images for affected projects, then vulnerability-scan
@@ -17,6 +19,19 @@
 # by devcontainers/ci; the ui-affected line tells the host Chromatic step
 # whether to run.
 set -euo pipefail
+
+echo "::group::0/5 Daemon hygiene (prune stale containers)"
+# Shape A keeps the dockerd IMAGE store warm on a PVC (base layers survive
+# the per-pod wipe - that is the point), which also keeps the previous
+# run's CONTAINERS: `compose up` reuses a stopped container verbatim, so
+# its baked command is the previous commit's. Run 40231127680 proved it -
+# postgres died on the pre-fix cert command, and keycloak's container was
+# 2 hours old. The ephemeral checkout (ci.yaml) sanitizes the tree, not
+# the daemon. Containers/volumes go, images stay: GitHub-hosted parity
+# for state the tests own, warm store for state they don't.
+docker container prune -f
+docker volume prune -af
+echo "::endgroup::"
 
 echo "::group::1/5 Validate (pre-commit)"
 uv run pre-commit run --all-files
