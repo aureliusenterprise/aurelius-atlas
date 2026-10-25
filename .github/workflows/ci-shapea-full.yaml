@@ -18,6 +18,11 @@ name: CI Shape A Full (GKE trial)
 # store (/var/lib/containerd) sat on the pod root (the node's overlayfs).
 # Fixed by mounting it on the PVC (arc-shapea-values.yaml); this file's
 # push trigger re-runs the trial after each infra fix.
+#
+# Trial 2 (run 40219350705): all e2e/test green (82 tasks), every
+# docker-build died on "parent snapshot ... does not exist" - BuildKit
+# metadata (docker subPath) outliving containerd's snapshot store. Fixed
+# by wiping the metadata in cache-init. Trial 3 next.
 
 on:
     # workflow_dispatch needs the file on the default branch (PR 150 has not
