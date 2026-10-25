@@ -229,3 +229,6 @@ licenses.json
 vulnerabilities.json
 vulnerabilities.html
 .trivy-cache/
+
+# devcontainers/ci userDataFolder (feature installer scratch, CI-cacheable)
+.devcontainer/.features-cache/

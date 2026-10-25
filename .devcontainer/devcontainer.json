@@ -1,6 +1,7 @@
 {
     "containerEnv": {
         "NX_DAEMON": "true",
+        "PLAYWRIGHT_BROWSERS_PATH": "/opt/playwright-browsers",
         "SOPS_AGE_KEY_FILE": "${containerWorkspaceFolder}/secrets/keys.txt"
     },
     "customizations": {
@@ -139,6 +140,9 @@
         }
     },
     "features": {
+        "./features/playwright-browsers": {
+            "version": "1.64.0"
+        },
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
             "packages": ["age", "gnupg2", "libpq-dev", "libnss3-tools", "mkcert"]
         },
@@ -164,6 +168,15 @@
         },
         "ghcr.io/dhoeric/features/trivy:1": {
             "version": "0.71.0"
+        },
+        "ghcr.io/postfinance/devcontainer-features/playwright-deps:2": {
+            "installChromiumDeps": true,
+            "installFirefoxDeps": true,
+            "installWebkitDeps": true
+        },
+        "ghcr.io/postfinance/devcontainer-features/sonar-scanner-cli:1": {
+            "includeJre": false,
+            "version": "8.0.1.6346"
         }
     },
     "forwardPorts": [4200, 4400, 8000, 8080],
@@ -190,9 +203,7 @@
         }
     },
     "postCreateCommand": {
-        "playwright": "bash .devcontainer/playwright.sh",
         "pre-commit": "bash .devcontainer/pre-commit.sh",
-        "sonar": "bash .devcontainer/sonar.sh",
         "sops": "bash .devcontainer/sops.sh"
     },
     "runArgs": ["--add-host=keycloak.localhost:127.0.0.1"]
