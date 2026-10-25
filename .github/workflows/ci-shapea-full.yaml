@@ -12,6 +12,12 @@ name: CI Shape A Full (GKE trial)
 # When this goes green, the flip is: ci.yaml's job shape moves to these
 # steps (CI_RUNS_ON retired), Shape B (atlas-ci scale set + composite +
 # atlas-toolchain-cache PVC) is uninstalled.
+#
+# Trial 1 (run 40217828572) failed phase 2+ with nested-overlay mount
+# rejections: dockerd here uses the containerd snapshotter, whose layer
+# store (/var/lib/containerd) sat on the pod root (the node's overlayfs).
+# Fixed by mounting it on the PVC (arc-shapea-values.yaml); this file's
+# push trigger re-runs the trial after each infra fix.
 
 on:
     # workflow_dispatch needs the file on the default branch (PR 150 has not
