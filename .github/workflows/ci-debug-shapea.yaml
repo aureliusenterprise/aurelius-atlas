@@ -3,16 +3,18 @@
 # up --wait = healthy), but a FRESH postgres container on the CI daemon
 # exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
 # elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
-# write-permission anomalies on world-writable targets, repro-free so
-# far (the same sequence on this devcontainer = healthy). Facts so
-# far: dockerd 29.9.2 on BOTH (local healthy / CI broken - daemon
-# version ruled OUT); node kernel 6.12.105+ vs local 6.18 WSL2 - the
-# ONLY delta: 6.12-era regressions fit both symptoms (procfs owner
-# checks for non-dumpable processes = ES coredump_filter; overlayfs
-# copy-up of the sticky /tmp bit = postgres mktemp). Round 3 = causal
-# matrix, every probe || true (round 2 died bash -e before the probes):
-# plain run vs --tmpfs /tmp vs setpriv-drop, as the container users.
-# Delete after diagnosis.
+# write-permission anomalies on world-writable targets. ROOT CAUSES
+# (round 3 matrix): (1) the dhi hardened postgres digest rolled to
+# /tmp=2775 root:999 - uid 70 cannot write /tmp at all (local digest
+# is the 1777 one - tag content differs per registry path); (2) the
+# GKE node (Ubuntu 26.04, kernel 6.12.105+) exposes /proc/self/
+# coredump_filter 644 root:root - ES 9.5 writes it unconditionally at
+# bootstrap (upstream Elasticsearch.java), fatal after the entrypoint's
+# root->1000 drop. "Databases used to start" = node auto-upgrade +
+# image roll, both recent. Candidate fixes: tmpfs /tmp mode=1777
+# (plain --tmpfs inherits the image's 2775 - round 3 B), fake
+# coredump_filter bind-mount for ES. Round 4 validates both, plus the
+# sysctl knob for the record. Delete after diagnosis.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -62,28 +64,35 @@ jobs:
             # The compose stacks interpolate ${OTEL_*}/${DATABASE_*} from
             # the project .env - decrypted .env.enc (nx decrypt, sops).
             # Round 1 died here.
-            # Causal matrix, no compose (no env/decrypt/healthcheck
-            # surface). Each probe prints id + /tmp mode + the exact
-            # failing writes. A=plain, B=--tmpfs /tmp (the candidate
-            # fix), C=owner-drop (dumpable theory).
-            - name: Postgres image matrix
+            # FIX CANDIDATES: postgres tmpfs mode=1777; ES fake
+            # coredump_filter bind. || true everywhere.
+            - name: Postgres fix probes
               continue-on-error: true
               run: |
                   PG=dhi.io/postgres:18-alpine3.23
-                  PROBE='id; ls -ld / /tmp; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter 2>&1 && echo coredump:WRITABLE || echo coredump:EACCES; mktemp -d /tmp/atlas-certs.XXXXXX && echo mktemp:OK || echo mktemp:EACCES; echo x > /tmp/p && echo tmpfile:OK || echo tmpfile:EACCES'
-                  echo "### A: plain run (image user)"
+                  PROBE='id; ls -ld /tmp; mktemp -d /tmp/atlas-certs.XXXXXX && echo mktemp:OK || echo mktemp:EACCES; install -m 600 /etc/hostname /tmp/srv.pem && echo install:OK || echo install:EACCES'
+                  echo "### P1: facts on the CI digest"
                   docker run --rm --entrypoint sh $PG -c "$PROBE" || true
-                  echo "### B: --tmpfs /tmp (candidate fix)"
-                  docker run --rm --tmpfs /tmp --entrypoint sh $PG -c "$PROBE" || true
+                  echo "### P2: tmpfs mode=1777 (candidate fix)"
+                  docker run --rm --tmpfs /tmp:mode=1777,exec --entrypoint sh $PG -c "$PROBE" || true
 
-            - name: Elasticsearch image matrix
+            - name: Elasticsearch fix probes
               continue-on-error: true
               run: |
                   ES=dhi.io/elasticsearch:9.5-debian13
-                  PROBE='id; ls -ld /tmp; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter 2>&1 && echo coredump:WRITABLE || echo coredump:EACCES; mktemp -d /tmp/atlas-certs.XXXXXX && echo mktemp:OK || echo mktemp:EACCES'
-                  echo "### A: plain run (image user)"
-                  docker run --rm --entrypoint bash $ES -c "$PROBE" || true
-                  echo "### B: --tmpfs /tmp"
-                  docker run --rm --tmpfs /tmp --entrypoint bash $ES -c "$PROBE" || true
-                  echo "### C: root -> setpriv drop (dumpable theory)"
-                  docker run --rm --user root --entrypoint bash $ES -c 'id; setpriv --reuid=1000 --regid=0 --clear-groups bash -c "id; echo 0 > /proc/self/coredump_filter 2>&1 && echo coredump:WRITABLE || echo coredump:EACCES"' || true
+                  echo 0x23 > probe-cf
+                  chmod 666 probe-cf
+                  echo "### E1: fake coredump_filter bind, as uid 1000"
+                  docker run --rm --user 1000:1000 -v "$PWD/probe-cf:/proc/1/coredump_filter" \
+                      --entrypoint bash $ES -c 'ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter && echo E1:WRITABLE || echo E1:EACCES' || true
+                  echo "### E2: full ES boot with the bind (compose env, as user 0 like dev compose)"
+                  docker run -d --name esprobe -u 0 -v "$PWD/probe-cf:/proc/1/coredump_filter" \
+                      -e discovery.type=single-node -e xpack.security.enabled=false \
+                      -e cluster.name=probe -e ES_JAVA_OPTS="-Xms512m -Xmx512m" $ES || true
+                  sleep 45
+                  docker logs esprobe 2>&1 | grep -oE '"message":"[^"]*(coredump|AccessDenied|started)[^"]*"' | head -3
+                  docker rm -f esprobe >/dev/null 2>&1 || true
+                  echo "### E3: sysctl knob for the record (privileged runner; node-wide, resets on reboot)"
+                  sysctl -w fs.suid_dumpable=1 2>&1 | tail -1 || true
+                  docker run --rm --user 1000:1000 --entrypoint bash $ES -c 'echo 0 > /proc/self/coredump_filter && echo E3:WRITABLE || echo E3:EACCES' || true
+                  sysctl -w fs.suid_dumpable=0 >/dev/null 2>&1 || true
