@@ -148,23 +148,22 @@ template:
                       # /opt/actions-runner/_work (container layer, root
                       # -owned) and died on "Access to the path
                       # '/opt/actions-runner/_work/_tool' is denied").
-                      # run.sh/Runner.Listener have no work flag; the knob
-                      # is config.sh --work, exactly as the ARC container
-                      # hooks do it: register FIRST (the JIT token is in
-                      # ACTIONS_RUNNER_INPUT_JITCONFIG, injected by the
-                      # controller), then run.sh finds .runner and starts.
+                      # The knob is config.sh --work, run BEFORE run.sh -
+                      # exactly what ARC's kubernetes-mode hooks do. The
+                      # controller injects ACTIONS_RUNNER_INPUT_JITCONFIG
+                      # as an ENV VAR (secretKeyRef jitToken) holding the
+                      # token STRING - not a file (run d1a37838b: an
+                      # [ -f ] guard was false, config.sh was skipped,
+                      # run.sh self-registered with the default _work).
+                      # --ephemeral is implicit: the JIT token carries it,
+                      # and run.sh needs .credentials/.runner on disk,
+                      # which config.sh writes.
                       export RUNNER_WORKSPACE=/home/runner/_work
                       export RUNNER_CACHE_DIR=/home/runner/_work/_tool_cache
-                      # Official actions-runner image pattern (its
-                      # entrypoint.sh): register with the controller's JIT
-                      # token - ACTIONS_RUNNER_INPUT_JITCONFIG is a secret
-                      # file mounted by the controller, config.sh takes
-                      # the token as text. --work is recorded in .runner;
-                      # run.sh (below) then just starts the listener on it.
-                      if [ ! -f /opt/actions-runner/.runner ] && [ -f "$ACTIONS_RUNNER_INPUT_JITCONFIG" ]; then
+                      if [ ! -f /opt/actions-runner/.runner ] && [ -n "$ACTIONS_RUNNER_INPUT_JITCONFIG" ]; then
                           /opt/actions-runner/config.sh --unattended --replace \
                               --work /home/runner/_work \
-                              --jitconfig "$(cat "$ACTIONS_RUNNER_INPUT_JITCONFIG")"
+                              --jitconfig "$ACTIONS_RUNNER_INPUT_JITCONFIG"
                       fi
                       # docker-init.sh: starts dockerd (privileged), waits
                       # for `docker info`, then exec "$@" = the runner.
