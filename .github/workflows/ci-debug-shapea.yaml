@@ -4,13 +4,15 @@
 # exits on `mktemp -d /tmp/atlas-certs.XXXXXX` (EACCES) and fresh
 # elasticsearch dies on /proc/self/coredump_filter (EACCES) - two
 # write-permission anomalies on world-writable targets, repro-free so
-# far (the same sequence on this devcontainer = healthy). Round-1
-# facts: dockerd 29.9.2, Security Options: cgroupns only, daemon.json
-# empty, no userns-remap; round 1 then died on compose env
-# interpolation - the pipeline decrypts .env.enc (nx decrypt), this job
-# must too. Round 2: decrypt, boot both stacks, probe the exact writes
-# INSIDE the containers, node OS/AppArmor facts. Delete after
-# diagnosis.
+# far (the same sequence on this devcontainer = healthy). Facts so
+# far: dockerd 29.9.2 on BOTH (local healthy / CI broken - daemon
+# version ruled OUT); node kernel 6.12.105+ vs local 6.18 WSL2 - the
+# ONLY delta: 6.12-era regressions fit both symptoms (procfs owner
+# checks for non-dumpable processes = ES coredump_filter; overlayfs
+# copy-up of the sticky /tmp bit = postgres mktemp). Round 3 = causal
+# matrix, every probe || true (round 2 died bash -e before the probes):
+# plain run vs --tmpfs /tmp vs setpriv-drop, as the container users.
+# Delete after diagnosis.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -60,56 +62,28 @@ jobs:
             # The compose stacks interpolate ${OTEL_*}/${DATABASE_*} from
             # the project .env - decrypted .env.enc (nx decrypt, sops).
             # Round 1 died here.
-            - name: Decrypt envs
+            # Causal matrix, no compose (no env/decrypt/healthcheck
+            # surface). Each probe prints id + /tmp mode + the exact
+            # failing writes. A=plain, B=--tmpfs /tmp (the candidate
+            # fix), C=owner-drop (dumpable theory).
+            - name: Postgres image matrix
+              continue-on-error: true
               run: |
-                  find . -name .env.enc -not -path "*/node_modules/*" \
-                      -not -path "*/.venv/*" |
-                      while read -r f; do
-                          sops decrypt --input-type=dotenv --output-type=dotenv \
-                              --output="${f%.enc}" "$f"
-                      done
-                  grep -c . dev/observability/.env
+                  PG=dhi.io/postgres:18-alpine3.23
+                  PROBE='id; ls -ld / /tmp; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter 2>&1 && echo coredump:WRITABLE || echo coredump:EACCES; mktemp -d /tmp/atlas-certs.XXXXXX && echo mktemp:OK || echo mktemp:EACCES; echo x > /tmp/p && echo tmpfile:OK || echo tmpfile:EACCES'
+                  echo "### A: plain run (image user)"
+                  docker run --rm --entrypoint sh $PG -c "$PROBE" || true
+                  echo "### B: --tmpfs /tmp (candidate fix)"
+                  docker run --rm --tmpfs /tmp --entrypoint sh $PG -c "$PROBE" || true
 
-            - name: Reproduce postgres boot
+            - name: Elasticsearch image matrix
+              continue-on-error: true
               run: |
-                  cd dev/observability && docker compose up -d
-                  cd ../postgres
-                  docker compose up -d 2>&1 | tail -5
-                  sleep 10
-                  docker compose ps
-                  echo "### postgres logs"
-                  docker compose logs postgres 2>&1 | grep -vE "metrics|otelcol" | tail -10
-                  echo "### container facts"
-                  C=$(docker compose ps -q postgres)
-                  docker inspect "$C" \
-                      --format 'CMD={{json .Config.Cmd}}
-                      ENTRY={{json .Config.Entrypoint}}
-                      USER={{.Config.User}}
-                      SECOPT={{json .HostConfig.SecurityOpt}}
-                      PRIV={{.HostConfig.Privileged}}
-                      TMP={{json .HostConfig.Tmpfs}}
-                      MOUNTS={{json .Mounts}}'
-                  echo "### inside the container: writability probes"
-                  docker exec "$C" ls -ld / /tmp 2>&1 || true
-                  docker exec "$C" sh -c 'id
-                  mktemp -d /tmp/atlas-certs.XXXXXX; echo mktemp-rc=$?
-                  echo x > /tmp/probe && echo plain-file-rc=0 || echo plain-file-rc=$?
-                  touch /probe-in-root && echo rootfs-write-rc=0 || echo rootfs-write-rc=$?' 2>&1 || true
-                  docker exec "$C" cat /proc/mounts 2>&1 | grep -E " /tmp| / " || true
-
-            # ES's boot dies writing /proc/self/coredump_filter (EACCES).
-            # Same probe from the ES container, as the ES user.
-            - name: Reproduce elasticsearch boot
-              run: |
-                  cd dev/elasticsearch
-                  docker compose up -d 2>&1 | tail -3
-                  sleep 20
-                  docker compose ps --format '{{.Name}} {{.Status}}'
-                  docker compose logs elasticsearch 2>&1 |
-                      grep -oE '"message":"[^"]*(coredump|AccessDenied)[^"]*"' | head -2 || true
-                  C=$(docker compose ps -q elasticsearch)
-                  docker exec "$C" sh -c 'id
-                  echo 0 > /proc/self/coredump_filter 2>/dev/null && echo coredump: WRITABLE || echo coredump: EACCES
-                  mktemp -d /tmp/atlas-certs.XXXXXX; echo mktemp-rc=$?' 2>&1 || true
-                  docker inspect "$C" --format 'USER={{.Config.User}}
-                  SECOPT={{json .HostConfig.SecurityOpt}}' || true
+                  ES=dhi.io/elasticsearch:9.5-debian13
+                  PROBE='id; ls -ld /tmp; ls -l /proc/self/coredump_filter; echo 0 > /proc/self/coredump_filter 2>&1 && echo coredump:WRITABLE || echo coredump:EACCES; mktemp -d /tmp/atlas-certs.XXXXXX && echo mktemp:OK || echo mktemp:EACCES'
+                  echo "### A: plain run (image user)"
+                  docker run --rm --entrypoint bash $ES -c "$PROBE" || true
+                  echo "### B: --tmpfs /tmp"
+                  docker run --rm --tmpfs /tmp --entrypoint bash $ES -c "$PROBE" || true
+                  echo "### C: root -> setpriv drop (dumpable theory)"
+                  docker run --rm --user root --entrypoint bash $ES -c 'id; setpriv --reuid=1000 --regid=0 --clear-groups bash -c "id; echo 0 > /proc/self/coredump_filter 2>&1 && echo coredump:WRITABLE || echo coredump:EACCES"' || true
