@@ -36,6 +36,8 @@ The cache volume is the ARC runner's `work` volume (`/home/runner/_work`), so it
 
 First measurements (canary + pipeline, this pool): warm npm install 47 s (vs minutes cold); uv cache serves `uv sync` from the PD within the first minute of container start; queueing behind a busy runner is visible (\~6 min serialised) - acceptable at current volume, the Phase 3 levers are the spot pool (parallelism) and Shape A (no 8.3 GB per-pod image pull).
 
+Full pipeline on the pool (run 40210002830, green): **51m13s** vs 54m33s before the capacity levers, vs 18m34s hosted. Phase split: setup 5m (image bridge load 13 s, devcontainer build 4.7m), validate 2.5m, test+e2e fan-out 21.5m (node 10.0 Gi / 64 % CPU with the dev-compose caps, vs 13.4 Gi / 101 % without), docker-build+scan+storybook 2.5m, **sonar 16.5m** (the top tuning target), Chromatic 0.8m. The remaining gap vs hosted is raw compute: the shared pool node (4 vCPU / 13 Gi allocatable, maxRunners 1) vs a hosted 8 vCPU / 32 GB VM per job.
+
 ## What we measured (30 days, 2026-09-25 → 10-25)
 
 | Workflow | Runs | Runner-minutes |
@@ -107,7 +109,7 @@ ARC (`actions-runner-controller`, GitHub's official chart) turns each workflow j
 - **A - ARC on atlas-dev (recommended)**: \~$12/mo, revertible (delete variables + `helm uninstall`), no new infra. Phase 1 = canary workflow, 5 green runs, then flip.
 - **B - Stay hosted** (status quo): zero ops, $13–21/mo, keep the AFD cache dependency and per-job pulls. Reasonable at current volume; the queue and 10 GB cache cap are the ceiling.
 - **C - Dedicated Standard cluster**: the €70/mo scenario - unnecessary now (atlas-dev is Standard). Revisit only if CI's blast radius on a shared cluster becomes unacceptable.
-- **D - Shape A** (runner pod = the dev container image, no dind sidecar): removes the 8.3 GB per-pod pull (the image is the pod's own container, containerd caches it per node) and the devcontainers/ci layer. **Canary live 2026-10-25** - `ci-shapea.yaml` on the `atlas-ci-shapea` scale set (privileged in-image dockerd, `ci-runner` feature bakes the runner binaries); Shape B (`atlas-ci`) keeps serving `ci` until the canary repeats green and the cache bridge lands.
+- **D - Shape A** (runner pod = the dev container image, no dind sidecar): removes the 8.3 GB per-pod pull (the image is the pod's own container, containerd caches it per node) and the devcontainers/ci layer. **Canary green 2026-10-25** - `ci-shapea.yaml` on the `atlas-ci-shapea` scale set (privileged in-image dockerd, `ci-runner` feature bakes the runner binaries); the validate gate ran **3m35s vs 9m+ on Shape B** (setup tax gone). Shape B (`atlas-ci`) keeps serving `ci` until the canary repeats green and the cache bridge lands.
 
 ## Decision asks
 

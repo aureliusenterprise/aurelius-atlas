@@ -8099,6 +8099,14 @@ CI is serial today, so that costs no throughput.</p>
 minute of container start; queueing behind a busy runner is visible (~6 min
 serialised) - acceptable at current volume, the Phase 3 levers are the spot
 pool (parallelism) and Shape A (no 8.3 GB per-pod image pull).</p>
+<p>Full pipeline on the pool (run 40210002830, green): <strong>51m13s</strong> vs 54m33s
+before the capacity levers, vs 18m34s hosted. Phase split: setup 5m (image
+bridge load 13 s, devcontainer build 4.7m), validate 2.5m, test+e2e fan-out
+21.5m (node 10.0 Gi / 64 % CPU with the dev-compose caps, vs 13.4 Gi /
+101 % without), docker-build+scan+storybook 2.5m, <strong>sonar 16.5m</strong> (the
+top tuning target), Chromatic 0.8m. The remaining gap vs hosted is raw
+compute: the shared pool node (4 vCPU / 13 Gi allocatable, maxRunners 1)
+vs a hosted 8 vCPU / 32 GB VM per job.</p>
 <h2 id="what-we-measured-30-days-2026-09-25-10-25">What we measured (30 days, 2026-09-25 → 10-25)<a class="headerlink" href="#what-we-measured-30-days-2026-09-25-10-25" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8277,10 +8285,11 @@ to revert. Full detail: <a href="../self-hosted-ci/">self-hosted-ci.md</a>.</p>
 <li><strong>D - Shape A</strong> (runner pod = the dev container image, no dind sidecar):
   removes the 8.3 GB per-pod pull (the image is the pod's own container,
   containerd caches it per node) and the devcontainers/ci layer. <strong>Canary
-  live 2026-10-25</strong> - <code>ci-shapea.yaml</code> on the <code>atlas-ci-shapea</code> scale set
+  green 2026-10-25</strong> - <code>ci-shapea.yaml</code> on the <code>atlas-ci-shapea</code> scale set
   (privileged in-image dockerd, <code>ci-runner</code> feature bakes the runner
-  binaries); Shape B (<code>atlas-ci</code>) keeps serving <code>ci</code> until the canary
-  repeats green and the cache bridge lands.</li>
+  binaries); the validate gate ran <strong>3m35s vs 9m+ on Shape B</strong> (setup tax
+  gone). Shape B (<code>atlas-ci</code>) keeps serving <code>ci</code> until the canary repeats
+  green and the cache bridge lands.</li>
 </ul>
 <h2 id="decision-asks">Decision asks<a class="headerlink" href="#decision-asks" title="Permanent link">&para;</a></h2>
 <ol>
