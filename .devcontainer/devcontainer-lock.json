@@ -49,6 +49,16 @@
             "integrity": "sha256:c291ec03dd2938d1c4bc6cf87e6afab8067514fb000c9165bcc66a6f65092783",
             "resolved": "ghcr.io/dhoeric/features/trivy@sha256:c291ec03dd2938d1c4bc6cf87e6afab8067514fb000c9165bcc66a6f65092783",
             "version": "1.0.0"
+        },
+        "ghcr.io/postfinance/devcontainer-features/playwright-deps:2": {
+            "integrity": "sha256:ca88957e2b63f5ff477a267897e7a557ed842b4f9af1aa32b45a207110e6977c",
+            "resolved": "ghcr.io/postfinance/devcontainer-features/playwright-deps@sha256:ca88957e2b63f5ff477a267897e7a557ed842b4f9af1aa32b45a207110e6977c",
+            "version": "2.0.0"
+        },
+        "ghcr.io/postfinance/devcontainer-features/sonar-scanner-cli:1": {
+            "integrity": "sha256:e765f188aecd5822424a900b6d4a7d1cb91e82b5e0a5678f76490b684c1bde98",
+            "resolved": "ghcr.io/postfinance/devcontainer-features/sonar-scanner-cli@sha256:e765f188aecd5822424a900b6d4a7d1cb91e82b5e0a5678f76490b684c1bde98",
+            "version": "1.1.0"
         }
     }
 }
