@@ -107,7 +107,7 @@ ARC (`actions-runner-controller`, GitHub's official chart) turns each workflow j
 - **A - ARC on atlas-dev (recommended)**: \~$12/mo, revertible (delete variables + `helm uninstall`), no new infra. Phase 1 = canary workflow, 5 green runs, then flip.
 - **B - Stay hosted** (status quo): zero ops, $13–21/mo, keep the AFD cache dependency and per-job pulls. Reasonable at current volume; the queue and 10 GB cache cap are the ceiling.
 - **C - Dedicated Standard cluster**: the €70/mo scenario - unnecessary now (atlas-dev is Standard). Revisit only if CI's blast radius on a shared cluster becomes unacceptable.
-- **D - Shape A later** (runner pod = the dev container image, no dind): removes the 8.3 GB per-pod pull (containerd caches per node) and the privileged sidecar. Phase 3, after A is boring.
+- **D - Shape A** (runner pod = the dev container image, no dind sidecar): removes the 8.3 GB per-pod pull (the image is the pod's own container, containerd caches it per node) and the devcontainers/ci layer. **Canary live 2026-10-25** - `ci-shapea.yaml` on the `atlas-ci-shapea` scale set (privileged in-image dockerd, `ci-runner` feature bakes the runner binaries); Shape B (`atlas-ci`) keeps serving `ci` until the canary repeats green and the cache bridge lands.
 
 ## Decision asks
 
