@@ -50,6 +50,8 @@ check_cmd sops sops --version
 check_cmd trivy trivy --version
 check_cmd cyclonedx cyclonedx --version
 check_cmd mkcert mkcert --version
+# GitHub CLI (gh) — used for PR/issue workflows from the dev container.
+check_cmd gh gh --version
 # Google Cloud/Kubernetes CLIs for the self-hosted CI infra (infra/arc).
 # gcloud prints "Google Cloud CLI 5xx.x.x" first; the GKE exec credential
 # plugin (kubectl auth for GKE) must be next to gcloud on PATH.
