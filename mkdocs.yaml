@@ -276,6 +276,7 @@ nav:
                       - Test Suite Review: architecture/platform/delivery/testing-review.md
                       - Release Management: architecture/platform/delivery/release-management.md
                       - Deployment: architecture/platform/delivery/deployment.md
+                      - Self-hosted CI: architecture/self-hosted-ci.md
                 - Observability:
                       - architecture/platform/observability/index.md
                       - Monitoring: architecture/platform/observability/monitoring.md
