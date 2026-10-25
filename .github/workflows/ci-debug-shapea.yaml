@@ -1,18 +1,15 @@
-# TEMPORARY Shape A forensics (PR 150) — round 10: the AppArmor verdict.
+# TEMPORARY Shape A forensics (PR 150) — round 11: name the denier.
 #
-# Theory (rounds 5-9): the ES bootstrap writes /proc/self/coredump_filter
-# unconditionally (Files.writeString, catch -> fatal RuntimeException —
-# bytecode-verified). On Shape A that write gets EACCES for uid 1000, and
-# caps do NOT fix it (R8/R9). The node LSM order is
-# capability,lockdown,yama,loadpin,safesetid,apparmor,bpf,ima with AppArmor
-# enabled (Y). Docker's docker-default AppArmor profile denies writes under
-# /proc/**. Every environment fits: k8s runner pod = privileged =
-# apparmor unconfined (runner-side write OK, R5); CI containers =
-# docker-default (EACCES); devcontainer dind = WSL2, apparmor absent
-# (boots); hosted runners = docker seccomp-only (boots).
-# Fix candidate = apparmor=unconfined (surgical, per-service).
-# Matrix: plain, apparmor=unconfined, privileged. Full boots, 90s,
-# report the fatal reason / started. Remove after diagnosis.
+# R10: plain ES container is apparmor=unconfined on this daemon; the
+# privileged ES (uid 1000, ALL caps: DAC_OVERRIDE+SYS_PTRACE) dies the
+# same "Could not set coredump filter". A denial that survives DAC
+# bypass + ptrace caps + unconfined apparmor is an LSM below the
+# capability check (COS runs bpflsm) OR the dumpability gate (the file
+# is root:root 644 = the process is NON-DUMPABLE; untested knob:
+# fs.suid_dumpable=2, which makes post-setuid transitions dumpable —
+# R4 tried only =1). dmesg on this privileged runner will name the
+# subsystem. Boot plain ES, capture dmesg, then suid_dumpable=2 + boot.
+# Remove once the e2e databases boot in ci.yaml.
 name: CI Debug (Shape A forensics)
 
 on:
@@ -30,40 +27,36 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Elasticsearch apparmor matrix
+            - name: Name the denier
               continue-on-error: true
               run: |
                   ES=dhi.io/elasticsearch:9.5-debian13
-                  boot() {
-                      local name="$1"; shift
-                      docker rm -f "$name" >/dev/null 2>&1 || true
-                      docker run -d --name "$name" \
-                          -e discovery.type=single-node \
-                          -e xpack.security.enabled=false \
-                          -e cluster.name="$name" \
-                          -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
-                          "$@" "$ES" >/dev/null 2>&1
-                  }
-                  probe() {
-                      local name="$1"
-                      echo "### $name (state=$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null))"
-                      docker logs "$name" 2>&1 |
-                          grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"' |
-                          head -4
-                  }
-                  echo "### AppArmor profile of a plain container"
-                  docker run --rm --entrypoint cat "$ES" /proc/self/attr/current 2>&1; echo
-                  echo "### AppArmor profile of apparmor=unconfined"
-                  docker run --rm --security-opt apparmor=unconfined --entrypoint cat "$ES" /proc/self/attr/current 2>&1; echo
-                  boot e-plain
-                  boot e-unconfined --security-opt apparmor=unconfined
-                  boot e-priv --privileged
-                  echo "waiting 90s..."
-                  sleep 90
-                  probe e-plain
-                  probe e-unconfined
-                  probe e-priv
+                  echo "### node suid_dumpable / runner own proc file"
+                  cat /proc/sys/fs/suid_dumpable
+                  ls -l /proc/self/coredump_filter
+                  grep -E "CapEff|Seccomp:" /proc/self/status
+                  dmesg -C 2>/dev/null || true
+                  docker rm -f e11a >/dev/null 2>&1 || true
+                  docker run -d --name e11a \
+                      -e discovery.type=single-node -e xpack.security.enabled=false \
+                      -e cluster.name=e11a -e ES_JAVA_OPTS="-Xms512m -Xmx512m" "$ES" >/dev/null
+                  sleep 40
+                  echo "### dmesg after boot (denials)"
+                  dmesg 2>/dev/null | tail -25
+                  docker rm -f e11a >/dev/null 2>&1 || true
+                  echo "### suid_dumpable=2, boot again"
+                  sysctl -w fs.suid_dumpable=2
+                  docker run -d --name e11b \
+                      -e discovery.type=single-node -e xpack.security.enabled=false \
+                      -e cluster.name=e11b -e ES_JAVA_OPTS="-Xms512m -Xmx512m" "$ES" >/dev/null
+                  sleep 40
+                  docker inspect -f 'e11b state={{.State.Status}}' e11b
+                  docker logs e11b 2>&1 |
+                      grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"' | head -4
+                  dmesg 2>/dev/null | tail -10
+                  docker rm -f e11b >/dev/null 2>&1 || true
+                  sysctl -w fs.suid_dumpable=0
 
             - name: Cleanup
               if: always()
-              run: docker rm -f e-plain e-unconfined e-priv 2>/dev/null; true
+              run: docker rm -f e11a e11b 2>/dev/null; sysctl -w fs.suid_dumpable=0 2>/dev/null; true
