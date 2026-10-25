@@ -1,6 +1,8 @@
 # Self-hosted CI on GKE
 
-> **Status**: plan. Phase 0 (the hosted bridge) is merged; Phase 1 is next.
+> **Status**: plan (cost/benefit decision doc:
+> [self-hosted-ci-decision.md](self-hosted-ci-decision.md)). Phase 0 (the
+> hosted bridge) is merged; Phase 1 is next.
 > Scope: moving the `ci` job of `.github/workflows/ci.yaml` from GitHub-hosted
 > runners to self-hosted runners on GKE, run by Actions Runner Controller
 > (ARC). The `publish` workflow (the dev container image itself) stays on
@@ -8,7 +10,9 @@
 > runners consume. (The plan originally targeted AKS; the Azure subscription's
 > quota history moved it to GKE, where the rest of the Aurelius Atlas dev
 > resources live. ARC itself is unchanged - the swap is node pool, storage
-> class, and auth plugin.)
+> class, and auth plugin. Target: the **existing `atlas-dev` Standard cluster**
+> (europe-west1) - verified Standard mode, privileged pods admitted; no new
+> cluster, no GKE control-plane fee.)
 
 ## Why
 
@@ -39,7 +43,7 @@ flowchart LR
     ARC -->|creates per job| POD[runner pod<br/>ephemeral]
     subgraph NODE[GKE node pool: n2-standard-8 spot, PD-SSD boot disk]
         POD
-        FS[Filestore PVC<br/>.container-cache uv/npm/pre-commit]
+        FS[PD cache PVC<br/>.container-cache uv/npm/pre-commit]
     end
     POD -->|docker API<br/>unix socket, shared volume| DIND[dind sidecar<br/>privileged, per pod]
     DIND -->|sibling containers| DC[dev container<br/>atlas-ci-runner:main<br/>pulled per pod, ~101s warm]
@@ -88,7 +92,7 @@ Small by design - the bridge was built so this is a swap, not a rewrite:
 | `runs-on`                                         | `ubuntu-latest`                                                     | `[self-hosted, linux, atlas-ci]`                                                                         | repo config variable `CI_RUNS_ON` used in `runs-on:` - flip one variable to move the fleet, flip back to revert (flag day, per job)                       |
 | Disk cleanup step                                 | deletes preinstalled toolchains                                     | no-op (clean node)                                                                                       | behind the existing `disk-cleanup` input; off on GKE                                                                                                      |
 | `actions/cache` (features/toolchain caches)       | GitHub cache service (private repo + self-hosted = **unavailable**) | volumes, below                                                                                           | composite gates the two cache steps behind a `use-actions-cache` input; on GKE the same paths are a mounted volume and the steps are skipped              |
-| uv/npm/pre-commit caches                          | `container-cache` key, restore/save                                 | Filestore PVC mounted at the **same paths** (`.container-cache/`)                                        | zero pipeline change - the `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` env already points there; volume = incremental, no 10 GB cap, no save step |
+| uv/npm/pre-commit caches                          | `container-cache` key, restore/save                                 | PD PVC mounted at the **same paths** (`.container-cache/`)                                               | zero pipeline change - the `UV_CACHE_DIR`/`npm_config_cache`/`PRE_COMMIT_HOME` env already points there; volume = incremental, no 10 GB cap, no save step |
 | dev container image                               | pulled per job                                                      | per **pod** on dind (node SSD, ~101s warm; composite's GHCR login covers it), per **node** under Shape A | none in Phases 1-2 (this is Shape A's motivation)                                                                                                         |
 | Docker layer cache                                | registry (GHCR)                                                     | registry - unchanged                                                                                     | none (this is why the registry-cache switch pays off: it works from any machine)                                                                          |
 | Artifacts, summaries, step outputs                | GitHub                                                              | GitHub - self-hosted supported                                                                           | none                                                                                                                                                      |
@@ -114,17 +118,21 @@ inject a privileged `docker:dind` sidecar per runner pod, sharing
 `DOCKER_HOST`; extra sidecar config - resources, the `/var/lib/docker`
 emptyDir on the node's SSD - merges in `template.spec.containers`). A
 taint + nodeSelector (`ci=true`) keeps CI pods alone on the dedicated pool.
-The toolchain caches are a Cloud Native Storage / Filestore PVC
-(`ReadWriteMany`) bound into the dev container at the exact `.container-cache`
-paths the composite action's env vars already use - the same content,
-volume-backed instead of GitHub-cache-backed, so the pipeline itself does not
-change.
+The toolchain caches are a PVC bound into the dev container at the exact
+`.container-cache` paths the composite action's env vars already use - the
+same content, volume-backed instead of GitHub-cache-backed, so the pipeline
+itself does not change. Phase 1 uses the cluster-default PD class
+(`standard-rwo`, RWO - fine while canaries are serial; the Filestore API
+cannot be enabled in this project). If parallel jobs land on separate nodes,
+Phase 2 gives each node its own PD copy (the caches are content-addressed,
+so correctness survives).
 
 ```bash
 gcloud container node-pools create cipool \
-    --cluster <gke> --location <region> \
+    --cluster atlas-dev --location europe-west1 \
     --machine-type n2-standard-8 --spot \
     --enable-autoscaling --min-nodes 0 --max-nodes 3 \
+    --disk-type pd-ssd --disk-size 200 \
     --node-taints ci=true:NoSchedule \
     --workload-metadata-disabled
 ```
@@ -169,22 +177,26 @@ in ~3 minutes, without spending test minutes on cluster bugs.
   K8s-native test namespaces. Bigger lift, no privileged daemon.
 - **Spot preemption** = job requeue, not corruption; registry cache makes
   reruns cheap. If preemptions get frequent, drop `--spot`.
-- **Filestore/NFS latency** for uv/npm caches: measure in Phase 2; the
-  escape hatch is one PVC per node (no cross-node sharing, `ReadWriteOnce`)
-    - the caches are content-addressed, so correctness survives.
+- **PD (RWO) cache volume**: Phase 1 serial-canary shape; a job pinned to a
+  second node starts cold (rebuilds uv/npm caches, minutes). Filestore RWX
+  is blocked by the project's billing-account service policy; the
+  content-addressed caches make per-node copies safe.
 - **ARC + `actions/cache`**: not available for private repos on self-hosted -
   which is why the plan moves caches to volumes rather than proxying the
   cache API. Do not re-add a cache proxy casually.
 - **Retention**: `buildcache-*` tags need a GHCR cleanup policy (already a
   follow-up from the registry-cache switch) - GKE removes the hosted-only
   excuse.
+- **Shared cluster**: CI pods share `atlas-dev`'s control plane with the
+  dev workloads. ARC's control-plane load is small (ephemeral pods, repo
+  scope); the taint keeps CI compute off the dev pool, and dev pods (no
+  `ci` toleration) never land on the CI pool. The privileged-dind blast
+  radius is the CI node pool's nodes.
 - **Cost guard**: `maxRunners 3`, pool `max 3`, spot, scale-to-zero.
   Steady-state estimate: an 18-minute run on n2-standard-8 spot ≈ $0.10, vs
   ~$0.32 hosted per run today - before counting the cache egress and queue
-  waits the hosted pool adds.
-- **GCP project**: GKE lands in the project that hosts the other Aurelius
-  Atlas dev resources; the cluster/region names get recorded in
-  `infra/arc/README.md` when Phase 1 provisions them.
+  waits the hosted pool adds. The GKE cluster fee is **not** charged to CI -
+  atlas-dev already pays it.
 
 ## Decisions to record
 

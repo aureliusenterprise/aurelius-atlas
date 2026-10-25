@@ -11,8 +11,11 @@ Setup and flag-day: [`README.md`](README.md).
 
 - `arc-values.yaml` - gha-runner-scale-set values (dind sidecar, taint/label
   to the CI node pool, resources, cache volume).
-- `toolchain-cache-pvc.yaml` - Filestore PVC backing `.container-cache`.
-- `install.sh` - subcommands: `controller`, `nodepool`, `scale-set`, `status`.
+- `toolchain-cache-pvc.yaml` - PD (RWO, Phase 1) cache volume backing
+  `.container-cache`; Filestore RWX blocked by project service policy.
+- `install.sh` - subcommands: `cluster`, `controller`, `nodepool`,
+  `scale-set`, `status` (`cluster` unused - target is the existing
+  atlas-dev Standard cluster).
 
 ## Conventions
 

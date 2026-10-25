@@ -12,13 +12,16 @@ on that sidecar - exactly the hosted-runner topology, so nothing in
 
 ## One-time setup
 
-Prereqs: a GKE cluster (>= 1.31, Filestore CSI on), a GitHub App installed on
+Prereqs: the **atlas-dev Standard cluster** (europe-west1 - verified: no
+Autopilot constraints, privileged pods admitted), a GitHub App installed on
 the repo with **Actions: read/write** (not a PAT - App credentials rotate
 cleanly). The `gcloud`/`kubectl`/`helm` CLIs come from the dev container
 (`./features/google-cloud-cli` - vendored dhoeric, with
 `installGkeGcloudAuthPlugin`; `kubectl-helm-minikube` - gated by
 `.devcontainer/smoke.sh`), so run these from inside it, after
-`gcloud auth login --no-launch-browser` + `gcloud config set project <project>`.
+`gcloud auth login --no-launch-browser` +
+`gcloud config set project aurelius-atlas` +
+`gcloud container clusters get-credentials atlas-dev --location europe-west1`.
 
 ```bash
 # 1. Controller (cluster-scoped, one per cluster):
@@ -33,7 +36,7 @@ kubectl -n arc-runners create secret generic atlas-arc-auth \
     --from-literal=github_app_installation_id="$GITHUB_APP_INSTALLATION_ID" \
     --from-file=github_app_private_key="$GITHUB_APP_PRIVATE_KEY_FILE"
 
-# 3. Toolchain cache volume (Filestore, shared ReadWriteMany):
+# 3. Toolchain cache volume (PD, 50 Gi - see the file's note on RWO):
 kubectl apply -f infra/arc/toolchain-cache-pvc.yaml
 
 # 4. The scale set (namespaced, per repo):
@@ -41,10 +44,12 @@ helm install atlas-ci oci://ghcr.io/actions/actions-runner-controller-charts/gha
     --namespace arc-runners -f infra/arc/arc-values.yaml
 ```
 
-The CI node pool is created by `./install.sh nodepool` (needs `GCP_PROJECT` /
-`GKE_CLUSTER` / `GKE_LOCATION` via env) - spot n2-standard-8, scale 0..3,
-tainted so only CI pods land there. The cluster/region names get recorded
-here once Phase 1 provisions them.
+The CI node pool is created by `./install.sh nodepool` (env:
+`GCP_PROJECT=aurelius-atlas GKE_CLUSTER=atlas-dev GKE_LOCATION=europe-west1`)
+
+- spot n2-standard-8, scale 0..3, tainted so only CI pods land there.
+  Cost/benefit + the option analysis:
+  [`docs/architecture/self-hosted-ci-decision.md`](../../docs/architecture/self-hosted-ci-decision.md).
 
 ## Flag day (repo side)
 

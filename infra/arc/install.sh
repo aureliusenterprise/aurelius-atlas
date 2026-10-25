@@ -2,7 +2,7 @@
 # Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
-# Usage: ./install.sh <controller|nodepool|scale-set|status>
+# Usage: ./install.sh <cluster|controller|nodepool|scale-set|status>
 # Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region), GKE_NODEPOOL (default: cipool)
 set -euo pipefail
 
@@ -13,6 +13,18 @@ POOL="${GKE_NODEPOOL:-cipool}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 case "${1:-status}" in
+    cluster)
+        # Standard-mode (Autopilot forbids privileged pods - the dind sidecar
+        # needs Standard). Zonal; system pool = 1-2 small nodes for the ARC
+        # controller; CI pods land on `nodepool` (spot, tainted) only.
+        gcloud container clusters create "$CLUSTER" \
+            --project "$PROJECT" --location "$LOCATION" \
+            --release-channel regular \
+            --machine-type e2-small --num-nodes 1 \
+            --enable-autoscaling --min-nodes 1 --max-nodes 2 \
+            --disk-type pd-balanced --disk-size 50 \
+            --workload-metadata-disabled
+        ;;
     controller)
         # Cluster-scoped; one per cluster.
         helm install arc \
@@ -26,6 +38,7 @@ case "${1:-status}" in
             --project "$PROJECT" --cluster "$CLUSTER" --location "$LOCATION" \
             --machine-type n2-standard-8 --spot \
             --enable-autoscaling --min-nodes 0 --max-nodes 3 \
+            --disk-type pd-ssd --disk-size 200 \
             --node-taints "ci=true:NoSchedule" \
             --workload-metadata-disabled
         ;;
@@ -40,7 +53,7 @@ case "${1:-status}" in
         kubectl -n arc-runners get autoscalingrunnerset,secrets,pvc,pods -o wide
         ;;
     *)
-        echo "usage: $0 <controller|nodepool|scale-set|status>" >&2
+        echo "usage: $0 <cluster|controller|nodepool|scale-set|status>" >&2
         exit 2
         ;;
 esac

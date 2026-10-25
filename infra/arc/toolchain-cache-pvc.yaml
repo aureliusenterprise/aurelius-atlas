@@ -1,15 +1,14 @@
 # Shared toolchain cache for GKE CI runners (infra/arc/README.md).
-# Cloud Native Storage / Filestore (ReadWriteMany) so uv/npm/pre-commit
-# caches are shared across runner pods and nodes. The composite action's
-# UV_CACHE_DIR, npm_config_cache and PRE_COMMIT_HOME paths bind onto this
-# volume via the CI_CACHE_MOUNTS repo variable; on hosted runners the same
-# paths are filled by actions/cache instead. The caches are
-# content-addressed, so shared access is safe; prune the subdirs if growth
-# needs it.
-#
-# Requires the Filestore CSI driver (on by default for GKE 1.31+). For a
-# zonal cluster, name the tier explicitly, e.g. storageClassName:
-# topolite-rwx (regional clusters pick it via topology-aware autoconfig).
+# Phase 1: PD (the cluster default, RWO) - the Filestore API cannot be
+# enabled in this project (billing-account service restriction), and the
+# canary is serial, so RWO is enough: RWO shares within a node, and ARC
+# jobs on one node read the same content-addressed caches. Phase 2 scales
+# to RWX (Filestore) if concurrent jobs land on multiple nodes. The
+# composite action's UV_CACHE_DIR, npm_config_cache and PRE_COMMIT_HOME
+# paths bind onto this volume via the CI_CACHE_MOUNTS repo variable; on
+# hosted runners the same paths are filled by actions/cache instead. The
+# caches are content-addressed, so shared access is safe; prune the
+# subdirs if growth needs it.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -17,9 +16,9 @@ metadata:
     namespace: arc-runners
 spec:
     accessModes:
-        - ReadWriteMany
-    storageClassName: standard-rwx
+        - ReadWriteOnce
+    storageClassName: standard-rwo
     volumeMode: Filesystem
     resources:
         requests:
-            storage: 100Gi
+            storage: 50Gi
