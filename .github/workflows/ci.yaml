@@ -56,7 +56,13 @@ jobs:
                   cacheFrom: ghcr.io/aureliusenterprise/atlas-ci-runner:main
                   # Validation only - never publish from this job.
                   push: never
-                  runCmd: uv run pre-commit run --all-files
+                  # `devcontainer build/up` rewrites devcontainer-lock.json in
+                  # the mounted workspace (its own formatting), which prettier
+                  # would then flag as modified. The committed lockfile is the
+                  # source of truth here, so undo the build side effect first.
+                  runCmd: |
+                      git checkout -- .devcontainer/devcontainer-lock.json
+                      uv run pre-commit run --all-files
 
     test:
         runs-on: ubuntu-latest
