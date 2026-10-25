@@ -110,6 +110,9 @@ runs:
               SOPS_AGE_KEY: ${{ inputs.sops-age-key }}
               DOCKERHUB_USER: ${{ inputs.dockerhub-username }}
               DOCKERHUB_PASSWORD: ${{ inputs.dockerhub-token }}
+              # Runners no longer export GITHUB_TOKEN to step processes by
+              # default, so set it explicitly for the passthrough below.
+              GITHUB_TOKEN: ${{ github.token }}
           with:
               imageName: ghcr.io/aureliusenterprise/atlas-ci-runner
               imageTag: ${{ inputs.image-tag }}
@@ -131,8 +134,8 @@ runs:
                   DOCKERHUB_PASSWORD
                   GITHUB_TOKEN
                   GITHUB_ACTOR
-                  BASE
-                  HEAD
+                  NX_BASE
+                  NX_HEAD
                   NX_LEGACY_AFFECTED
                   ACTIONS_RUNTIME_TOKEN
                   ACTIONS_CACHE_URL
