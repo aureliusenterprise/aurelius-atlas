@@ -8034,7 +8034,7 @@ the picture then - see infra/arc notes.)</p>
 </tr>
 <tr>
 <td>1 - canary</td>
-<td>cluster, ARC, node pool, dind; <strong>validate-only job</strong> runs on <code>atlas-ci</code> beside hosted</td>
+<td>cluster, ARC, node pool, dind; <strong><code>.github/workflows/ci-canary.yaml</code></strong> (manual) runs on <code>atlas-ci</code> beside hosted</td>
 <td>5 consecutive green canary runs; dev container pull + lifecycle healthy on the dind socket</td>
 <td>delete scale set</td>
 </tr>
