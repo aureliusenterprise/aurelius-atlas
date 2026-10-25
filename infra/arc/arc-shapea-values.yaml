@@ -93,6 +93,18 @@ template:
                       # already created under those dirs.
                       chgrp 999 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
                       chmod 2775 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
+                      # The checkout tree must be uid-1000-owned: e2e
+                      # compose/bind mounts run as container root and
+                      # write INTO the checkout (dist/, dev/*/certs,
+                      # coverage), and root-owned dirs make the next
+                      # job's checkout die with "EACCES: permission
+                      # denied, rmdir" (gate 40225615871, dev/). Runs as
+                      # root (this container), so it fixes what the
+                      # uid-1000 worker cannot. Scoped to the checkout
+                      # ONLY - recursive over .ci-cache (7 GB containerd)
+                      # is the boot stall; over the tree (~1 GB) it is
+                      # seconds.
+                      chown -R 1000:999 /work/aurelius-atlas 2>/dev/null || true
                       # BuildKit metadata (/var/lib/docker/buildkit) pairs
                       # with containerd's snapshot store (the layer
                       # snapshots ARE containerd snapshots - "buildkit-
