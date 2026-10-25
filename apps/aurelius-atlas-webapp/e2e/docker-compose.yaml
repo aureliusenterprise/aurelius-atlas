@@ -28,10 +28,10 @@ services:
     # The real Atlas server behind the nginx /api/ proxy (DD-142): the chain
     # nginx -> TLS -> server -> Elasticsearch answers /api/atlas/admin/version,
     # so the proxy test proves the whole data path, not just nginx config.
-    # Mirrors apps/aurelius-atlas-server/e2e/docker-compose.yaml; the certs are
-    # the server project's (its certificate carries the aurelius-atlas-server
-    # SAN nginx verifies against), and the store is reached on the dev
-    # Elasticsearch network.
+    # Mirrors apps/aurelius-atlas-server/e2e/docker-compose.yaml. The certs are
+    # this project's own: tls.json issues the aurelius-atlas-server leaf nginx
+    # verifies against, so the stack mounts only its owning project's certs/
+    # (DD-216). The store is reached on the dev Elasticsearch network.
     atlas-server:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
         networks:
@@ -77,7 +77,7 @@ services:
             # /api/ too; per-service it is the issuer, not a proxy upstream).
             - keycloak.localhost:host-gateway
         volumes:
-            - ../../aurelius-atlas-server/certs:/certs:ro
+            - ../certs:/certs:ro
 
 networks:
     # The dev Elasticsearch stack (started by the e2e target); the server

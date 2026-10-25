@@ -23,10 +23,10 @@ CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 # The issuer this suite mints from (DD-193, DD-202): the e2e Keycloak serves
 # HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
 # mint fixtures below and every per-service producer use it, and the
-# collector's oidc extension validates it (CA-pinned discovery, mounted at
-# /dev-ca). Standardizing the mint on :8443 is what keeps every suite in one
-# issuer world (DD-202); the plaintext :8080 listener stays validated in the
-# collector, for the human dev browser only (ADR 039).
+# collector's oidc extension validates it (CA-pinned discovery, from the
+# collector's own certs/). Standardizing the mint on :8443 is what keeps
+# every suite in one issuer world (DD-202); the plaintext :8080 listener
+# stays validated in the collector, for the human dev browser only (ADR 039).
 KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
 
 
