@@ -175,3 +175,23 @@ jobs:
                   buildCommand: "test -d dist/storybook/aurelius-atlas-ui"
                   outputDir: "dist/storybook/aurelius-atlas-ui"
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
+            # Post-job daemon cleanup - the "Post …" convention the stock
+            # actions use (and the right attribution: a sweep that fails
+            # blames the job that MADE the mess, not the next one).
+            # Containers/volumes go, images stay: the daemon store is
+            # warm on the PVC by design (base layers - the point), which
+            # preserves CONTAINERS too, and compose reuses a stopped one
+            # verbatim, command baked with the previous commit (run
+            # 40231127680: postgres died on a 2h-old pre-fix container).
+            # if: always() sweeps on failure/cancel/timeout too. Jobs
+            # that never reach the end of the job (pod evicted by a
+            # scale-set deploy) are covered by ci-pipeline.sh's startup
+            # guard; continue-on-error: cleanup must never flip the
+            # pipeline's verdict - the guard re-cleans on next entry.
+            - name: Clean daemon (post-job)
+              if: always()
+              continue-on-error: true
+              run: |
+                  docker container prune -f
+                  docker volume prune -af
