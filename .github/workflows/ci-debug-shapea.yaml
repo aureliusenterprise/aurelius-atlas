@@ -32,6 +32,20 @@ jobs:
                   echo "### node / kernel (expect Ubuntu, not COS)"
                   grep -E "^PRETTY_NAME" /etc/os-release
                   uname -r
+                  # The container gate on this node is dumpability, not
+                  # bpflsm (kernel 6.8 predates it): the ES entrypoint
+                  # starts as root and setuids to uid 1000, which clears
+                  # the dumpable flag, and a non-dumpable process's
+                  # /proc/self/coredump_filter stays root-owned 0644 =
+                  # EACCES. suid_dumpable=2 keeps post-setuid processes
+                  # dumpable. (COS ships =2 already - its denial was the
+                  # 6.12 bpflsm one, immune to this knob: round 11.)
+                  # Privileged container => this writes the NODE sysctl;
+                  # dockerd's containers inherit it. The privileged runner
+                  # pod itself is dumpable from exec (no setuid), which is
+                  # why it always wrote the file fine.
+                  sysctl -w fs.suid_dumpable=2
+                  cat /proc/sys/fs/suid_dumpable
                   echo "### coredump_filter writable from a container?"
                   docker run --rm dhi.io/elasticsearch:9.5-debian13 \
                       sh -c 'echo 0x23 > /proc/self/coredump_filter && cat /proc/self/coredump_filter && echo WRITE-OK'
