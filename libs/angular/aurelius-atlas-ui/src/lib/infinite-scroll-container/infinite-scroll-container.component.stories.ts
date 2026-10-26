@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/angular";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fireEvent, userEvent, within } from "storybook/test";
 
 import { InfiniteScrollContainer } from "./infinite-scroll-container.component";
 
@@ -70,8 +70,12 @@ export const Loading: Story = {
         emissions.length = 0;
         const canvas = within(canvasElement);
 
-        // UIC-22: a click while loading is suppressed.
-        await userEvent.click(canvas.getByRole("button", { name: "Load next page..." }));
+        // UIC-22: a click while loading is suppressed. Bulma's is-loading
+        // sets `pointer-events: none` on the button — that is what makes it
+        // inert for real users — so userEvent (a real pointer) can't reach
+        // it; fireEvent dispatches the DOM event the way keyboard activation
+        // does, which is the requestPage() guard under test here.
+        fireEvent.click(canvas.getByRole("button", { name: "Load next page..." }));
         expect(emissions).toHaveLength(0);
     },
 };
