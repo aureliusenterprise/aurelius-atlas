@@ -8062,6 +8062,10 @@ which arrives in 7.4 redesigned against <code>/v2/search/basic</code> when brows
 <td>APC-10</td>
 <td>Every client method has a Vitest spec naming it, the guard has one, and the e2e suite proves the guarded flow and a real server response through the proxy</td>
 </tr>
+<tr>
+<td>APC-11</td>
+<td><code>SearchService</code> answers the discovery routes of <code>routes/discovery.py</code> (4.1/4.2): <code>searchWithParameters</code>/<code>searchUsingBasic</code> (POST/GET <code>/search/basic</code>), <code>searchUsingAttribute</code>, <code>searchUsingFullText</code>, <code>quickSearch</code>/<code>quickSearchUsingQuery</code> (POST/GET <code>/search/quick</code>), <code>getSuggestions</code> — each path mirroring the route, the POST bodies the search's parameters as the server validates them, the GET parameters as query parameters with the Java defaults (false, 0) left out, as the routes read an absent parameter (DD-217). The DTO cluster is <code>atlas-search.ts</code> (APC-03); the Python twin is the server-client's <code>AtlasClient.search</code> (CL-13).</td>
+</tr>
 </tbody>
 </table>
 <p>APC-01 is the rule the audit exists to write. A client that hard-codes <code>/api/atlas</code>
@@ -8150,10 +8154,12 @@ ported as written (DD-140); and the auth wiring is keycloak-angular's, not the A
 <code>libs/authentication</code> (DD-141, on the pattern 7.1 set for the rest of <code>Core.imports</code>).</p>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>libs/angular/aurelius-atlas-data-access/src/lib/*.spec.ts</code> (Vitest,
+<li><code>libs/angular/aurelius-atlas-data-access/src/lib/**/*.spec.ts</code> (Vitest,
   <code>HttpTestingController</code>) — every <code>TypeDefsService</code> and <code>AdminService</code> method names its
   URL and its response type (APC-02, APC-03); the error spec proves the typed Atlas
-  error (APC-04). SHL-13's rule applies here too: coverage gate holds.</li>
+  error (APC-04). SHL-13's rule applies here too: coverage gate holds. The
+  <code>search.service.spec.ts</code> (APC-11) names every <code>SearchService</code> method, its URL,
+  its body/parameters, and the error path (APC-04).</li>
 <li><code>apps/aurelius-atlas-webapp/src/app/*.spec.ts</code> — the guard redirects an unauthenticated
   visit and lets an authenticated one through (APC-05); the config spec proves the
   providers are assembled (APC-06).</li>

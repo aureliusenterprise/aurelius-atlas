@@ -6895,10 +6895,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phases-all-shipped-2026-10-25" class="md-nav__link">
+  <a href="#phases-all-shipped-2026-10-25-full-pipeline-green-2026-10-26" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Phases (all shipped 2026-10-25)
+        Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)
       </span>
     </span>
   </a>
@@ -7610,10 +7610,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phases-all-shipped-2026-10-25" class="md-nav__link">
+  <a href="#phases-all-shipped-2026-10-25-full-pipeline-green-2026-10-26" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Phases (all shipped 2026-10-25)
+        Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)
       </span>
     </span>
   </a>
@@ -7821,8 +7821,9 @@
 
 <h1 id="self-hosted-ci-on-gke">Self-hosted CI on GKE<a class="headerlink" href="#self-hosted-ci-on-gke" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p><strong>Status</strong>: as-built (2026-10-25). The <code>ci</code> job runs on self-hosted ARC
-runners on GKE, <strong>directly in the dev container image</strong> (Shape A). This is
+<p><strong>Status</strong>: as-built (2026-10-26, full pipeline green 41m22s). The <code>ci</code> job
+runs on self-hosted ARC runners on GKE, <strong>directly in the dev container
+image</strong> (Shape A). This is
 the architecture record; cost/benefit and the option analysis are in
 <a href="../self-hosted-ci-decision/">self-hosted-ci-decision.md</a>, and the
 operational how-to (setup, deploy loop, the k8s contract, the PVC layout)
@@ -7883,7 +7884,7 @@ retired: on Shape A it only survived in-pod restarts, leaked
 root-owned dirs and staged diagnostics between jobs, and saved ~70s of
 install the cache server now covers. Layout + the reasons for every
 mount are in <a href="../../infra/arc/"><code>infra/arc/README.md</code></a>.</p>
-<h2 id="phases-all-shipped-2026-10-25">Phases (all shipped 2026-10-25)<a class="headerlink" href="#phases-all-shipped-2026-10-25" title="Permanent link">&para;</a></h2>
+<h2 id="phases-all-shipped-2026-10-25-full-pipeline-green-2026-10-26">Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)<a class="headerlink" href="#phases-all-shipped-2026-10-25-full-pipeline-green-2026-10-26" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -7911,7 +7912,7 @@ mount are in <a href="../../infra/arc/"><code>infra/arc/README.md</code></a>.</p
 <tr>
 <td>3 — <strong>Shape A</strong> (live)</td>
 <td>job container = the dev container image; <code>devcontainers/ci</code> retired</td>
-<td>the <code>ci</code> job runs direct steps on <code>atlas-ci-shapea</code></td>
+<td>full pipeline green <strong>41m22s</strong> (run 40296654173, 2026-10-26), cache hits confirmed</td>
 </tr>
 </tbody>
 </table>

@@ -38,6 +38,8 @@ First measurements (canary + pipeline, this pool): warm npm install 47 s (vs min
 
 Full pipeline on the pool (run 40210002830, green): **51m13s** vs 54m33s before the capacity levers, vs 18m34s hosted. Phase split: setup 5m (image bridge load 13 s, devcontainer build 4.7m), validate 2.5m, test+e2e fan-out 21.5m (node 10.0 Gi / 64 % CPU with the dev-compose caps, vs 13.4 Gi / 101 % without), docker-build+scan+storybook 2.5m, **sonar 16.5m** (the top tuning target), Chromatic 0.8m. The remaining gap vs hosted is raw compute: the shared pool node (4 vCPU / 13 Gi allocatable, maxRunners 1) vs a hosted 8 vCPU / 32 GB VM per job.
 
+Full pipeline on Shape A (run 40296654173, green 2026-10-26): **41m22s** — the first green on the live shape, 10 minutes under Shape B's 51m13s (no image pull, no devcontainer build step, warm `actions/cache` via the in-cluster cache server, all confirmed in the run log). Landing it took seven GKE-environment fixes after the canary's five green validate runs — the ES coredump-procfs denial (a byte-length-preserving javaagent, `tools/es-coredump-agent/`), ML's native self-check, the hardened ES image vs a `user:` override, the sonar-scanner PATH, an inert `actions/cache` save, elastic's product-check timeout, and the puller restart budget (DD-218) — each root-caused from run diagnostics and documented at the fix site.
+
 ## What we measured (30 days, 2026-09-25 → 10-25)
 
 | Workflow | Runs | Runner-minutes |

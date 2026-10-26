@@ -42,6 +42,7 @@ Not in scope:
 | APC-08 | Both webapp proxies forward `/api` to the Atlas server with the prefix intact — the dev proxy and the e2e nginx both (DD-139) |
 | APC-09 | The Keycloak `aurelius` client's redirect URIs and web origins cover the webapp's dev ports (4300, 4301) and its e2e origin (18444) |
 | APC-10 | Every client method has a Vitest spec naming it, the guard has one, and the e2e suite proves the guarded flow and a real server response through the proxy |
+| APC-11 | `SearchService` answers the discovery routes of `routes/discovery.py` (4.1/4.2): `searchWithParameters`/`searchUsingBasic` (POST/GET `/search/basic`), `searchUsingAttribute`, `searchUsingFullText`, `quickSearch`/`quickSearchUsingQuery` (POST/GET `/search/quick`), `getSuggestions` — each path mirroring the route, the POST bodies the search's parameters as the server validates them, the GET parameters as query parameters with the Java defaults (false, 0) left out, as the routes read an absent parameter (DD-217). The DTO cluster is `atlas-search.ts` (APC-03); the Python twin is the server-client's `AtlasClient.search` (CL-13). |
 
 APC-01 is the rule the audit exists to write. A client that hard-codes `/api/atlas` reproduces the Aurelius coupling to its deployment: it cannot be tested against a stub, and it breaks the moment the API moves. The token already exists in `aurelius-atlas-data-access`; 7.3 is the slice that plugs it in.
 
@@ -78,7 +79,7 @@ Against the Aurelius product, three intended differences are recorded in [design
 
 ## Acceptance
 
-- `libs/angular/aurelius-atlas-data-access/src/lib/*.spec.ts` (Vitest, `HttpTestingController`) — every `TypeDefsService` and `AdminService` method names its URL and its response type (APC-02, APC-03); the error spec proves the typed Atlas error (APC-04). SHL-13's rule applies here too: coverage gate holds.
+- `libs/angular/aurelius-atlas-data-access/src/lib/**/*.spec.ts` (Vitest, `HttpTestingController`) — every `TypeDefsService` and `AdminService` method names its URL and its response type (APC-02, APC-03); the error spec proves the typed Atlas error (APC-04). SHL-13's rule applies here too: coverage gate holds. The `search.service.spec.ts` (APC-11) names every `SearchService` method, its URL, its body/parameters, and the error path (APC-04).
 - `apps/aurelius-atlas-webapp/src/app/*.spec.ts` — the guard redirects an unauthenticated visit and lets an authenticated one through (APC-05); the config spec proves the providers are assembled (APC-06).
 - `apps/aurelius-atlas-webapp/e2e/` — an unauthenticated load lands on the Keycloak sign-in page (APC-05); an authenticated session reaches the browse placeholder (APC-05, APC-09); `GET /api/atlas/admin/version` **through the nginx proxy** returns the server's version document (APC-08, DD-142), replacing the placeholder assertion that proxied Keycloak.
 - Umbrella checks: `nx build`, `nx test -c ci`, `nx lint`, `nx e2e` for the app, plus `nx test aurelius-atlas-data-access -c ci` and `nx build aurelius-atlas-data-access`.

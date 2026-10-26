@@ -1,6 +1,6 @@
 # Self-hosted CI on GKE
 
-> **Status**: as-built (2026-10-25). The `ci` job runs on self-hosted ARC runners on GKE, **directly in the dev container image** (Shape A). This is the architecture record; cost/benefit and the option analysis are in [self-hosted-ci-decision.md](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/self-hosted-ci-decision/index.md>), and the operational how-to (setup, deploy loop, the k8s contract, the PVC layout) is [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>) — that file is the source of truth for the mechanics. Scope: the `ci` job of `.github/workflows/ci.yaml`. Every other workflow (`publish*`, `scan`, `rotate-keys`, docs, `build-devcontainer-image`) stays on GitHub-hosted runners — low-frequency, hosted cache service.
+> **Status**: as-built (2026-10-26, full pipeline green 41m22s). The `ci` job runs on self-hosted ARC runners on GKE, **directly in the dev container image** (Shape A). This is the architecture record; cost/benefit and the option analysis are in [self-hosted-ci-decision.md](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/self-hosted-ci-decision/index.md>), and the operational how-to (setup, deploy loop, the k8s contract, the PVC layout) is [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>) — that file is the source of truth for the mechanics. Scope: the `ci` job of `.github/workflows/ci.yaml`. Every other workflow (`publish*`, `scan`, `rotate-keys`, docs, `build-devcontainer-image`) stays on GitHub-hosted runners — low-frequency, hosted cache service.
 
 ## Architecture
 
@@ -28,14 +28,14 @@ Parity with the developer container is by construction: the CI steps run in the 
 
 The tree is **disposable** (the GitHub-hosted model): `ci.yaml` checks out with actions/checkout's default clean, and caches live OUTSIDE it. `node_modules` comes back via `actions/cache` against [`github-actions-cache-server`](<https://gha-cache-server.falcondev.io>) (its own PD volume; private repos get no cache service on self-hosted runners without one — the forked runner build that makes the stock step work is documented in [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>)). The uv download cache, the pre-commit home, and containerd's image store live on dedicated GKE PersistentVolumes as subPath mounts of the runner pod — validate is \~80s warm and e2e docker builds hit cached layers. The warm work tree is retired: on Shape A it only survived in-pod restarts, leaked root-owned dirs and staged diagnostics between jobs, and saved \~70s of install the cache server now covers. Layout + the reasons for every mount are in [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>).
 
-## Phases (all shipped 2026-10-25)
+## Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)
 
 | Phase | Scope | Result |
 | --- | --- | --- |
 | 0 — hosted bridge | whole pipeline in `devcontainers/ci` on hosted | green 18m34s; proved the single-job shape |
 | 1 — GKE canary (B) | ARC dind runner, validate-only, on the existing pool | 5/5 green, 9m each |
 | 2 — pipeline on B | full `ci` on GKE via devcontainers/ci + cache PVC + `CI_*` variables | green 51m13s; no new compute |
-| 3 — **Shape A** (live) | job container = the dev container image; `devcontainers/ci` retired | the `ci` job runs direct steps on `atlas-ci-shapea` |
+| 3 — **Shape A** (live) | job container = the dev container image; `devcontainers/ci` retired | full pipeline green **41m22s** (run 40296654173, 2026-10-26), cache hits confirmed |
 
 Phase 3 removed the Phase-2 bridge: the composite action, `ci-canary.yaml`, `arc-values.yaml`, `toolchain-cache-pvc.yaml`, the `atlas-ci` scale set, and the six `CI_*` variables are deleted (git history has them).
 
