@@ -44,8 +44,12 @@ services:
             # password of the built-in elastic user. Every other setting is in
             # config/elasticsearch.yml. ${VAR:?} guards: an empty password would
             # start a cluster nobody can log in to.
+            # -javaagent: tools/es-coredump-agent (GKE nodes deny the
+            # coredump_filter write ES does at bootstrap - fatal since 9.x,
+            # cosmetic setting; see the agent's header. Harmless elsewhere:
+            # the write goes to /tmp, which ES would use anyway.)
+            ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP:?} -Xmx${ELASTICSEARCH_HEAP:?} -javaagent:/agent/coredump-noop.jar
             ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
-            ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP:?} -Xmx${ELASTICSEARCH_HEAP:?}
         healthcheck:
             # The hardened image has no curl; openssl speaks HTTPS, verifies the
             # server against the workspace CA, and authenticates as elastic.
@@ -63,6 +67,7 @@ services:
             - ${ELASTICSEARCH_PORT}:9200
         volumes:
             - data:/usr/share/elasticsearch/data
+            - ../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
             - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
             # Not config/certs: see config/elasticsearch.yml.
             - ./certs:/usr/share/elasticsearch/config/tls:ro

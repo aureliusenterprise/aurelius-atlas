@@ -34,6 +34,17 @@ STARTUP_TIMEOUT_SECONDS = 180.0
 
 _CONFIG_DIR = "/usr/share/elasticsearch/config"
 
+_REPO_ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "tools/es-coredump-agent/coredump-noop.jar").is_file()
+)
+
+_AGENT_JAR = _REPO_ROOT / "tools" / "es-coredump-agent" / "coredump-noop.jar"
+"""The coredump-redirect javaagent (``tools/es-coredump-agent``): the ES image is
+started with it via ``ES_JAVA_OPTS``. Without it, Elasticsearch 9.x aborts at
+bootstrap on hosts that deny writes to ``/proc/self/coredump_filter`` (GKE's
+container lockdown does this for every Docker container on its nodes); the
+agent swaps the path for a harmless one. No-op elsewhere."""
+
 _ELASTICSEARCH_YML = """\
 cluster.name: aurelius-atlas-test
 network.host: 0.0.0.0
@@ -127,7 +138,8 @@ def elasticsearch_container(
         container = (
             DockerContainer(image)
             .with_env("ELASTIC_PASSWORD", password)
-            .with_env("ES_JAVA_OPTS", f"-Xms{heap} -Xmx{heap}")
+            .with_env("ES_JAVA_OPTS", f"-Xms{heap} -Xmx{heap} -javaagent:/agent/coredump-noop.jar")
+            .with_volume_mapping(str(_AGENT_JAR), "/agent/coredump-noop.jar", "ro")
             .with_volume_mapping(str(work_dir / "elasticsearch.yml"), f"{_CONFIG_DIR}/elasticsearch.yml", "ro")
             .with_volume_mapping(str(work_dir / "tls"), f"{_CONFIG_DIR}/tls", "ro")
             .with_exposed_ports(9200)

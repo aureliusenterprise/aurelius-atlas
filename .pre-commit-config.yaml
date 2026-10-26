@@ -1,7 +1,7 @@
 # Files copied from Apache Atlas release-2.4.0 stay byte-identical: no hook touches them. The vendored
 # dashboards (DD-017), the model and type system test fixtures taken from addons/models (1.1, 1.3) and the
 # built-in models vendored into aurelius-atlas-core (DD-032).
-exclude: ^(apps/aurelius-atlas-dashboard/(dashboardv[23]/|LICENSE$|NOTICE$)|libs/python/aurelius-atlas-(core|model|typesystem)/tests/fixtures/[^/]+\.json$|libs/python/aurelius-atlas-core/aurelius_atlas_core/models/)
+exclude: ^(apps/aurelius-atlas-dashboard/(dashboardv[23]/|LICENSE$|NOTICE$)|libs/python/aurelius-atlas-(core|model|typesystem)/tests/fixtures/[^/]+\.json$|libs/python/aurelius-atlas-core/aurelius_atlas_core/models/|tools/es-coredump-agent/coredump-noop\.jar$)
 
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
