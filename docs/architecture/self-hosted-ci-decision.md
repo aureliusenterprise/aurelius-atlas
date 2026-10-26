@@ -86,7 +86,7 @@ the ES coredump-procfs denial (a byte-length-preserving javaagent,
 `tools/es-coredump-agent/`), ML's native self-check, the hardened ES image
 vs a `user:` override, the sonar-scanner PATH, an inert `actions/cache`
 save, elastic's product-check timeout, and the puller restart budget
-(DD-217) — each root-caused from run diagnostics and documented at the fix
+(DD-218) — each root-caused from run diagnostics and documented at the fix
 site.
 
 ## What we measured (30 days, 2026-09-25 → 10-25)

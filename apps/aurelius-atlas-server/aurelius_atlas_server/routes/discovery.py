@@ -1,12 +1,13 @@
-"""The basic and full-text search endpoints of ``DiscoveryREST`` under ``/api/atlas/v2/search`` (SRC-02, FTX-05).
+"""The search endpoints of ``DiscoveryREST`` under ``/api/atlas/v2/search`` (SRC-02, FTX-05, QSR-01, SUG-01).
 
-``searchUsingBasic``, ``searchWithParameters``, ``searchUsingAttribute`` and ``searchUsingFullText``; the other
-searches follow in later increments (4.2b, 4.4, 4.5).
+``searchUsingBasic``, ``searchWithParameters``, ``searchUsingAttribute``, ``searchUsingFullText``, both
+``quickSearch`` and ``getSuggestions``; the other searches follow in later increments (4.4, 4.5).
 """
 
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
-from aurelius_atlas_model.discovery import FilterCriteria, Operator, SearchParameters, SortOrder
+from aurelius_atlas_core.suggestions_provider import SuggestionsProvider
+from aurelius_atlas_model.discovery import FilterCriteria, Operator, QuickSearchParameters, SearchParameters, SortOrder
 from aurelius_atlas_model.errors import java_string
 from fastapi import APIRouter, Request
 
@@ -30,6 +31,7 @@ NAME = "name"
 NEGATIVE_PAGE = "Limit/offset should be non-negative"
 FILTERS_WITHOUT_TYPE = "EntityFilters specified without Type name"
 FILTERS_WITHOUT_TAG = "TagFilters specified without tag name"
+SORT_WITHOUT_TYPE = "SortBy specified without Type name"
 NO_ATTRIBUTE_SEARCH = "attrName : {name}, attrValue: {value} for attribute search."
 MAX_FULLTEXT_QUERY_STR_LENGTH = "atlas.graph.fulltext-max-query-str-length"
 
@@ -122,6 +124,64 @@ async def search_using_full_text(request: Request, store: Store) -> AtlasJSONRes
         exclude_deleted_entities=flag(request, "excludeDeletedEntities"),
         limit=java_number(request, "limit", 0, INT_RANGE),
         offset=java_number(request, "offset", 0, INT_RANGE),
+    )
+    return AtlasJSONResponse(content=result.to_json())
+
+
+def validate_quick_search_parameters(parameters: QuickSearchParameters) -> None:
+    """The checks of ``quickSearch(QuickSearchParameters)`` and its ``validateSearchParameters`` (QSR-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST``, ``INVALID_SEARCH_PARAMS``, ``INVALID_QUERY_PARAM_LENGTH`` or
+            ``INVALID_QUERY_LENGTH``.
+    """
+    if parameters.limit < 0 or parameters.offset < 0:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, NEGATIVE_PAGE)
+    if not parameters.type_name and not _empty(parameters.entity_filters):
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, FILTERS_WITHOUT_TYPE)
+    if not parameters.type_name and not parameters.query:
+        raise AtlasError(AtlasErrorCode.INVALID_SEARCH_PARAMS)
+    if not parameters.type_name and parameters.sort_by:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, SORT_WITHOUT_TYPE)
+    _validate_lengths(parameters.search_parameters())
+
+
+async def _quick(store: Store, parameters: QuickSearchParameters) -> AtlasJSONResponse:
+    result = await EntityDiscoveryService(store).quick_search(parameters)
+    return AtlasJSONResponse(content=result.to_json())
+
+
+@DISCOVERY.get("/quick")
+async def quick_search_using_query(request: Request, store: Store) -> AtlasJSONResponse:
+    """``quickSearch`` of query parameters: without sub types, only the query's length checked (QSR-01, QSR-02)."""
+    query = first_value(request, "query")
+    validate_query_length(query)
+    sort_order = first_value(request, "sortOrder")
+    parameters = QuickSearchParameters(
+        query=query,
+        type_name=first_value(request, "typeName"),
+        exclude_deleted_entities=flag(request, "excludeDeletedEntities"),
+        offset=java_number(request, "offset", 0, INT_RANGE),
+        limit=java_number(request, "limit", 0, INT_RANGE),
+        sort_by=first_value(request, "sortBy"),
+        sort_order=None if sort_order is None else parsed_value("sortOrder", sort_order, SortOrder),
+    )
+    return await _quick(store, parameters)
+
+
+@DISCOVERY.post("/quick")
+async def quick_search(body: Body, store: Store) -> AtlasJSONResponse:
+    """``quickSearch`` of ``QuickSearchParameters``, validated first (QSR-01 to QSR-04)."""
+    parameters = model_body(QuickSearchParameters, body) or QuickSearchParameters()
+    validate_quick_search_parameters(parameters)
+    return await _quick(store, parameters)
+
+
+@DISCOVERY.get("/suggestions")
+async def get_suggestions(request: Request, store: Store) -> AtlasJSONResponse:
+    """``getSuggestions``: terms beginning with ``prefixString``, of ``fieldName`` or the heaviest fields (SUG-01)."""
+    result = await SuggestionsProvider(store).suggestions(
+        first_value(request, "prefixString"), first_value(request, "fieldName")
     )
     return AtlasJSONResponse(content=result.to_json())
 

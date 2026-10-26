@@ -35,7 +35,7 @@ workspace-wide rules live in the root `AGENTS.md`.
   the collector's validator; the collector validates both listeners, and
   every producer mints at :8443). The puller carries
   `restart: on-failure`, unbounded (the DD-195 boot race, issuer-shaped: the
-  mint needs Keycloak up; DD-217 — an attempt count burns out before
+  mint needs Keycloak up; DD-218 — an attempt count burns out before
   Keycloak is reliably up). The slice no longer carries the shared ingest
   token — its puller was the only consumer.
 - Database `aurelius`, credentials from `.env` dev defaults — the same values

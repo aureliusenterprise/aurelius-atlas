@@ -178,6 +178,7 @@ async def test__entities_of_a_type_are_counted_after_a_refresh(
             "list_tasks",
             "search",
             "classifications_of_types",
+            "terms",
             "get_linked",
             "restore_linked",
             "count_linked_type",
@@ -412,6 +413,31 @@ async def test__free_text_scores_in_elasticsearch_as_it_scores_in_memory(
         "search.keyword.t.tags.text^3",
         "search.keyword.__typeName.text^1",
     ]
+
+
+@pytest.mark.covers(
+    f"{E}.search",
+    f"{E}.terms",
+    "aurelius_atlas_core.testing.memory.MemoryEntityDocuments.terms",
+    rules=["QSR-03", "SUG-01"],
+)
+@pytest.mark.parametrize("prefix", ["", "a", "x", ".*"])
+async def test__facets_and_terms_aggregate_in_elasticsearch_as_they_count_in_memory(
+    documents: ElasticsearchEntityDocuments, prefix: str
+) -> None:
+    """Facets of the matching entities' values, terms of every entity's words with a prefix (DD-093, DD-094)."""
+    memory = MemoryEntityDocuments()
+    await documents.write([(item, None) for item in SEARCHED])
+    await memory.write([(item, None) for item in SEARCHED])
+    query = SearchQuery(type_names=None, size=1, facets=("keyword.__typeName", "keyword.t.tags", "keyword.t.none"))
+    fields = ["keyword.t.name", "keyword.t.tags", "keyword.__typeName"]
+
+    found, expected = await documents.search(query), await memory.search(query)
+
+    assert found.facets == expected.facets
+    assert found.facets["keyword.__typeName"] == [("table", 3), ("view", 1)]
+    assert await documents.terms(fields, prefix) == await memory.terms(fields, prefix)
+    assert (await documents.search(SearchQuery(type_names=None))).facets == {}
 
 
 @pytest.mark.covers(f"{E}.classifications_of_types", rules=["CSR-03"])

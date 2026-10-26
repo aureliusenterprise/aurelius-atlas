@@ -14,7 +14,7 @@ services:
         # Nx's implicitDependencies/^up chain and the e2e conftest fixtures
         # all start observability FIRST. The restart window carries the
         # collector over Keycloak's boot: Docker backs off 100 ms doubling to
-        # a 60 s ceiling, and the restarts are unbounded (DD-217 — an attempt
+        # a 60 s ceiling, and the restarts are unbounded (DD-218 — an attempt
         # count burns out ~6 min in, before Keycloak's TLS listener is
         # reliably up under the e2e fan-out; see dev/elasticsearch, run
         # 40292544843). A permanently bad config still fails loudly: a

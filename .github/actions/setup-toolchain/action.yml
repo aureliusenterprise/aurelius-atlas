@@ -37,7 +37,7 @@ inputs:
         default: "false"
     trivy-version:
         description: Trivy version to install
-        default: v0.68.0
+        default: v0.76.1
     cyclonedx:
         description: Install CycloneDX CLI (for SBOM generation)
         default: "false"
@@ -248,7 +248,7 @@ runs:
           if: inputs.trivy == 'true'
           uses: aquasecurity/setup-trivy@v0.2.6
           with:
-              trivy-version: ${{ inputs.trivy-version }}
+              version: ${{ inputs.trivy-version }}
 
         - name: Cache CycloneDX CLI
           id: cache-cyclonedx

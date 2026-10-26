@@ -16,10 +16,11 @@ from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
-from aurelius_atlas_core.free_text import TextQuery
+from aurelius_atlas_core.free_text import TERM_COUNT, TextQuery
 from aurelius_atlas_core.search_fields import KEYWORD, KINDS, TEXT
 from aurelius_atlas_core.search_query import (
     ACTIVE,
+    FACET_SIZE,
     STATE_FIELD,
     TYPE_NAME_FIELD,
     Filter,
@@ -80,7 +81,7 @@ def _search_mapping(kind: str) -> dict[str, Any]:
     """A search field's mapping: a keyword also has an analysed ``text`` sub-field for free text (DD-092)."""
     if kind != KEYWORD:
         return {"type": kind}
-    return {"type": kind, "ignore_above": KEYWORD_LIMIT, "fields": {TEXT: {"type": "text"}}}
+    return {"type": kind, "ignore_above": KEYWORD_LIMIT, "fields": {TEXT: {"type": "text", "fielddata": True}}}
 
 
 ENTITY_MAPPING: dict[str, Any] = {
@@ -333,7 +334,15 @@ class EntityDocuments(Protocol):
         ...
 
     async def search(self, query: SearchQuery) -> SearchHits:
-        """The entities of the query's page, as of now, how many match it in all, and their scores (DD-089)."""
+        """The entities of the query's page, as of now, how many match it in all, their scores, and the query's
+        facets (DD-089, DD-093).
+        """  # noqa: D205 - one sentence
+        ...
+
+    async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
+        """Per search field, the 5 words of every entity's text in it that begin with ``prefix``, with how many
+        entities hold each, most first, then by word (DD-094).
+        """  # noqa: D205 - one sentence
         ...
 
     async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
@@ -628,7 +637,8 @@ class ElasticsearchEntityDocuments:
     async def search(self, query: SearchQuery) -> SearchHits:
         """Refresh the entity index, then answer the query as a ``bool`` query of the search fields (DD-089).
 
-        Free text is a scored ``simple_query_string`` over the text sub-fields (DD-092).
+        Free text is a scored ``simple_query_string`` over the text sub-fields (DD-092); facets are ``terms``
+        aggregations of the same query (DD-093).
         """
         await self._client.indices.refresh(index=self._entities)
         clauses: list[dict[str, Any]] = []
@@ -653,17 +663,53 @@ class ElasticsearchEntityDocuments:
             size=query.size,
             track_total_hits=True,
             track_scores=True,
+            aggs={str(index): _es_terms(_search_path(name), FACET_SIZE) for index, name in enumerate(query.facets)}
+            or None,
         )
         hits = response["hits"]
+        aggregations = response.get("aggregations") or {}
         return SearchHits(
             [StoredEntity.model_validate(hit["_source"]) for hit in hits["hits"]],
             int(hits["total"]["value"]),
             [float(hit.get("_score") or 0) for hit in hits["hits"]],
+            {name: _buckets(aggregations, str(index)) for index, name in enumerate(query.facets)},
         )
+
+    async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
+        """Refresh the entity index, then a ``terms`` aggregation of each field's text sub-field (DD-094)."""
+        await self._client.indices.refresh(index=self._entities)
+        include = "".join(f"\\{character}" if character in _REGEX_RESERVED else character for character in prefix)
+        response = await self._client.search(
+            index=self._entities,
+            size=0,
+            query={"match_all": {}},
+            aggs={
+                str(index): _es_terms(f"{_search_path(name)}.{TEXT}", TERM_COUNT, include=f"{include}.*")
+                for index, name in enumerate(fields)
+            },
+        )
+        aggregations = response.get("aggregations") or {}
+        return {name: _buckets(aggregations, str(index)) for index, name in enumerate(fields)}
 
 
 def _search_path(name: str) -> str:
     return f"search.{name}"
+
+
+_REGEX_RESERVED = set('.?+*|{}[]()"\\#@&<>~')
+"""Characters Lucene's regular expressions reserve, escaped in a prefix."""
+
+
+def _es_terms(field: str, size: int, *, include: str | None = None) -> dict[str, Any]:
+    """A ``terms`` aggregation of a field, most documents first, then by value."""
+    terms: dict[str, Any] = {"field": field, "size": size, "order": [{"_count": "desc"}, {"_key": "asc"}]}
+    if include is not None:
+        terms["include"] = include
+    return {"terms": terms}
+
+
+def _buckets(aggregations: Mapping[str, Any], name: str) -> list[tuple[str, int]]:
+    return [(str(bucket["key"]), int(bucket["doc_count"])) for bucket in aggregations.get(name, {}).get("buckets", [])]
 
 
 def _es_text(text: TextQuery) -> dict[str, Any]:

@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
-import { API_BASE_URL } from "./api-config";
+import { API_BASE_URL } from "../api-config";
 import { AtlasTypeDef, AtlasTypeDefHeader, AtlasTypesDef, TypeDefsFilter } from "./atlas-typedef";
 
 /**

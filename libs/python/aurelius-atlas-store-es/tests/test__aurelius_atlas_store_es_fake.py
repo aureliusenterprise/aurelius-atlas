@@ -283,3 +283,28 @@ async def test__simple_query_strings_score_and_sort_by_boosted_words() -> None:
     assert sorted(hit["_score"] for hit in alone["hits"]["hits"]) == [5.0, 6.0]
     assert none["hits"]["hits"] == []
     assert [hit["_score"] for hit in plain["hits"]["hits"]] == [0.0, 0.0]
+
+
+async def test__terms_aggregations_count_values_or_words_of_the_matches() -> None:
+    """By count then key; a ``.text`` sub-field counts lowercased words once a document; ``include`` filters."""
+    fake = FakeClient()
+    for document_id, document in {"a": {"t": ["X y", "y"]}, "b": {"t": "x"}, "c": {"u": 1}}.items():
+        await fake.index(index="docs", id=document_id, document=document)
+    aggs = {
+        "values": {"terms": {"field": "t"}},
+        "words": {"terms": {"field": "t.text", "size": 1}},
+        "some": {"terms": {"field": "t.text", "include": "y.*"}},
+    }
+
+    found = await fake.search(index="docs", size=0, aggs=aggs)
+    plain = await fake.search(index="docs")
+
+    buckets = {name: found["aggregations"][name]["buckets"] for name in aggs}
+    assert buckets["values"] == [
+        {"key": "X y", "doc_count": 1},
+        {"key": "x", "doc_count": 1},
+        {"key": "y", "doc_count": 1},
+    ]
+    assert buckets["words"] == [{"key": "x", "doc_count": 2}]
+    assert buckets["some"] == [{"key": "y", "doc_count": 1}]
+    assert "aggregations" not in plain

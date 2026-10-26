@@ -99,7 +99,7 @@ format so the wiring increment is composition, not design (DD-187).
 ## Acceptance
 
 - Vitest (unit):
-    - `libs/angular/aurelius-atlas-data-access/src/lib/atlas-entities.service.spec.ts` —
+    - `libs/angular/aurelius-atlas-data-access/src/lib/atlas/atlas-entities.service.spec.ts` —
       `getEntityByGuid` hits `…/v2/entity/guid/<guid>` with the Atlas headers,
       maps the DTO, encodes the guid (APC-01's base-url rule, DET-03)
     - `search/details/details.component.spec.ts` — the skeleton renders at the

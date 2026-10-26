@@ -128,6 +128,8 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-090](#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them)                      | A classification search finds instances first, then the entities listing them                        | 4.1           | Proposed         |
 | [DD-091](#dd-091-free-text-is-split-from-quick-search)                                                              | Free text is split from quick search                                                                 | 4.2           | Proposed         |
 | [DD-092](#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights)                | String search fields carry an analysed text sub-field, searched with Atlas's weights                 | 4.2           | Proposed         |
+| [DD-093](#dd-093-facets-are-aggregations-of-the-searchs-own-query)                                                  | Facets are aggregations of the search's own query                                                    | 4.2           | Proposed         |
+| [DD-094](#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields)                                         | Suggestions are terms aggregations of the text sub-fields                                            | 4.2           | Proposed         |
 | [DD-126](#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place)                                | The webapp is a new project, not the Aurelius app upgraded in place                                  | 7.0           | Proposed         |
 | [DD-127](#dd-127-signals-replace-the-custom-store-each-slice-owns-its-state)                                        | Signals replace the custom store; each slice owns its state                                          | 7.0           | Proposed         |
 | [DD-128](#dd-128-aurelius-dictionaries-become-xliff-migrated-whole-with-the-json-as-fixture)                        | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                         | 7.1           | Proposed         |
@@ -219,7 +221,8 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-214](#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)                              | The test suite review of 2026-10-24 scopes the hardening increments                                  | cross-cutting | Accepted         |
 | [DD-215](#dd-215--the-ci-pipeline-drops-the-traceability-check-and-report)                                          | The CI pipeline drops the traceability check and report; the tools stay as local aids                | cross-cutting | Accepted         |
 | [DD-216](#dd-216--stacks-own-the-tls-material-they-mount)                                                           | Stacks own the TLS material they mount                                                               | cross-cutting | Accepted         |
-| [DD-217](#dd-217--the-dev-stacks-restart-windows-are-unbounded)                                                     | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up     | cross-cutting | Accepted         |
+| [DD-217](#dd-217--the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74)                                    | The search client lands on both sides of the wire, ahead of 7.4                                      | cross-cutting | Accepted         |
+| [DD-218](#dd-218--the-dev-stacks-restart-windows-are-unbounded)                                                     | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up     | cross-cutting | Accepted         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -2162,6 +2165,48 @@ not keep to the fields weighted 8 or more. `query_string`: closer to `edismax`, 
 
 **Consequences.** Fields mapped before 4.2a have no text sub-field; an entity index created before needs
 creating again.
+
+### DD-093. Facets are aggregations of the search's own query
+
+- **Status:** Proposed
+- **Increment:** 4.2
+- **Date:** 2026-10-24
+
+**Decision.** Quick search counts its facets with `terms` aggregations over the `keyword` search fields of
+`__typeName`, `__state` and `Asset.owner`, in the same Elasticsearch request as the page of results: the query
+of the search, unpaged, at most 100 values each, ordered by count and then by value. `ServiceType` is added up
+from the `__typeName` counts with the registry's types. The in-memory documents count the same.
+
+**Reason.** Atlas facets the Solr query its `AtlasSolrQueryBuilder` rebuilds from the same query, types,
+filters and state as the search; aggregating the search's own query counts exactly the entities found, without
+a second translation of the filters. 100 is Solr's default `facet.limit`.
+
+**Alternatives.** A second request for the counts: one more round trip for the same query.
+
+**Consequences.** Facets count what the search query matches, classification criteria included, which quick
+search does not take.
+
+### DD-094. Suggestions are terms aggregations of the text sub-fields
+
+- **Status:** Proposed
+- **Increment:** 4.2
+- **Date:** 2026-10-24
+
+**Decision.** The text sub-field of DD-092 enables `fielddata`. Suggestions are, for each field weighted 8 or
+more (or the one named), a `terms` aggregation of its text sub-field over every entity document, of the 5
+terms matching the prefix, most documents first; the fields' terms are then summed and the top 5 kept. The
+in-memory documents count the words of the same fields.
+
+**Reason.** Atlas reads Solr's terms component on the fields with `terms.limit` 5 and adds up the frequencies;
+a terms aggregation is the Elasticsearch reading of a field's terms and their document frequencies. The
+`_terms_enum` API knows no frequencies, and keyword fields hold whole values, not words.
+
+**Alternatives.** A completion suggester: a field of its own per attribute, suggesting whole values. Terms of
+the keyword fields: values, not words, and only case-sensitive prefixes.
+
+**Consequences.** Fielddata of a text sub-field is loaded into the heap the first time it is aggregated, which
+suggestions limit to the few fields weighted 8 or more. Fields mapped before 4.2b have no fielddata; an entity
+index created before needs creating again.
 
 ### DD-126. The webapp is a new project, not the Aurelius app upgraded in place
 
@@ -6096,7 +6141,48 @@ image is data2model's artifact). After this, no compose file mounts another proj
 matching the frontend-example, whose `tls.json` already listed all three services its
 e2e stack hosts.
 
-### DD-217 — The dev stacks' restart windows are unbounded
+### DD-217 — The search client lands on both sides of the wire, ahead of 7.4
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (the 8.4 client family and the 7.3 Angular client; no roadmap row)
+- **Date:** 2026-10-26
+
+**Context.** Increments 4.1/4.2 gave the server the discovery routes
+(`/api/atlas/v2/search/**`), and the Python client gained them as
+`AtlasClient.search` (CL-13, the 8.4 family). On the frontend, 7.3 deliberately
+ported only the surface the server implemented then (DD-140), leaving every
+search call to 7.4 ("the search slice, gated by server 4.1/2.3"). With server
+4.1/4.2 merged, the gate's server half is met, and 7.4's first line needs
+`SearchService` to exist — the client is the seam 7.4 consumes, and a client
+built without its consumer is the speculative build DD-140 rejects.
+
+**Decision.** Land the typed search client on both sides of the wire now, as
+data-layer only: `AtlasClient.search` (CL-13) and, in
+`libs/angular/aurelius-atlas-data-access`, `SearchService` (APC-11,
+`search.service.ts`) with the search DTO cluster (`atlas-search.ts`, APC-03's
+hand-mirror of `aurelius_atlas_model/discovery.py`). No screen calls it: the
+browse landing's affordances, the header search bar, and the results screen stay
+7.4's. The GET searches send the Java defaults (a false flag, a `0` page) as
+their absence, matching the server routes' `flag`/`java_number` reading; the
+POST searches send the parameters as the body `validate_basic_search_parameters`
+/ `validate_quick_search_parameters` validate.
+
+**Alternatives.** (a) Wait for 7.4 and build the client inside it — refused:
+7.4 is a UI slice (the results screen redesign), and bundling the wire contract
+into it makes its review carry both; (b) generate the TS DTOs from the Python
+models — deferred with the same open question as the typedef cluster's hand-sync
+(APC-03), one mechanism for all DTOs is better than one per cluster.
+
+**Consequences.** 7.4 consumes `SearchService` directly; the webapp's e2e stack
+already runs the real server behind the proxy (DD-142), so a 7.4 flow test needs
+no new wiring. The two DTO clusters (`atlas-search.ts`,
+`aurelius_atlas_model/discovery.py`) join the hand-sync list in
+`aurelius-atlas-data-access/AGENTS.md`. The Python side is proven against the
+container (`apps/aurelius-atlas-server/e2e/test__aurelius_atlas_server_search_e2e.py`);
+the Angular side is proven against `HttpTestingController` — the e2e proof of a
+search through the proxy lands with 7.4's screen.
+
+### DD-218 — The dev stacks' restart windows are unbounded
 
 - **Status:** Accepted
 - **Increment:** cross-cutting (dev-stack wiring; rides the CI pipeline, no roadmap row)
