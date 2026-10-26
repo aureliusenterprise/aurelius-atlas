@@ -21,9 +21,17 @@ pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 @pytest.fixture(scope="module")
 def es_settings() -> Generator[StoreSettings]:
-    """One container for the whole module; tests clean up the indices they create."""
+    """One container for the whole module; tests clean up the indices they create.
+
+    ``request_timeout`` is raised from the 10 s default: every client's first
+    request is the transport's product-check HEAD, bounded by the CLIENT
+    timeout - on a runner shared by the whole e2e fan-out that HEAD can pass
+    10 s before the server answers (CI runs 40282797027, 40286077875,
+    40289090955: elastic_transport.ConnectionTimeout). Fast-failure tests
+    below override it back down.
+    """
     with elasticsearch_container() as settings:
-        yield settings
+        yield with_changes(settings, request_timeout=60)
 
 
 @pytest.fixture
