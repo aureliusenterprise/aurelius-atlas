@@ -8143,6 +8143,10 @@ consumer and the server validate against one source of truth (DD-203).</p>
 <td><code>aurelius_atlas_server_client.lineage</code> owns the <code>v2/lineage/{guid}</code> body — <code>LineageInfo</code>, <code>EntityHeaderLite</code>, <code>LineageRelation</code>, <code>Direction</code> — moved verbatim from 8.2's app module (LM-04's model, LM-01's <code>Direction</code>), the entity guids typed as <code>UUID</code> (<code>guidEntityMap</code> keys, headers, relation endpoints — DV-78; <code>relationshipId</code> stays <code>str</code>); the flattening (<code>flatten_relations</code>, <code>PROCESS_TYPES</code>, <code>LINEAGE_RULES</code>) is 8.2's app logic and stays in the app.</td>
 </tr>
 <tr>
+<td>CL-13</td>
+<td><code>AtlasClient.search</code> answers the discovery routes of <code>routes/discovery.py</code> (4.1/4.2): <code>search_with_parameters</code> and <code>search_using_basic</code>, <code>search_using_attribute</code>, <code>search_using_full_text</code>, <code>quick_search</code> and <code>quick_search_using_query</code>, <code>get_suggestions</code> — each path mirroring the route, the POST bodies the model's <code>to_json()</code>, the GET parameters as query parameters with the Java defaults (false, 0) left out, as the routes read an absent parameter. The bodies are <code>aurelius-atlas-model</code>'s (<code>SearchParameters</code>, <code>AtlasSearchResult</code>, <code>QuickSearchParameters</code>, <code>AtlasQuickSearchResult</code>, <code>AtlasSuggestionsResult</code>), reused whole (CL-10).</td>
+</tr>
+<tr>
 <td>CL-20</td>
 <td><code>aurelius_atlas_data2model_client</code> owns the <code>/extract</code> contract: the rule-model family (<code>ExtractionRequest</code>, <code>RulesDef</code>, <code>ElementRule</code>, <code>RelationRule</code>, <code>ViewRule</code>, <code>ViewNodeRule</code>, <code>ViewEdgeRule</code>, <code>MappingEntry</code>, <code>LegacyStr</code>, the DTM-11 validation messages) moved out of the app, and the new <code>ExtractionResponse</code> (<code>metadata: list[MetadataEntry]</code>, <code>model: str</code> — the ar3 JSON string).</td>
 </tr>
@@ -8225,6 +8229,7 @@ increment adds no <code>DV-</code> rows because it changes no wire behaviour.</p
   <code>libs/python/aurelius-atlas-server-client/tests/test__aurelius_atlas_server_client_models.py</code>
   (CL-10), <code>test__aurelius_atlas_server_client_lineage.py</code> (CL-12),
   <code>test__aurelius_atlas_server_client_client.py</code> (CL-01..05, CL-11),
+  <code>test__aurelius_atlas_server_client_search.py</code> (CL-13),
   <code>libs/python/aurelius-atlas-data2model-client/tests/test__aurelius_atlas_data2model_client_models.py</code>
   (CL-20), <code>test__aurelius_atlas_data2model_client_client.py</code> (CL-01..04, CL-21),
   <code>libs/python/aurelius-atlas-lineage-model-client/tests/test__aurelius_atlas_lineage_model_client_models.py</code>
@@ -8237,7 +8242,8 @@ increment adds no <code>DV-</code> rows because it changes no wire behaviour.</p
   prove no wire change. The e2e suites (<code>nx e2e aurelius-atlas-{data2model,lineage-model,validate-entity,server}</code>)
   drive the containers <strong>through the client libraries</strong> — each conftest's <code>api</code>
   fixture wraps a CA-verified <code>httpx.AsyncClient</code> in the app's client (CL-21, CL-30,
-  CL-40, CL-11), so the libraries are proven against the real apps, not only a fake
+  CL-40, CL-11; the server's <code>test__aurelius_atlas_server_search_e2e.py</code> carries
+  CL-13), so the libraries are proven against the real apps, not only a fake
   transport. The raw-httpx fixtures stay where the library has no route: the parity
   scenarios (<code>run_scenario</code> takes <code>httpx.AsyncClient</code>), the auth-gate 401s, liveness,
   and the malformed-body call of VE-01.</li>

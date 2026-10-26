@@ -774,7 +774,7 @@ The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-203, DD-204
 
 One client per server: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01) — the app builds the httpx client from its own settings (TLS, timeout) and passes it in. The request paths are relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Because the client arrives from outside, tests hand over one built on a `MockTransport` and no socket opens (CL-02, the DD-200 seam made async). Every request carries `authorization: Bearer <token>` from the token source (CL-03); a non-2xx answer raises :class:`AtlasClientError` with the status and the server's `{errorCode, errorMessage}` when the body parses (CL-04); an unreachable upstream propagates as `httpx`'s own error — mapping it to an HTTP status is the app's job (LM-07's DV-80), not the client's (CL-05).
 
-The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin`, `routes/types.py` under `/api/atlas/v2/types`, and the `v2/lineage/{guid}` feed of the server root (whose route lands with 5.1, CL-11).
+The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin`, `routes/types.py` under `/api/atlas/v2/types`, the discovery routes of `routes/discovery.py` under `/api/atlas/v2/search` (CL-13), and the `v2/lineage/{guid}` feed of the server root (whose route lands with 5.1, CL-11).
 
 Type Aliases:
 
@@ -793,6 +793,9 @@ Classes:
 - **`AtlasClientError`** –
 
   A non-2xx answer from the Atlas server, with the status and the error body (CL-04).
+- **`SearchApi`** –
+
+  The discovery resource of an :class:`AtlasClient` (CL-13): `client.search`.
 - **`TypesApi`** –
 
   The typedef resource of an :class:`AtlasClient` (CL-11): `client.types`.
@@ -806,12 +809,13 @@ Attributes:
 - **`DEFAULT_TIMEOUT_SECONDS`** –
 
   The suggested request timeout, seconds — for the httpx client an app builds for this one (CL-01).
+- **`DISCOVERY_ROOT`** –
 - **`KIND_PATHS`** (`dict[TypeCategory, str]`) –
 
   The path segment of each kind's lookups, mirroring `routes/types.py`'s `KIND_PATHS` (CL-11).
 - **`LINEAGE_ROOT`** –
 
-  The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`, 5.1's feed).
+  The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`,
 - **`TYPES_ROOT`** –
 
 ### ADMIN\_ROOT
@@ -836,6 +840,12 @@ DEFAULT_TIMEOUT_SECONDS = 10.0
 
 The suggested request timeout, seconds — for the httpx client an app builds for this one (CL-01).
 
+### DISCOVERY\_ROOT
+
+```
+DISCOVERY_ROOT = 'api/atlas/v2/search'
+```
+
 ### KIND\_PATHS
 
 ```
@@ -857,7 +867,7 @@ The path segment of each kind's lookups, mirroring `routes/types.py`'s `KIND_PAT
 LINEAGE_ROOT = 'v2/lineage'
 ```
 
-The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`, 5.1's feed).
+The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`, `routes/discovery.py`, 5.1's feed).
 
 Relative to the httpx client's base URL (CL-01): httpx appends them, so the base URL the app passes — trailing slash included, as a pydantic `HttpUrl` renders one — works as given.
 
@@ -978,12 +988,19 @@ Methods:
 Attributes:
 
 - **`admin`** –
+- **`search`** –
 - **`types`** –
 
 #### admin
 
 ```
 admin = AdminApi(api)
+```
+
+#### search
+
+```
+search = SearchApi(api)
 ```
 
 #### types
@@ -1050,6 +1067,125 @@ status_code = status_code
 ```
 
 The HTTP status the server answered with.
+
+### SearchApi
+
+```
+SearchApi(api: _Api)
+```
+
+The discovery resource of an :class:`AtlasClient` (CL-13): `client.search`.
+
+The paths mirror `routes/discovery.py`; the bodies are `aurelius-atlas-model`'s, reused whole (CL-10). The GET searches carry their parameters as query parameters, the POST searches as the model's JSON body — as the server's JAX-RS routes read them.
+
+Methods:
+
+- **`get_suggestions`** –
+
+  `GET /api/atlas/v2/search/suggestions`: terms beginning with the prefix (SUG-01, SUG-02).
+- **`quick_search`** –
+
+  `POST /api/atlas/v2/search/quick`: the quick search of the body, with its facets (QSR-01).
+- **`quick_search_using_query`** –
+
+  `GET /api/atlas/v2/search/quick`: a quick search of the query parameters (QSR-01, QSR-02).
+- **`search_using_attribute`** –
+
+  `GET /api/atlas/v2/search/attribute`: entities whose attribute starts with the prefix (SRC-11).
+- **`search_using_basic`** –
+
+  `GET /api/atlas/v2/search/basic`: a search of the query parameters, not body-validated (SRC-11).
+- **`search_using_full_text`** –
+
+  `GET /api/atlas/v2/search/fulltext`: the entities matching the query, best first, with scores (FTX-05).
+- **`search_with_parameters`** –
+
+  `POST /api/atlas/v2/search/basic`: the entities the body's search finds (SRC-02).
+
+#### get\_suggestions
+
+```
+get_suggestions(prefix_string: str | None = None, field_name: str | None = None) -> AtlasSuggestionsResult
+```
+
+`GET /api/atlas/v2/search/suggestions`: terms beginning with the prefix (SUG-01, SUG-02).
+
+#### quick\_search
+
+```
+quick_search(parameters: QuickSearchParameters) -> AtlasQuickSearchResult
+```
+
+`POST /api/atlas/v2/search/quick`: the quick search of the body, with its facets (QSR-01).
+
+#### quick\_search\_using\_query
+
+```
+quick_search_using_query(
+    *,
+    query: str | None = None,
+    type_name: str | None = None,
+    exclude_deleted_entities: bool = False,
+    limit: int = 0,
+    offset: int = 0,
+    sort_by: str | None = None,
+    sort_order: SortOrder | None = None,
+) -> AtlasQuickSearchResult
+```
+
+`GET /api/atlas/v2/search/quick`: a quick search of the query parameters (QSR-01, QSR-02).
+
+#### search\_using\_attribute
+
+```
+search_using_attribute(
+    *,
+    type_name: str | None = None,
+    attr_name: str | None = None,
+    attr_value_prefix: str | None = None,
+    limit: int = 0,
+    offset: int = 0,
+) -> AtlasSearchResult
+```
+
+`GET /api/atlas/v2/search/attribute`: entities whose attribute starts with the prefix (SRC-11).
+
+#### search\_using\_basic
+
+```
+search_using_basic(
+    *,
+    query: str | None = None,
+    type_name: str | None = None,
+    classification: str | None = None,
+    sort_by: str | None = None,
+    sort_order: SortOrder | None = None,
+    exclude_deleted_entities: bool = False,
+    limit: int = 0,
+    offset: int = 0,
+    marker: str | None = None,
+) -> AtlasSearchResult
+```
+
+`GET /api/atlas/v2/search/basic`: a search of the query parameters, not body-validated (SRC-11).
+
+#### search\_using\_full\_text
+
+```
+search_using_full_text(
+    query: str, *, exclude_deleted_entities: bool = False, limit: int = 0, offset: int = 0
+) -> AtlasSearchResult
+```
+
+`GET /api/atlas/v2/search/fulltext`: the entities matching the query, best first, with scores (FTX-05).
+
+#### search\_with\_parameters
+
+```
+search_with_parameters(parameters: SearchParameters) -> AtlasSearchResult
+```
+
+`POST /api/atlas/v2/search/basic`: the entities the body's search finds (SRC-02).
 
 ### TypesApi
 

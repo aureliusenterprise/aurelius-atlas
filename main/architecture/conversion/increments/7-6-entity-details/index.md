@@ -61,7 +61,7 @@ Against the Aurelius product, one intended difference is recorded in [design-log
 
 - Vitest (unit):
 
-  - `libs/angular/aurelius-atlas-data-access/src/lib/atlas-entities.service.spec.ts` — `getEntityByGuid` hits `…/v2/entity/guid/<guid>` with the Atlas headers, maps the DTO, encodes the guid (APC-01's base-url rule, DET-03)
+  - `libs/angular/aurelius-atlas-data-access/src/lib/atlas/atlas-entities.service.spec.ts` — `getEntityByGuid` hits `…/v2/entity/guid/<guid>` with the Atlas headers, maps the DTO, encodes the guid (APC-01's base-url rule, DET-03)
   - `search/details/details.component.spec.ts` — the skeleton renders at the route (DET-01), empty-state per DET-02 (title fallback, no crumbs, zero property rows), strings from the catalogue (DET-04), `itemClicked` navigates the route (DET-06), no outstanding `HttpTestingController` requests (the screen fetches nothing — DET-02's proof)
   - `routes.spec.ts` — `search/details/:guid` loads the component (DET-01)
   - `i18n-completeness.spec.ts` — every `@@search.details.*` id used by the skeleton exists in both catalogues (DET-04)
