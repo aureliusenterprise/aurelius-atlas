@@ -248,7 +248,7 @@ runs:
           if: inputs.trivy == 'true'
           uses: aquasecurity/setup-trivy@v0.2.6
           with:
-              trivy-version: ${{ inputs.trivy-version }}
+              version: ${{ inputs.trivy-version }}
 
         - name: Cache CycloneDX CLI
           id: cache-cyclonedx
