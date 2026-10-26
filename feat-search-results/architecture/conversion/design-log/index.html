@@ -5982,6 +5982,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-221-the-empty-query-lists-every-entity-through-the-_all_entity_types-marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-221 — The empty query lists every entity through the <code>_ALL_ENTITY_TYPES</code> marker
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11697,6 +11708,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         DD-220 — The demo pass restores the search screens' legacy chrome: title, typography, shell and plate
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-221-the-empty-query-lists-every-entity-through-the-_all_entity_types-marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-221 — The empty query lists every entity through the <code>_ALL_ENTITY_TYPES</code> marker
       </span>
     </span>
   </a>
@@ -18702,6 +18724,42 @@ hit, the legacy centered line applies only to the no-results card, as ported.</p
 the <code>search-field</code> story and its specs name the plate; the results specs pin the
 count-inside-box and the top-level <code>#noData</code> (no <code>.column</code> without data); the layout
 spec pins the hero's "Atlas" title, the results spec the styled no-filters paragraph.</p>
+<h3 id="dd-221-the-empty-query-lists-every-entity-through-the-_all_entity_types-marker">DD-221 — The empty query lists every entity through the <code>_ALL_ENTITY_TYPES</code> marker<a class="headerlink" href="#dd-221-the-empty-query-lists-every-entity-through-the-_all_entity_types-marker" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 7.4a</li>
+<li><strong>Date:</strong> 2026-10-26</li>
+</ul>
+<p><strong>Context.</strong> Opening the results screen without a query (<code>/search/results</code>, the
+URL the explore buttons land on, a bookmark, a reload) showed the no-results card
+with the invitation to "try another query". The legacy app answers that URL with
+everything: the Aurelius <code>QueryResolver</code> defaults <code>query</code> to <code>''</code> — "so that when
+we load the page without a search term, we can still see results" — and the demo
+answers the bare URL with 683. SRH-02's wording already says the empty parameter
+"searches <code>""</code>, which answers"; the store deviated, refusing to fire at all. The
+refusal has a real reason: a basic search with no term, type, classification, or
+term is <code>INVALID_SEARCH_PARAMS</code> (SRC-02, ATLAS-400-00-047), so posting <code>query: ""</code>
+alone is a 400, not a list.</p>
+<p><strong>Decision.</strong> The store sends the empty query with Atlas's every-entity marker:
+<code>{typeName: "_ALL_ENTITY_TYPES", query: ""}</code> (SRC-03 — the marker stands for every
+entity, and the type satisfies SRC-02's requirement). A session type filter wins
+over the marker (SRH-08's explore); a non-empty query sends no <code>typeName</code> at all,
+as before. The URL effect's re-run guard becomes "the store has already run this
+text" rather than "the text matches the store's": the legacy resolver ran on every
+arrival, query-less included, so a first arrival at a bare <code>/search/results</code> fires
+the list-everything search, while the hero-submit-then-same-URL-navigation no-op
+(DD-219) is preserved.</p>
+<p><strong>Alternatives.</strong> (a) Fire <code>query: ""</code> with no type — refused: the server answers
+400 (SRC-02), and the alerts drawer would fill on every landing. (b) Keep the
+first port's refusal (no request, the no-results card) — refused: SRH-02 already
+promises the empty query answers, the demo is the parity oracle (ADR 052), and the
+card's advice is wrong for a URL that is the app's own default landing. (c) Send
+<code>typeName: "AtlasBaseType"</code> — refused: Atlas 2.4.0 has no such type (<code>UNKNOWN_TYPENAME</code>,
+SRC-03); the marker is the every-entity shape the store's own tests already use.</p>
+<p><strong>Consequences.</strong> The bare URL is a real landing, matching the demo; the results
+specs pin the marker body and the "first arrival fires" rule; the explore e2e's
+reload step asserts more rows than the one seeded glossary (the filtered re-run's
+count) — the every-entity search proving the session filter is gone.</p>
 
 
 

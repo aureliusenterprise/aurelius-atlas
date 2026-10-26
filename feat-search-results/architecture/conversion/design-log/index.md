@@ -2912,3 +2912,17 @@ The injectable seam, the handlers, and the wire behaviour are untouched. **Reaso
 **Alternatives.** (a) Keep the first port's cleaner shapes — refused: the legacy look is the product look (DD-150/152), and the demo is the parity oracle (ADR 052); (a reader comparing screens notices all seven). (b) Port the demo's centered **card** titles — refused: that is the demo's stuck "Loading …" per-card-GET state (DV-83's target: the demo's search answers never resolve there); with cards rendered from the hit, the legacy centered line applies only to the no-results card, as ported.
 
 **Consequences.** The 7.4b facet sidebar fills the shell that only shows with data; the `search-field` story and its specs name the plate; the results specs pin the count-inside-box and the top-level `#noData` (no `.column` without data); the layout spec pins the hero's "Atlas" title, the results spec the styled no-filters paragraph.
+
+### DD-221 — The empty query lists every entity through the `_ALL_ENTITY_TYPES` marker
+
+- **Status:** Accepted
+- **Increment:** 7.4a
+- **Date:** 2026-10-26
+
+**Context.** Opening the results screen without a query (`/search/results`, the URL the explore buttons land on, a bookmark, a reload) showed the no-results card with the invitation to "try another query". The legacy app answers that URL with everything: the Aurelius `QueryResolver` defaults `query` to `''` — "so that when we load the page without a search term, we can still see results" — and the demo answers the bare URL with 683. SRH-02's wording already says the empty parameter "searches `""`, which answers"; the store deviated, refusing to fire at all. The refusal has a real reason: a basic search with no term, type, classification, or term is `INVALID_SEARCH_PARAMS` (SRC-02, ATLAS-400-00-047), so posting `query: ""` alone is a 400, not a list.
+
+**Decision.** The store sends the empty query with Atlas's every-entity marker: `{typeName: "_ALL_ENTITY_TYPES", query: ""}` (SRC-03 — the marker stands for every entity, and the type satisfies SRC-02's requirement). A session type filter wins over the marker (SRH-08's explore); a non-empty query sends no `typeName` at all, as before. The URL effect's re-run guard becomes "the store has already run this text" rather than "the text matches the store's": the legacy resolver ran on every arrival, query-less included, so a first arrival at a bare `/search/results` fires the list-everything search, while the hero-submit-then-same-URL-navigation no-op (DD-219) is preserved.
+
+**Alternatives.** (a) Fire `query: ""` with no type — refused: the server answers 400 (SRC-02), and the alerts drawer would fill on every landing. (b) Keep the first port's refusal (no request, the no-results card) — refused: SRH-02 already promises the empty query answers, the demo is the parity oracle (ADR 052), and the card's advice is wrong for a URL that is the app's own default landing. (c) Send `typeName: "AtlasBaseType"` — refused: Atlas 2.4.0 has no such type (`UNKNOWN_TYPENAME`, SRC-03); the marker is the every-entity shape the store's own tests already use.
+
+**Consequences.** The bare URL is a real landing, matching the demo; the results specs pin the marker body and the "first arrival fires" rule; the explore e2e's reload step asserts more rows than the one seeded glossary (the filtered re-run's count) — the every-entity search proving the session filter is gone.

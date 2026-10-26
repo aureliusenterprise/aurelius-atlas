@@ -7499,7 +7499,8 @@
 <li><strong>Records:</strong> DD-218 (the 7.4 split; the search bar lands in the search hero, not the navbar;
   infinite scroll, not pagination), DD-219 (the results URL contract: <code>?query=</code> only),
   DD-220 (the demo pass: legacy count/box/no-results/row-gap typography, the field's icon
-  plate), DV-83 (result cards render from the search hit), DV-84 (the explore buttons map the m4i
+  plate), DD-221 (the empty query lists every entity through <code>_ALL_ENTITY_TYPES</code>),
+  DV-83 (result cards render from the search hit), DV-84 (the explore buttons map the m4i
   governance types to Atlas base types); relies on ADR 053, DD-140, DD-142, DD-143, DD-145,
   DD-186, DD-188, DD-217 (the search client, consumed as-is), UIC rules (7.2), WBP rules (7.0)</li>
 </ul>
@@ -7591,11 +7592,11 @@ screen</strong> — the screen the DD-143 gate held until server 4.1/2.3 and the
 </tr>
 <tr>
 <td>SRH-02</td>
-<td><code>search/results</code> reads <code>?query=</code> as its <strong>only</strong> URL state (DD-219): on arrival and on query-parameter change (the legacy <code>paramsOrQueryParamsChange</code> resolver contract, read as a signal), it runs the query — an absent/empty parameter searches <code>""</code>, which answers (the legacy default that made the explore buttons' empty-query landings work). Pages, filters and scroll state are session state in the layout-scoped store, never in the URL. Leaving the subtree destroys the store (it is provided by the layout component), so a fresh visit to browse resets the search (the legacy <code>NavigationEnd</code> reset, by construction).</td>
+<td><code>search/results</code> reads <code>?query=</code> as its <strong>only</strong> URL state (DD-219): on arrival and on query-parameter change (the legacy <code>paramsOrQueryParamsChange</code> resolver contract, read as a signal), it runs the query — an absent/empty parameter searches <code>""</code> <strong>with the <code>_ALL_ENTITY_TYPES</code> marker</strong> (DD-221: the server rejects an empty query without a type, SRC-02; the marker is every-entity, SRC-03 — the legacy default that made the explore buttons' landings and the bare URL answer). Pages, filters and scroll state are session state in the layout-scoped store, never in the URL. Leaving the subtree destroys the store (it is provided by the layout component), so a fresh visit to browse resets the search (the legacy <code>NavigationEnd</code> reset, by construction).</td>
 </tr>
 <tr>
 <td>SRH-03</td>
-<td>The query runs as <code>SearchService.searchWithParameters</code> — POST <code>{API_BASE_URL}/atlas/v2/search/basic</code> (APC-11, DD-188) with <code>SearchParameters</code> <code>{query, limit: 10, offset, excludeDeletedEntities: true}</code>. No sort control (SRH-05's relevance parity), no App Search shape (DD-140): the screen reads the <code>AtlasSearchResult</code> the server answers.</td>
+<td>The query runs as <code>SearchService.searchWithParameters</code> — POST <code>{API_BASE_URL}/atlas/v2/search/basic</code> (APC-11, DD-188) with <code>SearchParameters</code> <code>{query, limit: 10, offset, excludeDeletedEntities: true}</code> plus the explore card's <code>typeName</code> (SRH-08) — or, for an empty query with no session filter, <code>typeName: "_ALL_ENTITY_TYPES"</code> (DD-221). No sort control (SRH-05's relevance parity), no App Search shape (DD-140): the screen reads the <code>AtlasSearchResult</code> the server answers.</td>
 </tr>
 <tr>
 <td>SRH-04</td>
