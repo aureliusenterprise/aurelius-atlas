@@ -17,7 +17,12 @@ from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus, StoreSetti
 
 PROMETHEUS_QUERY_URL = "http://localhost:9090/api/v1/query"
 METRICS_QUERY = 'count({exported_job="dev-elasticsearch"})'
-METRICS_TIMEOUT_SECONDS = 180
+# The chain is puller collection (30 s) -> OTLP push -> Prometheus scrape
+# (15 s), and the puller's first scrape waits on a Keycloak-minted token
+# (DD-196), so the stack's first minutes on a loaded CI runner (the e2e
+# fan-out shares one 4-vCPU node) can outlast 180 s (run 40286077875:
+# series 0 after the full budget, green in 40279621021).
+METRICS_TIMEOUT_SECONDS = 420
 HEAP_UNITS = {"m": 1024**2, "g": 1024**3}
 UNAUTHORIZED = 401
 
