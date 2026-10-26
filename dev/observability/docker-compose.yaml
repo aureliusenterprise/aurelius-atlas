@@ -19,7 +19,9 @@ services:
         # crash; the watcher survives the intermediate exits) instead of
         # crash-looping into an open-ingest silence. The count syntax is
         # "on-failure:15" — no space, which YAML would read as a mapping.
-        restart: on-failure:15
+        # Unbounded - see dev/elasticsearch (run 40292544843: attempt-capped
+        # restarts burn out before Keycloak readiness; 60 s backoff ceiling).
+        restart: on-failure
         depends_on:
             loki:
                 condition: service_started

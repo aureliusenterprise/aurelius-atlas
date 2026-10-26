@@ -168,7 +168,9 @@ services:
         # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
         # their export.
-        restart: on-failure:15
+        # Unbounded - see dev/elasticsearch (run 40292544843: attempt-capped
+        # restarts burn out before Keycloak readiness; 60 s backoff ceiling).
+        restart: on-failure
         environment:
             # Same dev defaults the keycloak service uses for KC_DB_*; the
             # collector expands ${env:...} in its config.

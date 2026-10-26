@@ -79,7 +79,17 @@ services:
         # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
         # their export.
-        restart: on-failure:15
+        # Unbounded: with a Keycloak-gated mint, the restart budget must be
+        # in TIME, not attempts. Docker's on-failure backoff doubles
+        # (100 ms -> 60 s), so ":15" burns out in ~6 minutes - and if
+        # Keycloak's TLS listener is not ready by then (the e2e fan-out
+        # shares one 4-vCPU node), docker stops restarting the puller
+        # permanently and the slice's metrics never arrive: run
+        # 40292544843, ESD-06 polled 420 s against a dead puller. The 60 s
+        # backoff ceiling means an unbounded puller lands on its feet
+        # within a minute of Keycloak readiness; a permanently bad config
+        # shows as a restarting container in `docker compose ps`.
+        restart: on-failure
         environment:
             ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
             # Per-service ingest identity (7.18, DD-196): the puller mints
