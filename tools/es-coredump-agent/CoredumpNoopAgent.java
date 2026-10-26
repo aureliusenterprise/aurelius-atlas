@@ -7,7 +7,8 @@ import java.util.Arrays;
 /**
  * Neutralises Elasticsearch's bootstrap write to /proc/self/coredump_filter.
  *
- * <p>Elasticsearch 9.x writes "0x23" to /proc/self/coredump_filter at bootstrap
+ * <p>
+ * Elasticsearch 9.x writes "0x23" to /proc/self/coredump_filter at bootstrap
  * (to keep file-backed pages out of core dumps) and treats any failure as fatal
  * ("Could not set coredump filter", elastic/elasticsearch#139589 - closed
  * not-planned: "the environment must allow the write"). GKE's container
@@ -16,7 +17,8 @@ import java.util.Arrays;
  * cgroup nesting), while the setting is cosmetic in CI - no core dumps are
  * ever collected there.
  *
- * <p>This agent rewrites the path constant in the class bytes before
+ * <p>
+ * This agent rewrites the path constant in the class bytes before
  * org.elasticsearch.bootstrap.Elasticsearch is defined, redirecting the write
  * to a writable file. The replacement is the SAME BYTE LENGTH so the class
  * file's constant-pool offsets stay valid (no ASM needed):
@@ -28,7 +30,8 @@ public final class CoredumpNoopAgent {
     private static final byte[] OLD = "/proc/self/coredump_filter".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] NEW = "/tmp/coredump_filter.jvm12".getBytes(StandardCharsets.US_ASCII);
 
-    private CoredumpNoopAgent() {}
+    private CoredumpNoopAgent() {
+    }
 
     public static void premain(String args, Instrumentation inst) {
         inst.addTransformer(new Transformer(), false);
@@ -55,8 +58,7 @@ public final class CoredumpNoopAgent {
         }
 
         private static int indexOf(byte[] haystack) {
-            outer:
-            for (int i = 0; i + OLD.length <= haystack.length; i++) {
+            outer: for (int i = 0; i + OLD.length <= haystack.length; i++) {
                 for (int j = 0; j < OLD.length; j++) {
                     if (haystack[i + j] != OLD[j]) {
                         continue outer;

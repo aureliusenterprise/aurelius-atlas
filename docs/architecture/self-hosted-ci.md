@@ -37,8 +37,11 @@ no dind sidecar, no sibling container.
 
 Parity with the developer container is by construction: the CI steps run in
 the exact image digest developers build, via the same `onCreateCommand`
-scripts (`npm.sh`, `uv.sh`) run verbatim as workflow steps. The pipeline
-itself (`.devcontainer/ci-pipeline.sh`) is container-agnostic and unchanged.
+scripts (`npm.sh`, `uv.sh`) run verbatim as workflow steps. The pipeline is
+spread over named workflow steps for a readable log (validate → decrypt →
+test → teardown → build → scan → sonar → storybook → chromatic); the test
+step (`.devcontainer/ci-pipeline.sh`) is container-agnostic and stays one
+script.
 
 **The one privileged dependency**: in-image dockerd needs a privileged pod
 (the docker-in-docker feature marks the dev container privileged — it runs

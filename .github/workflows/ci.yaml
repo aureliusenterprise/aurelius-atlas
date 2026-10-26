@@ -23,19 +23,23 @@ jobs:
     # the image developers use, on the GKE pool (docs/architecture/
     # self-hosted-ci.md, self-hosted-ci-decision.md option D).
     #
-    # Fail-fast order (one container, one dockerd, one PVC work dir):
+    # Fail-fast order (one container, one dockerd, one PVC work dir), one
+    # named step per phase so the log reads as the pipeline:
     #
-    #   validate -> test -> docker build + vuln scan -> storybook -> sonar
+    #   validate -> decrypt -> test -> teardown -> docker build -> scan ->
+    #   sonar -> storybook -> chromatic
     #
     # e2e containers, built images, and reports all live on the same daemon
-    # / work volume, so later phases read what earlier phases wrote - the
-    # scan needs no image export, sonar finds coverage and sarif in place,
-    # Chromatic finds Storybook's dist/.
+    # / work volume, so later steps read what earlier steps wrote - the
+    # scan needs no image export (teardown keeps images), sonar finds
+    # coverage and sarif in place, Chromatic finds Storybook's dist/.
     #
-    # External services run last and only when warranted: SonarQube is the
-    # pipeline's final phase (set -e: a failing phase above skips it),
-    # Chromatic is gated on the UI-affected output - and a failing pipeline
-    # fails the job, so neither is reached.
+    # Tear-down runs right after the tests: the e2e stacks (Keycloak,
+    # Postgres, Elasticsearch, observability) would otherwise hold their
+    # memory through the whole build/scan/sonar tail. External services run
+    # last and only when warranted: SonarQube is the pipeline's final
+    # step, Chromatic is gated on the Storybook probe - and a failing
+    # pipeline fails the job, so neither is reached.
     ci:
         # The Shape A pool (infra/arc/arc-shapea-values.yaml). Hard-coded:
         # the pool is the dev container image, not a generic runner label;
@@ -124,6 +128,9 @@ jobs:
                   path: node_modules
                   key: ${{ steps.restore-node-modules.outputs.cache-primary-key }}
 
+            - name: Validate pre-commit
+              run: uv run pre-commit run --all-files
+
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). dhi.io = the
             # hardened base images; ghcr.io = buildcache push (needs
@@ -139,14 +146,20 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-            # THE pipeline: pre-commit -> nx affected -t test e2e -> docker
-            # build + vuln scan + storybook -> decrypt + sonar
-            # (.devcontainer/ci-pipeline.sh, container-agnostic). Writes
-            # ui-affected to the step output natively (no output file
-            # bridge). Cache env + PATH come from the pod's container
-            # command; SOPS_AGE_KEY decrypts the per-project .env.enc.
-            - name: Run the CI pipeline
-              id: core
+            # Decrypt every project, not just the affected ones
+            - name: Decrypt project env (for Sonar)
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: npx nx run-many -t decrypt
+
+            # The test phase: the affected unit + e2e suites
+            # (.devcontainer/ci-pipeline.sh, container-agnostic), with the
+            # failure diagnostics collected inside the container - the e2e
+            # containers live on this daemon, which the host runner never
+            # sees. Cache env + PATH come from the pod's container command;
+            # SOPS_AGE_KEY stays as a safeguard - a test run re-executes
+            # `decrypt` when a .env.enc is in the affected set.
+            - name: Run unit and integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: bash .devcontainer/ci-pipeline.sh
@@ -160,13 +173,6 @@ jobs:
                       **/lcov.info
                   if-no-files-found: ignore
 
-            - name: Upload vulnerability reports
-              uses: actions/upload-artifact@v7
-              with:
-                  name: vuln-reports
-                  path: "**/vulnerabilities.sarif"
-                  if-no-files-found: ignore
-
             - name: Upload failure diagnostics
               if: failure()
               uses: actions/upload-artifact@v7
@@ -175,9 +181,72 @@ jobs:
                   path: reports/failure-diagnostics/
                   retention-days: 30
 
-            # The pipeline's storybook phase built Aurelius Atlas UI's
-            # Storybook (dist/ is on the work volume) and reported
-            # ui-affected through the step output; publish it only then.
+            # Tear the e2e stacks down as soon as the tests are done:
+            # Keycloak/Postgres/Elasticsearch/observability hold ~8 Gi of
+            # the node's memory, and the scan/sonar tail does not need
+            # them. Containers/volumes go, IMAGES stay - the scan reads
+            # them from this daemon, and the daemon store is warm on the
+            # PVC by design (base layers are the point of it). Deleting
+            # containers also forecloses compose reusing a stopped one
+            # verbatim, command baked with the previous commit (run
+            # 40231127680: postgres died on a 2h-old pre-fix container);
+            # ci-pipeline.sh sweeps at startup too, so a job whose pod is
+            # evicted before this step leaves no residue for the next.
+            # if: always() sweeps on failure/cancel/timeout;
+            # continue-on-error: cleanup must never flip the verdict.
+            - name: Tear down test containers
+              if: always()
+              continue-on-error: true
+              run: |
+                  docker container prune -f
+                  docker volume prune -af
+
+            # Build the affected apps' images for the scan. e2e stacks
+            # build some of them as a dependency (webapp, frontend,
+            # lineage-model), but not every affected app has one (the
+            # fastapi example, data2model, ...), and the SBOM step below
+            # reads the image from the daemon by tag - so build all of
+            # them, explicitly. Registry-backed layer cache (GHCR
+            # buildcache tags, tools/plugins/docker.ts): on the warm daemon
+            # these are near-instant, and the pushes keep the shared
+            # baseline warm for the next branch.
+            - name: Build Docker images
+              run: npx nx affected -t docker-build -c ci
+
+            # Trivy scans the SBOM of every image built above
+            # (docker-vuln-scan -> docker-sbom -> the image on this daemon).
+            - name: Scan for vulnerabilities
+              run: npx nx affected -t docker-vuln-scan -c sarif
+
+            - name: Upload vulnerability reports
+              uses: actions/upload-artifact@v7
+              with:
+                  name: vuln-reports
+                  path: "**/vulnerabilities.sarif"
+                  if-no-files-found: ignore
+
+            # SonarQube analysis requires all previously generated test and scan results to be available.
+            - name: Run SonarQube analysis
+              run: npx nx affected -t sonar
+
+            # The Storybook build Chromatic publishes - only when the UI
+            # (or its dependencies) are affected. dist/ lands in the
+            # mounted checkout, where the Chromatic step uploads it. The
+            # --graph=stdout probe keeps the step a no-op (not a green
+            # lie) when the task is out of scope.
+            - name: Build Storybook (for Chromatic)
+              id: storybook
+              run: |
+                  if npx nx affected -t build-storybook --graph=stdout |
+                      jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' >/dev/null; then
+                      npx nx build-storybook aurelius-atlas-ui
+                      echo "ui-affected=true" >>"$GITHUB_OUTPUT"
+                  else
+                      echo "ui-affected=false" >>"$GITHUB_OUTPUT"
+                  fi
+
+            # Publish Aurelius Atlas UI's Storybook (dist/ is on the work
+            # volume) - only when the build step above produced it.
             # buildCommand is required: chromaui/action v18 preflights a
             # package.json build script ("build-storybook") when no build
             # command is given, and the root package.json has none (run
@@ -185,29 +254,9 @@ jobs:
             # already built, so the command is a guard, not a rebuild - it
             # fails loudly if dist/ is missing.
             - name: Run Chromatic
-              if: ${{ steps.core.outputs.ui-affected == 'true' }}
+              if: ${{ steps.storybook.outputs.ui-affected == 'true' }}
               uses: chromaui/action@v18
               with:
                   buildCommand: "test -d dist/storybook/aurelius-atlas-ui"
                   outputDir: "dist/storybook/aurelius-atlas-ui"
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-
-            # Post-job daemon cleanup - the "Post …" convention the stock
-            # actions use (and the right attribution: a sweep that fails
-            # blames the job that MADE the mess, not the next one).
-            # Containers/volumes go, images stay: the daemon store is
-            # warm on the PVC by design (base layers - the point), which
-            # preserves CONTAINERS too, and compose reuses a stopped one
-            # verbatim, command baked with the previous commit (run
-            # 40231127680: postgres died on a 2h-old pre-fix container).
-            # if: always() sweeps on failure/cancel/timeout too. Jobs
-            # that never reach the end of the job (pod evicted by a
-            # scale-set deploy) are covered by ci-pipeline.sh's startup
-            # guard; continue-on-error: cleanup must never flip the
-            # pipeline's verdict - the guard re-cleans on next entry.
-            - name: Clean daemon (post-job)
-              if: always()
-              continue-on-error: true
-              run: |
-                  docker container prune -f
-                  docker volume prune -af
