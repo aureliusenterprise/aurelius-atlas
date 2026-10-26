@@ -7854,10 +7854,10 @@ no dind sidecar, no sibling container.</p>
 <p>Parity with the developer container is by construction: the CI steps run in
 the exact image digest developers build, via the same <code>onCreateCommand</code>
 scripts (<code>npm.sh</code>, <code>uv.sh</code>) run verbatim as workflow steps. The pipeline is
-spread over named workflow steps for a readable log (validate → decrypt →
-test → teardown → build → scan → sonar → storybook → chromatic); the test
-step (<code>.devcontainer/ci-pipeline.sh</code>) is container-agnostic and stays one
-script.</p>
+plain workflow steps — one named step per phase for a readable log
+(validate → decrypt → test → teardown → build → scan → sonar → storybook →
+chromatic); every step runs in the job container, on the same daemon, so
+later steps read what earlier steps wrote.</p>
 <p><strong>The one privileged dependency</strong>: in-image dockerd needs a privileged pod
 (the docker-in-docker feature marks the dev container privileged — it runs
 its own daemon). Root-on-the-node by definition; contained by the shared
