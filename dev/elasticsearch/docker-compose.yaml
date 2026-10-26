@@ -13,6 +13,24 @@ services:
 
     elasticsearch:
         image: dhi.io/elasticsearch:9.5-debian13
+        # Init at uid 1000, NOT root. ES 9.5 writes /proc/self/coredump_filter
+        # at bootstrap (fatal if refused: "Could not set coredump filter",
+        # upstream elastic/elasticsearch#139589). Ownership of that file
+        # follows the dumpability rule (fs/proc/base.c): on hosts with
+        # fs.suid_dumpable=2 - the GKE node default, both COS and Ubuntu,
+        # and undeletable from a container (the sysctl write is denied) - a
+        # process that TRANSITIONED uid (root->1000, what the image's
+        # root entrypoint + gosu does) gets the file root-owned 0644, so
+        # uid 1000 cannot write it. The node's default container boot is
+        # root; dev containers (GitHub-hosted, WSL2: suid_dumpable=0) keep
+        # it uid-owned after the transition, which is why this stack boots
+        # there and died only in the GKE runner's dind (11 forensics rounds,
+        # runs 40237701606..40269389651). Running the container directly at
+        # uid 1000 (the k8s runner pod's own trick - runc inits it at
+        # runAsUser, no setuid) keeps the process dumpable=1 and the file
+        # uid-owned. The JVM's root check passes (we are not root); the
+        # data dir is chowned by volume-init; all bind mounts are :ro.
+        user: "1000:1000"
         # Memory cap (CI capacity): the e2e fan-out runs this stack inside
         # the CI runner's dind daemon on a shared node, where an uncapped
         # JVM competes with the parallel suites. 2g = the 1g heap below plus

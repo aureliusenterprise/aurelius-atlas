@@ -32,42 +32,29 @@ jobs:
                   echo "### node / kernel (expect Ubuntu, not COS)"
                   grep -E "^PRETTY_NAME" /etc/os-release
                   uname -r
-                  # The container gate on this node is dumpability, not
-                  # bpflsm (kernel 6.8 predates it): the ES entrypoint
-                  # starts as root and setuids to uid 1000, which clears
-                  # the dumpable flag, and a non-dumpable process's
-                  # /proc/self/coredump_filter stays root-owned 0644 =
-                  # EACCES. suid_dumpable=2 keeps post-setuid processes
-                  # dumpable. (COS ships =2 already - its denial was the
-                  # 6.12 bpflsm one, immune to this knob: round 11.)
-                  # Privileged container => this writes the NODE sysctl;
-                  # dockerd's containers inherit it. The privileged runner
-                  # pod itself is dumpable from exec (no setuid), which is
-                  # why it always wrote the file fine.
-                  sysctl -w fs.suid_dumpable=2
                   cat /proc/sys/fs/suid_dumpable
-                  echo "### coredump_filter writable from a container?"
-                  docker run --rm dhi.io/elasticsearch:9.5-debian13 \
-                      sh -c 'echo 0x23 > /proc/self/coredump_filter && cat /proc/self/coredump_filter && echo WRITE-OK'
 
-            - name: ES boots plain
+            - name: The decisive matrix (inode owner vs transition)
+              continue-on-error: true
               run: |
-                  docker rm -f e12 >/dev/null 2>&1 || true
-                  docker run -d --name e12 \
-                      -e discovery.type=single-node -e xpack.security.enabled=false \
-                      -e cluster.name=e12 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
-                      dhi.io/elasticsearch:9.5-debian13 >/dev/null
-                  sleep 40
-                  docker inspect -f 'state={{.State.Status}}' e12
-                  docker logs e12 2>&1 |
-                      grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"' | head -4
-                  docker rm -f e12 >/dev/null 2>&1 || true
-
-            - name: ES compose stack (TLS + healthcheck)
-              run: |
+                  ES=dhi.io/elasticsearch:9.5-debian13
+                  probe() {
+                      echo "### $1"
+                      shift
+                      docker run --rm "$@" -c 'ls -l /proc/self/coredump_filter; echo 0x23 > /proc/self/coredump_filter 2>/dev/null && echo WRITE-OK || echo WRITE-EACCES'
+                  }
+                  # A: runc init DIRECTLY at uid 1000 (no transition) -
+                  # what the k8s runner pod does (it WRITES). If OK,
+                  # `user: 1000:1000` in the compose fixes ES.
+                  probe "A init@1000" --user 1000 --entrypoint sh "$ES"
+                  # B: root init -> su to 1000 (the ES entrypoint's
+                  # gosu transition, what dies).
+                  probe "B root->su 1000" --entrypoint sh "$ES"
+                  docker run --rm --entrypoint sh "$ES" -c 'id; ls -l /proc/self/coredump_filter; echo 0x23 > /proc/self/coredump_filter && echo ROOT-WRITE-OK; ls -l /proc/self/coredump_filter; su -s /bin/sh 1000 -c "id; ls -l /proc/self/coredump_filter; echo 0x23 > /proc/self/coredump_filter && echo SU-WRITE-OK || echo SU-WRITE-EACCES"'
+                  # C: the real boot, compose user (init@1000).
+                  echo "### C ES boot, compose user=1000"
                   bash tools/tls/certgen.sh dev/elasticsearch
-                  docker compose -f dev/elasticsearch/docker-compose.yaml \
-                      up -d --wait elasticsearch
+                  docker compose -f dev/elasticsearch/docker-compose.yaml up -d --wait elasticsearch
                   docker inspect -f 'es-compose health={{.State.Health.Status}}' \
                       "$(docker compose -f dev/elasticsearch/docker-compose.yaml ps -q elasticsearch)"
                   docker compose -f dev/elasticsearch/docker-compose.yaml down -v
