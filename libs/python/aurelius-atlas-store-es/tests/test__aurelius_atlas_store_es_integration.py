@@ -79,7 +79,16 @@ async def test__check_health_is_up_when_replicas_cannot_be_placed(store: Elastic
     index = "sto-05-yellow"
     await store.client.indices.create(index=index, settings={"number_of_shards": 1, "number_of_replicas": 1})
     try:
-        await store.client.cluster.health(index=index, wait_for_status="yellow", timeout="30s")
+        # request_timeout must exceed the server-side timeout: cluster.health
+        # blocks for up to `timeout` waiting for yellow, and the client's
+        # default 3 s request timeout kills that wait on a loaded runner
+        # (CI run 40282797027: elastic_transport.ConnectionTimeout).
+        await store.client.cluster.health(
+            index=index,
+            wait_for_status="yellow",
+            timeout="30s",
+            request_timeout=60,  # pyright: ignore[reportCallIssue] - transport kwarg, not in the generated signature
+        )
         report = await check_health(store.client)
     finally:
         await store.client.indices.delete(index=index)
