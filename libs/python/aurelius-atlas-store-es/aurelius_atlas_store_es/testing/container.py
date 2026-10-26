@@ -55,6 +55,7 @@ xpack.security.http.ssl.enabled: true
 xpack.security.http.ssl.certificate: tls/server.pem
 xpack.security.http.ssl.key: tls/server-key.pem
 xpack.security.transport.ssl.enabled: false
+xpack.ml.enabled: false
 node.store.allow_mmap: false
 cluster.routing.allocation.disk.threshold_enabled: false
 """
