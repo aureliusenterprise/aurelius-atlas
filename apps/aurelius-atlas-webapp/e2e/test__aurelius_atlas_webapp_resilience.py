@@ -34,6 +34,17 @@ E2E_PROJECT = "aurelius-atlas-webapp-e2e"
 OUTAGE_DEADLINE_SECONDS = 60
 """How long nginx may keep answering from its DNS cache after the stop."""
 
+ALERT_DEADLINE_SECONDS = 45
+"""How long the outage-drain loop may keep opening the panel for its alert.
+
+The nginx 502 window is bounded (resolver `valid=10s`, e2e/config/nginx.conf)
+and starts at the stop, so one panel open races it: a slow browser (Firefox
+on CI, run 40329015948) lands its session call after the window and gets a
+200 — no alert, no dot. The drain loop keeps firing the call for this budget;
+the outage is bounded by the same window, and the fixture's finalizer bounds
+the restart.
+"""
+
 RECOVERY_DEADLINE_SECONDS = 90
 """How long the restarted server may take to answer through nginx again."""
 
@@ -95,6 +106,34 @@ def _poll_proxy_status(page: Page, root_url: str, expected: int, deadline_second
     return status
 
 
+def _surface_the_outage_alert(page: Page) -> None:
+    """Open and close the settings panel until the outage's alert lands.
+
+    One panel open is one session call racing the nginx 502 window: the
+    window is bounded (~10 s, resolver `valid=10s`) and browser speed is not,
+    so the call can answer 200 while the window is already shut (Firefox, CI
+    run 40329015948 — the dot assertion then fails with no alert in the
+    store). Each open fires the panel's construction-time session call
+    (SPL-14) and each failure is reported (ALR-05); the store's window
+    grouping (ALR-03) folds the burst of repeats into one group, so draining
+    cannot spam the feed. The loop ends on the dot — the first call that
+    answered 502 — and the final check re-runs the original assertion so a
+    real failure reports as one.
+    @param page the authenticated page
+    """
+    gear = page.locator('a.navbar-item[aria-label="Settings"]')
+    dot = page.locator('a.navbar-item[aria-label="Alerts"] .aurelius-badge-dot')
+    deadline = time.monotonic() + ALERT_DEADLINE_SECONDS
+    while time.monotonic() < deadline:
+        gear.click()
+        expect(page.locator(".aurelius-drawer-panel")).to_be_visible()
+        page.locator(".aurelius-drawer-panel button.delete").first.click()  # close
+        if dot.count() > 0:
+            return
+        time.sleep(1)
+    expect(dot).to_be_visible()
+
+
 @pytest.fixture
 def atlas_server_page_down() -> Iterator[Container]:
     """Stop the Atlas server of the stack and guarantee it is running again.
@@ -133,13 +172,13 @@ def test__a_server_outage_surfaces_an_alert_and_the_app_recovers(
     #    expiry, e2e/nginx.conf — valid=10s).
     assert _poll_proxy_status(page, root_url, 502, OUTAGE_DEADLINE_SECONDS) == 502
 
-    # 2. The shell surfaces it: open the settings panel (the gear), whose
-    #    session call fails, then read the bell + the drawer.
-    gear = page.locator('a.navbar-item[aria-label="Settings"]')
-    gear.click()
-    expect(page.locator(".aurelius-drawer-panel")).to_be_visible()
-    page.locator(".aurelius-drawer-panel button.delete").first.click()  # close
+    # 2. The shell surfaces it: drain the outage through the settings panel
+    #    (the gear) until its session call fails, then read the bell + the
+    #    drawer. One open races the bounded 502 window; the drain loop does
+    #    not (_surface_the_outage_alert).
+    _surface_the_outage_alert(page)
 
+    gear = page.locator('a.navbar-item[aria-label="Settings"]')
     expect(page.locator('a.navbar-item[aria-label="Alerts"] .aurelius-badge-dot')).to_be_visible()
 
     alerts_link = page.locator('a.navbar-item[aria-label="Alerts"]')
