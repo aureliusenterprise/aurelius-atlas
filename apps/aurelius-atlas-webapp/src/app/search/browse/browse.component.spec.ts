@@ -1,7 +1,10 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting, HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import { provideRouter } from "@angular/router";
+import Keycloak from "keycloak-js";
 
+import { SearchState } from "../search-state";
 import { Browse } from "./browse.component";
 
 describe("Browse", () => {
@@ -10,7 +13,15 @@ describe("Browse", () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [Browse],
-            providers: [provideHttpClient(), provideHttpClientTesting()],
+            providers: [
+                provideRouter([]),
+                provideHttpClient(),
+                provideHttpClientTesting(),
+                SearchState,
+                // The governance card's explore reads the session e-mail; the
+                // landing spec keeps the Keycloak plumbing out of scope.
+                { provide: Keycloak, useValue: { tokenParsed: {} } },
+            ],
         }).compileComponents();
 
         httpMock = TestBed.inject(HttpTestingController);
@@ -52,19 +63,18 @@ describe("Browse", () => {
         expect(cardTitles).toEqual(["Business context", "Technical context", "Data governance organization"]);
     });
 
-    it("insets the page content in the legacy section > container grid (SHM-07, DD-150)", () => {
+    it("renders the box and three cards top-level; the layout owns the inset (SHM-07, DD-150, DD-218)", () => {
         const fixture = TestBed.createComponent(Browse);
         fixture.detectChanges();
 
         const compiled = fixture.nativeElement as HTMLElement;
 
-        // The legacy pages wrap their root in `section.section > div.container`
-        // (the demo's insets come from exactly this, not hand-rolled margins).
-        const section = compiled.querySelector("section.section > .container");
-
-        expect(section).toBeTruthy();
-        expect(section?.querySelector(".box #browse-placeholder")).toBeTruthy();
-        expect(section?.querySelectorAll(".columns > .column")).toHaveLength(3);
+        // The legacy browse template sits top-level; the search hero insets it
+        // (section.section > div.container around the outlet — the legacy
+        // hero.component.html). The page does not double the wrapper (DD-218).
+        expect(compiled.querySelector("section")).toBeNull();
+        expect(compiled.querySelector(":scope > .box #browse-placeholder")).toBeTruthy();
+        expect(compiled.querySelectorAll(":scope > .columns > .column")).toHaveLength(3);
     });
 
     it("issues no HTTP requests: the landing exists before its API (BRW-04)", () => {

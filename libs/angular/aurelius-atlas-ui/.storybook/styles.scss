@@ -1,5 +1,31 @@
 @use "@aurelius/atlas-brand/src/main";
 
+/*
+ * Story host chrome: the box a story renders around a component lives
+ * here, not in an inline style attribute — stories keep their presentation
+ * in styles, like the components they show.
+ */
+
+// The scroll box around the infinite-scroll container (its scss is silent:
+// the scrolling box is the caller's, and the story is the caller).
+.story-scroll-host {
+    display: block; // the custom element is inline by default
+    max-height: 12rem;
+    overflow-y: auto;
+}
+
+// The tall relative host the sticky details-navigation anchors to.
+.story-tall-host {
+    min-height: 40rem;
+    position: relative;
+}
+
+// The bell glyph: Bulma's .icon.is-medium sizes the box, the glyph size is
+// the story's.
+.story-bell {
+    font-size: 1.5rem;
+}
+
 pre {
     .tag {
         display: inline;

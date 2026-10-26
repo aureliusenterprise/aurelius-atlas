@@ -19,12 +19,25 @@ export class Session {
 
     private readonly identityState = signal(Session.readIdentity(this.keycloak));
 
+    private readonly emailState = signal(Session.readEmail(this.keycloak));
+
     /** The identity to greet the user by, `""` when no session is readable. */
     readonly identity = this.identityState.asReadonly();
+
+    /**
+     * The signed-in user's e-mail (SRH-08, the governance card's
+     * `directToUser`): the token's `email`, the legacy
+     * `credentials.email` the Aurelius service read.
+     */
+    readonly email = this.emailState.asReadonly();
 
     private static readIdentity(keycloak: Keycloak): string {
         const token = keycloak.tokenParsed;
 
         return token?.["preferred_username"] ?? token?.["email"] ?? "";
+    }
+
+    private static readEmail(keycloak: Keycloak): string {
+        return keycloak.tokenParsed?.["email"] ?? "";
     }
 }
