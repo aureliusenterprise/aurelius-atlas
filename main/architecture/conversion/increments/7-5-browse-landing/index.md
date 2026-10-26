@@ -20,10 +20,10 @@ Explicitly not delivered here, with the increment that will:
 
 | Deferred | Lands with | Why |
 | --- | --- | --- |
-| The cards' search fields (`simple-search-input`) and the "explore" buttons (`directTo*`) | The search slice (7.4, gated by server 4.1 + 2.3 — DD-140) | Both are search navigation: they set `SearchService.query/filters` and route to `/search/results`, a screen whose API does not exist yet. Porting the affordance without its destination is the speculative build DD-140 rejects (DD-143) |
+| The cards' search fields (`simple-search-input`) and the "explore" buttons (`directTo*`) | **Delivered in 7.4a** (SRH-08) | Both are search navigation: they set `SearchService.query/filters` and route to `/search/results`, a screen whose API does not exist yet. Porting the affordance without its destination is the speculative build DD-140 rejects (DD-143) |
 | The Shell chrome (header, footer, global nav) | The search slice | Aurelius wraps every screen in `libs/shell`, and the header's centrepiece is the global search bar; wiring the chrome is one decision with the search entry point, not two (DD-143) |
-| `directToUser` (governance card: search the signed-in user's e-mail) | The search slice | Same: search navigation; the e-mail is now available from Keycloak, the results page is not |
-| Search client, results, details | 7.4 / 7.6, after server 4.1 / 2.3 | API not ready (user decision, 2026-10-20: hold all search until the API is ready) |
+| `directToUser` (governance card: search the signed-in user's e-mail) | **Delivered in 7.4a** (SRH-08) | Same: search navigation; the e-mail is now available from Keycloak, the results page is not |
+| Search client, results, details | Results: **delivered in 7.4a** (SRH); details: 7.6 skeleton (DET), wired after server 2.3 | API not ready (user decision, 2026-10-20: hold all search until the API is ready) |
 
 ## Semantics
 

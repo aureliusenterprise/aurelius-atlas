@@ -83,7 +83,8 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp`: bootstrap, router, runtime config, XLIFF locale bridge, OTel telemetry | Aurelius `apps/atlas/src/app`, `libs/i18n` | in progress |
 | 7.2 | Shared UI components | Legacy shared components as dumb `aurelius-atlas-ui` components, each with a story | Aurelius `libs/components` | in progress |
 | 7.3 | API client and auth wiring | The Atlas REST client in `aurelius-atlas-data-access`; Keycloak providers and bearer-token interceptor | Aurelius `libs/atlas/api`, `libs/http` | in progress |
-| 7.4 | Search | Query and results, the first slice with real data (on hold: gated by server 4.1/2.3, DD-143) | Aurelius `apps/atlas/src/app/search` | planned |
+| 7.4a | Search results | Hero search bar, results screen (infinite scroll), entry into 7.6 details, browse affordances (SRH-01..11, UIC-21..23; DD-218/219) | Aurelius `apps/atlas/src/app/search/{search,results}`, browse affordances | done |
+| 7.4b | Search discovery | Facet sidebar (quick-search aggregations), typeahead suggestions, advanced filters — net-new UX with no legacy copy (SDX) | Aurelius `apps/atlas/src/app/search/components/{filter}` (App Search shape, redesigned) | planned |
 | 7.5 | Landing page (browse) | Hero, context cards, info modals; search affordances join 7.4 (DD-143); Shell chrome ported by 7.11 (DD-145) | Aurelius `apps/atlas/src/app/search/browse` | in progress |
 | 7.6 | Entity details | Routed details skeleton (route, header, breadcrumbs, properties shell — DET-01..07); the data spine joins server 2.3 (DD-096, DD-097) | Aurelius `apps/atlas/src/app/search/details` | in progress |
 | 7.7 | Entity editor | Create and edit forms with validation | Aurelius `apps/atlas/src/app/search/{create,edit}-entity` | planned |

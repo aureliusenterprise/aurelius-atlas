@@ -25,7 +25,7 @@ Explicitly not delivered here, with the increment that will:
 | The nine type-specific components (domain/entity/attribute/field/dataset/collection/system/person/process) | The 2.3+7.6 wiring increment | They are m4i governance-type layouts (`m4i_data_domain`, …) — Aurelius's own type model, meaningless without entity data |
 | Lineage view, governance-quality cards, data-quality lists/pies | The 2.3+7.6 wiring increment (+ lineage backend) | Lineage is server 5.1; the quality cards post to Aurelius backends Aurelius Atlas does not have (DD-140) |
 | Classifications list, glossary terms (`meanings`), edit affordance (`DATA_STEWARD`), people, domains | Later 7.x slices (7.8, 7.9) + 3.3/3.4, 6.2 | Each is a feature whose server increment is planned, not built |
-| Search entry into details (results page) | 7.4, after server 4.1 + 2.3 (DD-143) | Unchanged: all search is on hold |
+| Search entry into details (results page) | **Delivered in 7.4a** — a card deep-links this skeleton (SRH-05) | The gate lifted with the search client (DD-217); the entity fetch stays 2.3's (DET-02) |
 
 ## Semantics
 
