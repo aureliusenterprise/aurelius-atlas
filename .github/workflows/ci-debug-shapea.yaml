@@ -1,18 +1,26 @@
-# TEMPORARY Shape A forensics (PR 150) — round 13: the cgroup-parent probe.
+# TEMPORARY Shape A forensics (PR 150) — round 14: the javaagent escape.
 #
-# Rounds 12b/12c verdicts: the coredump_filter write is denied for EVERY
-# dockerd container on GKE nodes - COS AND Ubuntu, every uid (probe A:
-# init@1000, no transition, still EACCES), privileged included (R10) -
-# while the k8s runner pod on the SAME node writes it (R11). Ubuntu
-# swap: red herring (GKE ships the lockdown on both OSes). The one
-# untested discriminator: the CGROUP PATH. GKE's bpflsm policy must
-# exempt k8s pods (containers under /kubepods.slice) - Elasticsearch
-# runs on GKE node pools in production - so putting docker containers
-# under kubepods.slice (--cgroup-parent, dockerd is privileged) should
-# inherit the exemption. This round probes it on the COS pool (the
-# scale set is unpinned back to COS). If W1/W3 go green: add
-# cgroup_parent to the compose stacks + with_kwargs(cgroup_parent=) to
-# the testcontainer helper, and the $117/mo Ubuntu pool goes away.
+# Rounds 1-13 exhausted the environment: on GKE nodes (COS AND Ubuntu,
+# every uid incl. init@1000, --privileged, --cgroup-parent
+# kubepods.slice, apparmor/seccomp off, suid_dumpable=2) the procfs
+# write ES 9.x does at bootstrap is denied for EVERY docker container,
+# while the k8s runner pod is exempt (GKE's container lockdown;
+# upstream elastic/elasticsearch#139589 closed not-planned: "the
+# environment must allow the write"; 9.2.8/9.4.4 ship the same fatal
+# write - no version escape).
+#
+# The setting is COSMETIC - it excludes file-backed pages from core
+# dumps, and CI never collects core dumps. Only its FAILURE is fatal.
+# The escape: a pure-JDK -javaagent that rewrites the path constant in
+# Elasticsearch.class at load - "/proc/self/coredump_filter" (26
+# bytes) -> "/tmp/coredump_filter.jvm12" (26 bytes, same length, no
+# ASM needed): the write goes to a plain file on the container's tmpfs
+# and succeeds; ES's bootstrap proceeds unchanged. Portable to every
+# host (dev containers included - the redirect is harmless there).
+#
+# W1 builds the agent, W2 boots ES with it (expect "started on").
+# If green: wire the agent into dev/elasticsearch + the store-es
+# testcontainer helper (and the e2e compose stacks), then full ci.yaml.
 # Remove once the e2e databases boot in ci.yaml.
 name: CI Debug (Shape A forensics)
 
@@ -31,45 +39,28 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Where am I (expect COS — pool unpinned)
+            - name: Build the agent
               run: |
-                  grep -E "^PRETTY_NAME" /etc/os-release
-                  uname -r
-                  echo "### runner pod cgroup (the exempt path)"
-                  cat /proc/self/cgroup
-                  echo "### docker cgroup config"
-                  docker info 2>/dev/null | grep -iE "cgroup"
+                  which javac
+                  bash tools/es-coredump-agent/build.sh
+                  ls -la tools/es-coredump-agent/coredump-noop.jar
 
-            - name: The cgroup-parent probe
-              continue-on-error: true
+            - name: ES boots with the agent
               run: |
-                  ES=dhi.io/elasticsearch:9.5-debian13
-                  echo "### W0 control: default docker cgroup"
-                  docker run --rm --entrypoint sh "$ES" \
-                      -c 'cat /proc/self/cgroup; ls -l /proc/self/coredump_filter; echo 0x23 > /proc/self/coredump_filter 2>/dev/null && echo WRITE-OK || echo WRITE-EACCES'
-                  echo "### W1 --cgroup-parent kubepods.slice"
-                  docker run --rm --cgroup-parent kubepods.slice --entrypoint sh "$ES" \
-                      -c 'cat /proc/self/cgroup; ls -l /proc/self/coredump_filter; echo 0x23 > /proc/self/coredump_filter 2>/dev/null && echo WRITE-OK || echo WRITE-EACCES'
-                  echo "### W2 ES boot under kubepods.slice (plain)"
-                  docker rm -f e13 >/dev/null 2>&1 || true
-                  docker run -d --name e13 --cgroup-parent kubepods.slice \
+                  docker rm -f e14 >/dev/null 2>&1 || true
+                  docker run -d --name e14 \
+                      -v "$PWD/tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro" \
                       -e discovery.type=single-node -e xpack.security.enabled=false \
-                      -e cluster.name=e13 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" "$ES" >/dev/null
+                      -e cluster.name=e14 \
+                      -e ES_JAVA_OPTS="-Xms512m -Xmx512m -javaagent:/agent/coredump-noop.jar" \
+                      dhi.io/elasticsearch:9.5-debian13 >/dev/null
                   sleep 45
-                  docker inspect -f 'e13 state={{.State.Status}}' e13
-                  docker logs e13 2>&1 |
-                      grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"' | head -4
-                  docker rm -f e13 >/dev/null 2>&1 || true
-                  echo "### W3 postgres compose (tmpfs fix) on COS"
-                  npx nx run aurelius-atlas-dev-postgres:decrypt
-                  docker compose -f dev/postgres/docker-compose.yaml up -d --wait postgres
-                  PGC="$(docker compose -f dev/postgres/docker-compose.yaml ps -q postgres)"
-                  docker inspect -f 'pg health={{.State.Health.Status}}' "$PGC"
-                  docker exec "$PGC" sh -c 'ls -ld /tmp && psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tc "select 1"'
-                  docker compose -f dev/postgres/docker-compose.yaml down -v
+                  docker inspect -f 'e14 state={{.State.Status}}' e14
+                  docker logs e14 2>&1 |
+                      grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"|Could not set coredump' | head -4
+                  docker exec e14 sh -c 'ls -l /tmp/coredump_filter.jvm12 && cat /tmp/coredump_filter.jvm12' 2>/dev/null
+                  docker rm -f e14 >/dev/null 2>&1 || true
 
             - name: Cleanup
               if: always()
-              run: |
-                  docker compose -f dev/postgres/docker-compose.yaml down -v 2>/dev/null || true
-                  docker ps -aq --filter name=e13 | xargs -r docker rm -f
+              run: docker ps -aq --filter name=e14 | xargs -r docker rm -f
