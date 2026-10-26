@@ -62,10 +62,6 @@ _TLS_STARTUP_COMMAND = (
 )
 
 
-_TLS_TMPFS: dict[str, str] = {"/tmp": "mode=1777,exec"}  # noqa: S108 - container mount target, not a host path
-"""Container tmpfs mount for the TLS startup copy (see configure_tls_postgres)."""
-
-
 def _write_tls_material(cert_dir: Path, sans: Sequence[str]) -> None:
     """Generate ephemeral TLS material for one container into ``cert_dir``.
 
@@ -147,7 +143,14 @@ def configure_tls_postgres(container: PostgresContainer, certs: TlsCertificates)
     40240896184); pinning ``mode=1777`` keeps the boot independent of
     which build the daemon happens to have cached.
     """
-    container.with_kwargs(entrypoint=["/bin/sh", "-c"], tmpfs=_TLS_TMPFS)
+    container.with_kwargs(entrypoint=["/bin/sh", "-c"])
+    # with_tmpfs_mount, NOT with_kwargs(tmpfs=...): the fork's start()
+    # passes self.tmpfs to create() as an explicit keyword, so a tmpfs
+    # entry in _kwargs is a second one - TypeError: create() got
+    # multiple values for keyword argument 'tmpfs' (CI run 40270804386;
+    # the kwarg form only survived on daemons whose image /tmp is the
+    # 1777 fresh-pull default, where the mount is a no-op failure).
+    container.with_tmpfs_mount("/tmp", "mode=1777,exec")  # noqa: S108 - container mount target, not a host path
     container.with_env("POSTGRES_HOST_AUTH_METHOD", "scram-sha-256")
     container.with_command([_TLS_STARTUP_COMMAND])
     container.with_volume_mapping(certs.directory, "/certs", "ro")

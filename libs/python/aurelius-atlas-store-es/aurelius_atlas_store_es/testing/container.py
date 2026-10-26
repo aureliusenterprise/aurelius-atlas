@@ -131,6 +131,24 @@ def elasticsearch_container(
             .with_volume_mapping(str(work_dir / "elasticsearch.yml"), f"{_CONFIG_DIR}/elasticsearch.yml", "ro")
             .with_volume_mapping(str(work_dir / "tls"), f"{_CONFIG_DIR}/tls", "ro")
             .with_exposed_ports(9200)
+            # Init at uid 1000, NOT root (same fix as dev/elasticsearch):
+            # ES 9.5's bootstrap write to /proc/self/coredump_filter is
+            # fatal when the process is non-dumpable, and hosts with
+            # fs.suid_dumpable=2 (the GKE node default) mark the image's
+            # root->uid-1000 entrypoint transition non-dumpable - CI
+            # forensics runs 40237701606..40269389651. At user 1000 runc
+            # inits without a transition: dumpable, file uid-owned, boots.
+            # The data dir is docker's anonymous volume initialised from
+            # the image (owned by uid 1000); the binds are :ro.
+            .with_kwargs(user="1000:1000")
+            # The image ships NO data directory, so docker's anonymous
+            # volume (and the named one in dev/elasticsearch) is born
+            # root-owned - uid 1000 cannot write it; dev/elasticsearch
+            # chowns it via a volume-init service, and here a tmpfs is
+            # the ephemeral equivalent (docker default mode 1777; the
+            # node's indices are test state, thrown away with the
+            # container).
+            .with_tmpfs_mount("/usr/share/elasticsearch/data")
         )
 
         with container:

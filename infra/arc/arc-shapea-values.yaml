@@ -65,24 +65,6 @@ template:
             - ip: 127.0.0.1
               hostnames:
                   - keycloak.localhost
-        # Pin the runner to the atlas-ci node pool (UBUNTU_CONTAINERD).
-        # The default pool is COS_CONTAINERD, whose kernel (6.12.105+)
-        # carries a BPF-LSM policy that denies container processes the
-        # /proc/self/coredump_filter write Elasticsearch 9.5 does at
-        # bootstrap (fatal "Could not set coredump filter"; upstream
-        # elastic/elasticsearch#139589, closed not-planned). Immune to
-        # caps/apparmor/seccomp/suid_dumpable - measured over 11 forensics
-        # rounds (runs 40237701606..40242965062, docs/architecture/
-        # self-hosted-ci.md). Ubuntu nodes (like the GitHub-hosted
-        # runners) allow the write. The taint keeps every other workload
-        # (cache-server, dev infra) on the COS nodes.
-        nodeSelector:
-            ci-pool: atlas-ci
-        tolerations:
-            - key: ci-pool
-              operator: Equal
-              value: atlas-ci
-              effect: NoSchedule
         securityContext:
             runAsUser: 1000 # vscode
             runAsGroup: 999 # docker (socket group)
