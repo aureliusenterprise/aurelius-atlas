@@ -31,7 +31,7 @@ const host = (args: Record<string, unknown>) => ({
     [allLoaded]="allLoaded"
     [loadLabel]="loadLabel"
     (nextPage)="onNextPage()"
-    style="display:block; max-height: 12rem; overflow-y: auto"
+    class="story-scroll-host"
 >
     <div class="box">Result 1</div>
     <div class="box">Result 2</div>
