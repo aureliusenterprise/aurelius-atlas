@@ -2,7 +2,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { AdminService, AtlasSession, AtlasStatus, AtlasVersion } from "./admin.service";
-import { API_BASE_URL, provideApiBaseUrl } from "./api-config";
+import { API_BASE_URL, provideApiBaseUrl } from "../api-config";
 import { atlasErrorFrom } from "./atlas-error";
 
 describe("AdminService", () => {

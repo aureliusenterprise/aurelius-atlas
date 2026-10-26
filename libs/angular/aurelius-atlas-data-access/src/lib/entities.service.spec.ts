@@ -1,7 +1,7 @@
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { EntitiesService, Entity, Envelope, FindAllQueryParams, PaginatedResponse } from "./entities.service";
-import { atlasErrorFrom } from "./atlas-error";
+import { atlasErrorFrom } from "./atlas/atlas-error";
 
 describe("EntitiesService", () => {
     let service: EntitiesService;

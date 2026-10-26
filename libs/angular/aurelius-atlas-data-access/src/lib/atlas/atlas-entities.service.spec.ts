@@ -1,7 +1,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { provideApiBaseUrl } from "./api-config";
+import { provideApiBaseUrl } from "../api-config";
 import { AtlasEntitiesService } from "./atlas-entities.service";
 import type { AtlasEntityWithExtInfo } from "./atlas-entity";
 
