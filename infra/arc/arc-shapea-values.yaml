@@ -175,8 +175,12 @@ template:
                       # and login files are skipped for `bash -c`), so
                       # assemble them explicitly: nvm node, /usr/local/bin
                       # (sops, kubectl, helm, trivy, gcloud, npm -g nx),
-                      # py-utils uv, sdkman java.
-                      export PATH="/usr/local/share/nvm/versions/node/$(ls /usr/local/share/nvm/versions/node | tail -1)/bin:/usr/local/bin:/usr/local/py-utils/bin:/usr/local/sdkman/bin:/usr/local/sdkman/candidates/java/current/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+                      # py-utils uv, sdkman java, sonar-scanner (the
+                      # sonar-scanner-cli feature bakes it to its own bin
+                      # dir on the image ENV PATH, which this command
+                      # overrides - run 40279621021: "sonar-scanner: not
+                      # found" across all 25 sonar tasks).
+                      export PATH="/usr/local/share/nvm/versions/node/$(ls /usr/local/share/nvm/versions/node | tail -1)/bin:/usr/local/bin:/usr/local/py-utils/bin:/usr/local/sdkman/bin:/usr/local/sdkman/candidates/java/current/bin:/usr/local/sonar-scanner/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
                       # devcontainer.json containerEnv, injected verbatim:
                       export NX_DAEMON=true
                       export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
