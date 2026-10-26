@@ -37,7 +37,7 @@ inputs:
         default: "false"
     trivy-version:
         description: Trivy version to install
-        default: v0.68.0
+        default: v0.76.1
     cyclonedx:
         description: Install CycloneDX CLI (for SBOM generation)
         default: "false"
