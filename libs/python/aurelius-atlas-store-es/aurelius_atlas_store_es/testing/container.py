@@ -62,6 +62,9 @@ cluster.routing.allocation.disk.threshold_enabled: false
 
 STARTUP_TIMEOUT_ERROR = "Elasticsearch did not become healthy within {timeout} seconds"
 
+LOG_TAIL_SUFFIX = "\n\nElasticsearch container log (last lines):\n{lines}"
+"""Appended to the timeout message so a failed boot shows the server's own output."""
+
 
 def _write_material(work_dir: Path) -> Path:
     """Write the node configuration and ephemeral TLS material; return the CA file.
@@ -153,7 +156,13 @@ def elasticsearch_container(
                     "ca_certs": ca_file,
                 },
             )
-            _wait_until_healthy(settings, timeout)
+            try:
+                _wait_until_healthy(settings, timeout)
+            except TimeoutError:
+                stdout, stderr = container.get_logs()
+                log_tail = "\n".join((stdout + stderr).decode(errors="replace").splitlines()[-200:])
+                detail = STARTUP_TIMEOUT_ERROR.format(timeout=timeout) + LOG_TAIL_SUFFIX.format(lines=log_tail)
+                raise TimeoutError(detail) from None
             yield settings
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
