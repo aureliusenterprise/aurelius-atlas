@@ -1,14 +1,14 @@
-# TEMPORARY Shape A forensics (PR 150) — round 11: name the denier.
+# TEMPORARY Shape A forensics (PR 150) — round 12: verify the OS fix.
 #
-# R10: plain ES container is apparmor=unconfined on this daemon; the
-# privileged ES (uid 1000, ALL caps: DAC_OVERRIDE+SYS_PTRACE) dies the
-# same "Could not set coredump filter". A denial that survives DAC
-# bypass + ptrace caps + unconfined apparmor is an LSM below the
-# capability check (COS runs bpflsm) OR the dumpability gate (the file
-# is root:root 644 = the process is NON-DUMPABLE; untested knob:
-# fs.suid_dumpable=2, which makes post-setuid transitions dumpable —
-# R4 tried only =1). dmesg on this privileged runner will name the
-# subsystem. Boot plain ES, capture dmesg, then suid_dumpable=2 + boot.
+# Rounds 1-11 root-caused the ES boot failure: COS 6.12.105+ nodes run a
+# BPF-LSM policy that denies container processes the
+# /proc/self/coredump_filter write ES 9.5 does at bootstrap (upstream
+# elastic/elasticsearch#139589). The fix is the new atlas-ci node pool
+# (UBUNTU_CONTAINERD, runner pinned via nodeSelector+toleration, kept
+# warm by minRunners=1; the cluster autoscaler placed it in -b for the
+# RWO cache PD). This round proves the databases boot on the Ubuntu
+# node: plain ES, the ES compose stack (TLS, healthcheck), and the
+# postgres compose stack (tmpfs /tmp fix, runs as uid 70).
 # Remove once the e2e databases boot in ci.yaml.
 name: CI Debug (Shape A forensics)
 
@@ -27,36 +27,51 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Name the denier
-              continue-on-error: true
+            - name: Where am I
               run: |
-                  ES=dhi.io/elasticsearch:9.5-debian13
-                  echo "### node suid_dumpable / runner own proc file"
-                  cat /proc/sys/fs/suid_dumpable
-                  ls -l /proc/self/coredump_filter
-                  grep -E "CapEff|Seccomp:" /proc/self/status
-                  dmesg -C 2>/dev/null || true
-                  docker rm -f e11a >/dev/null 2>&1 || true
-                  docker run -d --name e11a \
+                  echo "### node / kernel (expect Ubuntu, not COS)"
+                  grep -E "^PRETTY_NAME" /etc/os-release
+                  uname -r
+                  echo "### coredump_filter writable from a container?"
+                  docker run --rm dhi.io/elasticsearch:9.5-debian13 \
+                      sh -c 'echo 0x23 > /proc/self/coredump_filter && cat /proc/self/coredump_filter && echo WRITE-OK'
+
+            - name: ES boots plain
+              run: |
+                  docker rm -f e12 >/dev/null 2>&1 || true
+                  docker run -d --name e12 \
                       -e discovery.type=single-node -e xpack.security.enabled=false \
-                      -e cluster.name=e11a -e ES_JAVA_OPTS="-Xms512m -Xmx512m" "$ES" >/dev/null
+                      -e cluster.name=e12 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
+                      dhi.io/elasticsearch:9.5-debian13 >/dev/null
                   sleep 40
-                  echo "### dmesg after boot (denials)"
-                  dmesg 2>/dev/null | tail -25
-                  docker rm -f e11a >/dev/null 2>&1 || true
-                  echo "### suid_dumpable=2, boot again"
-                  sysctl -w fs.suid_dumpable=2
-                  docker run -d --name e11b \
-                      -e discovery.type=single-node -e xpack.security.enabled=false \
-                      -e cluster.name=e11b -e ES_JAVA_OPTS="-Xms512m -Xmx512m" "$ES" >/dev/null
-                  sleep 40
-                  docker inspect -f 'e11b state={{.State.Status}}' e11b
-                  docker logs e11b 2>&1 |
+                  docker inspect -f 'state={{.State.Status}}' e12
+                  docker logs e12 2>&1 |
                       grep -oE '"error\.(type|message)":"[^"]*"|"message":"started on[^"]*"' | head -4
-                  dmesg 2>/dev/null | tail -10
-                  docker rm -f e11b >/dev/null 2>&1 || true
-                  sysctl -w fs.suid_dumpable=0
+                  docker rm -f e12 >/dev/null 2>&1 || true
+
+            - name: ES compose stack (TLS + healthcheck)
+              run: |
+                  bash tools/tls/certgen.sh dev/elasticsearch
+                  docker compose -f dev/elasticsearch/docker-compose.yaml \
+                      up -d --wait elasticsearch
+                  docker inspect -f 'es-compose health={{.State.Health.Status}}' \
+                      "$(docker compose -f dev/elasticsearch/docker-compose.yaml ps -q elasticsearch)"
+                  docker compose -f dev/elasticsearch/docker-compose.yaml down -v
+
+            - name: Postgres compose stack (tmpfs fix)
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: |
+                  npx nx run aurelius-atlas-dev-postgres:decrypt
+                  docker compose -f dev/postgres/docker-compose.yaml up -d --wait postgres
+                  PGC="$(docker compose -f dev/postgres/docker-compose.yaml ps -q postgres)"
+                  docker inspect -f 'pg health={{.State.Health.Status}}' "$PGC"
+                  docker exec "$PGC" sh -c 'ls -ld /tmp && psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tc "select 1"'
+                  docker compose -f dev/postgres/docker-compose.yaml down -v
 
             - name: Cleanup
               if: always()
-              run: docker rm -f e11a e11b 2>/dev/null; sysctl -w fs.suid_dumpable=0 2>/dev/null; true
+              run: |
+                  docker compose -f dev/elasticsearch/docker-compose.yaml down -v 2>/dev/null || true
+                  docker compose -f dev/postgres/docker-compose.yaml down -v 2>/dev/null || true
+                  docker ps -aq --filter name=e12 | xargs -r docker rm -f

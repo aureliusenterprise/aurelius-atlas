@@ -33,7 +33,16 @@
 githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
 githubConfigSecret: atlas-arc-auth
 runnerScaleSetName: atlas-ci-shapea
-minRunners: 0
+# One warm (idle) runner pod, always. It is what keeps the single
+# Ubuntu node of the atlas-ci pool up: the pool is autoscaled 0-1 and
+# GKE's autoscaler only adds a node for a PENDING pod - with minRunners
+# 0 the pool sits at zero and the first job of the day eats a ~6 min
+# node boot. int (NOT 1.0): helm's --set passes a float as a STRING and
+# the chart's template omits runnersMin unless the value is numeric
+# (rev 13: minRunners="1.0" silently = no warm runner). Keep it here in
+# the file - YAML numbers all arrive as the same type, so the chart's
+# gt(minRunners, maxRunners) comparison type-checks.
+minRunners: 1
 # Separate scale set from atlas-ci (Shape B): the RWO cache PD never
 # attaches to two pods, and the full ci job keeps running on Shape B while
 # this canary proves Shape A.
@@ -56,6 +65,24 @@ template:
             - ip: 127.0.0.1
               hostnames:
                   - keycloak.localhost
+        # Pin the runner to the atlas-ci node pool (UBUNTU_CONTAINERD).
+        # The default pool is COS_CONTAINERD, whose kernel (6.12.105+)
+        # carries a BPF-LSM policy that denies container processes the
+        # /proc/self/coredump_filter write Elasticsearch 9.5 does at
+        # bootstrap (fatal "Could not set coredump filter"; upstream
+        # elastic/elasticsearch#139589, closed not-planned). Immune to
+        # caps/apparmor/seccomp/suid_dumpable - measured over 11 forensics
+        # rounds (runs 40237701606..40242965062, docs/architecture/
+        # self-hosted-ci.md). Ubuntu nodes (like the GitHub-hosted
+        # runners) allow the write. The taint keeps every other workload
+        # (cache-server, dev infra) on the COS nodes.
+        nodeSelector:
+            ci-pool: atlas-ci
+        tolerations:
+            - key: ci-pool
+              operator: Equal
+              value: atlas-ci
+              effect: NoSchedule
         securityContext:
             runAsUser: 1000 # vscode
             runAsGroup: 999 # docker (socket group)
