@@ -12,9 +12,9 @@ import java.util.Arrays;
  * ("Could not set coredump filter", elastic/elasticsearch#139589 - closed
  * not-planned: "the environment must allow the write"). GKE's container
  * lockdown denies that procfs write to every docker container on the node
- * (Aurelius Atlas CI runs 40237701606..40273498229: every uid, --privileged,
- * --cgroup-parent kubepods.slice), while the setting is cosmetic in CI - no
- * core dumps are ever collected there.
+ * (measured on CI runs 40237701606..40273498229: every uid, --privileged,
+ * cgroup nesting), while the setting is cosmetic in CI - no core dumps are
+ * ever collected there.
  *
  * <p>This agent rewrites the path constant in the class bytes before
  * org.elasticsearch.bootstrap.Elasticsearch is defined, redirecting the write

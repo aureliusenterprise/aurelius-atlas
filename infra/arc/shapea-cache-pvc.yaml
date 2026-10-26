@@ -1,12 +1,6 @@
-# Toolchain cache for the SHAPE A scale set (infra/arc/arc-shapea-values.yaml).
-#
-# Deliberately SEPARATE from atlas-toolchain-cache (Shape B): both scale sets
-# run during the canary period, and a shared RWO PD would (a) detach/attach
-# stall jobs when the two scale sets' pods land on different nodes and
-# (b) force fsGroup chown flip-flops (Shape B pods use fsGroup 1001, Shape A
-# 1000 - OnRootMismatch re-chowns the whole volume on every alternating
-# mount). Retire this claim with Shape B (helm uninstall atlas-ci) and the
-# PD cost returns to zero.
+# Toolchain cache for the Shape A scale set (infra/arc/arc-shapea-values.yaml).
+# One RWO PD for everything the runner keeps between jobs; it attaches to at
+# most one pod (maxRunners: 1).
 #
 # Layout (created setgid by the cache-init init container):
 #   .ci-cache/uv, npm, pre-commit  -> mounted at /var/cache/ci/* (subPath)

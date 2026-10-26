@@ -43,7 +43,8 @@ telemetry push. It delivers:
       elasticsearch) present their client credentials through the contrib
       collector's own **`oauth2client`** extension — mint, cache, refresh
       natively, zero custom code; each puller gains
-      `restart: on-failure:15` (the DD-195 race, now issuer-shaped);
+      `restart: on-failure` (the DD-195 race, now issuer-shaped; unbounded
+      per DD-217);
     - the **Atlas server** (Python, logfire 5.2) presents its JWT through a
       small in-app refresh shim: a `ClientCredentialsTokenSource`
       (urllib + cache + refresh-ahead, thread-safe, stdlib-only) feeding

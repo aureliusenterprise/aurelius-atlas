@@ -3,10 +3,12 @@ name: Build Dev Container Image
 # Builds the Aurelius Atlas dev container as a publishable image and runs the
 # in-container smoke test before publishing.
 #
-# This is the cache image consumed by `devcontainers/ci` steps in CI jobs
-# (`cacheFrom: ghcr.io/aureliusenterprise/atlas-ci-runner:main`): the image is
-# the devcontainer, so CI jobs run in the same environment developers use.
-# It is also the base for the future self-hosted runner image.
+# The published image (ghcr.io/aureliusenterprise/atlas-ci-runner) is what
+# the self-hosted CI jobs run IN: on the Shape A ARC scale set the runner
+# pod's job container IS this image (infra/arc), so CI runs in the same
+# environment developers use. The build itself uses devcontainers/ci, which
+# supplies the devcontainer lifecycle the image intentionally ships without
+# - the CI values file sets command/runAs*.
 #
 # Publishing is limited to `main` (see the push filters below). Feature-branch
 # and pull-request runs build and smoke-test the image without publishing, so
@@ -92,11 +94,11 @@ jobs:
               with:
                   imageName: ghcr.io/aureliusenterprise/atlas-ci-runner
                   # main pushes (and the weekly rebuild) publish :main, the
-                  # devcontainers/ci cache image. Feature-branch pushes publish
-                  # a per-commit tag sha-<full-sha> - that is the Shape A
-                  # canary image (infra/arc/arc-shapea-values.yaml runs it
-                  # directly as the runner pod's job container; the canary
-                  # points at the tag via CI_SHAPEA_IMAGE_TAG).
+                  # image the CI scale set runs by default. Feature-branch
+                  # pushes publish a per-commit tag sha-<full-sha>, which
+                  # CI_SHAPEA_IMAGE_TAG can point the runner pod at
+                  # (infra/arc/install.sh) to test a .devcontainer change
+                  # before merging.
                   imageTag: ${{ github.ref == 'refs/heads/main' && 'main' || format('sha-{0}', github.sha) }}
                   userDataFolder: ${{ github.workspace }}/.devcontainer/.features-cache
                   # Reuse the published image's layers; the first build after a

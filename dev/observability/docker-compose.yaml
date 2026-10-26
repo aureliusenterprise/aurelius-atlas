@@ -13,14 +13,13 @@ services:
         # other slice composes) attach this stack's network as external, so
         # Nx's implicitDependencies/^up chain and the e2e conftest fixtures
         # all start observability FIRST. The restart window carries the
-        # collector over Keycloak's boot: Docker backs off 100ms doubling to
-        # a 1min cap, 15 attempts ≈ 6 minutes — bounded, so a Keycloak that
-        # never comes up fails loudly (compose up --wait exits on the final
-        # crash; the watcher survives the intermediate exits) instead of
-        # crash-looping into an open-ingest silence. The count syntax is
-        # "on-failure:15" — no space, which YAML would read as a mapping.
-        # Unbounded - see dev/elasticsearch (run 40292544843: attempt-capped
-        # restarts burn out before Keycloak readiness; 60 s backoff ceiling).
+        # collector over Keycloak's boot: Docker backs off 100 ms doubling to
+        # a 60 s ceiling, and the restarts are unbounded (DD-217 — an attempt
+        # count burns out ~6 min in, before Keycloak's TLS listener is
+        # reliably up under the e2e fan-out; see dev/elasticsearch, run
+        # 40292544843). A permanently bad config still fails loudly: a
+        # container stuck in the restart loop shows in `docker compose ps`
+        # and `compose up --wait` never reports it healthy.
         restart: on-failure
         depends_on:
             loki:

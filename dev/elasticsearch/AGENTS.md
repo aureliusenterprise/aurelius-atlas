@@ -29,8 +29,9 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
   URL from env: the mint issuer is baked into the container at creation, and
   an env default let suite order split it from the collector's validator
   (the ESD-06 starvation). The collector validates both listeners. The puller
-  carries `restart: on-failure:15` (the DD-195 boot race, issuer-shaped: the
-  mint needs Keycloak up). The slice no longer carries the shared ingest
+  carries `restart: on-failure`, unbounded (the DD-195 boot race, issuer-shaped:
+  the mint needs Keycloak up; DD-217 — an attempt count burns out before
+  Keycloak is reliably up). The slice no longer carries the shared ingest
   token — its puller was the only consumer.
 - The image tag is shared with `aurelius_atlas_store_es.testing.container`; change both together.
 

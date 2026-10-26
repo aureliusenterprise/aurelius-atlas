@@ -75,9 +75,8 @@ services:
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
-        # their export.
-        # Unbounded - see dev/elasticsearch (run 40292544843: attempt-capped
-        # restarts burn out before Keycloak readiness; 60 s backoff ceiling).
+        # their export. Unbounded, per DD-217: an attempt count burns out
+        # ~6 min in, before Keycloak is reliably up (dev/elasticsearch).
         restart: on-failure
         environment:
             # Same dev defaults the postgres service gets; the collector

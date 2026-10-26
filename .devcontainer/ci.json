@@ -1,9 +1,0 @@
-{
-    "containerEnv": {
-        "SOPS_AGE_KEY_FILE": null
-    },
-    "customizations": null,
-    "forwardPorts": null,
-    "portsAttributes": null,
-    "runArgs": null
-}

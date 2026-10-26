@@ -13,9 +13,9 @@
 #
 # Everything runs in ONE container on ONE Docker daemon: e2e containers, built
 # images, and reports all live on the mounted checkout / shared daemon, so
-# later phases see what earlier phases produced. $GITHUB_OUTPUT is mounted in
-# by devcontainers/ci; the ui-affected line tells the host Chromatic step
-# whether to run.
+# later phases see what earlier phases produced. $GITHUB_OUTPUT is the ci
+# step's own output file (the job runs this script directly); the ui-affected
+# line tells the workflow's Chromatic step whether to run.
 set -euo pipefail
 
 echo "::group::1/5 Validate (pre-commit)"

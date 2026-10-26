@@ -2,22 +2,21 @@
 # Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
-# Usage: ./install.sh <cluster|controller|nodepool|scale-set-shapea|cache-server|status>
-# Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region), GKE_NODEPOOL (default: cipool),
+# Usage: ./install.sh <cluster|controller|scale-set-shapea|cache-server|status>
+# Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region),
 #        CI_SHAPEA_IMAGE_TAG (scale-set-shapea image tag, default: main)
 set -euo pipefail
 
 PROJECT="${GCP_PROJECT:?set GCP_PROJECT}"
 CLUSTER="${GKE_CLUSTER:?set GKE_CLUSTER}"
 LOCATION="${GKE_LOCATION:?set GKE_LOCATION (region)}"
-POOL="${GKE_NODEPOOL:-cipool}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 case "${1:-status}" in
     cluster)
-        # Standard-mode (Autopilot forbids privileged pods - the dind sidecar
-        # needs Standard). Zonal; system pool = 1-2 small nodes for the ARC
-        # controller; CI pods land on `nodepool` (spot, tainted) only.
+        # Standard-mode (Autopilot forbids privileged pods - the runner needs
+        # a privileged job container, so Standard). The runner pods schedule
+        # on the existing default pool's headroom (values: low requests).
         gcloud container clusters create "$CLUSTER" \
             --project "$PROJECT" --location "$LOCATION" \
             --release-channel regular \
@@ -31,17 +30,6 @@ case "${1:-status}" in
         helm install arc \
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
             --namespace arc-systems --create-namespace
-        ;;
-    nodepool)
-        # Scale-to-zero: GKE regional pools start at 1 node per zone; spot +
-        # min 0 keeps the idle cost to the controller's needs only.
-        gcloud container node-pools create "$POOL" \
-            --project "$PROJECT" --cluster "$CLUSTER" --location "$LOCATION" \
-            --machine-type n2-standard-8 --spot \
-            --enable-autoscaling --min-nodes 0 --max-nodes 3 \
-            --disk-type pd-ssd --disk-size 200 \
-            --node-taints "ci=true:NoSchedule" \
-            --workload-metadata=DISABLED
         ;;
     scale-set-shapea)
         # The production scale set (arc-shapea-values.yaml): the job
@@ -70,7 +58,7 @@ case "${1:-status}" in
         kubectl -n arc-runners get autoscalingrunnerset,secrets,pvc,pods,deploy,svc -o wide
         ;;
     *)
-        echo "usage: $0 <cluster|controller|nodepool|scale-set|status>" >&2
+        echo "usage: $0 <cluster|controller|scale-set-shapea|cache-server|status>" >&2
         exit 2
         ;;
 esac

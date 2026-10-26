@@ -1,12 +1,11 @@
-# ARC gha-runner-scale-set - SHAPE A canary (docs/architecture/self-hosted-ci.md).
-# Release name: atlas-ci-shapea, namespace: arc-runners.
+# ARC gha-runner-scale-set - Shape A, the live CI shape (docs/architecture/
+# self-hosted-ci.md). Release name: atlas-ci-shapea, namespace: arc-runners.
 #
 # Shape A = "the job runs IN the dev container image": the runner pod's job
 # container IS ghcr.io/aureliusenterprise/atlas-ci-runner (the dev container,
 # built by build-devcontainer-image.yaml; branch builds publish a
-# sha-<full-sha> tag, main publishes :main). The ci-shapea workflow has
-# direct steps - no devcontainers/ci action, no sibling container, no
-# per-job image pull.
+# sha-<full-sha> tag, main publishes :main). The ci job has direct steps -
+# no devcontainers/ci action, no sibling container, no per-job image pull.
 #
 # How the pieces fit (verified against chart 0.15.1 templates + the baked
 # feature scripts):
@@ -20,7 +19,7 @@
 #     /opt/actions-runner (owned by vscode). The command chains them.
 #   - Steps run directly on this container's filesystem: the runner's
 #     RunMode=docker only spawns a job container for jobs that request a
-#     `container:` - ci-shapea.yaml requests none.
+#     `container:` - the ci job requests none.
 #   - The image ships NO entrypoint/user (the devcontainer CLI injects
 #     those for developers), so command + runAs* are explicit here.
 #     uid 1000 = the image's vscode (sudoers.d entry, owns
@@ -33,23 +32,20 @@
 githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
 githubConfigSecret: atlas-arc-auth
 runnerScaleSetName: atlas-ci-shapea
-# One warm (idle) runner pod, always. It is what keeps the single
-# Ubuntu node of the atlas-ci pool up: the pool is autoscaled 0-1 and
-# GKE's autoscaler only adds a node for a PENDING pod - with minRunners
-# 0 the pool sits at zero and the first job of the day eats a ~6 min
-# node boot. int (NOT 1.0): helm's --set passes a float as a STRING and
-# the chart's template omits runnersMin unless the value is numeric
+# One warm (idle) runner pod, always: a queued job then starts on an
+# already-registered runner instead of paying pod creation + JIT
+# registration first. int (NOT 1.0): helm's --set passes a float as a STRING
+# and the chart's template omits runnersMin unless the value is numeric
 # (rev 13: minRunners="1.0" silently = no warm runner). Keep it here in
 # the file - YAML numbers all arrive as the same type, so the chart's
 # gt(minRunners, maxRunners) comparison type-checks.
 minRunners: 1
-# Separate scale set from atlas-ci (Shape B): the RWO cache PD never
-# attaches to two pods, and the full ci job keeps running on Shape B while
-# this canary proves Shape A.
+# One pod at most: the RWO cache PD (shapea-cache-pvc.yaml) attaches to a
+# single pod, and the ci job is serial today.
 maxRunners: 1
 
-# runs-on: atlas-ci-shapea (ci-shapea.yaml hardcodes it - a canary targets
-# its pool explicitly, like ci-canary.yaml does for atlas-ci).
+# runs-on: atlas-ci-shapea (ci.yaml hardcodes it - the job targets this
+# scale set's label explicitly).
 scaleSetLabels:
     - atlas-ci-shapea
 
@@ -77,10 +73,9 @@ template:
             fsGroupChangePolicy: OnRootMismatch
         # Creates the cache dirs setgid group-999 (the docker group = the
         # runner's runAsGroup, so every file uv/npm/pre-commit/dockerd write
-        # under them inherits gid 999 and all can write). Mirrors Shape B's
-        # cache-init; 999 not 1001 because THIS scale set's user is uid 1000
-        # with group 999. Runs as root: dockerd also creates bind-mount
-        # sources root:root without it.
+        # under them inherits gid 999 and all can write). 999 not 1001:
+        # this scale set's user is uid 1000 with group 999. Runs as root:
+        # dockerd also creates bind-mount sources root:root without it.
         initContainers:
             - name: cache-init
               image: ghcr.io/actions/actions-runner:latest
@@ -147,9 +142,10 @@ template:
                     mountPath: /work
         containers:
             - name: runner
-              # Shape A canary tag: CI_SHAPEA_IMAGE_TAG repo var (set to
-              # sha-<full-sha> after the branch build publishes it);
-              # :main = fallback once the ci-runner feature lands on main.
+              # The dev container image; the deploy-time tag comes from the
+              # CI_SHAPEA_IMAGE_TAG repo var (install.sh; set it to
+              # sha-<full-sha> to run a branch build's image, :main is the
+              # merged default).
               image: ghcr.io/aureliusenterprise/atlas-ci-runner:main
               securityContext:
                   privileged: true # dockerd (see header)
@@ -185,8 +181,8 @@ template:
                       export NX_DAEMON=true
                       export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
                       # Toolchain caches = the PVC subPaths mounted below,
-                      # OUTSIDE the checkout (Shape B lesson: inside it, the
-                      # root-owned mount roots break the next git clean).
+                      # OUTSIDE the checkout: inside it, the root-owned
+                      # mount roots break the next git clean.
                       export UV_CACHE_DIR=/var/cache/ci/uv
                       export npm_config_cache=/var/cache/ci/npm
                       export PRE_COMMIT_HOME=/var/cache/ci/pre-commit
@@ -266,18 +262,15 @@ template:
                   # are nested and the kernel rejects them: trial run
                   # 40217828572 died with "failed to mount
                   # /tmp/containerd-mount...: invalid argument" on every
-                  # e2e container (ryuk) and docker-build. Shape B never
-                  # hit this - devcontainers/ci gives the dev container
-                  # volume-backed /var/lib/docker AND /var/lib/containerd.
+                  # e2e container (ryuk) and docker-build.
                   - name: work
                     mountPath: /var/lib/containerd
                     subPath: .ci-cache/containerd
               resources:
                   # Sized for the full pipeline fan-out target (dev-compose
                   # caps ~8.75 Gi + runner overhead); requests stay low so
-                  # the canary schedules on the default pool's headroom
-                  # (n2-standard-8, 13.9 Gi allocatable - Shape B's
-                  # ceiling).
+                  # the runner schedules on the default pool's headroom
+                  # (n2-standard-8, 13.9 Gi allocatable).
                   requests:
                       cpu: "1"
                       memory: 4Gi
@@ -287,8 +280,7 @@ template:
         volumes:
             # One claim for everything (shapea-cache-pvc.yaml): the work
             # dir (checkout + tool cache), the .ci-cache/* subPaths above
-            # (caches, docker store, containerd root). Separate from Shape
-            # B's atlas-toolchain-cache on purpose - see the PVC's header.
+            # (caches, docker store, containerd root).
             - name: work
               persistentVolumeClaim:
                   claimName: atlas-shapea-cache

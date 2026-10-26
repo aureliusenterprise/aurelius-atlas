@@ -14,9 +14,11 @@ Setup and the k8s contract: [`README.md`](README.md).
   mounted at the runner root's `_work`, cache PVC subPaths).
 - `shapea-cache-pvc.yaml` - PD (RWO) volume: work dir + toolchain caches +
   dockerd/containerd stores (README has the layout and the reasons).
-- `install.sh` - subcommands: `cluster`, `controller`, `nodepool`,
-  `scale-set-shapea`, `status` (`cluster` unused - target is the existing
-  atlas-dev Standard cluster).
+- `install.sh` - subcommands: `cluster`, `controller`, `scale-set-shapea`,
+  `cache-server`, `status` (`cluster` unused - target is the existing
+  atlas-dev Standard cluster). Runner pods schedule on the default pool's
+  headroom; there is no dedicated CI node pool (the Shape-B taint pool and
+  the debug-era Ubuntu pool are both deleted).
 
 ## Conventions
 

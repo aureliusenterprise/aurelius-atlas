@@ -77,6 +77,18 @@ top tuning target), Chromatic 0.8m. The remaining gap vs hosted is raw
 compute: the shared pool node (4 vCPU / 13 Gi allocatable, maxRunners 1)
 vs a hosted 8 vCPU / 32 GB VM per job.
 
+Full pipeline on Shape A (run 40296654173, green 2026-10-26): **41m22s** —
+the first green on the live shape, 10 minutes under Shape B's 51m13s (no
+image pull, no devcontainer build step, warm `actions/cache` via the
+in-cluster cache server, all confirmed in the run log). Landing it took
+seven GKE-environment fixes after the canary's five green validate runs —
+the ES coredump-procfs denial (a byte-length-preserving javaagent,
+`tools/es-coredump-agent/`), ML's native self-check, the hardened ES image
+vs a `user:` override, the sonar-scanner PATH, an inert `actions/cache`
+save, elastic's product-check timeout, and the puller restart budget
+(DD-217) — each root-caused from run diagnostics and documented at the fix
+site.
+
 ## What we measured (30 days, 2026-09-25 → 10-25)
 
 | Workflow                             | Runs | Runner-minutes |

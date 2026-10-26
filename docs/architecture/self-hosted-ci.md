@@ -1,7 +1,8 @@
 # Self-hosted CI on GKE
 
-> **Status**: as-built (2026-10-25). The `ci` job runs on self-hosted ARC
-> runners on GKE, **directly in the dev container image** (Shape A). This is
+> **Status**: as-built (2026-10-26, full pipeline green 41m22s). The `ci` job
+> runs on self-hosted ARC runners on GKE, **directly in the dev container
+> image** (Shape A). This is
 > the architecture record; cost/benefit and the option analysis are in
 > [self-hosted-ci-decision.md](self-hosted-ci-decision.md), and the
 > operational how-to (setup, deploy loop, the k8s contract, the PVC layout)
@@ -72,14 +73,14 @@ root-owned dirs and staged diagnostics between jobs, and saved ~70s of
 install the cache server now covers. Layout + the reasons for every
 mount are in [`infra/arc/README.md`](../infra/arc/README.md).
 
-## Phases (all shipped 2026-10-25)
+## Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)
 
-| Phase                  | Scope                                                                | Result                                              |
-| ---------------------- | -------------------------------------------------------------------- | --------------------------------------------------- |
-| 0 — hosted bridge      | whole pipeline in `devcontainers/ci` on hosted                       | green 18m34s; proved the single-job shape           |
-| 1 — GKE canary (B)     | ARC dind runner, validate-only, on the existing pool                 | 5/5 green, 9m each                                  |
-| 2 — pipeline on B      | full `ci` on GKE via devcontainers/ci + cache PVC + `CI_*` variables | green 51m13s; no new compute                        |
-| 3 — **Shape A** (live) | job container = the dev container image; `devcontainers/ci` retired  | the `ci` job runs direct steps on `atlas-ci-shapea` |
+| Phase                  | Scope                                                                | Result                                                                             |
+| ---------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 0 — hosted bridge      | whole pipeline in `devcontainers/ci` on hosted                       | green 18m34s; proved the single-job shape                                          |
+| 1 — GKE canary (B)     | ARC dind runner, validate-only, on the existing pool                 | 5/5 green, 9m each                                                                 |
+| 2 — pipeline on B      | full `ci` on GKE via devcontainers/ci + cache PVC + `CI_*` variables | green 51m13s; no new compute                                                       |
+| 3 — **Shape A** (live) | job container = the dev container image; `devcontainers/ci` retired  | full pipeline green **41m22s** (run 40296654173, 2026-10-26), cache hits confirmed |
 
 Phase 3 removed the Phase-2 bridge: the composite action, `ci-canary.yaml`,
 `arc-values.yaml`, `toolchain-cache-pvc.yaml`, the `atlas-ci` scale set, and
