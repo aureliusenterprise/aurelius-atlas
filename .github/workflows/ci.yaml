@@ -77,18 +77,18 @@ jobs:
             # ~47s cold npm install (measured) -> ~10s restore. Keyed on
             # every lockfile; restore-keys fall back to the newest lock
             # version. zstd falls back to gzip (no zstd in the runner
-            # image) - fine at this scale.
-            - name: Cache node_modules
-              uses: actions/cache@v5
+            # image) - fine at this scale. Split restore/save (the
+            # save-always input is deprecated and demonstrably inert:
+            # run 40279621021's failure skipped "Post Cache node_modules",
+            # so the cache was never saved and every run paid the cold
+            # install). The save step below runs with if: always().
+            - name: Restore node_modules
+              id: restore-node-modules
+              uses: actions/cache/restore@v5
               with:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
                   restore-keys: ${{ runner.os }}-node-modules-
-                  # Save even when a later step fails: node_modules is
-                  # cache-worthy the moment npm ci finishes - gating the
-                  # save on a green pipeline delays the restore hit by
-                  # every failing run.
-                  save-always: true
 
             # .venv is NOT cached: uv sync is ~20s with the uv download
             # cache already on a PVC, and a restored .venv hard-codes the
@@ -112,6 +112,17 @@ jobs:
               run: |
                   bash .devcontainer/npm.sh
                   bash .devcontainer/uv.sh
+
+            # Save even when a later step fails: node_modules is
+            # cache-worthy the moment npm ci finishes - gating the save on
+            # a green pipeline delays the restore hit by every failing
+            # run (the deprecated save-always input never fired at all).
+            - name: Save node_modules
+              if: always()
+              uses: actions/cache/save@v5
+              with:
+                  path: node_modules
+                  key: ${{ steps.restore-node-modules.outputs.cache-primary-key }}
 
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). dhi.io = the
