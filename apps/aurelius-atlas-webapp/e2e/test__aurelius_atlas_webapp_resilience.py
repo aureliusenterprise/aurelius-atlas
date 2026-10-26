@@ -26,6 +26,7 @@ from conftest import Settings
 from docker import from_env as docker_from_env
 from docker.models.containers import Container
 from playwright.sync_api import Page, expect
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 E2E_PROJECT = "aurelius-atlas-webapp-e2e"
 """The compose project of this suite's stack (docker-compose.yaml `name:`)."""
@@ -67,18 +68,27 @@ def _poll_proxy_status(page: Page, root_url: str, expected: int, deadline_second
     """Poll the version endpoint through nginx until it answers `expected`.
 
     The probe is the same data path the browser's calls take (nginx /api/
-    proxy, TLS, server), so it measures what the alert measures.
+    proxy, TLS, server), so it measures what the alert measures. Each probe
+    carries a short timeout: mid-restart the TCP connect can hang (the
+    container's endpoint exists, the SYN goes unanswered), and a hung probe
+    must count as "not yet" — the deadline, not Playwright's 30 s default,
+    bounds the poll.
     @param page the Playwright page (its request context ignores the dev CA)
     @param root_url the app origin
     @param expected the status to wait for
     @param deadline_seconds the budget
-    @returns the observed status
+    @returns the observed status, -1 if no probe answered in time
     """
     deadline = time.monotonic() + deadline_seconds
     status = -1
     while time.monotonic() < deadline:
-        response = page.request.get(urljoin(root_url, "/api/atlas/admin/version"), ignore_https_errors=True)
-        status = response.status
+        try:
+            response = page.request.get(
+                urljoin(root_url, "/api/atlas/admin/version"), ignore_https_errors=True, timeout=5_000
+            )
+            status = response.status
+        except PlaywrightTimeoutError:
+            status = -1
         if status == expected:
             return status
         time.sleep(2)

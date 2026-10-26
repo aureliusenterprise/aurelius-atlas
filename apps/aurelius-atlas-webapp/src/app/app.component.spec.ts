@@ -40,13 +40,15 @@ describe("App", () => {
         const compiled = fixture.nativeElement as HTMLElement;
 
         // The Aurelius root wraps its outlet in the shell chrome: header
-        // above, footer below (SHL-03's bare-outlet reading is superseded
-        // here — the legacy root renders <models4insight-shell>). The
-        // outlet band is the legacy .is-tall-container (flex + 100vh), so
-        // the footer begins below the fold (SHM-05, SHM-07, DD-150). The
-        // named `drawer` outlet (SPL-14, DD-166) is the root's last child.
+        // above, the sticky loading bar (SRH-09), footer below (SHL-03's
+        // bare-outlet reading is superseded here — the legacy root renders
+        // <models4insight-shell>). The outlet band is the legacy
+        // .is-tall-container (flex + 100vh), so the footer begins below the
+        // fold (SHM-05, SHM-07, DD-150). The named `drawer` outlet (SPL-14,
+        // DD-166) is the root's last child.
         expect([...compiled.children].map((child) => child.tagName.toLowerCase())).toEqual([
             "aurelius-atlas-webapp-header",
+            "aurelius-atlas-webapp-nav-loading-bar",
             "div",
             "aurelius-atlas-webapp-footer",
             "router-outlet",

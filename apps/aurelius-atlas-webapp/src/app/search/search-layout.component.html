@@ -1,0 +1,30 @@
+<!--
+    The search subtree's chrome (SRH-01, DD-218): the hero above the routed
+    content, the global search field in its title row — the legacy
+    `search.component.html` shape, one-way bound (the legacy `[query]` +
+    `(querySubmitted)`; the legacy DATA_STEWARD editor `+` button is 7.7,
+    the role gate 6.2). The field reads the store's query, so a
+    back-navigation shows the query the URL carries (SRH-02).
+-->
+<aurelius-atlas-ui-hero [title]="heroTitle">
+    <ng-container after-title>
+        <div class="level is-mobile">
+            <div class="level-item">
+                <aurelius-atlas-ui-search-field
+                    class="input-bar"
+                    [query]="search.queryText()"
+                    [placeholder]="searchPlaceholder"
+                    (querySubmitted)="onQuerySubmitted($event)"
+                ></aurelius-atlas-ui-search-field>
+            </div>
+        </div>
+    </ng-container>
+</aurelius-atlas-ui-hero>
+<!-- The routed screens' inset (DD-150, owned here per DD-218): the legacy
+     hero wraps the outlet in `section.section > div.container` — the pages
+     render top-level, the layout insets them. -->
+<section class="section search-content">
+    <div class="container">
+        <router-outlet />
+    </div>
+</section>

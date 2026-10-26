@@ -6,7 +6,7 @@ import socket
 import ssl
 import time
 from datetime import UTC, datetime, timedelta
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit
 
 import pytest
 from conftest import (
@@ -897,3 +897,154 @@ def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: s
     expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entiteit type")
     expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Beschrijving")
     expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Sleutel")
+
+
+def _seed_entities(page: Page, root_url: str, type_name: str, names: list[str]) -> dict[str, str]:
+    """Seed entities through the proxy's bulk endpoint; return the guid assignments.
+
+    The server is open pre-6.1 (DV-54), so the proxy's ``/api`` leg answers
+    without a token. Names are **single tokens** carrying a unique ``run``
+    word: the free-text matcher is word-exact (FTX-01/SRC-06), and the shared
+    dev stack is never cleaned between runs — hyphenated names would share
+    their words with every earlier run's seeds and match them (term-OR).
+    """
+    body = {
+        "entities": [
+            {
+                "typeName": type_name,
+                "guid": f"-{i}",
+                "attributes": {"qualifiedName": name, "name": name},
+            }
+            for i, name in enumerate(names)
+        ]
+    }
+    response = page.request.post(
+        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+        data=json.dumps(body),
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status == 200, response.text()
+
+    return response.json()["guidAssignments"]
+
+
+def _purge_type(page: Page, root_url: str, type_name: str) -> None:
+    """Delete every entity of a type (the shared stack's determinism fix).
+
+    The dev stack is never cleaned between runs, and the explore search is a
+    type-only first page (limit 10): glossaries from earlier runs fill it and
+    push this run's seed off page 1. A type-scoped purge — list by type,
+    delete by guid — makes a type-filtered assertion deterministic.
+    """
+    listing = page.request.post(
+        urljoin(root_url, "/api/atlas/v2/search/basic"),
+        data=json.dumps({"typeName": type_name, "limit": 1000, "offset": 0, "excludeDeletedEntities": True}),
+        headers={"content-type": "application/json"},
+    )
+
+    assert listing.status == 200, listing.text()
+
+    for entity in listing.json().get("entities", []):
+        deleted = page.request.delete(urljoin(root_url, "/api/atlas/v2/entity/bulk"), params={"guid": entity["guid"]})
+
+        assert deleted.status == 200, deleted.text()
+
+
+def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, root_url: str) -> None:
+    """The hero field searches: seeded hits, the count, the card → details link (SRH-01..SRH-05).
+
+    A query submitted in the hero's search field runs POST
+    ``/api/atlas/v2/search/basic``, rides into ``search/results?query=``, and
+    renders a card per hit with the count above the box (the legacy
+    results screen, DD-218). Clicking a card deep-links the 2.3 skeleton with
+    that guid; the results URL survives so a reload re-runs the search
+    (SRH-02). The nl-NL locale renders the Dutch word (SRH-10).
+    """
+    run = secrets.token_hex(4)
+    names = [f"zz{run}alpha", f"zz{run}beta", f"zz{run}gamma"]
+    query = " ".join(names)
+    guids = _seed_entities(authenticated, root_url, "DataSet", names)
+
+    authenticated.goto(urljoin(root_url, "/en-US/search"))
+    field = authenticated.locator(".hero aurelius-atlas-ui-search-field input")
+    expect(field).to_be_visible()
+    field.fill(query)
+    # The submit button, not Enter: the native `search` event on Enter is
+    # Chromium-only (the legacy input shares the quirk, `(search)` only).
+    authenticated.locator(".hero aurelius-atlas-ui-search-field button.button.is-success").click()
+
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/results\?query="))
+    expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+results"))
+    rows = authenticated.locator(".result-row")
+    expect(rows).to_have_count(3)
+    for name in names:
+        expect(rows.filter(has_text=name)).to_have_count(1)
+
+    # The card → details deep link (SRH-05): the clicked guid rides the URL.
+    clicked = names[0]
+    rows.filter(has_text=clicked).locator("a").first.click()
+    expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guids['-0']}$"))
+    expect(authenticated.locator("h1.aurelius-details-title")).to_be_visible()
+
+    # The results URL is the screen's state (SRH-02): reload re-runs the
+    # search from the URL alone and the hero shows the query.
+    authenticated.go_back()
+    expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+results"))
+    expect(field).to_have_value(query)
+
+    # SRH-10: the same screen in Dutch — the count word rides the bridge.
+    authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={quote(query)}"))
+    expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+resultaten"))
+
+
+def test__business_explore_lists_glossary_entities_without_a_url_query(authenticated: Page, root_url: str) -> None:
+    """The business card's explore button lists glossary entities, type-filtered (SRH-08, DV-84).
+
+    Explore is the legacy ``directToGlossary``: an empty query plus the
+    session type filter ``typeName=AtlasGlossary`` (DV-84 — the Atlas type,
+    not the m4i ``Glossary`` label, which the server would reject as
+    UNKNOWN_TYPENAME, SRC-03). The filter rides the store, never the URL
+    (SRH-02: the URL carries only ``?query=``), so the results URL stays
+    clean — reloading it restarts from the URL alone (empty), proving the
+    filter lived only in the session store.
+
+    The type is purged first: the shared stack keeps every run's glossaries
+    and the explore page shows the first ten (limit 10) — the purge makes
+    the seeded entity the page.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}domain"
+    _purge_type(authenticated, root_url, "AtlasGlossary")
+    _seed_entities(authenticated, root_url, "AtlasGlossary", [name])
+
+    authenticated.goto(urljoin(root_url, "/en-US/search"))
+    authenticated.get_by_role("button", name="Start browsing data domains").click()
+
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/results$"))
+    rows = authenticated.locator(".result-row")
+    expect(rows.filter(has_text=name)).to_have_count(1)
+
+    # The type filter is session state: reloading the bare results URL
+    # restarts from the URL (an empty query, no filter) — the seeded
+    # glossary is gone, the no-results pair shows (SRH-02).
+    authenticated.reload()
+    expect(authenticated.locator(".no-results")).to_be_visible()
+    expect(rows).to_have_count(0)
+
+
+def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_url: str) -> None:
+    """A query with no hits renders the legacy no-results card (SRH-06).
+
+    The legacy results-box twin: "No results found" + "Please, try to make
+    another query.", from the bridge. The query is one token unique to the
+    run, so zero hits are guaranteed on the shared stack (word-exact terms,
+    FTX-01).
+    """
+    run = secrets.token_hex(8)
+
+    authenticated.goto(urljoin(root_url, f"/en-US/search/results?query=zzmiss{run}"))
+
+    expect(authenticated.locator(".no-results")).to_have_text("No results found")
+    expect(authenticated.locator(".another-query")).to_have_text("Please, try to make another query.")
+    expect(authenticated.locator(".result-row")).to_have_count(0)

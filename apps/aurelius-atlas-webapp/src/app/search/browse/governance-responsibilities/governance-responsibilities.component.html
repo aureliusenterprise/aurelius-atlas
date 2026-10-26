@@ -1,8 +1,8 @@
 <!--
-    The governance-responsibilities card (BRW-01, BRW-02): title, info icon
-    (the only button on the landing page — BRW-06), and the Aurelius
-    searching / exploring articles. The search field and explore button are
-    deferred to the search slice (DD-143); the copy that explains them stays.
+    The governance-responsibilities card (BRW-01, BRW-02): title, info icon,
+    the Aurelius searching / exploring articles, and the search slice's
+    affordances (SRH-08, DD-143): the card's search field and the
+    directToUser explore button — the signed-in user's e-mail as the query.
 -->
 <div class="card">
     <div class="card-content">
@@ -35,6 +35,13 @@
                         Search for the name or email address of the person you are looking for.
                     </p>
                 </div>
+                <nav class="level is-mobile">
+                    <aurelius-atlas-ui-search-field
+                        class="is-fullwidth"
+                        [placeholder]="searchPlaceholder"
+                        (querySubmitted)="onQuerySubmitted($event)"
+                    ></aurelius-atlas-ui-search-field>
+                </nav>
             </div>
         </article>
         <article class="media">
@@ -52,6 +59,14 @@
                         Click the button below to see a list of all people with data governance responsibilities.
                     </p>
                 </div>
+                <nav class="level is-mobile">
+                    <button type="button" class="button is-success" (click)="explore()">
+                        <span class="icon is-small">
+                            <fa-icon [icon]="faUser"></fa-icon>
+                        </span>
+                        <span>{{ exploreLabel }}</span>
+                    </button>
+                </nav>
             </div>
         </article>
     </div>
