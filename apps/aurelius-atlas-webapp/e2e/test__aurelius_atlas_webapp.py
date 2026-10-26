@@ -1006,8 +1006,9 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(authentic
     not the m4i ``Glossary`` label, which the server would reject as
     UNKNOWN_TYPENAME, SRC-03). The filter rides the store, never the URL
     (SRH-02: the URL carries only ``?query=``), so the results URL stays
-    clean — reloading it restarts from the URL alone (empty), proving the
-    filter lived only in the session store.
+    clean — reloading it restarts from the URL alone: the empty query, which
+    lists every entity (DD-221), proving the filter lived only in the
+    session store.
 
     The type is purged first: the shared stack keeps every run's glossaries
     and the explore page shows the first ten (limit 10) — the purge makes
@@ -1026,11 +1027,13 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(authentic
     expect(rows.filter(has_text=name)).to_have_count(1)
 
     # The type filter is session state: reloading the bare results URL
-    # restarts from the URL (an empty query, no filter) — the seeded
-    # glossary is gone, the no-results pair shows (SRH-02).
+    # restarts from the URL alone — the empty query, which searches every
+    # entity (_ALL_ENTITY_TYPES, DD-221). The purged type holds exactly the
+    # seeded glossary, so a filtered re-run would show its one row; the
+    # every-entity search shows more (stack-size agnostic: on a fresh CI
+    # stack the few seeded entities, on a shared stack the full page of ten).
     authenticated.reload()
-    expect(authenticated.locator(".no-results")).to_be_visible()
-    expect(rows).to_have_count(0)
+    expect(authenticated.locator(".result-row")).not_to_have_count(1)
 
 
 def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_url: str) -> None:

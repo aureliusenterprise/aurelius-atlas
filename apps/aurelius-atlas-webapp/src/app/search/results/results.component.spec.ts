@@ -26,7 +26,10 @@ function page(count: number, approximateCount: number) {
 
 /**
  * The screen with a controllable URL: the subject stands in for the router's
- * query-parameter stream (the legacy `paramsOrQueryParamsChange`).
+ * query-parameter stream (the legacy `paramsOrQueryParamsChange`). The
+ * screen's URL effect fires on arrival — the stream starts empty, so the
+ * arrival is the query-less URL: the list-everything search (DD-221),
+ * consumable as `arrival`.
  */
 function setup() {
     const navigate = vi.fn().mockResolvedValue(true);
@@ -50,6 +53,8 @@ function setup() {
         store: TestBed.inject(SearchState),
         httpMock: TestBed.inject(HttpTestingController),
         compiled: fixture.nativeElement as HTMLElement,
+        /** The arrival's list-everything request (the empty stream). */
+        arrival: () => TestBed.inject(HttpTestingController).expectOne(BASIC_SEARCH),
     };
 }
 
@@ -59,6 +64,7 @@ function setup() {
  */
 function arrive(query: string, answer = page(3, 3)) {
     const harness = setup();
+    harness.arrival().flush(page(0, 0)); // the query-less arrival (DD-221)
     harness.queryParamMap.next(convertToParamMap({ query }));
     harness.fixture.detectChanges(); // the URL effect runs, the request fires
     harness.httpMock.expectOne(BASIC_SEARCH).flush(answer);
@@ -71,6 +77,7 @@ const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " "
 describe("Results screen (SRH-02, SRH-04..07)", () => {
     it("arrives on the URL's query and runs it (SRH-02, SRH-03)", () => {
         const harness = setup();
+        harness.arrival().flush(page(0, 0));
 
         harness.queryParamMap.next(convertToParamMap({ query: "genomic" }));
         harness.fixture.detectChanges(); // the URL effect runs the search
@@ -92,14 +99,17 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         request.flush(page(1, 1));
     });
 
-    it("an absent query runs nothing and reads as no results (SRH-02, SRH-03, SRH-06)", () => {
+    it("an absent query lists every entity (SRH-02, SRH-03, DD-221)", () => {
         const harness = setup();
 
-        harness.queryParamMap.next(convertToParamMap({}));
+        // The arrival IS the query-less URL: the resolver twin's '' default,
+        // answered with the every-entity marker (SRC-03) standing in for the
+        // type the server requires with an empty query (SRC-02).
+        const request = harness.arrival();
+        expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "", offset: 0 });
+        request.flush(page(2, 2));
         harness.fixture.detectChanges();
-
-        harness.httpMock.expectNone(BASIC_SEARCH);
-        expect(normalize(harness.compiled.querySelector(".no-results")?.textContent)).toBe("No results found");
+        expect(harness.compiled.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(2);
     });
 
     it("renders the count header and one card per hit, from the hit (SRH-05, DV-83)", () => {

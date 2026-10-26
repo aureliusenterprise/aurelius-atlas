@@ -87,11 +87,14 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         const compiled = fixture.nativeElement as HTMLElement;
 
         // The cleared field re-submits (the Aurelius clear path): the store
-        // reads "", the URL drops the parameter (DD-219).
+        // reads "", the URL drops the parameter (DD-219). The empty query
+        // searches every entity (DD-221), so the request fires.
         compiled.querySelector<HTMLButtonElement>("button.delete")!.click();
         fixture.detectChanges();
 
-        httpMock.expectNone("/api/atlas/v2/search/basic"); // the empty query asks nothing (SRH-03)
+        const request = httpMock.expectOne("/api/atlas/v2/search/basic");
+        expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "" });
+        request.flush({ entities: [], approximateCount: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: null } });
         expect(fixture.debugElement.injector.get(SearchState).queryText()).toBe("");
     });

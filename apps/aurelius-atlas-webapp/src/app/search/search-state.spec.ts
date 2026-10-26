@@ -143,14 +143,39 @@ describe("SearchState (SRH-02..06)", () => {
         request.flush(page(0, 1, 1));
     });
 
-    it("the empty query with no filter asks the server nothing and reads as no results (SRH-03, SRH-06)", () => {
+    it("the empty query with no filter lists every entity (SRH-02, SRH-03, DD-221)", () => {
         const { store, httpMock } = setup();
 
         store.run(null);
 
-        httpMock.expectNone(BASIC_SEARCH);
-        expect(store.noResults()).toBe(true);
-        expect(store.entries()).toEqual([]);
+        // The server rejects an empty query without a type (SRC-02); the
+        // every-entity marker is the answer shape (SRC-03) — the demo
+        // resolver's documented default, "we can still see results".
+        const request = httpMock.expectOne(BASIC_SEARCH);
+        expect(request.request.body).toEqual({
+            typeName: "_ALL_ENTITY_TYPES",
+            query: "",
+            limit: 10,
+            offset: 0,
+            excludeDeletedEntities: true,
+        });
+        request.flush(page(0, 3, 42));
+        expect(store.entries()).toHaveLength(3);
+        expect(store.approximateCount()).toBe(42);
+    });
+
+    it("a first arrival at a query-less URL fires the list-everything search (SRH-02, DD-221)", () => {
+        const { store, httpMock } = setup();
+
+        // Arriving at /search/results directly (a bookmark, a reload): the
+        // legacy resolver ran on every arrival, its query='' default
+        // included — the store's "" is not yet "already run".
+        store.applyUrl(null);
+
+        const request = httpMock.expectOne(BASIC_SEARCH);
+        expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "" });
+        request.flush(page(0, 2, 2));
+        expect(store.entries()).toHaveLength(2);
     });
 
     it("a zero answer renders as no results (SRH-06)", () => {

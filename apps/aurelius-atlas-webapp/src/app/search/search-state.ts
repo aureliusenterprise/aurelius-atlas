@@ -3,6 +3,9 @@ import { AtlasEntityHeader, SearchParameters, SearchService } from "aurelius-atl
 
 import { AlertsService } from "../alerts/alerts.service";
 
+/** Atlas's every-entity type marker (SRC-03): what an empty query searches. */
+const ALL_ENTITY_TYPES = "_ALL_ENTITY_TYPES";
+
 /**
  * The search slice's session store (SRH-02, DD-219): the query arrives from
  * the URL, pages accumulate here, and nothing in the URL grows past
@@ -13,10 +16,13 @@ import { AlertsService } from "../alerts/alerts.service";
  * The query runs as a basic search (SRH-03, POST `/v2/search/basic`) with
  * pages of ten (the legacy page size, SRH-04): `run` is the hero's submit,
  * `explore` the browse cards' buttons, `nextPage` the infinite-scroll
- * container's. A search the server cannot answer (an empty query with no
- * filter is ATLAS-400-00-047, SRC-02) is never fired; a search the server
- * answers with an error lands in the alerts drawer (the DD-214 failure
- * path, the legacy pipeline strip's successor).
+ * container's. An empty query with no session filter searches
+ * `_ALL_ENTITY_TYPES` — the demo resolver's documented default ("we load the
+ * page without a search term, we can still see results", DD-221): the server
+ * rejects an empty query without a type (SRC-02), the marker is Atlas's
+ * every-entity shape (SRC-03). A search the server answers with an error
+ * lands in the alerts drawer (the DD-214 failure path, the legacy pipeline
+ * strip's successor).
  */
 @Injectable()
 export class SearchState {
@@ -56,6 +62,9 @@ export class SearchState {
     /** The next page's offset. */
     private offset = 0;
 
+    /** A search has run this session (the URL effect's re-run guard). */
+    private searched = false;
+
     /**
      * The hero's submit (SRH-01, SRH-02): the query is the search, and the
      * explore buttons' filter clears — the legacy `onQuerySubmitted` cleared
@@ -74,15 +83,18 @@ export class SearchState {
      * `?query=` is the screen's state — on arrival and on every
      * query-parameter change the query follows the URL, and the explore
      * buttons' session filter survives (the resolver set the store's query,
-     * never its filters). A parameter already in the store re-runs nothing:
-     * the hero's submit ran it, and the same-URL navigation is a no-op.
+     * never its filters). The resolver ran on EVERY arrival, query-less
+     * included (its `query = ''` default is what lists everything, DD-221);
+     * a text the store has already run re-runs nothing — the hero's submit
+     * ran it, and the same-URL navigation is a no-op.
      * @param query the URL's query, `null` when the parameter is absent
      */
     applyUrl(query: string | null): void {
-        if ((query ?? "") === this.queryText()) {
+        const text = query ?? "";
+        if (text === this.queryText() && this.searched) {
             return;
         }
-        this.queryText.set(query ?? "");
+        this.queryText.set(text);
         this.restart();
     }
 
@@ -121,21 +133,20 @@ export class SearchState {
     }
 
     /**
-     * Run the current search's next page (SRH-03). The empty query with no
-     * type filter asks the server nothing — its basic search requires a
-     * term or a filter (SRC-02, ATLAS-400-00-047) — and the no-results pair
-     * (SRH-06) is the honest rendering of "nothing to ask".
+     * Run the current search's next page (SRH-03). An empty query with no
+     * session filter searches `_ALL_ENTITY_TYPES` — the every-entity marker
+     * (SRC-03), the demo resolver's list-everything default (DD-221); the
+     * server rejects an empty query without a type (SRC-02), so the marker
+     * is what makes the bare `/search/results` URL answer.
      */
     private load(): void {
-        const typeName = this.typeFilter();
-        const query = this.queryText();
-        if (this.loading() || (!query && !typeName)) {
-            if (!this.loading()) {
-                this.entries.set([]);
-                this.approximateCount.set(0);
-            }
+        if (this.loading()) {
             return;
         }
+        this.searched = true;
+        const filter = this.typeFilter();
+        const query = this.queryText();
+        const typeName = filter ?? (query ? null : ALL_ENTITY_TYPES);
         this.loading.set(true);
         const parameters: SearchParameters = {
             query: query ?? "",
