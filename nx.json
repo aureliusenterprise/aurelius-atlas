@@ -104,7 +104,40 @@
                 }
             ]
         },
+        "docker-license-scan": {
+            "inputs": [
+                "production",
+                "^production",
+                "{projectRoot}/Dockerfile",
+                {
+                    "dependentTasksOutputFiles": "**/*",
+                    "transitive": true
+                }
+            ]
+        },
         "docker-publish": {
+            "inputs": [
+                "production",
+                "^production",
+                "{projectRoot}/Dockerfile",
+                {
+                    "dependentTasksOutputFiles": "**/*",
+                    "transitive": true
+                }
+            ]
+        },
+        "docker-sbom": {
+            "inputs": [
+                "production",
+                "^production",
+                "{projectRoot}/Dockerfile",
+                {
+                    "dependentTasksOutputFiles": "**/*",
+                    "transitive": true
+                }
+            ]
+        },
+        "docker-vuln-scan": {
             "inputs": [
                 "production",
                 "^production",

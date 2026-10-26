@@ -84,7 +84,7 @@ None.
 
 Unit (Vitest, run per project; ids in `it()` titles per the webapp convention):
 
-- `libs/angular/aurelius-atlas-data-access/src/lib/admin.service.spec.ts` —
+- `libs/angular/aurelius-atlas-data-access/src/lib/atlas/admin.service.spec.ts` —
   appended: `surfaces the Atlas error body on a failed call (APC-04)`
   (404, all three methods), `surfaces the server fault body (APC-04)` (500),
   `surfaces a network failure as a status-0 response (APC-04)`

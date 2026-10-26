@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
-import { API_BASE_URL } from "./api-config";
+import { API_BASE_URL } from "../api-config";
 
 /**
  * What `GET /api/atlas/admin/version` answers (ADM-01). The keys are capitalised the way
