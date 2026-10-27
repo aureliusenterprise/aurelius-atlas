@@ -127,6 +127,19 @@ template:
                       # already created under those dirs.
                       chgrp 999 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
                       chmod 2775 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
+                      # The cache dirs are MOUNT roots (volumeMounts below),
+                      # so their ownership is the DIR ON THE VOLUME - root's
+                      # until chowned here. fsGroup does not reach subPath
+                      # mounts (k8s applies it to volume roots only). The
+                      # runner (uid 1000) writing content under them works
+                      # (2775), but actions/cache RESTORE applies tar
+                      # metadata (utime/chmod) to the mount root itself,
+                      # which uid 1000 may not do on a root-owned dir:
+                      # "Cannot utime: Operation not permitted" - restore
+                      # silently degrades to a miss on every cross-pod hit
+                      # (run 40541811557, DD-233's first e2e/scan-sonar/
+                      # chromatic restores). chown the dirs, non-recursive.
+                      chown 1000:999 /work/.ci-cache/* 2>/dev/null || true
                       # The checkout tree must be uid-1000-owned: e2e
                       # compose/bind mounts run as container root and
                       # write INTO the checkout (dist/, dev/*/certs,
