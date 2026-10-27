@@ -15,7 +15,7 @@ Vendored copy of `ghcr.io/dhoeric/features/google-cloud-cli` (main, fetched
    underscores (`INSTALLGKEGCLOUDAUTHPLUGIN` - observed in the build log);
    upstream reads `INSTALL_GKEGCLOUDAUTH_PLUGIN`, never exported, so the
    published feature silently skips the plugin install. This copy accepts all
-   spellings. (Caught by our `smoke.sh` gate - the image build failed with
+   spellings. (The bug shipped once - the image build failed with
    "gke-gcloud-auth-plugin is not on PATH".)
 
 Verified by running `install.sh` in `mcr.microsoft.com/devcontainers/base:resolute`

@@ -70,9 +70,8 @@ chown -R "$CI_USER" "$RUNNER_HOME"
 #
 # Build-time gate: the binaries must exist and be executable. (NOT
 # config.sh --version: the runner refuses to run under sudo, and the
-# devcontainer feature-build environment sets SUDO_* - run 40212522218.
-# smoke.sh asserts `config.sh --version` as the dev user, where it
-# works.)
+# devcontainer feature-build environment sets SUDO_* - run 40212522218;
+# the check works as the dev user, which is where this script ships.)
 for f in run.sh config.sh bin/Runner.Listener bin/Runner.Worker bin/Runner.PluginHost; do
     [ -x "${RUNNER_HOME}/${f}" ] || {
         echo "ci-runner: ${RUNNER_HOME}/${f} is missing - corrupt tarball?" >&2

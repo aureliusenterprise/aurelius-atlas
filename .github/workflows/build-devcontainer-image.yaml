@@ -1,7 +1,6 @@
 name: Build Dev Container Image
 
-# Builds the Aurelius Atlas dev container as a publishable image and runs the
-# in-container smoke test before publishing.
+# Builds the Aurelius Atlas dev container as a publishable image.
 #
 # The published image (ghcr.io/aureliusenterprise/atlas-ci-runner) is what
 # the self-hosted CI jobs run IN: on the Shape A ARC scale set the runner
@@ -11,8 +10,12 @@ name: Build Dev Container Image
 # - the CI values file sets command/runAs*.
 #
 # Publishing is limited to `main` (see the push filters below). Feature-branch
-# and pull-request runs build and smoke-test the image without publishing, so
-# a broken `.devcontainer` is caught before it can poison the shared cache.
+# and pull-request runs build the image without publishing, so a broken
+# `.devcontainer` is caught before it can poison the shared cache. The
+# in-container smoke gate retired with the image's CI contract (the tools
+# self-verify in their features, dockerd gates pod boot, the e2e jobs run
+# Playwright per PR); its one unique check - the playwright pin - lives in
+# the guard step below.
 
 concurrency:
     group: devcontainer-image-${{ github.ref }}
@@ -75,21 +78,22 @@ jobs:
                   key: features-cache-${{ hashFiles('.devcontainer/devcontainer.json', '.devcontainer/features/**', 'uv.lock') }}
                   restore-keys: features-cache-
 
-            # The runCmd container runs the devcontainer lifecycle scripts
-            # (npm install, uv sync, ...) before the smoke test - redirect
-            # those tool caches into the workspace and cache them. Shared key
-            # with the CI jobs that run in this image (ci.yaml).
-            - name: Cache toolchain and hooks
-              uses: actions/cache@v5
-              with:
-                  path: |
-                      ${{ github.workspace }}/.container-cache/uv
-                      ${{ github.workspace }}/.container-cache/npm
-                      ${{ github.workspace }}/.container-cache/pre-commit
-                  key: container-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'package-lock.json', '.pre-commit-config.yaml', '.devcontainer/devcontainer.json') }}
-                  restore-keys: container-cache-${{ runner.os }}-
+            # The two playwright pins are independent sources that MUST
+            # agree: the baked browsers come from the playwright-browsers
+            # feature version (devcontainer.json), the runtime library from
+            # uv.lock. Drift = the cryptic "browser not found" at e2e time.
+            # This replaces the retired smoke.sh guard (which compared the
+            # baked marker to the pin inside the built container); source-to-
+            # source is the same failure mode, caught free and earlier.
+            - name: Playwright pin guard
+              run: |
+                  FEATURE=$(jq -r '.["features"]["./features/playwright-browsers"].version' .devcontainer/devcontainer.json)
+                  PINNED=$(awk '/^name = "playwright"$/{getline; sub(/^version = "/,""); sub(/"$/,""); print; exit}' uv.lock)
+                  echo "feature=$FEATURE uv.lock=$PINNED"
+                  [[ -n "$FEATURE" && -n "$PINNED" ]] || { echo "::error::could not read a playwright pin"; exit 1; }
+                  [[ "$FEATURE" == "$PINNED" ]] || { echo "::error::playwright-browsers feature is $FEATURE but uv.lock pins $PINNED - bump .devcontainer/devcontainer.json"; exit 1; }
 
-            - name: Build dev container image and run smoke test
+            - name: Build dev container image
               uses: devcontainers/ci@v0.3
               with:
                   imageName: ghcr.io/aureliusenterprise/atlas-ci-runner
@@ -112,4 +116,3 @@ jobs:
                   push: filter
                   refFilterForPush: ${{ github.ref == 'refs/heads/main' && 'refs/heads/main' || github.ref }}
                   eventFilterForPush: ""
-                  runCmd: bash .devcontainer/smoke.sh

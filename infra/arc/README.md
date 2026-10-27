@@ -36,8 +36,8 @@ the `repo` scope** in the auth secret (see "Auth" - the GitHub App we also
 created is blocked by plan gating on this repo today). The
 `gcloud`/`kubectl`/`helm` CLIs come from the dev container
 (`./features/google-cloud-cli` - vendored dhoeric, with
-`installGkeGcloudAuthPlugin`; `kubectl-helm-minikube` - gated by
-`.devcontainer/smoke.sh`), so run these from inside it, after
+`installGkeGcloudAuthPlugin`; `kubectl-helm-minikube`), so run these from
+inside it, after
 `gcloud auth login --no-launch-browser` +
 `gcloud config set project aurelius-atlas` +
 `gcloud container clusters get-credentials atlas-dev --location europe-west1`.

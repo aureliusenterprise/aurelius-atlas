@@ -232,4 +232,3 @@ vulnerabilities.html
 
 # devcontainers/ci userDataFolder (feature installer scratch, CI-cacheable)
 .devcontainer/.features-cache/
-.container-cache/
