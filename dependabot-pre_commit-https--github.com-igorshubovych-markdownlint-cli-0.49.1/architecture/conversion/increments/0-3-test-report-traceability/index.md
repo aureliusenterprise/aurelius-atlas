@@ -72,5 +72,5 @@ None: nothing in this increment is visible through the Atlas REST API.
 
 - `libs/python/aurelius-atlas-trace/tests/` — the marker (TRC-01 to TRC-05, TRC-11) with `pytester`, the inventory and spec parsing (TRC-06 to TRC-08), the check (TRC-09, TRC-10) on small sample workspaces, and the report (TRC-12 to TRC-15) on sample result files.
 - `libs/python/aurelius-atlas-store-es/tests/` — STO-01 to STO-08 and every public function of the store library named by `covers` markers.
-- `libs/python/aurelius-atlas-store-es/e2e/` — ESD-01 to ESD-06 against the running dev store (`nx e2e aurelius-atlas-store-es`).
+- `libs/python/aurelius-atlas-store-es/e2e/` — ESD-01 to ESD-06 against the running dev store (`nx e2e aurelius-atlas-store-es`). (Removed by DD-227: the suite evaluated the dev environment, not production; the ESD rules fall to the stack's healthchecks and review, per the 0-2 note.)
 - `uv run aurelius-atlas-trace check` exits zero on this branch; the CI run of this pull request uploads a `test-report` artifact.

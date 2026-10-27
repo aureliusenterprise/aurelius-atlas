@@ -30,6 +30,8 @@ Atlas type definitions as Pydantic models that read and write Atlas's REST JSON 
 
 Ported from `org.apache.atlas.model.typedef` of Apache Atlas 2.4.0. Field names are snake\_case in Python and the Java getter names in JSON (TDM-01). The normalisations the Java setters and constructors apply run as validators, so they hold for request bodies and for models built in code alike.
 
+The TDM-nn rule each class and field ports is cited in the increment spec, not in class docstrings or field descriptions: those are public and end up in the OpenAPI schema, where decision ids mean nothing to a client.
+
 Type Aliases:
 
 - **`AttributeDefs`** –
@@ -40,7 +42,7 @@ Classes:
 
 - **`AtlasAttributeDef`** –
 
-  An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).
+  An attribute of a struct, classification, entity, relationship or business metadata type.
 - **`AtlasBaseTypeDef`** –
 
   What every type definition has: identity, audit fields, name and options.
@@ -67,10 +69,10 @@ Classes:
   An entity attribute that a relationship type adds; read-only, derived from the relationship types.
 - **`AtlasRelationshipDef`** –
 
-  A relationship type between two entity types (TDM-12).
+  A relationship type between two entity types.
 - **`AtlasRelationshipEndDef`** –
 
-  One end of a relationship type: the entity type there and the attribute it gets (TDM-12).
+  One end of a relationship type: the entity type there and the attribute it gets.
 - **`AtlasStructDef`** –
 
   A struct type, and the base of the types that have attributes.
@@ -79,7 +81,7 @@ Classes:
   The identity of a type definition, as `/v2/types/typedefs/headers` lists it.
 - **`AtlasTypesDef`** –
 
-  Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
+  Type definitions of every kind: the body of `/v2/types/typedefs`.
 - **`Cardinality`** –
 
   How many values an attribute or relationship end holds.
@@ -377,7 +379,9 @@ AttributeDefs = list[AtlasAttributeDef]
 
 Bases: `AtlasModel`
 
-An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).
+An attribute of a struct, classification, entity, relationship or business metadata type.
+
+A null cardinality, an explicit null boolean, and an empty constraint list are normalised on read, as the Java setters do.
 
 **Show JSON schema:**
 
@@ -397,6 +401,7 @@ An attribute of a struct, classification, entity, relationship or business metad
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -410,6 +415,7 @@ An attribute of a struct, classification, entity, relationship or business metad
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -442,7 +448,7 @@ An attribute of a struct, classification, entity, relationship or business metad
       "type": "integer"
     }
   },
-  "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+  "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
   "properties": {
     "name": {
       "anyOf": [
@@ -454,6 +460,7 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "The attribute name, unique within its type.",
       "title": "Name"
     },
     "typeName": {
@@ -466,11 +473,13 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
       "title": "Typename"
     },
     "isOptional": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether an entity may omit the attribute."
     },
     "cardinality": {
       "anyOf": [
@@ -481,27 +490,33 @@ An attribute of a struct, classification, entity, relationship or business metad
           "type": "null"
         }
       ],
-      "default": "SINGLE"
+      "default": "SINGLE",
+      "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
     },
     "valuesMinCount": {
       "$ref": "#/$defs/JavaInt",
-      "default": -1
+      "default": -1,
+      "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
     },
     "valuesMaxCount": {
       "$ref": "#/$defs/JavaInt",
-      "default": -1
+      "default": -1,
+      "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
     },
     "isUnique": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute's value is unique across the entities of its type."
     },
     "isIndexable": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute is searchable."
     },
     "includeInNotification": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute's value is carried in change notifications."
     },
     "defaultValue": {
       "anyOf": [
@@ -513,6 +528,7 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "The value an entity gets for the attribute when it omits one.",
       "title": "Defaultvalue"
     },
     "description": {
@@ -525,11 +541,13 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "A description of the attribute.",
       "title": "Description"
     },
     "searchWeight": {
       "$ref": "#/$defs/JavaInt",
-      "default": -1
+      "default": -1,
+      "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
     },
     "indexType": {
       "anyOf": [
@@ -540,7 +558,8 @@ An attribute of a struct, classification, entity, relationship or business metad
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "How a string attribute is indexed: DEFAULT or STRING."
     },
     "constraints": {
       "anyOf": [
@@ -555,6 +574,7 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
       "title": "Constraints"
     },
     "options": {
@@ -570,6 +590,7 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
       "title": "Options"
     },
     "displayName": {
@@ -582,6 +603,7 @@ An attribute of a struct, classification, entity, relationship or business metad
         }
       ],
       "default": null,
+      "description": "The name shown for the attribute in UIs; the name itself when unset.",
       "title": "Displayname"
     }
   },
@@ -615,11 +637,15 @@ Fields:
 cardinality: Cardinality | None = Cardinality.SINGLE
 ```
 
+How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE.
+
 #### constraints
 
 ```
 constraints: list[AtlasConstraintDef] | None = None
 ```
+
+The constraints on the attribute, e.g. `ownedRef`/`inverseRef` pairs. An empty list is written back as null.
 
 #### default\_value
 
@@ -627,11 +653,15 @@ constraints: list[AtlasConstraintDef] | None = None
 default_value: str | None = None
 ```
 
+The value an entity gets for the attribute when it omits one.
+
 #### description
 
 ```
 description: str | None = None
 ```
+
+A description of the attribute.
 
 #### display\_name
 
@@ -639,11 +669,15 @@ description: str | None = None
 display_name: str | None = None
 ```
 
+The name shown for the attribute in UIs; the name itself when unset.
+
 #### include\_in\_notification
 
 ```
 include_in_notification: JavaBool = False
 ```
+
+Whether the attribute's value is carried in change notifications.
 
 #### index\_type
 
@@ -651,11 +685,15 @@ include_in_notification: JavaBool = False
 index_type: IndexType | None = None
 ```
 
+How a string attribute is indexed: DEFAULT or STRING.
+
 #### is\_indexable
 
 ```
 is_indexable: JavaBool = False
 ```
+
+Whether the attribute is searchable.
 
 #### is\_optional
 
@@ -663,11 +701,15 @@ is_indexable: JavaBool = False
 is_optional: JavaBool = False
 ```
 
+Whether an entity may omit the attribute.
+
 #### is\_unique
 
 ```
 is_unique: JavaBool = False
 ```
+
+Whether the attribute's value is unique across the entities of its type.
 
 #### model\_config
 
@@ -688,11 +730,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The attribute name, unique within its type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the attribute, e.g. `maxStrLength`, `validPattern`, `isSoftReference`.
 
 #### search\_weight
 
@@ -700,11 +746,15 @@ options: dict[str, str] | None = None
 search_weight: JavaInt = DEFAULT_SEARCH_WEIGHT
 ```
 
+The attribute's weight in search scoring, 1 to 10; -1 means unset.
+
 #### type\_name
 
 ```
 type_name: str | None = None
 ```
+
+The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.
 
 #### values\_max\_count
 
@@ -712,11 +762,15 @@ type_name: str | None = None
 values_max_count: JavaInt = COUNT_NOT_SET
 ```
 
+The most number of values a LIST/SET attribute may hold; -1 means unlimited.
+
 #### values\_min\_count
 
 ```
 values_min_count: JavaInt = COUNT_NOT_SET
 ```
+
+The least number of values a LIST/SET attribute must hold; -1 means unset.
 
 #### add\_constraint
 
@@ -796,6 +850,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -808,6 +863,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -820,6 +876,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -831,7 +888,8 @@ What every type definition has: identity, audit fields, name and options.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -842,7 +900,8 @@ What every type definition has: identity, audit fields, name and options.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -854,6 +913,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -866,6 +926,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -878,6 +939,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -890,6 +952,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -902,6 +965,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -917,6 +981,7 @@ What every type definition has: identity, audit fields, name and options.
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     }
   },
@@ -959,11 +1024,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### description
 
@@ -971,11 +1040,15 @@ created_by: str | None = None
 description: str | None = None
 ```
 
+A description of the type.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -996,11 +1069,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### service\_type
 
@@ -1008,11 +1085,15 @@ options: dict[str, str] | None = None
 service_type: str | None = None
 ```
 
+The service the type belongs to; built-in types use `atlas_core`.
+
 #### type\_version
 
 ```
 type_version: str | None = None
 ```
+
+The version string of the type, used by typedef patches.
 
 #### update\_time
 
@@ -1020,17 +1101,23 @@ type_version: str | None = None
 update_time: Timestamp | None = None
 ```
 
+When the type was last updated, in epoch milliseconds.
+
 #### updated\_by
 
 ```
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### get\_option
 
@@ -1070,7 +1157,7 @@ A business metadata type: attributes that apply to the entity types its options 
 {
   "$defs": {
     "AtlasAttributeDef": {
-      "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+      "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
       "properties": {
         "name": {
           "anyOf": [
@@ -1082,6 +1169,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -1094,11 +1182,13 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -1109,27 +1199,33 @@ A business metadata type: attributes that apply to the entity types its options 
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -1141,6 +1237,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -1153,11 +1250,13 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -1168,7 +1267,8 @@ A business metadata type: attributes that apply to the entity types its options 
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -1183,6 +1283,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -1198,6 +1299,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -1210,6 +1312,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         }
       },
@@ -1229,6 +1332,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -1242,6 +1346,7 @@ A business metadata type: attributes that apply to the entity types its options 
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -1296,6 +1401,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -1308,6 +1414,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -1320,6 +1427,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -1331,7 +1439,8 @@ A business metadata type: attributes that apply to the entity types its options 
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -1342,7 +1451,8 @@ A business metadata type: attributes that apply to the entity types its options 
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -1354,6 +1464,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -1366,6 +1477,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -1378,6 +1490,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -1390,6 +1503,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -1402,6 +1516,7 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -1417,10 +1532,12 @@ A business metadata type: attributes that apply to the entity types its options 
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     },
     "attributeDefs": {
-      "$ref": "#/$defs/AttributeDefs"
+      "$ref": "#/$defs/AttributeDefs",
+      "description": "The attributes of the type; one definition per name, the last given for a name wins."
     }
   },
   "title": "AtlasBusinessMetadataDef",
@@ -1455,6 +1572,8 @@ CATEGORY: TypeCategory = TypeCategory.BUSINESS_METADATA
 attribute_defs: AttributeDefs
 ```
 
+The attributes of the type; one definition per name, the last given for a name wins.
+
 #### category
 
 ```
@@ -1469,11 +1588,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### description
 
@@ -1481,11 +1604,15 @@ created_by: str | None = None
 description: str | None = None
 ```
 
+A description of the type.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -1506,11 +1633,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### service\_type
 
@@ -1518,11 +1649,15 @@ options: dict[str, str] | None = None
 service_type: str | None = None
 ```
 
+The service the type belongs to; built-in types use `atlas_core`.
+
 #### type\_version
 
 ```
 type_version: str | None = None
 ```
+
+The version string of the type, used by typedef patches.
 
 #### update\_time
 
@@ -1530,17 +1665,23 @@ type_version: str | None = None
 update_time: Timestamp | None = None
 ```
 
+When the type was last updated, in epoch milliseconds.
+
 #### updated\_by
 
 ```
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### add\_attribute
 
@@ -1612,7 +1753,7 @@ A classification type: attributes, super types and the entity types it may be ap
 {
   "$defs": {
     "AtlasAttributeDef": {
-      "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+      "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
       "properties": {
         "name": {
           "anyOf": [
@@ -1624,6 +1765,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -1636,11 +1778,13 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -1651,27 +1795,33 @@ A classification type: attributes, super types and the entity types it may be ap
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -1683,6 +1833,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -1695,11 +1846,13 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -1710,7 +1863,8 @@ A classification type: attributes, super types and the entity types it may be ap
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -1725,6 +1879,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -1740,6 +1895,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -1752,6 +1908,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         }
       },
@@ -1771,6 +1928,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -1784,6 +1942,7 @@ A classification type: attributes, super types and the entity types it may be ap
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -1857,6 +2016,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -1869,6 +2029,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -1881,6 +2042,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -1892,7 +2054,8 @@ A classification type: attributes, super types and the entity types it may be ap
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -1903,7 +2066,8 @@ A classification type: attributes, super types and the entity types it may be ap
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -1915,6 +2079,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -1927,6 +2092,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -1939,6 +2105,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -1951,6 +2118,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -1963,6 +2131,7 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -1978,20 +2147,25 @@ A classification type: attributes, super types and the entity types it may be ap
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     },
     "attributeDefs": {
-      "$ref": "#/$defs/AttributeDefs"
+      "$ref": "#/$defs/AttributeDefs",
+      "description": "The attributes of the type; one definition per name, the last given for a name wins."
     },
     "superTypes": {
-      "$ref": "#/$defs/NameSet"
+      "$ref": "#/$defs/NameSet",
+      "description": "The classifications this one extends."
     },
     "entityTypes": {
-      "$ref": "#/$defs/NameSet"
+      "$ref": "#/$defs/NameSet",
+      "description": "The entity types the classification may be applied to."
     },
     "subTypes": {
       "$ref": "#/$defs/OptionalNameSet",
-      "default": null
+      "default": null,
+      "description": "The classifications extending this one; derived by the server, ignored on create and update."
     }
   },
   "title": "AtlasClassificationDef",
@@ -2029,6 +2203,8 @@ CATEGORY: TypeCategory = TypeCategory.CLASSIFICATION
 attribute_defs: AttributeDefs
 ```
 
+The attributes of the type; one definition per name, the last given for a name wins.
+
 #### category
 
 ```
@@ -2043,11 +2219,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### description
 
@@ -2055,17 +2235,23 @@ created_by: str | None = None
 description: str | None = None
 ```
 
+A description of the type.
+
 #### entity\_types
 
 ```
 entity_types: NameSet
 ```
 
+The entity types the classification may be applied to.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -2086,11 +2272,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### service\_type
 
@@ -2098,13 +2288,15 @@ options: dict[str, str] | None = None
 service_type: str | None = None
 ```
 
+The service the type belongs to; built-in types use `atlas_core`.
+
 #### sub\_types
 
 ```
 sub_types: OptionalNameSet = None
 ```
 
-Derived from the super types of all classifications; ignored on create and update.
+The classifications extending this one; derived by the server, ignored on create and update.
 
 #### super\_types
 
@@ -2112,11 +2304,15 @@ Derived from the super types of all classifications; ignored on create and updat
 super_types: NameSet
 ```
 
+The classifications this one extends.
+
 #### type\_version
 
 ```
 type_version: str | None = None
 ```
+
+The version string of the type, used by typedef patches.
 
 #### update\_time
 
@@ -2124,17 +2320,23 @@ type_version: str | None = None
 update_time: Timestamp | None = None
 ```
 
+When the type was last updated, in epoch milliseconds.
+
 #### updated\_by
 
 ```
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### add\_attribute
 
@@ -2264,6 +2466,7 @@ A constraint on an attribute, such as `ownedRef` or `inverseRef`.
         }
       ],
       "default": null,
+      "description": "The constraint type name, e.g. ``ownedRef``.",
       "title": "Type"
     },
     "params": {
@@ -2277,6 +2480,7 @@ A constraint on an attribute, such as `ownedRef` or `inverseRef`.
         }
       ],
       "default": null,
+      "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
       "title": "Params"
     }
   },
@@ -2284,6 +2488,15 @@ A constraint on an attribute, such as `ownedRef` or `inverseRef`.
   "type": "object"
 }
 ```
+
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
 
 Fields:
 
@@ -2309,11 +2522,15 @@ model_config = ConfigDict(
 params: dict[str, Any] | None = None
 ```
 
+The constraint's parameters, e.g. `attribute` for a ref constraint.
+
 #### type
 
 ```
 type: str | None = None
 ```
+
+The constraint type name, e.g. `ownedRef`.
 
 #### get\_param
 
@@ -2353,7 +2570,7 @@ An entity type.
 {
   "$defs": {
     "AtlasAttributeDef": {
-      "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+      "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
       "properties": {
         "name": {
           "anyOf": [
@@ -2365,6 +2582,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -2377,11 +2595,13 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -2392,27 +2612,33 @@ An entity type.
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -2424,6 +2650,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -2436,11 +2663,13 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -2451,7 +2680,8 @@ An entity type.
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -2466,6 +2696,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -2481,6 +2712,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -2493,6 +2725,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         }
       },
@@ -2512,6 +2745,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -2525,6 +2759,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -2544,6 +2779,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -2556,11 +2792,13 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -2571,27 +2809,33 @@ An entity type.
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -2603,6 +2847,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -2615,11 +2860,13 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -2630,7 +2877,8 @@ An entity type.
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -2645,6 +2893,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -2660,6 +2909,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -2672,6 +2922,7 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         },
         "relationshipTypeName": {
@@ -2684,11 +2935,13 @@ An entity type.
             }
           ],
           "default": null,
+          "description": "The name of the relationship type that adds this attribute.",
           "title": "Relationshiptypename"
         },
         "isLegacyAttribute": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute comes from a legacy relationship end definition."
         }
       },
       "title": "AtlasRelationshipAttributeDef",
@@ -2761,6 +3014,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -2773,6 +3027,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -2785,6 +3040,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -2796,7 +3052,8 @@ An entity type.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -2807,7 +3064,8 @@ An entity type.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -2819,6 +3077,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -2831,6 +3090,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -2843,6 +3103,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -2855,6 +3116,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -2867,6 +3129,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -2882,17 +3145,21 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     },
     "attributeDefs": {
-      "$ref": "#/$defs/AttributeDefs"
+      "$ref": "#/$defs/AttributeDefs",
+      "description": "The attributes of the type; one definition per name, the last given for a name wins."
     },
     "superTypes": {
-      "$ref": "#/$defs/NameSet"
+      "$ref": "#/$defs/NameSet",
+      "description": "The entity types this one extends."
     },
     "subTypes": {
       "$ref": "#/$defs/OptionalNameSet",
-      "default": null
+      "default": null,
+      "description": "The entity types extending this one; derived by the server, ignored on create and update."
     },
     "relationshipAttributeDefs": {
       "anyOf": [
@@ -2907,6 +3174,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The attributes added by relationship types; derived by the server, ignored on create and update.",
       "title": "Relationshipattributedefs"
     },
     "businessAttributeDefs": {
@@ -2925,6 +3193,7 @@ An entity type.
         }
       ],
       "default": null,
+      "description": "The attributes of the business metadata types that apply to this one, keyed by business metadata type name; derived by the server, ignored on create and update.",
       "title": "Businessattributedefs"
     }
   },
@@ -2964,13 +3233,15 @@ CATEGORY: TypeCategory = TypeCategory.ENTITY
 attribute_defs: AttributeDefs
 ```
 
+The attributes of the type; one definition per name, the last given for a name wins.
+
 #### business\_attribute\_defs
 
 ```
 business_attribute_defs: dict[str, list[AtlasAttributeDef]] | None = None
 ```
 
-Derived from the business metadata types that apply to this one; ignored on create and update.
+The attributes of the business metadata types that apply to this one, keyed by business metadata type name; derived by the server, ignored on create and update.
 
 #### category
 
@@ -2986,11 +3257,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### description
 
@@ -2998,11 +3273,15 @@ created_by: str | None = None
 description: str | None = None
 ```
 
+A description of the type.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -3023,11 +3302,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### relationship\_attribute\_defs
 
@@ -3035,7 +3318,7 @@ options: dict[str, str] | None = None
 relationship_attribute_defs: list[AtlasRelationshipAttributeDef] | None = None
 ```
 
-Derived from the relationship types that refer to this one; ignored on create and update.
+The attributes added by relationship types; derived by the server, ignored on create and update.
 
 #### service\_type
 
@@ -3043,13 +3326,15 @@ Derived from the relationship types that refer to this one; ignored on create an
 service_type: str | None = None
 ```
 
+The service the type belongs to; built-in types use `atlas_core`.
+
 #### sub\_types
 
 ```
 sub_types: OptionalNameSet = None
 ```
 
-Derived from the super types of all entity types; ignored on create and update.
+The entity types extending this one; derived by the server, ignored on create and update.
 
 #### super\_types
 
@@ -3057,11 +3342,15 @@ Derived from the super types of all entity types; ignored on create and update.
 super_types: NameSet
 ```
 
+The entity types this one extends.
+
 #### type\_version
 
 ```
 type_version: str | None = None
 ```
+
+The version string of the type, used by typedef patches.
 
 #### update\_time
 
@@ -3069,17 +3358,23 @@ type_version: str | None = None
 update_time: Timestamp | None = None
 ```
 
+When the type was last updated, in epoch milliseconds.
+
 #### updated\_by
 
 ```
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### add\_attribute
 
@@ -3187,6 +3482,7 @@ An enum type.
             }
           ],
           "default": null,
+          "description": "The enum value, unique within its type.",
           "title": "Value"
         },
         "description": {
@@ -3199,6 +3495,7 @@ An enum type.
             }
           ],
           "default": null,
+          "description": "A description of the enum value.",
           "title": "Description"
         },
         "ordinal": {
@@ -3211,6 +3508,7 @@ An enum type.
             }
           ],
           "default": null,
+          "description": "The position of the value in the enum.",
           "title": "Ordinal"
         }
       },
@@ -3234,6 +3532,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -3246,6 +3545,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -3258,6 +3558,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -3269,7 +3570,8 @@ An enum type.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -3280,7 +3582,8 @@ An enum type.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -3292,6 +3595,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -3304,6 +3608,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -3316,6 +3621,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -3328,6 +3634,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -3340,6 +3647,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -3355,9 +3663,11 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     },
     "elementDefs": {
+      "description": "The values of the enum; one element per value, the last given for a value wins.",
       "items": {
         "$ref": "#/$defs/AtlasEnumElementDef"
       },
@@ -3374,6 +3684,7 @@ An enum type.
         }
       ],
       "default": null,
+      "description": "The value an entity gets for a missing attribute of this enum type.",
       "title": "Defaultvalue"
     }
   },
@@ -3418,11 +3729,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### default\_value
 
@@ -3430,11 +3745,15 @@ created_by: str | None = None
 default_value: str | None = None
 ```
 
+The value an entity gets for a missing attribute of this enum type.
+
 #### description
 
 ```
 description: str | None = None
 ```
+
+A description of the type.
 
 #### element\_defs
 
@@ -3442,11 +3761,15 @@ description: str | None = None
 element_defs: list[AtlasEnumElementDef]
 ```
 
+The values of the enum; one element per value, the last given for a value wins.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -3467,11 +3790,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### service\_type
 
@@ -3479,11 +3806,15 @@ options: dict[str, str] | None = None
 service_type: str | None = None
 ```
 
+The service the type belongs to; built-in types use `atlas_core`.
+
 #### type\_version
 
 ```
 type_version: str | None = None
 ```
+
+The version string of the type, used by typedef patches.
 
 #### update\_time
 
@@ -3491,17 +3822,23 @@ type_version: str | None = None
 update_time: Timestamp | None = None
 ```
 
+When the type was last updated, in epoch milliseconds.
+
 #### updated\_by
 
 ```
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### add\_element
 
@@ -3583,6 +3920,7 @@ One value of an enum type.
         }
       ],
       "default": null,
+      "description": "The enum value, unique within its type.",
       "title": "Value"
     },
     "description": {
@@ -3595,6 +3933,7 @@ One value of an enum type.
         }
       ],
       "default": null,
+      "description": "A description of the enum value.",
       "title": "Description"
     },
     "ordinal": {
@@ -3607,6 +3946,7 @@ One value of an enum type.
         }
       ],
       "default": null,
+      "description": "The position of the value in the enum.",
       "title": "Ordinal"
     }
   },
@@ -3627,6 +3967,8 @@ Fields:
 description: str | None = None
 ```
 
+A description of the enum value.
+
 #### model\_config
 
 ```
@@ -3646,11 +3988,15 @@ model_config = ConfigDict(
 ordinal: int | None = None
 ```
 
+The position of the value in the enum.
+
 #### value
 
 ```
 value: str | None = None
 ```
+
+The enum value, unique within its type.
 
 #### to\_json
 
@@ -3686,6 +4032,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -3699,6 +4046,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -3743,6 +4091,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "The attribute name, unique within its type.",
       "title": "Name"
     },
     "typeName": {
@@ -3755,11 +4104,13 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
       "title": "Typename"
     },
     "isOptional": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether an entity may omit the attribute."
     },
     "cardinality": {
       "anyOf": [
@@ -3770,27 +4121,33 @@ An entity attribute that a relationship type adds; read-only, derived from the r
           "type": "null"
         }
       ],
-      "default": "SINGLE"
+      "default": "SINGLE",
+      "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
     },
     "valuesMinCount": {
       "$ref": "#/$defs/JavaInt",
-      "default": -1
+      "default": -1,
+      "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
     },
     "valuesMaxCount": {
       "$ref": "#/$defs/JavaInt",
-      "default": -1
+      "default": -1,
+      "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
     },
     "isUnique": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute's value is unique across the entities of its type."
     },
     "isIndexable": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute is searchable."
     },
     "includeInNotification": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute's value is carried in change notifications."
     },
     "defaultValue": {
       "anyOf": [
@@ -3802,6 +4159,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "The value an entity gets for the attribute when it omits one.",
       "title": "Defaultvalue"
     },
     "description": {
@@ -3814,11 +4172,13 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "A description of the attribute.",
       "title": "Description"
     },
     "searchWeight": {
       "$ref": "#/$defs/JavaInt",
-      "default": -1
+      "default": -1,
+      "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
     },
     "indexType": {
       "anyOf": [
@@ -3829,7 +4189,8 @@ An entity attribute that a relationship type adds; read-only, derived from the r
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "How a string attribute is indexed: DEFAULT or STRING."
     },
     "constraints": {
       "anyOf": [
@@ -3844,6 +4205,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
       "title": "Constraints"
     },
     "options": {
@@ -3859,6 +4221,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
       "title": "Options"
     },
     "displayName": {
@@ -3871,6 +4234,7 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "The name shown for the attribute in UIs; the name itself when unset.",
       "title": "Displayname"
     },
     "relationshipTypeName": {
@@ -3883,11 +4247,13 @@ An entity attribute that a relationship type adds; read-only, derived from the r
         }
       ],
       "default": null,
+      "description": "The name of the relationship type that adds this attribute.",
       "title": "Relationshiptypename"
     },
     "isLegacyAttribute": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute comes from a legacy relationship end definition."
     }
   },
   "title": "AtlasRelationshipAttributeDef",
@@ -3922,11 +4288,15 @@ Fields:
 cardinality: Cardinality | None = Cardinality.SINGLE
 ```
 
+How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE.
+
 #### constraints
 
 ```
 constraints: list[AtlasConstraintDef] | None = None
 ```
+
+The constraints on the attribute, e.g. `ownedRef`/`inverseRef` pairs. An empty list is written back as null.
 
 #### default\_value
 
@@ -3934,11 +4304,15 @@ constraints: list[AtlasConstraintDef] | None = None
 default_value: str | None = None
 ```
 
+The value an entity gets for the attribute when it omits one.
+
 #### description
 
 ```
 description: str | None = None
 ```
+
+A description of the attribute.
 
 #### display\_name
 
@@ -3946,11 +4320,15 @@ description: str | None = None
 display_name: str | None = None
 ```
 
+The name shown for the attribute in UIs; the name itself when unset.
+
 #### include\_in\_notification
 
 ```
 include_in_notification: JavaBool = False
 ```
+
+Whether the attribute's value is carried in change notifications.
 
 #### index\_type
 
@@ -3958,11 +4336,15 @@ include_in_notification: JavaBool = False
 index_type: IndexType | None = None
 ```
 
+How a string attribute is indexed: DEFAULT or STRING.
+
 #### is\_indexable
 
 ```
 is_indexable: JavaBool = False
 ```
+
+Whether the attribute is searchable.
 
 #### is\_legacy\_attribute
 
@@ -3970,17 +4352,23 @@ is_indexable: JavaBool = False
 is_legacy_attribute: JavaBool = False
 ```
 
+Whether the attribute comes from a legacy relationship end definition.
+
 #### is\_optional
 
 ```
 is_optional: JavaBool = False
 ```
 
+Whether an entity may omit the attribute.
+
 #### is\_unique
 
 ```
 is_unique: JavaBool = False
 ```
+
+Whether the attribute's value is unique across the entities of its type.
 
 #### model\_config
 
@@ -4001,11 +4389,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The attribute name, unique within its type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the attribute, e.g. `maxStrLength`, `validPattern`, `isSoftReference`.
 
 #### relationship\_type\_name
 
@@ -4013,11 +4405,15 @@ options: dict[str, str] | None = None
 relationship_type_name: str | None = None
 ```
 
+The name of the relationship type that adds this attribute.
+
 #### search\_weight
 
 ```
 search_weight: JavaInt = DEFAULT_SEARCH_WEIGHT
 ```
+
+The attribute's weight in search scoring, 1 to 10; -1 means unset.
 
 #### type\_name
 
@@ -4025,17 +4421,23 @@ search_weight: JavaInt = DEFAULT_SEARCH_WEIGHT
 type_name: str | None = None
 ```
 
+The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.
+
 #### values\_max\_count
 
 ```
 values_max_count: JavaInt = COUNT_NOT_SET
 ```
 
+The most number of values a LIST/SET attribute may hold; -1 means unlimited.
+
 #### values\_min\_count
 
 ```
 values_min_count: JavaInt = COUNT_NOT_SET
 ```
+
+The least number of values a LIST/SET attribute must hold; -1 means unset.
 
 #### add\_constraint
 
@@ -4091,7 +4493,7 @@ Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps`
 
 Bases: `AtlasStructDef`
 
-A relationship type between two entity types (TDM-12).
+A relationship type between two entity types.
 
 **Show JSON schema:**
 
@@ -4099,7 +4501,7 @@ A relationship type between two entity types (TDM-12).
 {
   "$defs": {
     "AtlasAttributeDef": {
-      "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+      "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
       "properties": {
         "name": {
           "anyOf": [
@@ -4111,6 +4513,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -4123,11 +4526,13 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -4138,27 +4543,33 @@ A relationship type between two entity types (TDM-12).
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -4170,6 +4581,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -4182,11 +4594,13 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -4197,7 +4611,8 @@ A relationship type between two entity types (TDM-12).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -4212,6 +4627,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -4227,6 +4643,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -4239,6 +4656,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         }
       },
@@ -4258,6 +4676,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -4271,6 +4690,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -4278,7 +4698,7 @@ A relationship type between two entity types (TDM-12).
       "type": "object"
     },
     "AtlasRelationshipEndDef": {
-      "description": "One end of a relationship type: the entity type there and the attribute it gets (TDM-12).",
+      "description": "One end of a relationship type: the entity type there and the attribute it gets.",
       "properties": {
         "type": {
           "anyOf": [
@@ -4290,6 +4710,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The name of the entity type at this end of the relationship.",
           "title": "Type"
         },
         "name": {
@@ -4302,11 +4723,13 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "The name of the attribute this end adds to the entity type.",
           "title": "Name"
         },
         "isContainer": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the entity at this end owns the entities at the other end."
         },
         "cardinality": {
           "anyOf": [
@@ -4317,11 +4740,13 @@ A relationship type between two entity types (TDM-12).
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many entities sit at this end: SINGLE, LIST, or SET."
         },
         "isLegacyAttribute": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute this end defines already exists on the entity type."
         },
         "description": {
           "anyOf": [
@@ -4333,6 +4758,7 @@ A relationship type between two entity types (TDM-12).
             }
           ],
           "default": null,
+          "description": "A description of this end of the relationship.",
           "title": "Description"
         }
       },
@@ -4396,7 +4822,7 @@ A relationship type between two entity types (TDM-12).
       "type": "string"
     }
   },
-  "description": "A relationship type between two entity types (TDM-12).",
+  "description": "A relationship type between two entity types.",
   "properties": {
     "guid": {
       "anyOf": [
@@ -4408,6 +4834,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -4420,6 +4847,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -4432,6 +4860,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -4443,7 +4872,8 @@ A relationship type between two entity types (TDM-12).
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -4454,7 +4884,8 @@ A relationship type between two entity types (TDM-12).
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -4466,6 +4897,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -4478,6 +4910,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -4490,6 +4923,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -4502,6 +4936,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -4514,6 +4949,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -4529,10 +4965,12 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     },
     "attributeDefs": {
-      "$ref": "#/$defs/AttributeDefs"
+      "$ref": "#/$defs/AttributeDefs",
+      "description": "The attributes of the type; one definition per name, the last given for a name wins."
     },
     "relationshipCategory": {
       "anyOf": [
@@ -4543,7 +4981,8 @@ A relationship type between two entity types (TDM-12).
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "How the two ends depend on each other: ASSOCIATION, AGGREGATION, or COMPOSITION."
     },
     "relationshipLabel": {
       "anyOf": [
@@ -4555,6 +4994,7 @@ A relationship type between two entity types (TDM-12).
         }
       ],
       "default": null,
+      "description": "The label of the relationship; the type name when unset.",
       "title": "Relationshiplabel"
     },
     "propagateTags": {
@@ -4566,7 +5006,8 @@ A relationship type between two entity types (TDM-12).
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "The direction in which classifications propagate over the relationship."
     },
     "endDef1": {
       "anyOf": [
@@ -4577,7 +5018,8 @@ A relationship type between two entity types (TDM-12).
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "The first end of the relationship."
     },
     "endDef2": {
       "anyOf": [
@@ -4588,7 +5030,8 @@ A relationship type between two entity types (TDM-12).
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "The second end of the relationship."
     }
   },
   "title": "AtlasRelationshipDef",
@@ -4628,6 +5071,8 @@ CATEGORY: TypeCategory = TypeCategory.RELATIONSHIP
 attribute_defs: AttributeDefs
 ```
 
+The attributes of the type; one definition per name, the last given for a name wins.
+
 #### category
 
 ```
@@ -4642,11 +5087,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### description
 
@@ -4654,11 +5103,15 @@ created_by: str | None = None
 description: str | None = None
 ```
 
+A description of the type.
+
 #### end\_def1
 
 ```
 end_def1: AtlasRelationshipEndDef | None = None
 ```
+
+The first end of the relationship.
 
 #### end\_def2
 
@@ -4666,11 +5119,15 @@ end_def1: AtlasRelationshipEndDef | None = None
 end_def2: AtlasRelationshipEndDef | None = None
 ```
 
+The second end of the relationship.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -4691,11 +5148,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### propagate\_tags
 
@@ -4703,11 +5164,15 @@ options: dict[str, str] | None = None
 propagate_tags: PropagateTags | None = None
 ```
 
+The direction in which classifications propagate over the relationship.
+
 #### relationship\_category
 
 ```
 relationship_category: RelationshipCategory | None = None
 ```
+
+How the two ends depend on each other: ASSOCIATION, AGGREGATION, or COMPOSITION.
 
 #### relationship\_label
 
@@ -4715,11 +5180,15 @@ relationship_category: RelationshipCategory | None = None
 relationship_label: str | None = None
 ```
 
+The label of the relationship; the type name when unset.
+
 #### service\_type
 
 ```
 service_type: str | None = None
 ```
+
+The service the type belongs to; built-in types use `atlas_core`.
 
 #### type\_version
 
@@ -4727,11 +5196,15 @@ service_type: str | None = None
 type_version: str | None = None
 ```
 
+The version string of the type, used by typedef patches.
+
 #### update\_time
 
 ```
 update_time: Timestamp | None = None
 ```
+
+When the type was last updated, in epoch milliseconds.
 
 #### updated\_by
 
@@ -4739,11 +5212,15 @@ update_time: Timestamp | None = None
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### add\_attribute
 
@@ -4807,7 +5284,7 @@ Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps`
 
 Bases: `AtlasModel`
 
-One end of a relationship type: the entity type there and the attribute it gets (TDM-12).
+One end of a relationship type: the entity type there and the attribute it gets.
 
 **Show JSON schema:**
 
@@ -4828,7 +5305,7 @@ One end of a relationship type: the entity type there and the attribute it gets 
       "type": "boolean"
     }
   },
-  "description": "One end of a relationship type: the entity type there and the attribute it gets (TDM-12).",
+  "description": "One end of a relationship type: the entity type there and the attribute it gets.",
   "properties": {
     "type": {
       "anyOf": [
@@ -4840,6 +5317,7 @@ One end of a relationship type: the entity type there and the attribute it gets 
         }
       ],
       "default": null,
+      "description": "The name of the entity type at this end of the relationship.",
       "title": "Type"
     },
     "name": {
@@ -4852,11 +5330,13 @@ One end of a relationship type: the entity type there and the attribute it gets 
         }
       ],
       "default": null,
+      "description": "The name of the attribute this end adds to the entity type.",
       "title": "Name"
     },
     "isContainer": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the entity at this end owns the entities at the other end."
     },
     "cardinality": {
       "anyOf": [
@@ -4867,11 +5347,13 @@ One end of a relationship type: the entity type there and the attribute it gets 
           "type": "null"
         }
       ],
-      "default": "SINGLE"
+      "default": "SINGLE",
+      "description": "How many entities sit at this end: SINGLE, LIST, or SET."
     },
     "isLegacyAttribute": {
       "$ref": "#/$defs/JavaBool",
-      "default": false
+      "default": false,
+      "description": "Whether the attribute this end defines already exists on the entity type."
     },
     "description": {
       "anyOf": [
@@ -4883,6 +5365,7 @@ One end of a relationship type: the entity type there and the attribute it gets 
         }
       ],
       "default": null,
+      "description": "A description of this end of the relationship.",
       "title": "Description"
     }
   },
@@ -4906,11 +5389,15 @@ Fields:
 cardinality: Cardinality | None = Cardinality.SINGLE
 ```
 
+How many entities sit at this end: SINGLE, LIST, or SET.
+
 #### description
 
 ```
 description: str | None = None
 ```
+
+A description of this end of the relationship.
 
 #### is\_container
 
@@ -4918,11 +5405,15 @@ description: str | None = None
 is_container: JavaBool = False
 ```
 
+Whether the entity at this end owns the entities at the other end.
+
 #### is\_legacy\_attribute
 
 ```
 is_legacy_attribute: JavaBool = False
 ```
+
+Whether the attribute this end defines already exists on the entity type.
 
 #### model\_config
 
@@ -4943,11 +5434,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The name of the attribute this end adds to the entity type.
+
 #### type
 
 ```
 type: str | None = None
 ```
+
+The name of the entity type at this end of the relationship.
 
 #### to\_json
 
@@ -4971,7 +5466,7 @@ A struct type, and the base of the types that have attributes.
 {
   "$defs": {
     "AtlasAttributeDef": {
-      "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+      "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
       "properties": {
         "name": {
           "anyOf": [
@@ -4983,6 +5478,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -4995,11 +5491,13 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -5010,27 +5508,33 @@ A struct type, and the base of the types that have attributes.
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -5042,6 +5546,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -5054,11 +5559,13 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -5069,7 +5576,8 @@ A struct type, and the base of the types that have attributes.
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -5084,6 +5592,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -5099,6 +5608,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -5111,6 +5621,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         }
       },
@@ -5130,6 +5641,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -5143,6 +5655,7 @@ A struct type, and the base of the types that have attributes.
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -5197,6 +5710,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The server-assigned guid of the type definition.",
       "title": "Guid"
     },
     "createdBy": {
@@ -5209,6 +5723,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The user who created the type.",
       "title": "Createdby"
     },
     "updatedBy": {
@@ -5221,6 +5736,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The user who last updated the type.",
       "title": "Updatedby"
     },
     "createTime": {
@@ -5232,7 +5748,8 @@ A struct type, and the base of the types that have attributes.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was created, in epoch milliseconds."
     },
     "updateTime": {
       "anyOf": [
@@ -5243,7 +5760,8 @@ A struct type, and the base of the types that have attributes.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "When the type was last updated, in epoch milliseconds."
     },
     "version": {
       "anyOf": [
@@ -5255,6 +5773,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The version of the type definition.",
       "title": "Version"
     },
     "name": {
@@ -5267,6 +5786,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The unique name of the type.",
       "title": "Name"
     },
     "description": {
@@ -5279,6 +5799,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "A description of the type.",
       "title": "Description"
     },
     "typeVersion": {
@@ -5291,6 +5812,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The version string of the type, used by typedef patches.",
       "title": "Typeversion"
     },
     "serviceType": {
@@ -5303,6 +5825,7 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "The service the type belongs to; built-in types use ``atlas_core``.",
       "title": "Servicetype"
     },
     "options": {
@@ -5318,10 +5841,12 @@ A struct type, and the base of the types that have attributes.
         }
       ],
       "default": null,
+      "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
       "title": "Options"
     },
     "attributeDefs": {
-      "$ref": "#/$defs/AttributeDefs"
+      "$ref": "#/$defs/AttributeDefs",
+      "description": "The attributes of the type; one definition per name, the last given for a name wins."
     }
   },
   "title": "AtlasStructDef",
@@ -5356,6 +5881,8 @@ CATEGORY: TypeCategory = TypeCategory.STRUCT
 attribute_defs: AttributeDefs
 ```
 
+The attributes of the type; one definition per name, the last given for a name wins.
+
 #### category
 
 ```
@@ -5370,11 +5897,15 @@ The kind of this type definition, fixed by its class; never read from input (TDM
 create_time: Timestamp | None = None
 ```
 
+When the type was created, in epoch milliseconds.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who created the type.
 
 #### description
 
@@ -5382,11 +5913,15 @@ created_by: str | None = None
 description: str | None = None
 ```
 
+A description of the type.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The server-assigned guid of the type definition.
 
 #### model\_config
 
@@ -5407,11 +5942,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The unique name of the type.
+
 #### options
 
 ```
 options: dict[str, str] | None = None
 ```
+
+Extension options of the type, e.g. `applicableEntityTypes`.
 
 #### service\_type
 
@@ -5419,11 +5958,15 @@ options: dict[str, str] | None = None
 service_type: str | None = None
 ```
 
+The service the type belongs to; built-in types use `atlas_core`.
+
 #### type\_version
 
 ```
 type_version: str | None = None
 ```
+
+The version string of the type, used by typedef patches.
 
 #### update\_time
 
@@ -5431,17 +5974,23 @@ type_version: str | None = None
 update_time: Timestamp | None = None
 ```
 
+When the type was last updated, in epoch milliseconds.
+
 #### updated\_by
 
 ```
 updated_by: str | None = None
 ```
 
+The user who last updated the type.
+
 #### version
 
 ```
 version: int | None = None
 ```
+
+The version of the type definition.
 
 #### add\_attribute
 
@@ -5542,6 +6091,7 @@ The identity of a type definition, as `/v2/types/typedefs/headers` lists it.
         }
       ],
       "default": null,
+      "description": "The guid of the type definition.",
       "title": "Guid"
     },
     "name": {
@@ -5554,6 +6104,7 @@ The identity of a type definition, as `/v2/types/typedefs/headers` lists it.
         }
       ],
       "default": null,
+      "description": "The name of the type.",
       "title": "Name"
     },
     "serviceType": {
@@ -5566,6 +6117,7 @@ The identity of a type definition, as `/v2/types/typedefs/headers` lists it.
         }
       ],
       "default": null,
+      "description": "The service the type belongs to.",
       "title": "Servicetype"
     },
     "category": {
@@ -5577,7 +6129,8 @@ The identity of a type definition, as `/v2/types/typedefs/headers` lists it.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "The kind of the type."
     }
   },
   "title": "AtlasTypeDefHeader",
@@ -5598,11 +6151,15 @@ Fields:
 category: TypeCategory | None = None
 ```
 
+The kind of the type.
+
 #### guid
 
 ```
 guid: str | None = None
 ```
+
+The guid of the type definition.
 
 #### model\_config
 
@@ -5623,11 +6180,15 @@ model_config = ConfigDict(
 name: str | None = None
 ```
 
+The name of the type.
+
 #### service\_type
 
 ```
 service_type: str | None = None
 ```
+
+The service the type belongs to.
 
 #### of
 
@@ -5651,7 +6212,7 @@ Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps`
 
 Bases: `AtlasModel`
 
-Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
+Type definitions of every kind: the body of `/v2/types/typedefs`.
 
 **Show JSON schema:**
 
@@ -5659,7 +6220,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
 {
   "$defs": {
     "AtlasAttributeDef": {
-      "description": "An attribute of a struct, classification, entity, relationship or business metadata type (TDM-10).",
+      "description": "An attribute of a struct, classification, entity, relationship or business metadata type.\n\nA null cardinality, an explicit null boolean, and an empty constraint list are\nnormalised on read, as the Java setters do.",
       "properties": {
         "name": {
           "anyOf": [
@@ -5671,6 +6232,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -5683,11 +6245,13 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -5698,27 +6262,33 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -5730,6 +6300,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -5742,11 +6313,13 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -5757,7 +6330,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -5772,6 +6346,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -5787,6 +6362,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -5799,6 +6375,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         }
       },
@@ -5818,6 +6395,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The server-assigned guid of the type definition.",
           "title": "Guid"
         },
         "createdBy": {
@@ -5830,6 +6408,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who created the type.",
           "title": "Createdby"
         },
         "updatedBy": {
@@ -5842,6 +6421,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who last updated the type.",
           "title": "Updatedby"
         },
         "createTime": {
@@ -5853,7 +6433,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was created, in epoch milliseconds."
         },
         "updateTime": {
           "anyOf": [
@@ -5864,7 +6445,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was last updated, in epoch milliseconds."
         },
         "version": {
           "anyOf": [
@@ -5876,6 +6458,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version of the type definition.",
           "title": "Version"
         },
         "name": {
@@ -5888,6 +6471,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The unique name of the type.",
           "title": "Name"
         },
         "description": {
@@ -5900,6 +6484,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the type.",
           "title": "Description"
         },
         "typeVersion": {
@@ -5912,6 +6497,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version string of the type, used by typedef patches.",
           "title": "Typeversion"
         },
         "serviceType": {
@@ -5924,6 +6510,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The service the type belongs to; built-in types use ``atlas_core``.",
           "title": "Servicetype"
         },
         "options": {
@@ -5939,10 +6526,12 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
           "title": "Options"
         },
         "attributeDefs": {
-          "$ref": "#/$defs/AttributeDefs"
+          "$ref": "#/$defs/AttributeDefs",
+          "description": "The attributes of the type; one definition per name, the last given for a name wins."
         }
       },
       "title": "AtlasBusinessMetadataDef",
@@ -5961,6 +6550,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The server-assigned guid of the type definition.",
           "title": "Guid"
         },
         "createdBy": {
@@ -5973,6 +6563,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who created the type.",
           "title": "Createdby"
         },
         "updatedBy": {
@@ -5985,6 +6576,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who last updated the type.",
           "title": "Updatedby"
         },
         "createTime": {
@@ -5996,7 +6588,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was created, in epoch milliseconds."
         },
         "updateTime": {
           "anyOf": [
@@ -6007,7 +6600,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was last updated, in epoch milliseconds."
         },
         "version": {
           "anyOf": [
@@ -6019,6 +6613,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version of the type definition.",
           "title": "Version"
         },
         "name": {
@@ -6031,6 +6626,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The unique name of the type.",
           "title": "Name"
         },
         "description": {
@@ -6043,6 +6639,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the type.",
           "title": "Description"
         },
         "typeVersion": {
@@ -6055,6 +6652,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version string of the type, used by typedef patches.",
           "title": "Typeversion"
         },
         "serviceType": {
@@ -6067,6 +6665,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The service the type belongs to; built-in types use ``atlas_core``.",
           "title": "Servicetype"
         },
         "options": {
@@ -6082,20 +6681,25 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
           "title": "Options"
         },
         "attributeDefs": {
-          "$ref": "#/$defs/AttributeDefs"
+          "$ref": "#/$defs/AttributeDefs",
+          "description": "The attributes of the type; one definition per name, the last given for a name wins."
         },
         "superTypes": {
-          "$ref": "#/$defs/NameSet"
+          "$ref": "#/$defs/NameSet",
+          "description": "The classifications this one extends."
         },
         "entityTypes": {
-          "$ref": "#/$defs/NameSet"
+          "$ref": "#/$defs/NameSet",
+          "description": "The entity types the classification may be applied to."
         },
         "subTypes": {
           "$ref": "#/$defs/OptionalNameSet",
-          "default": null
+          "default": null,
+          "description": "The classifications extending this one; derived by the server, ignored on create and update."
         }
       },
       "title": "AtlasClassificationDef",
@@ -6114,6 +6718,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
           "title": "Type"
         },
         "params": {
@@ -6127,6 +6732,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
           "title": "Params"
         }
       },
@@ -6146,6 +6752,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The server-assigned guid of the type definition.",
           "title": "Guid"
         },
         "createdBy": {
@@ -6158,6 +6765,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who created the type.",
           "title": "Createdby"
         },
         "updatedBy": {
@@ -6170,6 +6778,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who last updated the type.",
           "title": "Updatedby"
         },
         "createTime": {
@@ -6181,7 +6790,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was created, in epoch milliseconds."
         },
         "updateTime": {
           "anyOf": [
@@ -6192,7 +6802,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was last updated, in epoch milliseconds."
         },
         "version": {
           "anyOf": [
@@ -6204,6 +6815,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version of the type definition.",
           "title": "Version"
         },
         "name": {
@@ -6216,6 +6828,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The unique name of the type.",
           "title": "Name"
         },
         "description": {
@@ -6228,6 +6841,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the type.",
           "title": "Description"
         },
         "typeVersion": {
@@ -6240,6 +6854,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version string of the type, used by typedef patches.",
           "title": "Typeversion"
         },
         "serviceType": {
@@ -6252,6 +6867,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The service the type belongs to; built-in types use ``atlas_core``.",
           "title": "Servicetype"
         },
         "options": {
@@ -6267,17 +6883,21 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
           "title": "Options"
         },
         "attributeDefs": {
-          "$ref": "#/$defs/AttributeDefs"
+          "$ref": "#/$defs/AttributeDefs",
+          "description": "The attributes of the type; one definition per name, the last given for a name wins."
         },
         "superTypes": {
-          "$ref": "#/$defs/NameSet"
+          "$ref": "#/$defs/NameSet",
+          "description": "The entity types this one extends."
         },
         "subTypes": {
           "$ref": "#/$defs/OptionalNameSet",
-          "default": null
+          "default": null,
+          "description": "The entity types extending this one; derived by the server, ignored on create and update."
         },
         "relationshipAttributeDefs": {
           "anyOf": [
@@ -6292,6 +6912,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The attributes added by relationship types; derived by the server, ignored on create and update.",
           "title": "Relationshipattributedefs"
         },
         "businessAttributeDefs": {
@@ -6310,6 +6931,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The attributes of the business metadata types that apply to this one, keyed by business metadata type name; derived by the server, ignored on create and update.",
           "title": "Businessattributedefs"
         }
       },
@@ -6329,6 +6951,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The server-assigned guid of the type definition.",
           "title": "Guid"
         },
         "createdBy": {
@@ -6341,6 +6964,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who created the type.",
           "title": "Createdby"
         },
         "updatedBy": {
@@ -6353,6 +6977,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who last updated the type.",
           "title": "Updatedby"
         },
         "createTime": {
@@ -6364,7 +6989,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was created, in epoch milliseconds."
         },
         "updateTime": {
           "anyOf": [
@@ -6375,7 +7001,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was last updated, in epoch milliseconds."
         },
         "version": {
           "anyOf": [
@@ -6387,6 +7014,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version of the type definition.",
           "title": "Version"
         },
         "name": {
@@ -6399,6 +7027,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The unique name of the type.",
           "title": "Name"
         },
         "description": {
@@ -6411,6 +7040,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the type.",
           "title": "Description"
         },
         "typeVersion": {
@@ -6423,6 +7053,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version string of the type, used by typedef patches.",
           "title": "Typeversion"
         },
         "serviceType": {
@@ -6435,6 +7066,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The service the type belongs to; built-in types use ``atlas_core``.",
           "title": "Servicetype"
         },
         "options": {
@@ -6450,9 +7082,11 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
           "title": "Options"
         },
         "elementDefs": {
+          "description": "The values of the enum; one element per value, the last given for a value wins.",
           "items": {
             "$ref": "#/$defs/AtlasEnumElementDef"
           },
@@ -6469,6 +7103,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The value an entity gets for a missing attribute of this enum type.",
           "title": "Defaultvalue"
         }
       },
@@ -6488,6 +7123,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The enum value, unique within its type.",
           "title": "Value"
         },
         "description": {
@@ -6500,6 +7136,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the enum value.",
           "title": "Description"
         },
         "ordinal": {
@@ -6512,6 +7149,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The position of the value in the enum.",
           "title": "Ordinal"
         }
       },
@@ -6531,6 +7169,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The attribute name, unique within its type.",
           "title": "Name"
         },
         "typeName": {
@@ -6543,11 +7182,13 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The attribute's type: a primitive or built-in name, an array/map type name, or the name of a defined type.",
           "title": "Typename"
         },
         "isOptional": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether an entity may omit the attribute."
         },
         "cardinality": {
           "anyOf": [
@@ -6558,27 +7199,33 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many values the attribute holds: SINGLE, LIST, or SET. A null reads as SINGLE."
         },
         "valuesMinCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The least number of values a LIST/SET attribute must hold; -1 means unset."
         },
         "valuesMaxCount": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The most number of values a LIST/SET attribute may hold; -1 means unlimited."
         },
         "isUnique": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is unique across the entities of its type."
         },
         "isIndexable": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute is searchable."
         },
         "includeInNotification": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute's value is carried in change notifications."
         },
         "defaultValue": {
           "anyOf": [
@@ -6590,6 +7237,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The value an entity gets for the attribute when it omits one.",
           "title": "Defaultvalue"
         },
         "description": {
@@ -6602,11 +7250,13 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the attribute.",
           "title": "Description"
         },
         "searchWeight": {
           "$ref": "#/$defs/JavaInt",
-          "default": -1
+          "default": -1,
+          "description": "The attribute's weight in search scoring, 1 to 10; -1 means unset."
         },
         "indexType": {
           "anyOf": [
@@ -6617,7 +7267,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How a string attribute is indexed: DEFAULT or STRING."
         },
         "constraints": {
           "anyOf": [
@@ -6632,6 +7283,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The constraints on the attribute, e.g. ``ownedRef``/``inverseRef`` pairs. An empty list is written back as null.",
           "title": "Constraints"
         },
         "options": {
@@ -6647,6 +7299,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the attribute, e.g. ``maxStrLength``, ``validPattern``, ``isSoftReference``.",
           "title": "Options"
         },
         "displayName": {
@@ -6659,6 +7312,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The name shown for the attribute in UIs; the name itself when unset.",
           "title": "Displayname"
         },
         "relationshipTypeName": {
@@ -6671,18 +7325,20 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The name of the relationship type that adds this attribute.",
           "title": "Relationshiptypename"
         },
         "isLegacyAttribute": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute comes from a legacy relationship end definition."
         }
       },
       "title": "AtlasRelationshipAttributeDef",
       "type": "object"
     },
     "AtlasRelationshipDef": {
-      "description": "A relationship type between two entity types (TDM-12).",
+      "description": "A relationship type between two entity types.",
       "properties": {
         "guid": {
           "anyOf": [
@@ -6694,6 +7350,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The server-assigned guid of the type definition.",
           "title": "Guid"
         },
         "createdBy": {
@@ -6706,6 +7363,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who created the type.",
           "title": "Createdby"
         },
         "updatedBy": {
@@ -6718,6 +7376,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who last updated the type.",
           "title": "Updatedby"
         },
         "createTime": {
@@ -6729,7 +7388,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was created, in epoch milliseconds."
         },
         "updateTime": {
           "anyOf": [
@@ -6740,7 +7400,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was last updated, in epoch milliseconds."
         },
         "version": {
           "anyOf": [
@@ -6752,6 +7413,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version of the type definition.",
           "title": "Version"
         },
         "name": {
@@ -6764,6 +7426,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The unique name of the type.",
           "title": "Name"
         },
         "description": {
@@ -6776,6 +7439,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the type.",
           "title": "Description"
         },
         "typeVersion": {
@@ -6788,6 +7452,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version string of the type, used by typedef patches.",
           "title": "Typeversion"
         },
         "serviceType": {
@@ -6800,6 +7465,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The service the type belongs to; built-in types use ``atlas_core``.",
           "title": "Servicetype"
         },
         "options": {
@@ -6815,10 +7481,12 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
           "title": "Options"
         },
         "attributeDefs": {
-          "$ref": "#/$defs/AttributeDefs"
+          "$ref": "#/$defs/AttributeDefs",
+          "description": "The attributes of the type; one definition per name, the last given for a name wins."
         },
         "relationshipCategory": {
           "anyOf": [
@@ -6829,7 +7497,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "How the two ends depend on each other: ASSOCIATION, AGGREGATION, or COMPOSITION."
         },
         "relationshipLabel": {
           "anyOf": [
@@ -6841,6 +7510,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The label of the relationship; the type name when unset.",
           "title": "Relationshiplabel"
         },
         "propagateTags": {
@@ -6852,7 +7522,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "The direction in which classifications propagate over the relationship."
         },
         "endDef1": {
           "anyOf": [
@@ -6863,7 +7534,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "The first end of the relationship."
         },
         "endDef2": {
           "anyOf": [
@@ -6874,14 +7546,15 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "The second end of the relationship."
         }
       },
       "title": "AtlasRelationshipDef",
       "type": "object"
     },
     "AtlasRelationshipEndDef": {
-      "description": "One end of a relationship type: the entity type there and the attribute it gets (TDM-12).",
+      "description": "One end of a relationship type: the entity type there and the attribute it gets.",
       "properties": {
         "type": {
           "anyOf": [
@@ -6893,6 +7566,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The name of the entity type at this end of the relationship.",
           "title": "Type"
         },
         "name": {
@@ -6905,11 +7579,13 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The name of the attribute this end adds to the entity type.",
           "title": "Name"
         },
         "isContainer": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the entity at this end owns the entities at the other end."
         },
         "cardinality": {
           "anyOf": [
@@ -6920,11 +7596,13 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": "SINGLE"
+          "default": "SINGLE",
+          "description": "How many entities sit at this end: SINGLE, LIST, or SET."
         },
         "isLegacyAttribute": {
           "$ref": "#/$defs/JavaBool",
-          "default": false
+          "default": false,
+          "description": "Whether the attribute this end defines already exists on the entity type."
         },
         "description": {
           "anyOf": [
@@ -6936,6 +7614,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of this end of the relationship.",
           "title": "Description"
         }
       },
@@ -6955,6 +7634,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The server-assigned guid of the type definition.",
           "title": "Guid"
         },
         "createdBy": {
@@ -6967,6 +7647,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who created the type.",
           "title": "Createdby"
         },
         "updatedBy": {
@@ -6979,6 +7660,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The user who last updated the type.",
           "title": "Updatedby"
         },
         "createTime": {
@@ -6990,7 +7672,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was created, in epoch milliseconds."
         },
         "updateTime": {
           "anyOf": [
@@ -7001,7 +7684,8 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "description": "When the type was last updated, in epoch milliseconds."
         },
         "version": {
           "anyOf": [
@@ -7013,6 +7697,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version of the type definition.",
           "title": "Version"
         },
         "name": {
@@ -7025,6 +7710,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The unique name of the type.",
           "title": "Name"
         },
         "description": {
@@ -7037,6 +7723,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "A description of the type.",
           "title": "Description"
         },
         "typeVersion": {
@@ -7049,6 +7736,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The version string of the type, used by typedef patches.",
           "title": "Typeversion"
         },
         "serviceType": {
@@ -7061,6 +7749,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "The service the type belongs to; built-in types use ``atlas_core``.",
           "title": "Servicetype"
         },
         "options": {
@@ -7076,10 +7765,12 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
             }
           ],
           "default": null,
+          "description": "Extension options of the type, e.g. ``applicableEntityTypes``.",
           "title": "Options"
         },
         "attributeDefs": {
-          "$ref": "#/$defs/AttributeDefs"
+          "$ref": "#/$defs/AttributeDefs",
+          "description": "The attributes of the type; one definition per name, the last given for a name wins."
         }
       },
       "title": "AtlasStructDef",
@@ -7161,7 +7852,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
       "type": "string"
     }
   },
-  "description": "Type definitions of every kind: the body of ``/v2/types/typedefs`` (TDM-13).",
+  "description": "Type definitions of every kind: the body of ``/v2/types/typedefs``.",
   "properties": {
     "enumDefs": {
       "anyOf": [
@@ -7175,6 +7866,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
           "type": "null"
         }
       ],
+      "description": "The enum types.",
       "title": "Enumdefs"
     },
     "structDefs": {
@@ -7189,6 +7881,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
           "type": "null"
         }
       ],
+      "description": "The struct types.",
       "title": "Structdefs"
     },
     "classificationDefs": {
@@ -7203,6 +7896,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
           "type": "null"
         }
       ],
+      "description": "The classification types.",
       "title": "Classificationdefs"
     },
     "entityDefs": {
@@ -7217,6 +7911,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
           "type": "null"
         }
       ],
+      "description": "The entity types.",
       "title": "Entitydefs"
     },
     "relationshipDefs": {
@@ -7231,6 +7926,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
           "type": "null"
         }
       ],
+      "description": "The relationship types.",
       "title": "Relationshipdefs"
     },
     "businessMetadataDefs": {
@@ -7245,6 +7941,7 @@ Type definitions of every kind: the body of `/v2/types/typedefs` (TDM-13).
           "type": "null"
         }
       ],
+      "description": "The business metadata types.",
       "title": "Businessmetadatadefs"
     }
   },
@@ -7268,11 +7965,15 @@ Fields:
 business_metadata_defs: list[AtlasBusinessMetadataDef] | None
 ```
 
+The business metadata types.
+
 #### classification\_defs
 
 ```
 classification_defs: list[AtlasClassificationDef] | None
 ```
+
+The classification types.
 
 #### entity\_defs
 
@@ -7280,11 +7981,15 @@ classification_defs: list[AtlasClassificationDef] | None
 entity_defs: list[AtlasEntityDef] | None
 ```
 
+The entity types.
+
 #### enum\_defs
 
 ```
 enum_defs: list[AtlasEnumDef] | None
 ```
+
+The enum types.
 
 #### model\_config
 
@@ -7305,11 +8010,15 @@ model_config = ConfigDict(
 relationship_defs: list[AtlasRelationshipDef] | None
 ```
 
+The relationship types.
+
 #### struct\_defs
 
 ```
 struct_defs: list[AtlasStructDef] | None
 ```
+
+The struct types.
 
 #### has\_business\_metadata\_def
 
@@ -7608,7 +8317,7 @@ Classes:
 
 - **`AtlasPatch`** –
 
-  The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
+  The record of one applied typedef patch; the times are epoch milliseconds.
 - **`PatchStatus`** –
 
   How a patch ended (`AtlasPatch.PatchStatus`).
@@ -7631,7 +8340,7 @@ The `type` of a typedef patch's record (`AtlasTypeDefStoreInitializer.TYPEDEF_PA
 
 Bases: `AtlasModel`
 
-The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
+The record of one applied typedef patch; the times are epoch milliseconds.
 
 **Show JSON schema:**
 
@@ -7650,7 +8359,7 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
       "type": "string"
     }
   },
-  "description": "The record of one patch (``AtlasPatch``); the times are epoch milliseconds.",
+  "description": "The record of one applied typedef patch; the times are epoch milliseconds.",
   "properties": {
     "id": {
       "anyOf": [
@@ -7662,6 +8371,7 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
         }
       ],
       "default": null,
+      "description": "The unique id of the patch.",
       "title": "Id"
     },
     "description": {
@@ -7674,6 +8384,7 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
         }
       ],
       "default": null,
+      "description": "A description of the patch.",
       "title": "Description"
     },
     "type": {
@@ -7686,6 +8397,7 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
         }
       ],
       "default": null,
+      "description": "The kind of patch; typedef patches use ``TYPEDEF_PATCH``.",
       "title": "Type"
     },
     "action": {
@@ -7698,6 +8410,7 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
         }
       ],
       "default": null,
+      "description": "The action the patch performs, e.g. ``ADD_ATTRIBUTE``.",
       "title": "Action"
     },
     "updatedBy": {
@@ -7710,6 +8423,7 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
         }
       ],
       "default": null,
+      "description": "The user who applied the patch.",
       "title": "Updatedby"
     },
     "createdBy": {
@@ -7722,15 +8436,18 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
         }
       ],
       "default": null,
+      "description": "The user who defined the patch.",
       "title": "Createdby"
     },
     "createdTime": {
       "default": 0,
+      "description": "When the patch was defined, in epoch milliseconds.",
       "title": "Createdtime",
       "type": "integer"
     },
     "updatedTime": {
       "default": 0,
+      "description": "When the patch was applied, in epoch milliseconds.",
       "title": "Updatedtime",
       "type": "integer"
     },
@@ -7743,22 +8460,14 @@ The record of one patch (`AtlasPatch`); the times are epoch milliseconds.
           "type": "null"
         }
       ],
-      "default": null
+      "default": null,
+      "description": "How the patch ended: UNKNOWN, APPLIED, SKIPPED, or FAILED."
     }
   },
   "title": "AtlasPatch",
   "type": "object"
 }
 ```
-
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
 
 Fields:
 
@@ -7778,11 +8487,15 @@ Fields:
 action: str | None = None
 ```
 
+The action the patch performs, e.g. `ADD_ATTRIBUTE`.
+
 #### created\_by
 
 ```
 created_by: str | None = None
 ```
+
+The user who defined the patch.
 
 #### created\_time
 
@@ -7790,17 +8503,23 @@ created_by: str | None = None
 created_time: int = 0
 ```
 
+When the patch was defined, in epoch milliseconds.
+
 #### description
 
 ```
 description: str | None = None
 ```
 
+A description of the patch.
+
 #### id
 
 ```
 id: str | None = None
 ```
+
+The unique id of the patch.
 
 #### model\_config
 
@@ -7821,11 +8540,15 @@ model_config = ConfigDict(
 status: PatchStatus | None = None
 ```
 
+How the patch ended: UNKNOWN, APPLIED, SKIPPED, or FAILED.
+
 #### type
 
 ```
 type: str | None = None
 ```
+
+The kind of patch; typedef patches use `TYPEDEF_PATCH`.
 
 #### updated\_by
 
@@ -7833,11 +8556,15 @@ type: str | None = None
 updated_by: str | None = None
 ```
 
+The user who applied the patch.
+
 #### updated\_time
 
 ```
 updated_time: int = 0
 ```
+
+When the patch was applied, in epoch milliseconds.
 
 #### to\_json
 
@@ -7914,7 +8641,7 @@ Classes:
 
 - **`AtlasModel`** –
 
-  The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
+  The base of every Atlas model.
 
 Functions:
 
@@ -7969,13 +8696,15 @@ A `java.util.Date`: an aware datetime, written as epoch milliseconds (TDM-05).
 
 Bases: `BaseModel`
 
-The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).
+The base of every Atlas model.
+
+Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to strings), and validation on assignment — the Jackson conventions of the Java models (TDM-01 to TDM-03, TDM-15, DD-020).
 
 **Show JSON schema:**
 
 ```
 {
-  "description": "The JSON conventions of every Atlas model (TDM-01 to TDM-03, TDM-15, DD-020).",
+  "description": "The base of every Atlas model.\n\nJava camelCase aliases, lenient input (extra keys ignored, numbers coerce to strings),\nand validation on assignment \u2014 the Jackson conventions of the Java models (TDM-01 to TDM-03, TDM-15, DD-020).",
   "properties": {},
   "title": "AtlasModel",
   "type": "object"

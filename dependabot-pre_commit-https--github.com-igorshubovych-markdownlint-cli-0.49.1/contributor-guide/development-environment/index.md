@@ -114,7 +114,7 @@ The rule that surprises people: **services are reached by service name, not `loc
 | Elasticsearch | `${ELASTICSEARCH_PORT}` → 9200 | `elasticsearch` | TLS only |
 | Postgres (examples) | `${DATABASE_PORT}` → 5432 | `postgres` | Keycloak keeps its own, on its network |
 | Keycloak | 8080 / 8443 | `keycloak` | 8080 dev convenience; 8443 is the verified TLS path |
-| OTel collector | 4317 / 4318 | `observability` | OTLP gRPC / HTTP, TLS only |
+| OTel collector | 127.0.0.1:4317 / 4318 / 4319 | `observability` | OTLP: 4318 browser leg (user JWT), 4317/4319 service leg (shared token); TLS (DD-193), loopback-pinned |
 | Prometheus / Loki / Tempo | 9090 / 3100 / 3200 | `observability` | Consumed through the collector |
 | Grafana | 127.0.0.1:3000 | `observability` | Loopback only |
 

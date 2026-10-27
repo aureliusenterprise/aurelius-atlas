@@ -35,6 +35,8 @@ Not in scope:
 | ESD-05 | The JVM heap is fixed (1 GiB by default) so the whole system still runs on one machine ([ADR 006](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)) |
 | ESD-06 | Cluster metrics reach `dev/observability` through a sidecar collector; `dev/observability` stays unaware of this project |
 
+> \[!NOTE\] The ESD rules have no automated e2e tests (DD-223, DD-227). ESD-04's test meant restarting the shared dev store mid-suite, which races every other suite riding it; the sweep then judged the rest (ESD-01, ESD-02, ESD-05, ESD-06) as dev-environment evaluation that proves nothing about production — the dev stack's healthchecks and review carry them. ESD-03 (credential hygiene) remains a unit test in `libs/python/aurelius-atlas-store-es/tests/test__dev_elasticsearch_config.py`. This library's production behaviour is proven by the STO rules and the apps' own e2e suites, which run against this store from the Atlas side.
+
 ### Store library
 
 | Id | Rule |
