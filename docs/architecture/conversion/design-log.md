@@ -229,6 +229,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-230](#dd-230--parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc)                              | Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away | cross-cutting | Accepted         |
 | [DD-231](#dd-231--teardown-downs-the-compose-stacks-prune-only-sweeps-corpses)                                      | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail                  | cross-cutting | Accepted         |
 | [DD-232](#dd-232--the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir)                                    | CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir          | cross-cutting | Accepted         |
+| [DD-233](#dd-233--the-toolchain-caches-bridge-pod-churn-through-the-cache-server)                                   | Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)                | cross-cutting | Accepted         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -6919,3 +6920,52 @@ fork's price, ~3×. The `e2e` job is now the pipeline's only stack owner,
 so DD-231's teardown is a single named step, not a tail. Caches are
 per-pod: a pod respawn cold-starts uv/npm/sonar/docker once (48 s–2 min),
 the warm pair absorbs it. Next free DD: 233.
+
+### DD-233 — The toolchain caches bridge pod churn through the cache server
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (CI pipeline; repairs DD-232's cache-warmth assumption)
+- **Date:** 2026-10-27
+
+**Context.** DD-232 recorded that per-pod emptyDir caches make a pod
+respawn cold "once (48 s–2 min), the warm pair absorbs it". The fan-out
+pool churns pods constantly — scale-in after every run, helm deploys,
+preemptions — so a `validate` landing on a never-seen pod is the norm.
+Measured on run 40538065508 (warm run, fresh pod): the pre-commit step
+spent 66 s re-`Installing environment` for its seven hook repos
+(talisman's Go build alone ~40 s) before the first hook ran — step time
+181 s where the RWO-PD single job (a pod alive for weeks, caches hot)
+spent 83 s; hook _execution_ is identical in both (96 s). The install
+step pays the same tax on uv's side (~25 s of wheel re-downloads;
+npm does not — node_modules rides the cache server and restores in
+~10 s). The old pipeline's "4 s python / 20s node" warmth was the PD's
+weeks-long pod life, not a better mechanism.
+
+**Decision.** Bridge the cold-pod gap through the existing in-cluster
+`actions/cache` server (the same backend node_modules uses, LAN speed,
+OIDC-scoped): `validate` restores uv (keyed `uv.lock`) and pre-commit
+(keyed `.pre-commit-config.yaml`) and saves both on miss — single
+writer, the node_modules shape; the three fan-out jobs restore uv;
+`scan-sonar` restores/saves the SonarScanner jar cache (DD-230's ~94 s
+per-pod bootstrap, save after the analysis since the jars land during
+it). The emptyDir stays the warm tier _within_ a pod; the cache server
+is the cross-pod tier. Keying on the config files makes every cache
+rebuild exactly-once per version bump.
+
+**Alternatives.** (a) Pin runner pods warm (higher `minRunners`) —
+refused: absorbs some churn, pays idle pods for all of it, and helm
+deploys evict anyway. (b) Return to a shared RWX volume — Filestore is
+blocked by billing-account policy (on record). (c) Bake the caches
+into the runner image — refused for the same reasons as DD-230's
+`~/.sonar` bake (rotation cadence), and the config-keyed caches
+self-invalidate where image layers go stale.
+
+**Consequences.** Cold-pod validate drops ~66 s (pre-commit envs) and
+~25 s (uv wheels); scan-sonar's first-run sonar bootstrap drops ~94 s
+on a fresh pod. First run per key version pays the build (the
+save-on-miss upload, ~1 min for the uv cache at LAN speed) and every
+pod everywhere rides the artifact after. The cache server PD (20 Gi,
+LRU at 90 %) grows by uv (~2–3 Gi) + pre-commit (~0.5 Gi) + sonar
+(~0.4 Gi) — headroom verified against the 18 Gi eviction line. The
+"4 s/20 s" memory is restored where it applies (warm installs on any
+pod); the ephemeral-tree rule is untouched. Next free DD: 234.

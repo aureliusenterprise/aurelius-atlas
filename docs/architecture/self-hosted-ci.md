@@ -20,8 +20,9 @@ flowchart LR
     ARC -->|creates per job| POD[runner pod<br/>ephemeral, privileged]
     subgraph NODE[GKE atlas-dev default pool]
         POD
-        PVC[(PD PVC atlas-shapea-cache<br/>work + caches + containerd store)]
+        ED[(emptyDir work volume<br/>work + caches + containerd store)]
     end
+    POD -->|actions/cache| CS[cache server<br/>20 Gi PD + LRU]
     POD -->|job container IS the image| DC[atlas-ci-runner<br/>dev container<br/>in-image dockerd]
     DC --> GHCR[(GHCR<br/>atlas-ci-runner<br/>buildcache-* tags)]
 ```
@@ -70,7 +71,11 @@ work is documented in
 [`infra/arc/README.md`](../infra/arc/README.md)). The uv download cache,
 the pre-commit home, and containerd's image store live on the runner
 pod's per-pod `emptyDir` work volume (DD-232) as subPath mounts — warm
-within a pod, cold across pods. The warm work tree is
+within a pod, cold across pods; uv and pre-commit bridge across pods
+through the cache server too, keyed on `uv.lock` /
+`.pre-commit-config.yaml` (DD-233 — the fan-out pool churns pods, and a
+cold-pod pre-commit pays 66 s of hook-env reinstalls without the
+bridge). The warm work tree is
 retired: on Shape A it only survived in-pod restarts, leaked
 root-owned dirs and staged diagnostics between jobs, and saved ~70s of
 install the cache server now covers. Layout + the reasons for every
@@ -104,13 +109,18 @@ the six `CI_*` variables are deleted (git history has them).
   pod), so no co-scheduled job pays it.
 - **Per-pod caches (emptyDir).** Caches are warm within a pod and cold
   across pods: a new pod re-pulls base layers (measured 48 s worst case,
-  0.0 s once the node's image cache has the layers) and re-warms the
-  toolchain caches. `minRunners: 2` keeps a warm pair so fan-out jobs
-  start in ~15 s; Filestore RWX (a shared warm cache) is blocked by the
-  project's billing-account policy; content-addressed caches make
-  per-pod copies safe.
-- **`actions/cache` unavailable** for private repos on self-hosted — the
-  reason caches are volumes, not a proxied cache API. Do not re-add a proxy.
+  0.0 s once the node's image cache has the layers) — the toolchain
+  caches (uv, pre-commit, sonar, node_modules) bridge that gap via the
+  cache server (DD-233), the containerd store does not. `minRunners: 2`
+  keeps a warm pair so fan-out jobs start in ~15 s; Filestore RWX (a
+  shared warm volume) is blocked by the project's billing-account
+  policy; content-addressed caches make per-pod copies safe.
+- **The cache server is the only cache service** — stock
+  `actions/cache` is unavailable for private repos on self-hosted, so
+  the forked-runner + `CUSTOM_ACTIONS_RESULTS_URL` wiring _is_ the cache
+  API here. If it breaks, every restore silently no-ops (the steps are
+  best-effort by design) and CI slows to cold-install everywhere;
+  healthcheck the service when install times spike.
 - **Ops ownership**: ARC chart upgrades, classic-PAT rotation (90-day), GHCR
   `buildcache-*` retention. A few hours/quarter.
 - **Cost**: two warm pods idle between runs (`minRunners: 2`); the

@@ -91,6 +91,32 @@ jobs:
             # hard-codes the job workdir in its script shebangs, which
             # changes per pod.
 
+            # The toolchain caches (uv wheels, pre-commit hook envs) live
+            # on the pod's emptyDir: warm WITHIN a pod, cold across pods
+            # (DD-232). The fan-out pool churns pods - scale-in, deploys,
+            # preemptions - so a fresh-pod validate is the norm, and the
+            # cold tax measured on run 40538065508: pre-commit reinstalled
+            # every hook env (66s, talisman's Go build ~40s of it) and uv
+            # re-downloaded wheels (~25s). The cache server (the same
+            # backend node_modules uses) bridges pods; the emptyDir stays
+            # the warm tier within one. Restore in every job; save in
+            # validate only (single writer, node_modules' shape).
+            - name: Restore uv cache
+              id: restore-uv-cache
+              uses: actions/cache/restore@v5
+              with:
+                  path: /var/cache/ci/uv
+                  key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
+                  restore-keys: ${{ runner.os }}-uv-cache-
+
+            - name: Restore pre-commit cache
+              id: restore-pre-commit-cache
+              uses: actions/cache/restore@v5
+              with:
+                  path: /var/cache/ci/pre-commit
+                  key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+                  restore-keys: ${{ runner.os }}-pre-commit-
+
             # Affected baseline for nx affected. The runner exports no
             # GITHUB_TOKEN by default, so pass it explicitly. Every job in
             # the run sees the same head/base SHAs, so each job's
@@ -112,6 +138,17 @@ jobs:
                   bash .devcontainer/npm.sh
                   bash .devcontainer/uv.sh
 
+            # uv wheels cache (the UV_CACHE_DIR export in the pod command
+            # points uv at /var/cache/ci/uv, where the restore landed).
+            # Skipped on restore hit - see Save node_modules for the
+            # re-upload cost of saving unconditionally.
+            - name: Save uv cache
+              if: always() && steps.restore-uv-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v5
+              with:
+                  path: /var/cache/ci/uv
+                  key: ${{ steps.restore-uv-cache.outputs.cache-primary-key }}
+
             # Save even when a later step fails: node_modules is
             # cache-worthy the moment npm ci finishes - gating the save on
             # a green pipeline delays the restore hit by every failing run
@@ -131,6 +168,17 @@ jobs:
 
             - name: Validate pre-commit
               run: uv run pre-commit run --all-files
+
+            # The hook envs (repo clones + installed tools under
+            # PRE_COMMIT_HOME) - the 66s cold reinstall killed on a fresh
+            # pod (run 40538065508). Keyed on the config: a config bump
+            # rebuilds once, every pod everywhere rides the artifact.
+            - name: Save pre-commit cache
+              if: always() && steps.restore-pre-commit-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v5
+              with:
+                  path: /var/cache/ci/pre-commit
+                  key: ${{ steps.restore-pre-commit-cache.outputs.cache-primary-key }}
 
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). The unit
@@ -220,6 +268,15 @@ jobs:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
                   restore-keys: ${{ runner.os }}-node-modules-
+
+            # uv wheels from the cache server - the per-pod emptyDir is
+            # cold on a fresh pod (validate saves; see its cache steps).
+            - name: Restore uv cache
+              uses: actions/cache/restore@v5
+              with:
+                  path: /var/cache/ci/uv
+                  key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
+                  restore-keys: ${{ runner.os }}-uv-cache-
 
             - name: Set SHAs (nx affected baseline)
               uses: nrwl/nx-set-shas@v5
@@ -360,6 +417,15 @@ jobs:
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
                   restore-keys: ${{ runner.os }}-node-modules-
 
+            # uv wheels from the cache server - the per-pod emptyDir is
+            # cold on a fresh pod (validate saves; see its cache steps).
+            - name: Restore uv cache
+              uses: actions/cache/restore@v5
+              with:
+                  path: /var/cache/ci/uv
+                  key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
+                  restore-keys: ${{ runner.os }}-uv-cache-
+
             - name: Set SHAs (nx affected baseline)
               uses: nrwl/nx-set-shas@v5
               env:
@@ -385,6 +451,19 @@ jobs:
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx run-many -t decrypt
+
+            # The SonarScanner download cache (~382 MB of engine/JRE/plugin
+            # jars, SONAR_USER_HOME): a fresh pod's first sonar task pays
+            # ~94 s of jar downloads (DD-230). Content-addressed - no lock
+            # file to key on, the cache is the key; stale entries re-fetch
+            # by hash (DD-230's own note). scan-sonar is the pipeline's
+            # only sonar runner, so it is also the only writer.
+            - name: Restore sonar cache
+              id: restore-sonar-cache
+              uses: actions/cache/restore@v5
+              with:
+                  path: /var/cache/ci/sonar
+                  key: ${{ runner.os }}-sonar-home
 
             # Coverage from validate, restored to the workspace root so
             # sonar's in-tree reportPaths resolve:
@@ -431,6 +510,18 @@ jobs:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t sonar
 
+            # Save AFTER the analysis: the jars download during the sonar
+            # tasks, so the cache is only full now. On miss only (see the
+            # node_modules note for the re-upload cost of saving hits);
+            # scan-sonar is the sole sonar runner, so the single-writer
+            # shape node_modules uses falls out for free.
+            - name: Save sonar cache
+              if: always() && steps.restore-sonar-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v5
+              with:
+                  path: /var/cache/ci/sonar
+                  key: ${{ steps.restore-sonar-cache.outputs.cache-primary-key }}
+
     # ─── chromatic: Storybook build + publish ──────────────────────────────
     # Its own job now that sonar no longer serializes ahead of it — the
     # DD-229 setsid background dance existed to hide the storybook build
@@ -461,6 +552,15 @@ jobs:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
                   restore-keys: ${{ runner.os }}-node-modules-
+
+            # uv wheels from the cache server - the per-pod emptyDir is
+            # cold on a fresh pod (validate saves; see its cache steps).
+            - name: Restore uv cache
+              uses: actions/cache/restore@v5
+              with:
+                  path: /var/cache/ci/uv
+                  key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
+                  restore-keys: ${{ runner.os }}-uv-cache-
 
             - name: Set SHAs (nx affected baseline)
               uses: nrwl/nx-set-shas@v5
