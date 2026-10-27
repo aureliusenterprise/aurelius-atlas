@@ -221,6 +221,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-226](<#dd-226--the-dev-stacks-restart-windows-are-unbounded>) | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up | cross-cutting | Accepted |
 | [DD-227](<#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production>) | The store-es e2e suite is removed: it evaluated the dev environment, not production | cross-cutting | Accepted |
 | [DD-228](<#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied>) | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour | cross-cutting | Accepted |
+| [DD-229](<#dd-229--the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon>) | Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss | cross-cutting | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3031,3 +3032,17 @@ The injectable seam, the handlers, and the wire behaviour are untouched. **Reaso
 **Alternatives.** (a) Move them to a CI "infra validation" suite — refused: the dev stack's readiness is the compose healthchecks' job (DD-226), and a separate infra suite is where flakes go to be ignored. (b) Keep CIA-07's producers-flow as the telemetry canary — refused: Grafana's stack dashboard shows the pullers live, and every producer's own suite going green proves its export; a 90 s log-poll on the dev box proves less. (c) Keep the TLS test, verify against the container's own CA — refused: the CA is the workspace's, so the chain proves dev wiring by construction.
 
 **Consequences.** The webapp e2e drops from 36 to 31 tests per browser (the two container-internals tests carried 120 s/90 s poll floors); the frontend-example suite from 17 to 16. Four CIA rules and SHL-11's TLS half join the fleet's explicitly-untested list, each with its note in the increment spec that owns it — the ledger DD-223 started, and the shape-A runner's first failure (DD-227's ESD-06) is exactly the flake class this sweep thins.
+
+### DD-229 — The shape-A tail overlaps, the test graph shares its daemon
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (CI pipeline; follows the shape-A consolidation)
+- **Date:** 2026-10-27
+
+**Context.** Run 40471177041 — the first fully green shape-A pipeline — spent 38m 26s: tests 16m 59s (Nx: 9m 22s recoverable, default parallelism 3 against the container's 6 CPUs), Sonar 13m 28s (Nx: 85 % recoverable — the 25 scanners queue on the SonarQube Cloud server and idle the node), and fixed costs the serialised graph left on the table: docker-build (60 s) waits behind every test although images depend on source, the node\_modules cache save re-uploads \~40 s after a hit, and Storybook+Chromatic (2 m) wait behind sonar's queue.
+
+**Decision.** Three overlaps in the single job, no new jobs: docker-build joins the test step's graph (`affected -t test e2e docker-build`) at `--parallel=5` — one CPU stays headroom for the e2e stacks' containers, which share this cgroup; the Storybook build launches in the background of the sonar step (detached with `setsid` — the runner kills each step's process tree at the step boundary, so a plain `&` dies there) and an "Await Storybook build" step joins its exit code after sonar, keeping the verdict; the cache save runs only on a restore miss. Sonar keeps its position — coverage, lcov and sarif must exist — and the overlap exploits its waiting.
+
+**Alternatives.** (a) A parallel `storybook` job — refused: the consolidation to one job (shape A) is the point of the migration, and a second job pays pod startup plus a second daemon to save what the background build saves for free. (b) `--parallel=6` — the e2e composes' Keycloak/Elasticsearch/Tempo containers compete in the same cgroup; 5 leaves them a core. (c) Scoping Sonar engines per project (`sonar.javascript.file.suffixes=` etc.) — deferred: real, but it changes what Sonar analyses; it deserves its own measurement, not a ride-along.
+
+**Consequences.** Expected 38m 26s → \~33m: \~1 min from the build overlap, up to 5m 21s from parallelism (Nx's estimate; contention caps the real recovery), \~2 min from storybook-under-sonar, \~40 s from the conditional save. The Storybook log moves to `storybook.log`, echoed at the join — failures appear at the await step, not live. If `--parallel=5` turns out to inflate e2e contention past what it recovers, the knob is one flag.

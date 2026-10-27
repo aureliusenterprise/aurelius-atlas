@@ -6070,6 +6070,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-229-the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-229 — The shape-A tail overlaps, the test graph shares its daemon
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11937,6 +11948,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-229-the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-229 — The shape-A tail overlaps, the test graph shares its daemon
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13240,6 +13262,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied">DD-228</a></td>
 <td>Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour</td>
+<td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-229--the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon">DD-229</a></td>
+<td>Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss</td>
 <td>cross-cutting</td>
 <td>Accepted</td>
 </tr>
@@ -19320,6 +19348,42 @@ frontend-example suite from 17 to 16. Four CIA rules and SHL-11's TLS half join
 the fleet's explicitly-untested list, each with its note in the increment spec
 that owns it — the ledger DD-223 started, and the shape-A runner's first
 failure (DD-227's ESD-06) is exactly the flake class this sweep thins.</p>
+<h3 id="dd-229-the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon">DD-229 — The shape-A tail overlaps, the test graph shares its daemon<a class="headerlink" href="#dd-229-the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (CI pipeline; follows the shape-A consolidation)</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Context.</strong> Run 40471177041 — the first fully green shape-A pipeline — spent
+38m 26s: tests 16m 59s (Nx: 9m 22s recoverable, default parallelism 3 against
+the container's 6 CPUs), Sonar 13m 28s (Nx: 85 % recoverable — the 25 scanners
+queue on the SonarQube Cloud server and idle the node), and fixed costs the
+serialised graph left on the table: docker-build (60 s) waits behind every
+test although images depend on source, the node_modules cache save re-uploads
+~40 s after a hit, and Storybook+Chromatic (2 m) wait behind sonar's queue.</p>
+<p><strong>Decision.</strong> Three overlaps in the single job, no new jobs: docker-build
+joins the test step's graph (<code>affected -t test e2e docker-build</code>) at
+<code>--parallel=5</code> — one CPU stays headroom for the e2e stacks' containers, which
+share this cgroup; the Storybook build launches in the background of the
+sonar step (detached with <code>setsid</code> — the runner kills each step's process
+tree at the step boundary, so a plain <code>&amp;</code> dies there) and an "Await
+Storybook build" step joins its exit code after sonar, keeping the verdict;
+the cache save runs only on a restore miss. Sonar keeps its position —
+coverage, lcov and sarif must exist — and the overlap exploits its waiting.</p>
+<p><strong>Alternatives.</strong> (a) A parallel <code>storybook</code> job — refused: the consolidation
+to one job (shape A) is the point of the migration, and a second job pays pod
+startup plus a second daemon to save what the background build saves for
+free. (b) <code>--parallel=6</code> — the e2e composes' Keycloak/Elasticsearch/Tempo
+containers compete in the same cgroup; 5 leaves them a core. (c) Scoping
+Sonar engines per project (<code>sonar.javascript.file.suffixes=</code> etc.) —
+deferred: real, but it changes what Sonar analyses; it deserves its own
+measurement, not a ride-along.</p>
+<p><strong>Consequences.</strong> Expected 38m 26s → ~33m: ~1 min from the build overlap,
+up to 5m 21s from parallelism (Nx's estimate; contention caps the real
+recovery), ~2 min from storybook-under-sonar, ~40 s from the conditional
+save. The Storybook log moves to <code>storybook.log</code>, echoed at the join —
+failures appear at the await step, not live. If <code>--parallel=5</code> turns out to
+inflate e2e contention past what it recovers, the knob is one flag.</p>
 
 
 
