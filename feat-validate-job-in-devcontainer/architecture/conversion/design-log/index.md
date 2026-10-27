@@ -223,6 +223,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-228](<#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied>) | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour | cross-cutting | Accepted |
 | [DD-229](<#dd-229--the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon>) | Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss | cross-cutting | Accepted |
 | [DD-230](<#dd-230--parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc>) | Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away | cross-cutting | Accepted |
+| [DD-231](<#dd-231--teardown-downs-the-compose-stacks-prune-only-sweeps-corpses>) | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail | cross-cutting | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3061,3 +3062,17 @@ The injectable seam, the handlers, and the wire behaviour are untouched. **Reaso
 **Alternatives.** (a) Keep `--parallel=5` with longer testcontainers timeouts — refused: DD-222..228 spent a week deleting exactly this flake class, and tuning a timeout to feed a lane Nx cannot fill is backwards. (b) actions/cache for `~/.sonar` — refused: the PVC subPaths are the established shape-A pattern for toolchain caches (no cache-server round-trip, warm across pods by construction). (c) Bake `~/.sonar` into the runner image — refused for now: the image rebuild cadence is slower than SonarCloud's plugin rotation, and stale cache entries are re-fetched by content hash anyway; the PVC gets the same warmth with no skew.
 
 **Consequences.** The parallelism clause of DD-229 is retired (the overlaps survive — this run's own failures were unit tests, not the grafted builds). The sonar step's per-pod floor drops \~94 s; the engine-scoping idea retires with paired-run evidence, and DD-229's "85 % recoverable" sonar figure is re-read as the server queue, which no scanner flag fixes — future sonar tuning starts from the CI per-task times, not local guesses. The values change lands on the next `infra/arc/install.sh` run (helm upgrade evicts in-flight runner pods — run it between jobs).
+
+### DD-231 — Teardown downs the compose stacks: prune only sweeps corpses
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (CI pipeline; repairs DD-229's teardown step)
+- **Date:** 2026-10-27
+
+**Context.** The shape-A teardown step names its purpose in its own comment — Keycloak/Postgres/Elasticsearch/observability hold \~8 Gi of the node's memory and the scan/sonar tail must not pay for it. It never happened: `docker container prune -f` sweeps only STOPPED containers, and the suites leave their stacks Up, so every run's teardown deleted exactly one corpse — the 28.67 kB testcontainers ryuk (runs 40471177041, 40486044342 and 40489544189 each report the same single container) — while the \~8 Gi rode through docker-build, the vuln scan, sonar and Chromatic on a node capped at 11 Gi.
+
+**Decision.** The teardown iterates `docker compose ls --all -q` and runs `docker compose --project-name <p> down -v --remove-orphans` per project — the same project-name pattern the diagnostics step uses — keeping the prune pair behind it as the sweeper for non-compose strays (ryuk, anonymous volumes). `down` deletes containers, named volumes and networks; images stay, so the scan's daemon-read and the warm base-layer store are untouched (unchanged from the prune semantics).
+
+**Alternatives.** (a) `docker stop $(docker ps -q)` — kills the stacks bluntly, with no per-project attribution in the log; refused for the readable footprint ("Tearing down compose project: …"). (b) Each suite downs its own stack — refused: the suites share the `dev/*` stacks (the E2E suite rule, DD-223), and a suite stopping one mid-graph evicts its neighbours. (c) Leave it — refused: the tail's memory pressure is the cgroup's, and sonar and Storybook pay it.
+
+**Consequences.** The scan/sonar/Chromatic tail runs with the stacks' \~8 Gi free; the teardown step grows from 1 s to the seconds a four-stack `down` takes, naming each project as it goes. The stopped-container foreclosure the old comment guarded (run 40231127680) carries over unchanged. The step's log is the verification: it names each project it downs, and the prune tail stops reporting one 28.67 kB corpse as the step's whole output.
