@@ -8161,7 +8161,8 @@ The report is a small generator of our own over standard formats
 <li><code>libs/python/aurelius-atlas-store-es/tests/</code> — STO-01 to STO-08 and every public function of the
   store library named by <code>covers</code> markers.</li>
 <li><code>libs/python/aurelius-atlas-store-es/e2e/</code> — ESD-01 to ESD-06 against the running dev store
-  (<code>nx e2e aurelius-atlas-store-es</code>).</li>
+  (<code>nx e2e aurelius-atlas-store-es</code>). (Removed by DD-227: the suite evaluated the dev environment,
+  not production; the ESD rules fall to the stack's healthchecks and review, per the 0-2 note.)</li>
 <li><code>uv run aurelius-atlas-trace check</code> exits zero on this branch; the CI run of this pull request
   uploads a <code>test-report</code> artifact.</li>
 </ul>

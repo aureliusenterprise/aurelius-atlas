@@ -219,6 +219,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-216](<#dd-216--stacks-own-the-tls-material-they-mount>) | Stacks own the TLS material they mount | cross-cutting | Accepted |
 | [DD-217](<#dd-217--the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74>) | The search client lands on both sides of the wire, ahead of 7.4 | cross-cutting | Accepted |
 | [DD-226](<#dd-226--the-dev-stacks-restart-windows-are-unbounded>) | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up | cross-cutting | Accepted |
+| [DD-227](<#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production>) | The store-es e2e suite is removed: it evaluated the dev environment, not production | cross-cutting | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3001,3 +3002,17 @@ The injectable seam, the handlers, and the wire behaviour are untouched. **Reaso
 **Decision.** All four dev composes (`dev/elasticsearch`, `dev/keycloak`, `dev/postgres`, `dev/observability`) carry unbounded `restart: on-failure` on every container whose readiness depends on Keycloak — the collector and the metrics-pullers. This supersedes the bounded-restart half of DD-195 (the awaited readiness — `up --wait` + healthchecks — stands) and the `restart: on-failure:15` detail of DD-202. Loudness moves from the restart count to the state Docker reports: a permanently bad config sits in a visible `restarting` loop, in `docker compose ps` and in the compose `up --wait` that never returns healthy.
 
 **Consequences.** Keycloak readiness is no longer raced: the 60 s backoff ceiling lands a puller within a minute of the issuer coming up, at any cold-start delay, so ESD-06's budget measures ES metrics latency (its stated subject) instead of Docker's restart arithmetic. The cost of the unbounded form is that a permanently broken puller retries forever — visible, not loud; acceptable for dev stacks, where the same loop is the normal boot shape during Keycloak's startup.
+
+### DD-227 — The store-es e2e suite is removed: it evaluated the dev environment, not production
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (test strategy; follows DD-223, DD-225)
+- **Date:** 2026-10-27
+
+**Decision.** `libs/python/aurelius-atlas-store-es/e2e/` is deleted: ESD-01, ESD-02, ESD-05 and ESD-06 lose their automated tests. The rules stay specified in the 0-2 increment; the dev stack carries them — `up --wait` gates on the compose healthchecks (ESD-01), every app's e2e suite reaches the store over verified HTTPS with credentials (ESD-02 in the production path), heap and puller wiring are config under review (ESD-05, ESD-06). ESD-03 (credential hygiene) remains a unit test in `tests/`; ESD-04 was already untested by DD-223's choice.
+
+**Reason.** The suite asserted the dev environment's state, not the library's production behaviour — the same bar DD-223 set for the FastAPI `/docs` probes. The shape-A runner made the cost concrete: the ESD-06 metrics test burned its full 420s budget and failed the pipeline (run 40465196293) while the ES metrics-puller sat in DD-226's unbounded restart backoff waiting on Keycloak — a dev-stack readiness race, charged to the test suite, blocking production work. A test whose green state is "the dev box is warm" is a flake generator; what the store library must prove is in its unit/container tests (STO-01 to STO-08) and in the apps' suites, which ride the real code path against this store.
+
+**Alternatives.** (a) Keep it with a larger budget — refused: the 420s fix was already tuning a test that should not exist. (b) Keep ESD-02/ESD-05 as e2e against the dev store — refused: the server e2e suite proves TLS + auth + store round-trips from the Atlas side, on the production client path. (c) Move the suite to CI infra validation — refused: dev-stack health is the compose healthchecks' job, already wired to `up --wait`.
+
+**Consequences.** CI's longest e2e suite disappears (7 min worst case, 0s green — the ESD-06 poll dominated it); the 420s `METRICS_TIMEOUT_SECONDS` leaves with the suite. The traceability report gains four explicitly-untested rules beside ESD-04, with this entry as the note. The dev/elasticsearch puller and its DD-226 restart posture stay — Grafana reads them; only the CI assertion on their warm-up is gone.

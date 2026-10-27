@@ -6048,6 +6048,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-227-the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-227 — The store-es e2e suite is removed: it evaluated the dev environment, not production
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11893,6 +11904,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-227-the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-227 — The store-es e2e suite is removed: it evaluated the dev environment, not production
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13184,6 +13206,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-226--the-dev-stacks-restart-windows-are-unbounded">DD-226</a></td>
 <td>The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up</td>
+<td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production">DD-227</a></td>
+<td>The store-es e2e suite is removed: it evaluated the dev environment, not production</td>
 <td>cross-cutting</td>
 <td>Accepted</td>
 </tr>
@@ -19188,6 +19216,41 @@ ESD-06's budget measures ES metrics latency (its stated subject) instead of Dock
 restart arithmetic. The cost of the unbounded form is that a permanently broken puller
 retries forever — visible, not loud; acceptable for dev stacks, where the same loop is
 the normal boot shape during Keycloak's startup.</p>
+<h3 id="dd-227-the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production">DD-227 — The store-es e2e suite is removed: it evaluated the dev environment, not production<a class="headerlink" href="#dd-227-the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (test strategy; follows DD-223, DD-225)</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Decision.</strong> <code>libs/python/aurelius-atlas-store-es/e2e/</code> is deleted: ESD-01,
+ESD-02, ESD-05 and ESD-06 lose their automated tests. The rules stay specified
+in the 0-2 increment; the dev stack carries them — <code>up --wait</code> gates on the
+compose healthchecks (ESD-01), every app's e2e suite reaches the store over
+verified HTTPS with credentials (ESD-02 in the production path), heap and puller
+wiring are config under review (ESD-05, ESD-06). ESD-03 (credential hygiene)
+remains a unit test in <code>tests/</code>; ESD-04 was already untested by DD-223's choice.</p>
+<p><strong>Reason.</strong> The suite asserted the dev environment's state, not the library's
+production behaviour — the same bar DD-223 set for the FastAPI <code>/docs</code> probes.
+The shape-A runner made the cost concrete: the ESD-06 metrics test burned its
+full 420s budget and failed the pipeline (run 40465196293) while the ES
+metrics-puller sat in DD-226's unbounded restart backoff waiting on Keycloak —
+a dev-stack readiness race, charged to the test suite, blocking production
+work. A test whose green state is "the dev box is warm" is a flake generator;
+what the store library must prove is in its unit/container tests (STO-01 to
+STO-08) and in the apps' suites, which ride the real code path against this
+store.</p>
+<p><strong>Alternatives.</strong> (a) Keep it with a larger budget — refused: the 420s fix was
+already tuning a test that should not exist. (b) Keep ESD-02/ESD-05 as e2e
+against the dev store — refused: the server e2e suite proves TLS + auth + store
+round-trips from the Atlas side, on the production client path. (c) Move the
+suite to CI infra validation — refused: dev-stack health is the compose
+healthchecks' job, already wired to <code>up --wait</code>.</p>
+<p><strong>Consequences.</strong> CI's longest e2e suite disappears (7 min worst case, 0s
+green — the ESD-06 poll dominated it); the 420s <code>METRICS_TIMEOUT_SECONDS</code>
+leaves with the suite. The traceability report gains four explicitly-untested
+rules beside ESD-04, with this entry as the note. The dev/elasticsearch puller
+and its DD-226 restart posture stay — Grafana reads them; only the CI assertion
+on their warm-up is gone.</p>
 
 
 
