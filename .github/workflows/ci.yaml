@@ -49,6 +49,8 @@ jobs:
 
         permissions:
             contents: read
+            # Registry logins: testcontainers pulls, buildcache reads.
+            packages: write
 
         steps:
             # EPHEMERAL TREE (the GitHub-hosted model): actions/checkout's
@@ -129,6 +131,24 @@ jobs:
 
             - name: Validate pre-commit
               run: uv run pre-commit run --all-files
+
+            # Registry logins against the container's OWN dockerd (the
+            # docker-in-docker feature starts it at pod boot). The unit
+            # suites include testcontainers (store-es spins a real
+            # Elasticsearch), so the dhi.io pull needs the login before
+            # the test step — a cold pod without it fails the suite as
+            # "unauthorized" (the login rode the test step in the single
+            # job). ghcr.io = buildcache pulls (packages:write scope).
+            - name: Registry logins
+              env:
+                  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+                  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+                  GITHUB_TOKEN: ${{ github.token }}
+                  GITHUB_ACTOR: ${{ github.actor }}
+              run: |
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
             # Decrypt every project, not just the affected ones - unit
             # tests re-execute decrypt when a .env.enc is in the affected
