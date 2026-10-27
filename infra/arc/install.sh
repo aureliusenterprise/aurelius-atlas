@@ -2,7 +2,7 @@
 # Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
-# Usage: ./install.sh <cluster|controller|scale-set-shapea|cache-server|status>
+# Usage: ./install.sh <cluster|controller|scale-set-shapea|scale-set-shapea-spike|cache-server|status>
 # Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region),
 #        CI_SHAPEA_IMAGE_TAG (scale-set-shapea image tag, default: main)
 set -euo pipefail
@@ -45,6 +45,19 @@ case "${1:-status}" in
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
             --namespace arc-runners -f "$HERE/arc-shapea-values.yaml" \
             --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${TAG}"
+        ;;
+    scale-set-shapea-spike)
+        # The Phase-0 parallel-jobs spike (arc-shapea-spike-values.yaml):
+        # prod values + the spike overrides (emptyDir work volume, maxRunners
+        # 2, label atlas-ci-shapea-spike, scale-to-zero). Its OWN release -
+        # the production runner pod is untouched, `runs-on: atlas-ci-shapea`
+        # is unaffected. Tear down: helm -n arc-runners uninstall
+        # atlas-ci-shapea-spike.
+        helm upgrade --install atlas-ci-shapea-spike \
+            oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
+            --namespace arc-runners \
+            -f "$HERE/arc-shapea-values.yaml" -f "$HERE/arc-shapea-spike-values.yaml" \
+            --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${CI_SHAPEA_IMAGE_TAG:-main}"
         ;;
     cache-server)
         # The actions/cache backend for self-hosted runners

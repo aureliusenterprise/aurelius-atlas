@@ -1,0 +1,127 @@
+name: CI Parallelism Spike
+
+# Phase-0 gate for splitting CI into parallel jobs (see the session plan /
+# DD-232 candidate). The production scale set is pinned to maxRunners: 1
+# because the 50 Gi cache PD is ReadWriteOnce; the spike scale set
+# (infra/arc/arc-shapea-spike-values.yaml) swaps that volume for an emptyDir
+# and raises the ceiling to 2. This workflow answers the two questions that
+# decide the split:
+#
+#   1. Concurrency — do two jobs on the spike label actually run at the same
+#      time, on separate pods (ideally separate nodes)?
+#   2. Isolation + cold cost — is each pod's cache volume its own (no shared
+#      state, no RWO attach contention), and what does a cold node pay for
+#      the e2e job's first base-image pull?
+#
+# Throwaway by design: delete this file with the split (or when the spike
+# retires). Tear the pool down with:
+#   helm -n arc-runners uninstall atlas-ci-shapea-spike
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    # The shared probe body: volume identity, per-pod marker isolation, and a
+    # daemon check. Both jobs run it, 3 minutes apart at the start so their
+    # sleep windows must overlap for concurrency to be provable.
+    probe-a:
+        runs-on: atlas-ci-shapea-spike
+        steps:
+            - name: Report position
+              id: t0
+              run: echo "start=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+
+            - name: Volume identity (emptyDir, per pod)
+              run: |
+                  echo "pod=$(hostname) node=$(curl -sH 'Metadata-Flavor: Google' \
+                      http://metadata.google.internal/computeMetadata/v1/instance/name)" \
+                      | tee -a"$GITHUB_STEP_SUMMARY"
+                  echo "### work volume backing:" >>"$GITHUB_STEP_SUMMARY"
+                  findmnt -no SOURCE,FSTYPE,SIZE /opt/actions-runner/_work >>"$GITHUB_STEP_SUMMARY" 2>/dev/null \
+                      || df -h /opt/actions-runner/_work | tee -a"$GITHUB_STEP_SUMMARY"
+                  echo "### cache subPaths (cache-init, from the prod values):" >>"$GITHUB_STEP_SUMMARY"
+                  ls /var/cache/ci/ | tr '\n' ' ' >>"$GITHUB_STEP_SUMMARY"
+                  echo "### SONAR_USER_HOME (the prod values' export):" >>"$GITHUB_STEP_SUMMARY"
+                  echo "${SONAR_USER_HOME:-(unset)}" >>"$GITHUB_STEP_SUMMARY"
+
+            - name: Daemon up (privileged dockerd per pod)
+              run: docker info --format 'server={{.ServerVersion}} driver={{.Driver}}' | tee -a"$GITHUB_STEP_SUMMARY"
+
+            - name: Write the A marker (isolation half 1)
+              # The work volume's root in the runner container is
+              # /opt/actions-runner/_work (cache-init sees it as /work); the
+              # .ci-cache top dirs it creates live right there, next to the
+              # per-job checkout.
+              run: |
+                  mkdir -p /opt/actions-runner/_work/.ci-cache
+                  echo "A-$(hostname)-$(date -u +%H:%M:%S)" > /opt/actions-runner/_work/.ci-cache/spike-marker
+                  cat /opt/actions-runner/_work/.ci-cache/spike-marker | tee -a"$GITHUB_STEP_SUMMARY"
+
+            - name: Overlap window
+              run: sleep 180
+
+            - name: Marker intact and unmodified (isolation half 2)
+              run: |
+                  case "$(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" in
+                      A-*) echo "marker still ours: $(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" | tee -a"$GITHUB_STEP_SUMMARY";;
+                      *) echo "::error::marker was overwritten - a job from the other pod shares this volume"; exit 1;;
+                  esac
+
+            - name: Report end
+              run: echo "end=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+
+    probe-b:
+        runs-on: atlas-ci-shapea-spike
+        steps:
+            - name: Report position
+              id: t0
+              run: echo "start=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+
+            - name: Volume identity (emptyDir, per pod)
+              run: |
+                  echo "pod=$(hostname) node=$(curl -sH 'Metadata-Flavor: Google' \
+                      http://metadata.google.internal/computeMetadata/v1/instance/name)" \
+                      | tee -a"$GITHUB_STEP_SUMMARY"
+                  echo "### work volume backing:" >>"$GITHUB_STEP_SUMMARY"
+                  findmnt -no SOURCE,FSTYPE,SIZE /opt/actions-runner/_work >>"$GITHUB_STEP_SUMMARY" 2>/dev/null \
+                      || df -h /opt/actions-runner/_work | tee -a"$GITHUB_STEP_SUMMARY"
+
+            - name: Cold-pull cost of the e2e base images
+              env:
+                  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+                  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+              run: |
+                  # The e2e job's first minutes on a cold node: the dev-stack
+                  # images (dhi.io needs the registry login, same as ci.yaml).
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
+                  echo "### cold pull timings (this pod's daemon, empty store):" >>"$GITHUB_STEP_SUMMARY"
+                  # The two heaviest dev-stack images the e2e job needs
+                  # (dev/elasticsearch + dev/postgres compose, verbatim tags).
+                  for img in dhi.io/elasticsearch:9.5-debian13 dhi.io/postgres:18-alpine3.23; do
+                      start=$(date +%s)
+                      docker pull -q "$img" >/dev/null
+                      echo "$img: $(( $(date +%s) - start ))s" >>"$GITHUB_STEP_SUMMARY"
+                  done
+
+            - name: Write the B marker (isolation half 1)
+              run: |
+                  mkdir -p /opt/actions-runner/_work/.ci-cache
+                  echo "B-$(hostname)-$(date -u +%H:%M:%S)" > /opt/actions-runner/_work/.ci-cache/spike-marker
+                  cat /opt/actions-runner/_work/.ci-cache/spike-marker | tee -a"$GITHUB_STEP_SUMMARY"
+
+            - name: Overlap window
+              run: sleep 180
+
+            - name: Marker is B's, never A's (isolation half 2)
+              run: |
+                  case "$(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" in
+                      B-*) echo "marker is ours: $(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" | tee -a"$GITHUB_STEP_SUMMARY";;
+                      *) echo "::error::marker is not ours - the two pods share a volume"; exit 1;;
+                  esac
+
+            - name: Report end
+              run: echo "end=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
