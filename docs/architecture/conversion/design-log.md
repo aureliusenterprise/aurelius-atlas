@@ -222,7 +222,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-215](#dd-215--the-ci-pipeline-drops-the-traceability-check-and-report)                                          | The CI pipeline drops the traceability check and report; the tools stay as local aids                | cross-cutting | Accepted         |
 | [DD-216](#dd-216--stacks-own-the-tls-material-they-mount)                                                           | Stacks own the TLS material they mount                                                               | cross-cutting | Accepted         |
 | [DD-217](#dd-217--the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74)                                    | The search client lands on both sides of the wire, ahead of 7.4                                      | cross-cutting | Accepted         |
-| [DD-218](#dd-218--the-dev-stacks-restart-windows-are-unbounded)                                                     | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up     | cross-cutting | Accepted         |
+| [DD-226](#dd-226--the-dev-stacks-restart-windows-are-unbounded)                                                     | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up     | cross-cutting | Accepted         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -2800,7 +2800,8 @@ accordion's toggle-content unit starts translating in nl-NL for the first time.
 
 ### DD-145. The Shell chrome is ported search-free; the root composes header and footer
 
-- **Status:** Proposed
+- **Status:** Proposed (the "navbar search bar" wording superseded by
+  [DD-218](#dd-218--74-splits-in-two-and-the-search-bar-lands-in-the-hero-the-list-is-infinite-scroll))
 - **Increment:** 7.11
 - **Date:** 2026-10-20
 
@@ -6182,7 +6183,411 @@ container (`apps/aurelius-atlas-server/e2e/test__aurelius_atlas_server_search_e2
 the Angular side is proven against `HttpTestingController` — the e2e proof of a
 search through the proxy lands with 7.4's screen.
 
-### DD-218 — The dev stacks' restart windows are unbounded
+### DD-218 — 7.4 splits in two, and the search bar lands in the hero; the list is infinite scroll
+
+- **Status:** Accepted
+- **Increment:** 7.4a
+- **Date:** 2026-10-26
+
+**Context.** The 7.4 row ("Query and results, the first slice with real data")
+grew into the collection point of three deferrals: the results screen itself,
+the browse cards' affordances (DD-143), and the Shell's search chrome (DD-145).
+AGENTS.md caps an increment at roughly 1,500 production lines and says to split
+before coding. The reading of the legacy app (`.scratch/aurelius`, the
+`Aurelius origin` citation of 7-0) settled two UX questions the roadmap row
+left open. The search bar: DD-145's wording ("the global search bar ... join
+7.4") reads like a navbar feature, but the legacy navbar's start slot renders
+one button per visible top-level route, and Atlas's only such route is
+`hidden` — the legacy navbar carries **zero** nav buttons, and the search input
+lives in the hero of the search subtree (`search.component.html`, the
+`simple-search-input` above the routed content). The list: the legacy results
+screen is an infinite scroll (a sentinel `IntersectionObserver` over the
+results box, a "Load next page..." button as the keyboard/no-API fallback,
+pages appended, page size 10), not a paged grid — the ui-lib `pagination`
+component has no legacy results-screen to wire to.
+
+**Decision.** Split 7.4 into **7.4a Search results** (this increment: the hero
+with the search field, the results route and screen, infinite scroll, the
+results → details entry, the browse affordances of DD-143, the sticky
+navigation bar of DD-145) and **7.4b Search discovery** (facets from
+quick-search `aggregationMetrics`, typeahead suggestions, advanced filters —
+the parts with no legacy equivalent, so the slice that invents UX ships
+separately from the slice that ports it). The search bar lands **in the hero**,
+the legacy fact; DD-145's navbar wording is superseded, and the navbar's
+start slot stays empty because Atlas shows no nav buttons. The results list
+keeps **infinite scroll** (UIC-21..23 port the container); `Pagination` stays
+unused on this screen. The split line is the discovery boundary: 7.4a answers
+"type and see", 7.4b answers "narrow down".
+
+**Alternatives.** (a) One 7.4 increment — refused: ~2,500 production lines
+against the 1,500 budget, and it welds the ported screen to net-new facets;
+(b) split results | entry points (header bar + browse cards) — refused: the
+affordances without their destination screen are exactly the half-wired slice
+DD-143 defers, and the e2e flow (card → results → details) cannot split across
+PRs; (c) a paged grid with the existing `Pagination` — refused: the legacy
+infinite scroll **is** the product UX (the user named it), and DD-140's
+redesign licence covers the wire (App Search → `/v2/search/basic`), not the
+screen; (d) a navbar search bar per DD-145's literal wording — refused: the
+legacy source shows the bar in the hero, and DD-145's own reasoning is "the
+header's centrepiece is the global search bar" — in Aurelius Atlas, as in the
+legacy app, that centrepiece is the search hero.
+
+**Consequences.** The roadmap row splits; DD-217's "7.4 consumes `SearchService`
+directly" rides unchanged. The sticky navigation bar (DD-145's deferred half)
+lands with 7.4a, closing the Shell chrome deferral. 7.4b carries its own spec
+and rule ids (SDX) with the typeahead design it has no legacy copy of. The
+ui-lib grows one dumb component (the infinite-scroll container) on the UIC
+series; `Pagination` remains in the library for the screens that page.
+
+### DD-219 — The results URL carries the query only
+
+- **Status:** Accepted
+- **Increment:** 7.4a
+- **Date:** 2026-10-26
+
+**Context.** The legacy resolver reads one URL parameter (`query`) and leaves
+filters, sort, and the accumulated pages in the in-memory store; navigating to
+browse wipes the store. A modern reading would put page/sort/filters in the
+URL (shareable, back-button-correct), and the 7.6 details screen already made
+the URL the screen's whole state. But 7.4a ships no facets (7.4b) and no sort
+control (the legacy results screen has none — ordering is relevance, the
+server default), so the parameters to share do not exist yet on this screen.
+
+**Decision.** `search/results?query=` is the whole URL contract of 7.4a
+(SRH-02, SRH-08): the deep link carries the query, the store carries pages and
+the explore buttons' type filters, and leaving the subtree destroys the store
+(provided by the layout component) so a fresh browse visit resets the search —
+the legacy `NavigationEnd` reset, by construction. 7.4b will record its own
+decision for filter parameters when filters exist to name.
+
+**Alternatives.** (a) Query + page + sort + filters in the URL — refused for
+7.4a: inventing a parameter grammar the legacy app lacks, for state this slice
+does not expose, is the speculative design DD-140 refuses; the grammar lands
+with the controls, in 7.4b. (b) Path-based `search/basic/:queryText` (the
+Atlas dashboard's shape) — refused: the Aurelius product (the port's origin)
+uses the query-parameter form (ADR 046 keeps the dashboard's REST contract, not
+the dashboard's routes; 7.x ports Aurelius's UI).
+
+**Consequences.** The e2e deep link is `search/results?query=…`; the back
+button re-runs the query (the resolver's `paramsOrQueryParamsChange` contract,
+SRH-02). The store's page accumulation needs no URL mirror, and the spec's
+"the URL is the screen's state" line is scoped to the query — the 7.6
+skeleton's stronger rule (DET-07) applies to the details screen, where the
+guid is the entity's address.
+
+### DD-220 — The demo pass restores the search screens' legacy chrome: title, typography, shell and plate
+
+- **Status:** Accepted
+- **Increment:** 7.4a
+- **Date:** 2026-10-26
+
+**Context.** The 7.4a code review compared the running webapp side-by-side with the
+legacy Aurelius demo (the `.scratch/aurelius` origin, rendered at
+`google.aurelius-atlas.com/demo/atlas`) on the browse, results, and no-results screens.
+The geometry (hero, container inset, two-column shape) matched; seven details did not,
+each verbatim in the legacy source: the hero's title is the literal `"Atlas"` the legacy
+`search.component.html` hard-codes as `title="Atlas"` — not the app name (the first port
+rendered `appName` into it); the filter shell's empty state is the legacy `#noFilters`
+block, a `div.content` around `p.is-italic.has-text-centered` (the first port shipped a
+bare paragraph); the count header is `h6.title.is-6` **inside** the
+results box (the first port floated it outside, unstyled); the 80vh cap sits on the box
+(`.box { height: 100%; max-height: 80vh }`) with the inner `.results-container` as the
+scroll owner (the first port scrolled the box itself); the no-results state is the
+legacy `#noData` twin — a `.card` at the **top level**, replacing the whole two-column
+block (filter shell included), its `card-content` centered by the legacy
+`text-align-last: center`, message `p.title.is-4`, advice `h6.title.is-6` (the first
+port shipped a small `.box` inside the results column); each result row is a Bulma
+`.column`, whose 0.75rem padding is the gap between cards; and every search field
+carries the `ControlShell`'s left icon plate (`context.icon` = `faSearch`,
+`icon is-left has-text-info` — cyan on the demo), which the DD-135 port of
+`simple-search-input` dropped with the rest of the shell.
+
+**Decision.** Port all seven verbatim: the hero title is the literal "Atlas", the
+filter box's empty state is the legacy `content`/`is-italic`/`has-text-centered`
+paragraph, the count moves inside `.results-box` as
+`h6.title.is-6`, the box/container split takes the legacy rules, `.card.no-results-card`
+replaces the columns (the `ngIf`/`ngIf:else` shape — SRH-06's pair, SRH-07's shell
+shown only with data), each row is the legacy `div.column` wrapping the card (the
+column's auto height keeps the card host's `min-height: 100%` inert — stretched to the
+scroll container's definite height, the cards inflate to one per screen; its 0.75rem
+padding is the gap between rows), and the ui-lib `search-field` renders the left plate
+(its UIC-01 markup set, completed).
+
+**Alternatives.** (a) Keep the first port's cleaner shapes — refused: the legacy
+look is the product look (DD-150/152), and the demo is the parity oracle (ADR 052);
+(a reader comparing screens notices all seven). (b) Port the demo's centered **card**
+titles — refused: that is the demo's stuck "Loading …" per-card-GET state (DV-83's
+target: the demo's search answers never resolve there); with cards rendered from the
+hit, the legacy centered line applies only to the no-results card, as ported.
+
+**Consequences.** The 7.4b facet sidebar fills the shell that only shows with data;
+the `search-field` story and its specs name the plate; the results specs pin the
+count-inside-box and the top-level `#noData` (no `.column` without data); the layout
+spec pins the hero's "Atlas" title, the results spec the styled no-filters paragraph.
+
+### DD-221 — The empty query lists every entity through the `_ALL_ENTITY_TYPES` marker
+
+- **Status:** Accepted
+- **Increment:** 7.4a
+- **Date:** 2026-10-26
+
+**Context.** Opening the results screen without a query (`/search/results`, the
+URL the explore buttons land on, a bookmark, a reload) showed the no-results card
+with the invitation to "try another query". The legacy app answers that URL with
+everything: the Aurelius `QueryResolver` defaults `query` to `''` — "so that when
+we load the page without a search term, we can still see results" — and the demo
+answers the bare URL with 683. SRH-02's wording already says the empty parameter
+"searches `""`, which answers"; the store deviated, refusing to fire at all. The
+refusal has a real reason: a basic search with no term, type, classification, or
+term is `INVALID_SEARCH_PARAMS` (SRC-02, ATLAS-400-00-047), so posting `query: ""`
+alone is a 400, not a list.
+
+**Decision.** The store sends the empty query with Atlas's every-entity marker:
+`{typeName: "_ALL_ENTITY_TYPES", query: ""}` (SRC-03 — the marker stands for every
+entity, and the type satisfies SRC-02's requirement). A session type filter wins
+over the marker (SRH-08's explore); a non-empty query sends no `typeName` at all,
+as before. The URL effect's re-run guard becomes "the store has already run this
+text" rather than "the text matches the store's": the legacy resolver ran on every
+arrival, query-less included, so a first arrival at a bare `/search/results` fires
+the list-everything search, while the hero-submit-then-same-URL-navigation no-op
+(DD-219) is preserved.
+
+**Alternatives.** (a) Fire `query: ""` with no type — refused: the server answers
+400 (SRC-02), and the alerts drawer would fill on every landing. (b) Keep the
+first port's refusal (no request, the no-results card) — refused: SRH-02 already
+promises the empty query answers, the demo is the parity oracle (ADR 052), and the
+card's advice is wrong for a URL that is the app's own default landing. (c) Send
+`typeName: "AtlasBaseType"` — refused: Atlas 2.4.0 has no such type (`UNKNOWN_TYPENAME`,
+SRC-03); the marker is the every-entity shape the store's own tests already use.
+
+**Consequences.** The bare URL is a real landing, matching the demo; the results
+specs pin the marker body and the "first arrival fires" rule; the explore e2e's
+reload step asserts more rows than the one seeded glossary (the filtered re-run's
+count) — the every-entity search proving the session filter is gone.
+
+### DD-222 — The Python apps emit the stable HTTP semantic conventions
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (telemetry; no Atlas REST semantics — no roadmap row, DD-210's pattern)
+- **Date:** 2026-10-26
+
+**Context.** The webapp → server → Elasticsearch trace (7.18/7.19) carried two
+HTTP conventions at once. The browser leg (JS SDK 2.12) and elasticsearch-py's
+native spans emit the stable set (`http.request.method`, `url.full`,
+`db.system.name` — the latter stable natively since 8.13, DD-210); the
+FastAPI/ASGI leg (instrumentation 0.66b1) emits the old set by default
+(`http.method`, `http.url`, `http.status_code`, `net.peer.*`). Every
+span-attribute filter written against the stable names silently misses the
+request spans — the exact trap DD-210's ES-span probe steps around by
+matching `db.system.name` only. The same split lands on metrics: the RED
+panels read the old `http_server_duration_milliseconds` (ms), which the
+instrumentor stops reporting under the opt-in.
+
+**Decision.** All five Python apps set the standard
+`OTEL_SEMCONV_STABILITY_OPT_IN=http` (value `http`, not `http/dup` —
+the old set is dropped, not doubled). It is a bare `OTEL_*` name
+(third-party-runtime consumer, the root `AGENTS.md` env rule) set in two
+places per app: the `Dockerfile` `ENV` (the e2e/prod image) and the
+project `.env`/`.env.enc` (`nx serve`, whose process environment Nx
+builds from the project env). The FastAPI RED dashboard moves with it in
+the same change: `http_server_request_duration_seconds` (stable; the SDK
+emits seconds, the ms panels multiply the quantiles by 1000),
+`http_server_response_body_size_bytes`, labels `http_route` /
+`http_response_status_code`; `http_server_active_requests` keeps its name
+(the panel uses a bare `sum()`; the stable label set is a subset). The
+SSE exclusion also fixes a stale route: the old `http_target!="/sse"`
+never matched the real route `/entities/sse` (the router mounts it under
+its prefix), so the p95-excl-SSE panel silently included stream
+durations. The server e2e store-span probe (DD-210) gains the convention
+pin: the request span must carry `http.request.method=GET` and none of
+`http.method`/`http.url`/`http.status_code`.
+
+**Alternatives.** (a) `http/dup` — refused: it doubles span attributes
+and metrics series forever; the migration it exists for has no second
+consumer here (the collector pipeline and every dashboard in-repo are
+updated in this change, and no external consumer reads these series).
+(b) Set the opt-in in code (the instrumentor constructors accept no
+equivalent; the SDK reads it once at first instrumentation, and the
+apps' composition roots instrument at import-adjacent time) — refused:
+env is the mechanism the standard defines, and `nx serve`/image/dashboards
+stay declarative. (c) Leave the server legacy and rewrite the ES-span
+filters to old names — refused: the stable set is where OTel has
+standardised (the JS browser SDK and elasticsearch-py are already
+there), and one trace carrying one convention is the point.
+
+**Consequences.** Server and auxiliary-app spans drop
+`http.url`/`http.status_code`/`net.peer.*` (nothing in-repo filters on
+them; the webapp/frontend/keycloak dashboards read web-vital, Micrometer,
+and resource attributes only — verified). Metric history is split at the
+flip: the old `http_server_duration_milliseconds` series stop, the new
+ones start (dev dashboards, acceptable; Grafana's time range covers the
+gap). The active-requests gauge loses its `http_host`/`http_server_name`
+labels (the stable set is method+scheme; the panel is a bare sum). The
+server e2e probe is the regression gate: a dropped `ENV` in an image
+fails the store-span test with a named message. The 8.x aux apps carry
+the same ENV pair for symmetry — their spans join the stable set on the
+next trace they ride (the 8.2 chain, DD-210). Tempo's search by
+`resource.*` and the Grafana Explore panels are unaffected (resource
+attributes are not part of the HTTP semconv switch).
+
+### DD-223 — E2E suites never restart shared dev infra; layout parity leaves e2e
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (e2e infrastructure)
+- **Date:** 2026-10-27
+
+**Decision.** An e2e suite may read and write the shared `dev/*` services, but it
+must **never restart** them: no `docker compose down`/`up`, no container cycling,
+on a stack other suites ride. Writes stay allowed when namespaced and self-cleaned
+(the webapp's uuid-prefixed indices, the server's `scenario_*` writes, the example
+apps' fixture rows). Concretely:
+
+- `aurelius-atlas-store-es` e2e drops its ESD-04 restart-persistence test — the
+  only test in the fleet that took the shared dev Elasticsearch down and up
+  mid-suite. The rule moves to the increment spec as deliberately untested: the
+  named-volume behaviour is verified by review, and the healthcheck (DD-008)
+  covers the "stack comes back up" half. With no restart left in the suite, its
+  `parallelism: false` pin (project.json) is deleted — store-es e2e now runs
+  beside every other task.
+- The rationalisation sweep that rides along: the ESD-03 credential-hygiene test
+  moves from store-es e2e to a unit test (`tests/test__dev_elasticsearch_config.py`
+  — it inspects committed files, never a running store; the `test` target decrypts
+  the dev project's `.env` first), and the two FastAPI-framework probes in
+  fastapi-example e2e (`/docs`, `/openapi.json` — they assert FastAPI defaults, not
+  Aurelius behaviour, and carried no `covers` rule) are deleted.
+- Layout-parity pins leave the webapp e2e suite (with the user's directive:
+  interactions are what e2e guards, layout is what unit/visual tests guard). Eight
+  tests go: the navbar logo box, the body type/ink, the type ramp, the chrome-band
+  palette, the accent ramp, footer-below-the-fold, the landing container inset, and
+  the dark-OS light pin. Their checks land in the webapp's Vitest component specs
+  (`header.component.spec.ts`, `footer.component.spec.ts`, app/shell template
+  structure) as class/token/attribute assertions — the parts a jsdom browser can
+  verify — while the computed-pixel measurements (Bulma ramp values, band heights,
+  bounding boxes) are dropped: they pinned the demo at parity-establishing time and
+  can only fail on CSS refactorings, not on behaviour. The interaction half of the
+  burger-menu test (click, dropdown, logout entry) stays in e2e; only its CSS pins
+  go. A Storybook visual-test setup for the webapp (it has no `storybook` target
+  today) is a follow-up increment, not part of this change.
+
+**Reason.** CI runs `nx affected -t test e2e` in parallel, and the fleet rides the
+shared `dev/*` services. ESD-04's dev-ES down/up races every suite mid-flight —
+lost-connection failures are on record (the `parallelism: false` pin was that
+outage's scar tissue, and it serialised the suite forever after). The fix is to
+remove the restart, not to isolate every writer: a per-suite store stack was built
+and verified in this cycle (ES ×3, Postgres ×1) and rejected as over-correction —
+the dev stores' standing data is a debug aid, namespaced writes are already the
+convention, and one restart-test does not justify four extra cold boots per CI run.
+The proof half is the same story: tests that assert framework defaults (`/docs`
+returns 200) or demo-measured pixels (navbar height 68px, ink `#4a4a4a`) can only
+fail for non-Aurelius reasons, and they are the slowest to debug when they do.
+
+**Alternatives.** (a) Suite-owned stores for every writer (the shape this session
+built and verified: store-es/webapp/server on their own ES, fastapi-example on its
+own Postgres) — refused on the user's direction: the ban is on restarts, writes are
+fine, and four cold store boots per CI run is a lot of boot to buy what namespaced
+writes already provide. The work is preserved in this branch's history if a suite
+ever needs isolation (the suite-stack compose recipe — dev image, node config
+mounted read-only, DD-216 certs, openssl healthcheck — is on record).
+(b) Keep ESD-04 with a global serialisation — refused: `parallelism: false` taxes
+the whole fleet forever to run one test, and the dev-ES restart is the exact race
+the pin documents. (c) Move the layout pins to Storybook visual tests now —
+refused as scope: the webapp has no storybook target, and porting eight computed-
+style pins to a visual harness is its own increment; the Vitest component specs
+cover the structure that jsdom can see, the pixels return with the storybook slice.
+
+**Consequences.** store-es e2e runs in parallel (one serialised suite gone); the
+dev Elasticsearch is never cycled mid-suite, so co-scheduled suites stop losing
+connections. ESD-04 is the fleet's first explicitly untested rule, with the note in
+the increment spec carrying why. The webapp e2e suite drops eight tests (~135 →
+127 collected, all browsers) and the shell's computed-style coverage moves to unit
+specs as structural assertions; a true visual-parity harness waits on a webapp
+Storybook slice. The dev stores' data survives e2e runs (writes are namespaced and
+self-cleaned, and the webapp glossary purge rides its own uuid-prefixed types).
+`AGENTS.md` gains all three rules: no restarts, prove Aurelius behaviour not
+framework defaults, guard interactions not layout.
+
+### DD-224 — The webapp e2e signs in once per browser and replays the session
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (e2e infrastructure; follows DD-223's time audit)
+- **Date:** 2026-10-27
+
+**Decision.** The webapp suite's `authenticated` fixture no longer runs the
+Keycloak form login per test. A session fixture signs in **once per browser**,
+saves the context as a Playwright `storage_state` (the realm's SSO cookie,
+`KEYCLOAK_IDENTITY`), and every test now gets its **own context seeded from that
+state**: the SPA boots with `check-sso` and the silent-iframe redirect (APC-05),
+so a pre-authed context mints its own 60s access tokens from the stored SSO
+session — the login form never opens. The fixture watches the boot: navbar →
+signed in; login form (session died — e.g. the resilience logout test ends the
+realm session, RSL-02) → run the form login and refresh the shared state, so
+the next test replays from a live session again. The per-test context keeps
+cookies/storage/cache isolated exactly as the per-test login left them.
+
+**Reason.** The slow-e2e diagnosis: the suite's ~37 authenticated tests per
+browser each paid a full Keycloak sign-in (~1.5s of form fill, redirect and
+token exchange) — ~60% of the suite's wall time and the fleet's biggest single
+cost. The realm's SSO session (30-minute idle window, refreshed by every test's
+visit) plus the SPA's silent check-sso is exactly the mechanism the reuse rides:
+it is the flow a real returning user takes, so the fixture now proves the SSO
+path end to end as part of every test.
+
+**Alternatives.** (a) Keep the per-test login — refused: it is the cost this
+decision exists to remove. (b) One shared context for the whole session —
+refused: tests mutate storage/cookies (locale, settings panel, theme); isolation
+stays, only the session is shared. (c) Mint tokens by REST and inject them —
+refused: keycloak-js keeps its tokens in JS memory, not storage; the
+storage_state path is the browser's own session story and needs no injection
+hack. (d) Test-only Keycloak config with longer token lifetimes — refused: it
+drifts from the dev realm every suite rides.
+
+**Consequences.** The suite measured 1.28s/test after the change vs 2.24s before
+(full matrix, all browsers): the webapp e2e drops from ~4m to ~2m20. The realm's
+60s access token and 30-minute SSO window bound the suite: ~4 minutes of
+sessions fit with room, and the self-heal covers the tail. The state file lives
+under pytest's tmp path — cookies only, never the user's password. The
+resilience suite's logout test (which ends the realm session and re-signs-in by
+form) runs on the shared state and proves the recovery path in-suite.
+
+### DD-225 — E2E containers export spans every second so Tempo probes land sooner
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (e2e infrastructure; follows DD-224's time audit)
+- **Date:** 2026-10-27
+
+**Decision.** The OTLP-emitting app services in the e2e compose stacks (the
+server stack's `aurelius-atlas-server`, the webapp stack's `atlas-server`, the
+lineage chain's `data2model` and `lineage-model`) set
+`OTEL_BSP_SCHEDULE_DELAY: "1000"`, and the Tempo read-back probe loops (server
+store-ride, lineage chain, webapp stamping/ingest) poll every 1s instead of
+every 3s. Deadlines stay as they were (60–120s).
+
+**Reason.** The probes ride `BatchSpanProcessor`, which the apps construct with
+no arguments — its 5000ms schedule delay is the floor under every read-back:
+the first poll that can succeed lands ≥5s after the request, Tempo's block
+ingest adds 1–3s, and the 3s sleeps then quantise arrival to ~6–9s. The floor
+is the exporter, not the polling, and the SDK reads
+`OTEL_BSP_SCHEDULE_DELAY` from the environment when the processor is built, so
+the compose env reaches it with no code change. The key stays bare (`OTEL_*` is
+a third-party consumer, per the env-prefix rule) and rides the e2e compose
+only: prod images keep the SDK default.
+
+**Alternatives.** (a) Keep the 3s sleeps — refused: they were tuned to a 5s
+floor the fleet no longer has, and each quantises 1–3s of latency per probe per
+browser. (b) Force an export per request (a `SimpleSpanProcessor` under test)
+— refused: it changes the pipeline the suite exercises. (c) Shorten the
+deadlines — refused: the deadlines are the failure budget, not the expected
+path.
+
+**Consequences.** Measured solo: the server store-ride probe 12.2s → 6.2s
+(suite 31.9s → 28.8s), the lineage chain probe 6.1s → 1.0s, the webapp suite
+2m36s → 2m08s (its probes ride three browsers). The 84.6s server-dashboard
+number from the same audit needed no fix: it is contention, not the test —
+measured clean, the dashboard pair is 7.2s + 0.8s. Export cadence rises (dev
+containers only, negligible collector load); probes fail only on real
+ingest loss.
+
+### DD-226 — The dev stacks' restart windows are unbounded
 
 - **Status:** Accepted
 - **Increment:** cross-cutting (dev-stack wiring; rides the CI pipeline, no roadmap row)

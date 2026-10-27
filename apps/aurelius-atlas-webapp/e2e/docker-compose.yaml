@@ -71,6 +71,9 @@ services:
             AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+            # Export every second in test containers so Tempo read-back
+            # probes land sooner (DD-225); mirrors the server e2e compose.
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
         extra_hosts:
             # The mint target: the e2e Keycloak's :8443 listener, published
             # loopback-wide on this machine (the webapp service maps it for

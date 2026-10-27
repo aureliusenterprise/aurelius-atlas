@@ -32,6 +32,12 @@ ENV AURELIUS_ATLAS_SERVER_PORT=21000
 # AURELIUS_ATLAS_SERVER_TLS_CA_FILE: CA bundle the healthcheck verifies the server's own certificate
 # with when it serves HTTPS (local dev: /certs/ca.pem). Unset: the system trust store.
 ENV AURELIUS_ATLAS_SERVER_TLS_CA_FILE=""
+# Stable HTTP semantic conventions (DD-222): the OTel instrumentors read this at
+# process start and emit only the stable http.*/url.*/server.* span attributes
+# (no old http.url/net.peer.* set) and the stable http.server.request.duration
+# metrics — matching the elasticsearch client's natively-stable spans, so one
+# trace carries one convention. Bare OTEL_* name by the workspace env rule.
+ENV OTEL_SEMCONV_STABILITY_OPT_IN=http
 
 WORKDIR /application
 

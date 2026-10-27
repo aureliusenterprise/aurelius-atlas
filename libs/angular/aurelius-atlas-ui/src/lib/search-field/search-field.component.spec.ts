@@ -103,6 +103,16 @@ describe("SearchField", () => {
         expect(fixture.nativeElement.querySelector("button.delete")).toBeNull();
     });
 
+    it("carries the ControlShell's left icon plate, as the Aurelius context's default did (UIC-01)", () => {
+        // The legacy ControlShell rendered context.icon — faSearch, the
+        // simple-search-input default — in an is-left plate (the demo shows
+        // the cyan magnifier in the hero and every card).
+        const plate = fixture.nativeElement.querySelector(".control .icon.is-left");
+
+        expect(plate).toBeTruthy();
+        expect(plate.classList.contains("has-text-info")).toBe(true);
+    });
+
     it("names the icon buttons from the caller's labels (DD-136)", () => {
         fixture.componentRef.setInput("submitLabel", "Zoeken");
         fixture.componentRef.setInput("query", "branch");

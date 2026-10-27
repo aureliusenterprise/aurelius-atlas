@@ -19,7 +19,7 @@ type Story = StoryObj<DetailsNavigation>;
 
 /** The template binding the inputs, with the legacy default items. */
 const template = `
-<div style="min-height: 40rem; position: relative">
+<div class="story-tall-host">
     <aurelius-atlas-ui-details-navigation [label]="label" [toggleLabel]="toggleLabel">
         <li><a href="#properties-details">Properties</a></li>
     </aurelius-atlas-ui-details-navigation>
@@ -72,7 +72,7 @@ export const WithSections: Story = {
     render: (args) => ({
         props: { ...args },
         template: `
-<div style="min-height: 40rem; position: relative">
+<div class="story-tall-host">
     <aurelius-atlas-ui-details-navigation [label]="label">
         <li><a href="#description-details">Description</a></li>
         <li><a href="#properties-details">Properties</a></li>

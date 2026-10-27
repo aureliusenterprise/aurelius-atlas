@@ -1,0 +1,37 @@
+/*
+ * Results screen (SRH-05..07): the legacy two-column shape, the legacy
+ * `results.component.scss` verbatim — both boxes are full-height capped at
+ * 80vh, the results box is a flex column whose `.results-container` is the
+ * scroll owner, and the no-results card centers its text lines through the
+ * legacy `.card-content` rule (`text-align-last: center` — Bulma has no
+ * `.card-content` rule of its own, so the legacy rule applies, as it does
+ * on the demo).
+ */
+.box {
+    height: 100%;
+    max-height: 80vh;
+}
+
+.filter-box {
+    overflow-y: auto;
+}
+
+.results-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.results-container {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* The legacy rows: each card sits in a bare Bulma `.column` (its base
+ * 0.75rem padding is the gap between rows the demo shows, and its auto
+ * height keeps the card's min-height:100% inert). No extra rules. */
+
+.no-results-card {
+    .card-content {
+        text-align-last: center;
+    }
+}

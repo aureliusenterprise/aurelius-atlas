@@ -25,7 +25,9 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   (HTTPS, CA-verified)
 - `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the built
   image, with the real atlas-server container behind nginx `/api/` (DD-142) and
-  Keycloak sign-in via the `authenticated` fixture (APC-10)
+  Keycloak sign-in via the `authenticated` fixture (APC-10), which replays a
+  per-browser session state — one form login per browser, silent check-sso for
+  every test, form-login self-heal when the shared session dies (DD-224)
 
 ## Porting rules (every slice)
 

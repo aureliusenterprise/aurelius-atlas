@@ -18,7 +18,7 @@ type Story = StoryObj<Badge>;
 const template = `
 <div class="buttons are-medium">
     <aurelius-atlas-ui-badge [visible]="visible" [severity]="severity" [label]="label">
-        <span class="icon is-medium" style="font-size: 1.5rem">&#128276;</span>
+        <span class="icon is-medium story-bell">&#128276;</span>
     </aurelius-atlas-ui-badge>
 </div>
 `;

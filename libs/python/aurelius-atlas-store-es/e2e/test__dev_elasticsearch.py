@@ -1,14 +1,17 @@
-"""The dev store (``dev/elasticsearch``) as ``nx up`` starts it: ESD-01 to ESD-06 of increment 0.2."""
+"""The dev store (``dev/elasticsearch``) as ``nx up`` starts it: ESD-01, 02, 05, 06 of increment 0.2.
 
-import asyncio
+Every test here reads the shared dev stack; credential hygiene (ESD-03) is file
+inspection, tested in ``tests/``. ESD-04 (data survives ``down``/``up``) has no
+test: exercising it means restarting the shared store mid-suite, which races
+every other suite riding it (DD-223) — the rule is untested by choice.
+"""
+
 import json
-import re
 import ssl
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from asyncio.subprocess import PIPE, STDOUT
 from pathlib import Path
 
 import pytest
@@ -77,22 +80,6 @@ def test__dev_elasticsearch_serves_only_tls_from_the_workspace_ca(dev_settings: 
         urllib.request.urlopen(f"{dev_settings.host_urls[0]}/", context=context, timeout=10)  # noqa: S310
 
 
-@pytest.mark.covers(rules=["ESD-03"])
-def test__dev_elasticsearch_password_is_only_in_the_encrypted_env(dev_env: dict[str, str], dev_dir: Path) -> None:
-    """The password is stored encrypted, reaches the container by interpolation, and is in no other file."""
-    encrypted = (dev_dir / ".env.enc").read_text()
-    assert re.search(r"^ELASTICSEARCH_PASSWORD=ENC\[", encrypted, re.MULTILINE)
-    assert "${ELASTICSEARCH_PASSWORD:?}" in (dev_dir / "docker-compose.yaml").read_text()
-
-    password = dev_env["ELASTICSEARCH_PASSWORD"]
-    plaintext = [
-        path
-        for path in dev_dir.rglob("*")
-        if path.is_file() and path.name != ".env" and "certs" not in path.parts and password in path.read_text()
-    ]
-    assert plaintext == []
-
-
 @ON_MODULE_LOOP
 @pytest.mark.covers(rules=["ESD-05"])
 async def test__dev_elasticsearch_heap_is_fixed(dev_store: ElasticsearchStore, dev_env: dict[str, str]) -> None:
@@ -122,26 +109,3 @@ def test__dev_elasticsearch_metrics_reach_prometheus() -> None:
         time.sleep(5)
 
     assert series > 0
-
-
-@ON_MODULE_LOOP
-@pytest.mark.covers(rules=["ESD-04"])
-async def test__dev_elasticsearch_keeps_data_across_down_and_up(dev_settings: StoreSettings, dev_dir: Path) -> None:
-    """A document written before ``docker compose down`` is there after the stack comes back up."""
-    index = "esd-04-persistence"
-    async with ElasticsearchStore(dev_settings) as store:
-        await store.client.index(index=index, id="1", document={"kept": True}, refresh=True)
-
-    compose = ["docker", "compose", "--project-directory", str(dev_dir)]
-    for command in (["down"], ["up", "--detach", "--wait"]):
-        process = await asyncio.create_subprocess_exec(*compose, *command, stdout=PIPE, stderr=STDOUT)
-        output, _ = await process.communicate()
-        assert process.returncode == 0, output.decode()
-
-    async with ElasticsearchStore(dev_settings) as store:
-        try:
-            document = await store.client.get(index=index, id="1")
-        finally:
-            await store.client.indices.delete(index=index)
-
-    assert document["_source"] == {"kept": True}

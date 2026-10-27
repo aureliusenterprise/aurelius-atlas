@@ -37,6 +37,10 @@ ENV AURELIUS_ATLAS_FASTAPI_PORT=8000
 # Leave it unset for deployments whose certificate chains to the image's system
 # trust store.
 ENV AURELIUS_ATLAS_FASTAPI_TLS_CA_FILE=""
+# Stable HTTP semantic conventions (DD-222): the OTel instrumentors read this at
+# process start; the FastAPI/httpx spans carry only the stable http.*/url.* set
+# and the stable http.server.request.duration metrics the RED dashboard reads.
+ENV OTEL_SEMCONV_STABILITY_OPT_IN=http
 
 # Set the working directory
 WORKDIR /application

@@ -11,8 +11,10 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 - `aurelius_atlas_store_es/testing/` — `fake.py` (`FakeClient`, no extra deps) and `container.py`
   (TLS-enabled Elasticsearch via testcontainers, `testing` extra) — DD-007
 - `tests/` — unit tests against the fake, integration tests against the container
-- `e2e/` — ESD-01 to ESD-06 against the dev store that `nx e2e` starts through the implicit dependency
-  on `aurelius-atlas-dev-elasticsearch`; the persistence test runs `docker compose down`/`up` on it
+- `e2e/` — ESD-01, ESD-02, ESD-05, ESD-06 against the dev store that `nx e2e` starts through the implicit
+  dependency on `aurelius-atlas-dev-elasticsearch`; every test reads the shared stack (no restarts —
+  DD-223). ESD-03 (credential hygiene) is a unit test in `tests/test__dev_elasticsearch_config.py`;
+  ESD-04 (restart persistence) is deliberately untested — see the note in the increment spec
 
 ## Wiring Checklist
 
@@ -21,8 +23,9 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   `docs/architecture/conversion/increments/0-2-elasticsearch-infrastructure.md`; every test names the
   functions and rules it checks with `@pytest.mark.covers` (ADR 056); `aurelius-atlas-trace check`
   reports unnamed functions or rules locally (a review aid, not a CI gate).
-- `project.json` sets `parallelism: false` on `e2e`: its persistence test restarts the shared dev store, so
-  no other task may run beside it (another project's e2e lost its connection when they ran together).
+- The e2e suite never restarts the shared dev store (DD-223): an earlier ESD-04 test took it down/up
+  mid-suite and raced every other suite riding it (a lost-connection failure is on record), which is
+  why the rule is untested by choice.
 - The container helper uses the same image tag as `dev/elasticsearch/docker-compose.yaml`; change both
   together.
 

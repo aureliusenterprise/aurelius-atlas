@@ -59,6 +59,9 @@ services:
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET:?}
             AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /certs/ca.pem
+            # Export every second in test containers so the chain probe's
+            # Tempo read-back lands sooner (DD-225).
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
         extra_hosts:
             - keycloak.localhost:host-gateway
         networks:
@@ -105,6 +108,9 @@ services:
             AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET: ${AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET:?}
             AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CA_FILE: /certs/ca.pem
+            # Export every second in test containers so the chain probe's
+            # Tempo read-back lands sooner (DD-225).
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
         extra_hosts:
             - keycloak.localhost:host-gateway
         networks:

@@ -160,6 +160,11 @@ jobs:
             # left behind. Cache env + PATH come from the pod's container
             # command; SOPS_AGE_KEY stays as a safeguard - a test run
             # re-executes `decrypt` when a .env.enc is in the affected set.
+            # Note on durations: the task graph runs e2e suites concurrently
+            # on this runner, so per-test times in the junit reports are
+            # inflated by CPU contention (a 7s Playwright test can record
+            # 80s+). Read them as relative, not absolute; total wall time is
+            # what the job optimises (DD-225 audit).
             - name: Run unit and integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}

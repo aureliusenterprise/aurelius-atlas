@@ -44,7 +44,7 @@ telemetry push. It delivers:
       collector's own **`oauth2client`** extension — mint, cache, refresh
       natively, zero custom code; each puller gains
       `restart: on-failure` (the DD-195 race, now issuer-shaped; unbounded
-      per DD-218);
+      per DD-226);
     - the **Atlas server** (Python, logfire 5.2) presents its JWT through a
       small in-app refresh shim: a `ClientCredentialsTokenSource`
       (urllib + cache + refresh-ahead, thread-safe, stdlib-only) feeding

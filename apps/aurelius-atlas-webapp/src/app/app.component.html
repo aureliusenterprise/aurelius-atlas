@@ -1,10 +1,12 @@
 <!--
-  The shell chrome (SHC-01): the Aurelius root wraps its outlet in the header
-  and the footer (the legacy sticky loading/pipeline block is not ported,
-  DD-145). The outlet band is the legacy `.is-tall-container` (SHM-05,
-  SHM-07): a full viewport tall, so the footer starts below the fold (DD-150).
+  The shell chrome (SHC-01): the Aurelius root wraps its outlet in the header,
+  the sticky loading bar (SRH-09, the pipeline half of the legacy block stays
+  deferred), and the footer. The outlet band is the legacy
+  `.is-tall-container` (SHM-05, SHM-07): a full viewport tall, so the footer
+  starts below the fold (DD-150).
 -->
 <aurelius-atlas-webapp-header />
+<aurelius-atlas-webapp-nav-loading-bar />
 <div class="is-tall-container has-background">
     <router-outlet />
 </div>
