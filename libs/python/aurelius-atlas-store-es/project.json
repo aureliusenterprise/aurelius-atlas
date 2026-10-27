@@ -6,11 +6,14 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_store_es",
     "tags": [],
     "targets": {
-        "e2e": {
+        "test": {
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "projects": ["aurelius-atlas-dev-elasticsearch"], "target": "decrypt" }
+            ],
             "metadata": {
-                "description": "Run the e2e tests alone: one restarts the shared dev Elasticsearch (docker compose down/up)"
-            },
-            "parallelism": false
+                "description": "Unit tests; the ESD-03 config test sweeps dev/elasticsearch/.env, so that project decrypts first"
+            }
         }
     }
 }

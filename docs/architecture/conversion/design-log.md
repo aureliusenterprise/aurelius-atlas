@@ -6426,3 +6426,160 @@ the same ENV pair for symmetry — their spans join the stable set on the
 next trace they ride (the 8.2 chain, DD-210). Tempo's search by
 `resource.*` and the Grafana Explore panels are unaffected (resource
 attributes are not part of the HTTP semconv switch).
+
+### DD-223 — E2E suites never restart shared dev infra; layout parity leaves e2e
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (e2e infrastructure)
+- **Date:** 2026-10-27
+
+**Decision.** An e2e suite may read and write the shared `dev/*` services, but it
+must **never restart** them: no `docker compose down`/`up`, no container cycling,
+on a stack other suites ride. Writes stay allowed when namespaced and self-cleaned
+(the webapp's uuid-prefixed indices, the server's `scenario_*` writes, the example
+apps' fixture rows). Concretely:
+
+- `aurelius-atlas-store-es` e2e drops its ESD-04 restart-persistence test — the
+  only test in the fleet that took the shared dev Elasticsearch down and up
+  mid-suite. The rule moves to the increment spec as deliberately untested: the
+  named-volume behaviour is verified by review, and the healthcheck (DD-008)
+  covers the "stack comes back up" half. With no restart left in the suite, its
+  `parallelism: false` pin (project.json) is deleted — store-es e2e now runs
+  beside every other task.
+- The rationalisation sweep that rides along: the ESD-03 credential-hygiene test
+  moves from store-es e2e to a unit test (`tests/test__dev_elasticsearch_config.py`
+  — it inspects committed files, never a running store; the `test` target decrypts
+  the dev project's `.env` first), and the two FastAPI-framework probes in
+  fastapi-example e2e (`/docs`, `/openapi.json` — they assert FastAPI defaults, not
+  Aurelius behaviour, and carried no `covers` rule) are deleted.
+- Layout-parity pins leave the webapp e2e suite (with the user's directive:
+  interactions are what e2e guards, layout is what unit/visual tests guard). Eight
+  tests go: the navbar logo box, the body type/ink, the type ramp, the chrome-band
+  palette, the accent ramp, footer-below-the-fold, the landing container inset, and
+  the dark-OS light pin. Their checks land in the webapp's Vitest component specs
+  (`header.component.spec.ts`, `footer.component.spec.ts`, app/shell template
+  structure) as class/token/attribute assertions — the parts a jsdom browser can
+  verify — while the computed-pixel measurements (Bulma ramp values, band heights,
+  bounding boxes) are dropped: they pinned the demo at parity-establishing time and
+  can only fail on CSS refactorings, not on behaviour. The interaction half of the
+  burger-menu test (click, dropdown, logout entry) stays in e2e; only its CSS pins
+  go. A Storybook visual-test setup for the webapp (it has no `storybook` target
+  today) is a follow-up increment, not part of this change.
+
+**Reason.** CI runs `nx affected -t test e2e` in parallel, and the fleet rides the
+shared `dev/*` services. ESD-04's dev-ES down/up races every suite mid-flight —
+lost-connection failures are on record (the `parallelism: false` pin was that
+outage's scar tissue, and it serialised the suite forever after). The fix is to
+remove the restart, not to isolate every writer: a per-suite store stack was built
+and verified in this cycle (ES ×3, Postgres ×1) and rejected as over-correction —
+the dev stores' standing data is a debug aid, namespaced writes are already the
+convention, and one restart-test does not justify four extra cold boots per CI run.
+The proof half is the same story: tests that assert framework defaults (`/docs`
+returns 200) or demo-measured pixels (navbar height 68px, ink `#4a4a4a`) can only
+fail for non-Aurelius reasons, and they are the slowest to debug when they do.
+
+**Alternatives.** (a) Suite-owned stores for every writer (the shape this session
+built and verified: store-es/webapp/server on their own ES, fastapi-example on its
+own Postgres) — refused on the user's direction: the ban is on restarts, writes are
+fine, and four cold store boots per CI run is a lot of boot to buy what namespaced
+writes already provide. The work is preserved in this branch's history if a suite
+ever needs isolation (the suite-stack compose recipe — dev image, node config
+mounted read-only, DD-216 certs, openssl healthcheck — is on record).
+(b) Keep ESD-04 with a global serialisation — refused: `parallelism: false` taxes
+the whole fleet forever to run one test, and the dev-ES restart is the exact race
+the pin documents. (c) Move the layout pins to Storybook visual tests now —
+refused as scope: the webapp has no storybook target, and porting eight computed-
+style pins to a visual harness is its own increment; the Vitest component specs
+cover the structure that jsdom can see, the pixels return with the storybook slice.
+
+**Consequences.** store-es e2e runs in parallel (one serialised suite gone); the
+dev Elasticsearch is never cycled mid-suite, so co-scheduled suites stop losing
+connections. ESD-04 is the fleet's first explicitly untested rule, with the note in
+the increment spec carrying why. The webapp e2e suite drops eight tests (~135 →
+127 collected, all browsers) and the shell's computed-style coverage moves to unit
+specs as structural assertions; a true visual-parity harness waits on a webapp
+Storybook slice. The dev stores' data survives e2e runs (writes are namespaced and
+self-cleaned, and the webapp glossary purge rides its own uuid-prefixed types).
+`AGENTS.md` gains all three rules: no restarts, prove Aurelius behaviour not
+framework defaults, guard interactions not layout.
+
+### DD-224 — The webapp e2e signs in once per browser and replays the session
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (e2e infrastructure; follows DD-223's time audit)
+- **Date:** 2026-10-27
+
+**Decision.** The webapp suite's `authenticated` fixture no longer runs the
+Keycloak form login per test. A session fixture signs in **once per browser**,
+saves the context as a Playwright `storage_state` (the realm's SSO cookie,
+`KEYCLOAK_IDENTITY`), and every test now gets its **own context seeded from that
+state**: the SPA boots with `check-sso` and the silent-iframe redirect (APC-05),
+so a pre-authed context mints its own 60s access tokens from the stored SSO
+session — the login form never opens. The fixture watches the boot: navbar →
+signed in; login form (session died — e.g. the resilience logout test ends the
+realm session, RSL-02) → run the form login and refresh the shared state, so
+the next test replays from a live session again. The per-test context keeps
+cookies/storage/cache isolated exactly as the per-test login left them.
+
+**Reason.** The slow-e2e diagnosis: the suite's ~37 authenticated tests per
+browser each paid a full Keycloak sign-in (~1.5s of form fill, redirect and
+token exchange) — ~60% of the suite's wall time and the fleet's biggest single
+cost. The realm's SSO session (30-minute idle window, refreshed by every test's
+visit) plus the SPA's silent check-sso is exactly the mechanism the reuse rides:
+it is the flow a real returning user takes, so the fixture now proves the SSO
+path end to end as part of every test.
+
+**Alternatives.** (a) Keep the per-test login — refused: it is the cost this
+decision exists to remove. (b) One shared context for the whole session —
+refused: tests mutate storage/cookies (locale, settings panel, theme); isolation
+stays, only the session is shared. (c) Mint tokens by REST and inject them —
+refused: keycloak-js keeps its tokens in JS memory, not storage; the
+storage_state path is the browser's own session story and needs no injection
+hack. (d) Test-only Keycloak config with longer token lifetimes — refused: it
+drifts from the dev realm every suite rides.
+
+**Consequences.** The suite measured 1.28s/test after the change vs 2.24s before
+(full matrix, all browsers): the webapp e2e drops from ~4m to ~2m20. The realm's
+60s access token and 30-minute SSO window bound the suite: ~4 minutes of
+sessions fit with room, and the self-heal covers the tail. The state file lives
+under pytest's tmp path — cookies only, never the user's password. The
+resilience suite's logout test (which ends the realm session and re-signs-in by
+form) runs on the shared state and proves the recovery path in-suite.
+
+### DD-225 — E2E containers export spans every second so Tempo probes land sooner
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (e2e infrastructure; follows DD-224's time audit)
+- **Date:** 2026-10-27
+
+**Decision.** The OTLP-emitting app services in the e2e compose stacks (the
+server stack's `aurelius-atlas-server`, the webapp stack's `atlas-server`, the
+lineage chain's `data2model` and `lineage-model`) set
+`OTEL_BSP_SCHEDULE_DELAY: "1000"`, and the Tempo read-back probe loops (server
+store-ride, lineage chain, webapp stamping/ingest) poll every 1s instead of
+every 3s. Deadlines stay as they were (60–120s).
+
+**Reason.** The probes ride `BatchSpanProcessor`, which the apps construct with
+no arguments — its 5000ms schedule delay is the floor under every read-back:
+the first poll that can succeed lands ≥5s after the request, Tempo's block
+ingest adds 1–3s, and the 3s sleeps then quantise arrival to ~6–9s. The floor
+is the exporter, not the polling, and the SDK reads
+`OTEL_BSP_SCHEDULE_DELAY` from the environment when the processor is built, so
+the compose env reaches it with no code change. The key stays bare (`OTEL_*` is
+a third-party consumer, per the env-prefix rule) and rides the e2e compose
+only: prod images keep the SDK default.
+
+**Alternatives.** (a) Keep the 3s sleeps — refused: they were tuned to a 5s
+floor the fleet no longer has, and each quantises 1–3s of latency per probe per
+browser. (b) Force an export per request (a `SimpleSpanProcessor` under test)
+— refused: it changes the pipeline the suite exercises. (c) Shorten the
+deadlines — refused: the deadlines are the failure budget, not the expected
+path.
+
+**Consequences.** Measured solo: the server store-ride probe 12.2s → 6.2s
+(suite 31.9s → 28.8s), the lineage chain probe 6.1s → 1.0s, the webapp suite
+2m36s → 2m08s (its probes ride three browsers). The 84.6s server-dashboard
+number from the same audit needed no fix: it is contention, not the test —
+measured clean, the dashboard pair is 7.2s + 0.8s. Export cadence rises (dev
+containers only, negligible collector load); probes fail only on real
+ingest loss.

@@ -79,6 +79,11 @@ jobs:
               # legitimately needs the age key. Keep the scope as narrow as
               # possible: a workflow-level env var would expose the key to
               # every step and every third-party action in the job.
+              # Note on durations: the task graph runs e2e suites concurrently
+              # on this one runner, so per-test times in the junit reports are
+              # inflated by CPU contention (a 7s Playwright test can record
+              # 80s+). Read them as relative, not absolute; total wall time is
+              # what the job optimises (DD-225 audit).
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t test e2e -c ci

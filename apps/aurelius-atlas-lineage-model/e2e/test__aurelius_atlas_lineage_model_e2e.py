@@ -98,9 +98,10 @@ async def test__the_chain_shares_one_trace_with_the_caller(client: httpx.AsyncCl
     )
     assert response.status_code == 200
 
-    # BatchSpanProcessor exports on a 5s cycle per container and Tempo's live
-    # store indexes within seconds; poll trace-by-id (the deterministic
-    # route — 404 first, data after; see the webapp suite's stamping probe).
+    # The e2e containers export on a 1s BatchSpanProcessor cycle (DD-225) and
+    # Tempo's live store indexes within seconds; poll trace-by-id (the
+    # deterministic route — 404 first, data after; see the webapp suite's
+    # stamping probe).
     deadline = time.monotonic() + 90
     while time.monotonic() < deadline:
         body = await _fetch_trace(trace_id)
@@ -120,6 +121,6 @@ async def test__the_chain_shares_one_trace_with_the_caller(client: httpx.AsyncCl
                 "aurelius-atlas-data2model", set()
             ):
                 return
-        await asyncio.sleep(3)
+        await asyncio.sleep(1)
 
     pytest.fail(f"Tempo never showed the chain inside the caller's trace {trace_id} — no stitch")
