@@ -6718,6 +6718,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -6921,6 +6925,60 @@
     
   
   Deployment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../self-hosted-ci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Self-hosted CI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../self-hosted-ci-decision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Self-hosted CI Decision
 
     
   </span>
@@ -7997,6 +8055,17 @@ without adding Atlas behaviour:</p>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>[!NOTE]
+The ESD rules have no automated e2e tests (DD-223, DD-227). ESD-04's test meant
+restarting the shared dev store mid-suite, which races every other suite riding it;
+the sweep then judged the rest (ESD-01, ESD-02, ESD-05, ESD-06) as dev-environment
+evaluation that proves nothing about production — the dev stack's healthchecks and
+review carry them. ESD-03 (credential hygiene) remains a unit test in
+<code>libs/python/aurelius-atlas-store-es/tests/test__dev_elasticsearch_config.py</code>.
+This library's production behaviour is proven by the STO rules and the apps' own
+e2e suites, which run against this store from the Atlas side.</p>
+</blockquote>
 <h3 id="store-library">Store library<a class="headerlink" href="#store-library" title="Permanent link">&para;</a></h3>
 <table>
 <thead>

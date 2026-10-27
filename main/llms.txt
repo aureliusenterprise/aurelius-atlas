@@ -212,6 +212,8 @@
 - [Identity Management](<https://aureliusenterprise.github.io/main/architecture/platform/security/identity-management/index.md>)
 - [Security](<https://aureliusenterprise.github.io/main/architecture/platform/security/index.md>)
 - [Secrets Management](<https://aureliusenterprise.github.io/main/architecture/platform/security/secrets-management/index.md>)
+- [Self-hosted CI Decision](<https://aureliusenterprise.github.io/main/architecture/self-hosted-ci-decision/index.md>)
+- [Self-hosted CI](<https://aureliusenterprise.github.io/main/architecture/self-hosted-ci/index.md>)
 - [Architecture Roadmap](<https://aureliusenterprise.github.io/main/architecture/vision-and-strategy/architecture-roadmap/index.md>)
 - [Business Objectives](<https://aureliusenterprise.github.io/main/architecture/vision-and-strategy/business-objectives/index.md>)
 - [Vision &amp;amp; Strategy](<https://aureliusenterprise.github.io/main/architecture/vision-and-strategy/index.md>)
