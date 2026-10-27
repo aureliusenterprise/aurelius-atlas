@@ -1,7 +1,8 @@
 # GKE self-hosted CI runners
 
 ARC (`gha-runner-scale-set`) runner pods for `aureliusenterprise/aurelius-atlas`:
-the `ci` job runs **directly in the dev container image** on GKE (plan:
+the CI fan-out (`validate` → `e2e` ∥ `scan-sonar` ∥ `chromatic`) runs
+**directly in the dev container image** on GKE (plan:
 [`docs/architecture/self-hosted-ci.md`](../../docs/architecture/self-hosted-ci.md),
 decision: [`self-hosted-ci-decision.md`](../../docs/architecture/self-hosted-ci-decision.md)).
 
@@ -13,6 +14,14 @@ privileged `dockerd`, then `exec "$@"`) to `/opt/actions-runner/run.sh`. No
 devcontainers/ci wrapper, no dind sidecar, no per-job image pull - the setup
 tax of the old hosted/Shape-B topology (8.3 GB pull + devcontainer build +
 sibling container, ~5 min) is structurally gone.
+
+The pool scales to **three concurrent pods** (DD-232): the fan-out's jobs
+run side by side, each on its own pod and its **own emptyDir work volume** -
+the 50 Gi RWO cache PD is retired (it pinned `maxRunners: 1`), and the jobs
+exchange files through artifacts + the GHCR buildcache, never the disk.
+`minRunners: 2` keeps a warm pair so a queued fan-out job starts in ~15s
+(spike 40520070483: warm-pod registration 15-17s; a cold node pays ~3 min
+for the runner image).
 
 The scale set retired 2026-10-25: the former **Shape B** bridge (stock
 `actions-runner` + dind sidecar + devcontainers/ci, `atlas-ci` release,
@@ -51,8 +60,7 @@ kubectl -n arc-runners create secret generic atlas-ghcr-pull \
     --type=kubernetes.io/dockerconfigjson \
     --from-literal=".dockerconfigjson={\"auths\":{\"ghcr.io\":{\"auth\":\"$AUTH\"}}}"
 
-# 4. The cache/work volume + the scale set:
-kubectl apply -f infra/arc/shapea-cache-pvc.yaml
+# 4. The scale set (the work volume is a per-pod emptyDir - no PVC to apply):
 CI_SHAPEA_IMAGE_TAG=main ./install.sh scale-set-shapea
 
 # 5. The actions/cache backend for the runners (its own release, safe any
@@ -118,10 +126,10 @@ the JIT token string; the listener consumes it at run.sh boot). Consequences:
   `config.sh --jitconfig` crash-looped the pods), and `RUNNER_WORKSPACE` is
   an ARC kubernetes-mode hook input the standalone listener ignores. The fix
   is what ARC's own hooks do: **mount the work volume AT
-  `/opt/actions-runner/_work`** - the default then lands on the PVC. (Jobs
+  `/opt/actions-runner/_work`** - the default then lands on the volume. (Jobs
   on the container layer died with `Access to the path
 '/opt/actions-runner/_work/_tool' is denied` once `_work` was root-owned.)
-- **`SOPS_AGE_KEY_FILE`** = `/var/cache/ci/sops/keys.txt` (a PVC subPath
+- **`SOPS_AGE_KEY_FILE`** = `/var/cache/ci/sops/keys.txt` (a cache subPath
   cache-init touches every boot). The checkout is EPHEMERAL (see
   "Caches"), so the file cannot live in the tree's `secrets/`; its
   content is irrelevant when `SOPS_AGE_KEY` is in the environment -
@@ -131,7 +139,7 @@ the JIT token string; the listener consumes it at run.sh boot). Consequences:
 [999]` (docker group - k8s drops the image's supplementary groups; the
   dockerd socket is `root:docker` 0660). `fsGroup: 1000` with
   `fsGroupChangePolicy: OnRootMismatch` (the default `Always` chowns the
-  whole 50 Gi volume every pod boot).
+  whole volume every pod boot).
 - **PATH**: k8s `bash -c` skips login files, so the container command
   assembles the baked toolchains explicitly (nvm node glob, /usr/local/bin,
   py-utils, sdkman) before `exec docker-init.sh run.sh`.
@@ -145,18 +153,28 @@ the JIT token string; the listener consumes it at run.sh boot). Consequences:
   dirs are ununlinkable by the uid-1000 clean - at-boot scoping keeps the
   multi-GB caches out of the walk).
 
-## The PVC (`shapea-cache-pvc.yaml`, atlas-shapea-cache, 50 Gi RWO PD)
+## The work volume (per-pod emptyDir, 20 Gi sizeLimit)
 
-One ext4 volume (PD - overlayfs works on it, NFS/Filestore would not),
-subPath-mounted:
+One `emptyDir` **per runner pod** (DD-232 - supersedes the 50 Gi RWO PD,
+`shapea-cache-pvc.yaml`, retired): the work dir and every cache live on the
+node's local PD, subPath-mounted:
 
-| Path (in pod)                       | PVC subPath            | Why                                                                                                                |
+| Path (in pod)                       | Volume subPath         | Why                                                                                                                |
 | ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `/opt/actions-runner/_work`         | (root)                 | work dir: runner `_tool`/`_temp` + job workspace (uid-1000-writable); the checkout under it is sanitized every job |
 | `/var/cache/ci/{uv,npm,pre-commit}` | `.ci-cache/<name>`     | toolchain caches, OUTSIDE the checkout (the GitHub-hosted cache model)                                             |
+| `/var/cache/ci/sonar`               | `.ci-cache/sonar`      | SonarScanner's ~380 MB engine/plugin jar download cache (SONAR_USER_HOME)                                          |
 | `/var/cache/ci/sops`                | `.ci-cache/sops`       | the sops key file (exists for sops; content irrelevant, key is in env)                                             |
-| `/var/lib/docker`                   | `.ci-cache/docker`     | dockerd store: compose/e2e base images survive pods                                                                |
+| `/var/lib/docker`                   | `.ci-cache/docker`     | dockerd store: compose/e2e base images survive jobs on the same pod                                                |
 | `/var/lib/containerd`               | `.ci-cache/containerd` | **the critical one** - see below                                                                                   |
+
+**Warm within a pod, cold across pods.** A pod that survives between jobs
+(the `minRunners: 2` warm pair) keeps its caches, image stores, and
+registry auth; a NEW pod starts cold - measured (spike probe-b, run
+40520070483): the two heaviest dev-stack images pull in 48s, and 0.0s when
+the node already holds the layers (GKE image cache). PD disks support
+overlayfs (NFS/Filestore would not - and Filestore is blocked by
+billing-account policy anyway).
 
 **Containerd's root must be volume-backed.** The image's
 `/etc/containerd/config.toml` (root=`/var/lib/containerd`) + dockerd's
@@ -164,7 +182,9 @@ containerd-snapshotter (devcontainers/features#1642) mean every image/layer
 snapshot lives under `/var/lib/containerd`, NOT `/var/lib/docker`. Left on
 the pod root (the node's overlayfs), nested overlay mounts are rejected:
 "failed to mount /tmp/containerd-mount…: invalid argument" killed every
-e2e container and docker-build in trial run 40217828572.
+e2e container and docker-build in trial run 40217828572. The emptyDir
+mount IS a PD-backed filesystem, so the nesting stays flat - same
+requirement as the PD had.
 
 **BuildKit metadata and containerd snapshots are a pod-scoped pair.**
 `/var/lib/docker/buildkit` (metadata) references containerd snapshots by
@@ -172,10 +192,12 @@ id; if the metadata outlives the snapshot store (a pod that dies
 mid-build, an infra change that moves one store - trial runs 40217828572 →
 40219350705), every build dies "parent snapshot … does not exist". cache-init
 wipes the metadata each boot; builds use `--cache-from type=registry`, so it
-is disposable.
+is disposable. With an emptyDir the pair is born and dies together - the
+wipe is belt-and-braces for mid-pod crashes.
 
-**The volume is deliberately NOT shared** with the (retired) Shape B cache:
-two scale sets on one RWO disk = detach stalls + fsGroup chown flip-flop.
+**Sizing**: steady state is ~12 Gi per pod (containerd ~5, work ~1, caches
+~3, docker ~3); 20 Gi sizeLimit vs 47 Gi node allocatable leaves room for
+two packed pods - which the anti-affinity tries to avoid, not enable.
 
 ## Cache server (`actions/cache` for self-hosted)
 
@@ -227,6 +249,6 @@ The contract has three parts - all three are required:
 ## Rollback
 
 `helm uninstall atlas-ci-shapea -n arc-runners` (+ `arc` in `arc-systems`),
-delete `shapea-cache-pvc.yaml`, delete `atlas-arc-auth`/`atlas-ghcr-pull`.
+delete `atlas-arc-auth`/`atlas-ghcr-pull`.
 The workflow side is a git revert of the ci.yaml flip (hosted runners
 predate the variables, and the variables retired with Shape B).

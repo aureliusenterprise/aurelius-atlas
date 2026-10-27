@@ -2,7 +2,7 @@
 # Provision the GKE side of self-hosted CI (docs/architecture/self-hosted-ci.md,
 # infra/arc/README.md).
 #
-# Usage: ./install.sh <cluster|controller|scale-set-shapea|scale-set-shapea-spike|cache-server|status>
+# Usage: ./install.sh <cluster|controller|scale-set-shapea|cache-server|status>
 # Env:   GCP_PROJECT, GKE_CLUSTER, GKE_LOCATION (region),
 #        CI_SHAPEA_IMAGE_TAG (scale-set-shapea image tag, default: main)
 set -euo pipefail
@@ -17,11 +17,13 @@ case "${1:-status}" in
         # Standard-mode (Autopilot forbids privileged pods - the runner needs
         # a privileged job container, so Standard). The runner pods schedule
         # on the existing default pool's headroom (values: low requests).
+        # Fan-out (DD-232): three concurrent jobs want three nodes, so the
+        # pool ceiling is 3 (the live atlas-dev pool is 3 x 4-CPU nodes).
         gcloud container clusters create "$CLUSTER" \
             --project "$PROJECT" --location "$LOCATION" \
             --release-channel regular \
             --machine-type e2-small --num-nodes 1 \
-            --enable-autoscaling --min-nodes 1 --max-nodes 2 \
+            --enable-autoscaling --min-nodes 1 --max-nodes 3 \
             --disk-type pd-balanced --disk-size 50 \
             --workload-metadata=DISABLED
         ;;
@@ -45,19 +47,6 @@ case "${1:-status}" in
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
             --namespace arc-runners -f "$HERE/arc-shapea-values.yaml" \
             --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${TAG}"
-        ;;
-    scale-set-shapea-spike)
-        # The Phase-0 parallel-jobs spike (arc-shapea-spike-values.yaml):
-        # prod values + the spike overrides (emptyDir work volume, maxRunners
-        # 2, label atlas-ci-shapea-spike, scale-to-zero). Its OWN release -
-        # the production runner pod is untouched, `runs-on: atlas-ci-shapea`
-        # is unaffected. Tear down: helm -n arc-runners uninstall
-        # atlas-ci-shapea-spike.
-        helm upgrade --install atlas-ci-shapea-spike \
-            oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-            --namespace arc-runners \
-            -f "$HERE/arc-shapea-values.yaml" -f "$HERE/arc-shapea-spike-values.yaml" \
-            --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${CI_SHAPEA_IMAGE_TAG:-main}"
         ;;
     cache-server)
         # The actions/cache backend for self-hosted runners

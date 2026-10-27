@@ -68,9 +68,9 @@ out with actions/checkout's default clean, and caches live OUTSIDE it.
 runners without one — the forked runner build that makes the stock step
 work is documented in
 [`infra/arc/README.md`](../infra/arc/README.md)). The uv download cache,
-the pre-commit home, and containerd's image store live on dedicated GKE
-PersistentVolumes as subPath mounts of the runner pod — validate is
-~80s warm and e2e docker builds hit cached layers. The warm work tree is
+the pre-commit home, and containerd's image store live on the runner
+pod's per-pod `emptyDir` work volume (DD-232) as subPath mounts — warm
+within a pod, cold across pods. The warm work tree is
 retired: on Shape A it only survived in-pod restarts, leaked
 root-owned dirs and staged diagnostics between jobs, and saved ~70s of
 install the cache server now covers. Layout + the reasons for every
@@ -95,19 +95,27 @@ the six `CI_*` variables are deleted (git history has them).
   the shared cluster + node separation bound the blast radius. The fallback
   if that ever stops being acceptable is K8s-native e2e (no privileged
   daemon) — a bigger lift.
-- **Serial pool (`maxRunners: 1`, one RWO PVC).** The pipeline peaks near 6
-  vCPU / ~30 GB and the RWO volume pins the pod to one node; CI is serial
-  today, so no throughput is lost. Levers: constrain the dev docker-compose
-  stacks (ES/Keycloak heap), then the documented tainted spot pool.
-- **PD (RWO) volume.** A job on a second node starts cold (rebuilds caches,
-  minutes); Filestore RWX is blocked by the project's billing-account policy;
-  content-addressed caches make per-node copies safe.
+- **Parallel pool (`maxRunners: 3`, per-pod emptyDir).** The fan-out
+  (DD-232) runs `validate` → {`e2e`, `scan-sonar`, `chromatic`} on up to
+  three pods; a preferred pod anti-affinity spreads them over the
+  cluster's three nodes, and packing two jobs on one node (4 CPU / 13.6 Gi
+  allocatable) degrades to CPU contention — DD-229's measured failure
+  mode. The e2e job owns the dev-stack memory alone now (~8 Gi on its
+  pod), so no co-scheduled job pays it.
+- **Per-pod caches (emptyDir).** Caches are warm within a pod and cold
+  across pods: a new pod re-pulls base layers (measured 48 s worst case,
+  0.0 s once the node's image cache has the layers) and re-warms the
+  toolchain caches. `minRunners: 2` keeps a warm pair so fan-out jobs
+  start in ~15 s; Filestore RWX (a shared warm cache) is blocked by the
+  project's billing-account policy; content-addressed caches make
+  per-pod copies safe.
 - **`actions/cache` unavailable** for private repos on self-hosted — the
   reason caches are volumes, not a proxied cache API. Do not re-add a proxy.
 - **Ops ownership**: ARC chart upgrades, classic-PAT rotation (90-day), GHCR
   `buildcache-*` retention. A few hours/quarter.
-- **Cost**: idle scales to zero (`minRunners: 0`); the atlas-dev cluster fee
-  is not charged to CI. Spot preemption = job requeue, not corruption.
+- **Cost**: two warm pods idle between runs (`minRunners: 2`); the
+  atlas-dev cluster fee is not charged to CI. Spot preemption = job
+  requeue, not corruption.
 
 ## Decisions
 

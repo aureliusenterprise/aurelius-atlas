@@ -15,39 +15,31 @@ on:
 permissions:
     contents: read
 
+# The pipeline is a FAN-OUT DAG on the Shape A pool (DD-232, supersedes
+# DD-229's single-job clause; spike runs 40517674042/40520070483 proved the
+# pool): `validate` checks the tree and runs the unit suites, then three jobs
+# run CONCURRENTLY on separate runner pods — `e2e` (integration suites),
+# `scan-sonar` (image builds, trivy, SonarQube), and `chromatic` (Storybook
+# build + publish). The core win: sonar is ~85% SonarCloud SERVER-queue wait
+# (13m28s wall for 2m4s of scanner in run 40471177041) and e2e is CPU/RAM
+# saturation — serializing them in one job wasted ~25 min of wall time.
+#
+# The pool (infra/arc): per-pod emptyDir cache volumes (no shared PD), so
+# jobs must NOT share files through the work volume. Cross-job handoffs ride
+# artifacts (coverage) or rebuild (images, via the GHCR buildcache); scan
+# and sonar stay in ONE job so the sarif handoff never crosses the boundary.
+# The runner image is pre-baked with the node toolchain + dev-stack base
+# images, so per-job cold cost is checkout+install (~2 min), not image pulls.
 jobs:
-    # The whole pipeline in ONE job, running DIRECTLY in the dev container
-    # image (ghcr.io/aureliusenterprise/atlas-ci-runner - the runner pod's
-    # job container IS that image; infra/arc). No devcontainers/ci wrapper,
-    # no sibling container, no per-job image pull: the steps below run in
-    # the image developers use, on the GKE pool (docs/architecture/
-    # self-hosted-ci.md, self-hosted-ci-decision.md option D).
-    #
-    # Fail-fast order (one container, one dockerd, one PVC work dir), one
-    # named step per phase so the log reads as the pipeline:
-    #
-    #   validate -> decrypt -> test + docker build -> teardown -> scan ->
-    #   sonar ∥ storybook -> chromatic
-    #
-    # e2e containers, built images, and reports all live on the same daemon
-    # / work volume, so later steps read what earlier steps wrote - the
-    # scan needs no image export (teardown keeps images), sonar finds
-    # coverage and sarif in place, Chromatic finds Storybook's dist/.
-    #
-    # Tear-down runs right after the tests: the e2e stacks (Keycloak,
-    # Postgres, Elasticsearch, observability) would otherwise hold their
-    # memory through the whole build/scan/sonar tail. External services run
-    # last and only when warranted: SonarQube is the pipeline's final
-    # step, Chromatic is gated on the Storybook probe - and a failing
-    # pipeline fails the job, so neither is reached.
-    ci:
-        # The Shape A pool (infra/arc/arc-shapea-values.yaml). Hard-coded:
-        # the pool is the dev container image, not a generic runner label;
-        # reverting to hosted runners is a git revert, not a variable flip
-        # (the CI_* flag-day variables retired with the devcontainers/ci
-        # wrapper).
+    # ─── validate: tree checks + unit suites ───────────────────────────────
+    # Everything that gates the fan-out: format/type checks (pre-commit
+    # --all-files — deliberate: the type checker catches breakage in files
+    # the PR never touched), dependency install, and the unit `test` suites
+    # with coverage. Its product is the green light + the coverage artifacts
+    # the sonar job uploads.
+    validate:
         runs-on: atlas-ci-shapea
-        timeout-minutes: 60
+        timeout-minutes: 30
 
         env:
             # Nx 23.3+: select affected by individual tasks instead of whole
@@ -57,16 +49,14 @@ jobs:
 
         permissions:
             contents: read
-            # Pull the dev container image, push buildcache tags.
-            packages: write
 
         steps:
             # EPHEMERAL TREE (the GitHub-hosted model): actions/checkout's
             # DEFAULT clean (git clean -ffdx + git reset --hard) sanitizes
-            # the previous job's tree - node_modules, .venv, coverage, dist,
+            # the previous job's tree — node_modules, .venv, coverage, dist,
             # diagnostics all wiped. Nothing in the tree persists BY
             # DESIGN. The warm tree saved only ~70s of install (npm 47s +
-            # uv ~20s, from caches that live on PVC subPaths OUTSIDE the
+            # uv ~20s, from caches that live on cache subPaths OUTSIDE the
             # tree) and caused every warm-tree bug of the Shape A trial
             # week: root-owned dirs from e2e bind mounts breaking checkout
             # (EACCES rmdir), staged diagnostics surviving `git clean` and
@@ -82,9 +72,9 @@ jobs:
             # every lockfile; restore-keys fall back to the newest lock
             # version. zstd falls back to gzip (no zstd in the runner
             # image) - fine at this scale. Split restore/save (the
-            # save-always input is deprecated and demonstrably inert:
-            # run 40279621021's failure skipped "Post Cache node_modules",
-            # so the cache was never saved and every run paid the cold
+            # save-always input is deprecated and demonstrably inert: run
+            # 40279621021's failure skipped "Post Cache node_modules", so
+            # the cache was never saved and every run paid the cold
             # install). The save step below runs with if: always().
             - name: Restore node_modules
               id: restore-node-modules
@@ -95,11 +85,14 @@ jobs:
                   restore-keys: ${{ runner.os }}-node-modules-
 
             # .venv is NOT cached: uv sync is ~20s with the uv download
-            # cache already on a PVC, and a restored .venv hard-codes the
-            # job workdir in its script shebangs, which changes per pod.
+            # cache already on a cache volume, and a restored .venv
+            # hard-codes the job workdir in its script shebangs, which
+            # changes per pod.
 
             # Affected baseline for nx affected. The runner exports no
-            # GITHUB_TOKEN by default, so pass it explicitly.
+            # GITHUB_TOKEN by default, so pass it explicitly. Every job in
+            # the run sees the same head/base SHAs, so each job's
+            # `nx affected` set is identical.
             - name: Set SHAs (nx affected baseline)
               uses: nrwl/nx-set-shas@v5
               env:
@@ -119,11 +112,14 @@ jobs:
 
             # Save even when a later step fails: node_modules is
             # cache-worthy the moment npm ci finishes - gating the save on
-            # a green pipeline delays the restore hit by every failing
-            # run (the deprecated save-always input never fired at all).
+            # a green pipeline delays the restore hit by every failing run
+            # (the deprecated save-always input never fired at all).
             # Skipped when the restore HIT: cache/save re-uploads
             # unconditionally - a hit costs ~40s of re-upload every run
             # (runs 40468045053/40471177041: 9s restore, 40s save).
+            # validate is the ONLY job that saves: the three fan-out jobs
+            # restore concurrently, and a concurrent save on the same key
+            # is a race for nothing.
             - name: Save node_modules
               if: always() && steps.restore-node-modules.outputs.cache-hit != 'true'
               uses: actions/cache/save@v5
@@ -133,6 +129,87 @@ jobs:
 
             - name: Validate pre-commit
               run: uv run pre-commit run --all-files
+
+            # Decrypt every project, not just the affected ones - unit
+            # tests re-execute decrypt when a .env.enc is in the affected
+            # set, and keeping every job's decrypt identical (run-many,
+            # key scoped to the step) is the per-job contract of the split
+            # world. Key scoped to this step.
+            - name: Decrypt project env
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: npx nx run-many -t decrypt
+
+            # Unit suites only (the e2e suites moved to the `e2e` job;
+            # docker-build moved with them - the scan job rebuilds what it
+            # scans via the GHCR buildcache, so no daemon is shared across
+            # jobs). Coverage (-c ci) is this job's product: the sonar
+            # job uploads it. Cache env + PATH come from the pod's
+            # container command; SOPS_AGE_KEY stays as a safeguard - a
+            # test run re-executes `decrypt` when a .env.enc is in the
+            # affected set.
+            - name: Run unit tests
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: npx nx affected -t test -c ci
+
+            # The coverage handoff: sonar's per-project reportPaths are
+            # in-tree relative (<project>/coverage.xml for Python,
+            # coverage/<project>/lcov.info for JS), so the artifact must
+            # keep workspace-relative paths — upload-artifact's default
+            # root is the workspace, and download-artifact restores to the
+            # same root.
+            - name: Upload coverage reports
+              uses: actions/upload-artifact@v7
+              with:
+                  name: coverage-reports
+                  path: |
+                      **/coverage.xml
+                      **/lcov.info
+                  if-no-files-found: ignore
+
+    # ─── e2e: integration suites ───────────────────────────────────────────
+    # The CPU/RAM-heavy half: Playwright/pytest e2e suites with their
+    # compose stacks (Keycloak, Postgres, Elasticsearch, observability) and
+    # testcontainers, on this pod's own privileged dockerd. Runs on its own
+    # pod, so the stacks' ~8 Gi of memory and the suites' CPU no longer
+    # serialize with the sonar queue-wait (DD-232). No sonar/scan/storybook
+    # here — this job ends at teardown.
+    e2e:
+        needs: validate
+        runs-on: atlas-ci-shapea
+        timeout-minutes: 45
+
+        env:
+            NX_LEGACY_AFFECTED: "false"
+
+        permissions:
+            contents: read
+            # Pull the dev container image, push buildcache tags.
+            packages: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Restore node_modules
+              uses: actions/cache/restore@v5
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: ${{ runner.os }}-node-modules-
+
+            - name: Set SHAs (nx affected baseline)
+              uses: nrwl/nx-set-shas@v5
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+
+            - name: Install dependencies
+              run: |
+                  bash .devcontainer/npm.sh
+                  bash .devcontainer/uv.sh
 
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). dhi.io = the
@@ -149,41 +226,37 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-            # Decrypt every project, not just the affected ones - the e2e
-            # stacks read the per-project .env, and sonar needs SONAR_TOKEN.
-            # Key scoped to this step.
             - name: Decrypt project env
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx run-many -t decrypt
 
-            # The test phase: the affected unit + e2e suites. Every step
-            # runs in the SAME container on the SAME dockerd, so the
-            # diagnostics and teardown steps see exactly what the suites
-            # left behind. Cache env + PATH come from the pod's container
-            # command; SOPS_AGE_KEY stays as a safeguard - a test run
-            # re-executes `decrypt` when a .env.enc is in the affected set.
-            # Note on durations: the task graph runs e2e suites concurrently
-            # on this runner, so per-test times in the junit reports are
-            # inflated by CPU contention (a 7s Playwright test can record
-            # 80s+). Read them as relative, not absolute; total wall time is
-            # what the job optimises (DD-225 audit).
+            # The integration phase: the affected e2e suites + the image
+            # builds they depend on (e2e stacks build some apps as a
+            # dependency; docker-build rides the same graph because image
+            # builds depend on source, not on tests, and the daemon is
+            # warm - serialising them behind the test step was a free
+            # minute). Parallelism stays at Nx's default (3): --parallel=5
+            # regressed run 40486044342 - the store-es suite's
+            # testcontainers Elasticsearch missed its 180s health window, a
+            # fastapi auth fixture read-timed out, and the critical path
+            # grew 7m37s -> 10m35s. The node's CPUs are already spent: e2e
+            # suites, the compose stacks' JVMs, and pytest workers share
+            # them.
             #
-            # docker-build rides the same graph: image builds depend on
-            # source, not on tests, and the daemon is warm - serialising them
-            # behind the whole test step was a free minute of wall time.
-            # Parallelism stays at Nx's default (3): --parallel=5 regressed
-            # run 40486044342 - the store-es suite's testcontainers
-            # Elasticsearch missed its 180s health window, a fastapi auth
-            # fixture read-timed out, and the critical path grew 7m37s ->
-            # 10m35s. The node's 6 CPUs are already spent: e2e suites, the
-            # compose stacks' JVMs, and pytest workers share them.
-            - name: Run unit and integration tests
+            # Note on durations: the task graph runs e2e suites
+            # concurrently on this runner, so per-test times in the junit
+            # reports are inflated by CPU contention (a 7s Playwright test
+            # can record 80s+). Read them as relative, not absolute; total
+            # wall time is what the job optimises (DD-225 audit).
+            - name: Run integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t test e2e docker-build -c ci
+              run: npx nx affected -t e2e docker-build -c ci
 
-            # Collect container logs and status for debugging failed tests
+            # Collect container logs and status for debugging failed tests.
+            # Same container, same dockerd as the step above, so this sees
+            # exactly what the suites left behind.
             - name: Collect failure diagnostics
               if: failure()
               run: |
@@ -204,27 +277,14 @@ jobs:
                   path: reports/failure-diagnostics/
                   retention-days: 30
 
-            # Coverage reports are generated by the test step and uploaded here
-            - name: Upload coverage reports
-              uses: actions/upload-artifact@v7
-              with:
-                  name: coverage-reports
-                  path: |
-                      **/coverage.xml
-                      **/lcov.info
-                  if-no-files-found: ignore
-
             # Tear the e2e stacks down as soon as the tests are done:
             # Keycloak/Postgres/Elasticsearch/observability hold ~8 Gi of
-            # the node's memory, and the scan/sonar tail does not need
-            # them. `compose down` per project is the strong form: prune
-            # only sweeps STOPPED containers, and the suites leave their
-            # stacks Up, so the prune pair alone reclaimed one 28.67 kB
-            # corpse every run (40471177041/40486044342/40489544189) while
-            # the stacks rode on. Containers/volumes/networks go, IMAGES
-            # stay - down never touches images, the scan reads them from
-            # this daemon, and the daemon store is warm on the PVC by
-            # design (base layers are the point of it). Deleting containers
+            # the pod's memory. `compose down` per project is the strong
+            # form: prune only sweeps STOPPED containers, and the suites
+            # leave their stacks Up, so the prune pair alone reclaimed one
+            # 28.67 kB corpse every run (40471177041/40486044342/40489544189)
+            # while the stacks rode on. Containers/volumes/networks go,
+            # IMAGES stay - down never touches images. Deleting containers
             # also forecloses compose reusing a stopped one verbatim,
             # command baked with the previous commit (run 40231127680:
             # postgres died on a 2h-old pre-fix container).
@@ -232,6 +292,8 @@ jobs:
             # (testcontainers' ryuk, anonymous volumes).
             # if: always() sweeps on failure/cancel/timeout;
             # continue-on-error: cleanup must never flip the verdict.
+            # (DD-231 — the e2e job is now the only stack owner, so this is
+            # the pipeline's single teardown, not the tail of one job.)
             - name: Tear down test containers
               if: always()
               continue-on-error: true
@@ -243,12 +305,87 @@ jobs:
                   docker container prune -f
                   docker volume prune -af
 
-            # Trivy scans the SBOM of every app image - built in the test
-            # step's graph (docker-build: e2e stacks build some apps as a
-            # dependency, not every affected app has an e2e, so the target
-            # names them all; GHCR buildcache tags keep them near-instant on
-            # the warm daemon, tools/plugins/docker.ts).
-            # docker-vuln-scan -> docker-sbom -> the image on this daemon.
+    # ─── scan-sonar: image scanning + SonarQube ────────────────────────────
+    # The I/O-wait half of the old serial pipeline. Scan and sonar MUST stay
+    # in one job: sonar reads `**/vulnerabilities.sarif` from the work
+    # volume, and the fan-out jobs never share files. Sonar is ~85% server
+    # queue-wait, so this pod's CPUs idle while SonarCloud digests — exactly
+    # the half that now overlaps the e2e job. Coverage arrives as validate's
+    # artifact; images rebuild here from the GHCR buildcache (near-instant
+    # on a warm node — spike probe-b: 48s for the two heaviest dev-stack
+    # images cold, 0.0s once the node has seen the layers).
+    scan-sonar:
+        needs: validate
+        runs-on: atlas-ci-shapea
+        timeout-minutes: 45
+
+        env:
+            NX_LEGACY_AFFECTED: "false"
+
+        permissions:
+            contents: read
+            # Pull the dev container image, push/pull buildcache tags.
+            packages: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Restore node_modules
+              uses: actions/cache/restore@v5
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: ${{ runner.os }}-node-modules-
+
+            - name: Set SHAs (nx affected baseline)
+              uses: nrwl/nx-set-shas@v5
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+
+            - name: Install dependencies
+              run: |
+                  bash .devcontainer/npm.sh
+                  bash .devcontainer/uv.sh
+
+            - name: Registry logins
+              env:
+                  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+                  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+                  GITHUB_TOKEN: ${{ github.token }}
+                  GITHUB_ACTOR: ${{ github.actor }}
+              run: |
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
+                  printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+            - name: Decrypt project env
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: npx nx run-many -t decrypt
+
+            # Coverage from validate, restored to the workspace root so
+            # sonar's in-tree reportPaths resolve:
+            # <project>/coverage.xml (Python), coverage/<project>/lcov.info
+            # (JS). A no-test-run (validate failed) has no artifact —
+            # sonar tolerates missing reports, and this job never starts
+            # when validate fails anyway (needs:).
+            - name: Download coverage reports
+              uses: actions/download-artifact@v8
+              with:
+                  name: coverage-reports
+                  path: .
+
+            # Trivy scans the SBOM of every app image. The images are
+            # built HERE (docker-vuln-scan -> docker-sbom -> the image on
+            # this daemon): the e2e job's daemon is a pod away, so the
+            # split's cost is one rebuild per affected app — the GHCR
+            # buildcache tags keep it near-instant (tools/plugins/docker.ts).
+            - name: Build app images
+              run: npx nx affected -t docker-build
+
             - name: Scan for vulnerabilities
               run: npx nx affected -t docker-vuln-scan -c sarif
 
@@ -259,56 +396,83 @@ jobs:
                   path: "**/vulnerabilities.sarif"
                   if-no-files-found: ignore
 
-            # The Storybook build Chromatic publishes - only when the UI
-            # (or its dependencies) are affected. dist/ lands in the
-            # mounted checkout, where the Chromatic step uploads it. The
-            # --graph=stdout probe keeps the step a no-op (not a green
-            # lie) when the task is out of scope.
-            #
-            # Launched in the BACKGROUND, under the sonar step: sonar is
-            # 85% queue-wait on the SonarQube server (run 40471177041:
-            # 13m28s, critical path 2m4s), so the scanner barely uses the
-            # node while storybook's compiler does - the two overlap almost
-            # for free. The build's exit code lands in .storybook-status,
-            # which the await step below turns into this job's verdict.
-            # setsid + reparenting: the runner kills each step's process
-            # tree when the step ends, so a plain `cmd &` dies at the
-            # boundary — the detached session survives into the sonar step.
-            - name: Start Storybook build (for Chromatic)
-              id: storybook
-              run: |
-                  if npx nx affected -t build-storybook --graph=stdout |
-                      jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' >/dev/null; then
-                      setsid bash -c \
-                          'npx nx build-storybook aurelius-atlas-ui >storybook.log 2>&1; echo $? >.storybook-status' \
-                          </dev/null >/dev/null 2>&1 &
-                      echo "ui-affected=true" >>"$GITHUB_OUTPUT"
-                  else
-                      echo "ui-affected=false" >>"$GITHUB_OUTPUT"
-                  fi
-
-            # SonarQube analysis requires all previously generated test and scan results to be available.
-            # The sonar target dependsOn decrypt (the per-project .env carries SONAR_TOKEN), and with
-            # task-based affected decrypt only rides the graph when a .env.enc is affected — so the age
-            # key is scoped to this step, as the hosted sonar job's "Decrypt secrets for SonarQube" step
-            # did (run 40468045053: keyless decrypt failed every project's .env.enc).
+            # SonarQube analysis requires the test and scan results to be
+            # available: coverage arrived as an artifact, the sarif is
+            # scan's own work-volume output (see the job header - scan and
+            # sonar co-locate for exactly this handoff). The sonar target
+            # dependsOn decrypt (the per-project .env carries SONAR_TOKEN),
+            # and with task-based affected decrypt only rides the graph when
+            # a .env.enc is affected - so the age key is scoped to this
+            # step, as the hosted sonar job's "Decrypt secrets for
+            # SonarQube" step did (run 40468045053: keyless decrypt failed
+            # every project's .env.enc).
             - name: Run SonarQube analysis
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t sonar
 
-            # Sonar is done; collect the background Storybook build. Sonar
-            # outlasts it in every run so far, so this is a join, not a
-            # wait - the loop only matters if that flips.
-            - name: Await Storybook build
-              if: steps.storybook.outputs.ui-affected == 'true'
-              run: |
-                  while [ ! -f .storybook-status ]; do sleep 2; done
-                  cat storybook.log
-                  exit "$(cat .storybook-status)"
+    # ─── chromatic: Storybook build + publish ──────────────────────────────
+    # Its own job now that sonar no longer serializes ahead of it — the
+    # DD-229 setsid background dance existed to hide the storybook build
+    # behind sonar's queue-wait in a single job; in the fan-out, chromatic
+    # runs concurrently from the start and the build is a plain foreground
+    # step. The --graph=stdout probe keeps the job a no-op (not a green
+    # lie) when the UI is out of the affected set.
+    chromatic:
+        needs: validate
+        runs-on: atlas-ci-shapea
+        timeout-minutes: 30
 
-            # Publish Aurelius Atlas UI's Storybook (dist/ is on the work
-            # volume) - only when the build step above produced it.
+        env:
+            NX_LEGACY_AFFECTED: "false"
+
+        permissions:
+            contents: read
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Restore node_modules
+              uses: actions/cache/restore@v5
+              with:
+                  path: node_modules
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: ${{ runner.os }}-node-modules-
+
+            - name: Set SHAs (nx affected baseline)
+              uses: nrwl/nx-set-shas@v5
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+
+            - name: Install dependencies
+              run: |
+                  bash .devcontainer/npm.sh
+                  bash .devcontainer/uv.sh
+
+            - name: Decrypt project env
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+              run: npx nx run-many -t decrypt
+
+            # The Storybook build Chromatic publishes - only when the UI
+            # (or its dependencies) are affected. dist/ lands in the
+            # mounted checkout, where the Chromatic step uploads it.
+            - name: Build Storybook (for Chromatic)
+              id: storybook
+              run: |
+                  if npx nx affected -t build-storybook --graph=stdout |
+                      jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' >/dev/null; then
+                      npx nx build-storybook aurelius-atlas-ui
+                      echo "ui-affected=true" >>"$GITHUB_OUTPUT"
+                  else
+                      echo "ui-affected=false" >>"$GITHUB_OUTPUT"
+                  fi
+
+            # Publish Aurelius Atlas UI's Storybook (dist/ is in the
+            # checkout) - only when the build step above produced it.
             # buildCommand is required: chromaui/action v18 preflights a
             # package.json build script ("build-storybook") when no build
             # command is given, and the root package.json has none (run

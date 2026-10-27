@@ -1,6 +1,7 @@
 # infra/arc
 
-ARC (Actions Runner Controller) deployment for running the `ci` job on GKE.
+ARC (Actions Runner Controller) deployment for running the CI fan-out
+(validate / e2e / scan-sonar / chromatic) on GKE.
 Not an Nx project - plain manifests + script, applied by hand from the dev
 container (it bakes gcloud/kubectl/helm via devcontainer features).
 Plan and phases:
@@ -10,10 +11,10 @@ Setup and the k8s contract: [`README.md`](README.md).
 ## Files
 
 - `arc-shapea-values.yaml` - gha-runner-scale-set values: the job container
-  IS the dev container image (privileged, in-image dockerd, work volume
-  mounted at the runner root's `_work`, cache PVC subPaths).
-- `shapea-cache-pvc.yaml` - PD (RWO) volume: work dir + toolchain caches +
-  dockerd/containerd stores (README has the layout and the reasons).
+  IS the dev container image (privileged, in-image dockerd, work volume a
+  PER-POD emptyDir mounted at the runner root's `_work`, cache subPaths).
+  `minRunners: 2` / `maxRunners: 3` for the fan-out; anti-affinity spreads
+  the three concurrent jobs across nodes.
 - `install.sh` - subcommands: `cluster`, `controller`, `scale-set-shapea`,
   `cache-server`, `status` (`cluster` unused - target is the existing
   atlas-dev Standard cluster). Runner pods schedule on the default pool's
@@ -31,9 +32,13 @@ scale-set-shapea` (the build workflow publishes the tag; helm `--set`
 - The pod is **privileged** (in-image dockerd); treat the container command
   and volumeMounts as one contract - README "What lives where" explains why
   each line exists (every one is a failed trial).
+- The work volume is a per-pod `emptyDir` (DD-232): caches are warm within a
+  pod, cold across pods. There is intentionally **no shared volume** - jobs
+  exchange files through artifacts + the GHCR buildcache, never the disk.
+  Do not re-add a PVC: the RWO cache PD is what pinned the pool to one pod.
 
 ## Removal
 
 `helm uninstall atlas-ci-shapea -n arc-runners` (+ `arc` in `arc-systems`),
-delete the PVC + secrets, git-revert the ci.yaml flip. Nothing in
+delete the secrets, git-revert the ci.yaml flip. Nothing in
 `.github/` hard-codes GKE beyond `runs-on:`.

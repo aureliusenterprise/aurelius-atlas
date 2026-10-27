@@ -32,17 +32,23 @@
 githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
 githubConfigSecret: atlas-arc-auth
 runnerScaleSetName: atlas-ci-shapea
-# One warm (idle) runner pod, always: a queued job then starts on an
-# already-registered runner instead of paying pod creation + JIT
-# registration first. int (NOT 1.0): helm's --set passes a float as a STRING
-# and the chart's template omits runnersMin unless the value is numeric
-# (rev 13: minRunners="1.0" silently = no warm runner). Keep it here in
-# the file - YAML numbers all arrive as the same type, so the chart's
-# gt(minRunners, maxRunners) comparison type-checks.
-minRunners: 1
-# One pod at most: the RWO cache PD (shapea-cache-pvc.yaml) attaches to a
-# single pod, and the ci job is serial today.
-maxRunners: 1
+# Two warm (idle) runner pods, always: the fan-out DAG (ci.yaml DD-232)
+# runs three jobs concurrently, and the validate job is fast - a queued
+# fan-out job then starts on an already-registered runner instead of
+# paying pod creation + JIT registration first (spike 40520070483: jobs
+# started 15-17s after queue on warm pods; a cold node pays ~3 min for
+# the 546 MB runner image). int (NOT 2.0): helm's --set passes a float as
+# a STRING and the chart's template omits runnersMin unless the value is
+# numeric (rev 13: minRunners="1.0" silently = no warm runner). Keep it
+# here in the file - YAML numbers all arrive as the same type, so the
+# chart's gt(minRunners, maxRunners) comparison type-checks.
+minRunners: 2
+# Three pods at most: the three fan-out jobs (e2e, scan-sonar, chromatic)
+# run concurrently (validate + one fan-out ride a warm pair). The old cap
+# of 1 died with the RWO cache PD: the work volume is a per-pod emptyDir
+# now (volumes below), so pods are independent and spread via the
+# anti-affinity below (spike 40520070483 proved concurrency + isolation).
+maxRunners: 3
 
 # runs-on: atlas-ci-shapea (ci.yaml hardcodes it - the job targets this
 # scale set's label explicitly).
@@ -51,6 +57,22 @@ scaleSetLabels:
 
 template:
     spec:
+        # Spread the fan-out: three runner pods on three nodes is the plan
+        # (e2e saturates a node's CPUs and ~10 Gi for the compose stacks;
+        # two jobs packed on one node share 4 CPUs/13.6 Gi and OOM-risk
+        # the stacks). PREFERRED, not required: a packed pod degrades
+        # (CPU contention, DD-229's lesson) where "required" would leave
+        # a job queued forever while the autoscaler provisions.
+        affinity:
+            podAntiAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                    - weight: 100
+                      podAffinityTerm:
+                          topologyKey: kubernetes.io/hostname
+                          labelSelector:
+                              matchLabels:
+                                  actions.github.com/scale-set-name: atlas-ci-shapea
+                                  actions.github.com/scale-set-namespace: arc-runners
         # Pull atlas-ci-runner (private GHCR package) - see README "Shape A"
         # for the one-liner that creates it from the CI PAT.
         imagePullSecrets:
@@ -65,10 +87,10 @@ template:
             runAsUser: 1000 # vscode
             runAsGroup: 999 # docker (socket group)
             supplementalGroups: [999]
-            # The work PVC root becomes group-writable for vscode on
+            # The work volume root becomes group-writable for vscode on
             # (re-)mount. OnRootMismatch: recursive chown only when the
             # volume root's perms change - never on warm pods (the default,
-            # Always, chowns the whole 50 Gi volume on every start).
+            # Always, chowns the whole volume on every start).
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
         # Creates the cache dirs setgid group-999 (the docker group = the
@@ -120,7 +142,7 @@ template:
                       # BuildKit metadata (/var/lib/docker/buildkit) pairs
                       # with containerd's snapshot store (the layer
                       # snapshots ARE containerd snapshots - "buildkit-
-                      # layer-snapshot-v1-*"). Both persist on this PVC
+                      # layer-snapshot-v1-*"). Both persist on this volume
                       # together, but a pod that dies mid-build (or an
                       # infra change that moves one store, trial runs
                       # 40217828572 -> 40219350705) leaves the metadata
@@ -180,7 +202,7 @@ template:
                       # devcontainer.json containerEnv, injected verbatim:
                       export NX_DAEMON=true
                       export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
-                      # Toolchain caches = the PVC subPaths mounted below,
+                      # Toolchain caches = the cache subPaths mounted below,
                       # OUTSIDE the checkout: inside it, the root-owned
                       # mount roots break the next git clean.
                       export UV_CACHE_DIR=/var/cache/ci/uv
@@ -207,7 +229,7 @@ template:
                       # RELATIVE to the runner root, so the fix is the
                       # ARC kubernetes-mode trick: mount the work volume
                       # AT /opt/actions-runner/_work (volumeMounts below)
-                      # - the default then lands on the PVC. Jobs run as
+                      # - the default then lands on the work volume. Jobs run as
                       # uid 1000 with the volume group-writable (fsGroup),
                       # so the old "'/opt/actions-runner/_work/_tool' is
                       # denied" (container layer, root-owned) is gone.
@@ -236,7 +258,7 @@ template:
                   # are the only persistent state.
                   - name: work
                     mountPath: /opt/actions-runner/_work
-                  # Toolchain caches (PVC subPaths, pre-created setgid by
+                  # Toolchain caches (cache subPaths, pre-created setgid by
                   # cache-init). Must match the exports in the command.
                   - name: work
                     mountPath: /var/cache/ci/uv
@@ -257,14 +279,14 @@ template:
                   - name: work
                     mountPath: /var/cache/ci/sonar
                     subPath: .ci-cache/sonar
-                  # dockerd's image store ON THE PVC: compose base images
+                  # dockerd's image store ON THE WORK VOLUME: compose base images
                   # (e2e), pulled base layers, etc. survive the per-pod
                   # wipe. ext4 on a PD supports overlayfs (NFS would not -
                   # Filestore is not used here).
                   - name: work
                     mountPath: /var/lib/docker
                     subPath: .ci-cache/docker
-                  # containerd's root ON THE PVC - the critical one. The
+                  # containerd's root ON THE WORK VOLUME - the critical one. The
                   # image's /etc/containerd/config.toml starts containerd
                   # with root=/var/lib/containerd and dockerd runs with the
                   # containerd-snapshotter enabled (storage-driver=overlayfs,
@@ -290,9 +312,19 @@ template:
                       cpu: "6"
                       memory: 11Gi
         volumes:
-            # One claim for everything (shapea-cache-pvc.yaml): the work
-            # dir (checkout + tool cache), the .ci-cache/* subPaths above
-            # (caches, docker store, containerd root).
+            # One PER-POD work volume (DD-232): the runner's _work, the
+            # .ci-cache/* caches, docker's store, and containerd's root.
+            # The RWO cache PD (shapea-cache-pvc.yaml) is retired - it
+            # pinned maxRunners to 1, and the fan-out's jobs share no
+            # files (artifacts + the GHCR buildcache cross the boundary,
+            # ci.yaml). emptyDir = the node's local PD: warm within a pod
+            # (the registry logins, base-image layers, uv/npm/pre-commit
+            # caches persist across jobs on the same pod), cold across
+            # pods (the runner image + dev-stack bases are baked; spike
+            # probe-b: 48s worst cold, 0.0s when the node has the layers).
+            # 20Gi sizeLimit: per-pod steady state is ~12 Gi (containerd
+            # ~5, work ~1, caches ~3, docker ~3); node allocatable is
+            # 47 Gi, so two packed pods (40 Gi) stay under it.
             - name: work
-              persistentVolumeClaim:
-                  claimName: atlas-shapea-cache
+              emptyDir:
+                  sizeLimit: 20Gi
