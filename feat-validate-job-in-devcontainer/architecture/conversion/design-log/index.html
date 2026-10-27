@@ -6081,6 +6081,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-230-parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-230 — Parallelism stays at the default, the scanner cache moves to the PVC
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11959,6 +11970,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-230-parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-230 — Parallelism stays at the default, the scanner cache moves to the PVC
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13268,6 +13290,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-229--the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon">DD-229</a></td>
 <td>Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss</td>
+<td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-230--parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc">DD-230</a></td>
+<td>Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away</td>
 <td>cross-cutting</td>
 <td>Accepted</td>
 </tr>
@@ -19384,6 +19412,55 @@ recovery), ~2 min from storybook-under-sonar, ~40 s from the conditional
 save. The Storybook log moves to <code>storybook.log</code>, echoed at the join —
 failures appear at the await step, not live. If <code>--parallel=5</code> turns out to
 inflate e2e contention past what it recovers, the knob is one flag.</p>
+<h3 id="dd-230-parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc">DD-230 — Parallelism stays at the default, the scanner cache moves to the PVC<a class="headerlink" href="#dd-230-parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (CI pipeline; supersedes DD-229's parallelism clause)</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Context.</strong> DD-229's <code>--parallel=5</code> run (40486044342) failed two unit
+suites and got slower: the store-es suite's testcontainers Elasticsearch
+missed its 180 s health window, a fastapi auth fixture read-timed out, and
+the critical path grew 7m 37s → 10m 35s (run 17m 36s). Nx's "recoverable
+time" assumes tasks idle on CPU; here the 6-CPU cgroup is already spent on
+compose-stack JVMs (Elasticsearch, Keycloak, Tempo) and pytest workers, so
+the fifth lane buys queueing, not throughput. The same week's sonar
+measurement (store-es, local scanner): paired A/B runs of the as-is config
+vs engine-scoped suffixes (JS/TS/CSS/YAML/JSON/XML emptied) averaged 39.2 s
+vs 39.0 s — no effect. The 3.8 s → 0.2 s "plugin download" saving claimed
+earlier was a cold-vs-warm cache artifact: the scanner's download cache
+(~382 MB — the cloud engine jar, a JRE, 13 plugin jars, content-addressed
+under <code>~/.sonar</code>) is identical for both configs; SonarCloud ships the full
+bundle to the CLI regardless of project languages. What the cache does
+explain is the CI sonar step's shape: the first task per pod pays the cold
+bootstrap (run 40471177041: otel:sonar 109 s vs ~15 s steady-state) because
+HOME is the container layer, wiped on every runner-pod boot, while uv/npm/
+pre-commit caches live on PVC subPaths (arc-shapea-values.yaml).</p>
+<p><strong>Decision.</strong> (a) The test step keeps DD-229's docker-build graft at Nx's
+default parallelism — one flag, DD-229's consequence named it. (b) The
+scanner cache joins the PVC subPath set: <code>SONAR_USER_HOME=/var/cache/ci/sonar</code>
+in the runner command, a <code>.ci-cache/sonar</code> mount, dir created by cache-init
+— every pod's first sonar task stops paying ~94 s of jar downloads, and the
+first pod boot pays them once. (c) Sonar engine scoping is measured away:
+the suffix knobs are NOT added to any sonar-project.properties, retracting
+the store-es trial before it shipped.</p>
+<p><strong>Alternatives.</strong> (a) Keep <code>--parallel=5</code> with longer testcontainers
+timeouts — refused: DD-222..228 spent a week deleting exactly this flake
+class, and tuning a timeout to feed a lane Nx cannot fill is backwards.
+(b) actions/cache for <code>~/.sonar</code> — refused: the PVC subPaths are the
+established shape-A pattern for toolchain caches (no cache-server
+round-trip, warm across pods by construction). (c) Bake <code>~/.sonar</code> into the
+runner image — refused for now: the image rebuild cadence is slower than
+SonarCloud's plugin rotation, and stale cache entries are re-fetched by
+content hash anyway; the PVC gets the same warmth with no skew.</p>
+<p><strong>Consequences.</strong> The parallelism clause of DD-229 is retired (the overlaps
+survive — this run's own failures were unit tests, not the grafted builds).
+The sonar step's per-pod floor drops ~94 s; the engine-scoping idea retires
+with paired-run evidence, and DD-229's "85 % recoverable" sonar figure is
+re-read as the server queue, which no scanner flag fixes — future sonar
+tuning starts from the CI per-task times, not local guesses. The values
+change lands on the next <code>infra/arc/install.sh</code> run (helm upgrade evicts
+in-flight runner pods — run it between jobs).</p>
 
 
 
