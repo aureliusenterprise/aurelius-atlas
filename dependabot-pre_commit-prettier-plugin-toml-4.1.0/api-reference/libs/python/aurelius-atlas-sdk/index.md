@@ -453,7 +453,7 @@ Configure a PostgreSQL test container to enforce TLS, mirroring dev/postgres.
 
 Call before the container starts. The server comes up with ssl=on and a hostssl-only pg\_hba.conf, so plaintext TCP connections are rejected server-side; clients connect with sslmode=verify-full against `certs.ca_bundle_path` (host: :data:`TLS_POSTGRES_HOST`).
 
-The hardened image runs as a fixed non-root user that cannot read host-owned key material it does not own, so — like dev/postgres — the certificates are copied into the container filesystem with strict permissions before startup (Postgres also refuses world-readable keys).
+The hardened image runs as a fixed non-root user that cannot read host-owned key material it does not own, so — like dev/postgres — the certificates are copied into the container filesystem with strict permissions before startup (Postgres also refuses world-readable keys). The copy lands on an explicit `/tmp` tmpfs: the image's own `/tmp` is 2775 root:999 (setgid, no sticky bit) in the digest a warm CI image store serves, where uid 70 gets EACCES on `mktemp -d` (run 40240896184); pinning `mode=1777` keeps the boot independent of which build the daemon happens to have cached.
 
 ### tls\_certificates
 
