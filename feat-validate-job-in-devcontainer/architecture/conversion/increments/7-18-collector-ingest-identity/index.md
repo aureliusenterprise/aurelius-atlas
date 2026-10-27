@@ -48,11 +48,10 @@ None against Apache Atlas (no Atlas behaviour is touched). The posture choices �
   - `test__collector_accepts_a_service_jwt` — a client-credentials JWT (the e2e Keycloak, `otel-atlas-server`) pushed to 4319 answers 2xx, and the probe span reads back from Tempo stamped `otel.ingest.client=otel-atlas-server` with `enduser.id=""` (CIA-06, CIA-07, CIA-09 — the webapp suite, Tempo-wired)
   - `test__collector_rejects_the_shared_token_on_the_service_leg` — the shared token on 4319 answers 401 (CIA-06, CIA-08)
   - `test__collector_rejects_a_jwt_on_the_legacy_leg` — a service JWT on 4321 answers 401 (CIA-08)
-  - `test__collector_accepts_the_dev_plaintext_issuer` — a client-credentials JWT minted from the plaintext :8080 listener is accepted on the per-service leg (4319): the collector's second OIDC provider validates the dev listener's iss, so the mint standardization on :8443 (DD-202) keeps the human browser's issuer valid (CIA-11)
-  - `test__collector_accepts_the_shared_ingest_token` — **updated**: the legacy leg (4321) accepts the shared token (CIA-10; the 7.17 form tested 4319, now an OIDC port)
-  - `test__collector_publishes_are_loopback_pinned` — **updated**: the published socket set is 4317–4321 (CIA-10, CIA-03)
-  - `test__producers_keep_flowing_with_the_token` — unchanged assertion: accepted exports within the window prove the graduated producers (pullers, atlas-server behind the webapp proxy) and the legacy producers (Keycloak-native) all present valid credentials (CIA-07, CIA-10)
   - 7.17's browser-leg tests (`test__otel_proxy_*`, `test__collector_rejects_unauthenticated_ingest`, `test__collector_accepts_a_user_token_on_the_browser_leg`, `test__collector_rejects_the_shared_token_on_the_browser_leg`, `test__collector_stamps_the_user_onto_the_telemetry`) — unchanged: the browser leg is untouched
+
+> \[!NOTE\] Four dev-posture tests this increment's acceptance named — `test__collector_accepts_the_dev_plaintext_issuer` (CIA-11), `test__collector_accepts_the_shared_ingest_token` (CIA-10), `test__collector_publishes_are_loopback_pinned` (CIA-10, CIA-03) and `test__producers_keep_flowing_with_the_token` (CIA-07, CIA-10) — were removed by DD-228: they asserted the dev stack's deployment posture (the plaintext :8080 listener, the loopback publishes, dev puller liveness), not behaviour the product ships. The per-service leg's JWT proofs (CIA-06/07/09 via `test__collector_accepts_a_service_jwt`) and the leg separation (CIA-08) stay in the webapp suite; the two-listener acceptance (CIA-11) rides the collector's shipped OIDC config and review.
+
 - Unit (pytest, server): `ClientCredentialsTokenSource` mints with client\_secret\_basic, caches until refresh-ahead, refreshes per expiry, survives mint failure (export proceeds header-less, the 401 path); the exporters attach the bearer header per export (CIA-07).
 - Run: the dev stack plus producers; `curl` matrix on the CA-verified TLS:
 

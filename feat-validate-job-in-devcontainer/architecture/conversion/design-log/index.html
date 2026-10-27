@@ -6059,6 +6059,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-228-dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-228 — Dev-posture tests leave the suites: the sweep of DD-223's rule, applied
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11915,6 +11926,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-228-dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-228 — Dev-posture tests leave the suites: the sweep of DD-223's rule, applied
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13212,6 +13234,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production">DD-227</a></td>
 <td>The store-es e2e suite is removed: it evaluated the dev environment, not production</td>
+<td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied">DD-228</a></td>
+<td>Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour</td>
 <td>cross-cutting</td>
 <td>Accepted</td>
 </tr>
@@ -19251,6 +19279,47 @@ leaves with the suite. The traceability report gains four explicitly-untested
 rules beside ESD-04, with this entry as the note. The dev/elasticsearch puller
 and its DD-226 restart posture stay — Grafana reads them; only the CI assertion
 on their warm-up is gone.</p>
+<h3 id="dd-228-dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied">DD-228 — Dev-posture tests leave the suites: the sweep of DD-223's rule, applied<a class="headerlink" href="#dd-228-dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (test strategy; follows DD-223, DD-225, DD-227)</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Decision.</strong> Six e2e tests are removed: the webapp suite's
+<code>test__browser_facing_tls_verifies_against_ca</code>,
+<code>test__collector_accepts_the_dev_plaintext_issuer</code>,
+<code>test__collector_accepts_the_shared_ingest_token</code>,
+<code>test__collector_publishes_are_loopback_pinned</code> and
+<code>test__producers_keep_flowing_with_the_token</code>, and the frontend-example suite's
+<code>test__browser_facing_tls_verifies_against_ca</code>. Their conftest support leaves
+with them (<code>plaintext_service_token</code>, <code>collector_container</code> and the dev issuer
+constants). The rules they pinned — CIA-03, CIA-07, CIA-10, CIA-11 and
+SHL-11's TLS half — keep their specs, with an "untested by choice" note where
+each acceptance list named the test.</p>
+<p><strong>Reason.</strong> DD-223's rule — e2e proves Aurelius behaviour, not the dev box —
+applied as a sweep. Each cut test asserted dev deployment posture: a
+certificate chain signed by the workspace mkcert CA, the collector's
+127.0.0.1 port publishes, the plaintext :8080 Keycloak listener only the dev
+browser uses, the shared ingest token's dev-only legacy leg, and the dev
+pullers' liveness read through the Docker API. None of it exists in production.
+Two of them (the loopback-pin, the producers-flow) were also the suite's
+flake-prone container-internals tests — the same family DD-227 deleted at the
+store-es end. The proofs that ride shipped config stay: the CIA-01/06/08
+credential rejects, the browser/service-leg accepts, the proxy paths, the CSP.</p>
+<p><strong>Alternatives.</strong> (a) Move them to a CI "infra validation" suite — refused:
+the dev stack's readiness is the compose healthchecks' job (DD-226), and a
+separate infra suite is where flakes go to be ignored. (b) Keep CIA-07's
+producers-flow as the telemetry canary — refused: Grafana's stack dashboard
+shows the pullers live, and every producer's own suite going green proves its
+export; a 90 s log-poll on the dev box proves less. (c) Keep the TLS test,
+verify against the container's own CA — refused: the CA is the workspace's, so
+the chain proves dev wiring by construction.</p>
+<p><strong>Consequences.</strong> The webapp e2e drops from 36 to 31 tests per browser (the
+two container-internals tests carried 120 s/90 s poll floors); the
+frontend-example suite from 17 to 16. Four CIA rules and SHL-11's TLS half join
+the fleet's explicitly-untested list, each with its note in the increment spec
+that owns it — the ledger DD-223 started, and the shape-A runner's first
+failure (DD-227's ESD-06) is exactly the flake class this sweep thins.</p>
 
 
 

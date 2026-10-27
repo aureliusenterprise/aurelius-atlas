@@ -74,7 +74,7 @@ None against Apache Atlas: the Aurelius interface is Aurelius's own, and the Atl
 ## Acceptance
 
 - `apps/aurelius-atlas-webapp/tests` (co-located `.spec.ts`, Vitest) — config parsing and the failure modes of SHL-02, the metrics-endpoint derivation of SHL-14; the route table of SHL-04, SHL-05, SHL-06; the root component of SHL-03; the locale service of SHL-07. SHL-13.
-- `apps/aurelius-atlas-webapp/e2e/` — pytest + Playwright against the built image: SHL-12, plus SHL-11's TLS and proxy paths and the CSP check.
+- `apps/aurelius-atlas-webapp/e2e/` — pytest + Playwright against the built image: SHL-12, plus SHL-11's TLS and proxy paths and the CSP check. (DD-228: SHL-11's TLS half lost its e2e check — the CA-verified handshake pinned the workspace mkcert CA, i.e. dev deployment material; the shipped nginx config's TLS block is reviewed, the proxy paths and CSP stay e2e-guarded.)
 - `scripts/check-webapp-purity.sh` (or an ESLint rule set) — WBP-02, SHL-01, SHL-09, SHL-10: greps the tree for `@NgModule`, `platformBrowserDynamic`, `@models4insight/`, `@ngx-translate/`, `environment`, and a state-owning `new BehaviorSubject` outside RxJS interop. Run in CI and by `nx run aurelius-atlas-webapp:check-purity`.
 - Dictionary completeness for SHL-08 — a Vitest test that loads the Aurelius JSON from the cloned reference checkout path recorded in the test, and asserts each key and value appears in both catalogues. Reference JSON is vendored into `tests/fixtures/` (DD-128), so the test runs offline.
 - Umbrella checks: `nx build`, `nx test -c ci`, `nx lint`, `nx e2e` for the app.

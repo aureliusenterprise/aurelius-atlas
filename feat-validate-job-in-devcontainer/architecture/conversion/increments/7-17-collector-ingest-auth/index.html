@@ -8046,6 +8046,20 @@ recorded in DD-193, not in <code>deviations.md</code> (which tracks Atlas-parity
   dashboard shows the pullers and Keycloak flowing)</li>
 </ul>
 </li>
+</ul>
+<blockquote>
+<p>[!NOTE]
+Three of this increment's acceptance tests —
+<code>test__collector_accepts_the_shared_ingest_token</code>,
+<code>test__collector_publishes_are_loopback_pinned</code> and
+<code>test__producers_keep_flowing_with_the_token</code> — were removed by DD-228: they
+asserted the dev stack's deployment posture (loopback publishes, dev puller
+liveness, the shared token's dev leg), not behaviour the product ships. The
+auth-posture proofs that ride shipped config (the CIA-01 rejects, the
+browser-leg accepts) stay in the webapp suite. The dev ingest liveness is
+visible in Grafana's stack dashboard.</p>
+</blockquote>
+<ul>
 <li>Unit (vitest, <code>aurelius-atlas-observability</code>): <code>createAureliusOtelIngestAuth</code>
   sends the bearer token of an authenticated session, nothing for a signed-out
   one or before the client attaches, and the current token when refresh fails

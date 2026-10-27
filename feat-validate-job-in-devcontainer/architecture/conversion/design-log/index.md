@@ -220,6 +220,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-217](<#dd-217--the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74>) | The search client lands on both sides of the wire, ahead of 7.4 | cross-cutting | Accepted |
 | [DD-226](<#dd-226--the-dev-stacks-restart-windows-are-unbounded>) | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up | cross-cutting | Accepted |
 | [DD-227](<#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production>) | The store-es e2e suite is removed: it evaluated the dev environment, not production | cross-cutting | Accepted |
+| [DD-228](<#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied>) | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour | cross-cutting | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3016,3 +3017,17 @@ The injectable seam, the handlers, and the wire behaviour are untouched. **Reaso
 **Alternatives.** (a) Keep it with a larger budget — refused: the 420s fix was already tuning a test that should not exist. (b) Keep ESD-02/ESD-05 as e2e against the dev store — refused: the server e2e suite proves TLS + auth + store round-trips from the Atlas side, on the production client path. (c) Move the suite to CI infra validation — refused: dev-stack health is the compose healthchecks' job, already wired to `up --wait`.
 
 **Consequences.** CI's longest e2e suite disappears (7 min worst case, 0s green — the ESD-06 poll dominated it); the 420s `METRICS_TIMEOUT_SECONDS` leaves with the suite. The traceability report gains four explicitly-untested rules beside ESD-04, with this entry as the note. The dev/elasticsearch puller and its DD-226 restart posture stay — Grafana reads them; only the CI assertion on their warm-up is gone.
+
+### DD-228 — Dev-posture tests leave the suites: the sweep of DD-223's rule, applied
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (test strategy; follows DD-223, DD-225, DD-227)
+- **Date:** 2026-10-27
+
+**Decision.** Six e2e tests are removed: the webapp suite's `test__browser_facing_tls_verifies_against_ca`, `test__collector_accepts_the_dev_plaintext_issuer`, `test__collector_accepts_the_shared_ingest_token`, `test__collector_publishes_are_loopback_pinned` and `test__producers_keep_flowing_with_the_token`, and the frontend-example suite's `test__browser_facing_tls_verifies_against_ca`. Their conftest support leaves with them (`plaintext_service_token`, `collector_container` and the dev issuer constants). The rules they pinned — CIA-03, CIA-07, CIA-10, CIA-11 and SHL-11's TLS half — keep their specs, with an "untested by choice" note where each acceptance list named the test.
+
+**Reason.** DD-223's rule — e2e proves Aurelius behaviour, not the dev box — applied as a sweep. Each cut test asserted dev deployment posture: a certificate chain signed by the workspace mkcert CA, the collector's 127.0.0.1 port publishes, the plaintext :8080 Keycloak listener only the dev browser uses, the shared ingest token's dev-only legacy leg, and the dev pullers' liveness read through the Docker API. None of it exists in production. Two of them (the loopback-pin, the producers-flow) were also the suite's flake-prone container-internals tests — the same family DD-227 deleted at the store-es end. The proofs that ride shipped config stay: the CIA-01/06/08 credential rejects, the browser/service-leg accepts, the proxy paths, the CSP.
+
+**Alternatives.** (a) Move them to a CI "infra validation" suite — refused: the dev stack's readiness is the compose healthchecks' job (DD-226), and a separate infra suite is where flakes go to be ignored. (b) Keep CIA-07's producers-flow as the telemetry canary — refused: Grafana's stack dashboard shows the pullers live, and every producer's own suite going green proves its export; a 90 s log-poll on the dev box proves less. (c) Keep the TLS test, verify against the container's own CA — refused: the CA is the workspace's, so the chain proves dev wiring by construction.
+
+**Consequences.** The webapp e2e drops from 36 to 31 tests per browser (the two container-internals tests carried 120 s/90 s poll floors); the frontend-example suite from 17 to 16. Four CIA rules and SHL-11's TLS half join the fleet's explicitly-untested list, each with its note in the increment spec that owns it — the ledger DD-223 started, and the shape-A runner's first failure (DD-227's ESD-06) is exactly the flake class this sweep thins.
