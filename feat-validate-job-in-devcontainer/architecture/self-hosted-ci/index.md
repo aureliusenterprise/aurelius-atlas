@@ -10,8 +10,9 @@ flowchart LR
     ARC -->|creates per job| POD[runner pod<br/>ephemeral, privileged]
     subgraph NODE[GKE atlas-dev default pool]
         POD
-        PVC[(PD PVC atlas-shapea-cache<br/>work + caches + containerd store)]
+        ED[(emptyDir work volume<br/>work + caches + containerd store)]
     end
+    POD -->|actions/cache| CS[cache server<br/>20 Gi PD + LRU]
     POD -->|job container IS the image| DC[atlas-ci-runner<br/>dev container<br/>in-image dockerd]
     DC --> GHCR[(GHCR<br/>atlas-ci-runner<br/>buildcache-* tags)]
 ```
@@ -26,7 +27,7 @@ Parity with the developer container is by construction: the CI steps run in the 
 
 ## Caching (the point of moving off hosted)
 
-The tree is **disposable** (the GitHub-hosted model): `ci.yaml` checks out with actions/checkout's default clean, and caches live OUTSIDE it. `node_modules` comes back via `actions/cache` against [`github-actions-cache-server`](<https://gha-cache-server.falcondev.io>) (its own PD volume; private repos get no cache service on self-hosted runners without one — the forked runner build that makes the stock step work is documented in [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>)). The uv download cache, the pre-commit home, and containerd's image store live on the runner pod's per-pod `emptyDir` work volume (DD-232) as subPath mounts — warm within a pod, cold across pods. The warm work tree is retired: on Shape A it only survived in-pod restarts, leaked root-owned dirs and staged diagnostics between jobs, and saved \~70s of install the cache server now covers. Layout + the reasons for every mount are in [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>).
+The tree is **disposable** (the GitHub-hosted model): `ci.yaml` checks out with actions/checkout's default clean, and caches live OUTSIDE it. `node_modules` comes back via `actions/cache` against [`github-actions-cache-server`](<https://gha-cache-server.falcondev.io>) (its own PD volume; private repos get no cache service on self-hosted runners without one — the forked runner build that makes the stock step work is documented in [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>)). The uv download cache, the pre-commit home, and containerd's image store live on the runner pod's per-pod `emptyDir` work volume (DD-232) as subPath mounts — warm within a pod, cold across pods; uv and pre-commit bridge across pods through the cache server too, keyed on `uv.lock` / `.pre-commit-config.yaml` (DD-233 — the fan-out pool churns pods, and a cold-pod pre-commit pays 66 s of hook-env reinstalls without the bridge). The warm work tree is retired: on Shape A it only survived in-pod restarts, leaked root-owned dirs and staged diagnostics between jobs, and saved \~70s of install the cache server now covers. Layout + the reasons for every mount are in [`infra/arc/README.md`](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/infra/arc/index.md>).
 
 ## Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)
 
@@ -43,8 +44,8 @@ Phase 3 removed the Phase-2 bridge: the composite action, `ci-canary.yaml`, `arc
 
 - **Privileged job container = root on the CI node.** Jobs are our own code; the shared cluster + node separation bound the blast radius. The fallback if that ever stops being acceptable is K8s-native e2e (no privileged daemon) — a bigger lift.
 - **Parallel pool (`maxRunners: 3`, per-pod emptyDir).** The fan-out (DD-232) runs `validate` → {`e2e`, `scan-sonar`, `chromatic`} on up to three pods; a preferred pod anti-affinity spreads them over the cluster's three nodes, and packing two jobs on one node (4 CPU / 13.6 Gi allocatable) degrades to CPU contention — DD-229's measured failure mode. The e2e job owns the dev-stack memory alone now (\~8 Gi on its pod), so no co-scheduled job pays it.
-- **Per-pod caches (emptyDir).** Caches are warm within a pod and cold across pods: a new pod re-pulls base layers (measured 48 s worst case, 0.0 s once the node's image cache has the layers) and re-warms the toolchain caches. `minRunners: 2` keeps a warm pair so fan-out jobs start in \~15 s; Filestore RWX (a shared warm cache) is blocked by the project's billing-account policy; content-addressed caches make per-pod copies safe.
-- **`actions/cache` unavailable** for private repos on self-hosted — the reason caches are volumes, not a proxied cache API. Do not re-add a proxy.
+- **Per-pod caches (emptyDir).** Caches are warm within a pod and cold across pods: a new pod re-pulls base layers (measured 48 s worst case, 0.0 s once the node's image cache has the layers) — the toolchain caches (uv, pre-commit, sonar, node\_modules) bridge that gap via the cache server (DD-233), the containerd store does not. `minRunners: 2` keeps a warm pair so fan-out jobs start in \~15 s; Filestore RWX (a shared warm volume) is blocked by the project's billing-account policy; content-addressed caches make per-pod copies safe.
+- **The cache server is the only cache service** — stock `actions/cache` is unavailable for private repos on self-hosted, so the forked-runner + `CUSTOM_ACTIONS_RESULTS_URL` wiring *is* the cache API here. If it breaks, every restore silently no-ops (the steps are best-effort by design) and CI slows to cold-install everywhere; healthcheck the service when install times spike.
 - **Ops ownership**: ARC chart upgrades, classic-PAT rotation (90-day), GHCR `buildcache-*` retention. A few hours/quarter.
 - **Cost**: two warm pods idle between runs (`minRunners: 2`); the atlas-dev cluster fee is not charged to CI. Spot preemption = job requeue, not corruption.
 
