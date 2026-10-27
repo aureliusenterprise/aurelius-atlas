@@ -244,7 +244,13 @@ jobs:
                   if-no-files-found: ignore
 
             # SonarQube analysis requires all previously generated test and scan results to be available.
+            # The sonar target dependsOn decrypt (the per-project .env carries SONAR_TOKEN), and with
+            # task-based affected decrypt only rides the graph when a .env.enc is affected — so the age
+            # key is scoped to this step, as the hosted sonar job's "Decrypt secrets for SonarQube" step
+            # did (run 40468045053: keyless decrypt failed every project's .env.enc).
             - name: Run SonarQube analysis
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t sonar
 
             # The Storybook build Chromatic publishes - only when the UI
