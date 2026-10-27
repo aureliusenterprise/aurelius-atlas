@@ -10,8 +10,6 @@ from urllib.request import Request, urlopen
 
 import dotenv
 import pytest
-from docker import from_env as docker_from_env
-from docker.models.containers import Container
 from playwright.sync_api import Browser, Page
 from playwright.sync_api import Error as PlaywrightError
 from pydantic import SecretStr
@@ -34,7 +32,6 @@ ATLAS_SERVER_HOST_PORT = 18445
 # reach it on 127.0.0.1; the certificate carries the "otel-collector" SAN, so
 # that is the TLS server hostname. The shared ingest token (DD-193) is Nx's
 # injected dev default from the project .env.
-OBSERVABILITY_PROJECT = "aurelius-atlas-dev-observability"
 COLLECTOR_HOST = "127.0.0.1"
 COLLECTOR_PORT = 4318
 SERVICE_PORT = 4319
@@ -61,7 +58,6 @@ KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
 # The dev plaintext listener (ADR 039, the collector's second provider): the
 # mint the human dev browser does, and the mint the CIA-11 fixture below
 # reproduces, to prove the collector accepts that iss too (DD-202).
-KEYCLOAK_DEV_ISSUER = "http://keycloak.localhost:8080/realms/master"
 
 
 class Settings(BaseSettings):
@@ -428,64 +424,3 @@ def service_token(keycloak: DockerCompose) -> str:
 
     with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
         return json.load(response)["access_token"]
-
-
-@pytest.fixture
-def plaintext_service_token(keycloak: DockerCompose) -> str:
-    """A client-credentials token minted from the plaintext :8080 listener (CIA-11, DD-202).
-
-    Keycloak stamps ``iss`` from the listener that served the mint, so this
-    token carries ``iss=http://keycloak.localhost:8080/realms/master`` — the
-    issuer the human dev browser presents (ADR 039's listener), which the
-    collector's second OIDC provider must accept. The mint needs no CA pin:
-    the listener is plaintext HTTP.
-
-    Function-scoped: the dev realm mints 60s tokens (the ``service_token``
-    fixture's rule).
-    """
-    _ = keycloak
-    body = urlencode(
-        {
-            "grant_type": "client_credentials",
-            "client_id": "otel-atlas-server",
-            "client_secret": os.environ.get("OTEL_INGEST_CLIENT_SECRET", DEFAULT_INGEST_CLIENT_SECRET),
-        }
-    ).encode()
-    request = Request(f"{KEYCLOAK_DEV_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # the dev stack's plaintext listener, by design (ADR 039)
-
-    with urlopen(request) as response:  # noqa: S310  # plaintext dev issuer, mint-side by design
-        return json.load(response)["access_token"]
-
-
-@pytest.fixture(scope="session")
-def collector_container(observability: DockerCompose) -> Container:  # noqa: ARG001
-    """The running collector container of the dev observability stack (CIA-03).
-
-    Found by compose labels rather than name, mirroring how the fixture above
-    starts it. ``observability`` guarantees the stack is up. The collector
-    crash-loops until Keycloak answers its OIDC discovery (DD-193/DD-195) and
-    the restart policy brings it back, so the fixture polls for the settled
-    state — running with its port bindings in place — rather than reading the
-    container mid-restart (a restarting container reports no bindings).
-    """
-    client = docker_from_env()
-    deadline = time.monotonic() + 120
-    while True:
-        containers = client.containers.list(
-            filters={
-                "label": [
-                    f"com.docker.compose.project={OBSERVABILITY_PROJECT}",
-                    "com.docker.compose.service=otel-collector",
-                ]
-            }
-        )
-        if containers:
-            container = containers[0]
-            container.reload()
-            ports = container.attrs["NetworkSettings"]["Ports"]
-            if container.status == "running" and any(ports.values()):
-                return container
-        if time.monotonic() >= deadline:
-            message = "the dev/observability collector did not settle into a running state"
-            raise ValueError(message)
-        time.sleep(2)

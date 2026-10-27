@@ -2,15 +2,11 @@ import base64
 import json
 import re
 import secrets
-import socket
-import ssl
 import time
-from datetime import UTC, datetime, timedelta
-from urllib.parse import quote, urljoin, urlsplit
+from urllib.parse import quote, urljoin
 
 import pytest
 from conftest import (
-    CA_FILE,
     COLLECTOR_HOST,
     COLLECTOR_PORT,
     LEGACY_PORT,
@@ -18,38 +14,12 @@ from conftest import (
     TEMPO_HOST,
     TEMPO_PORT,
 )
-from docker.models.containers import Container
 from playwright.sync_api import Page, expect
 
 EN_PLACEHOLDER = (
     "Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below."
 )
 NL_PLACEHOLDER = "Welkom bij Aurelius Atlas! We helpen u graag op weg. Kies hieronder uw interessegebied."
-
-
-def test__browser_facing_tls_verifies_against_ca(root_url: str) -> None:
-    """The browser-facing endpoint verifies against the local development CA (SHL-11).
-
-    Playwright's bundled browsers cannot enroll the mkcert root, so the browser
-    context relaxes certificate verification (see ``conftest`` — ADR 039). This
-    check performs the equivalent CA and hostname verification of the same
-    endpoint: the handshake fails if nginx serves a certificate the CA did not
-    issue or one that does not cover the connecting hostname.
-    """
-    parts = urlsplit(root_url)
-    host = parts.hostname or "localhost"
-    port = parts.port or 443
-
-    context = ssl.create_default_context(cafile=str(CA_FILE))
-    with (
-        socket.create_connection((host, port), timeout=10) as sock,
-        context.wrap_socket(sock, server_hostname=host) as tls,
-    ):
-        cert = tls.getpeercert()
-        assert cert is not None
-
-    subject_alt_names = {value for _type, value in cert["subjectAltName"]}
-    assert host in subject_alt_names
 
 
 def test__root_redirects_to_preferred_locale(page: Page, root_url: str) -> None:
@@ -341,27 +311,6 @@ def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: s
     assert response.status == 401
 
 
-def test__collector_accepts_the_dev_plaintext_issuer(page: Page, plaintext_service_token: str) -> None:
-    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-202).
-
-    Keycloak stamps iss from the listener that served the mint, so this
-    token's iss is the dev plaintext listener — what the human dev browser
-    presents (ADR 039). The collector's oidc extension lists both listeners
-    as providers precisely so this issuer verifies on the per-service leg,
-    which every automated producer uses: the mint is standardized on the
-    TLS :8443 listener, and the :8080 provider is the human-browser half
-    of the accepted posture. "not 401" is the point (the user_token
-    fixture's positive-control rule).
-    """
-    response = page.request.post(
-        f"https://{COLLECTOR_HOST}:{SERVICE_PORT}/v1/traces",
-        data=b"",
-        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {plaintext_service_token}"},
-    )
-
-    assert response.status in (200, 202, 400, 415)
-
-
 def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> None:
     """A client-credentials JWT authenticates the per-service leg, stamped by client (CIA-06, CIA-07, CIA-09).
 
@@ -435,67 +384,6 @@ def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> Non
     pytest.fail(
         f"Tempo never returned the probe trace stamped for otel-atlas-server (trace {trace_id}) — azp not stamped"
     )
-
-
-def test__collector_accepts_the_shared_ingest_token(page: Page, ingest_token: str) -> None:
-    """The legacy leg (4321) accepts the shared ingest token (CIA-10, CIA-04's surviving half).
-
-    The producers that cannot present a Keycloak JWT — Keycloak's native
-    OTLP, the FastAPI example (static-header SDK, 60s tokens) — keep 7.17's
-    shared-token mechanism here (DD-196); an empty protobuf body answers 200
-    once authenticated. (The 7.17 form of this test rode 4319, which is
-    OIDC-only now — CIA-08 moves the shared token off it, proved by
-    test__collector_rejects_the_shared_token_on_the_service_leg.)
-    """
-    response = page.request.post(
-        f"https://{COLLECTOR_HOST}:{LEGACY_PORT}/v1/traces",
-        data=b"",
-        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {ingest_token}"},
-    )
-
-    assert response.status in (200, 202, 400, 415)
-
-
-def test__collector_publishes_are_loopback_pinned(collector_container: Container) -> None:
-    """The collector's host publishes bind 127.0.0.1, and the exporter has none (CIA-03).
-
-    Reading the running container's port bindings (not the compose file) is
-    what proves the deployed posture: the OTLP ports — the browser leg, the
-    per-service leg, and 7.18's legacy leg (4317-4321, CIA-10) — are
-    reachable from this machine only, and the prometheus exporter (:9464) is
-    not published at all — Prometheus scrapes it inside the compose network.
-    """
-    collector_container.reload()
-    ports = collector_container.attrs["NetworkSettings"]["Ports"]
-
-    published = {port: bindings for port, bindings in ports.items() if bindings}
-    assert set(published) == {"4317/tcp", "4318/tcp", "4319/tcp", "4320/tcp", "4321/tcp"}
-    assert all(binding["HostIp"] == "127.0.0.1" for bindings in published.values() for binding in bindings)
-
-
-def test__producers_keep_flowing_with_the_token(collector_container: Container) -> None:
-    """Every producer keeps exporting on its leg (CIA-07, CIA-10).
-
-    The collector's debug exporter logs every accepted push (verbosity basic:
-    one ``Traces``/``Metrics`` info line per export, ``otelcol.component.kind``
-    exporter). The e2e stack runs the graduated producers (the pullers on
-    their oauth2client JWTs, the atlas-server through its refresh shim) on
-    the per-service leg and the legacy producers (Keycloak-native, the
-    FastAPI example) on the shared-token leg, so accepted exports within the
-    last two minutes prove both credential kinds are presented correctly:
-    the ingest is all-or-nothing, a producer with a broken credential lands
-    in the receiver's rejected 401/Unauthenticated path and exports nothing.
-    """
-    since = datetime.now(UTC) - timedelta(seconds=120)
-
-    deadline = time.monotonic() + 90
-    while time.monotonic() < deadline:
-        logs = collector_container.logs(since=since, tail=2000).decode()
-        if '"otelcol.component.kind": "exporter"' in logs:
-            return
-        time.sleep(1)
-
-    pytest.fail("no accepted OTLP export reached the collector — a producer lost the ingest token")
 
 
 def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:

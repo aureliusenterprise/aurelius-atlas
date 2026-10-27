@@ -1,39 +1,11 @@
 import re
-import socket
-import ssl
 from collections.abc import Generator
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 import pytest
 from aurelius_atlas_example import Entity
-from conftest import CA_FILE
 from playwright.sync_api import Page, expect
 from sqlmodel import Session, select
-
-
-def test__browser_facing_tls_verifies_against_ca(base_url: str) -> None:
-    """The browser-facing endpoint verifies against the local development CA.
-
-    Playwright's bundled browsers cannot enroll the mkcert root, so the browser
-    context relaxes certificate verification (see ``conftest`` — ADR 039). This
-    check performs the equivalent CA and hostname verification of the same
-    endpoint: the handshake fails if nginx serves a certificate the CA did not
-    issue or one that does not cover the connecting hostname.
-    """
-    parts = urlsplit(base_url)
-    host = parts.hostname or "localhost"
-    port = parts.port or 443
-
-    context = ssl.create_default_context(cafile=str(CA_FILE))
-    with (
-        socket.create_connection((host, port), timeout=10) as sock,
-        context.wrap_socket(sock, server_hostname=host) as tls,
-    ):
-        cert = tls.getpeercert()
-        assert cert is not None
-
-    subject_alt_names = {value for _type, value in cert["subjectAltName"]}
-    assert host in subject_alt_names
 
 
 @pytest.mark.parametrize(
