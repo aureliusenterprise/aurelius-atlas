@@ -110,11 +110,6 @@
     "aliases": []
   },
   {
-    "version": "feat-validate-job-in-devcontainer",
-    "title": "feat-validate-job-in-devcontainer",
-    "aliases": []
-  },
-  {
     "version": "feat-search-results",
     "title": "feat-search-results",
     "aliases": []
