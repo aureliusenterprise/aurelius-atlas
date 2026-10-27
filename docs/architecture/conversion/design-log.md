@@ -6906,13 +6906,16 @@ dissolves. (d) `requiredDuringScheduling` anti-affinity — refused: three
 nodes is the steady state, not a guarantee; a job queued forever while
 the autoscaler provisions is worse than a packed pod.
 
-**Consequences.** Wall-time target: 38 min → ~26–28 min (validate ~7 min
-
-- the longest fan-out branch: e2e ~17 min with its own stacks,
-  scan-sonar ~15 min mostly server-queue). The DD-229 setsid/await dance
-  retires with the single job. Each job pays checkout+install (~2 min,
-  node_modules from the cache server) — the fork's price, ~3×. The
-  `e2e` job is now the pipeline's only stack owner, so DD-231's teardown
-  is a single named step, not a tail. Caches are per-pod: a pod respawn
-  cold-starts uv/npm/sonar/docker once (48 s–2 min), the warm pair absorbs
-  it. Next free DD: 233.
+**Consequences.** Wall-time target: 38 min → ~26–28 min: validate ~7 min,
+then the longest fan-out branch (e2e ~17 min with its own stacks,
+scan-sonar ~15 min mostly server-queue). Measured on the first run
+(40531441140, green): **27m 48s** — validate 8m 55s gates chromatic
+3m 46s, scan-sonar 16m 20s (sonar 11m 12s of server queue, 2m 49s the
+buildcache rebuild) and e2e 17m 42s (15m 32s of suites) on three pods;
+the e2e job is the critical path, 2m 19s off the sonar branch. The
+DD-229 setsid/await dance retires with the single job. Each job pays
+checkout+install (~2 min, node_modules from the cache server) — the
+fork's price, ~3×. The `e2e` job is now the pipeline's only stack owner,
+so DD-231's teardown is a single named step, not a tail. Caches are
+per-pod: a pod respawn cold-starts uv/npm/sonar/docker once (48 s–2 min),
+the warm pair absorbs it. Next free DD: 233.
