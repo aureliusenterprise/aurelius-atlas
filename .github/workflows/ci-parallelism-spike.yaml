@@ -35,25 +35,26 @@ jobs:
     probe-a:
         runs-on: atlas-ci-shapea-spike
         steps:
-            - name: Report position
-              id: t0
-              run: echo "start=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+            - name: Report position and boot cost
+              run: |
+                  now="$(date -u +%H:%M:%S)"
+                  boot="$(stat -c %Y / 2>/dev/null || echo 0)"
+                  echo "start=$now boot_age=$(( $(date +%s) - boot ))s pod=$(hostname)" >> "$GITHUB_STEP_SUMMARY"
 
             - name: Volume identity (emptyDir, per pod)
               run: |
-                  echo "pod=$(hostname) node=$(curl -sH 'Metadata-Flavor: Google' \
-                      http://metadata.google.internal/computeMetadata/v1/instance/name)" \
-                      | tee -a"$GITHUB_STEP_SUMMARY"
+                  echo "node=$(curl -sH 'Metadata-Flavor: Google' \
+                      http://metadata.google.internal/computeMetadata/v1/instance/name)" >> "$GITHUB_STEP_SUMMARY"
                   echo "### work volume backing:" >>"$GITHUB_STEP_SUMMARY"
                   findmnt -no SOURCE,FSTYPE,SIZE /opt/actions-runner/_work >>"$GITHUB_STEP_SUMMARY" 2>/dev/null \
-                      || df -h /opt/actions-runner/_work | tee -a"$GITHUB_STEP_SUMMARY"
+                      || df -h /opt/actions-runner/_work >>"$GITHUB_STEP_SUMMARY"
                   echo "### cache subPaths (cache-init, from the prod values):" >>"$GITHUB_STEP_SUMMARY"
                   ls /var/cache/ci/ | tr '\n' ' ' >>"$GITHUB_STEP_SUMMARY"
                   echo "### SONAR_USER_HOME (the prod values' export):" >>"$GITHUB_STEP_SUMMARY"
                   echo "${SONAR_USER_HOME:-(unset)}" >>"$GITHUB_STEP_SUMMARY"
 
             - name: Daemon up (privileged dockerd per pod)
-              run: docker info --format 'server={{.ServerVersion}} driver={{.Driver}}' | tee -a"$GITHUB_STEP_SUMMARY"
+              run: docker info --format 'server={{.ServerVersion}} driver={{.Driver}}' >> "$GITHUB_STEP_SUMMARY"
 
             - name: Write the A marker (isolation half 1)
               # The work volume's root in the runner container is
@@ -63,7 +64,7 @@ jobs:
               run: |
                   mkdir -p /opt/actions-runner/_work/.ci-cache
                   echo "A-$(hostname)-$(date -u +%H:%M:%S)" > /opt/actions-runner/_work/.ci-cache/spike-marker
-                  cat /opt/actions-runner/_work/.ci-cache/spike-marker | tee -a"$GITHUB_STEP_SUMMARY"
+                  cat /opt/actions-runner/_work/.ci-cache/spike-marker >> "$GITHUB_STEP_SUMMARY"
 
             - name: Overlap window
               run: sleep 180
@@ -71,28 +72,29 @@ jobs:
             - name: Marker intact and unmodified (isolation half 2)
               run: |
                   case "$(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" in
-                      A-*) echo "marker still ours: $(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" | tee -a"$GITHUB_STEP_SUMMARY";;
-                      *) echo "::error::marker was overwritten - a job from the other pod shares this volume"; exit 1;;
+                      A-*) echo "marker still ours" >>"$GITHUB_STEP_SUMMARY";;
+                      *) echo "::error::marker was overwritten - a job from the other pod shares this volume" >>"$GITHUB_STEP_SUMMARY"; exit 1;;
                   esac
 
             - name: Report end
-              run: echo "end=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+              run: echo "end=$(date -u +%H:%M:%S)" >> "$GITHUB_STEP_SUMMARY"
 
     probe-b:
         runs-on: atlas-ci-shapea-spike
         steps:
-            - name: Report position
-              id: t0
-              run: echo "start=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+            - name: Report position and boot cost
+              run: |
+                  now="$(date -u +%H:%M:%S)"
+                  boot="$(stat -c %Y / 2>/dev/null || echo 0)"
+                  echo "start=$now boot_age=$(( $(date +%s) - boot ))s pod=$(hostname)" >> "$GITHUB_STEP_SUMMARY"
 
             - name: Volume identity (emptyDir, per pod)
               run: |
-                  echo "pod=$(hostname) node=$(curl -sH 'Metadata-Flavor: Google' \
-                      http://metadata.google.internal/computeMetadata/v1/instance/name)" \
-                      | tee -a"$GITHUB_STEP_SUMMARY"
+                  echo "node=$(curl -sH 'Metadata-Flavor: Google' \
+                      http://metadata.google.internal/computeMetadata/v1/instance/name)" >> "$GITHUB_STEP_SUMMARY"
                   echo "### work volume backing:" >>"$GITHUB_STEP_SUMMARY"
                   findmnt -no SOURCE,FSTYPE,SIZE /opt/actions-runner/_work >>"$GITHUB_STEP_SUMMARY" 2>/dev/null \
-                      || df -h /opt/actions-runner/_work | tee -a"$GITHUB_STEP_SUMMARY"
+                      || df -h /opt/actions-runner/_work >>"$GITHUB_STEP_SUMMARY"
 
             - name: Cold-pull cost of the e2e base images
               env:
@@ -116,7 +118,7 @@ jobs:
               run: |
                   mkdir -p /opt/actions-runner/_work/.ci-cache
                   echo "B-$(hostname)-$(date -u +%H:%M:%S)" > /opt/actions-runner/_work/.ci-cache/spike-marker
-                  cat /opt/actions-runner/_work/.ci-cache/spike-marker | tee -a"$GITHUB_STEP_SUMMARY"
+                  cat /opt/actions-runner/_work/.ci-cache/spike-marker >> "$GITHUB_STEP_SUMMARY"
 
             - name: Overlap window
               run: sleep 180
@@ -124,9 +126,9 @@ jobs:
             - name: Marker is B's, never A's (isolation half 2)
               run: |
                   case "$(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" in
-                      B-*) echo "marker is ours: $(cat /opt/actions-runner/_work/.ci-cache/spike-marker)" | tee -a"$GITHUB_STEP_SUMMARY";;
-                      *) echo "::error::marker is not ours - the two pods share a volume"; exit 1;;
+                      B-*) echo "marker is ours" >>"$GITHUB_STEP_SUMMARY";;
+                      *) echo "::error::marker is not ours - the two pods share a volume" >>"$GITHUB_STEP_SUMMARY"; exit 1;;
                   esac
 
             - name: Report end
-              run: echo "end=$(date -u +%H:%M:%S)" | tee -a"$GITHUB_STEP_SUMMARY"
+              run: echo "end=$(date -u +%H:%M:%S)" >> "$GITHUB_STEP_SUMMARY"
