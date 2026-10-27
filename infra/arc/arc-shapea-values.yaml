@@ -86,7 +86,7 @@ template:
                   - /bin/bash
                   - -c
                   - |
-                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd /work/.ci-cache/sops
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd /work/.ci-cache/sops /work/.ci-cache/sonar
                       # sops needs SOPS_AGE_KEY_FILE to EXIST even when
                       # SOPS_AGE_KEY carries the key; the checkout is
                       # ephemeral (clean tree, no keys.txt exclude), so the
@@ -186,6 +186,13 @@ template:
                       export UV_CACHE_DIR=/var/cache/ci/uv
                       export npm_config_cache=/var/cache/ci/npm
                       export PRE_COMMIT_HOME=/var/cache/ci/pre-commit
+                      # SonarScanner's download cache (the cloud engine jar,
+                      # the JRE, the per-language plugin jars - ~380 MB):
+                      # without it, every pod's first sonar task pays the
+                      # cold bootstrap (run 40471177041: otel:sonar 109s vs
+                      # ~15s steady-state; the rest ride the warm in-pod
+                      # cache). Content-addressed - safe to share.
+                      export SONAR_USER_HOME=/var/cache/ci/sonar
                       # docker-in-docker feature containerEnv:
                       export DOCKER_BUILDKIT=1
                       # Work folder: the JIT self-registration (the
@@ -245,6 +252,11 @@ template:
                   - name: work
                     mountPath: /var/cache/ci/sops
                     subPath: .ci-cache/sops
+                  # SonarScanner download cache (see SONAR_USER_HOME in the
+                  # command): plugin/engine jars survive the per-pod wipe.
+                  - name: work
+                    mountPath: /var/cache/ci/sonar
+                    subPath: .ci-cache/sonar
                   # dockerd's image store ON THE PVC: compose base images
                   # (e2e), pulled base layers, etc. survive the per-pod
                   # wipe. ext4 on a PD supports overlayfs (NFS would not -

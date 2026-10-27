@@ -172,14 +172,16 @@ jobs:
             # docker-build rides the same graph: image builds depend on
             # source, not on tests, and the daemon is warm - serialising them
             # behind the whole test step was a free minute of wall time.
-            # --parallel=5: Nx's default (3) left the 6-CPU container idle
-            # (run 40471177041: 9m22s recoverable, Nx's own recommendation);
-            # one CPU stays headroom for the e2e stacks' containers, which
-            # share this cgroup.
+            # Parallelism stays at Nx's default (3): --parallel=5 regressed
+            # run 40486044342 - the store-es suite's testcontainers
+            # Elasticsearch missed its 180s health window, a fastapi auth
+            # fixture read-timed out, and the critical path grew 7m37s ->
+            # 10m35s. The node's 6 CPUs are already spent: e2e suites, the
+            # compose stacks' JVMs, and pytest workers share them.
             - name: Run unit and integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t test e2e docker-build -c ci --parallel=5
+              run: npx nx affected -t test e2e docker-build -c ci
 
             # Collect container logs and status for debugging failed tests
             - name: Collect failure diagnostics
