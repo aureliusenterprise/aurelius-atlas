@@ -6103,6 +6103,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-232 — The CI pipeline is a fan-out DAG; the pool is per-pod emptyDir
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12003,6 +12014,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-232 — The CI pipeline is a fan-out DAG; the pool is per-pod emptyDir
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13324,6 +13346,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-231--teardown-downs-the-compose-stacks-prune-only-sweeps-corpses">DD-231</a></td>
 <td>CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail</td>
+<td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-232--the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir">DD-232</a></td>
+<td>CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir</td>
 <td>cross-cutting</td>
 <td>Accepted</td>
 </tr>
@@ -19524,6 +19552,73 @@ takes, naming each project as it goes. The stopped-container foreclosure
 the old comment guarded (run 40231127680) carries over unchanged. The
 step's log is the verification: it names each project it downs, and the
 prune tail stops reporting one 28.67 kB corpse as the step's whole output.</p>
+<h3 id="dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir">DD-232 — The CI pipeline is a fan-out DAG; the pool is per-pod emptyDir<a class="headerlink" href="#dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> cross-cutting (CI pipeline; supersedes DD-229's single-job clause)</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Context.</strong> The single shape-A job (38m 04s green, run 40501485238) is
+two workloads stitched serially: the test phase (~17 min of CPU/RAM
+saturation — e2e suites plus compose-stack JVMs) and the sonar step
+(13m 28s wall, ~85% of it SonarCloud <em>server</em> queue — 2m 4s of scanner,
+DD-230's re-read). One job on one 6-CPU cgroup can overlap them only by
+the DD-229 setsid dance, which hides Storybook, not sonar. The pool
+forbade splitting: the 50 Gi cache PD is ReadWriteOnce, so
+<code>arc-shapea-values.yaml</code> pins <code>maxRunners: 1</code> — a second runner pod
+cannot mount the work volume, and the docs recorded "a job on a second
+node starts cold". A spike scale set (own helm release, prod untouched)
+with an emptyDir work volume and <code>maxRunners: 2</code> measured the two open
+questions (run 40520070483, probes 14:20:02Z→14:23:09Z and
+14:20:03Z→14:23:59Z): two jobs on the pool label run CONCURRENTLY on
+separate pods; per-pod markers on the work volume stay per-pod (no
+shared state); JIT pod boot is 15–17 s on a warm node (a cold node pays
+~3 min pulling the 546 MB runner image); and a cold daemon pulls the two
+heaviest dev-stack images in 48 s, the second in 0.0 s once the node has
+the layers (GKE image-cache sharing). Node facts measured at the same
+time: 3 × (4 CPU / 13.6 Gi allocatable), so pod <em>requests</em> of 1 CPU/4 Gi
+let three runner pods pack on ONE node — anti-affinity, not requests, is
+what spreads them.</p>
+<p><strong>Decision.</strong> (a) <code>ci.yaml</code> becomes a fan-out DAG: <code>validate</code> (checkout,
+install, pre-commit --all-files, decrypt, unit <code>test</code>, coverage upload)
+gates three concurrent jobs — <code>e2e</code> (the <code>e2e</code> + <code>docker-build</code> graph,
+diagnostics, DD-231 teardown), <code>scan-sonar</code> (image rebuild from the
+buildcache, trivy, sarif, <code>sonar</code>), and <code>chromatic</code> (Storybook build +
+publish). Scan and sonar co-locate in one job: the sarif handoff stays
+on the work volume. (b) Cross-job state rides artifacts (coverage
+upload/download) or rebuilds (GHCR buildcache images) — jobs never share
+files through the volume. (c) The pool: the RWO PD retires; the work
+volume becomes a per-pod 20 Gi <code>emptyDir</code> (warm within a pod — caches,
+image stores, registry auth survive between jobs; cold across pods —
+48 s worst measured). <code>minRunners: 2</code> (warm pair: fan-out jobs start in
+~15 s; a cold-node start pays the image pull), <code>maxRunners: 3</code> (the
+three fan-out jobs), a PREFERRED pod anti-affinity on
+<code>kubernetes.io/hostname</code> (spreads across nodes; packing degrades
+gracefully where <code>required</code> would deadlock a queue), requests stay
+1 CPU/4 Gi (limits 6 CPU/11 Gi), and the cluster autoscaler ceiling goes
+2 → 3 nodes.</p>
+<p><strong>Alternatives.</strong> (a) Per-pod PDs via a StorageClass — dead before the
+spike: ARC builds job pods from <code>template.spec</code>, with no StatefulSet and
+no <code>volumeClaimTemplates</code> (chart 0.15.1), so per-runner PVCs need an
+external provisioner webhook. (b) Filestore (RWX) shared cache — blocked
+by billing-account policy (on record). (c) Keep the single job and
+parallelise inside it — exhausted: DD-229/230 measured the in-job
+overlaps and the parallelism knob; the serial test→sonar wall is the
+server queue, which only a second job (running <em>while</em> the first waits)
+dissolves. (d) <code>requiredDuringScheduling</code> anti-affinity — refused: three
+nodes is the steady state, not a guarantee; a job queued forever while
+the autoscaler provisions is worse than a packed pod.</p>
+<p><strong>Consequences.</strong> Wall-time target: 38 min → ~26–28 min (validate ~7 min</p>
+<ul>
+<li>the longest fan-out branch: e2e ~17 min with its own stacks,
+  scan-sonar ~15 min mostly server-queue). The DD-229 setsid/await dance
+  retires with the single job. Each job pays checkout+install (~2 min,
+  node_modules from the cache server) — the fork's price, ~3×. The
+  <code>e2e</code> job is now the pipeline's only stack owner, so DD-231's teardown
+  is a single named step, not a tail. Caches are per-pod: a pod respawn
+  cold-starts uv/npm/sonar/docker once (48 s–2 min), the warm pair absorbs
+  it. Next free DD: 233.</li>
+</ul>
 
 
 
