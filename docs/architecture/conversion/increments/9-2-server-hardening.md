@@ -1,7 +1,7 @@
 # 9.2 Server hardening: TLS, error detail, security headers
 
 - **Status:** in progress
-- **Pull request:** –
+- **Pull request:** [#154](https://github.com/aureliusenterprise/aurelius-atlas/pull/154)
 - **Records:** DD-234, DD-235, DD-236; DV-85, DV-86; supersedes parts of SRV-03 and SRV-04 (0.5)
 
 ## Scope
