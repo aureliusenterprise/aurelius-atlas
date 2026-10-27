@@ -115,6 +115,11 @@
     "aliases": []
   },
   {
+    "version": "feat-search-results",
+    "title": "feat-search-results",
+    "aliases": []
+  },
+  {
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
