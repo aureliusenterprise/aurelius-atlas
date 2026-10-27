@@ -6969,3 +6969,13 @@ LRU at 90 %) grows by uv (~2–3 Gi) + pre-commit (~0.5 Gi) + sonar
 (~0.4 Gi) — headroom verified against the 18 Gi eviction line. The
 "4 s/20 s" memory is restored where it applies (warm installs on any
 pod); the ephemeral-tree rule is untouched. Next free DD: 234.
+
+Measured (run 40549779734, fixed fleet, all caches warm on the server):
+all restores hit and extract clean (zero `Cannot utime`), validate's
+pre-commit step 181s -> **82s** (the old always-warm PD pod was 83s -
+parity), uv install 26s, scan-sonar 16m 20s -> **12m 2s** (the sonar
+jar cache rides the bridge too), validate 8m 55s -> **7m 0s**, full
+pipeline 27m 48s -> **25m 48s** with the e2e suites now the critical
+path. The restore step's metadata bug (subPath mount roots stay
+root-owned under fsGroup - k8s applies it to volume roots only;
+cache-init chowns them now) shipped in the same change.
