@@ -42,11 +42,22 @@ _PG_HBA_CONF = (
 )
 
 _TLS_STARTUP_COMMAND = (
-    "install -m 600 /certs/server.pem /tmp/server.pem &&"
-    " install -m 600 /certs/server-key.pem /tmp/server-key.pem &&"
+    # The copy (not a direct bind-mount at the ssl paths) is Postgres' own
+    # rule: the key must be 0600 and owned by the server user, and a bind
+    # mount exposes host ownership. mktemp -d, not a fixed /tmp path: the
+    # target must be born with the running user's ownership every boot -
+    # fixed paths collide on a warm daemon ("File exists", run 40225940082;
+    # then EACCES over a foreign-owned file, sticky /tmp, run 40228376483).
+    # The template is ABSOLUTE: the hardened image is alpine/busybox, whose
+    # mktemp with no template writes tmp.XXXXXX in the CWD (the postgres
+    # user's CWD is / - "mktemp: : Permission denied", run 40229842880);
+    # glibc (dev laptops) defaults to /tmp, so only CI caught this.
+    "d=$(mktemp -d /tmp/atlas-certs.XXXXXX) &&"
+    " install -m 600 /certs/server.pem $d/server.pem &&"
+    " install -m 600 /certs/server-key.pem $d/server-key.pem &&"
     " exec docker-entrypoint.sh -c ssl=on"
-    " -c ssl_cert_file=/tmp/server.pem"
-    " -c ssl_key_file=/tmp/server-key.pem"
+    " -c ssl_cert_file=$d/server.pem"
+    " -c ssl_key_file=$d/server-key.pem"
     " -c hba_file=/certs/pg_hba.conf"
 )
 
@@ -126,8 +137,21 @@ def configure_tls_postgres(container: PostgresContainer, certs: TlsCertificates)
     host-owned key material it does not own, so — like dev/postgres — the
     certificates are copied into the container filesystem with strict
     permissions before startup (Postgres also refuses world-readable keys).
+    The copy lands on an explicit ``/tmp`` tmpfs: the image's own ``/tmp``
+    is 2775 root:999 (setgid, no sticky bit) in the digest a warm CI image
+    store serves, where uid 70 gets EACCES on ``mktemp -d`` (run
+    40240896184); pinning ``mode=1777`` keeps the boot independent of
+    which build the daemon happens to have cached.
     """
     container.with_kwargs(entrypoint=["/bin/sh", "-c"])
+    # with_tmpfs_mount, NOT with_kwargs(tmpfs=...): testcontainers' own
+    # start() (stock 4.15) passes self.tmpfs to create() as an explicit
+    # keyword, so a tmpfs entry in _kwargs is a second one - TypeError:
+    # create() got multiple values for keyword argument 'tmpfs' (CI run
+    # 40270804386; the kwarg form only survived on daemons whose image
+    # /tmp is the 1777 fresh-pull default, where the mount is a no-op
+    # failure).
+    container.with_tmpfs_mount("/tmp", "mode=1777,exec")  # noqa: S108 - container mount target, not a host path
     container.with_env("POSTGRES_HOST_AUTH_METHOD", "scram-sha-256")
     container.with_command([_TLS_STARTUP_COMMAND])
     container.with_volume_mapping(certs.directory, "/certs", "ro")

@@ -96,7 +96,7 @@ async def _fetch_trace(trace_id: str) -> str | None:
 
 @pytest.mark.covers(rules=["CIA-07"])
 async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient) -> None:
-    """elasticsearch-py's native OTel spans ride the server trace (DD-210, DD-196).
+    """elasticsearch-py's native OTel spans ride the server trace (DD-210, DD-196, DD-222).
 
     elasticsearch-py >= 8.13 emits a span per store operation on the global
     tracer, on by default; ``setup_telemetry`` installs that tracer, so the
@@ -107,15 +107,23 @@ async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient)
     Tempo, and require BOTH the server's request span and an
     ``elasticsearch``-attributed span under the caller's trace id — the store
     round-trip is visible inside the request it served.
+
+    The probe also pins the stable HTTP semantic conventions (DD-222): the
+    request span must carry ``http.request.method``/``http.route`` and none of
+    the old ``http.method``/``http.url`` set, so one trace carries one
+    convention — the store spans' ``db.system.name`` is stable natively, and
+    the image's ``OTEL_SEMCONV_STABILITY_OPT_IN=http`` makes the ASGI spans
+    match. A regression to the old set on the request span fails the probe.
     """
     trace_id = secrets.token_hex(16)
     parent_id = secrets.token_hex(8)
 
-    # BatchSpanProcessor exports on a 5s cycle and Tempo's live store indexes
-    # within seconds; poll trace-by-id (404 first, data after — the webapp
-    # suite's stamping-probe pattern, 120s). The GET repeats every cycle: a
-    # store span lost in a collector/Tempo hiccup is replaced by the next
-    # cycle's, so the probe fails only when ES emits no spans at all.
+    # The e2e container exports on a 1s BatchSpanProcessor cycle (DD-225) and
+    # Tempo's live store indexes within seconds; poll trace-by-id (404 first,
+    # data after — the webapp suite's stamping-probe pattern, 120s). The GET
+    # repeats every cycle: a store span lost in a collector/Tempo hiccup is
+    # replaced by the next cycle's, so the probe fails only when ES emits no
+    # spans at all.
     deadline = time.monotonic() + 120
     while time.monotonic() < deadline:
         response = await client.get(
@@ -127,6 +135,7 @@ async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient)
         if body is not None:
             request_span = False
             store_span = False
+            request_span_stable = False
             for line in body.strip().splitlines():
                 for batch in json.loads(line).get("batches", []):
                     for scope in batch.get("scopeSpans", []):
@@ -134,10 +143,19 @@ async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient)
                             attrs = {a["key"]: a["value"].get("stringValue", "") for a in span.get("attributes", [])}
                             if span.get("name") == "GET /api/atlas/v2/types/typedefs/headers":
                                 request_span = True
+                                # Stable HTTP semconv (DD-222): the ASGI span carries
+                                # the http.request.method/http.route set, never the
+                                # old http.method/http.url one.
+                                request_span_stable = attrs.get("http.request.method") == "GET" and not (
+                                    {"http.method", "http.url", "http.status_code"} & attrs.keys()
+                                )
                             if attrs.get("db.system.name") == "elasticsearch":
                                 store_span = True
-            if request_span and store_span:
+            if request_span and store_span and request_span_stable:
                 return
-        await asyncio.sleep(3)
+        await asyncio.sleep(1)
 
-    pytest.fail(f"Tempo never showed a store span inside the request trace {trace_id} — ES not instrumented")
+    pytest.fail(
+        f"Tempo never showed a stable-semconv store span inside the request trace {trace_id} "
+        "— ES not instrumented, or the ASGI span fell back to the old conventions (DD-222)"
+    )

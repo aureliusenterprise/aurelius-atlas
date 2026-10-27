@@ -1,0 +1,33 @@
+# github-actions-cache-server (https://gha-cache-server.falcondev.io) - the
+# actions/cache backend for the Shape A runners (infra/arc/README.md "Cache
+# server"). Release: gha-cache-server, namespace: arc-runners.
+#
+# Why: private-repo caches are unavailable to self-hosted runners on
+# GitHub's hosted cache service; this MIT server implements the same
+# Actions Cache API, so the stock actions/cache step works unmodified.
+# Auth is the runner's own OIDC token (verified against
+# token.actions.githubusercontent.com) - no shared secret, and cache
+# scope is per-repo like GitHub's.
+#
+# The runners reach it via the cluster DNS name (see ACTIONS_RESULTS_URL
+# in arc-shapea-values.yaml); artifact upload/download passthrough goes
+# to GitHub's results receiver (the chart default).
+fullnameOverride: gha-cache-server # service DNS = the apiBaseUrl below
+config:
+    # Must be the URL the RUNNER uses (uploads/downloads point back at
+    # it). Trailing slash required by the runner's cache client.
+    apiBaseUrl: http://gha-cache-server.arc-runners.svc.cluster.local:3000/
+    storage:
+        driver: filesystem
+    db:
+        driver: sqlite
+persistentVolumeClaim:
+    # 20 Gi pd-balanced: node_modules (~1 GB) + .venv (~0.7 GB) + the
+    # 90-day cleanup / LRU headroom. The server self-evicts at 90% full.
+    storage: 20Gi
+resources:
+    requests:
+        cpu: 100m
+        memory: 256Mi
+    limits:
+        memory: 1Gi

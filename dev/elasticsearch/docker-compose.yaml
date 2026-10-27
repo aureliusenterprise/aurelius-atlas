@@ -13,6 +13,18 @@ services:
 
     elasticsearch:
         image: dhi.io/elasticsearch:9.5-debian13
+        # No user: override. The image's root entrypoint (chown + gosu to uid
+        # 1000) is the supported boot path; starting the container directly at
+        # uid 1000 makes the entrypoint fail instantly (exit 1, CI run
+        # 40275092577). The coredump_filter write the JVM does at bootstrap is
+        # refused on GKE nodes for every container, uid 0, 1000, or otherwise
+        # (runs 40237701606..40274182707); the -javaagent below is what fixes
+        # that, not the user.
+        # Memory cap (CI capacity): the e2e fan-out runs this stack inside
+        # the CI runner's dind daemon on a shared node, where an uncapped
+        # JVM competes with the parallel suites. 2g = the 1g heap below plus
+        # off-heap headroom.
+        mem_limit: 2g
         depends_on:
             volume-init:
                 condition: service_completed_successfully
@@ -21,8 +33,12 @@ services:
             # password of the built-in elastic user. Every other setting is in
             # config/elasticsearch.yml. ${VAR:?} guards: an empty password would
             # start a cluster nobody can log in to.
+            # -javaagent: tools/es-coredump-agent (GKE nodes deny the
+            # coredump_filter write ES does at bootstrap - fatal since 9.x,
+            # cosmetic setting; see the agent's header. Harmless elsewhere:
+            # the write goes to /tmp, which ES would use anyway.)
+            ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP:?} -Xmx${ELASTICSEARCH_HEAP:?} -javaagent:/agent/coredump-noop.jar
             ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
-            ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP:?} -Xmx${ELASTICSEARCH_HEAP:?}
         healthcheck:
             # The hardened image has no curl; openssl speaks HTTPS, verifies the
             # server against the workspace CA, and authenticates as elastic.
@@ -40,6 +56,7 @@ services:
             - ${ELASTICSEARCH_PORT}:9200
         volumes:
             - data:/usr/share/elasticsearch/data
+            - ../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
             - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
             # Not config/certs: see config/elasticsearch.yml.
             - ./certs:/usr/share/elasticsearch/config/tls:ro
@@ -56,12 +73,23 @@ services:
         # the dev collector, so dev/observability never learns this project
         # exists. Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
         # their export.
-        restart: on-failure:15
+        # Unbounded: with a Keycloak-gated mint, the restart budget must be
+        # in TIME, not attempts. Docker's on-failure backoff doubles
+        # (100 ms -> 60 s), so ":15" burns out in ~6 minutes - and if
+        # Keycloak's TLS listener is not ready by then (the e2e fan-out
+        # shares one 4-vCPU node), docker stops restarting the puller
+        # permanently and the slice's metrics never arrive: run
+        # 40292544843, ESD-06 polled 420 s against a dead puller. The 60 s
+        # backoff ceiling means an unbounded puller lands on its feet
+        # within a minute of Keycloak readiness; a permanently bad config
+        # shows as a restarting container in `docker compose ps`.
+        restart: on-failure
         environment:
             ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
             # Per-service ingest identity (7.18, DD-196): the puller mints

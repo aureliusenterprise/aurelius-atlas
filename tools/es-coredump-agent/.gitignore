@@ -1,0 +1,3 @@
+# The agent jar is COMMITTED (compose/testcontainers bind-mount it at fixed paths;
+# dev containers and CI share one binary). Rebuild after editing the source:
+# bash tools/es-coredump-agent/build.sh

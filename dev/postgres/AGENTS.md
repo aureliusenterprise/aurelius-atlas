@@ -34,9 +34,10 @@ workspace-wide rules live in the root `AGENTS.md`.
   the container at creation, so an env default let suite order split it from
   the collector's validator; the collector validates both listeners, and
   every producer mints at :8443). The puller carries
-  `restart: on-failure:15` (the DD-195 boot race, issuer-shaped: the mint
-  needs Keycloak up). The slice no longer carries the shared ingest token —
-  its puller was the only consumer.
+  `restart: on-failure`, unbounded (the DD-195 boot race, issuer-shaped: the
+  mint needs Keycloak up; DD-226 — an attempt count burns out before
+  Keycloak is reliably up). The slice no longer carries the shared ingest
+  token — its puller was the only consumer.
 - Database `aurelius`, credentials from `.env` dev defaults — the same values
   the FastAPI example's settings model reads.
 - The `Entity` table is created by the application at startup in dev; there are

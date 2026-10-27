@@ -21,9 +21,17 @@ pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 @pytest.fixture(scope="module")
 def es_settings() -> Generator[StoreSettings]:
-    """One container for the whole module; tests clean up the indices they create."""
+    """One container for the whole module; tests clean up the indices they create.
+
+    ``request_timeout`` is raised from the 10 s default: every client's first
+    request is the transport's product-check HEAD, bounded by the CLIENT
+    timeout - on a runner shared by the whole e2e fan-out that HEAD can pass
+    10 s before the server answers (CI runs 40282797027, 40286077875,
+    40289090955: elastic_transport.ConnectionTimeout). Fast-failure tests
+    below override it back down.
+    """
     with elasticsearch_container() as settings:
-        yield settings
+        yield with_changes(settings, request_timeout=60)
 
 
 @pytest.fixture
@@ -79,7 +87,16 @@ async def test__check_health_is_up_when_replicas_cannot_be_placed(store: Elastic
     index = "sto-05-yellow"
     await store.client.indices.create(index=index, settings={"number_of_shards": 1, "number_of_replicas": 1})
     try:
-        await store.client.cluster.health(index=index, wait_for_status="yellow", timeout="30s")
+        # request_timeout must exceed the server-side timeout: cluster.health
+        # blocks for up to `timeout` waiting for yellow, and the client's
+        # default 3 s request timeout kills that wait on a loaded runner
+        # (CI run 40282797027: elastic_transport.ConnectionTimeout).
+        await store.client.cluster.health(
+            index=index,
+            wait_for_status="yellow",
+            timeout="30s",
+            request_timeout=60,  # pyright: ignore[reportCallIssue] - transport kwarg, not in the generated signature
+        )
         report = await check_health(store.client)
     finally:
         await store.client.indices.delete(index=index)

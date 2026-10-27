@@ -10,9 +10,10 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   `health.py` (`check_health`, `HealthReport`), `errors.py`
 - `aurelius_atlas_store_es/testing/` — `fake.py` (`FakeClient`, no extra deps) and `container.py`
   (TLS-enabled Elasticsearch via testcontainers, `testing` extra) — DD-007
-- `tests/` — unit tests against the fake, integration tests against the container
-- `e2e/` — ESD-01 to ESD-06 against the dev store that `nx e2e` starts through the implicit dependency
-  on `aurelius-atlas-dev-elasticsearch`; the persistence test runs `docker compose down`/`up` on it
+- `tests/` — unit tests against the fake, integration tests against the container; ESD-03
+  (credential hygiene) is a unit test in `tests/test__dev_elasticsearch_config.py`
+- No `e2e/` (DD-227): the old suite evaluated the dev environment's state (ESD-01, ESD-02, ESD-05,
+  ESD-06), not this library's production behaviour — see the note in the increment spec
 
 ## Wiring Checklist
 
@@ -21,8 +22,9 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
   `docs/architecture/conversion/increments/0-2-elasticsearch-infrastructure.md`; every test names the
   functions and rules it checks with `@pytest.mark.covers` (ADR 056); `aurelius-atlas-trace check`
   reports unnamed functions or rules locally (a review aid, not a CI gate).
-- `project.json` sets `parallelism: false` on `e2e`: its persistence test restarts the shared dev store, so
-  no other task may run beside it (another project's e2e lost its connection when they ran together).
+- The ESD rules (the dev store's posture) have no automated tests (DD-223, DD-227): the dev stack's
+  own healthchecks and review carry them; the apps' e2e suites exercise this library against the
+  running store from the production side.
 - The container helper uses the same image tag as `dev/elasticsearch/docker-compose.yaml`; change both
   together.
 
@@ -30,7 +32,6 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 
 ```bash
 uv run pytest libs/python/aurelius-atlas-store-es/tests
-npx nx e2e aurelius-atlas-store-es    # starts dev/elasticsearch (and dev/observability) first
 uv run pyright libs/python/aurelius-atlas-store-es
 ```
 
