@@ -7956,7 +7956,7 @@ telemetry push. It delivers:</p>
   collector's own <strong><code>oauth2client</code></strong> extension — mint, cache, refresh
   natively, zero custom code; each puller gains
   <code>restart: on-failure</code> (the DD-195 race, now issuer-shaped; unbounded
-  per DD-218);</li>
+  per DD-226);</li>
 <li>the <strong>Atlas server</strong> (Python, logfire 5.2) presents its JWT through a
   small in-app refresh shim: a <code>ClientCredentialsTokenSource</code>
   (urllib + cache + refresh-ahead, thread-safe, stdlib-only) feeding

@@ -155,6 +155,7 @@
 - [7.19 Frontend failure UX](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/7-19-frontend-failure-ux/index.md>)
 - [7.2 Design system](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/7-2-design-system/index.md>)
 - [7.3 API client and auth wiring](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/7-3-api-client-auth/index.md>)
+- [7.4a Search results](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/7-4a-search-results/index.md>)
 - [7.5 Landing page (browse)](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/7-5-browse-landing/index.md>)
 - [7.6 Entity details](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/7-6-entity-details/index.md>)
 - [8.0 Auxiliary API foundation](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/conversion/increments/8-0-auxiliary-api-foundation/index.md>)

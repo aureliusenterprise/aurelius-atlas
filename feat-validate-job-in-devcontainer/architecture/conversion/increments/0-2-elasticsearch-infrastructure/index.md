@@ -35,6 +35,8 @@ Not in scope:
 | ESD-05 | The JVM heap is fixed (1 GiB by default) so the whole system still runs on one machine ([ADR 006](<https://aureliusenterprise.github.io/feat-validate-job-in-devcontainer/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)) |
 | ESD-06 | Cluster metrics reach `dev/observability` through a sidecar collector; `dev/observability` stays unaware of this project |
 
+> \[!NOTE\] ESD-04 has no automated test (DD-223): exercising it means restarting the shared dev store mid-suite, which races every other suite riding it. The named-volume rule is verified by review; the healthcheck (DD-008) covers the "stack comes back up" half.
+
 ### Store library
 
 | Id | Rule |

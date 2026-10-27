@@ -8142,6 +8142,22 @@ Atlas clients expect when it lands).</p>
 <td>Encoded numbers are no suggestion to a user</td>
 <td>4.2</td>
 </tr>
+<tr>
+<td>DV-83</td>
+<td>Search UI</td>
+<td>A result card fetches its entity lazily on viewport intersection (the App Search answer carries identity only)</td>
+<td>The card renders straight from the search hit (<code>AtlasEntityHeader.displayText</code>, <code>typeName</code>)</td>
+<td>The Atlas search contract (SRC-09) answers headers with display text; the per-card GET is dead weight</td>
+<td>7.4a</td>
+</tr>
+<tr>
+<td>DV-84</td>
+<td>Search UI</td>
+<td>The browse cards' explore buttons filter on the m4i governance types (<code>m4i_data_domain</code>, <code>m4i_system</code>, <code>m4i_person</code>); <code>directToUser</code> filters <code>typename: m4i_person</code> with the e-mail as query</td>
+<td>Business explores <code>typeName=AtlasGlossary</code>, technical explores <code>typeName=Infrastructure</code>; governance searches the signed-in user's plain e-mail, no type filter</td>
+<td>The m4i types name Aurelius's own type model, which Aurelius Atlas does not ship (ADR 046 keeps Atlas's built-in model); the mappings are model types the server knows — an unknown <code>typeName</code> answers <code>UNKNOWN_TYPENAME</code> (SRC-03) — and the Atlas glossary, not a plain <code>Glossary</code>, is the model's data-domain kind; the e-mail term is the search text Atlas can match</td>
+<td>7.4a</td>
+</tr>
 </tbody>
 </table>
 

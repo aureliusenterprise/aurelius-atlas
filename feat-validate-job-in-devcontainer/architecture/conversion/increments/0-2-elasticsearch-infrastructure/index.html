@@ -8055,6 +8055,12 @@ without adding Atlas behaviour:</p>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>[!NOTE]
+ESD-04 has no automated test (DD-223): exercising it means restarting the shared dev
+store mid-suite, which races every other suite riding it. The named-volume rule is
+verified by review; the healthcheck (DD-008) covers the "stack comes back up" half.</p>
+</blockquote>
 <h3 id="store-library">Store library<a class="headerlink" href="#store-library" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
