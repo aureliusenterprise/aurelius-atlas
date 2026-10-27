@@ -6361,3 +6361,68 @@ SRC-03); the marker is the every-entity shape the store's own tests already use.
 specs pin the marker body and the "first arrival fires" rule; the explore e2e's
 reload step asserts more rows than the one seeded glossary (the filtered re-run's
 count) — the every-entity search proving the session filter is gone.
+
+### DD-222 — The Python apps emit the stable HTTP semantic conventions
+
+- **Status:** Accepted
+- **Increment:** cross-cutting (telemetry; no Atlas REST semantics — no roadmap row, DD-210's pattern)
+- **Date:** 2026-10-26
+
+**Context.** The webapp → server → Elasticsearch trace (7.18/7.19) carried two
+HTTP conventions at once. The browser leg (JS SDK 2.12) and elasticsearch-py's
+native spans emit the stable set (`http.request.method`, `url.full`,
+`db.system.name` — the latter stable natively since 8.13, DD-210); the
+FastAPI/ASGI leg (instrumentation 0.66b1) emits the old set by default
+(`http.method`, `http.url`, `http.status_code`, `net.peer.*`). Every
+span-attribute filter written against the stable names silently misses the
+request spans — the exact trap DD-210's ES-span probe steps around by
+matching `db.system.name` only. The same split lands on metrics: the RED
+panels read the old `http_server_duration_milliseconds` (ms), which the
+instrumentor stops reporting under the opt-in.
+
+**Decision.** All five Python apps set the standard
+`OTEL_SEMCONV_STABILITY_OPT_IN=http` (value `http`, not `http/dup` —
+the old set is dropped, not doubled). It is a bare `OTEL_*` name
+(third-party-runtime consumer, the root `AGENTS.md` env rule) set in two
+places per app: the `Dockerfile` `ENV` (the e2e/prod image) and the
+project `.env`/`.env.enc` (`nx serve`, whose process environment Nx
+builds from the project env). The FastAPI RED dashboard moves with it in
+the same change: `http_server_request_duration_seconds` (stable; the SDK
+emits seconds, the ms panels multiply the quantiles by 1000),
+`http_server_response_body_size_bytes`, labels `http_route` /
+`http_response_status_code`; `http_server_active_requests` keeps its name
+(the panel uses a bare `sum()`; the stable label set is a subset). The
+SSE exclusion also fixes a stale route: the old `http_target!="/sse"`
+never matched the real route `/entities/sse` (the router mounts it under
+its prefix), so the p95-excl-SSE panel silently included stream
+durations. The server e2e store-span probe (DD-210) gains the convention
+pin: the request span must carry `http.request.method=GET` and none of
+`http.method`/`http.url`/`http.status_code`.
+
+**Alternatives.** (a) `http/dup` — refused: it doubles span attributes
+and metrics series forever; the migration it exists for has no second
+consumer here (the collector pipeline and every dashboard in-repo are
+updated in this change, and no external consumer reads these series).
+(b) Set the opt-in in code (the instrumentor constructors accept no
+equivalent; the SDK reads it once at first instrumentation, and the
+apps' composition roots instrument at import-adjacent time) — refused:
+env is the mechanism the standard defines, and `nx serve`/image/dashboards
+stay declarative. (c) Leave the server legacy and rewrite the ES-span
+filters to old names — refused: the stable set is where OTel has
+standardised (the JS browser SDK and elasticsearch-py are already
+there), and one trace carrying one convention is the point.
+
+**Consequences.** Server and auxiliary-app spans drop
+`http.url`/`http.status_code`/`net.peer.*` (nothing in-repo filters on
+them; the webapp/frontend/keycloak dashboards read web-vital, Micrometer,
+and resource attributes only — verified). Metric history is split at the
+flip: the old `http_server_duration_milliseconds` series stop, the new
+ones start (dev dashboards, acceptable; Grafana's time range covers the
+gap). The active-requests gauge loses its `http_host`/`http_server_name`
+labels (the stable set is method+scheme; the panel is a bare sum). The
+server e2e probe is the regression gate: a dropped `ENV` in an image
+fails the store-span test with a named message. The 8.x aux apps carry
+the same ENV pair for symmetry — their spans join the stable set on the
+next trace they ride (the 8.2 chain, DD-210). Tempo's search by
+`resource.*` and the Grafana Explore panels are unaffected (resource
+attributes are not part of the HTTP semconv switch).

@@ -29,6 +29,9 @@ LABEL org.opencontainers.image.version="${VERSION}"
 ENV AURELIUS_ATLAS_LINEAGE_MODEL_HOST=0.0.0.0
 ENV AURELIUS_ATLAS_LINEAGE_MODEL_PORT=21002
 ENV AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CA_FILE=""
+# Stable HTTP semantic conventions (DD-222): the OTel instrumentors read this at
+# process start; the FastAPI/httpx spans carry only the stable http.*/url.* set.
+ENV OTEL_SEMCONV_STABILITY_OPT_IN=http
 
 WORKDIR /application
 
