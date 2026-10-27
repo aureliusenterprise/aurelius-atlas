@@ -59,6 +59,9 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # HSTS off in e2e (DD-236): the webapp e2e browser reaches Keycloak over
+            # keycloak.localhost; includeSubDomains on localhost would pin it to HTTPS.
+            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
             # OTLP ingest identity (7.18, DD-196): the server exports through
             # its own pipeline (aurelius-atlas-otel), minting client-credentials
             # JWTs as otel-atlas-server for the per-service leg — the OIDC

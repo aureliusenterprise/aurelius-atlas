@@ -16,7 +16,11 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
   server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
   turns them on and runs on the module loop, where the lifespan started the worker
-- `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type
+- `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type;
+  a 5xx answer is opaque and carries the trace id as `requestId` (SRV-07, DD-235)
+- `aurelius_atlas_server/security_headers.py` — `SecurityHeadersMiddleware`: security headers on every
+  answer, split `/api` path vs dashboard; HSTS gated on `hsts_enabled` (SRV-08, DD-236). TLS material
+  is a required setting — the server never serves plaintext (SRV-06, DD-234)
 - OTLP ingest (DD-196) lives in the shared `aurelius-atlas-otel` lib (DD-197):
   `app.py::_ingest_pipeline` maps `ServerSettings.otel_*` into
   `build_otlp_pipeline`, installed by the lib's `setup_telemetry` on the
