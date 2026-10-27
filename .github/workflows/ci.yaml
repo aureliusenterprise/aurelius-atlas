@@ -26,8 +26,8 @@ jobs:
     # Fail-fast order (one container, one dockerd, one PVC work dir), one
     # named step per phase so the log reads as the pipeline:
     #
-    #   validate -> decrypt -> test -> teardown -> docker build -> scan ->
-    #   sonar -> storybook -> chromatic
+    #   validate -> decrypt -> test + docker build -> teardown -> scan ->
+    #   sonar ∥ storybook -> chromatic
     #
     # e2e containers, built images, and reports all live on the same daemon
     # / work volume, so later steps read what earlier steps wrote - the
@@ -121,8 +121,11 @@ jobs:
             # cache-worthy the moment npm ci finishes - gating the save on
             # a green pipeline delays the restore hit by every failing
             # run (the deprecated save-always input never fired at all).
+            # Skipped when the restore HIT: cache/save re-uploads
+            # unconditionally - a hit costs ~40s of re-upload every run
+            # (runs 40468045053/40471177041: 9s restore, 40s save).
             - name: Save node_modules
-              if: always()
+              if: always() && steps.restore-node-modules.outputs.cache-hit != 'true'
               uses: actions/cache/save@v5
               with:
                   path: node_modules
@@ -165,10 +168,18 @@ jobs:
             # inflated by CPU contention (a 7s Playwright test can record
             # 80s+). Read them as relative, not absolute; total wall time is
             # what the job optimises (DD-225 audit).
+            #
+            # docker-build rides the same graph: image builds depend on
+            # source, not on tests, and the daemon is warm - serialising them
+            # behind the whole test step was a free minute of wall time.
+            # --parallel=5: Nx's default (3) left the 6-CPU container idle
+            # (run 40471177041: 9m22s recoverable, Nx's own recommendation);
+            # one CPU stays headroom for the e2e stacks' containers, which
+            # share this cgroup.
             - name: Run unit and integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t test e2e -c ci
+              run: npx nx affected -t test e2e docker-build -c ci --parallel=5
 
             # Collect container logs and status for debugging failed tests
             - name: Collect failure diagnostics
@@ -219,20 +230,12 @@ jobs:
                   docker container prune -f
                   docker volume prune -af
 
-            # Build the affected apps' images for the scan. e2e stacks
-            # build some of them as a dependency (webapp, frontend,
-            # lineage-model), but not every affected app has one (the
-            # fastapi example, data2model, ...), and the SBOM step below
-            # reads the image from the daemon by tag - so build all of
-            # them, explicitly. Registry-backed layer cache (GHCR
-            # buildcache tags, tools/plugins/docker.ts): on the warm daemon
-            # these are near-instant, and the pushes keep the shared
-            # baseline warm for the next branch.
-            - name: Build Docker images
-              run: npx nx affected -t docker-build -c ci
-
-            # Trivy scans the SBOM of every image built above
-            # (docker-vuln-scan -> docker-sbom -> the image on this daemon).
+            # Trivy scans the SBOM of every app image - built in the test
+            # step's graph (docker-build: e2e stacks build some apps as a
+            # dependency, not every affected app has an e2e, so the target
+            # names them all; GHCR buildcache tags keep them near-instant on
+            # the warm daemon, tools/plugins/docker.ts).
+            # docker-vuln-scan -> docker-sbom -> the image on this daemon.
             - name: Scan for vulnerabilities
               run: npx nx affected -t docker-vuln-scan -c sarif
 
@@ -242,6 +245,34 @@ jobs:
                   name: vuln-reports
                   path: "**/vulnerabilities.sarif"
                   if-no-files-found: ignore
+
+            # The Storybook build Chromatic publishes - only when the UI
+            # (or its dependencies) are affected. dist/ lands in the
+            # mounted checkout, where the Chromatic step uploads it. The
+            # --graph=stdout probe keeps the step a no-op (not a green
+            # lie) when the task is out of scope.
+            #
+            # Launched in the BACKGROUND, under the sonar step: sonar is
+            # 85% queue-wait on the SonarQube server (run 40471177041:
+            # 13m28s, critical path 2m4s), so the scanner barely uses the
+            # node while storybook's compiler does - the two overlap almost
+            # for free. The build's exit code lands in .storybook-status,
+            # which the await step below turns into this job's verdict.
+            # setsid + reparenting: the runner kills each step's process
+            # tree when the step ends, so a plain `cmd &` dies at the
+            # boundary — the detached session survives into the sonar step.
+            - name: Start Storybook build (for Chromatic)
+              id: storybook
+              run: |
+                  if npx nx affected -t build-storybook --graph=stdout |
+                      jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' >/dev/null; then
+                      setsid bash -c \
+                          'npx nx build-storybook aurelius-atlas-ui >storybook.log 2>&1; echo $? >.storybook-status' \
+                          </dev/null >/dev/null 2>&1 &
+                      echo "ui-affected=true" >>"$GITHUB_OUTPUT"
+                  else
+                      echo "ui-affected=false" >>"$GITHUB_OUTPUT"
+                  fi
 
             # SonarQube analysis requires all previously generated test and scan results to be available.
             # The sonar target dependsOn decrypt (the per-project .env carries SONAR_TOKEN), and with
@@ -253,21 +284,15 @@ jobs:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: npx nx affected -t sonar
 
-            # The Storybook build Chromatic publishes - only when the UI
-            # (or its dependencies) are affected. dist/ lands in the
-            # mounted checkout, where the Chromatic step uploads it. The
-            # --graph=stdout probe keeps the step a no-op (not a green
-            # lie) when the task is out of scope.
-            - name: Build Storybook (for Chromatic)
-              id: storybook
+            # Sonar is done; collect the background Storybook build. Sonar
+            # outlasts it in every run so far, so this is a join, not a
+            # wait - the loop only matters if that flips.
+            - name: Await Storybook build
+              if: steps.storybook.outputs.ui-affected == 'true'
               run: |
-                  if npx nx affected -t build-storybook --graph=stdout |
-                      jq -e '.tasks.tasks | has("aurelius-atlas-ui:build-storybook")' >/dev/null; then
-                      npx nx build-storybook aurelius-atlas-ui
-                      echo "ui-affected=true" >>"$GITHUB_OUTPUT"
-                  else
-                      echo "ui-affected=false" >>"$GITHUB_OUTPUT"
-                  fi
+                  while [ ! -f .storybook-status ]; do sleep 2; done
+                  cat storybook.log
+                  exit "$(cat .storybook-status)"
 
             # Publish Aurelius Atlas UI's Storybook (dist/ is on the work
             # volume) - only when the build step above produced it.
