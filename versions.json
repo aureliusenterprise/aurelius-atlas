@@ -110,6 +110,11 @@
     "aliases": []
   },
   {
+    "version": "feat-server-hardening-tls-errors-headers",
+    "title": "feat-server-hardening-tls-errors-headers",
+    "aliases": []
+  },
+  {
     "version": "feat-search-results",
     "title": "feat-search-results",
     "aliases": []
