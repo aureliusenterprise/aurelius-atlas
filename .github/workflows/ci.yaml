@@ -217,18 +217,29 @@ jobs:
             # Tear the e2e stacks down as soon as the tests are done:
             # Keycloak/Postgres/Elasticsearch/observability hold ~8 Gi of
             # the node's memory, and the scan/sonar tail does not need
-            # them. Containers/volumes go, IMAGES stay - the scan reads
-            # them from this daemon, and the daemon store is warm on the
-            # PVC by design (base layers are the point of it). Deleting
-            # containers also forecloses compose reusing a stopped one
-            # verbatim, command baked with the previous commit (run
-            # 40231127680: postgres died on a 2h-old pre-fix container).
+            # them. `compose down` per project is the strong form: prune
+            # only sweeps STOPPED containers, and the suites leave their
+            # stacks Up, so the prune pair alone reclaimed one 28.67 kB
+            # corpse every run (40471177041/40486044342/40489544189) while
+            # the stacks rode on. Containers/volumes/networks go, IMAGES
+            # stay - down never touches images, the scan reads them from
+            # this daemon, and the daemon store is warm on the PVC by
+            # design (base layers are the point of it). Deleting containers
+            # also forecloses compose reusing a stopped one verbatim,
+            # command baked with the previous commit (run 40231127680:
+            # postgres died on a 2h-old pre-fix container).
+            # The prunes stay as the sweeper for non-compose strays
+            # (testcontainers' ryuk, anonymous volumes).
             # if: always() sweeps on failure/cancel/timeout;
             # continue-on-error: cleanup must never flip the verdict.
             - name: Tear down test containers
               if: always()
               continue-on-error: true
               run: |
+                  for project in $(docker compose ls --all -q); do
+                      echo "Tearing down compose project: $project"
+                      docker compose --project-name "$project" down -v --remove-orphans
+                  done
                   docker container prune -f
                   docker volume prune -af
 
