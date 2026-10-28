@@ -1,7 +1,7 @@
 # 10.3 App and edge charts
 
-- **Status:** in progress
-- **Pull request:** –
+- **Status:** in review
+- **Pull request:** #159
 - **Records:** ADR 057, DD-238, DD-242, DD-243, DD-251, DD-256, DD-259, DD-261..264
 
 ## Scope
