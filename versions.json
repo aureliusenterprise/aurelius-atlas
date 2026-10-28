@@ -125,6 +125,11 @@
     "aliases": []
   },
   {
+    "version": "feat-chart-foundation",
+    "title": "feat-chart-foundation",
+    "aliases": []
+  },
+  {
     "version": "feat-aux-apis-validate-entity",
     "title": "feat-aux-apis-validate-entity",
     "aliases": []
