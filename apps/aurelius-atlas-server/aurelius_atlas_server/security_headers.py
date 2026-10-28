@@ -11,10 +11,12 @@ the JSON is never a document (it is not one, and CSP is the belt).
 The dashboards (``/`` and ``/n/``, DSH-01/DSH-02) are the vendored Apache Atlas 2.4.0
 UI: its ``index.html`` carries inline bootstrap scripts (one interpolates the build's
 cache-bust value, so a CSP hash churns every build — hash pinning is not stable
-enough for vendored files), it loads its scripts and stylesheets from the origin, and
-its assets are bust-versioned, so they cache ``immutable``. The CSP therefore allows
-``'unsafe-inline'`` scripts on the dashboard documents only (DV-86); the API keeps
-``default-src 'none'``. The webapp (7.x, nginx-served) has its own hardened CSP
+enough for vendored files), and its require-handlebars-plugin compiles templates at
+runtime with ``new Function`` — so the CSP allows ``'unsafe-inline'`` and
+``'unsafe-eval'`` scripts on the dashboard documents only (DV-86; the e2e dashboard
+test is the regression guard). What CSP does enforce there is the rest:
+``object-src``/``base-uri``/``frame-ancestors`` closed, same-origin sources. The API
+keeps ``default-src 'none'``. The webapp (7.x, nginx-served) has its own hardened CSP
 (DD-159's precedent); this covers what the server process itself serves.
 
 ``Strict-Transport-Security`` rides every response when ``hsts_enabled`` (the image's
@@ -47,7 +49,8 @@ DASHBOARD_SECURITY_HEADERS: tuple[Header, ...] = (
         "content-security-policy",
         (
             "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
-            "; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+            "; script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+            "; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
         ),
     ),
 )

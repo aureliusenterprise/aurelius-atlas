@@ -7069,8 +7069,13 @@ answers (by path prefix, so error and 404 answers are covered) get
 `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a
 `Permissions-Policy`, `Cache-Control: no-store`, and a CSP that serves no
 documents (`default-src 'none'; base-uri 'none'; frame-ancestors 'none'`). The
-dashboard documents get a same-origin CSP with `'unsafe-inline'` scripts/styles
-(DV-86) and `SAMEORIGIN` framing; assets fetched with the legacy `?bust=` get
+dashboard documents get a same-origin CSP with `'unsafe-inline'` +
+`'unsafe-eval'` scripts and `'unsafe-inline'` styles (DV-86: the vendored
+`index.html.tpl` inlines the build-varying bust value, and the
+require-handlebars-plugin compiles templates at runtime with `new Function` —
+the e2e dashboard boot is the regression guard; what CSP does enforce there is
+`object-src`/`base-uri`/`frame-ancestors` closed and same-origin sources) and
+`SAMEORIGIN` framing; assets fetched with the legacy `?bust=` get
 `public, max-age=31536000, immutable` (the bust param is the legacy's own
 content-versioning; HTML is excluded so a stale page cannot pin itself). HSTS
 (max-age 1y, includeSubDomains) rides every answer when `hsts_enabled` —
