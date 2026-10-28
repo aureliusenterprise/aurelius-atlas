@@ -69,6 +69,11 @@ LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification |
 JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
 
+WRITE_REFRESH = "wait_for"
+"""Every write's ``refresh`` parameter (ENS-11, DD-237): the response returns after the documents are visible,
+so the next read sees them — no read path pays a refresh of its own. ``wait_for`` (not ``true``) also waits
+for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk."""
+
 REFERRING_PAGE = 1000
 """How many referring entities one search page holds (DD-057)."""
 
@@ -438,7 +443,7 @@ class ElasticsearchEntityDocuments:
                 lines.append(codec.dumps({"delete": action}))
                 kinds.append(group_kind)
         body = b"\n".join(lines) + b"\n"  # NDJSON bytes: the transport sends them as they are
-        response = await self._client.bulk(operations=body)  # pyright: ignore[reportArgumentType]
+        response = await self._client.bulk(operations=body, refresh=WRITE_REFRESH)  # pyright: ignore[reportArgumentType]
         results = []
         for item, kind in zip(response["items"], kinds, strict=True):
             outcome = next(iter(item.values()))
@@ -468,35 +473,38 @@ class ElasticsearchEntityDocuments:
         }
 
     async def restore_linked(self, kind: LinkedKind, guid: str, before: Linked | None) -> None:
-        """Index the document's state before, or delete one that did not exist before (DD-062)."""
+        """Put back a linked document's state before a write, or delete one the write created (DD-062)."""
         index = self._linked[kind]
         if before is None:
             try:
-                await self._client.delete(index=index, id=guid)
+                await self._client.delete(index=index, id=guid, refresh=WRITE_REFRESH)
             except NotFoundError:
                 return
         else:
-            await self._client.index(index=index, id=guid, document=codec.dumps(before.to_json()))  # type: ignore[arg-type]
+            await self._client.index(
+                index=index,
+                id=guid,
+                document=codec.dumps(before.to_json()),  # type: ignore[arg-type]
+                refresh=WRITE_REFRESH,
+            )
 
     async def count_linked_type(self, kind: LinkedKind, type_name: str) -> int:
-        """Refresh the kind's index, then count its documents of the type (REL-10, CLS-12)."""
+        """Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11)."""
         index = self._linked[kind]
-        await self._client.indices.refresh(index=index)
         response = await self._client.count(index=index, query={"term": {"typeName": type_name}})
         return int(response["count"])
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
-        """Refresh the entity index, then page through the entities whose ``references`` hold a GUID (DD-057)."""
+        """Page through the entities whose ``references`` hold a GUID (DD-057): writes refresh (ENS-11)."""
         return await self._listing("references", guids)
 
     async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
-        """Refresh the entity index, then page through the entities whose ``classificationGuids`` hold one (DD-076)."""
+        """Page through the entities whose ``classificationGuids`` hold one (DD-076): writes refresh (ENS-11)."""
         return await self._listing("classificationGuids", guids)
 
     async def list_tasks(self, *, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]:
-        """Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06)."""
+        """Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11)."""
         index = self._linked[LinkedKind.TASK]
-        await self._client.indices.refresh(index=index)
         query: dict[str, Any] = (
             {"terms": {"status": [TaskStatus.PENDING.value, TaskStatus.IN_PROGRESS.value]}}
             if open_only
@@ -525,7 +533,6 @@ class ElasticsearchEntityDocuments:
     async def _listing(self, field: str, guids: Sequence[str]) -> list[VersionedEntity]:
         if not guids:
             return []
-        await self._client.indices.refresh(index=self._entities)
         found: list[VersionedEntity] = []
         after: list[Any] | None = None
         while True:
@@ -552,11 +559,16 @@ class ElasticsearchEntityDocuments:
         """Index the state before, or delete an entity that did not exist before (DD-046)."""
         if before is None:
             try:
-                await self._client.delete(index=self._entities, id=guid)
+                await self._client.delete(index=self._entities, id=guid, refresh=WRITE_REFRESH)
             except NotFoundError:
                 return
         else:
-            await self._client.index(index=self._entities, id=guid, document=codec.dumps(before.to_json()))  # type: ignore[arg-type]
+            await self._client.index(
+                index=self._entities,
+                id=guid,
+                document=codec.dumps(before.to_json()),  # type: ignore[arg-type]
+                refresh=WRITE_REFRESH,
+            )
 
     async def reserve(self, reservation: Reservation) -> Reservation | None:
         """``op_type=create``: of two processes reserving one value, one fails (DD-045)."""
@@ -595,32 +607,37 @@ class ElasticsearchEntityDocuments:
             return
 
     async def put_journal(self, entry: JournalEntry) -> None:
-        """Index the entry under its write id."""
-        await self._client.index(index=self._journal, id=entry.write_id, document=codec.dumps(entry.to_json()))  # type: ignore[arg-type]
+        """Index the entry under its write id; recovery's search reads it (ENS-11)."""
+        await self._client.index(
+            index=self._journal,
+            id=entry.write_id,
+            document=codec.dumps(entry.to_json()),  # type: ignore[arg-type]
+            refresh=WRITE_REFRESH,
+        )
 
     async def delete_journal(self, write_id: str) -> None:
-        """Delete the entry; one already gone is fine."""
+        """Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11)."""
         try:
-            await self._client.delete(index=self._journal, id=write_id)
+            await self._client.delete(index=self._journal, id=write_id, refresh=WRITE_REFRESH)
         except NotFoundError:
             return
 
     async def journal(self) -> list[JournalEntry]:
-        """The entries of the journal, refreshed first so none written a moment ago is missed."""
-        await self._client.indices.refresh(index=self._journal)
+        """The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11)."""
         response = await self._client.search(index=self._journal, size=JOURNAL_PAGE, query={"match_all": {}})
         return [JournalEntry.model_validate(hit["_source"]) for hit in response["hits"]["hits"]]
 
     async def count_type(self, type_name: str) -> int:
-        """Refresh the entity index, then count the entities of the type (DD-048)."""
-        await self._client.indices.refresh(index=self._entities)
+        """Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11)."""
         response = await self._client.count(index=self._entities, query={"term": {"typeName": type_name}})
         return int(response["count"])
 
     async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
-        """Refresh the classification index, then page through the instances of the types by GUID (DD-090)."""
+        """Page through the classification index for the instances of the types by GUID (DD-090).
+
+        Writes refresh (ENS-11).
+        """
         index = self._linked[LinkedKind.CLASSIFICATION]
-        await self._client.indices.refresh(index=index)
         query: dict[str, Any] = {"match_all": {}} if type_names is None else {"terms": {"typeName": sorted(type_names)}}
         found: list[StoredClassification] = []
         after: list[Any] | None = None
@@ -635,12 +652,11 @@ class ElasticsearchEntityDocuments:
             after = hits[-1]["sort"]
 
     async def search(self, query: SearchQuery) -> SearchHits:
-        """Refresh the entity index, then answer the query as a ``bool`` query of the search fields (DD-089).
+        """Answer the query as a ``bool`` query of the search fields (DD-089): writes refresh (ENS-11).
 
         Free text is a scored ``simple_query_string`` over the text sub-fields (DD-092); facets are ``terms``
         aggregations of the same query (DD-093).
         """
-        await self._client.indices.refresh(index=self._entities)
         clauses: list[dict[str, Any]] = []
         if query.type_names is not None:
             clauses.append({"terms": {_search_path(TYPE_NAME_FIELD): sorted(query.type_names)}})
@@ -676,8 +692,7 @@ class ElasticsearchEntityDocuments:
         )
 
     async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
-        """Refresh the entity index, then a ``terms`` aggregation of each field's text sub-field (DD-094)."""
-        await self._client.indices.refresh(index=self._entities)
+        """A ``terms`` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11)."""
         include = "".join(f"\\{character}" if character in _REGEX_RESERVED else character for character in prefix)
         response = await self._client.search(
             index=self._entities,

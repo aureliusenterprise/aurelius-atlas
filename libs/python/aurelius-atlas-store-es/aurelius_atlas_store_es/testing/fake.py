@@ -94,9 +94,16 @@ class FakeClient:
         self.settings_updates: list[str] = []
         self.seq_no = -1
         self.refreshes: list[str] = []
+        self.write_refreshes: list[tuple[str, str]] = []
+        """The ``refresh`` parameter of every write, as ``(index, refresh)`` in call order (ENS-11)."""
 
     def _index_of(self, name: str) -> dict[str, tuple[dict[str, Any], int]]:
         return self.documents.setdefault(self.aliases.get(name, name), {})
+
+    def _record_write_refresh(self, index: str, refresh: str | None) -> None:
+        """Remember the ``(index, refresh)`` of a write as it was passed; the parameter is a no-op in the fake."""
+        if refresh is not None:
+            self.write_refreshes.append((index, refresh))
 
     async def get(self, *, index: str, id: str, source: bool = True) -> dict[str, Any]:  # noqa: A002 - Elasticsearch's name
         """Answer like ``GET index/_doc/id``, raising ``NotFoundError`` for a missing document."""
@@ -118,12 +125,14 @@ class FakeClient:
         op_type: str | None = None,
         if_seq_no: int | None = None,
         if_primary_term: int | None = None,
+        refresh: str | None = None,
         **_options: object,
     ) -> dict[str, Any]:
         """Store ``document``, raising ``ConflictError`` like Elasticsearch for ``op_type=create`` or ``if_seq_no``.
 
         A body given as bytes is read as Elasticsearch reads it, its floats kept as decimals.
         """
+        self._record_write_refresh(index, refresh)
         if isinstance(document, bytes):
             document = _read(document)
         documents = self._index_of(index)
@@ -149,12 +158,13 @@ class FakeClient:
                 docs.append({"_id": document_id, "found": False})
         return {"docs": docs}
 
-    async def bulk(self, *, operations: bytes, **_options: object) -> dict[str, Any]:
+    async def bulk(self, *, operations: bytes, refresh: str | None = None, **_options: object) -> dict[str, Any]:
         """Apply ``create``, ``index`` and ``delete`` actions of an NDJSON body, each with its own outcome."""
         lines = iter([line for line in operations.split(b"\n") if line.strip()])
         items = []
         for action_line in lines:
             ((kind, action),) = _read(action_line).items()
+            self._record_write_refresh(action["_index"], refresh)
             versions = {"if_seq_no": action.get("if_seq_no"), "if_primary_term": action.get("if_primary_term")}
             try:
                 if kind == "delete":
@@ -181,8 +191,11 @@ class FakeClient:
         id: str,  # noqa: A002 - Elasticsearch's name
         if_seq_no: int | None = None,
         if_primary_term: int | None = None,
+        refresh: str | None = None,
+        **_options: object,
     ) -> dict[str, Any]:
         """Delete a document, raising ``NotFoundError`` when missing and ``ConflictError`` on a stale version."""
+        self._record_write_refresh(index, refresh)
         documents = self._index_of(index)
         current = documents.get(id)
         if current is None:
