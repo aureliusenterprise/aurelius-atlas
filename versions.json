@@ -120,11 +120,6 @@
     "aliases": []
   },
   {
-    "version": "feat-otel-edge-tracing",
-    "title": "feat-otel-edge-tracing",
-    "aliases": []
-  },
-  {
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
