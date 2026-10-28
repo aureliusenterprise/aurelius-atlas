@@ -1,1 +1,7 @@
 {{- include "atlas-keycloak.requireValues" (dict "values" .Values) }}
+{{- if gt (int .Values.replicas) 1 }}
+{{- fail "replicas > 1 is not supported yet: the multi-node contract (per-replica hostnames, RSS seeding at scale) is a later increment (CHT-16)" }}
+{{- end }}
+{{- if and (eq .Values.database.flavor "external") (not .Values.database.url) }}
+{{- fail "database.flavor=external requires database.url (the JDBC URL with sslmode=verify-full + sslrootcert) — the bundled URL points at a service this flavor does not render (CHT-17)" }}
+{{- end }}

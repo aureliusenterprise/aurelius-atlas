@@ -1,1 +1,6 @@
+{{/* Render-time guards (CHT-10, the ADR 018 spirit): a bad deployment fails at
+install, loudly. */}}
 {{- include "atlas-elasticsearch.requireValues" (dict "values" .Values) }}
+{{- if gt (int .Values.replicas) 1 }}
+{{- fail "replicas > 1 is not supported yet: the quorum-cluster switch (per-node transport certificates, discovery seeding) is a later increment (CHT-10)" }}
+{{- end }}

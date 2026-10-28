@@ -1,0 +1,16 @@
+{{/* The PodDisruptionBudget (CHT-18): the single-node store is never fully
+voluntarily disrupted. */}}
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+    name: {{ include "atlas-elasticsearch.fullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-elasticsearch.labels" . | nindent 8 }}
+spec:
+    minAvailable: {{ int .Values.pdb.minAvailable }}
+    selector:
+        matchLabels:
+            {{- include "atlas-elasticsearch.selectorLabels" . | nindent 12 }}
+{{- end }}

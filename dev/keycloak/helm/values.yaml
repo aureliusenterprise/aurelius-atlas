@@ -1,9 +1,10 @@
 # The identity provider chart — its runtime contract (CHT-02).
 # Keycloak 26.7 (26.8 is pinned-broken upstream) serving the Aurelius realm;
 # its Postgres is bundled (postgres.* below, flavor=external points at an
-# existing database). The StatefulSet, the realm-import Job (import +
-# placeholder replacement, the dev compose's pattern), the RSS headless
-# service, and the prod-mode start (`kc.sh start`, not start-dev) land in 10.2.
+# existing database). The workload is 10.2's (CHT-16/17): the prod-mode
+# StatefulSet (`kc.sh start --import-realm`), the realm ConfigMap (chart asset,
+# DD-256), the RSS headless service, probes on the management port, and the
+# bundled Postgres (cert-copy boot, pg_hba, VCT).
 #
 # WARNING (runbook): Keycloak pins the realm issuer at first boot — the
 # hostname below must be final before the first install; changing it later
@@ -25,6 +26,12 @@ global:
     issuer:
         url: ""
     dnsResolver: ""
+    # The issuer signing this pod's certificates (DD-243). Namespaced by
+    # default — the umbrella's chart-managed chain is an Issuer (DD-259).
+    trust:
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
 
 enabled: true
 component: keycloak
@@ -39,30 +46,49 @@ image:
 # The browser hostname the issuer pins to (KC_HOSTNAME): https://<hostname>.
 hostname: ""
 
+# Credentials (CHT-19, DD-254): the umbrella generates each Secret and this
+# chart consumes it by <release>-<purpose> name; set a name to bring your own.
 bootstrap:
-    # Admin bootstrap from <release>-keycloak-admin (DD-244).
-    userSecret: ""
-    passwordSecret: ""
+    # Admin bootstrap: <release>-keycloak-admin (keys user/password).
+    adminSecretName: ""
 
-# The realm to import at first boot: the umbrella renders it from
-# dev/keycloak/import/master.json's shape, secrets substituted by Helm
-# (replacing the dev flag -Dkeycloak.migration.replace-placeholders=true).
 realm:
+    # Import master.json (the chart's files/ copy, DD-256) at first boot.
     import: true
     name: master
+    # Demo users: <release>-keycloak-users (keys writer-password/reader-password)
+    # feed the ${DEV_USER_*} import placeholders (CHT-16).
+    usersSecretName: ""
+    # The shared otel-* ingest secret: <release>-otel-clients (key
+    # OTEL_INGEST_CLIENT_SECRET) feeds the ${OTEL_INGEST_CLIENT_SECRET}
+    # import placeholders (CHT-16).
+    otelClientsSecretName: ""
+
+# Native telemetry (CHT-16): Keycloak is the OIDC issuer, so its own OTLP
+# cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on the
+# collector's LEGACY leg with the shared token, and only when the operator
+# points at a collector (10.3 wires the observability slice).
+telemetry:
+    # Collector legacy-leg endpoint, e.g. https://atlas-observability:4320 —
+    # "" renders no telemetry env at all.
+    endpoint: ""
+    # The legacy-leg token: <release>-collector-legacy (key token).
+    tokenSecretName: ""
+    tracesSamplerArg: "0.1"
 
 database:
     # "bundled" renders the Postgres below; "external" uses the url.
     flavor: bundled
-    # External JDBC URL (sslmode=verify-full + root cert required).
+    # External JDBC URL (sslmode=verify-full + sslrootcert required), with the
+    # credentials in <release>-keycloak-database (keys user/password) unless a
+    # name is given.
     url: ""
-    userSecret: ""
-    passwordSecret: ""
+    secretName: ""
 
 postgres:
     # Bundled Keycloak database (a chart section, not a subchart — it exists
-    # only for Keycloak, CHT-02). The cert-copy init pattern (mktemp +
-    # install -m 600) lands in 10.2.
+    # only for Keycloak, CHT-02). Credentials come from the same
+    # <release>-keycloak-database Secret Keycloak connects with (CHT-17).
     enabled: true
     nameOverride: ""
     image:
@@ -80,6 +106,9 @@ postgres:
             memory: 256Mi
         limits:
             memory: 512Mi
+    pdb:
+        enabled: true
+        minAvailable: 1
 
 service:
     # 8443 is the browser-facing TLS port (the gateway routes keycloak host);
@@ -88,16 +117,44 @@ service:
     managementPort: 9000
 
 probes:
+    # Management-port probes (dev healthcheck's port). Prod mode puts TLS on
+    # the management interface too (it inherits the keypair — DD-260; the dev
+    # plaintext probe worked only on the compose's named relaxation, ADR 039),
+    # so the scheme is HTTPS; kubelet's HTTPS probes accept any certificate —
+    # a liveness check is not a trust check. The startup budget covers the
+    # prod-mode cold boot: `kc.sh start` re-augments the runtime into the
+    # image filesystem (not the PVC) on every new container — ~165s measured
+    # on minikube against the compose's 180s start_period, so 300s.
     path: /health/ready
-    initialDelaySeconds: 60
+    scheme: HTTPS
+    initialDelaySeconds: 0
     periodSeconds: 20
     timeoutSeconds: 5
     failureThreshold: 6
+    startup:
+        periodSeconds: 10
+        failureThreshold: 30
+
+pdb:
+    # CHT-18: never zero voluntary disruptions.
+    enabled: true
+    minAvailable: 1
 
 tls:
+    # "" takes the Certificate's Secret (<fullname>-tls); set to bring your own
+    # (keys tls.crt/tls.key/ca.crt). The ca.crt is the same issuer root every
+    # cluster certificate chains to (DD-243): it is the JDBC sslrootcert
+    # (CHT-17) and the JVM's trust anchor — the dev truststore workaround is
+    # never rendered (CHT-16).
     secretName: ""
-    caConfigMap: ""
-    caPath: /etc/aurelius-atlas/tls/ca.crt
+    mountPath: /etc/aurelius-atlas/tls
+
+certificate:
+    # cert-manager issues the browser-facing certificate (CHT-16) with the
+    # KC_HOSTNAME (the issuer host) plus the in-cluster names as SANs.
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
 
 serviceAccount:
     create: true
@@ -110,8 +167,11 @@ resources:
     limits:
         memory: 1Gi
 
-# JAVA_OPTS extras appended to the chart's base (truststore flags for the
-# Vert.x OTLP sender land with 10.2's observability wiring).
+# Quarkus heap (the JAVA_OPTS -Xms/-Xmx pair — leaving it unset lets Quarkus
+# size to 25% of the node, the dev compose's CI-cap lesson). extraJavaOpts
+# appends after the chart's base flags (the replace-placeholders import flag,
+# the RSS query).
+heap: 512m
 extraJavaOpts: ""
 
 nodeSelector: {}
@@ -120,10 +180,14 @@ affinity: {}
 podAnnotations: {}
 podLabels: {}
 
+# The hardened Keycloak image runs as its fixed non-root user (uid 65532
+# "nonroot") and owns /opt/keycloak/lib/quarkus, where `kc.sh start` writes the
+# re-augmented runtime (DD-257) — run as that uid. fsGroup matches.
 podSecurityContext:
     runAsNonRoot: true
-    runAsUser: 1000
-    fsGroup: 1000
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault
 

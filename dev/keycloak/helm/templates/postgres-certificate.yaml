@@ -1,0 +1,39 @@
+{{/*
+The database's server certificate (CHT-17, DD-243). The SANs are what
+Keycloak's JDBC verify-full check compares against — the service name and its
+FQDN forms — plus the loopback address, which the pg_isready probes dial
+(DD-258; the dev tls.json lists "127.0.0.1" for exactly this). ca.crt in the
+output Secret is the sslrootcert both sides pin (the mount the JVM/psql trust
+path, never the dev truststore).
+*/}}
+{{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled .Values.certificate.enabled }}
+{{- $pg := include "atlas-keycloak.pgFullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+{{- $issuerRef := .Values.global.trust.issuerRef -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: {{ $pg }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-keycloak.labelsPG" . | nindent 8 }}
+spec:
+    secretName: {{ include "atlas-keycloak.pgTlsSecretName" . }}
+    duration: {{ .Values.certificate.duration }}
+    renewBefore: {{ .Values.certificate.renewBefore }}
+    subject:
+        organizations:
+            - aurelius-atlas
+    dnsNames:
+        - {{ $pg }}
+        - {{ printf "%s.%s" $pg $ns }}
+        - {{ printf "%s.%s.svc" $pg $ns }}
+        - {{ printf "%s.%s.svc.cluster.local" $pg $ns }}
+    ipAddresses:
+        - 127.0.0.1
+    issuerRef:
+        name: {{ required "global.trust.issuerRef.name is required (DD-243)" $issuerRef.name }}
+        {{- with $issuerRef.kind }}
+        kind: {{ . }}
+        {{- end }}
+{{- end }}

@@ -1,0 +1,169 @@
+{{/*
+The StatefulSet (CHT-10..15). The boot path is the image's own: the hardened
+dhi.io image runs as uid 1000 with no root/gosu stage (DD-257), so the pod
+runs as 1000 and fsGroup 1000 hands the data volume to the JVM — the in-cluster
+shape of the compose's separate volume-init chown (forcing uid 0 makes the JVM
+refuse to boot). The coredump agent lands as an init container copying the
+javaagent jar to an emptyDir (CHT-15, DD-255): GKE nodes deny the procfs write
+ES 9.x treats as fatal at bootstrap.
+*/}}
+{{- $fullname := include "atlas-elasticsearch.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-elasticsearch.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.replicas }}
+    serviceName: {{ include "atlas-elasticsearch.headlessName" . }}
+    selector:
+        matchLabels:
+            {{- include "atlas-elasticsearch.selectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-elasticsearch.labels" . | nindent 16 }}
+                {{- with .Values.podLabels }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            initContainers:
+                -   name: coredump-agent
+                    # The javaagent jar, copied to the shared emptyDir
+                    # (CHT-15). Image: tools/es-coredump-agent (DD-255).
+                    image: {{ include "atlas-elasticsearch.agentImage" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - cp
+                        - /coredump-noop.jar
+                        - /agent/coredump-noop.jar
+                    securityContext:
+                        runAsUser: 1000
+                        allowPrivilegeEscalation: false
+                    volumeMounts:
+                        - name: agent
+                          mountPath: /agent
+            containers:
+                -   name: elasticsearch
+                    image: {{ include "atlas-elasticsearch.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.containerSecurityContext | nindent 24 }}
+                    ports:
+                        - name: https
+                          containerPort: {{ int .Values.service.port }}
+                          protocol: TCP
+                    env:
+                        - name: ES_JAVA_OPTS
+                          value: {{ include "atlas-elasticsearch.javaOpts" . | quote }}
+                        - name: ELASTIC_PASSWORD
+                          # The generated bootstrap password (CHT-13, DD-244);
+                          # the entrypoint writes it into the keystore.
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-elasticsearch.authSecretName" . }}
+                                  key: elastic-password
+                    volumeMounts:
+                        - name: data
+                          mountPath: /usr/share/elasticsearch/data
+                        - name: config
+                          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+                          subPath: elasticsearch.yml
+                          readOnly: true
+                        - name: tls
+                          mountPath: {{ .Values.tls.mountPath | quote }}
+                          readOnly: true
+                        - name: agent
+                          mountPath: /agent
+                          readOnly: true
+                    {{- /* The compose healthcheck as probes (CHT-14, DD-008):
+                    openssl over TLS, CA-pinned, as elastic; green or yellow
+                    is healthy. The image has no curl. */}}
+                    startupProbe:
+                        exec:
+                            command:
+                            - /bin/sh
+                            - -c
+                            - {{ include "atlas-elasticsearch.healthcheck" . | quote }}
+                        periodSeconds: {{ int .Values.probes.startup.periodSeconds }}
+                        failureThreshold: {{ int .Values.probes.startup.failureThreshold }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                    readinessProbe:
+                        exec:
+                            command:
+                            - /bin/sh
+                            - -c
+                            - {{ include "atlas-elasticsearch.healthcheck" . | quote }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    livenessProbe:
+                        exec:
+                            command:
+                            - /bin/sh
+                            - -c
+                            - {{ include "atlas-elasticsearch.healthcheck" . | quote }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            volumes:
+                -   name: config
+                    configMap:
+                        name: {{ $fullname }}
+                -   name: tls
+                    secret:
+                        # The cert-manager Certificate's Secret (CHT-12), or a
+                        # brought one; projected into the image's PEM names.
+                        secretName: {{ default (printf "%s-tls" $fullname) .Values.tls.secretName }}
+                        items:
+                            - key: tls.crt
+                              path: elasticsearch.pem
+                            - key: tls.key
+                              path: elasticsearch-key.pem
+                            - key: ca.crt
+                              path: ca.pem
+                -   name: agent
+                    emptyDir: {}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+    volumeClaimTemplates:
+        -   metadata:
+                name: data
+                labels:
+                    {{- include "atlas-elasticsearch.labels" . | nindent 20 }}
+            spec:
+                accessModes:
+                    {{- toYaml .Values.persistence.accessModes | nindent 20 }}
+                {{- with .Values.global.storageClass }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+                resources:
+                    requests:
+                        storage: {{ .Values.persistence.size | quote }}

@@ -63,12 +63,24 @@ docker compose -f dev/elasticsearch/docker-compose.yaml down -v   # reset all da
 ## Helm chart
 
 `helm/` — the `atlas-elasticsearch` chart (CHT-02): the port, TLS layout,
-heap, and data volume contract of the production store (ADR 047). The
-StatefulSet, the `elasticsearch.yml` ConfigMap (the shape of
-`config/elasticsearch.yml`), the GKE coredump-agent init, and the
-openssl-s_client exec healthcheck land in 10.2. This `helm/` deploys to
-clusters; the `docker-compose.yaml` stays the dev-mode service (they are
-siblings, not duplicates). Conventions: `helm/AGENTS.md`.
+heap, and data volume contract of the production store (ADR 047). Landed in
+10.2 (CHT-10..15): the single-node StatefulSet (the image's own uid-1000 boot —
+the hardened image does no root/gosu privilege drop and its JVM refuses root,
+DD-257 — with `fsGroup: 1000`, the in-cluster shape of the compose's separate
+`volume-init` chown), the `elasticsearch.yml`
+ConfigMap (the shape of `config/elasticsearch.yml` — the hardened image
+ignores dotted env vars, so the file is the only settings channel), the
+cert-manager `Certificate` mounted at `config/tls` in the image's PEM names
+(never `config/certs` — auto-configuration's directory), the GKE
+coredump-agent init from the `aurelius-atlas-elasticsearch-agent` image
+(`tools/es-coredump-agent/`, DD-255), and the openssl-s_client exec
+healthcheck (`/_cluster/health`, green-or-yellow, CA-pinned).
+`ELASTIC_PASSWORD` reads the umbrella-generated Secret
+(`<release>-elasticsearch`, key `elastic-password`) — the chart never renders
+a password. `replicas > 1` fails the render (the quorum switch is a later
+increment). This `helm/` deploys to clusters; the `docker-compose.yaml` stays
+the dev-mode service (they are siblings, not duplicates). Conventions:
+`helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-dev-elasticsearch:helm-template
