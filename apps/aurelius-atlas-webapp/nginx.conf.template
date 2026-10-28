@@ -9,9 +9,9 @@
 # image has no shell tooling to render at start, on purpose; an unresolved
 # container fails at config parse instead of serving with template defaults.
 # NOTE: the hardened image includes this file inside its *http* block (the
-# last include in /etc/nginx/nginx.conf), so the file may open with http-level
-# directives (the limit_req_zone below); the server block then follows. Keep
-# everything else server-scoped.
+# last line of the stock nginx.conf), so http-scoped directives (the
+# limit_req_zone and otel_exporter blocks below) are legal at file top; the
+# server block then follows. Keep everything else server-scoped.
 
 # Browser rate limit on the API proxy (SRV-09, DD-238): a per-client-IP leaky
 # bucket, 300 requests/minute sustained with a burst of 100 served immediately
@@ -40,8 +40,25 @@ map $atlas_api_limit_key $atlas_api_limit_addr {
 limit_req_zone $atlas_api_limit_addr zone=atlas_api:10m rate=300r/m;
 limit_req_status 429;
 
+# Native edge tracing (SHL-15, DD-239): every /api/ request gets an edge span
+# exported to the collector's legacy gRPC leg (OTLP/gRPC, TLS-pinned to the
+# stack CA, shared ingest token — the leg of producers that cannot present a
+# Keycloak JWT, CIA-10: nginx has no mint, only static export headers). The
+# edge is a producer, not a user: the collector stamps no user identity on
+# this leg (ETR-03, DD-194); per-user attribution rides the browser leg.
+otel_exporter {
+    endpoint ${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT};
+    trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
+    header authorization "Bearer ${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN}";
+}
+otel_service_name aurelius-atlas-webapp-edge;
+
 server {
     listen 8080;
+
+    # Assets produce no spans: tracing is opted in per location (/api/
+    # below); the module's off/ignore defaults cover every other route.
+    otel_trace off;
 
     # Version-disclosure hardening: keep the nginx version out of the
     # Server header and error pages.
@@ -115,6 +132,14 @@ server {
         # 429 on overflow. The server itself never rate limits — internal
         # callers arrive on private ranges, whose key is empty and unaccounted.
         limit_req zone=atlas_api burst=100 nodelay;
+
+        # The traced location (ETR-01): the edge span parents the server's
+        # request span (propagate = extract the inbound traceparent, inject
+        # this span's id toward the upstream), and records the status nginx
+        # answered — 9.3's limiter lands here, so a 429 refusal is a span too.
+        otel_trace on;
+        otel_trace_context propagate;
+
         set $api_upstream ${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM};
         proxy_pass $api_upstream;
         proxy_http_version 1.1;

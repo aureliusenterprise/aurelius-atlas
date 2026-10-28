@@ -192,3 +192,14 @@ are never limited and the server itself carries no limiter. A deployment with
 internal callers on public addresses extends the geo block (one `0` entry per
 range); the e2e bucket is deliberately test-sized (60r/m, burst 20) so the
 burst test can outspend it.
+
+Both configs also carry **native edge tracing** (SHL-15, DD-239). The image
+carries the OTel tracing module (`ngx_otel_module`, built in the Dockerfile's
+builder stage on `dhi.io/nginx:1.30-alpine3.24-dev`): every `/api/` request
+exports an edge span to the collector's legacy gRPC leg
+(`AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT` + the stack CA +
+`AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN` as the static export header, ETR-01).
+The module is loaded through `/etc/nginx/modules/otel.conf` — the hardened
+base image includes that directory in the main context, the only place
+`load_module` is legal. A deployment with no collector points the endpoint at
+the leg it owns (the module has no mint: static export headers only, DD-239).
