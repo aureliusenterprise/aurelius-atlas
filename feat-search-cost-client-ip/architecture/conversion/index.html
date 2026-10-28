@@ -4014,6 +4014,8 @@
       
         
       
+        
+      
     
     
     
@@ -5648,6 +5650,33 @@
     
   
   9.3 Search cost and client IP
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-4-edge-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.4 Edge tracing
 
     
   </span>
@@ -8290,6 +8319,13 @@ checks a PR must pass:</p>
 <td>Search cost and client IP</td>
 <td>Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87)</td>
 <td>— (Atlas refreshes nothing on reads, JanusGraph; no limiter to port)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.4</td>
+<td>Edge tracing</td>
+<td>The webapp's nginx exports <code>/api/</code> spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239)</td>
+<td>— (no Java twin; nginx/OTLP are Aurelius infrastructure)</td>
 <td>in progress</td>
 </tr>
 </tbody>

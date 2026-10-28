@@ -111,6 +111,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 9.1 | Targeted resilience e2e | Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03) | — (no Java twin; Atlas ships no resilience e2e) | in progress |
 | 9.2 | Server hardening | TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86) | `AtlasBaseExceptionMapper` (cause echo, superseded for 5xx); no header filter to port | in progress |
 | 9.3 | Search cost and client IP | Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87) | — (Atlas refreshes nothing on reads, JanusGraph; no limiter to port) | in progress |
+| 9.4 | Edge tracing | The webapp's nginx exports `/api/` spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239) | — (no Java twin; nginx/OTLP are Aurelius infrastructure) | in progress |
 
 ## After phase 0
 
