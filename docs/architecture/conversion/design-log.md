@@ -233,6 +233,8 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-234](#dd-234--tls-material-is-a-required-setting-the-server-never-serves-plaintext)                             | TLS material is a required setting: the server never serves plaintext                                                             | 9.2           | Accepted         |
 | [DD-235](#dd-235--a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid)                                     | A 5xx answer is opaque and carries the trace id as `requestId`                                                                    | 9.2           | Accepted         |
 | [DD-236](#dd-236--security-response-headers-are-a-pure-asgi-middleware-split-on-api-path)                           | Security response headers are a pure-ASGI middleware split on `/api` path                                                         | 9.2           | Accepted         |
+| [DD-237](#dd-237--index-refresh-moves-from-reads-to-writes)                                                         | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes                                 | 9.3           | Accepted         |
+| [DD-238](#dd-238--the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)                                 | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                                 | 9.3           | Accepted         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7101,3 +7103,108 @@ middleware, not a framework feature.
 HSTS-off answers. The parity runner compares expected response headers only, so
 additive headers keep every scenario green. The dev compose stacks carry
 `HSTS_ENABLED=false` explicitly (e2e images do not read `.env`). Next free DD: 237.
+
+### DD-237 — Index refresh moves from reads to writes
+
+- **Status:** Accepted
+- **Increment:** 9.3
+- **Date:** 2026-10-28
+
+**Decision.** Every write a search reads carries `refresh="wait_for"`:
+the entity/linked bulk (`EntityDocuments.write`), the entity restore, the
+linked restore, the journal put and delete, and the audit append
+(`put_events`). No read path calls `indices.refresh` — `count_type`,
+`referring`, `classified`, `search`, `terms`, `journal`, `list_tasks`,
+`count_linked_type`, `classifications_of_types`, `list_events`,
+`entities_with_tag_changes` all lose theirs. Reservations stay unrefreshed:
+they are read by `mget`, which is real time (ENS-04). `wait_for` (not `true`)
+also waits for the _concurrent_ writes' refresh — the pair that keeps a
+reader from seeing half of one bulk (DV-16's shape, unchanged). ENS-11.
+
+**Reason.** Pentest M6: every read paid a full index refresh on the request's
+critical path — a search, a count, an audit listing each forced a refresh of
+the entities (or audits) index. That is a denial-of-service lever on the
+store, not a feature: `refresh` is a write-path affordance, and Apache Atlas
+refreshes nothing on reads (JanusGraph's transactional graph cache makes it
+pointless there). Read-your-writes (ENS-04, ENS-07's visible contract) needs
+the refresh _once_, at the write that created the fact; paying for it on
+every reader multiplies the cost by the read:write ratio.
+
+**Alternatives.** (a) `refresh=true` — refused: it forces a refresh of every
+shard immediately and serialises concurrent writers on it; `wait_for` joins
+the refresh the write's own request triggers. (b) Refresh only on the writes
+that mutate what the UI searches (bulk, restore) and leave journal/audit on
+reads — refused: the journal read is recovery's (a restart reads entries
+written moments before), the audit list rides the audit append; a partial
+move re-introduces the read-side cost on the paths kept. (c) No refresh at
+all, tolerate stale reads — refused: ENS-04's read-your-writes is
+scenario-pinned (write → search returns the entity), and Atlas's
+transactional visibility is the parity behaviour. (d) A `searchRequestCache`
+-style read-your-writes (ES's real-time GETs + `search_after` on `seq_no`):
+ES's `mget`-real-time + `wait_for`-refresh pair is the same guarantee with
+less machinery.
+
+**Consequences.** Write latency rises (the response waits for the refresh);
+read latency falls off a cliff at the p99. The fake client records the
+`refresh` kwarg of every write (`write_refreshes`) and keeps counting
+`indices.refresh` calls (`refreshes`), so the unit tests pin both halves:
+writes carry `wait_for`, reads call refresh never. The e2e parity scenarios
+(write → search sequences) are the acceptance over the real store — they
+stay green unchanged, which _is_ the read-your-writes proof. Supersedes the
+read-side refresh rationale in DD-043, DD-048, DD-057 (their decisions
+stand; only the refresh's location moves). Next free DD: 238.
+
+### DD-238 — The browser rate limit lives at the nginx edge, not in the server
+
+- **Status:** Accepted
+- **Increment:** 9.3
+- **Date:** 2026-10-28
+
+**Decision.** The webapp's nginx (`nginx.conf.template`, mirrored by
+`e2e/config/nginx.conf`) carries a `limit_req` leaky bucket on the `/api/`
+proxy: key `$binary_remote_addr` through a `geo`/`map` pair that maps the
+private ranges (RFC 1918 + loopback) to the empty key — nginx does not
+account requests with an empty key — `rate=300r/m`, `burst=100`, `nodelay`,
+`limit_req_status 429`. The server itself has no limiter: no middleware,
+no setting, no 429 error code in the enum. uvicorn's `forwarded_allow_ips`
+becomes a server setting (default `127.0.0.1`) so the webapp proxy hop is
+declared and the access log / OTel peer attributes key on the browser's
+address, not the proxy's (SRV-10). The e2e bucket is test-sized (60r/m,
+burst 20) so the burst test can outspend it sequentially. SRV-09.
+
+**Reason.** Pentest M6's search-cost half: a browser (or a script posing as
+one) can fire unbounded searches. The limit belongs where the browser is:
+at the webapp edge, nginx already terminates TLS, proxies `/api/`, stamps
+headers — the bucket is one more line of the same job, runs in C, shares
+state across workers in one shm zone, and refuses before a request costs a
+handler, a query, or an ES fan-out. The user's steer: internal apps are not
+the concern — a service bursting the API is working, a browser flooding it
+is attacking; the private-range allowlist is exactly that split. An
+application-layer limiter (pure-ASGI token bucket; slowapi/limits) was
+built and removed: it also limits the internal callers nobody worries
+about, its limits are per-process (a multi-worker deployment multiplies the
+budget), and uvicorn's default trust (`127.0.0.1`) makes every proxied
+request look like the proxy — every browser sharing one bucket. `limits`
+is also a transitive dependency of a library that is removable (the
+observability stack), a coupling DD-238's removal notes must keep straight.
+
+**Alternatives.** (a) The pure-ASGI middleware (built first) — removed for
+the reasons above; kept as a fallback only if a deployment runs the server
+without the webapp edge and wants a limiter (the server has no knob for it
+now). (b) slowapi — refused: Flask/FastAPI decorator middleware, same
+per-process limitation, new vocabulary (strategy/storage) for one rule.
+(c) `X-Forwarded-For`-keyed limiting in nginx (`realip` module) — refused:
+the browser cannot spoof the TCP address nginx sees; the webapp is the only
+front door, no realip hop is needed. (d) Elasticsearch-side throttling
+(`search.max_concurrent_shard_requests`) — refused for this increment: it
+protects the store from the server, not the server from browsers.
+
+**Consequences.** The refusal is nginx's 429 (HTML, no Atlas error body, no
+`Retry-After` — `limit_req` sends none): DV-87 records the deviation, the
+webapp's alert drawer (ALR-05) is the UX for the refused call. Deployments
+that front the server with something other than the webapp nginx get no
+limiter — that is the product boundary, stated in the spec. A deployment
+whose internal callers arrive from public addresses must extend the geo
+allowlist. `forwarded_allow_ips` ships `127.0.0.1` (uvicorn's own default —
+the setting exists to _name the proxy_, not to trust more by default). Next
+free DD: 239.

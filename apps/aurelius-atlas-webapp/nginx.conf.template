@@ -8,8 +8,38 @@
 # e2e/config/nginx.conf for a static resolved variant. The hardened runtime
 # image has no shell tooling to render at start, on purpose; an unresolved
 # container fails at config parse instead of serving with template defaults.
-# NOTE: the hardened image includes this file at *server* level, so only
-# server-scoped directives are allowed here (no http-level `map`).
+# NOTE: the hardened image includes this file inside its *http* block (the
+# last include in /etc/nginx/nginx.conf), so the file may open with http-level
+# directives (the limit_req_zone below); the server block then follows. Keep
+# everything else server-scoped.
+
+# Browser rate limit on the API proxy (SRV-09, DD-238): a per-client-IP leaky
+# bucket, 300 requests/minute sustained with a burst of 100 served immediately
+# (nodelay — a browser issues a page's requests at once), refusals answered
+# 429 (nginx's default 503 is a server-fault code and retries are pointless
+# for a browser). The key is a map, not $binary_remote_addr: requests from
+# private ranges — internal services calling the API directly, and dev/e2e
+# traffic — get the empty key, which nginx does not account (the blog's
+# allowlist pattern). The limit is the browser's: an internal caller bursting
+# is working, an attacker bursting is browsing. Extend the geo block (a 0 entry
+# per range) for deployment networks that are not RFC 1918.
+geo $atlas_api_limit_key {
+    default 1;
+    127.0.0.0/8 0;
+    ::1 0;
+    10.0.0.0/8 0;
+    172.16.0.0/12 0;
+    192.168.0.0/16 0;
+}
+
+map $atlas_api_limit_key $atlas_api_limit_addr {
+    0 "";
+    1 $binary_remote_addr;
+}
+
+limit_req_zone $atlas_api_limit_addr zone=atlas_api:10m rate=300r/m;
+limit_req_status 429;
+
 server {
     listen 8080;
 
@@ -81,6 +111,10 @@ server {
     resolver ${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER} valid=10s ipv6=off;
 
     location /api/ {
+        # The browser bucket (SRV-09): public addresses above, in a burst;
+        # 429 on overflow. The server itself never rate limits — internal
+        # callers arrive on private ranges, whose key is empty and unaccounted.
+        limit_req zone=atlas_api burst=100 nodelay;
         set $api_upstream ${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM};
         proxy_pass $api_upstream;
         proxy_http_version 1.1;
