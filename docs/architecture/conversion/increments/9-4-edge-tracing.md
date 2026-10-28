@@ -1,7 +1,7 @@
 # 9.4 Edge tracing: the webapp's nginx joins the trace
 
 - **Status:** in progress
-- **Pull request:** —
+- **Pull request:** [#156](https://github.com/aureliusenterprise/aurelius-atlas/pull/156)
 - **Records:** DD-239
 
 ## Scope
