@@ -6158,6 +6158,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-239 — The edge exports spans on the legacy leg, built in the dev-image stage
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6237,6 +6248,8 @@
       
         
           
+        
+      
         
       
         
@@ -7962,6 +7975,33 @@
     
   
   9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-4-edge-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.4 Edge tracing
 
     
   </span>
@@ -12142,6 +12182,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-239 — The edge exports spans on the legacy leg, built in the dev-image stage
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13494,6 +13545,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-236--security-response-headers-are-a-pure-asgi-middleware-split-on-api-path">DD-236</a></td>
 <td>Security response headers are a pure-ASGI middleware split on <code>/api</code> path</td>
 <td>9.2</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-239--the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage">DD-239</a></td>
+<td>The webapp's nginx exports <code>/api/</code> spans on the collector's legacy leg; the module builds in the image's dev-stage</td>
+<td>9.4</td>
 <td>Accepted</td>
 </tr>
 </tbody>
@@ -19923,6 +19980,61 @@ middleware, not a framework feature.</p>
 HSTS-off answers. The parity runner compares expected response headers only, so
 additive headers keep every scenario green. The dev compose stacks carry
 <code>HSTS_ENABLED=false</code> explicitly (e2e images do not read <code>.env</code>). Next free DD: 237.</p>
+<h3 id="dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage">DD-239 — The edge exports spans on the legacy leg, built in the dev-image stage<a class="headerlink" href="#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 9.4</li>
+<li><strong>Date:</strong> 2026-10-28</li>
+</ul>
+<p><strong>Decision.</strong> The webapp's nginx becomes an OTLP producer through the native
+<code>ngx_otel_module</code> (v0.1.2), compiled in a Docker builder stage on
+<code>dhi.io/nginx:1.30-alpine3.24-dev</code> against the exact nginx source the runtime
+image ships, loaded via the main-context include the hardened image already
+provides (<code>/etc/nginx/modules/*.conf</code>), and exporting the <code>/api/</code> spans to the
+collector's <strong>legacy gRPC leg</strong> (4320: TLS, CA-pinned, shared ingest token).
+The edge span propagates W3C context (<code>extract|inject</code>), so it stitches
+browser-app trace → edge span → server request span; static assets stay
+untraced. The edge is a producer, not a user: the collector stamps no user
+identity on it (CIA-09's rule, edge edition). ETR-01..03. (Numbering note:
+PR #155 reserves DD-237/238; 239 here assumes it merges first.)</p>
+<p><strong>Reason.</strong> The edge is the browser's only entry point and the one hop the
+stack cannot see; once 9.3's limiter lands, refusals (429) exist <em>only</em> at the
+edge — nginx's refusal lines go to container stderr, which the collector does
+not collect (OTLP-only receivers), so without this the event is invisible in
+Tempo/Loki/Grafana. The module's native span carries the edge's own view
+(<code>http.status_code</code>, <code>net.sock.peer.addr</code>, the matched route) and joins the
+trace the browser started. The 2022 blog's Lua/OpenTelemetry-Collector-sidecar
+route is obsolete next to the native module (nginx measures third-party
+tracing at ~50% request cost, native at 10-15%).</p>
+<p><strong>Alternatives.</strong> (a) Per-service OAuth like every other producer — the
+module's export headers are config-parse-time <strong>static strings</strong> with no
+refresh hook (source: <code>addExporterHeader</code> validates at parse, the exporter
+builds once in <code>initWorkerProcess</code>), so a minted Keycloak JWT expires minutes
+in; a gateway collector presenting <code>oauth2client</code> to the services leg is the
+recorded upgrade path, not this increment. The legacy leg is the defined home
+for producers that cannot present a JWT (CIA-10 — Keycloak and the FastAPI
+example ride it). (b) The <code>-dev</code> image as runtime — it is a toolchain, not a
+product; the runtime stage is the hardened image plus the module's 93-lib
+closure (~42 MB, gRPC/protobuf/abseil/ICU: gRPC pulls ICU at runtime, verified
+by ldd). (c) <code>filelog</code>-tailing nginx's stderr into Loki — answers "where are
+the refusal logs" with lines, not spans: no trace join, no client-side
+stitch, and the collector has no container-log receiver today; the span
+supersedes the log line. (d) The module from nginx.org's prebuilt dynmodules —
+built for glibc nginx.org binaries; our base is the hardened musl image
+(module signature is feature-flag checked, and musl will not resolve Alpine's
+dangling soname symlinks — the builder tars the closure dereferenced, <code>-h</code>).</p>
+<p><strong>Consequences.</strong> The webapp image grows 14→56 MB; the SBOM/license report
+gains grpc/protobuf/abseil/re2/icu (Apache/BSD). The builder pins the v0.1.2
+tag with the cmake-4 policy flag (its <code>cmake_minimum_required</code> predates 3.5)
+and apk's <code>python-3.14</code> (the dev image's xcb-proto resolves 3.14; bare
+<code>python</code> is 3.15 now) — reproducible-build facts recorded here.
+<code>limit_req</code> and this module share the <code>/api/</code> location: the limiter refuses
+before the span's <code>http.status_code</code> records the 429 (the module samples at
+the rewrite phase, completes at the log phase — a refused request's span is
+real, proven in the prototype burst). The v0.1.x line is 2023-frozen
+(4 open issues, no maintainer activity); re-evaluate at the next nginx
+baseline (the 1.30 signature check is the compatibility gate — a mismatched
+module fails at config parse, loudly, at boot). Next free DD: 240.</p>
 
 
 

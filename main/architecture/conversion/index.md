@@ -110,6 +110,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 8.7 | Client failure contract | Test-completeness of the four client libraries (DD-125): 2xx-with-garbage-body, timeout vs connect error, raising token source, concurrent `with_token` (adds CL-08; proves CL-03/04/05) | — (the 8.4 clients, unproven failure paths) | in progress |
 | 9.1 | Targeted resilience e2e | Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03) | — (no Java twin; Atlas ships no resilience e2e) | in progress |
 | 9.2 | Server hardening | TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86) | `AtlasBaseExceptionMapper` (cause echo, superseded for 5xx); no header filter to port | in progress |
+| 9.4 | Edge tracing | The webapp's nginx exports `/api/` spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239) | — (no Java twin; nginx/OTLP are Aurelius infrastructure) | in progress |
 
 ## After phase 0
 
