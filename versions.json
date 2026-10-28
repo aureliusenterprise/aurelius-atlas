@@ -110,6 +110,11 @@
     "aliases": []
   },
   {
+    "version": "feat-stateful-charts",
+    "title": "feat-stateful-charts",
+    "aliases": []
+  },
+  {
     "version": "feat-search-results",
     "title": "feat-search-results",
     "aliases": []
