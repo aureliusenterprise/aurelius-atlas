@@ -1,0 +1,1 @@
+{{- include "atlas-elasticsearch.requireValues" (dict "values" .Values) }}

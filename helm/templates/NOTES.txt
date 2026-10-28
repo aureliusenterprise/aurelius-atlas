@@ -1,0 +1,25 @@
+Aurelius Atlas {{ .Chart.AppVersion }} installed into namespace {{ include "aurelius-atlas.namespace" . }}.
+
+Edge (DD-242, Gateway API {{ .Values.global.gateway.className }}):
+{{- if .Values.global.hosts.atlas.enabled }}
+  https://{{ include "aurelius-atlas.atlasHost" . }}          webapp (SPA, /api, /otel)
+{{- end }}
+{{- if .Values.global.hosts.keycloak.enabled }}
+  https://{{ include "aurelius-atlas.keycloakHost" . }}    identity provider (issuer: {{ include "aurelius-atlas.issuerUrl" . }})
+{{- end }}
+{{- if .Values.global.hosts.dashboard.enabled }}
+  https://{{ include "aurelius-atlas.dashboardHost" . }}    legacy dashboards (server /, /n/)
+{{- end }}
+{{- if .Values.global.hosts.grafana.enabled }}
+  https://{{ include "aurelius-atlas.grafanaHost" . }}      Grafana
+{{- end }}
+
+Generated credentials (DD-244) live in Secrets; read one with:
+  kubectl -n {{ include "aurelius-atlas.namespace" . }} get secret {{ .Release.Name }}-elasticsearch -o jsonpath='{.data.elastic-password}' | base64 -d
+
+Prerequisites the chart does NOT install (runbook): cert-manager, a GatewayClass
+named {{ .Values.global.gateway.className | quote }}, and the dhi.io pull secret
+if the cluster cannot pull dhi.io images without credentials.
+
+WARNING: Keycloak pins its issuer at first boot. {{ include "aurelius-atlas.issuerUrl" . }}
+is now final for this install — changing global.domain later requires a realm rebuild.

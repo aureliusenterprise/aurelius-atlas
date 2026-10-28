@@ -1,0 +1,132 @@
+# The webapp chart — its runtime contract (CHT-02).
+# apps/aurelius-atlas-webapp ships an nginx whose shipped config is a TEMPLATE:
+# the deployment resolves it and mounts the result over
+# /etc/nginx/conf.d/default.conf, and serves /config.json for bootstrap
+# (SHL-02: the prod build bundles neither). This chart owns both ConfigMaps;
+# 10.3 renders them. The reference resolution is the e2e stack's
+# apps/aurelius-atlas-webapp/e2e/config/nginx.conf.
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    # The umbrella's dnsResolver: nginx's per-request upstream resolution
+    # (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER).
+    dnsResolver: ""
+
+enabled: true
+component: webapp
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 2
+port: 8080
+
+image:
+    name: aurelius-atlas-webapp
+    tag: ""
+
+resources:
+    requests:
+        cpu: 50m
+        memory: 64Mi
+    limits:
+        memory: 256Mi
+
+# nginx's resolver (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER). "" takes the chart
+# default 10.96.0.10 (the ClusterIP default); the runbook reads the live
+# cluster value: kubectl -n kube-system get svc kube-dns -o jsonpath.
+dnsResolver: ""
+
+# The upstreams the nginx template names (placeholders _API_UPSTREAM,
+# _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME). "" defaults in
+# 10.3: server/collector service DNS in this namespace. _NAME is the
+# proxy_ssl_name — it must match the upstream certificate's SAN (DD-243).
+nginx:
+    apiUpstream: ""
+    apiUpstreamName: ""
+    otelUpstream: ""
+    otelUpstreamName: ""
+    # The browser leg's OTLP endpoint the SPA is told about (config.json).
+    otlpEndpoint: /otel/v1/traces
+    # CSP connect-src/frame-src additions — the Keycloak origins (the template's
+    # ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}); "" derives from the issuer URL.
+    keycloakOrigins: ""
+
+# /config.json (SHL-02): served at bootstrap, shape in src/app/config.ts.
+# "" values derive in 10.3: keycloak.url from the umbrella's issuer URL,
+# appVersion from the release tag.
+config:
+    apiBaseUrl: /api
+    appName: "Aurelius Atlas Data Governance"
+    appCopyright: 2026
+    appVersion: ""
+    keycloak:
+        clientId: aurelius
+        realm: master
+        url: ""
+    otelExporterUrl: /otel/v1/traces
+    otelMetricsExporterUrl: /otel/v1/metrics
+
+probes:
+    # Plain HTTP: the container serves 8080 plaintext; TLS terminates at the
+    # gateway (DD-242). The liveness probe answers when nginx is up.
+    livenessPath: /
+    readinessPath: /config.json
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+tls:
+    # The CA the nginx proxy verifies the API/collector upstreams against
+    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}).
+    secretName: ""
+    caConfigMap: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+service:
+    type: ClusterIP
+    port: 8080
+
+serviceAccount:
+    create: true
+    name: ""
+
+# The legacy-leg ingest token (DD-239): the nginx otel module's export
+# credential. Browser-reachable by design (DD-244) — a public ingest
+# constant, not a secret to protect. From <release>-collector-legacy.
+otelIngestToken:
+    secret: ""
+    key: token
+
+configMapRefs: []
+extraEnv: []
+extraVolumes: []
+extraVolumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+        drop:
+            - ALL
+
+required: []

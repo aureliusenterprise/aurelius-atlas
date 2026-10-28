@@ -71,3 +71,16 @@ jobs:
               env:
                   VERSION: ${{ github.ref_name }}
                   IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/aurelius-atlas/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"
+
+            # Charts publish after images (CHT-05, ADR 057): the release's
+            # OCI chart set lands in the same registry namespace as the
+            # images it deploys. Chart versions carry the release semver
+            # WITHOUT the leading v (helm's constraint; DD-245), and the
+            # umbrella's helm-publish cascades to the component charts it
+            # embeds, so one target publishes the tested combination
+            # (CHT-07). Chart signing (cosign on OCI artifacts) is a
+            # follow-up, per the increment spec.
+            - name: Publish charts
+              run: npx nx run-many -t helm-publish -- --version "${VERSION#v}"
+              env:
+                  VERSION: ${{ github.ref_name }}

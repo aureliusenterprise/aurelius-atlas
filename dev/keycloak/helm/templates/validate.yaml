@@ -1,0 +1,1 @@
+{{- include "atlas-keycloak.requireValues" (dict "values" .Values) }}

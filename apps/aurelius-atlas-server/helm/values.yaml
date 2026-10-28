@@ -1,0 +1,117 @@
+# The Atlas server chart — its runtime contract (CHT-02).
+# The port, probes, settings env (prefix AURELIUS_ATLAS_SERVER_), and trust
+# mounts of apps/aurelius-atlas-server. Workload manifests land in 10.3.
+
+# The umbrella's contract (CHT-03). The shape is declared whole: Helm merges
+# the umbrella's global over this, and Go templates fail on deep access into a
+# missing map — so every key a template reads must exist at its default.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+
+enabled: true
+component: server
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+port: 21000
+
+image:
+    name: aurelius-atlas-server
+    # "" takes the chart's appVersion, which the release sets to the image tag (DD-245).
+    tag: ""
+
+resources:
+    requests:
+        cpu: 250m
+        memory: 512Mi
+    limits:
+        memory: 1Gi
+
+probes:
+    livenessPath: /api/atlas/admin/liveness
+    readinessPath: /api/atlas/admin/readiness
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 6
+    failureThreshold: 3
+
+# TLS material (SRV-06: the server refuses to start without it, DD-234).
+# The umbrella's Certificate writes the Secret (certificate/tls.crt, key/
+# tls.key, ca/ca.crt); the CA ConfigMap carries the trust root for the store
+# and the collector (DD-243).
+tls:
+    secretName: ""
+    caConfigMap: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+service:
+    type: ClusterIP
+    port: 21000
+
+serviceAccount:
+    create: true
+    name: ""
+
+# Settings env, verbatim names (ADR 018: the component's prefix is its contract).
+# Computed defaults land in 10.3 (ELASTICSEARCH_HOSTS derives from the store's
+# service; REVISION from the release tag):
+#   AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS = ["https://<es-service>.<ns>.svc:9200"]
+config:
+    AURELIUS_ATLAS_SERVER_HOST: "0.0.0.0"
+    AURELIUS_ATLAS_SERVER_PORT: "21000"
+    AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+    AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
+    AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
+    AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /etc/aurelius-atlas/tls/ca.crt
+    # Client-IP trust (SRV-10, DD-238): the webapp's nginx is the front door;
+    # set this to the cluster's pod CIDR so logs key on the browser's address.
+    AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS: "10.244.0.0/16"
+    # OTLP export on the per-service leg (DD-196): a minted client JWT, not a
+    # static header. Computed in 10.3:
+    #   AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT = https://<collector>.<ns>.svc:4319
+    #   AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL = <issuer>/realms/master/protocol/openid-connect/token
+    AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
+    AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    OTEL_SEMCONV_STABILITY_OPT_IN: http
+
+# Settings that arrive from Secrets (DD-244): name/key pairs. 10.3 wires:
+#   AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD <- <release>-elasticsearch/elastic-password
+#   AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET     <- <release>-otel-clients/OTEL_INGEST_CLIENT_SECRET
+secretRefs: []
+configMapRefs: []
+extraEnv: []
+
+extraVolumes: []
+extraVolumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+# Render-time guards (ADR 018): [{key, message}] on chart values.
+required: []

@@ -1,0 +1,89 @@
+# The search store chart — its runtime contract (CHT-02).
+# The port, TLS layout, heap, and data volume of the Elasticsearch the server
+# uses as its system of record (ADR 047). The StatefulSet, ConfigMap
+# (elasticsearch.yml shape: dev/elasticsearch/config), the GKE coredump-agent
+# init container, and the openssl-s_client exec healthcheck land in 10.2.
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    storageClass: ""
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+
+enabled: true
+component: elasticsearch
+nameOverride: ""
+fullnameOverride: ""
+
+# Topology: single-node now (discovery.type=single-node, transport TLS off —
+# the dev arrangement, DD-006); replicas>1 switches to a quorum cluster with
+# per-node transport certificates (10.2 implements the switch).
+replicas: 1
+
+image:
+    # The hardened store image (dhi.io mirror path; a deployment may point at
+    # its own mirror). The Aurelius app images live under global.image.
+    repository: dhi.io/elasticsearch
+    tag: "9.5-debian13"
+
+# The store's built-in `elastic` user (bootstrap password from
+# <release>-elasticsearch/elastic-password, DD-244).
+auth:
+    username: elastic
+
+# Heap = half of memory limit is the rule; set both together.
+resources:
+    requests:
+        cpu: 500m
+        memory: 2Gi
+    limits:
+        memory: 2Gi
+heap: 1g
+
+persistence:
+    size: 30Gi
+    accessModes:
+        - ReadWriteOnce
+
+service:
+    # Headless + ClusterIP published by 10.2; the server reaches
+    # https://<service>.<ns>.svc:9200 with ELASTICSEARCH_CA_CERTS pinned.
+    port: 9200
+
+tls:
+    secretName: ""
+    caConfigMap: ""
+    # Paths inside config/ (the image's ES_PATH_CONF): the yml names
+    # tls/elasticsearch.pem etc. relative to the config dir (DD-006 layout).
+    mountPath: /usr/share/elasticsearch/config/tls
+
+serviceAccount:
+    create: true
+    name: ""
+
+# ES_JAVA_OPTS extras appended to the heap flags (the coredump javaagent
+# arrives with the 10.2 init container, appended by the chart).
+extraJavaOpts: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+# The store's entrypoint is root (it chowns the data volume, then gosu's to
+# uid 1000), so the pod runs root + fsGroup 1000 — the compose volume-init's
+# in-cluster shape (10.2).
+podSecurityContext:
+    fsGroup: 1000
+
+required: []

@@ -1,0 +1,54 @@
+apiVersion: v2
+name: aurelius-atlas
+description: "Aurelius Atlas — an Apache Atlas-compatible metadata catalogue on Elasticsearch. Umbrella chart: composes the component charts and owns the edge, the trust model, and the shared secrets."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+    - data-catalogue
+    - metadata
+    - elasticsearch
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas
+dependencies:
+    # Pin-equal (DD-245): the umbrella ships exactly the component-chart set CI
+    # tested. `helm package -u` embeds these tarballs in the published archive,
+    # so an install from OCI resolves the tested combination with no registry
+    # round-trip. The version is bumped with every release by Nx release, and
+    # `helm dependency update` refuses a mismatch. Each component chart lives
+    # next to the project it deploys (DD-247); the paths below are the only
+    # place the two trees are joined.
+    - name: atlas-server
+      version: "=0.1.0"
+      repository: "file://../apps/aurelius-atlas-server/helm"
+      condition: atlas-server.enabled
+    - name: atlas-webapp
+      version: "=0.1.0"
+      repository: "file://../apps/aurelius-atlas-webapp/helm"
+      condition: atlas-webapp.enabled
+    - name: atlas-data2model
+      version: "=0.1.0"
+      repository: "file://../apps/aurelius-atlas-data2model/helm"
+      condition: atlas-data2model.enabled
+    - name: atlas-lineage-model
+      version: "=0.1.0"
+      repository: "file://../apps/aurelius-atlas-lineage-model/helm"
+      condition: atlas-lineage-model.enabled
+    - name: atlas-validate-entity
+      version: "=0.1.0"
+      repository: "file://../apps/aurelius-atlas-validate-entity/helm"
+      condition: atlas-validate-entity.enabled
+    - name: atlas-elasticsearch
+      version: "=0.1.0"
+      repository: "file://../dev/elasticsearch/helm"
+      condition: atlas-elasticsearch.enabled
+    - name: atlas-keycloak
+      version: "=0.1.0"
+      repository: "file://../dev/keycloak/helm"
+      condition: atlas-keycloak.enabled
+    - name: atlas-observability
+      version: "=0.1.0"
+      repository: "file://../dev/observability/helm"
+      condition: atlas-observability.enabled

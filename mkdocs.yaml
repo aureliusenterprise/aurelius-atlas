@@ -243,6 +243,10 @@ nav:
                       - 9.2 Server hardening: architecture/conversion/increments/9-2-server-hardening.md
                       - 9.3 Search cost and client IP: architecture/conversion/increments/9-3-search-cost-client-ip.md
                       - 9.4 Edge tracing: architecture/conversion/increments/9-4-edge-tracing.md
+                      - 10.1 Deployment chart foundation: architecture/conversion/increments/10-1-chart-foundation.md
+          - Deployment:
+                - architecture/deployment/index.md
+                - Runbook: architecture/deployment/runbook.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

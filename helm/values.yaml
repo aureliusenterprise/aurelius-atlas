@@ -1,0 +1,161 @@
+# Aurelius Atlas umbrella chart — values contract (CHT-03).
+#
+# This file is the system's deployment surface: everything an environment may
+# change. Component knowledge lives in the component charts; the umbrella owns
+# the joins — the edge, the trust model, the shared secrets, and `global`.
+#
+# Conventions:
+#   * A value left "" takes the default the chart computes (see comments);
+#     a value set here wins. `helm lint`/`helm template` render standalone.
+#   * No value names a cloud provider (CHT-04); environment differences are
+#     `environments/*.yaml` overlays, never chart forks.
+
+global:
+    # Namespace the system installs into. Subcharts inherit it; a component
+    # installed standalone defaults to its release namespace.
+    namespace: atlas
+
+    # Base domain for the browser-facing hosts. The issuer URL, the Keycloak
+    # hostname, and the host certificates all derive from it, so a deployment
+    # sets exactly one value to retarget a cluster.
+    # WARNING (runbook): Keycloak pins its issuer at first boot — set the final
+    # hostname before the first install; changing it afterwards invalidates
+    # issued tokens and needs a realm rebuild.
+    domain: atlas.localhost
+
+    # Labels added to every resource of every chart.
+    labels: {}
+
+    image:
+        # Image registry for the Aurelius images: <registry>/<namespace>/<name>:<tag>.
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        # Tag override for all Aurelius images; "" takes each chart's
+        # appVersion, which the release sets to the release tag (DD-245).
+        tag: ""
+        # Pull secrets, e.g. [{name: dhi-pull}] for dhi.io base images on
+        # clusters without a pull-through cache. Created outside the chart
+        # (runbook) — the chart consumes names, never credentials.
+        pullSecrets: []
+
+    # StorageClass for every volume claim (store, Keycloak DB, observability);
+    # "" takes the cluster default.
+    storageClass: ""
+
+    # The DNS resolver the webapp's nginx uses for per-request upstream
+    # resolution. Empty renders the chart default (kube-dns cluster IP
+    # 10.96.0.10, the ClusterIP default many clusters use); the runbook reads
+    # the live value with `kubectl -n kube-system get svc kube-dns`.
+    dnsResolver: ""
+
+    issuer:
+        # Keycloak issuer root the components verify tokens against;
+        # "" defaults to https://keycloak.<domain> (the keycloak host below).
+        url: ""
+
+    trust:
+        # Create a self-signed ClusterIssuer for in-cluster certificates
+        # (DD-243). Turn off to bring an existing issuer (ACME, a private CA).
+        createIssuer: true
+        # The issuer every Certificate in the system is signed by.
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: ClusterIssuer
+        # Secret carrying the trust root (key: ca.crt) the components pin by
+        # file. "" defaults to "<issuerRef.name>-ca" — the secret cert-manager
+        # creates for a self-signed issuer. Point it elsewhere (or set
+        # caBundle) when the issuer is external and its CA is not in-cluster.
+        caSecretName: ""
+        # PEM of the trust root, installed as a Secret when set; overrides
+        # caSecretName. For ACME/private-CA issuers whose CA is not on-cluster.
+        caBundle: ""
+
+    gateway:
+        # GatewayClass serving the edge (DD-242). Envoy Gateway on a stock
+        # cluster; a managed cluster names its own implementation
+        # ("gke.l4-gateway-netsvc" et al.) — the chart renders the same API.
+        className: envoy-gateway
+        # Port the Gateway listens on (TLS terminates at the gateway; the
+        # webapp→server hop stays TLS).
+        port: 443
+
+    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-242).
+    hosts:
+        atlas:
+            enabled: true
+            # "" defaults to atlas.<domain> — the webapp: SPA, /config.json,
+            # and the /api and /otel proxies (the tested data path, DD-142).
+            host: ""
+        keycloak:
+            enabled: true
+            # "" defaults to keycloak.<domain> — the identity provider the
+            # browser redirects to (ADR 007).
+            host: ""
+        dashboard:
+            # The vendored Apache Atlas dashboards (server /, /n/ — DD-018).
+            # Off by default: the server is not browser-exposed while the
+            # webapp is the product surface (ADR 054).
+            enabled: false
+            # "" defaults to dashboard.<domain>.
+            host: ""
+        grafana:
+            # Off by default; `kubectl port-forward` reaches it (runbook).
+            enabled: false
+            # "" defaults to grafana.<domain>.
+            host: ""
+
+# Shared runtime credentials (DD-244). The umbrella generates what is empty,
+# preserves generated values across upgrades (lookup), and writes one Secret
+# per consumer; the component charts mount them by name. None is committed
+# (R5). Retrieval: kubectl get secret -n <ns> <release>-<purpose> -o jsonpath.
+secrets:
+    elasticsearch:
+        # elastic user bootstrap password → Secret <release>-elasticsearch.
+        password: ""
+    keycloakAdmin:
+        user: admin
+        password: ""
+    keycloakDatabase:
+        user: keycloak
+        password: ""
+    otelClients:
+        # Client secret the realm's otel-* service accounts share (the
+        # collector's per-service leg verifies their JWTs) →
+        # Secret <release>-otel-clients, key OTEL_INGEST_CLIENT_SECRET.
+        secret: ""
+    collectorLegacy:
+        # Static token on the collector's legacy leg — the webapp edge's
+        # export credential. Browser-reachable by design (DD-239, DD-244):
+        # treat it as a public ingest endpoint's constant.
+        token: ""
+    keycloakUsers:
+        # Demo account passwords the realm import fills (${DEV_USER_*}).
+        writerPassword: ""
+        readerPassword: ""
+
+# ─── Component charts ───────────────────────────────────────────────────────
+# Key = chart name; `enabled` gates the subchart, everything else passes
+# through to that chart (its own values.yaml documents its surface).
+atlas-elasticsearch:
+    enabled: true
+atlas-keycloak:
+    enabled: true
+    # Keycloak's database, bundled by the atlas-keycloak chart (CHT-02):
+    # disable with database.flavor=external and point Keycloak at an existing
+    # Postgres via database.url.
+    postgres:
+        enabled: true
+atlas-server:
+    enabled: true
+atlas-webapp:
+    enabled: true
+atlas-data2model:
+    enabled: true
+atlas-lineage-model:
+    enabled: true
+atlas-validate-entity:
+    enabled: true
+atlas-observability:
+    # ADR 016: the system observes itself. Off only for deployments that
+    # point telemetry at their own collector (values, not a fork).
+    enabled: true
