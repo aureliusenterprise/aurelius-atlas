@@ -1,0 +1,140 @@
+{{/*
+Tempo (CHT-39): Deployment + PVC with the byte-copied config (OTLP HTTP on
+4318, HTTP/API on 3200, storage under /var/tempo — the PVC's mount). The
+Service carries both: the collector exports traces to :4318, Grafana's tempo
+datasource and Prometheus's tempo job read :3200. Tempo's own gRPC OTLP
+receiver (:4317) stays unused in-cluster — only the collector is an ingest
+seam (CHT-36).
+*/}}
+{{- if .Values.tempo.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}-tempo
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            {{- include "atlas-observability.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: tempo
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-observability.labels" . | nindent 16 }}
+                app.kubernetes.io/component: tempo
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: tempo
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.tempo.image.repository "tag" .Values.tempo.image.tag "defaultTag" "3-debian13") | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    args:
+                        - "-config.file=/etc/tempo/config.yaml"
+                    ports:
+                        -   name: otlp-http
+                            containerPort: 4318
+                            protocol: TCP
+                        -   name: http
+                            containerPort: {{ int .Values.tempo.probes.port }}
+                            protocol: TCP
+                    livenessProbe:
+                        httpGet:
+                            path: /ready
+                            port: http
+                        initialDelaySeconds: {{ int .Values.tempo.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.tempo.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.tempo.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.tempo.probes.failureThreshold }}
+                    readinessProbe:
+                        httpGet:
+                            path: /ready
+                            port: http
+                        initialDelaySeconds: {{ int .Values.tempo.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.tempo.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.tempo.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.tempo.probes.failureThreshold }}
+                    {{- with .Values.tempo.resources }}
+                    resources:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+                    volumeMounts:
+                        -   name: config
+                            mountPath: /etc/tempo/config.yaml
+                            subPath: config.yaml
+                            readOnly: true
+                        -   name: data
+                            mountPath: /var/tempo
+            volumes:
+                -   name: config
+                    configMap:
+                        name: {{ $fullname }}-tempo
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: {{ $fullname }}-tempo
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    accessModes:
+        - ReadWriteOnce
+    {{- with .Values.global.storageClass }}
+    storageClassName: {{ . | quote }}
+    {{- end }}
+    resources:
+        requests:
+            storage: {{ .Values.tempo.persistence.size | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ $fullname }}-tempo
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    ports:
+        -   name: otlp-http
+            port: 4318
+            targetPort: otlp-http
+            protocol: TCP
+        -   name: http
+            port: {{ int .Values.tempo.probes.port }}
+            targetPort: http
+            protocol: TCP
+    selector:
+        {{- include "atlas-observability.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tempo
+{{- end }}

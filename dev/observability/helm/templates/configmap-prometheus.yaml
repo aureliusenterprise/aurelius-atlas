@@ -1,0 +1,53 @@
+{{/*
+The Prometheus scrape ConfigMap (CHT-38): dev/observability/config/prometheus.
+yaml's five jobs with the native-histogram protocol pins kept, retargeted to
+this chart's Service names (DD-266 — static configs, not service discovery; no
+Prometheus Operator). The job_names are the contract the observability-stack
+dashboard pins (job="otel-collector", "otel-collector-internal", "loki",
+"tempo", "prometheus") and are unchanged.
+*/}}
+{{- if .Values.prometheus.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-prometheus
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    prometheus.yaml: |
+        global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+
+        scrape_configs:
+            - job_name: prometheus
+              static_configs:
+                  - targets: ["{{ $fullname }}-prometheus:{{ int .Values.prometheus.probes.port }}"]
+
+            - job_name: otel-collector
+              # OTLP-pushed exponential histograms reach us as Prometheus
+              # native histograms via the collector's prometheus exporter;
+              # text scraping would flatten them to a lone +Inf bucket.
+              scrape_protocols: ["PrometheusProto", "OpenMetricsText1.0.0", "PrometheusText0.0.4"]
+              scrape_native_histograms: true
+              static_configs:
+                  - targets: ["{{ $fullname }}:{{ int .Values.service.metricsPort }}"]
+
+            # Self-monitoring: the stack's own internal metrics. :8888 is the
+            # collector's internal telemetry (otelcol_* pipeline health);
+            # loki/tempo expose their own. Other slices' telemetry arrives via
+            # OTLP push (their pullers, DD-266), never scrape.
+            - job_name: otel-collector-internal
+              static_configs:
+                  - targets: ["{{ $fullname }}:{{ int .Values.service.internalPort }}"]
+
+            - job_name: loki
+              static_configs:
+                  - targets: ["{{ $fullname }}-loki:{{ int .Values.loki.probes.port }}"]
+
+            - job_name: tempo
+              static_configs:
+                  - targets: ["{{ $fullname }}-tempo:{{ int .Values.tempo.probes.port }}"]
+{{- end }}

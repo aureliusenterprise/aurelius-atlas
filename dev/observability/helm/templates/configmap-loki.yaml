@@ -1,0 +1,19 @@
+{{/*
+Loki's ConfigMap (CHT-39): a byte-copy of dev/observability/config/loki.yaml
+(DD-256 pattern — the suite byte-compares the asset). The config is
+environment-free: auth off, in-memory ring, filesystem storage under /loki
+(the PVC's mount); no cluster slot to compute.
+*/}}
+{{- if .Values.loki.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-loki
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    config.yaml: |
+        {{- .Files.Get "files/loki.yaml" | nindent 8 }}
+{{- end }}

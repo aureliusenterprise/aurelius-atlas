@@ -90,6 +90,35 @@ service:
     # StatefulSet (CHT-10).
     port: 9200
 
+# The slice-owned metrics puller (CHT-43, DD-266): Elasticsearch speaks no
+# OTLP, so the chart runs the dev config/metrics-puller.yaml as a Deployment —
+# the contrib collector image scraping this store and pushing OTLP (per-
+# service leg, oauth2client mint) to the observability chart's collector.
+telemetry:
+    enabled: false
+    # The collector Service; "" derives this release's atlas-observability
+    # chart name (the siblingService name rule, as the server chart).
+    service: ""
+    # The collector's per-service gRPC leg (DD-196).
+    port: 4317
+    # The OTel realm the ingest JWT mints against.
+    realm: master
+    image:
+        repository: dhi.io/opentelemetry-collector
+        tag: "0-debian13-contrib"
+    # The issuer-wait init image (CHT-37's pattern, DD-226): a poll, not a
+    # workload — busybox is enough and declares the same uid (65532).
+    issuerWait:
+        image:
+            repository: dhi.io/busybox
+            tag: "1.37"
+    resources:
+        requests:
+            cpu: 50m
+            memory: 128Mi
+        limits:
+            memory: 256Mi
+
 tls:
     # "" takes the Certificate's Secret (<fullname>-tls); set to bring your
     # own (keys tls.crt/tls.key/ca.crt — projected into the image's PEM names

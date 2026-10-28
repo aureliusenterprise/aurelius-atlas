@@ -1,0 +1,726 @@
+{
+    "annotations": { "list": [] },
+    "description": "Health of the dev Elasticsearch cluster (exported_job 'dev-elasticsearch', scraped by the dev-elasticsearch metrics-puller sidecar). Stat cards are live cluster gauges; activity charts count work per time bucket, so dev traffic shows small whole numbers rather than fractional per-second rates.",
+    "id": null,
+    "panels": [
+        {
+            "collapsed": false,
+            "description": "Cluster-level health cards and cluster-state activity.",
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+            "id": 100,
+            "panels": [],
+            "title": "Cluster",
+            "type": "row"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Cluster status (green/yellow/red) computed from the cluster-health gauges: red wins over yellow over green. Yellow = a replica shard is unassigned (dev runs a single node, so yellow with 1 data node is normal); red means a primary is lost and data is unreadable.",
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "options": {
+                                "0": { "color": "green", "text": "green" },
+                                "1": { "color": "yellow", "text": "yellow" },
+                                "2": { "color": "red", "text": "red" }
+                            },
+                            "type": "value"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "green", "value": null },
+                            { "color": "yellow", "value": 1 },
+                            { "color": "red", "value": 2 }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": { "calcs": ["lastNotNull"] }
+            },
+            "targets": [
+                {
+                    "expr": "2 * (max(elasticsearch_cluster_health{exported_job=\"dev-elasticsearch\",status=\"red\"}) or on() vector(0)) + (max(elasticsearch_cluster_health{exported_job=\"dev-elasticsearch\",status=\"yellow\"}) or on() vector(0))",
+                    "refId": "A"
+                }
+            ],
+            "title": "Cluster Status",
+            "type": "stat"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Total nodes joined to the cluster (live gauge). The dev cluster is a single node; dropping to 0 means Elasticsearch is down or the puller lost it.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "red", "value": null },
+                            { "color": "green", "value": 1 }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": { "calcs": ["lastNotNull"] }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_nodes{exported_job=\"dev-elasticsearch\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Nodes",
+            "type": "stat"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Nodes holding data (live gauge). Same as Nodes on this single-node dev cluster; a gap between the two means a node lost its data role.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "red", "value": null },
+                            { "color": "green", "value": 1 }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": { "calcs": ["lastNotNull"] }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_data_nodes{exported_job=\"dev-elasticsearch\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Data Nodes",
+            "type": "stat"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Active shards in the cluster (live gauge) - primaries plus replicas of every index the application creates. Grows when index templates materialise new indices.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [{ "color": "green", "value": null }]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
+            "id": 4,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": { "calcs": ["lastNotNull"] }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_shards{exported_job=\"dev-elasticsearch\",state=\"active\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Active Shards",
+            "type": "stat"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Unassigned shards (live gauge). On a single-node cluster replicas are always unassigned (yellow), so a small constant is expected; any growth of primaries turning unassigned turns the cluster red.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "green", "value": null },
+                            { "color": "red", "value": 1 }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 },
+            "id": 5,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": { "calcs": ["lastNotNull"] }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_shards{exported_job=\"dev-elasticsearch\",state=\"unassigned\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Unassigned Shards",
+            "type": "stat"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Cluster tasks waiting to be applied (live gauge): index creation, mapping updates, shard allocation. Normally 0; a queue that keeps growing means the master cannot apply states.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            { "color": "green", "value": null },
+                            { "color": "yellow", "value": 1 }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+            "id": 6,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": { "calcs": ["lastNotNull"] }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_pending_tasks{exported_job=\"dev-elasticsearch\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Pending Tasks",
+            "type": "stat"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Shards by allocation state over time (live gauges). On a single node, primary shards count equals active primaries and every replica shows unassigned - that is the yellow steady state.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+            "id": 7,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_shards{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "{{state}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Shards by State",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Cluster-state updates per time bucket (increase()), by outcome. Successes follow index creation or mapping changes from the app; failures mean states the master could not commit.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+            "id": 8,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "increase(elasticsearch_cluster_state_update_count_total{exported_job=\"dev-elasticsearch\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "{{state}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Cluster State Updates (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Cluster-state queue depth (committed/pending) plus in-flight shard fetches (live gauges). All flat at 0 between app runs; pending climbing means the master is behind.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+            "id": 9,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_cluster_state_queue{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "queue {{state}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_cluster_in_flight_fetch{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "in-flight fetch",
+                    "refId": "B"
+                }
+            ],
+            "title": "State Queue & Fetches",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "Indexing and search workload: operations, latency, segments, translog, and the memory guards (circuit breakers, indexing pressure).",
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+            "id": 101,
+            "panels": [],
+            "title": "Indexing & Search",
+            "type": "row"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Operations completed on the node per time bucket (increase()), by operation. index/delete/get come from e2e runs and dashboard searches; refresh/flush run on ES's own schedule. Whole counts, not per-second rates.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 },
+            "id": 10,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (operation) (increase(elasticsearch_node_operations_completed_total{exported_job=\"dev-elasticsearch\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{operation}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Node Operations (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Average milliseconds per operation (time rate / completed rate), by operation. Gaps mean no such operation ran in that bucket; index ops in the tens of ms are normal on this hardware, seconds mean disk or GC pressure.",
+            "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 8, "y": 15 },
+            "id": 11,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (operation) (rate(elasticsearch_node_operations_time_milliseconds_total{exported_job=\"dev-elasticsearch\"}[$__interval])) / sum by (operation) (rate(elasticsearch_node_operations_completed_total{exported_job=\"dev-elasticsearch\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{operation}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Avg Operation Time",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Documents across all indices (live gauges): active vs deleted (deleted stay counted until merges remove them). Steps up during e2e runs; a large deleted share that never shrinks means merges are not running.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 16, "y": 15 },
+            "id": 12,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_index_documents{exported_job=\"dev-elasticsearch\",aggregation=\"total\"}",
+                    "legendFormat": "{{state}} docs",
+                    "refId": "A"
+                }
+            ],
+            "title": "Documents",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Lucene segments (live gauge, by aggregation) and merges running right now. Segment count steps up with each refresh and drops when a merge completes; a continuously rising count with no dips means merges are starved.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 0, "y": 23 },
+            "id": 13,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_index_segments_count{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "segments ({{aggregation}})",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_index_operations_merge_current{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "merges running",
+                    "refId": "B"
+                }
+            ],
+            "title": "Segments & Merges",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Translog size on disk (live gauges, bytes): committed plus the uncommitted tail waiting for a flush. Grows while indexing, resets toward 0 at each flush; a tail that never flushes means heavy indexing or flush stalls.",
+            "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 8, "y": 23 },
+            "id": 14,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_node_translog_size_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "translog",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_node_translog_uncommitted_size_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "uncommitted",
+                    "refId": "B"
+                }
+            ],
+            "title": "Translog (bytes)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Indexing buffer held in memory (live gauges, bytes) by stage - coordinating, primary, replica - against the node's indexing-pressure limit. Pressure hugging the limit precedes write rejections under bulk-load e2e runs.",
+            "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 16, "y": 23 },
+            "id": 15,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_memory_indexing_pressure_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "{{stage}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_indexing_pressure_memory_limit_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "limit",
+                    "refId": "B"
+                }
+            ],
+            "title": "Indexing Pressure Memory",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Circuit breakers: memory currently estimated against each breaker (bytes) and its limit. The parent breaker caps the sum of the children; sustained estimated near the limit means requests are about to be rejected with CircuitBreakingException.",
+            "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+            "id": 16,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_breaker_memory_estimated_bytes{exported_job=\"dev-elasticsearch\",name=~\"parent|request|fielddata|inflight_requests\"}",
+                    "legendFormat": "{{name}} estimated",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_breaker_memory_limit_bytes{exported_job=\"dev-elasticsearch\",name=~\"parent|request|fielddata|inflight_requests\"}",
+                    "legendFormat": "{{name}} limit",
+                    "refId": "B"
+                }
+            ],
+            "title": "Circuit Breakers (bytes)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Write rejections and breaker trips per time bucket (increase()). All should stay 0 in dev; rejections appear when bulk writes exceed indexing pressure, trips when a breaker (usually parent or inflight_requests) fires.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+            "id": 17,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (name) (increase(elasticsearch_breaker_tripped_total{exported_job=\"dev-elasticsearch\"}[$__interval])) > 0",
+                    "interval": "1m",
+                    "legendFormat": "{{name}} breaker tripped",
+                    "refId": "A"
+                },
+                {
+                    "expr": "increase(elasticsearch_indexing_pressure_memory_primary_rejections_total{exported_job=\"dev-elasticsearch\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "pressure primary rejections",
+                    "refId": "B"
+                },
+                {
+                    "expr": "increase(elasticsearch_indexing_pressure_memory_replica_rejections_total{exported_job=\"dev-elasticsearch\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "pressure replica rejections",
+                    "refId": "C"
+                }
+            ],
+            "title": "Rejections & Breaker Trips (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "Node resources: CPU, memory, disk, thread pools, caches, and connections.",
+            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+            "id": 102,
+            "panels": [],
+            "title": "Node Resources",
+            "type": "row"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "OS CPU utilisation (percent, host-wide - not ES-specific) and load averages (runnable threads, roughly cores-worth). The dev box idles near 0; sustained high CPU usually means merges or a big aggregation from the dashboard.",
+            "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 },
+            "id": 18,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_os_cpu_usage_percent{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "cpu %",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_os_cpu_load_avg_1m_ratio{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "load 1m",
+                    "refId": "B"
+                },
+                {
+                    "expr": "elasticsearch_os_cpu_load_avg_15m_ratio{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "load 15m",
+                    "refId": "C"
+                }
+            ],
+            "title": "CPU & Load",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Host memory used vs free (live gauges, bytes) as Elasticsearch sees it. The JVM heap lives inside used; watch for used creeping up without ever dropping, which points at a heap or cache leak.",
+            "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 8, "y": 40 },
+            "id": 19,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_os_memory_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "memory {{state}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Memory",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Data-volume disk (live gauges, bytes): total, free, and what Elasticsearch may allocate. Elasticsearch stops accepting writes at the low watermark (85% used by default), so falling available is the number to watch before long e2e sessions.",
+            "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
+            "id": 20,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_node_fs_disk_total_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "total",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_node_fs_disk_free_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "free",
+                    "refId": "B"
+                },
+                {
+                    "expr": "elasticsearch_node_fs_disk_available_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "available",
+                    "refId": "C"
+                },
+                {
+                    "expr": "elasticsearch_node_shards_size_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "shards on disk",
+                    "refId": "D"
+                }
+            ],
+            "title": "Disk",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Tasks waiting for a thread, by pool (live gauge; only the pools dev traffic uses are shown). Queued write/search above 0 for minutes means requests are backing up - check CPU, breaker, and indexing-pressure panels first.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 0, "y": 48 },
+            "id": 21,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_node_thread_pool_tasks_queued{exported_job=\"dev-elasticsearch\",thread_pool_name=~\"write|search|get|management|flush|refresh|merge|index_searcher|system_read|system_write\"}",
+                    "legendFormat": "{{thread_pool_name}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Thread Pool Queued",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Busy threads per pool (live gauge; the pools dev traffic uses). write/search pulse during e2e runs and return to 0; threads pinned at the pool ceiling with queued tasks is saturation.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 8, "y": 48 },
+            "id": 22,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_node_thread_pool_threads{exported_job=\"dev-elasticsearch\",state=\"active\",thread_pool_name=~\"write|search|get|management|flush|refresh|merge|index_searcher|system_read|system_write\"}",
+                    "legendFormat": "{{thread_pool_name}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Thread Pool Busy Threads",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Query and fielddata cache memory held (live gauges, bytes) plus evictions per time bucket. A query cache that grows then sawtooths down is evicting for room - normal in dev, but evictions spiking during a slow dashboard search explain the slowness.",
+            "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 16, "y": 48 },
+            "id": 23,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_node_cache_memory_usage_bytes{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "{{cache_name}} cache",
+                    "refId": "A"
+                }
+            ],
+            "title": "Cache Memory",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Request-cache hits vs misses per time bucket (increase()). Misses dominate in dev because each e2e run uses fresh data; a steady hit stream means the dashboard is re-running identical searches.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 0, "y": 56 },
+            "id": 24,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "increase(elasticsearch_node_cache_count{exported_job=\"dev-elasticsearch\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "request cache {{type}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum by (cache_name) (increase(elasticsearch_node_cache_evictions_total{exported_job=\"dev-elasticsearch\"}[$__interval])) > 0",
+                    "interval": "1m",
+                    "legendFormat": "{{cache_name}} evictions",
+                    "refId": "B"
+                }
+            ],
+            "title": "Request Cache & Evictions (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Open HTTP connections (REST clients: FastAPI, the puller, curl) and file descriptors held by the node (live gauges). The puller keeps one long-lived connection; bursts of HTTP connections come from e2e runs.",
+            "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 8, "y": 56 },
+            "id": 25,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "elasticsearch_node_http_connections{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "http connections",
+                    "refId": "A"
+                },
+                {
+                    "expr": "elasticsearch_node_open_files{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "open files",
+                    "refId": "B"
+                },
+                {
+                    "expr": "elasticsearch_node_cluster_connections{exported_job=\"dev-elasticsearch\"}",
+                    "legendFormat": "cluster peers",
+                    "refId": "C"
+                }
+            ],
+            "title": "Connections & Files",
+            "type": "timeseries"
+        },
+        {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "description": "Transport-layer traffic between cluster nodes (bytes/s, rate by direction). Roughly zero on this single-node cluster - anything steady here is the puller's REST polls counted elsewhere, so persistent traffic means an unexpected second node joined.",
+            "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+            "gridPos": { "h": 8, "w": 8, "x": 16, "y": 56 },
+            "id": 26,
+            "options": {
+                "legend": { "displayMode": "list", "placement": "bottom" },
+                "tooltip": { "mode": "multi" }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (direction) (rate(elasticsearch_node_cluster_io_bytes_total{exported_job=\"dev-elasticsearch\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{direction}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Cluster Network Throughput",
+            "type": "timeseries"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "elasticsearch", "observability"],
+    "time": { "from": "now-6h", "to": "now" },
+    "timezone": "browser",
+    "title": "Elasticsearch",
+    "uid": "aurelius-elasticsearch-obsv",
+    "version": 1
+}

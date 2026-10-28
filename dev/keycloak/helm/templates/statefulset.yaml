@@ -132,15 +132,22 @@ spec:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.otelClientsSecretName" . }}
                                   key: OTEL_INGEST_CLIENT_SECRET
-                        {{- with .Values.telemetry.endpoint }}
-                        {{- /* Legacy-leg OTLP only, when pointed at a collector
-                        (CHT-16): Keycloak is the issuer, so it cannot present a
-                        Keycloak-minted JWT at its own boot (DD-193/196). */}}
+                        {{- with (include "atlas-keycloak.telemetryEndpoint" .) }}
+                        {{- /* Legacy-leg OTLP only, when telemetry resolves to
+                        an endpoint (CHT-16/42): Keycloak is the issuer, so it
+                        cannot present a Keycloak-minted JWT at its own boot
+                        (DD-193/196). */}}
                         - name: OTEL_SERVICE_NAME
                           value: keycloak
                         - name: OTEL_EXPORTER_OTLP_ENDPOINT
                           value: {{ . | quote }}
                         - name: OTEL_EXPORTER_OTLP_CERTIFICATE
+                          value: {{ include "atlas-keycloak.caPath" $ | quote }}
+                        {{- /* Quarkus' OTLP sender ignores the generic
+                        OTEL_EXPORTER_OTLP_CERTIFICATE (dev compose notes;
+                        dev worked around it with a p12 truststore). The
+                        runtime Quarkus knob is the fix (CHT-42). */}}
+                        - name: QUARKUS_OTEL_EXPORTER_OTLP_TRUST_CERT_CERTS
                           value: {{ include "atlas-keycloak.caPath" $ | quote }}
                         - name: OTEL_TRACES_SAMPLER
                           value: parentbased_traceidratio

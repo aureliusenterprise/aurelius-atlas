@@ -90,6 +90,21 @@ serviceAccount:
     create: true
     name: ""
 
+# The per-service OTLP leg (CHT-42, DD-196): with telemetry.enabled the
+# deployment joins the collector endpoint, the issuer's realm token URL
+# (CHT-41's public URL, split-horizon-resolved — DD-265), and the ingest
+# client secret. The config CLIENT_ID/CA_FILE keys are the defaults; the
+# app's export stays off while otel_token_url is None (its settings).
+telemetry:
+    enabled: false
+    # The collector Service; "" derives this release's atlas-observability
+    # chart name (the siblingService name rule, as the server chart).
+    service: ""
+    # The per-service leg (HTTP + OIDC, DD-196).
+    port: 4319
+    # The Keycloak realm the OTLP client-credentials mint targets (7.18).
+    realm: master
+
 config:
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: aurelius-atlas-lineage-model
