@@ -168,6 +168,7 @@
 - [8.7 Client failure contract](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/8-7-client-failure-contract/index.md>)
 - [9.1 Targeted resilience e2e](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/9-1-targeted-resilience-e2e/index.md>)
 - [9.2 Server hardening](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/9-2-server-hardening/index.md>)
+- [9.3 Search cost and client IP](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/9-3-search-cost-client-ip/index.md>)
 - [9.4 Edge tracing](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/9-4-edge-tracing/index.md>)
 - [Increments](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/index.md>)
 - [Specification Template](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/template/index.md>)

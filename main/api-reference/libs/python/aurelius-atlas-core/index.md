@@ -1126,6 +1126,9 @@ Attributes:
 - **`UNIQUE_VALUE_INDEX`** –
 
   The alias of the unique value reservations (DD-045).
+- **`WRITE_REFRESH`** –
+
+  Every write's `refresh` parameter (ENS-11, DD-237): the response returns after the documents are visible,
 
 ### CLASSIFICATION\_INDEX
 
@@ -1327,6 +1330,14 @@ UNIQUE_VALUE_INDEX = f'{INDEX_PREFIX}-unique-values'
 
 The alias of the unique value reservations (DD-045).
 
+### WRITE\_REFRESH
+
+```
+WRITE_REFRESH = 'wait_for'
+```
+
+Every write's `refresh` parameter (ENS-11, DD-237): the response returns after the documents are visible, so the next read sees them — no read path pays a refresh of its own. `wait_for` (not `true`) also waits for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk.
+
 ### Linked
 
 ```
@@ -1347,19 +1358,19 @@ Methods:
 
 - **`classifications_of_types`** –
 
-  Refresh the classification index, then page through the instances of the types by GUID (DD-090).
+  Page through the classification index for the instances of the types by GUID (DD-090).
 - **`classified`** –
 
-  Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
+  Page through the entities whose `classificationGuids` hold one (DD-076): writes refresh (ENS-11).
 - **`count_linked_type`** –
 
-  Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
+  Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).
 - **`count_type`** –
 
-  Refresh the entity index, then count the entities of the type (DD-048).
+  Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
 - **`delete_journal`** –
 
-  Delete the entry; one already gone is fine.
+  Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).
 - **`get`** –
 
   `mget` of the entity index: real time, as a get by id is (ENS-04).
@@ -1368,19 +1379,19 @@ Methods:
   `mget` of the kind's index: real time (DD-061, DD-070).
 - **`journal`** –
 
-  The entries of the journal, refreshed first so none written a moment ago is missed.
+  The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).
 - **`list_tasks`** –
 
-  Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).
+  Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
 - **`prepare`** –
 
   Create each index behind its alias unless it exists (ENS-01).
 - **`put_journal`** –
 
-  Index the entry under its write id.
+  Index the entry under its write id; recovery's search reads it (ENS-11).
 - **`referring`** –
 
-  Refresh the entity index, then page through the entities whose `references` hold a GUID (DD-057).
+  Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
 - **`release`** –
 
   Delete the reservation when `guid` still holds it, guarded by its version.
@@ -1395,13 +1406,13 @@ Methods:
   Index the state before, or delete an entity that did not exist before (DD-046).
 - **`restore_linked`** –
 
-  Index the document's state before, or delete one that did not exist before (DD-062).
+  Put back a linked document's state before a write, or delete one the write created (DD-062).
 - **`search`** –
 
-  Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+  Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 - **`terms`** –
 
-  Refresh the entity index, then a `terms` aggregation of each field's text sub-field (DD-094).
+  A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1426,7 +1437,9 @@ The aliases of the entity index, the reservations, the journal and the linked do
 classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
 ```
 
-Refresh the classification index, then page through the instances of the types by GUID (DD-090).
+Page through the classification index for the instances of the types by GUID (DD-090).
+
+Writes refresh (ENS-11).
 
 #### classified
 
@@ -1434,7 +1447,7 @@ Refresh the classification index, then page through the instances of the types b
 classified(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
-Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
+Page through the entities whose `classificationGuids` hold one (DD-076): writes refresh (ENS-11).
 
 #### count\_linked\_type
 
@@ -1442,7 +1455,7 @@ Refresh the entity index, then page through the entities whose `classificationGu
 count_linked_type(kind: LinkedKind, type_name: str) -> int
 ```
 
-Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
+Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).
 
 #### count\_type
 
@@ -1450,7 +1463,7 @@ Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
 count_type(type_name: str) -> int
 ```
 
-Refresh the entity index, then count the entities of the type (DD-048).
+Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
 
 #### delete\_journal
 
@@ -1458,7 +1471,7 @@ Refresh the entity index, then count the entities of the type (DD-048).
 delete_journal(write_id: str) -> None
 ```
 
-Delete the entry; one already gone is fine.
+Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).
 
 #### get
 
@@ -1482,7 +1495,7 @@ get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, Do
 journal() -> list[JournalEntry]
 ```
 
-The entries of the journal, refreshed first so none written a moment ago is missed.
+The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).
 
 #### list\_tasks
 
@@ -1490,7 +1503,7 @@ The entries of the journal, refreshed first so none written a moment ago is miss
 list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
-Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).
+Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
 
 #### prepare
 
@@ -1508,7 +1521,7 @@ An existing entity index gets the fields it lacks mapped, as `references` (EDL-1
 put_journal(entry: JournalEntry) -> None
 ```
 
-Index the entry under its write id.
+Index the entry under its write id; recovery's search reads it (ENS-11).
 
 #### referring
 
@@ -1516,7 +1529,7 @@ Index the entry under its write id.
 referring(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
-Refresh the entity index, then page through the entities whose `references` hold a GUID (DD-057).
+Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
 
 #### release
 
@@ -1556,7 +1569,7 @@ Index the state before, or delete an entity that did not exist before (DD-046).
 restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
-Index the document's state before, or delete one that did not exist before (DD-062).
+Put back a linked document's state before a write, or delete one the write created (DD-062).
 
 #### search
 
@@ -1564,7 +1577,7 @@ Index the document's state before, or delete one that did not exist before (DD-0
 search(query: SearchQuery) -> SearchHits
 ```
 
-Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 
 Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093).
 
@@ -1574,7 +1587,7 @@ Free text is a scored `simple_query_string` over the text sub-fields (DD-092); f
 terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
 ```
 
-Refresh the entity index, then a `terms` aggregation of each field's text sub-field (DD-094).
+A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
 
 #### write
 

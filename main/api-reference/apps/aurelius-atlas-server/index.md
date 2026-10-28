@@ -75,6 +75,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Hsts Enabled",
 >       "type": "boolean"
 >     },
+>     "forwarded_allow_ips": {
+>       "default": "127.0.0.1",
+>       "title": "Forwarded Allow Ips",
+>       "type": "string"
+>     },
 >     "dashboard_dir": {
 >       "anyOf": [
 >         {
@@ -236,6 +241,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tls_cert_file` (`FilePath`)
 > - `tls_key_file` (`FilePath`)
 > - `hsts_enabled` (`bool`)
+> - `forwarded_allow_ips` (`str`)
 > - `dashboard_dir` (`DirectoryPath | None`)
 > - `models_dir` (`Path`)
 > - `typedef_refresh_seconds` (`float`)
@@ -309,6 +315,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > User for the store.
+>
+> ### forwarded\_allow\_ips
+>
+> ```
+> forwarded_allow_ips: str = '127.0.0.1'
+> ```
+>
+> Which peers may rewrite the client address through `X-Forwarded-For` (SRV-10, DD-238), passed to uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network, so the access log and OTel peer attributes key on the browser's address, not the proxy's. The rate limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).
 >
 > ### host
 >

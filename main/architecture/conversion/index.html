@@ -4014,6 +4014,8 @@
       
         
       
+        
+      
     
     
     
@@ -5621,6 +5623,33 @@
     
   
   9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
 
     
   </span>
@@ -8283,6 +8312,13 @@ checks a PR must pass:</p>
 <td>Server hardening</td>
 <td>TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86)</td>
 <td><code>AtlasBaseExceptionMapper</code> (cause echo, superseded for 5xx); no header filter to port</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.3</td>
+<td>Search cost and client IP</td>
+<td>Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87)</td>
+<td>— (Atlas refreshes nothing on reads, JanusGraph; no limiter to port)</td>
 <td>in progress</td>
 </tr>
 <tr>

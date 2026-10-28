@@ -1266,6 +1266,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.forwarded_allow_ips" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;forwarded_allow_ips
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.host" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -4869,6 +4880,8 @@
       
         
       
+        
+      
     
     
     
@@ -6476,6 +6489,33 @@
     
   
   9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
 
     
   </span>
@@ -8505,6 +8545,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.forwarded_allow_ips" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;forwarded_allow_ips
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.host" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9389,6 +9440,11 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Hsts Enabled"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"forwarded_allow_ips"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Forwarded Allow Ips"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"dashboard_dir"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
@@ -9599,6 +9655,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.hsts_enabled)" href="./#aurelius_atlas_server.settings.ServerSettings.hsts_enabled">hsts_enabled</a></code>
                 (<code><span title="bool">bool</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            forwarded_allow_ips
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.forwarded_allow_ips)" href="./#aurelius_atlas_server.settings.ServerSettings.forwarded_allow_ips">forwarded_allow_ips</a></code>
+                (<code><span title="str">str</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            dashboard_dir
@@ -9930,6 +9995,33 @@ Elasticsearch settings; it does not start without its store.</p>
     <div class="doc doc-contents ">
 
         <p>User for the store.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.forwarded_allow_ips" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">forwarded_allow_ips</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.forwarded_allow_ips" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">forwarded_allow_ips</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">'127.0.0.1'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Which peers may rewrite the client address through <code>X-Forwarded-For</code> (SRV-10, DD-238), passed to
+uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network,
+so the access log and OTel peer attributes key on the browser's address, not the proxy's. The rate
+limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).</p>
 
     </div>
 

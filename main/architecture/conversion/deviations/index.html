@@ -4026,6 +4026,8 @@
       
         
       
+        
+      
     
     
     
@@ -5633,6 +5635,33 @@
     
   
   9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
 
     
   </span>
@@ -8231,6 +8260,14 @@ Atlas clients expect when it lands).</p>
 <td>The dashboard CSP allows <code>'unsafe-inline'</code> + <code>'unsafe-eval'</code> scripts and <code>'unsafe-inline'</code> styles; the JSON API CSP is <code>default-src 'none'</code> — it serves no documents</td>
 <td>The vendored <code>index.html.tpl</code> inlines the build-varying <code>&lt;%- bust %&gt;</code> value (hashes churn every build), and the require-handlebars-plugin compiles its templates at runtime with <code>new Function</code> (e2e-proven: <code>EvalError</code> kills the boot without <code>'unsafe-eval'</code>); the strict form returns with the dashboard retirement (6.3) (SRV-08, DD-236)</td>
 <td>9.2</td>
+</tr>
+<tr>
+<td>DV-87</td>
+<td>Server</td>
+<td>Atlas has no rate limiter: every request is answered, and it has no 429 in its error-code enum</td>
+<td>The webapp's nginx <code>/api/</code> proxy limits each public client address (leaky bucket, refusals answered nginx's 429 with an HTML body); the server answers every request it receives, and a caller reaching it directly (internal apps, deployments without the webapp) sees Atlas's answer-everything behaviour</td>
+<td>Search-cost hardening at the browser's front door (the pentest's M6): a service bursting the API is working, a browser flooding it is attacking, and the webapp arrangement is where the browser is (SRV-09, DD-238)</td>
+<td>9.3</td>
 </tr>
 </tbody>
 </table>

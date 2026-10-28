@@ -2722,6 +2722,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.WRITE_REFRESH" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;WRITE_REFRESH
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.Linked" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7753,6 +7764,8 @@
       
         
       
+        
+      
     
     
     
@@ -9360,6 +9373,33 @@
     
   
   9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
 
     
   </span>
@@ -12471,6 +12511,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;UNIQUE_VALUE_INDEX
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.WRITE_REFRESH" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;WRITE_REFRESH
       </span>
     </span>
   </a>
@@ -19245,6 +19296,18 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
             <p>The alias of the unique value reservations (DD-045).</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            WRITE_REFRESH
+
+
+  
+      module-attribute
+   (aurelius_atlas_core.entity_documents.WRITE_REFRESH)" href="./#aurelius_atlas_core.entity_documents.WRITE_REFRESH">WRITE_REFRESH</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>Every write's <code>refresh</code> parameter (ENS-11, DD-237): the response returns after the documents are visible,</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -19773,6 +19836,32 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
 </div>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_core.entity_documents.WRITE_REFRESH" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">WRITE_REFRESH</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.WRITE_REFRESH" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">WRITE_REFRESH</span> <span class="o">=</span> <span class="s1">'wait_for'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Every write's <code>refresh</code> parameter (ENS-11, DD-237): the response returns after the documents are visible,
+so the next read sees them — no read path pays a refresh of its own. <code>wait_for</code> (not <code>true</code>) also waits
+for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk.</p>
+
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-type_alias">
 
@@ -19839,7 +19928,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classifications_of_types)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classifications_of_types">classifications_of_types</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the classification index, then page through the instances of the types by GUID (DD-090).</p>
+              <p>Page through the classification index for the instances of the types by GUID (DD-090).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19851,7 +19940,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classified)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classified">classified</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the entity index, then page through the entities whose <code>classificationGuids</code> hold one (DD-076).</p>
+              <p>Page through the entities whose <code>classificationGuids</code> hold one (DD-076): writes refresh (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19863,7 +19952,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.count_linked_type)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.count_linked_type">count_linked_type</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).</p>
+              <p>Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19875,7 +19964,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.count_type)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.count_type">count_type</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the entity index, then count the entities of the type (DD-048).</p>
+              <p>Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19887,7 +19976,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.delete_journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.delete_journal">delete_journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Delete the entry; one already gone is fine.</p>
+              <p>Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19923,7 +20012,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.journal">journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The entries of the journal, refreshed first so none written a moment ago is missed.</p>
+              <p>The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19935,7 +20024,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.list_tasks)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.list_tasks">list_tasks</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).</p>
+              <p>Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19959,7 +20048,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.put_journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.put_journal">put_journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Index the entry under its write id.</p>
+              <p>Index the entry under its write id; recovery's search reads it (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -19971,7 +20060,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.referring)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.referring">referring</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the entity index, then page through the entities whose <code>references</code> hold a GUID (DD-057).</p>
+              <p>Page through the entities whose <code>references</code> hold a GUID (DD-057): writes refresh (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20031,7 +20120,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.restore_linked)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.restore_linked">restore_linked</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Index the document's state before, or delete one that did not exist before (DD-062).</p>
+              <p>Put back a linked document's state before a write, or delete one the write created (DD-062).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20043,7 +20132,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search">search</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the entity index, then answer the query as a <code>bool</code> query of the search fields (DD-089).</p>
+              <p>Answer the query as a <code>bool</code> query of the search fields (DD-089): writes refresh (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20055,7 +20144,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms">terms</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Refresh the entity index, then a <code>terms</code> aggregation of each field's text sub-field (DD-094).</p>
+              <p>A <code>terms</code> aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20147,7 +20236,8 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the classification index, then page through the instances of the types by GUID (DD-090).</p>
+        <p>Page through the classification index for the instances of the types by GUID (DD-090).</p>
+<p>Writes refresh (ENS-11).</p>
 
 
     </div>
@@ -20176,7 +20266,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the entity index, then page through the entities whose <code>classificationGuids</code> hold one (DD-076).</p>
+        <p>Page through the entities whose <code>classificationGuids</code> hold one (DD-076): writes refresh (ENS-11).</p>
 
 
     </div>
@@ -20200,7 +20290,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).</p>
+        <p>Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).</p>
 
 
     </div>
@@ -20224,7 +20314,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the entity index, then count the entities of the type (DD-048).</p>
+        <p>Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).</p>
 
 
     </div>
@@ -20248,7 +20338,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Delete the entry; one already gone is fine.</p>
+        <p>Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).</p>
 
 
     </div>
@@ -20330,7 +20420,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>The entries of the journal, refreshed first so none written a moment ago is missed.</p>
+        <p>The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).</p>
 
 
     </div>
@@ -20359,7 +20449,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).</p>
+        <p>Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).</p>
 
 
     </div>
@@ -20408,7 +20498,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Index the entry under its write id.</p>
+        <p>Index the entry under its write id; recovery's search reads it (ENS-11).</p>
 
 
     </div>
@@ -20437,7 +20527,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the entity index, then page through the entities whose <code>references</code> hold a GUID (DD-057).</p>
+        <p>Page through the entities whose <code>references</code> hold a GUID (DD-057): writes refresh (ENS-11).</p>
 
 
     </div>
@@ -20572,7 +20662,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Index the document's state before, or delete one that did not exist before (DD-062).</p>
+        <p>Put back a linked document's state before a write, or delete one the write created (DD-062).</p>
 
 
     </div>
@@ -20596,7 +20686,7 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the entity index, then answer the query as a <code>bool</code> query of the search fields (DD-089).</p>
+        <p>Answer the query as a <code>bool</code> query of the search fields (DD-089): writes refresh (ENS-11).</p>
 <p>Free text is a scored <code>simple_query_string</code> over the text sub-fields (DD-092); facets are <code>terms</code>
 aggregations of the same query (DD-093).</p>
 
@@ -20622,7 +20712,7 @@ aggregations of the same query (DD-093).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Refresh the entity index, then a <code>terms</code> aggregation of each field's text sub-field (DD-094).</p>
+        <p>A <code>terms</code> aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).</p>
 
 
     </div>
