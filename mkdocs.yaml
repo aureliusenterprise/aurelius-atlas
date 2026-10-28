@@ -241,6 +241,7 @@ nav:
                       - 8.7 Client failure contract: architecture/conversion/increments/8-7-client-failure-contract.md
                       - 9.1 Targeted resilience e2e: architecture/conversion/increments/9-1-targeted-resilience-e2e.md
                       - 9.2 Server hardening: architecture/conversion/increments/9-2-server-hardening.md
+                      - 9.3 Search cost and client IP: architecture/conversion/increments/9-3-search-cost-client-ip.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
