@@ -1,11 +1,11 @@
-"""The server's settings, read once at start-up from the environment (SRV-01, SRV-03)."""
+"""The server's settings, read once at start-up from the environment (SRV-01, SRV-03, SRV-06)."""
 
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal
 
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
-from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr, model_validator
+from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_PREFIX = "AURELIUS_ATLAS_SERVER_"
@@ -16,10 +16,6 @@ DEFAULT_PORT = 21000
 
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels both uvicorn and the OTel console accept."""
-
-TLS_PAIR_ERROR = (
-    f"{ENV_PREFIX}TLS_CERT_FILE and {ENV_PREFIX}TLS_KEY_FILE must both be set, or both be unset, to configure TLS"
-)
 
 
 class ServerSettings(BaseSettings):
@@ -36,11 +32,17 @@ class ServerSettings(BaseSettings):
     log_level: LogLevel = "info"
     """The lowest level of log record the server and uvicorn emit."""
 
-    tls_cert_file: FilePath | None = None
-    """PEM certificate to serve HTTPS with; requires ``tls_key_file`` (SRV-03)."""
+    tls_cert_file: FilePath
+    """PEM certificate to serve HTTPS with (SRV-06, DD-234): required — the server never serves plaintext,
+    the way the store's password is required (SRV-01, SRV-02)."""
 
-    tls_key_file: FilePath | None = None
-    """PEM private key of ``tls_cert_file``."""
+    tls_key_file: FilePath
+    """PEM private key of ``tls_cert_file`` (SRV-06)."""
+
+    hsts_enabled: bool = True
+    """Whether responses carry ``Strict-Transport-Security`` (SRV-08, DD-236). The image ships True; the dev
+    arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the
+    plaintext dev surfaces (ADR 039's named relaxations)."""
 
     dashboard_dir: DirectoryPath | None = None
     """The built dashboards: ``dashboardv2`` at its root and ``dashboardv3`` in ``n/``; None serves the API only
@@ -104,17 +106,9 @@ class ServerSettings(BaseSettings):
     """PEM CA verifying the collector's TLS for the OTLP export; unset uses
     the system trust store (the dev stack's mkcert CA is not system-wide)."""
 
-    @model_validator(mode="after")
-    def _tls_pair(self) -> Self:
-        if (self.tls_cert_file is None) != (self.tls_key_file is None):
-            raise ValueError(TLS_PAIR_ERROR)
-        return self
-
     @property
-    def tls(self) -> tuple[Path, Path] | None:
-        """The certificate and key to serve HTTPS with, or None for plain HTTP."""
-        if self.tls_cert_file is None or self.tls_key_file is None:
-            return None
+    def tls(self) -> tuple[Path, Path]:
+        """The certificate and key to serve HTTPS with (SRV-03, SRV-06, DD-234)."""
         return Path(self.tls_cert_file), Path(self.tls_key_file)
 
     def store_settings(self) -> StoreSettings:

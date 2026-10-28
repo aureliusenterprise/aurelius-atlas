@@ -9,12 +9,19 @@ from aurelius_atlas_server.settings import ServerSettings
 
 
 def uvicorn_options(settings: ServerSettings) -> dict[str, Any]:
-    """The uvicorn options for the settings: address, port and, when configured, TLS (SRV-03)."""
-    options: dict[str, Any] = {"host": settings.host, "port": settings.port, "log_level": settings.log_level}
-    if settings.tls is not None:
-        certificate, key = settings.tls
-        options |= {"ssl_certfile": str(certificate), "ssl_keyfile": str(key)}
-    return options
+    """The uvicorn options for the settings: address, port and TLS (SRV-03, SRV-06, DD-234).
+
+    The TLS pair is part of the options unconditionally: the settings refuse to construct without it,
+    so a server that starts is an HTTPS server.
+    """
+    certificate, key = settings.tls
+    return {
+        "host": settings.host,
+        "port": settings.port,
+        "log_level": settings.log_level,
+        "ssl_certfile": str(certificate),
+        "ssl_keyfile": str(key),
+    }
 
 
 def run() -> None:

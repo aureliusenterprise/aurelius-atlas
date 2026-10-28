@@ -14,9 +14,17 @@ from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch
 
 
-@pytest.mark.covers("aurelius_atlas_server.routes.admin.get_readiness", rules=["ADM-04", "SRV-04", "SRV-05"])
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.admin.get_readiness",
+    "aurelius_atlas_server.errors.atlas_error_handler",
+    rules=["ADM-04", "SRV-04", "SRV-05", "SRV-07"],
+)
 async def test__readiness_fails_while_the_store_is_unhealthy(client: httpx.AsyncClient, fake_es: FakeClient) -> None:
-    """A red cluster makes readiness answer 500 with the Atlas error body; liveness and status stay up."""
+    """A red cluster makes readiness answer 500 with the opaque Atlas body plus the trace id (SRV-07).
+
+    Liveness and status stay up. The 5xx body carries no cause — the stack trace is in the
+    log, and ``requestId``/``X-Request-Id`` carry the trace id that ties them together.
+    """
     fake_es.cluster_status = "red"
 
     readiness = await client.get("/api/atlas/admin/readiness")
@@ -25,10 +33,14 @@ async def test__readiness_fails_while_the_store_is_unhealthy(client: httpx.Async
 
     assert readiness.status_code == 500
     assert readiness.headers["content-type"] == ATLAS_JSON_MEDIA_TYPE
-    assert readiness.json() == {
+    body = readiness.json()
+    request_id = body.pop("requestId", None)
+    assert body == {
         "errorCode": "ATLAS-500-00-001",
         "errorMessage": "Internal server error Service not ready to accept client requests",
     }
+    assert re.fullmatch(r"[0-9a-f]{32}", request_id)
+    assert readiness.headers["x-request-id"] == request_id
     assert liveness.status_code == 200
     assert status.json() == {"Status": "ACTIVE"}
 
