@@ -24,6 +24,7 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)
 - `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the built
+- `helm/` — the `atlas-webapp` chart (its own section below)
   image, with the real atlas-server container behind nginx `/api/` (DD-142) and
   Keycloak sign-in via the `authenticated` fixture (APC-10), which replays a
   per-browser session state — one form login per browser, silent check-sso for
@@ -83,6 +84,21 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
   its library closure ship in the image (builder stage, DD-239) — do not
   `load_module` from conf.d, it is main-context only and lives in
   `etc/nginx/modules/otel.conf`.
+
+## Helm chart
+
+`helm/` — the `atlas-webapp` chart (CHT-02): nginx port/probes, the
+`/config.json` bootstrap, and the two ConfigMaps the deployment needs (the
+shipped nginx config is a template resolved at deploy — 10.3 renders them).
+Renders standalone and through the umbrella; conventions in
+`helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-webapp:helm-template
+```
+
+Removing the app removes `helm/` too — plus the umbrella's dependency and
+values-toggle rows (`helm/AGENTS.md`).
 
 ## Removal
 

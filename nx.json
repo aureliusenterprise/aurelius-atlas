@@ -37,6 +37,7 @@
         "./tools/plugins/alembic.ts",
         "./tools/plugins/docker.ts",
         "./tools/plugins/docker-compose.ts",
+        "./tools/plugins/helm.ts",
         "./tools/plugins/mkdocs.ts",
         "./tools/plugins/python.ts",
         "./tools/plugins/sonarqube.ts",
@@ -147,6 +148,14 @@
                     "transitive": true
                 }
             ]
+        },
+        "helm-lint": {
+            "cache": true,
+            "inputs": ["default", "^default"]
+        },
+        "helm-template": {
+            "cache": true,
+            "inputs": ["default", "^default"]
         },
         "sonar": {
             "inputs": ["default", "^default"]

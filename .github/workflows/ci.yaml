@@ -180,6 +180,15 @@ jobs:
                   path: /var/cache/ci/pre-commit
                   key: ${{ steps.restore-pre-commit-cache.outputs.cache-primary-key }}
 
+            # Charts gate (CHT-06): helm bakes into the runner image (the
+            # devcontainer's kubectl-helm-minikube feature), so lint+template
+            # need no cluster, registry, or key - a cheap gate that runs
+            # before the unit suites. Each chart renders against its own test
+            # values; the umbrella adds the environment overlays (CHT-04: the
+            # minikube/gke values render on a stock cluster).
+            - name: Lint & render charts
+              run: npx nx affected -t helm-lint helm-template
+
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). The unit
             # suites include testcontainers (store-es spins a real

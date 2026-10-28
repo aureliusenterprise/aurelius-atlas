@@ -1,0 +1,19 @@
+# The GKE environment overlay (documented target; validated as its own
+# increment, 10.5+). Cloud-agnostic core unchanged (CHT-04): only values.
+# Prerequisites the runbook installs: GKE Gateway (GatewayClass
+# projects/.../global/gateway-services | named via gateway.className),
+# a TLS issuer (managed certs via cert-manager's ACME solver, or the org CA),
+# and the dhi.io / ghcr pull secrets.
+global:
+    # Set to the deployment's real domain (issuer immutability warning!).
+    domain: atlas.example.com
+    gateway:
+        className: gke-l7-global-external-managed
+    storageClass: standard-rwo
+    trust:
+        # GKE path: bring the org's ACME/CA issuer; the self-signed default is
+        # the stock-cluster posture, not the browser-trusted production one.
+        createIssuer: false
+        issuerRef:
+            name: atlas-public
+            kind: ClusterIssuer

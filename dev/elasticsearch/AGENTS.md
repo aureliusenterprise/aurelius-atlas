@@ -11,6 +11,7 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
   OTLP to dev/observability)
 - `tls.json` — certificate for the `elasticsearch` service (`certgen` writes `certs/`)
 - `.env` / `.env.enc` — SOPS-encrypted dev settings (`ELASTICSEARCH_PASSWORD`, `_PORT`, `_HEAP`)
+- `helm/` — the `atlas-elasticsearch` chart (its own section below)
 
 ## Wiring Checklist
 
@@ -58,6 +59,20 @@ docker compose -f dev/elasticsearch/docker-compose.yaml down -v   # reset all da
 
 - Keep it an empty cluster: index templates and mappings belong to the application (1.3, 2.2).
 - `ELASTICSEARCH_PORT` (default 9200) is part of the workspace contract — coordinate before changing.
+
+## Helm chart
+
+`helm/` — the `atlas-elasticsearch` chart (CHT-02): the port, TLS layout,
+heap, and data volume contract of the production store (ADR 047). The
+StatefulSet, the `elasticsearch.yml` ConfigMap (the shape of
+`config/elasticsearch.yml`), the GKE coredump-agent init, and the
+openssl-s_client exec healthcheck land in 10.2. This `helm/` deploys to
+clusters; the `docker-compose.yaml` stays the dev-mode service (they are
+siblings, not duplicates). Conventions: `helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-dev-elasticsearch:helm-template
+```
 
 ## Removal
 

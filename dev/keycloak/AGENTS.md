@@ -11,6 +11,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   (scrapes `postgres-keycloak`, pushes OTLP to dev/observability)
 - `import/master.json` — realm, clients, and test users, imported on startup
 - `.env` / `.env.enc` — SOPS-encrypted dev settings
+- `helm/` — the `atlas-keycloak` chart (its own section below)
 
 ## Wiring Checklist
 
@@ -123,6 +124,20 @@ nx serve aurelius-atlas-dev-keycloak   # decrypt + build + observability + up
   a hang.
 - Keep `import/master.json` idempotent (fixed UUIDs where needed) so re-imports
   don't churn.
+
+## Helm chart
+
+`helm/` — the `atlas-keycloak` chart (CHT-02): Keycloak 26.7 with the bundled
+Postgres (`postgres.*` values; `flavor=external` points at an existing
+database). The StatefulSet, the realm-import Job (the compose's
+import-and-replace pattern), and prod-mode start land in 10.2. Remember the
+issuer pin (runbook): Keycloak fixes its realm issuer at first boot, so the
+chart's `global.domain`/issuer URL is immutable for a volume. Conventions:
+`helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-dev-keycloak:helm-template
+```
 
 ## Removal
 

@@ -1,0 +1,117 @@
+{{/*
+The Deployment. TLS is a cert/key pair (the apps accept both-set or
+both-unset, the settings module enforces it); the chart mounts the pair when
+tls.enabled, and the probes' scheme follows it.
+*/}}
+{{- $fullname := include "atlas-validate-entity.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-validate-entity.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.replicaCount }}
+    selector:
+        matchLabels:
+            {{- include "atlas-validate-entity.selectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-validate-entity.labels" . | nindent 16 }}
+                {{- with .Values.podLabels }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: {{ .Values.component }}
+                    image: {{ include "atlas-validate-entity.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    ports:
+                        - name: https
+                          containerPort: {{ int .Values.port }}
+                          protocol: TCP
+                    env:
+                        - name: {{ .Values.componentEnvPrefix }}HOST
+                          value: "0.0.0.0"
+                        - name: {{ .Values.componentEnvPrefix }}PORT
+                          value: {{ int .Values.port | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}AUTH_SERVER_URL
+                          value: {{ include "atlas-validate-entity.issuerUrl" . | quote }}
+                        {{- with .Values.config }}
+                        {{- range $key, $value := . }}
+                        - name: {{ $key }}
+                          value: {{ $value | quote }}
+                        {{- end }}
+                        {{- end }}
+                        {{- with .Values.secretRefs }}
+                        {{- range . }}
+                        - name: {{ .name }}
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ .secret }}
+                                  key: {{ .key }}
+                        {{- end }}
+                        {{- end }}
+                        {{- with .Values.extraEnv }}
+                        {{- toYaml . | nindent 24 }}
+                        {{- end }}
+                    {{- if .Values.tls.enabled }}
+                    volumeMounts:
+                        - name: tls
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                    {{- end }}
+                    readinessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.readinessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: {{ ternary "HTTPS" "HTTP" .Values.tls.enabled }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    livenessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.livenessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: {{ ternary "HTTPS" "HTTP" .Values.tls.enabled }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            {{- if .Values.tls.enabled }}
+            volumes:
+                -   name: tls
+                    secret:
+                        secretName: {{ default (printf "%s-tls" $fullname) .Values.tls.secretName }}
+            {{- end }}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}

@@ -1,0 +1,9 @@
+# The minikube environment (CHT-04: environment = values, not a chart fork).
+# Targets the devcontainer's minikube: Envoy Gateway as the GatewayClass, the
+# chart's self-signed issuer for trust, *.atlas.test hosts via the tunnel
+# (runbook: minikube tunnel + /etc/hosts entries).
+global:
+    domain: atlas.test
+    gateway:
+        className: envoy-gateway
+    storageClass: ""
