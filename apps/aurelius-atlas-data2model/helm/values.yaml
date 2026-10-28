@@ -1,0 +1,112 @@
+# The data2model chart — its runtime contract (CHT-02).
+# apps/aurelius-atlas-data2model: FastAPI, prefix AURELIUS_ATLAS_DATA2MODEL_,
+# port 21001. It verifies Keycloak bearer tokens (audience aurelius-atlas-data2model)
+# and exports OTLP with its own ingest identity. The service shape is copied
+# from the sibling aux charts (lineage-model, validate-entity) by design —
+# each chart owns its templates (DD-247).
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    # The Keycloak issuer root the tokens this API verifies are issued by
+    # (AUTH_SERVER_URL). The umbrella passes it; a standalone install sets it.
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+
+enabled: true
+component: data2model
+# The env prefix of the settings module; the Deployment composes HOST/PORT from it.
+componentEnvPrefix: AURELIUS_ATLAS_DATA2MODEL_
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+port: 21001
+
+image:
+    name: aurelius-atlas-data2model
+    tag: ""
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 256Mi
+    limits:
+        memory: 512Mi
+
+probes:
+    # The app ships one anonymous probe (DTM-10): 204 while the process serves.
+    livenessPath: /liveness
+    readinessPath: /liveness
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+tls:
+    # cert/key pair, mounted together (the settings module requires both-set
+    # or both-unset). TLS on: every in-cluster hop is TLS (ADR 039).
+    enabled: true
+    secretName: ""
+    certPath: /etc/aurelius-atlas/tls/tls.crt
+    keyPath: /etc/aurelius-atlas/tls/tls.key
+    caConfigMap: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+service:
+    type: ClusterIP
+    port: 21001
+
+serviceAccount:
+    create: true
+    name: ""
+
+# Settings env (verbatim, prefix AURELIUS_ATLAS_DATA2MODEL_). AUTH_SERVER_URL
+# arrives from the umbrella's issuer (10.3 wires global.issuer.url in); the
+# OTEL endpoint/token URL compute in 10.3 from the collector and issuer:
+#   AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT = https://<collector>.<ns>.svc:4319
+config:
+    AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: master
+    AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius-atlas-data2model
+    AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    AURELIUS_ATLAS_DATA2MODEL_LOG_LEVEL: info
+    AURELIUS_ATLAS_DATA2MODEL_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
+    AURELIUS_ATLAS_DATA2MODEL_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
+    AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_ID: otel-data2model
+    AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    OTEL_SEMCONV_STABILITY_OPT_IN: http
+
+# From Secrets (DD-244): 10.3 wires the ingest client secret
+# (OTEL_CLIENT_SECRET <- <release>-otel-clients/OTEL_INGEST_CLIENT_SECRET).
+secretRefs: []
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+# The issuer guard is the chart's own (validate.yaml): AUTH_SERVER_URL may
+# arrive as global.issuer.url (the umbrella) or derive from global.domain.
+required: []

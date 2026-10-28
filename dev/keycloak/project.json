@@ -5,7 +5,7 @@
     "projectType": "application",
     "release": {
         "version": {
-            "versionActions": "tools/plugins/noop-version-actions.ts"
+            "versionActions": "tools/plugins/chart-yaml-version-actions.ts"
         }
     },
     "tags": [],

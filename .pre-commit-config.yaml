@@ -16,6 +16,9 @@ repos:
           - id: check-yaml
             name: Check for YAML syntax errors
             args: [--unsafe]
+            # Helm templates are Go templates, not YAML: they parse only after
+            # rendering (helm lint/template gate them — CHT-06).
+            exclude: (^|/)helm/templates/
           - id: end-of-file-fixer
             name: Ensure files end with a newline
           - id: trailing-whitespace

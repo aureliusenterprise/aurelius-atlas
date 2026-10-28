@@ -1,0 +1,4 @@
+{{- include "atlas-lineage-model.requireValues" (dict "values" .Values) }}
+{{- if not (include "atlas-lineage-model.issuerUrl" .) -}}
+{{- fail "global.issuer.url (or, as its fallback, global.domain) is required — AUTH_SERVER_URL: the tokens this API verifies are issued by it" -}}
+{{- end -}}

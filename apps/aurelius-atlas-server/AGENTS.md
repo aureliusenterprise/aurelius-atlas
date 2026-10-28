@@ -30,6 +30,7 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
 - `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the image over HTTPS on the dev store
+- `helm/` — the `atlas-server` chart (its own section below)
 
 ## Porting an Atlas resource
 
@@ -74,6 +75,21 @@ npx nx test aurelius-atlas-server -c ci
 npx nx e2e aurelius-atlas-server -c ci    # builds the image, starts the dev store
 uv run pytest apps/aurelius-atlas-server/tests
 ```
+
+## Helm chart
+
+`helm/` — the `atlas-server` chart (CHT-02): container port, probes, the
+`AURELIUS_ATLAS_SERVER_` settings env, and the trust mounts of this app. The
+workload manifests land in 10.3; the chart renders standalone (test values)
+and through the umbrella (`helm/`). Chart conventions and
+gotchas: `helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-server:helm-template
+```
+
+Removing the app removes `helm/` too — plus the umbrella's dependency and
+values-toggle rows (`helm/AGENTS.md`).
 
 ## Removal
 

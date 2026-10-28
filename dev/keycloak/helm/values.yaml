@@ -1,0 +1,130 @@
+# The identity provider chart — its runtime contract (CHT-02).
+# Keycloak 26.7 (26.8 is pinned-broken upstream) serving the Aurelius realm;
+# its Postgres is bundled (postgres.* below, flavor=external points at an
+# existing database). The StatefulSet, the realm-import Job (import +
+# placeholder replacement, the dev compose's pattern), the RSS headless
+# service, and the prod-mode start (`kc.sh start`, not start-dev) land in 10.2.
+#
+# WARNING (runbook): Keycloak pins the realm issuer at first boot — the
+# hostname below must be final before the first install; changing it later
+# invalidates every issued token.
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    storageClass: ""
+    # The Keycloak issuer root and browser host derive from the umbrella's
+    # hostname; "" here takes keycloak.<domain> (the umbrella passes it in).
+    domain: ""
+    issuer:
+        url: ""
+    dnsResolver: ""
+
+enabled: true
+component: keycloak
+nameOverride: ""
+fullnameOverride: ""
+replicas: 1
+
+image:
+    repository: dhi.io/keycloak
+    tag: "26.7-debian13"
+
+# The browser hostname the issuer pins to (KC_HOSTNAME): https://<hostname>.
+hostname: ""
+
+bootstrap:
+    # Admin bootstrap from <release>-keycloak-admin (DD-244).
+    userSecret: ""
+    passwordSecret: ""
+
+# The realm to import at first boot: the umbrella renders it from
+# dev/keycloak/import/master.json's shape, secrets substituted by Helm
+# (replacing the dev flag -Dkeycloak.migration.replace-placeholders=true).
+realm:
+    import: true
+    name: master
+
+database:
+    # "bundled" renders the Postgres below; "external" uses the url.
+    flavor: bundled
+    # External JDBC URL (sslmode=verify-full + root cert required).
+    url: ""
+    userSecret: ""
+    passwordSecret: ""
+
+postgres:
+    # Bundled Keycloak database (a chart section, not a subchart — it exists
+    # only for Keycloak, CHT-02). The cert-copy init pattern (mktemp +
+    # install -m 600) lands in 10.2.
+    enabled: true
+    nameOverride: ""
+    image:
+        repository: dhi.io/postgres
+        tag: "18-alpine3.23"
+    auth:
+        database: keycloak
+    persistence:
+        size: 5Gi
+    service:
+        port: 5432
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 512Mi
+
+service:
+    # 8443 is the browser-facing TLS port (the gateway routes keycloak host);
+    # 9000 is the management port (health probes, never routed).
+    port: 8443
+    managementPort: 9000
+
+probes:
+    path: /health/ready
+    initialDelaySeconds: 60
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+tls:
+    secretName: ""
+    caConfigMap: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+serviceAccount:
+    create: true
+    name: ""
+
+resources:
+    requests:
+        cpu: 250m
+        memory: 768Mi
+    limits:
+        memory: 1Gi
+
+# JAVA_OPTS extras appended to the chart's base (truststore flags for the
+# Vert.x OTLP sender land with 10.2's observability wiring).
+extraJavaOpts: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+        type: RuntimeDefault
+
+required: []

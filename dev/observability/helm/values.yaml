@@ -1,0 +1,115 @@
+# The observability chart — its runtime contract (CHT-02).
+# The collector is the system's one seam for signals (ADR 034): three ingest
+# legs — browser (OIDC, 4318), per-service (OIDC client JWTs, 4317/4319),
+# legacy (static token, 4320/4321) — and one egress to Prometheus, Loki, and
+# Tempo, with Grafana reading them (ADR 016: nothing leaves the system).
+# The collector ConfigMap (dev/observability/config/otel-collector.yaml's
+# shape with issuer URLs and backend endpoints computed from this chart's
+# services) lands in 10.3.
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    storageClass: ""
+    domain: ""
+    # The OIDC issuer(s) the collector validates ingest tokens against
+    # (DD-202: the listener that minted the token is the issuer in it, so a
+    # plaintext-issuer deployment lists both). "" derives from global.issuer.url.
+    issuer:
+        url: ""
+    dnsResolver: ""
+
+enabled: true
+component: observability
+nameOverride: ""
+fullnameOverride: ""
+
+collector:
+    replicaCount: 1
+    image:
+        repository: dhi.io/opentelemetry-collector
+        tag: "0-debian13-contrib"
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 512Mi
+    # The JWKS boot race (DD-195/DD-226): the collector discovers Keycloak's
+    # JWKS at start; the chart's init container waits for the issuer before
+    # the collector boots, replacing the dev compose's unbounded restart.
+    readinessPath: ""
+
+prometheus:
+    enabled: true
+    image:
+        repository: dhi.io/prometheus
+        tag: "3.13-debian13"
+    retention: 15d
+    persistence:
+        size: 20Gi
+
+loki:
+    enabled: true
+    image:
+        repository: dhi.io/loki
+        tag: "3-debian13"
+    persistence:
+        size: 20Gi
+
+tempo:
+    enabled: true
+    image:
+        repository: dhi.io/tempo
+        tag: "3-debian13"
+    persistence:
+        size: 20Gi
+
+grafana:
+    enabled: true
+    image:
+        repository: dhi.io/grafana
+        tag: "13-debian13"
+    # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
+    # the default posture is kubectl port-forward (runbook).
+    adminPasswordSecret: ""
+
+# Ingest legs (ports fixed by the collector contract, DD-193/DD-196):
+#   browser 4318 (HTTP, OIDC)  · services 4317 (gRPC) + 4319 (HTTP, OIDC)
+#   legacy 4320 (gRPC) + 4321 (HTTP, static token, DD-239)
+service:
+    browserPort: 4318
+    servicesGrpcPort: 4317
+    servicesHttpPort: 4319
+    legacyGrpcPort: 4320
+    legacyHttpPort: 4321
+
+tls:
+    secretName: ""
+    caConfigMap: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+serviceAccount:
+    create: true
+    name: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    fsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+
+required: []

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-elasticsearch
+description: "The Aurelius Atlas search store: Elasticsearch 9, hardened image, single-node (ADR 047). The GKE coredump agent ships as an init container (10.2)."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas

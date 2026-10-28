@@ -1,0 +1,6 @@
+# Test values for helm lint/template (CHT-06): a domain to derive hosts from
+# and the issuer the API verifies tokens against (the ADR 018 guard).
+global:
+    domain: atlas.test
+    issuer:
+        url: https://keycloak.atlas.test

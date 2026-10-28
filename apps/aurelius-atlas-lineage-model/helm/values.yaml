@@ -1,0 +1,101 @@
+# The lineage-model chart — its runtime contract (CHT-02).
+# apps/aurelius-atlas-lineage-model: FastAPI, prefix AURELIUS_ATLAS_LINEAGE_MODEL_,
+# port 21002. Verifies Keycloak bearer tokens (audience aurelius-atlas-lineage-model)
+# and exports OTLP with its own ingest identity. Shares the service shape with
+# data2model and validate-entity by design — each chart owns its templates
+# (DD-247).
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+
+enabled: true
+component: lineage-model
+componentEnvPrefix: AURELIUS_ATLAS_LINEAGE_MODEL_
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+port: 21002
+
+image:
+    name: aurelius-atlas-lineage-model
+    tag: ""
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 256Mi
+    limits:
+        memory: 512Mi
+
+probes:
+    # The app ships one anonymous probe (LM line, DTM-10 shape): 204 while serving.
+    livenessPath: /liveness
+    readinessPath: /liveness
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+tls:
+    enabled: true
+    secretName: ""
+    certPath: /etc/aurelius-atlas/tls/tls.crt
+    keyPath: /etc/aurelius-atlas/tls/tls.key
+    caConfigMap: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+service:
+    type: ClusterIP
+    port: 21002
+
+serviceAccount:
+    create: true
+    name: ""
+
+config:
+    AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
+    AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: aurelius-atlas-lineage-model
+    AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info
+    AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
+    AURELIUS_ATLAS_LINEAGE_MODEL_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
+    AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_ID: otel-lineage-model
+    AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    OTEL_SEMCONV_STABILITY_OPT_IN: http
+
+secretRefs: []
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+# The issuer guard is the chart's own (validate.yaml): AUTH_SERVER_URL may
+# arrive as global.issuer.url (the umbrella) or derive from global.domain.
+required: []

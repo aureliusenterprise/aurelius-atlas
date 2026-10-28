@@ -50,6 +50,7 @@ rules live in the root `AGENTS.md`.
   `rate()` only where the quantity is inherently per-second (throughput,
   quantiles, bytes/s) or high-volume enough that fractions are meaningful.
 - `scripts/init-grafana.sh` — provisions Grafana datasources on first start
+- `helm/` — the `atlas-observability` chart (its own section below)
 
 ## Wiring Checklist
 
@@ -127,6 +128,19 @@ nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
   `enduser.id` on `otel-*` pushes — machine telemetry wears no user identity
   (DD-196, CIA-09). Read traces back with `GET :3200/api/traces/<id>`
   (plural; Tempo 3.x).
+
+## Helm chart
+
+`helm/` — the `atlas-observability` chart (CHT-02): the collector's three
+ingest legs and one egress (ADR 034, ADR 016) as a values contract. The
+collector ConfigMap (the shape of `config/otel-collector.yaml` with issuer
+URLs and backend endpoints computed from the chart's services) lands in 10.3.
+This `helm/` deploys to clusters; the `docker-compose.yaml` stays the
+dev-mode stack. Conventions: `helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-dev-observability:helm-template
+```
 
 ## Removal
 

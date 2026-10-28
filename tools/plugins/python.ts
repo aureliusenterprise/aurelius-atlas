@@ -184,13 +184,18 @@ function createNodesInternal(configFilePath: string, options: PythonPluginOption
 
     const isWorkspaceProject = projectRoot === ".";
     const targets = buildTargets(projectRoot, options);
-
+    // Every pyproject owner is also a Helm chart owner (apps/*, the root
+    // umbrella), so release runs the composite module — the ecosystem's
+    // pyproject versioning AND the chart's Chart.yaml, umbrella pins, and
+    // Chart.lock (DD-250). The composite extends @nxlv/python's actions, so
+    // the pyproject side is unchanged; the chart side is inert when no
+    // helm/Chart.yaml exists. The lock-skip option is the ecosystem's own.
     return {
         projects: {
             [projectRoot]: {
                 release: {
                     version: {
-                        versionActions: "@nxlv/python/release/version-actions",
+                        versionActions: "tools/plugins/chart-yaml-version-actions.ts",
                         versionActionsOptions: {
                             skipLockFileUpdate: !isWorkspaceProject,
                         },

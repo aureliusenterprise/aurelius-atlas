@@ -31,6 +31,7 @@ auth=None)` builds the verifier, mounts the routers, and configures the telemetr
 - `scenarios/` — the parity scenario, read from the Aurelius source: the caller's
   entity in, the full mock document out (byte equality, no volatile fields)
 - `tests/` — unit tests (app wiring on a fake issuer, the mock document's shape);
+- `helm/` — the `atlas-validate-entity` chart (its own section below)
   `e2e/` — this image on the dev Keycloak, Keycloak-minted tokens, real TLS
 
 ## Rules the app keeps
@@ -65,6 +66,22 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
   liveness healthcheck.
 - `e2e/docker-compose.yaml` — this app alone: the collector on the observability
   network, Keycloak through `keycloak.localhost:host-gateway`.
+
+## Helm chart
+
+`helm/` — the `atlas-validate-entity` chart (CHT-02): port 21003, probes, the
+`AURELIUS_ATLAS_VALIDATE_ENTITY_` settings env, the Keycloak audience
+(`aurelius-atlas-validate-entity`), and the OTLP ingest identity. Its
+deployment/service/sa/pdb templates are the shipped aux-API shape, kept as a
+copy per chart by design (DD-247) — no shared library chart. Conventions:
+`helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-validate-entity:helm-template
+```
+
+Removing the app removes `helm/` too — plus the umbrella's dependency and
+values-toggle rows (`helm/AGENTS.md`).
 
 ## Removal
 
