@@ -19,6 +19,17 @@ spec:
           port: {{ int .Values.service.port }}
           targetPort: https
           protocol: TCP
+        {{- if .Values.service.issuerPort }}
+        {{/* DD-265: the HTTPS-standard alias in-cluster producers dial when
+        they reach the issuer by its public name (the browser URL implies 443
+        and CoreDNS split-horizon resolves that name here, CHT-41). Same
+        listener as 8443; the port number is what keeps the emitted issuer
+        free of a ":8443" suffix. */}}
+        - name: https-issuer
+          port: {{ int .Values.service.issuerPort }}
+          targetPort: https
+          protocol: TCP
+        {{- end }}
     selector:
         {{- include "atlas-keycloak.selectorLabels" . | nindent 12 }}
 ---

@@ -1,0 +1,36 @@
+{{/*
+The collector's Certificate (CHT-36): cluster names only — the Service's
+bare/namespace/FQDN forms. Never a browser host: the collector is producer-
+facing, and the browser's leg arrives through the webapp's /otel/ proxy, which
+verifies this leaf against the trust root (DD-242's audience split, DD-243).
+tls.secretName brings your own and this renders nothing.
+*/}}
+{{- if and .Values.certificate.enabled (not .Values.tls.secretName) }}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $ns := include "atlas-observability.namespace" . -}}
+{{- $issuerRef := .Values.global.trust.issuerRef -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    secretName: {{ include "atlas-observability.tlsSecretName" . }}
+    duration: {{ .Values.certificate.duration }}
+    renewBefore: {{ .Values.certificate.renewBefore }}
+    subject:
+        organizations:
+            - aurelius-atlas
+    dnsNames:
+        - {{ $fullname }}
+        - {{ printf "%s.%s" $fullname $ns }}
+        - {{ printf "%s.%s.svc" $fullname $ns }}
+        - {{ printf "%s.%s.svc.cluster.local" $fullname $ns }}
+    issuerRef:
+        name: {{ required "global.trust.issuerRef.name is required (DD-243)" $issuerRef.name }}
+        {{- with $issuerRef.kind }}
+        kind: {{ . }}
+        {{- end }}
+{{- end }}

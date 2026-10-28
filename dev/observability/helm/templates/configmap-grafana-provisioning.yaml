@@ -1,0 +1,21 @@
+{{/*
+The Grafana dashboard-provider ConfigMap (CHT-40): dev's shape — a file
+provider reading /var/lib/grafana/dashboards (files/grafana-dashboards.yaml,
+byte-compared by the suite). A separate ConfigMap from the dashboards
+themselves because the provider file and the JSON must land in different
+paths (Grafana scans the provider's directory, and the provider definition
+must not sit in it).
+*/}}
+{{- if .Values.grafana.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-grafana-provisioning
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    dashboards.yaml: |
+        {{- .Files.Get "files/grafana-dashboards.yaml" | nindent 8 }}
+{{- end }}

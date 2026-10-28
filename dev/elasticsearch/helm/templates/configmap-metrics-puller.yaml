@@ -1,0 +1,73 @@
+{{/*
+The metrics puller's collector config (CHT-43): the slice's dev
+config/metrics-puller.yaml, ported. Every receiver/exporter keeps its dev
+shape; the three env-fed slots differ as the spec allows (DD-265/DD-266):
+the receiver endpoint dials this chart's Service, the OTLP endpoint dials
+this release's collector, and the mint URL is the issuer's public realm
+endpoint (which now resolves in-cluster through the CoreDNS entry). The
+`service.name` upsert stays the dev value — the accepted dashboards'
+exported_job pins are the contract (DD-265). No credential in here (R5):
+passwords and the client secret arrive as env.
+*/}}
+{{- if .Values.telemetry.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ include "atlas-elasticsearch.pullerName" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-elasticsearch.pullerLabels" . | nindent 8 }}
+data:
+    config.yaml: |
+        receivers:
+            elasticsearch:
+                endpoint: {{ printf "https://%s:%d" (include "atlas-elasticsearch.fullname" .) (int .Values.service.port) | quote }}
+                username: {{ .Values.auth.username | quote }}
+                password: ${env:ELASTICSEARCH_PASSWORD}
+                tls:
+                    ca_file: {{ printf "%s/ca.crt" (trimSuffix "/" .Values.tls.mountPath) | quote }}
+                collection_interval: 30s
+
+        processors:
+            resource:
+                attributes:
+                    # Prometheus attribution: series carry exported_job="dev-elasticsearch".
+                    - action: upsert
+                      key: service.name
+                      value: dev-elasticsearch
+            batch:
+
+        exporters:
+            otlp:
+                {{- $collector := include "atlas-elasticsearch.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.telemetry.service) }}
+                endpoint: {{ printf "https://%s:%d" $collector (int .Values.telemetry.port) | quote }}
+                # The per-service leg (DD-196, CIA-06): the oidc receiver
+                # accepts only client-credentials JWTs; the oauth2client
+                # extension mints and attaches the bearer per export.
+                auth:
+                    authenticator: oauth2client
+                tls:
+                    ca_file: {{ printf "%s/ca.crt" (trimSuffix "/" .Values.tls.mountPath) | quote }}
+
+        extensions:
+            # Per-service ingest identity (DD-196, CIA-07): mints
+            # client-credentials JWTs as the otel-elasticsearch realm client.
+            # DD-265: the mint target is the issuer's PUBLIC URL, which the
+            # runbook's CoreDNS entry resolves to the Keycloak Service's 443
+            # port in-cluster — the same issuer the collector validates
+            # against, so one world in dev and cluster alike.
+            oauth2client:
+                token_url: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-elasticsearch.issuerUrl" .) .Values.telemetry.realm | quote }}
+                client_id: otel-elasticsearch
+                client_secret: ${env:OTEL_INGEST_CLIENT_SECRET}
+                tls:
+                    ca_file: {{ printf "%s/ca.crt" (trimSuffix "/" .Values.tls.mountPath) | quote }}
+
+        service:
+            extensions: [oauth2client]
+            pipelines:
+                metrics:
+                    receivers: [elasticsearch]
+                    processors: [resource, batch]
+                    exporters: [otlp]
+{{- end }}

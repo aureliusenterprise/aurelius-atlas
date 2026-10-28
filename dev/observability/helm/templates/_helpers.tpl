@@ -36,3 +36,93 @@ convention the charts follow, not code they share.
 {{- $node -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "atlas-observability.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "atlas-observability.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if hasPrefix (lower .Release.Name) (lower $name) -}}
+{{- printf "%s" (lower $name) | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "atlas-observability.versionLabel" -}}
+{{- default "undefined" .Chart.AppVersion | toString | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/* A component image: <registry>/<name>:<tag> with the dhi.io defaults the
+values file names. Unlike the app images (global.image), these are upstream
+hardened images and travel under their own repository (the store chart's
+rule). */}}
+{{- define "atlas-observability.componentImage" -}}
+{{- printf "%s:%s" .repository (default .defaultTag .tag) -}}
+{{- end -}}
+
+{{/* The browser host Keycloak answers on; mirrors the umbrella's helper so a
+standalone render derives the same name (CHT-03). */}}
+{{- define "atlas-observability.keycloakHost" -}}
+{{- if .Values.global.issuer.url -}}
+{{- $u := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" .Values.global.issuer.url)) -}}
+{{- $u | trimSuffix "/" | splitList "/" | first -}}
+{{- else -}}
+{{- printf "keycloak.%s" (required "global.domain or global.issuer.url is required (the issuer the collector validates ingest tokens against)" .Values.global.domain) -}}
+{{- end -}}
+{{- end -}}
+
+{{/* The issuer root the collector's oidc extension validates against
+(CHT-34): the public URL (DD-265 — in-cluster DNS resolves it too). */}}
+{{- define "atlas-observability.issuerUrl" -}}
+{{- $url := default (printf "https://%s" (include "atlas-observability.keycloakHost" .)) .Values.global.issuer.url -}}
+{{- trimSuffix "/" $url -}}
+{{- end -}}
+
+{{/* The namespace this chart's resources land in. */}}
+{{- define "atlas-observability.namespace" -}}
+{{- default .Release.Namespace .Values.global.namespace -}}
+{{- end -}}
+
+{{/* The legacy-leg token Secret (CHT-35): <release>-collector-legacy, the
+umbrella's generated credential (DD-244); secrets.collectorLegacy brings
+your own. */}}
+{{- define "atlas-observability.legacySecretName" -}}
+{{- default (printf "%s-collector-legacy" .Release.Name) .Values.secrets.collectorLegacy -}}
+{{- end -}}
+
+{{/* The Grafana admin Secret (DD-267): <release>-grafana-admin, the
+umbrella's generated credential; grafana.adminPasswordSecret brings your
+own. */}}
+{{- define "atlas-observability.grafanaAdminSecretName" -}}
+{{- default (printf "%s-grafana-admin" .Release.Name) .Values.grafana.adminPasswordSecret -}}
+{{- end -}}
+
+{{/* The collector's TLS Secret (CHT-36): its own Certificate's output;
+tls.secretName brings your own. */}}
+{{- define "atlas-observability.tlsSecretName" -}}
+{{- default (printf "%s-tls" (include "atlas-observability.fullname" .)) .Values.tls.secretName -}}
+{{- end -}}
+
+{{- define "atlas-observability.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "atlas-observability.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{- define "atlas-observability.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/name: {{ include "atlas-observability.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ include "atlas-observability.versionLabel" . | quote }}
+app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}
+app.kubernetes.io/part-of: aurelius-atlas
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.global.labels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}

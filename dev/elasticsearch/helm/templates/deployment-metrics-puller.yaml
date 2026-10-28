@@ -1,0 +1,122 @@
+{{/*
+The metrics puller Deployment (CHT-43, DD-266): the dev compose's
+`metrics-puller` service as a Kubernetes workload — the contrib collector
+image (its entrypoint already speaks --config /etc/otelcol-contrib/config.yaml)
+with the ConfigMap port of the slice's config/metrics-puller.yaml.
+
+Credentials arrive only as env from Secrets (R5): ELASTICSEARCH_PASSWORD from
+the store's own <release>-elasticsearch Secret, OTEL_INGEST_CLIENT_SECRET from
+<release>-otel-clients. The trust root for the store dial, the mint, and the
+collector dial is this chart's Certificate Secret (ca.crt key). The image's
+declared user (65532) with drop-ALL — CHT-44. The dev `restart: on-failure`
+boot-race pattern (DD-195/DD-226: the oauth2client extension mints at startup
+and the process exits when the issuer is not answering yet) is the issuer-wait
+init container — the observability chart's collector shape (CHT-37).
+*/}}
+{{- if .Values.telemetry.enabled -}}
+{{- $puller := include "atlas-elasticsearch.pullerName" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $puller }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-elasticsearch.pullerLabels" . | nindent 8 }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            {{- include "atlas-elasticsearch.pullerSelectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-elasticsearch.pullerLabels" . | nindent 16 }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            {{/* The puller is a plain workload that talks to no API — the
+            store's SA keeps RBAC surface at zero new identities. */}}
+            serviceAccountName: {{ default (include "atlas-elasticsearch.fullname" .) .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 65532
+                runAsGroup: 65532
+                seccompProfile:
+                    type: RuntimeDefault
+            initContainers:
+                # The JWKS boot race (DD-195/DD-226), same shape as the
+                # observability chart's collector (CHT-37): the oauth2client
+                # extension discovers the issuer at start and exits 1 if it
+                # is not answering yet; the compose absorbs that with an
+                # unbounded restart, Kubernetes gets this wait.
+                - name: issuer-wait
+                  image: {{ printf "%s:%s" .Values.telemetry.issuerWait.image.repository .Values.telemetry.issuerWait.image.tag | quote }}
+                  imagePullPolicy: IfNotPresent
+                  command:
+                      - /bin/sh
+                      - -c
+                      - |
+                          until wget -q -O /dev/null --no-check-certificate {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-elasticsearch.issuerUrl" .) .Values.telemetry.realm) | quote }}; do
+                              echo "waiting for the issuer" >&2
+                              sleep 5
+                          done
+                  securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 65532
+                      runAsGroup: 65532
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                          drop:
+                              - ALL
+                      seccompProfile:
+                          type: RuntimeDefault
+            containers:
+                - name: metrics-puller
+                  image: {{ printf "%s:%s" .Values.telemetry.image.repository .Values.telemetry.image.tag | quote }}
+                  imagePullPolicy: IfNotPresent
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                          drop:
+                              - ALL
+                      seccompProfile:
+                          type: RuntimeDefault
+                  env:
+                      - name: ELASTICSEARCH_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: {{ include "atlas-elasticsearch.authSecretName" . }}
+                                key: elastic-password
+                      - name: OTEL_INGEST_CLIENT_SECRET
+                        valueFrom:
+                            secretKeyRef:
+                                name: {{ printf "%s-otel-clients" .Release.Name }}
+                                key: OTEL_INGEST_CLIENT_SECRET
+                  {{- with .Values.telemetry.resources }}
+                  resources:
+                      {{- toYaml . | nindent 22 }}
+                  {{- end }}
+                  volumeMounts:
+                      - name: config
+                        mountPath: /etc/otelcol-contrib/config.yaml
+                        subPath: config.yaml
+                        readOnly: true
+                      - name: tls
+                        mountPath: {{ .Values.tls.mountPath }}
+                        readOnly: true
+            volumes:
+                - name: config
+                  configMap:
+                      name: {{ $puller }}
+                - name: tls
+                  secret:
+                      secretName: {{ default (printf "%s-tls" (include "atlas-elasticsearch.fullname" .)) .Values.tls.secretName }}
+{{- end }}

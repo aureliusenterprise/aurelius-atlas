@@ -1,0 +1,7 @@
+# Test values for helm lint/template (CHT-06): a domain to derive the issuer
+# from — the collector's oidc provider needs it (CHT-34), and the issuer-wait
+# init container's poll URL derives from the same join (CHT-37).
+global:
+    domain: atlas.test
+    issuer:
+        url: https://keycloak.atlas.test

@@ -1,0 +1,121 @@
+{{/*
+The metrics puller Deployment (CHT-43, DD-266): the dev compose's
+`metrics-puller` service as a Kubernetes workload — the contrib collector
+image watching the bundled Keycloak database. Gated on the bundled flavour
+besides telemetry: with database.flavor=external the chart knows nothing of
+the external server's endpoint or trust, so there is nothing to watch.
+
+Credentials arrive only as env from Secrets (R5): the database role from
+<release>-keycloak-database (the same Secret both DB ends read, CHT-17),
+OTEL_INGEST_CLIENT_SECRET from <release>-otel-clients. The issuer-wait init
+container carries the boot race (DD-195/DD-226) exactly as the Elasticsearch
+chart's puller and the observability chart's collector (CHT-37). User 65532,
+drop-ALL — CHT-44.
+*/}}
+{{- if and .Values.telemetry.enabled .Values.postgres.enabled -}}
+{{- $puller := include "atlas-keycloak.pullerName" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $puller }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.pullerLabels" . | nindent 8 }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            {{- include "atlas-keycloak.pullerSelectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-keycloak.pullerLabels" . | nindent 16 }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            {{/* The puller is a plain workload that talks to no API — the
+            server's SA keeps RBAC surface at zero new identities. */}}
+            serviceAccountName: {{ default (include "atlas-keycloak.fullname" .) .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 65532
+                runAsGroup: 65532
+                seccompProfile:
+                    type: RuntimeDefault
+            initContainers:
+                - name: issuer-wait
+                  image: {{ printf "%s:%s" .Values.telemetry.puller.issuerWait.image.repository .Values.telemetry.puller.issuerWait.image.tag | quote }}
+                  imagePullPolicy: IfNotPresent
+                  command:
+                      - /bin/sh
+                      - -c
+                      - |
+                          until wget -q -O /dev/null --no-check-certificate {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-keycloak.issuerUrl" .) .Values.realm.name) | quote }}; do
+                              echo "waiting for the issuer" >&2
+                              sleep 5
+                          done
+                  securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 65532
+                      runAsGroup: 65532
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                          drop:
+                              - ALL
+                      seccompProfile:
+                          type: RuntimeDefault
+            containers:
+                - name: metrics-puller
+                  image: {{ printf "%s:%s" .Values.telemetry.puller.image.repository .Values.telemetry.puller.image.tag | quote }}
+                  imagePullPolicy: IfNotPresent
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                          drop:
+                              - ALL
+                      seccompProfile:
+                          type: RuntimeDefault
+                  env:
+                      - name: KEYCLOAK_DATABASE_USERNAME
+                        valueFrom:
+                            secretKeyRef:
+                                name: {{ include "atlas-keycloak.dbSecretName" . }}
+                                key: user
+                      - name: KEYCLOAK_DATABASE_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: {{ include "atlas-keycloak.dbSecretName" . }}
+                                key: password
+                      - name: OTEL_INGEST_CLIENT_SECRET
+                        valueFrom:
+                            secretKeyRef:
+                                name: {{ include "atlas-keycloak.otelClientsSecretName" . }}
+                                key: OTEL_INGEST_CLIENT_SECRET
+                  {{- with .Values.telemetry.puller.resources }}
+                  resources:
+                      {{- toYaml . | nindent 22 }}
+                  {{- end }}
+                  volumeMounts:
+                      - name: config
+                        mountPath: /etc/otelcol-contrib/config.yaml
+                        subPath: config.yaml
+                        readOnly: true
+                      - name: tls
+                        mountPath: {{ .Values.tls.mountPath }}
+                        readOnly: true
+            volumes:
+                - name: config
+                  configMap:
+                      name: {{ $puller }}
+                - name: tls
+                  secret:
+                      secretName: {{ include "atlas-keycloak.tlsSecretName" . }}
+{{- end }}

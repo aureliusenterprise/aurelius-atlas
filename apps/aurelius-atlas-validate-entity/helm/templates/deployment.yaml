@@ -53,6 +53,22 @@ spec:
                           value: {{ int .Values.port | quote }}
                         - name: {{ .Values.componentEnvPrefix }}AUTH_SERVER_URL
                           value: {{ include "atlas-validate-entity.issuerUrl" . | quote }}
+                        {{- if .Values.telemetry.enabled }}
+                        {{/* The per-service OTLP leg (CHT-42, DD-196): a
+                        minted client JWT against the issuer's public realm
+                        token endpoint (CHT-41/DD-265), exported to the
+                        collector's HTTP+OIDC leg. */}}
+                        {{- $collector := include "atlas-validate-entity.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.telemetry.service) }}
+                        - name: {{ .Values.componentEnvPrefix }}OTEL_ENDPOINT
+                          value: {{ printf "https://%s:%d" $collector (int .Values.telemetry.port) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}OTEL_TOKEN_URL
+                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-validate-entity.issuerUrl" .) .Values.telemetry.realm | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}OTEL_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ printf "%s-otel-clients" .Release.Name }}
+                                  key: OTEL_INGEST_CLIENT_SECRET
+                        {{- end }}
                         {{- with .Values.config }}
                         {{- range $key, $value := . }}
                         - name: {{ $key }}

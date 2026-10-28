@@ -1,0 +1,173 @@
+{{/*
+Grafana (CHT-40, DD-267): Deployment + PVC, the compose's anonymous-Viewer env
+set (Viewer role, login form disabled — the deployed posture), admin
+credentials joined from <release>-grafana-admin (generated, never rendered;
+the login form stays disabled either way, so the credential exists only to
+keep the instance off ship-defaults). Provisioning (datasources + dashboard
+provider) and the dashboards ride ConfigMaps; the GF_PATHS_* pair keeps every
+writable path on the one PVC (a dhi-image convention, the compose's shape).
+*/}}
+{{- if .Values.grafana.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}-grafana
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            {{- include "atlas-observability.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: grafana
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-observability.labels" . | nindent 16 }}
+                app.kubernetes.io/component: grafana
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: grafana
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.grafana.image.repository "tag" .Values.grafana.image.tag "defaultTag" "13-debian13") | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    env:
+                        -   name: GF_AUTH_ANONYMOUS_ENABLED
+                            value: "true"
+                        -   name: GF_AUTH_ANONYMOUS_ORG_ROLE
+                            value: Viewer
+                        -   name: GF_AUTH_DISABLE_LOGIN_FORM
+                            value: "true"
+                        -   name: GF_USERS_VIEWERS_CAN_EDIT
+                            value: "true"
+                        -   name: GF_PATHS_PROVISIONING
+                            value: /etc/grafana/provisioning
+                        -   name: GF_PATHS_DATA
+                            value: /var/lib/grafana/data
+                        -   name: GF_PATHS_LOGS
+                            value: /var/lib/grafana/logs
+                        -   name: GF_PATHS_PLUGINS
+                            value: /var/lib/grafana/plugins
+                        -   name: GF_SECURITY_ADMIN_USER
+                            valueFrom:
+                                secretKeyRef:
+                                    name: {{ include "atlas-observability.grafanaAdminSecretName" . }}
+                                    key: user
+                        -   name: GF_SECURITY_ADMIN_PASSWORD
+                            valueFrom:
+                                secretKeyRef:
+                                    name: {{ include "atlas-observability.grafanaAdminSecretName" . }}
+                                    key: password
+                    ports:
+                        -   name: http
+                            containerPort: {{ int .Values.grafana.probes.port }}
+                            protocol: TCP
+                    livenessProbe:
+                        httpGet:
+                            path: /api/health
+                            port: http
+                        initialDelaySeconds: {{ int .Values.grafana.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.grafana.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.grafana.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.grafana.probes.failureThreshold }}
+                    readinessProbe:
+                        httpGet:
+                            path: /api/health
+                            port: http
+                        initialDelaySeconds: {{ int .Values.grafana.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.grafana.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.grafana.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.grafana.probes.failureThreshold }}
+                    {{- with .Values.grafana.resources }}
+                    resources:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+                    volumeMounts:
+                        -   name: datasources
+                            mountPath: /etc/grafana/provisioning/datasources
+                            readOnly: true
+                        -   name: provisioning
+                            mountPath: /etc/grafana/provisioning/dashboards
+                            readOnly: true
+                        -   name: dashboards
+                            mountPath: /var/lib/grafana/dashboards
+                            readOnly: true
+                        -   name: data
+                            mountPath: /var/lib/grafana
+            volumes:
+                -   name: datasources
+                    configMap:
+                        name: {{ $fullname }}-grafana-datasources
+                -   name: provisioning
+                    configMap:
+                        name: {{ $fullname }}-grafana-provisioning
+                -   name: dashboards
+                    configMap:
+                        name: {{ $fullname }}-grafana-dashboards
+                -   name: data
+                    persistentVolumeClaim:
+                        claimName: {{ $fullname }}-grafana
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: {{ $fullname }}-grafana
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    accessModes:
+        - ReadWriteOnce
+    {{- with .Values.global.storageClass }}
+    storageClassName: {{ . | quote }}
+    {{- end }}
+    resources:
+        requests:
+            storage: {{ .Values.grafana.persistence.size | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ $fullname }}-grafana
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    ports:
+        -   name: http
+            port: {{ int .Values.grafana.probes.port }}
+            targetPort: http
+            protocol: TCP
+    selector:
+        {{- include "atlas-observability.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: grafana
+{{- end }}

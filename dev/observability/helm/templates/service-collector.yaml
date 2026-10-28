@@ -1,0 +1,47 @@
+{{/*
+The collector's Service (CHT-33): one ClusterIP carrying the five ingest legs
+plus the two scrape ports the chart's Prometheus targets (CHT-38). The port
+names ride the Service so a values-level leg-port override stays coherent.
+*/}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    type: {{ .Values.service.type }}
+    ports:
+        -   name: otlp-browser
+            port: {{ int .Values.service.browserPort }}
+            targetPort: otlp-browser
+            protocol: TCP
+        -   name: otlp-services-grpc
+            port: {{ int .Values.service.servicesGrpcPort }}
+            targetPort: otlp-services-grpc
+            protocol: TCP
+        -   name: otlp-services-http
+            port: {{ int .Values.service.servicesHttpPort }}
+            targetPort: otlp-services-http
+            protocol: TCP
+        -   name: otlp-legacy-grpc
+            port: {{ int .Values.service.legacyGrpcPort }}
+            targetPort: otlp-legacy-grpc
+            protocol: TCP
+        -   name: otlp-legacy-http
+            port: {{ int .Values.service.legacyHttpPort }}
+            targetPort: otlp-legacy-http
+            protocol: TCP
+        -   name: metrics
+            port: {{ int .Values.service.metricsPort }}
+            targetPort: metrics
+            protocol: TCP
+        -   name: internal
+            port: {{ int .Values.service.internalPort }}
+            targetPort: internal
+            protocol: TCP
+    selector:
+        {{- include "atlas-observability.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}

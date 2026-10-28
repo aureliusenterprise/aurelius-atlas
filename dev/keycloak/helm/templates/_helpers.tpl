@@ -164,6 +164,63 @@ https://<host> — validate.yaml guards it. */}}
 {{- default (printf "%s-collector-legacy" .Release.Name) .Values.telemetry.tokenSecretName -}}
 {{- end -}}
 
+{{/* The sibling chart's Service in this release (CHT-42, name rule per
+DD-247 — each chart duplicates the join it makes): "" derives
+<release>-<name>, shortened when the release name already prefixes it. */}}
+{{- define "atlas-keycloak.siblingService" -}}
+{{- if .override -}}
+{{- .override -}}
+{{- else -}}
+{{- $name := .name -}}
+{{- if hasPrefix (lower .release) (lower $name) -}}
+{{- lower $name -}}
+{{- else -}}
+{{- printf "%s-%s" .release $name -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* The collector legacy-leg endpoint Keycloak exports to (CHT-42): the
+explicit value wins, else the derived sibling name + port when enabled. */}}
+{{- define "atlas-keycloak.telemetryEndpoint" -}}
+{{- if .Values.telemetry.endpoint -}}
+{{- .Values.telemetry.endpoint -}}
+{{- else if .Values.telemetry.enabled -}}
+{{- $collector := include "atlas-keycloak.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.telemetry.service) -}}
+{{- printf "https://%s:%d" $collector (int .Values.telemetry.port) -}}
+{{- end -}}
+{{- end -}}
+
+{{/* The issuer root in-cluster producers reach by public name (DD-265 —
+CoreDNS resolves it to this Service, :443 answers). */}}
+{{- define "atlas-keycloak.issuerUrl" -}}
+{{- $url := default (printf "https://%s" (include "atlas-keycloak.host" .)) .Values.global.issuer.url -}}
+{{- trimSuffix "/" $url -}}
+{{- end -}}
+
+{{/* The metrics puller (CHT-43, DD-266): its name, and its own label pair —
+the server's selectorLabels would also match the puller's pods, so the
+puller carries its own name/instance pair (the labelsPG pattern). */}}
+{{- define "atlas-keycloak.pullerName" -}}
+{{- printf "%s-metrics-puller" (include "atlas-keycloak.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- define "atlas-keycloak.pullerSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "atlas-keycloak.pullerName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+{{- define "atlas-keycloak.pullerLabels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/name: {{ include "atlas-keycloak.pullerName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ include "atlas-keycloak.versionLabel" . | quote }}
+app.kubernetes.io/component: metrics-puller
+app.kubernetes.io/part-of: aurelius-atlas
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.global.labels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
 {{/* The TLS Secret carrying this pod's certificate + the issuer CA (CHT-16). */}}
 {{- define "atlas-keycloak.tlsSecretName" -}}
 {{- default (printf "%s-tls" (include "atlas-keycloak.fullname" .)) .Values.tls.secretName -}}

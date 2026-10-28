@@ -1,0 +1,178 @@
+{{/*
+The collector ConfigMap (CHT-34): dev/observability/config/otel-collector.yaml's
+pipeline reproduced with the environment slots computed — backend endpoints at
+this chart's Services, the single OIDC provider at the public issuer (DD-265
+makes it resolvable in-cluster too), deployment.environment.name from values
+(DD-268), receiver ports from values. The structure (receivers, processors,
+exporters, pipelines) is drift-pinned against the dev file by the chart-
+contract suite; the bearer token is NOT here (R5) — bearertokenauth reads it
+from the env the deployment fills from <release>-collector-legacy (CHT-35).
+*/}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $issuer := printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) .Values.realm -}}
+{{- $cert := printf "%s/otel-collector.pem" (trimSuffix "/" .Values.tls.mountPath) -}}
+{{- $key := printf "%s/otel-collector-key.pem" (trimSuffix "/" .Values.tls.mountPath) -}}
+{{- $ca := printf "%s/ca.pem" (trimSuffix "/" .Values.tls.mountPath) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    config.yaml: |
+        receivers:
+            # Three ingest legs, credential-typed (DD-193, DD-196). TLS proves
+            # which collector you reach on all of them; the auth extension
+            # proves who writes. One authenticator per port (the contrib image
+            # has no compositeauth) — the legs are separate ports by design.
+            otlp:
+                protocols:
+                    http:
+                        endpoint: 0.0.0.0:{{ int .Values.service.browserPort }}
+                        tls:
+                            cert_file: {{ $cert }}
+                            key_file: {{ $key }}
+                        auth:
+                            authenticator: oidc
+            otlp/services:
+                protocols:
+                    grpc:
+                        endpoint: 0.0.0.0:{{ int .Values.service.servicesGrpcPort }}
+                        tls:
+                            cert_file: {{ $cert }}
+                            key_file: {{ $key }}
+                        auth:
+                            authenticator: oidc
+                    http:
+                        endpoint: 0.0.0.0:{{ int .Values.service.servicesHttpPort }}
+                        tls:
+                            cert_file: {{ $cert }}
+                            key_file: {{ $key }}
+                        auth:
+                            authenticator: oidc
+            otlp/legacy:
+                protocols:
+                    grpc:
+                        endpoint: 0.0.0.0:{{ int .Values.service.legacyGrpcPort }}
+                        tls:
+                            cert_file: {{ $cert }}
+                            key_file: {{ $key }}
+                        auth:
+                            authenticator: bearertokenauth
+                    http:
+                        endpoint: 0.0.0.0:{{ int .Values.service.legacyHttpPort }}
+                        tls:
+                            cert_file: {{ $cert }}
+                            key_file: {{ $key }}
+                        auth:
+                            authenticator: bearertokenauth
+
+        processors:
+            batch:
+            resource:
+                attributes:
+                    - action: upsert
+                      key: deployment.environment.name
+                      value: {{ .Values.collector.deploymentEnvironment | quote }}
+                    # CIA-05 (DD-194): the OIDC verifier keeps the verified
+                    # token's claims in the request context under their raw
+                    # JWT names; copy sub onto the resource (enduser.id) and
+                    # azp as otel.ingest.client (CIA-09, DD-196). Legacy-leg
+                    # pushes carry no auth context — empty upserts, by design.
+                    - action: upsert
+                      key: enduser.id
+                      from_context: auth.claims.sub
+                    - action: upsert
+                      key: otel.ingest.client
+                      from_context: auth.claims.azp
+            # CIA-09 (DD-196): a service-account push must not wear a user
+            # identity — clear enduser.id on pushes from an otel-* client.
+            transform/identity:
+                trace_statements:
+                    - context: resource
+                      statements:
+                          - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
+                metric_statements:
+                    - context: resource
+                      statements:
+                          - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
+                log_statements:
+                    - context: resource
+                      statements:
+                          - set(attributes["enduser.id"], "") where IsMatch(attributes["otel.ingest.client"], "^otel-")
+            # The metrics leg of CIA-05 (DD-194): the prometheus exporter
+            # keeps only a few resource attributes as labels, so promote
+            # enduser.id and otel.ingest.client onto every datapoint (the
+            # enduser_id / otel_ingest_client labels panels group by).
+            transform/user_labels:
+                metric_statements:
+                    - context: datapoint
+                      statements:
+                          - set(attributes["enduser.id"], resource.attributes["enduser.id"])
+                          - set(attributes["otel.ingest.client"], resource.attributes["otel.ingest.client"])
+
+        exporters:
+            debug:
+                verbosity: basic
+            otlp_http/loki:
+                endpoint: http://{{ $fullname }}-loki:3100/otlp
+            otlp_http/tempo:
+                endpoint: http://{{ $fullname }}-tempo:4318
+            prometheus:
+                endpoint: 0.0.0.0:{{ int .Values.service.metricsPort }}
+                # OTel SDKs aggregate histograms exponentially; the classic
+                # text format would flatten them to a lone +Inf bucket. Emit
+                # Prometheus native histograms so p95 panels work.
+                send_native_histogram: true
+
+        extensions:
+            health_check:
+                endpoint: 0.0.0.0:{{ int .Values.collector.probes.port }}
+            # Shared ingest secret for the legacy leg (DD-239). The token
+            # arrives as OTEL_COLLECTOR_INGEST_TOKEN from the Secret the
+            # deployment mounts — never rendered here (R5).
+            bearertokenauth:
+                tokens:
+                    - ${env:OTEL_COLLECTOR_INGEST_TOKEN}
+            # Ingest validator (DD-193 browser leg, DD-196 per-service leg):
+            # verifies the presented token against the issuer's JWKS and
+            # requires the otel-collector audience the realm's otel-ingest
+            # scope mints. One provider: in the cluster the issuer is one
+            # realm behind one public name that resolves in-cluster too
+            # (DD-265), so the dev dual-listener provider pair (DD-202)
+            # collapses to one. CA-pinned discovery (DD-216).
+            oidc:
+                providers:
+                    - issuer_url: {{ $issuer | quote }}
+                      audience: otel-collector
+                      issuer_ca_path: {{ $ca | quote }}
+
+        service:
+            extensions: [health_check, bearertokenauth, oidc]
+            # Internal telemetry (otelcol_* pipeline health) on 0.0.0.0 so
+            # Prometheus (job otel-collector-internal) can scrape it.
+            telemetry:
+                metrics:
+                    readers:
+                        - pull:
+                              exporter:
+                                  prometheus:
+                                      host: 0.0.0.0
+                                      port: {{ int .Values.service.internalPort }}
+            pipelines:
+                traces:
+                    receivers: [otlp, otlp/services, otlp/legacy]
+                    processors: [resource, transform/identity, batch]
+                    exporters: [otlp_http/tempo, debug]
+                metrics:
+                    receivers: [otlp, otlp/services, otlp/legacy]
+                    processors: [resource, transform/identity, transform/user_labels, batch]
+                    exporters: [prometheus, debug]
+                logs:
+                    # Service legs only: no browser producer emits OTLP logs,
+                    # and the OIDC leg stays trace/metric-shaped.
+                    receivers: [otlp/services, otlp/legacy]
+                    processors: [resource, transform/identity, batch]
+                    exporters: [otlp_http/loki, debug]

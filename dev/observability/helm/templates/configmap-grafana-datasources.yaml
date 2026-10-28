@@ -1,0 +1,50 @@
+{{/*
+The Grafana datasources ConfigMap (CHT-40): dev's shape (uids
+prometheus/loki/tempo, the serviceMap and tracesToLogsV2 cross-links) with
+urls computed to this chart's Services — the one Grafana asset that cannot be
+a byte-copy (the compose service names are not cluster names). The cross-link
+uids are pinned by the chart-contract suite; only the urls differ from dev.
+*/}}
+{{- if .Values.grafana.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-grafana-datasources
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    datasources.yaml: |
+        apiVersion: 1
+
+        datasources:
+            - name: Prometheus
+              uid: prometheus
+              type: prometheus
+              access: proxy
+              url: http://{{ $fullname }}-prometheus:{{ int .Values.prometheus.probes.port }}
+              isDefault: true
+
+            - name: Loki
+              uid: loki
+              type: loki
+              access: proxy
+              url: http://{{ $fullname }}-loki:{{ int .Values.loki.probes.port }}
+
+            - name: Tempo
+              uid: tempo
+              type: tempo
+              access: proxy
+              url: http://{{ $fullname }}-tempo:{{ int .Values.tempo.probes.port }}
+              jsonData:
+                  serviceMap:
+                      datasourceUid: prometheus
+                  tracesToLogsV2:
+                      datasourceUid: loki
+                      filterByTraceID: true
+                      filterBySpanID: false
+                      spanStartTimeShift: "-1h"
+                      spanEndTimeShift: "1h"
+                      tags: ["service.name"]
+{{- end }}
