@@ -6,6 +6,92 @@ encode (the global.* contract, the label set, the ADR 018 guard) is a
 convention the charts follow, not code they share.
 */}}
 
+{{- define "atlas-elasticsearch.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "atlas-elasticsearch.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if hasPrefix (lower .Release.Name) (lower $name) -}}
+{{- printf "%s" (lower $name) | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* The headless Service that governs the StatefulSet (CHT-10). */}}
+{{- define "atlas-elasticsearch.headlessName" -}}
+{{- printf "%s-headless" (include "atlas-elasticsearch.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/* The generated credential Secret (DD-244/DD-254); the umbrella names it
+<release>-elasticsearch. auth.secretName brings your own. */}}
+{{- define "atlas-elasticsearch.authSecretName" -}}
+{{- $default := printf "%s-%s" .Release.Name (default "elasticsearch" .Values.component) -}}
+{{- default $default .Values.auth.secretName -}}
+{{- end -}}
+
+{{- define "atlas-elasticsearch.versionLabel" -}}
+{{- default "undefined" .Chart.AppVersion | toString | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "atlas-elasticsearch.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/name: {{ include "atlas-elasticsearch.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ include "atlas-elasticsearch.versionLabel" . | quote }}
+app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}
+app.kubernetes.io/part-of: aurelius-atlas
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.global.labels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{- define "atlas-elasticsearch.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "atlas-elasticsearch.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{/* The store image (upstream dhi.io mirror, chart-pinned — not global.image). */}}
+{{- define "atlas-elasticsearch.image" -}}
+{{- $name := required "image.repository is required (the store image)" .Values.image.repository -}}
+{{- $tag := required "image.tag is required (the store image tag travels with the chart)" .Values.image.tag -}}
+{{- printf "%s:%s" $name $tag -}}
+{{- end -}}
+
+{{/* The coredump-agent image (an Aurelius image: global.image registry/namespace,
+DD-255). tag "" takes the chart appVersion the release sets. */}}
+{{- define "atlas-elasticsearch.agentImage" -}}
+{{- $registry := default "ghcr.io" .Values.global.image.registry -}}
+{{- $namespace := default "aureliusenterprise" .Values.global.image.namespace -}}
+{{- $name := required "agent.image.name is required" .Values.agent.image.name -}}
+{{- $tag := default .Chart.AppVersion .Values.agent.image.tag -}}
+{{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
+{{- end -}}
+
+{{/* ES_JAVA_OPTS (CHT-15): the heap flags, the coredump javaagent, then extras. */}}
+{{- define "atlas-elasticsearch.javaOpts" -}}
+{{- $opts := printf "-Xms%s -Xmx%s -javaagent:/agent/coredump-noop.jar" .Values.heap .Values.heap -}}
+{{- with .Values.extraJavaOpts -}}
+{{- $opts = printf "%s %s" $opts . -}}
+{{- end -}}
+{{- $opts -}}
+{{- end -}}
+
+{{/*
+The healthcheck command (CHT-14, DD-008): the compose healthcheck's shape as a
+shell one-liner — openssl over TLS, CA-pinned, authenticated as elastic; a
+green-or-yellow cluster health answers healthy. The hardened image has no curl.
+*/}}
+{{- define "atlas-elasticsearch.healthcheck" -}}
+printf 'GET /_cluster/health HTTP/1.1\r\nHost: localhost\r\nAuthorization: Basic %s\r\nConnection: close\r\n\r\n' "$(printf 'elastic:%s' "$ELASTIC_PASSWORD" | base64 -w0)" | timeout {{ int .Values.probes.timeoutSeconds }} openssl s_client -quiet -verify_return_error -CAfile {{ .Values.tls.mountPath }}/ca.pem -connect localhost:{{ int .Values.service.port }} 2>/dev/null | grep -qE '"status":"(green|yellow)"'
+{{- end -}}
+
 {{- define "atlas-elasticsearch.requireValues" -}}
 {{- $missing := list -}}
 {{- with .values.required }}

@@ -54,17 +54,22 @@ global:
         url: ""
 
     trust:
-        # Create a self-signed ClusterIssuer for in-cluster certificates
-        # (DD-243). Turn off to bring an existing issuer (ACME, a private CA).
+        # Build the private trust root in-cluster: a self-signed bootstrap
+        # Issuer signs one CA Certificate, and a CA-type Issuer of that CA
+        # signs every leaf (DD-243 as corrected by DD-259). Turn off to bring
+        # an existing issuer (ACME, a private CA) instead.
         createIssuer: true
-        # The issuer every Certificate in the system is signed by.
+        # The issuer every Certificate in the system is signed by. The
+        # chart-managed chain is namespaced (`Issuer`) — a ClusterIssuer
+        # cannot read a CA Secret the chart writes into the app namespace
+        # (DD-259). A bring-your-own issuer is often a ClusterIssuer (gke.yaml).
         issuerRef:
             name: aurelius-atlas-selfsigned
-            kind: ClusterIssuer
+            kind: Issuer
         # Secret carrying the trust root (key: ca.crt) the components pin by
-        # file. "" defaults to "<issuerRef.name>-ca" — the secret cert-manager
-        # creates for a self-signed issuer. Point it elsewhere (or set
-        # caBundle) when the issuer is external and its CA is not in-cluster.
+        # file. "" defaults to "<issuerRef.name>-ca" — the Secret the CA
+        # Certificate renders under createIssuer, and the one caBundle fills
+        # when the issuer is external and its CA is not in-cluster.
         caSecretName: ""
         # PEM of the trust root, installed as a Secret when set; overrides
         # caSecretName. For ACME/private-CA issuers whose CA is not on-cluster.

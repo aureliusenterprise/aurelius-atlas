@@ -4,6 +4,19 @@ The subcharts default these identically for a standalone render; the umbrella
 is the source of truth (CHT-03).
 */}}
 
+{{/* Shared labels every umbrella-owned resource carries. */}}
+{{- define "aurelius-atlas.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ default "undefined" .Chart.AppVersion | toString | trunc 63 | trimSuffix "-" | quote }}
+app.kubernetes.io/part-of: aurelius-atlas
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.global.labels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
 {{/* The namespace the system installs into. */}}
 {{- define "aurelius-atlas.namespace" -}}
 {{- required "global.namespace is required (the values file ships a default)" .Values.global.namespace -}}

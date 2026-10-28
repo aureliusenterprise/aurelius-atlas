@@ -12,6 +12,8 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 - `import/master.json` — realm, clients, and test users, imported on startup
 - `.env` / `.env.enc` — SOPS-encrypted dev settings
 - `helm/` — the `atlas-keycloak` chart (its own section below)
+- `import/master.json` — the dev realm; the **single authored source** the
+  chart's `files/master.json` byte-copies (a chart-contract test fails on drift — re-run the copy after editing)
 
 ## Wiring Checklist
 
@@ -129,8 +131,21 @@ nx serve aurelius-atlas-dev-keycloak   # decrypt + build + observability + up
 
 `helm/` — the `atlas-keycloak` chart (CHT-02): Keycloak 26.7 with the bundled
 Postgres (`postgres.*` values; `flavor=external` points at an existing
-database). The StatefulSet, the realm-import Job (the compose's
-import-and-replace pattern), and prod-mode start land in 10.2. Remember the
+database). Landed in 10.2 (CHT-16/17): the prod-mode StatefulSet
+(`kc.sh start --import-realm` — never `start-dev`) running as the image's uid
+(65532, which owns `/opt/keycloak/lib/quarkus` where the start re-augments —
+a foreign uid cannot write it, DD-257), the realm ConfigMap (the
+`files/master.json` chart asset — a byte-copy of `import/master.json`, the
+drift guard is a chart-contract test, DD-256; the `${DEV_USER_*}` /
+`${OTEL_INGEST_CLIENT_SECRET}` placeholders resolve inside Keycloak via
+`-Dkeycloak.migration.replace-placeholders=true` fed from the generated
+Secrets, never by Helm substitution), the RSS headless Service JGroups
+discovers through, HTTPS management-port probes (prod mode puts TLS there
+too — DD-260), and the bundled Postgres section
+(the compose's cert-copy boot: mktemp + `install -m 600`, `ssl=on` flags, the
+pg_hba ConfigMap, the `/tmp` tmpfs). The JVM trusts the cluster CA through the
+mounted issuer `ca.crt` — the dev truststore workaround is never rendered.
+Remember the
 issuer pin (runbook): Keycloak fixes its realm issuer at first boot, so the
 chart's `global.domain`/issuer URL is immutable for a volume. Conventions:
 `helm/AGENTS.md`.

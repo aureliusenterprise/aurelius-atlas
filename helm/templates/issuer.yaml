@@ -1,0 +1,84 @@
+{{/*
+The trust model (DD-243 as corrected by DD-259, CHT-19). cert-manager is a
+cluster prerequisite — this chart never installs it (the runbook does); it
+renders the issuer every Certificate in the system references.
+
+createIssuer=true builds the private root in-cluster as a three-step chain in
+the app namespace: a self-signed bootstrap Issuer signs one `isCA` root
+Certificate, whose Secret (global.trust.caSecretName) is the trust root every
+component pins by file; a CA-type Issuer of that Secret then signs every leaf.
+One CA, so every leaf's `ca.crt` is the same root and a consumer can verify a
+peer's leaf (Keycloak → Postgres, CHT-17). A bare `selfSigned` issuer cannot
+do this: cert-manager gives each self-signed Certificate its own private key,
+so no leaf trusts any other (DD-259, found in the 10.2 hand check).
+
+The chain is namespaced (`Issuer`), not cluster-scoped: a `ClusterIssuer`
+reads its CA Secret from cert-manager's own namespace, while a chart can only
+write a `Certificate`'s Secret into the Certificate's namespace — so a
+chart-managed CA Secret is unreachable to a ClusterIssuer (DD-259).
+createIssuer=false means the operator brings their own issuer (ACME, a private
+CA) and names it via global.trust.issuerRef; its CA, not being on-cluster, is
+installed as the Secret the components pin by file (global.trust.caBundle →
+caSecretName), so the trust path stays one Secret lookup regardless of who
+signs.
+*/}}
+{{- if .Values.global.trust.createIssuer -}}
+{{- $name := required "global.trust.issuerRef.name is required (DD-243)" .Values.global.trust.issuerRef.name -}}
+{{- $ns := include "aurelius-atlas.namespace" . -}}
+{{- $caSecret := include "aurelius-atlas.caSecretName" . -}}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+    name: {{ printf "%s-bootstrap" $name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: {{ $caSecret }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    isCA: true
+    commonName: {{ $name }}
+    secretName: {{ $caSecret }}
+    duration: {{ .Values.global.trust.caDuration | default "8760h0m0s" }}
+    renewBefore: {{ .Values.global.trust.caRenewBefore | default "720h0m0s" }}
+    subject:
+        organizations:
+            - aurelius-atlas
+    privateKey:
+        algorithm: ECDSA
+        size: 256
+    issuerRef:
+        name: {{ printf "%s-bootstrap" $name }}
+        kind: Issuer
+        group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+    name: {{ $name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    ca:
+        secretName: {{ $caSecret }}
+{{- else if .Values.global.trust.caBundle -}}
+apiVersion: v1
+kind: Secret
+metadata:
+    name: {{ include "aurelius-atlas.caSecretName" . }}
+    namespace: {{ include "aurelius-atlas.namespace" . }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+type: Opaque
+data:
+    ca.crt: {{ .Values.global.trust.caBundle | b64enc | quote }}
+{{- end }}

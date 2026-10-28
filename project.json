@@ -1,0 +1,31 @@
+{
+    "$schema": "./node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas",
+    "targets": {
+        "test": {
+            "cache": true,
+            "configurations": {
+                "ci": {
+                    "junitxml": "junit.xml",
+                    "trace-json": "trace.json"
+                }
+            },
+            "executor": "@nxlv/python:run-commands",
+            "inputs": [
+                "pythonBase",
+                "^default",
+                "{projectRoot}/tests/**/*",
+                "{workspaceRoot}/helm/**",
+                "{workspaceRoot}/dev/*/helm/**",
+                "{workspaceRoot}/tools/es-coredump-agent/**"
+            ],
+            "metadata": {
+                "description": "Run the chart-contract suite (DD-253): rendered-manifest invariants for every chart"
+            },
+            "options": {
+                "command": "uv run pytest tests",
+                "cwd": "."
+            }
+        }
+    }
+}

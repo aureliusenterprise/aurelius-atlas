@@ -1,0 +1,46 @@
+{{/*
+The Services (CHT-16): the ClusterIP the gateway and the apps reach, and the
+RSS (Replica Service) headless companion the JGroups DNS_PING discovers
+through — `-Djgroups.dns.query` points at it, so it must exist and publish
+not-ready addresses for the cluster to form.
+*/}}
+{{- $fullname := include "atlas-keycloak.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labels" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    ports:
+        - name: https
+          port: {{ int .Values.service.port }}
+          targetPort: https
+          protocol: TCP
+    selector:
+        {{- include "atlas-keycloak.selectorLabels" . | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ include "atlas-keycloak.rssName" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labels" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    clusterIP: None
+    publishNotReadyAddresses: true
+    ports:
+        - name: https
+          port: {{ int .Values.service.port }}
+          targetPort: https
+          protocol: TCP
+        - name: jgroups
+          port: 7800
+          targetPort: jgroups
+          protocol: TCP
+    selector:
+        {{- include "atlas-keycloak.selectorLabels" . | nindent 12 }}

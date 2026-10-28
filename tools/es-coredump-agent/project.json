@@ -1,0 +1,13 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "description": "The Elasticsearch coredump-filter javaagent image (DD-255): the jar the atlas-elasticsearch chart's init container copies (CHT-15).",
+    "name": "aurelius-atlas-elasticsearch-agent",
+    "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
+    "tags": [],
+    "targets": {}
+}

@@ -1,0 +1,25 @@
+{{/*
+The bundled database's Service (CHT-17). Headless like the ES companion:
+Keycloak dials the stable DNS name and a single replica gains nothing from a
+ClusterIP hop; the JDBC host in the helper matches.
+*/}}
+{{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ include "atlas-keycloak.pgFullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labelsPG" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    clusterIP: None
+    publishNotReadyAddresses: false
+    ports:
+        - name: postgres
+          port: {{ int .Values.postgres.service.port }}
+          targetPort: postgres
+          protocol: TCP
+    selector:
+        {{- include "atlas-keycloak.selectorLabelsPG" . | nindent 12 }}
+{{- end }}

@@ -238,7 +238,10 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/conftest.py" = ["INP001"]
+# The chart-contract harness shells out to `helm` and asserts on rendered YAML;
+# the assert/subprocess safety codes are the harness's shape, not a hazard.
 "**/test__*.py" = ["INP001", "S101", "PLR0913", "PLR2004"]
+"tests/conftest.py" = ["INP001", "S101", "S603", "S607"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 
 [tool.ruff.lint.pydocstyle]

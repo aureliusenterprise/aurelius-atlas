@@ -89,12 +89,16 @@ CI renders every chart against both overlays on every change (CHT-06), so
 
 ## Trust
 
-cert-manager signs every certificate (DD-243). The default posture is the
-chart-created self-signed `ClusterIssuer`: the umbrella creates the issuer
-and the certificates, and publishes the CA bundle into a ConfigMap the
-components mount to pin by file. A production deployment brings its own
-issuer (`global.trust.createIssuer: false`, `issuerRef` to the org's) and
-either the CA secret name or a literal CA bundle.
+cert-manager signs every certificate (DD-243, corrected by DD-259). The
+default posture is the chart-created private root: a self-signed bootstrap
+`Issuer` signs one CA `Certificate` (its Secret is
+`global.trust.caSecretName`), and a CA-type `Issuer` of that CA — namespaced,
+since a `ClusterIssuer` cannot read a CA Secret the chart writes into the app
+namespace — signs every leaf, so every certificate descends from one root and
+each component's mounted `ca.crt` verifies every peer. A production
+deployment brings its own issuer (`global.trust.createIssuer: false`,
+`issuerRef` to the org's, typically a `ClusterIssuer`) and either the CA
+secret name or a literal CA bundle.
 
 **The Keycloak issuer URL is immutable once entities exist.** Tokens embed
 the issuer; changing `global.domain` (or `global.issuer.url`) after data is
