@@ -150,6 +150,11 @@
     "aliases": []
   },
   {
+    "version": "feat-app-edge-charts",
+    "title": "feat-app-edge-charts",
+    "aliases": []
+  },
+  {
     "version": "feat-api-client-libraries",
     "title": "feat-api-client-libraries",
     "aliases": []
