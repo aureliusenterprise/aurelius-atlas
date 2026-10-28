@@ -1,0 +1,159 @@
+{{/*
+The bundled Keycloak database (CHT-17) — a chart section, not a subchart: it
+exists only for Keycloak (CHT-02). database.flavor=external renders none of
+this and KC_DB_URL comes from database.url instead.
+
+The cert-copy boot is the dev sibling's, ported verbatim: the image runs as a
+fixed non-root user that cannot read the mounted key material it does not
+own, and Postgres insists the key is 0600 owned by the server user — so the
+pair is copied into a fresh mktemp dir every boot (fixed paths collide on a
+warm node). The /tmp tmpfs pins the mode: emptyDir medium=Memory is kubelet's
+tmpfs mount at mode 1777, the same pin the compose sets explicitly, so the
+boot does not depend on the image digest's own /tmp.
+*/}}
+{{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
+{{- $pg := include "atlas-keycloak.pgFullname" . -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: {{ $pg }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labelsPG" . | nindent 8 }}
+spec:
+    replicas: 1
+    serviceName: {{ $pg }}
+    selector:
+        matchLabels:
+            {{- include "atlas-keycloak.selectorLabelsPG" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-keycloak.labelsPG" . | nindent 16 }}
+        spec:
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 70
+                runAsGroup: 70
+                fsGroup: 70
+                seccompProfile:
+                    type: RuntimeDefault
+            containers:
+                -   name: postgres
+                    image: {{ include "atlas-keycloak.pgImage" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - /bin/sh
+                        - -c
+                        - >-
+                            d=$(mktemp -d /tmp/atlas-certs.XXXXXX) && install
+                            -m 600 /certs/tls.crt $d/server.pem && install -m
+                            600 /certs/tls.key $d/server-key.pem && exec
+                            docker-entrypoint.sh -c ssl=on -c
+                            ssl_cert_file=$d/server.pem -c
+                            ssl_key_file=$d/server-key.pem -c
+                            hba_file=/conf/pg_hba.conf
+                    env:
+                        - name: POSTGRES_USER
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.dbSecretName" . }}
+                                  key: user
+                        - name: POSTGRES_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.dbSecretName" . }}
+                                  key: password
+                        - name: POSTGRES_DB
+                          value: {{ .Values.postgres.auth.database | quote }}
+                        - name: POSTGRES_HOST_AUTH_METHOD
+                          value: scram-sha-256
+                    ports:
+                        - name: postgres
+                          containerPort: {{ int .Values.postgres.service.port }}
+                          protocol: TCP
+                    volumeMounts:
+                        - name: certs
+                          mountPath: /certs
+                          readOnly: true
+                        - name: conf
+                          mountPath: /conf
+                          readOnly: true
+                        - name: tmp
+                          mountPath: /tmp
+                        - name: data
+                          mountPath: /var/lib/postgresql
+                    startupProbe:
+                        exec:
+                            command:
+                                - /bin/sh
+                                - -c
+                                - >-
+                                    PGSSLMODE=verify-full
+                                    PGSSLROOTCERT=/certs/ca.crt pg_isready -h
+                                    127.0.0.1 -U "$POSTGRES_USER" -d
+                                    "$POSTGRES_DB"
+                        periodSeconds: 5
+                        failureThreshold: 30
+                        timeoutSeconds: 5
+                    readinessProbe:
+                        exec:
+                            command:
+                                - /bin/sh
+                                - -c
+                                - >-
+                                    PGSSLMODE=verify-full
+                                    PGSSLROOTCERT=/certs/ca.crt pg_isready -h
+                                    127.0.0.1 -U "$POSTGRES_USER" -d
+                                    "$POSTGRES_DB"
+                        periodSeconds: 10
+                        timeoutSeconds: 5
+                        failureThreshold: 5
+                    livenessProbe:
+                        exec:
+                            command:
+                                - /bin/sh
+                                - -c
+                                - >-
+                                    PGSSLMODE=verify-full
+                                    PGSSLROOTCERT=/certs/ca.crt pg_isready -h
+                                    127.0.0.1 -U "$POSTGRES_USER" -d
+                                    "$POSTGRES_DB"
+                        periodSeconds: 10
+                        timeoutSeconds: 5
+                        failureThreshold: 5
+                    resources:
+                        {{- toYaml .Values.postgres.resources | nindent 24 }}
+                    securityContext:
+                        allowPrivilegeEscalation: false
+                        readOnlyRootFilesystem: false
+                        capabilities:
+                            drop:
+                                - ALL
+            volumes:
+                -   name: certs
+                    secret:
+                        secretName: {{ include "atlas-keycloak.pgTlsSecretName" . }}
+                -   name: conf
+                    configMap:
+                        name: {{ $pg }}
+                -   name: tmp
+                    emptyDir:
+                        medium: Memory
+    volumeClaimTemplates:
+        -   metadata:
+                name: data
+            spec:
+                accessModes:
+                    - ReadWriteOnce
+                resources:
+                    requests:
+                        storage: {{ .Values.postgres.persistence.size }}
+                {{- with .Values.global.storageClass }}
+                storageClassName: {{ . | quote }}
+                {{- end }}
+{{- end }}

@@ -39,7 +39,13 @@ empty defaults, so it renders standalone; through the umbrella, Helm's
 source of truth. Deep access into a missing value map panics the Go template
 (nil pointer) — a chart that reads `global.x.y` must ship the whole shape.
 The contract: `namespace`, `labels`, `image{registry,namespace,tag,pullSecrets}`,
-`storageClass`, `domain`, `issuer.url`, `dnsResolver`.
+`storageClass`, `domain`, `issuer.url`, `dnsResolver`, and
+`trust.issuerRef` (`{name, kind}` — the issuer every component `Certificate`
+signs against; with `trust.createIssuer` on (the default) the umbrella
+renders the chain itself — bootstrap self-signed `Issuer` → `isCA` root
+`Certificate` → `ca` `Issuer` — all namespaced, because a `ClusterIssuer`
+cannot read a CA Secret in the app namespace (DD-259); off means the
+operator brings their own issuer).
 
 Names: a release prefixes its charts (`<release>-<chart>`); the fullname
 helper drops the prefix when the release name already starts with it, so the

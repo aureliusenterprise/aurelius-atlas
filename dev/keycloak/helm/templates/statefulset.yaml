@@ -1,0 +1,231 @@
+{{/*
+The Keycloak StatefulSet (CHT-16). Prod mode — `kc.sh start`, never start-dev.
+KC_HOSTNAME pins the issuer (the values/runbook warning). The browser listener
+is TLS from the cert-manager Certificate; the management port (9000) is the
+plain-HTTP probe surface. The realm ConfigMap mounts at the import directory
+and Keycloak's own replace-placeholders resolves the secret placeholders from
+this container's environment (DD-256). Telemetry envs render only when a
+legacy-leg endpoint is configured (CHT-16).
+*/}}
+{{- $fullname := include "atlas-keycloak.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-keycloak.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.replicas }}
+    serviceName: {{ include "atlas-keycloak.rssName" . }}
+    selector:
+        matchLabels:
+            {{- include "atlas-keycloak.selectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-keycloak.labels" . | nindent 16 }}
+                {{- with .Values.podLabels }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            {{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
+            initContainers:
+                # The compose's `depends_on: condition: service_healthy` for the
+                # database (DD-258). Kubernetes has no readiness-gated start, so
+                # this waits for the headless Service to publish the database
+                # pod — which happens only once that pod's own verify-full
+                # pg_isready probe passes, so the wait is transitive on the DB
+                # serving verified TLS. bash's /dev/tcp is the compose's KC
+                # healthcheck shape and needs no client tool in the image.
+                -   name: wait-for-postgres
+                    image: {{ include "atlas-keycloak.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - /bin/bash
+                        - -c
+                        - |
+                            until (exec 3<>/dev/tcp/{{ include "atlas-keycloak.pgFullname" . }}/{{ int .Values.postgres.service.port }}) 2>/dev/null; do
+                                echo "waiting for {{ include "atlas-keycloak.pgFullname" . }}:{{ int .Values.postgres.service.port }}" >&2
+                                sleep 2
+                            done
+                    securityContext:
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                            drop:
+                                - ALL
+            {{- end }}
+            containers:
+                -   name: keycloak
+                    image: {{ include "atlas-keycloak.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - /opt/keycloak/bin/kc.sh
+                        - start
+                        - --import-realm
+                        - --http-relative-path=/
+                        - {{ printf "-Djgroups.dns.query=%s" (include "atlas-keycloak.rssName" .) | quote }}
+                    env:
+                        - name: KC_BOOTSTRAP_ADMIN_USERNAME
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.adminSecretName" . }}
+                                  key: user
+                        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.adminSecretName" . }}
+                                  key: password
+                        - name: KC_DB
+                          value: postgres
+                        - name: KC_DB_URL
+                          value: {{ include "atlas-keycloak.jdbcUrl" . | quote }}
+                        - name: KC_DB_USERNAME
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.dbSecretName" . }}
+                                  key: user
+                        - name: KC_DB_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.dbSecretName" . }}
+                                  key: password
+                        - name: KC_HOSTNAME
+                          value: {{ include "atlas-keycloak.host" . | quote }}
+                        - name: KC_PROXY_HEADERS
+                          value: xforwarded
+                        - name: KC_HTTP_ENABLED
+                          value: "false"
+                        - name: KC_HEALTH_ENABLED
+                          value: "true"
+                        - name: KC_HTTPS_CERTIFICATE_FILE
+                          value: {{ printf "%s/tls.crt" (trimSuffix "/" .Values.tls.mountPath) | quote }}
+                        - name: KC_HTTPS_CERTIFICATE_KEY_FILE
+                          value: {{ printf "%s/tls.key" (trimSuffix "/" .Values.tls.mountPath) | quote }}
+                        - name: JAVA_OPTS
+                          value: {{ include "atlas-keycloak.javaOpts" . | quote }}
+                        {{- /* Realm placeholders resolved at import (DD-256). */}}
+                        - name: DEV_USER_WRITER_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.usersSecretName" . }}
+                                  key: writer-password
+                        - name: DEV_USER_READER_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.usersSecretName" . }}
+                                  key: reader-password
+                        - name: OTEL_INGEST_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.otelClientsSecretName" . }}
+                                  key: OTEL_INGEST_CLIENT_SECRET
+                        {{- with .Values.telemetry.endpoint }}
+                        {{- /* Legacy-leg OTLP only, when pointed at a collector
+                        (CHT-16): Keycloak is the issuer, so it cannot present a
+                        Keycloak-minted JWT at its own boot (DD-193/196). */}}
+                        - name: OTEL_SERVICE_NAME
+                          value: keycloak
+                        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                          value: {{ . | quote }}
+                        - name: OTEL_EXPORTER_OTLP_CERTIFICATE
+                          value: {{ include "atlas-keycloak.caPath" $ | quote }}
+                        - name: OTEL_TRACES_SAMPLER
+                          value: parentbased_traceidratio
+                        - name: OTEL_TRACES_SAMPLER_ARG
+                          value: {{ $.Values.telemetry.tracesSamplerArg | quote }}
+                        - name: OTEL_EXPORTER_OTLP_HEADERS
+                          # The secret carries the composed header value
+                          # ("Authorization=Bearer <token>") — env values
+                          # cannot concat from a secretKeyRef.
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.legacyTokenSecretName" $ }}
+                                  key: otel-header
+                        {{- end }}
+                    ports:
+                        - name: https
+                          containerPort: {{ int .Values.service.port }}
+                          protocol: TCP
+                        - name: management
+                          containerPort: {{ int .Values.service.managementPort }}
+                          protocol: TCP
+                        - name: jgroups
+                          containerPort: 7800
+                          protocol: TCP
+                    volumeMounts:
+                        - name: tls
+                          mountPath: {{ .Values.tls.mountPath | quote }}
+                          readOnly: true
+                        {{- if .Values.realm.import }}
+                        - name: realm
+                          mountPath: /opt/keycloak/data/import
+                          readOnly: true
+                        {{- end }}
+                    startupProbe:
+                        httpGet:
+                            path: {{ .Values.probes.path }}
+                            port: management
+                            scheme: {{ .Values.probes.scheme }}
+                        periodSeconds: {{ int .Values.probes.startup.periodSeconds }}
+                        failureThreshold: {{ int .Values.probes.startup.failureThreshold }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                    readinessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.path }}
+                            port: management
+                            scheme: {{ .Values.probes.scheme }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    livenessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.path }}
+                            port: management
+                            scheme: {{ .Values.probes.scheme }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+                    securityContext:
+                        allowPrivilegeEscalation: false
+                        readOnlyRootFilesystem: false
+                        capabilities:
+                            drop:
+                                - ALL
+            volumes:
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-keycloak.tlsSecretName" . }}
+                {{- if .Values.realm.import }}
+                -   name: realm
+                    configMap:
+                        name: {{ printf "%s-realm" $fullname }}
+                {{- end }}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
