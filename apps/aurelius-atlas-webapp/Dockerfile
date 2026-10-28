@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # The OTel module must be compiled against this exact nginx (the module
 # signature is feature-flag checked at dlopen, and the .so links musl), so
 # the builder rides the -dev variant of the same tag: it is the hardened
@@ -8,8 +9,12 @@ FROM dhi.io/nginx:1.30-alpine3.24-dev AS otel-builder
 # The python-3.14 pin is apk arithmetic, not taste: the image's xcb-proto is
 # resolved against 3.14 and bare `python` now means 3.15, which breaks it.
 # nginx-stable-mod-dev ships the 1.30.6 source kit the binary was built from
-# (/usr/src/nginx-1.30.6); the rest is the nginx-otel build recipe.
-RUN apk add --no-cache \
+# (/usr/src/nginx-1.30.6); the rest is the nginx-otel build recipe. The cache
+# mount carries apk's index + package tarballs across builds (plain `apk add`,
+# not --no-cache: the flag is what discards them; a cold pass is ~300 MB of
+# downloads).
+RUN --mount=type=cache,id=webapp-otel-apk,target=/var/cache/apk \
+    apk add \
         python-3.14 \
         nginx-stable-mod-dev \
         gcc g++ cmake make ninja git \
@@ -32,9 +37,13 @@ RUN ARGS=$(nginx -V 2>&1 | grep '^configure arguments:' \
 # 3.5); verified to build clean on the gcc 15.2 the image ships. The closure
 # tar is the module's runtime library set (grpc/protobuf/abseil/icu) —
 # dereferenced (-h): musl will not resolve dangling soname symlinks.
+#
+# No build cache mount here: the vendored SDK's configure_file() headers get
+# fresh timestamps every pass, so ninja rebuilds its 34 objects regardless of
+# what the mount carries (measured: warm = cold, ~17s). The clone + cmake +
+# ninja is cheap next to the apk layer.
 RUN git clone --depth 1 --branch v0.1.2 https://github.com/nginx/nginx-otel.git /nginx-otel \
-    && mkdir -p /out-stage \
-    && mkdir /nginx-otel/build \
+    && mkdir -p /out-stage /nginx-otel/build \
     && cd /nginx-otel/build \
     && cmake -G Ninja \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
