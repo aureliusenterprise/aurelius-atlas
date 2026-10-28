@@ -183,3 +183,13 @@ a filled-in copy over that path. Unresolved placeholders make nginx fail at
 startup instead of serving with template values (same pattern as the example
 app; see its README for the envsubst/kustomize recipe). E2E ships such a
 filled-in copy at `e2e/config/nginx.conf` (TLS + verified proxies, ADR 039).
+
+The image carries the native OTel tracing module (`ngx_otel_module`, built in
+the Dockerfile's builder stage on `dhi.io/nginx:1.30-alpine3.24-dev`, DD-239):
+every `/api/` request exports an edge span to the collector's legacy gRPC leg
+(`AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT` + the stack CA +
+`AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN` as the static export header, ETR-01).
+The module is loaded through `/etc/nginx/modules/otel.conf` — the hardened
+base image includes that directory in the main context, the only place
+`load_module` is legal. A deployment with no collector points the endpoint at
+the leg it owns (the module has no mint: static export headers only, DD-239).

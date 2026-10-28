@@ -75,6 +75,14 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
 - Every new component gets a Storybook story (7.2 wires the ui library pattern);
   every new route gets an e2e scenario.
 - Template strings carry `i18n="@@legacy.key"` markers matching the catalogue ids.
+- The nginx configs (shipped template + `e2e/config/nginx.conf`) are
+  **http-context includes**: the hardened image loads `conf.d/*.conf` inside
+  its `http{}` block, so http-scoped directives (`otel_exporter`, `map`,
+  `geo`, limit zones) belong at file top. Tracing is opted in per location
+  (`otel_trace on` on `/api/`, off server-wide, ETR-01); the OTel module and
+  its library closure ship in the image (builder stage, DD-239) — do not
+  `load_module` from conf.d, it is main-context only and lives in
+  `etc/nginx/modules/otel.conf`.
 
 ## Removal
 
