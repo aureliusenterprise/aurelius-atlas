@@ -65,6 +65,60 @@ secret "<issuer>-ca".
 {{- end -}}
 
 {{/*
+A co-deployed component's Service name, from the release-prefix rule the
+component charts use for their own names (CHT-13): release `atlas` +
+component `atlas-server` → `atlas-server`; release `atlas-prod` + the same
+component → `atlas-prod-atlas-server`. The umbrella owns the edge and joins
+routes to services by this name; each chart names itself identically, so the
+two sides of the join cannot drift while the rule is the same. `override`
+(a values knob) short-circuits.
+*/}}
+{{- define "aurelius-atlas.componentService" -}}
+{{- if .override -}}
+{{- .override -}}
+{{- else -}}
+{{- $name := .name -}}
+{{- if hasPrefix (lower .release) (lower $name) -}}
+{{- lower $name -}}
+{{- else -}}
+{{- printf "%s-%s" .release $name -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+The edge listener set (CHT-29/30) as JSON, so gateway.yaml, httproutes.yaml,
+and certificate-edge.yaml share one derivation. One entry per enabled browser
+host whose component is also enabled — a route to a disabled backend is a
+404-generating corpse. secret = the listener's termination Secret;
+backend/port = the single coarse backend (DD-242: routing is host-level, the
+webapp's /api and /otel proxy is the tested data path); tlsBackend = the
+backend speaks TLS and gets the BackendTLSPolicy trust pin (CHT-30).
+*/}}
+{{- define "aurelius-atlas.edge.listeners" -}}
+{{- $l := list -}}
+{{- $webapp := index .Values "atlas-webapp" | default dict -}}
+{{- $keycloak := index .Values "atlas-keycloak" | default dict -}}
+{{- $server := index .Values "atlas-server" | default dict -}}
+{{- $obs := index .Values "atlas-observability" | default dict -}}
+{{- if and .Values.global.hosts.atlas.enabled $webapp.enabled -}}
+{{- $l = append $l (dict "name" "atlas" "host" (include "aurelius-atlas.atlasHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-webapp" "release" .Release.Name "override" .Values.global.hosts.atlas.service)) "port" (int .Values.global.hosts.atlas.port) "tlsBackend" false) -}}
+{{- end -}}
+{{- if and .Values.global.hosts.keycloak.enabled $keycloak.enabled -}}
+{{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.keycloak.service) -}}
+{{- $l = append $l (dict "name" "keycloak" "host" (include "aurelius-atlas.keycloakHost" .) "secret" (printf "%s-tls" $kc) "backend" $kc "port" (int .Values.global.hosts.keycloak.port) "tlsBackend" true) -}}
+{{- end -}}
+{{- if and .Values.global.hosts.dashboard.enabled $server.enabled -}}
+{{- $srv := include "aurelius-atlas.componentService" (dict "name" "atlas-server" "release" .Release.Name "override" .Values.global.hosts.dashboard.service) -}}
+{{- $l = append $l (dict "name" "dashboard" "host" (include "aurelius-atlas.dashboardHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" $srv "port" (int .Values.global.hosts.dashboard.port) "tlsBackend" true) -}}
+{{- end -}}
+{{- if and .Values.global.hosts.grafana.enabled $obs.enabled -}}
+{{- $l = append $l (dict "name" "grafana" "host" (include "aurelius-atlas.grafanaHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-observability-grafana" "release" .Release.Name "override" .Values.global.hosts.grafana.service)) "port" (int .Values.global.hosts.grafana.port) "tlsBackend" false) -}}
+{{- end -}}
+{{- toJson $l -}}
+{{- end -}}
+
+{{/*
 Render-time value validation (ADR 018's spirit: a bad deployment fails at
 install, loudly, not at first request). Renders nothing; fails the render.
 */}}

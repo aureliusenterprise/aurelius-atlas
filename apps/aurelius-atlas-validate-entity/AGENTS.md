@@ -69,12 +69,15 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
 
 ## Helm chart
 
-`helm/` — the `atlas-validate-entity` chart (CHT-02): port 21003, probes, the
-`AURELIUS_ATLAS_VALIDATE_ENTITY_` settings env, the Keycloak audience
-(`aurelius-atlas-validate-entity`), and the OTLP ingest identity. Its
-deployment/service/sa/pdb templates are the shipped aux-API shape, kept as a
-copy per chart by design (DD-247) — no shared library chart. Conventions:
-`helm/AGENTS.md`.
+`helm/` — the `atlas-validate-entity` chart (CHT-02, workloads in 10.3a):
+port 21003, probes, the `AURELIUS_ATLAS_VALIDATE_ENTITY_` settings env, the
+Keycloak audience (`aurelius-atlas-validate-entity`), and the OTLP ingest
+identity. Its deployment/service/sa/pdb/certificate templates are the shipped
+aux-API shape, kept as a copy per chart by design (DD-247) — no shared
+library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
+FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
+`/etc/aurelius-atlas/tls` (DD-251's closure). Chart-contract tests:
+`tests/test__charts_aux.py`. Conventions: `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-validate-entity:helm-template

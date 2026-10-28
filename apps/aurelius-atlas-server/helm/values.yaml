@@ -17,6 +17,12 @@ global:
         url: ""
     domain: ""
     dnsResolver: ""
+    trust:
+        # The issuer the chart's Certificate is signed by (umbrella default;
+        # DD-243/DD-259). Standalone renders need it present.
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
 
 enabled: true
 component: server
@@ -45,14 +51,58 @@ probes:
     timeoutSeconds: 6
     failureThreshold: 3
 
-# TLS material (SRV-06: the server refuses to start without it, DD-234).
-# The umbrella's Certificate writes the Secret (certificate/tls.crt, key/
-# tls.key, ca/ca.crt); the CA ConfigMap carries the trust root for the store
-# and the collector (DD-243).
+# TLS material (SRV-06: the server refuses to start without it, DD-234). By
+# default the chart's own Certificate (CHT-22) writes the Secret — its ca.crt
+# rides the same volume, which is what the store/collector trust settings pin
+# (DD-251's closure: one mount, three files, no dead ConfigMap).
 tls:
     secretName: ""
-    caConfigMap: ""
-    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+# The Certificate cert-manager issues for this Service (CHT-22): SANs are the
+# Service name and its FQDNs — the name the webapp's nginx pins with
+# proxy_ssl_name (DD-142's tested data path). cert-manager is a cluster
+# prerequisite (runbook), never installed by the chart; tls.secretName brings
+# your own and this renders nothing.
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
+
+# The Elasticsearch Service this server dials (CHT-21). "" derives the store
+# chart's Service name in this release (CHT-13); set it when the store lives
+# elsewhere (an external cluster: also point tls at its CA via caConfigMap-
+# style values or the ELASTICSEARCH_CA_CERTS config override).
+store:
+    service: ""
+    port: 9200
+
+# The OTLP export leg (7.18, DD-196). Off by default: the collector is 10.3b,
+# and the server with an unreachable token URL would boot-export into nothing.
+# Enabled, the chart renders the joins (endpoint/token URL from the issuer,
+# the secret from <release>-otel-clients).
+telemetry:
+    enabled: false
+    # The collector Service; "" derives this release's atlas-observability
+    # chart name (10.3b).
+    service: ""
+    # The per-service leg (HTTP + OIDC, DD-196).
+    port: 4319
+
+auth:
+    # The Keycloak realm the OTLP client-credentials mint targets (7.18).
+    realm: master
+
+# Credential Secret names (DD-244): "" derives <release>-<purpose>, the
+# umbrella's generated names. Set to bring your own (CHT-21's joins).
+credentialSecrets:
+    elasticsearch: ""
+    otelClients: ""
+
+# Client-IP trust (SRV-10, DD-238, DD-261): which peers may rewrite the client
+# address via X-Forwarded-For, passed to uvicorn. Loopback only in a stock
+# render; environment overlays name the in-cluster webapp network, so the
+# access log keys on the browser's address (DD-261's two-hop edge).
+forwardedAllowIps: "127.0.0.1"
 
 service:
     type: ClusterIP
@@ -74,20 +124,17 @@ config:
     AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
     AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /etc/aurelius-atlas/tls/ca.crt
-    # Client-IP trust (SRV-10, DD-238): the webapp's nginx is the front door;
-    # set this to the cluster's pod CIDR so logs key on the browser's address.
-    AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS: "10.244.0.0/16"
+    # Client-IP trust: the top-level forwardedAllowIps (CHT-21, DD-261).
     # OTLP export on the per-service leg (DD-196): a minted client JWT, not a
-    # static header. Computed in 10.3:
-    #   AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT = https://<collector>.<ns>.svc:4319
-    #   AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL = <issuer>/realms/master/protocol/openid-connect/token
+    # static header. The joins render when telemetry.enabled (CHT-21).
     AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
     AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     OTEL_SEMCONV_STABILITY_OPT_IN: http
 
-# Settings that arrive from Secrets (DD-244): name/key pairs. 10.3 wires:
-#   AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD <- <release>-elasticsearch/elastic-password
-#   AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET     <- <release>-otel-clients/OTEL_INGEST_CLIENT_SECRET
+# Settings that arrive from Secrets (DD-244) — the chart renders the joins
+# (CHT-21): ELASTICSEARCH_PASSWORD <- <release>-elasticsearch/elastic-password,
+# OTEL_CLIENT_SECRET <- <release>-otel-clients/OTEL_INGEST_CLIENT_SECRET
+# (telemetry.enabled only). Their names are the umbrella's credential contract.
 secretRefs: []
 configMapRefs: []
 extraEnv: []
@@ -100,10 +147,13 @@ affinity: {}
 podAnnotations: {}
 podLabels: {}
 
+# The image's declared user (DD-257): dhi.io/python-3.14-alpine runs as
+# `nonroot` (uid/gid 65532, verified from the image) and does no privilege
+# drop, so the pod must pin it. fsGroup mirrors the compose volume-init shape.
 podSecurityContext:
     runAsNonRoot: true
-    runAsUser: 1000
-    fsGroup: 1000
+    runAsUser: 65532
+    fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault
 securityContext:

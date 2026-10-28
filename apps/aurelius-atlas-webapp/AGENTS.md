@@ -87,11 +87,33 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
 
 ## Helm chart
 
-`helm/` — the `atlas-webapp` chart (CHT-02): nginx port/probes, the
-`/config.json` bootstrap, and the two ConfigMaps the deployment needs (the
-shipped nginx config is a template resolved at deploy — 10.3 renders them).
-Renders standalone and through the umbrella; conventions in
-`helm/AGENTS.md`.
+`helm/` — the `atlas-webapp` chart (10.3a, CHT-23/24/25/26): plaintext 8080
+behind the umbrella's Gateway (TLS ends at the edge, DD-242) with HTTP probes.
+The shipped nginx template rides the chart as a **byte copy**
+(`helm/files/nginx.conf.template` — a test asserts it matches this project's
+`nginx.conf.template`, so the drift guard is the chart test); Helm never
+substitutes a placeholder. The `resolve-nginx-config` init container (same
+image, `/bin/sh -ec`) `sed`s the ten `${AURELIUS_ATLAS_WEBAPP_*}` placeholders
+into the emptyDir nginx reads, and `grep`s the output to fail the pod on any
+left unresolved (DD-262 — Helm cannot render them without re-drawing the
+umbrella's generated token). The ten are the chart's join contract (CHT-25):
+`API_UPSTREAM`/`_NAME` (the server Service) and `OTEL_UPSTREAM`/`_NAME` +
+`OTLP_ENDPOINT` (the collector legs) default to **cluster FQDNs** — the
+template's `proxy_pass` is a variable, which forces nginx's stub resolver, and
+that resolver ignores `resolv.conf`'s search list (a short Service name 502s on
+`Host not found`; the peer Certificates carry the `.svc.cluster.local` SAN so
+`proxy_ssl_name` matches, DD-243). `KEYCLOAK_ORIGINS` (the issuer),
+`DNS_RESOLVER`, `TLS_CA_FILE` (the CA mount), `REALIP_BLOCK` (DD-261, from
+`nginx.trustedProxyCIDRs`), and `OTEL_INGEST_TOKEN` — which arrives from the
+`<release>-collector-legacy` Secret at pod start, never rendered. `/config.json`
+is a ConfigMap rendered from values and mounted at the SPA's bootstrap path
+(`config.apiBaseUrl` `/api`, `config.keycloak.url`, `config.otelExporterUrl`).
+`uid`/`fsGroup` 65532 with `/run/nginx`, `/var/lib/nginx/tmp`, `/var/log/nginx`
+on emptyDirs (the read-only-rootfs nginx needs them writable — and _tmp_
+specifically: the image bakes `/var/lib/nginx/logs` and `/var/lib/nginx/modules`
+as symlinks, and an emptyDir over `/var/lib/nginx` hides them, which breaks
+`load_module` at boot). Chart-contract
+tests: `tests/test__charts_webapp.py`. Conventions in `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-webapp:helm-template

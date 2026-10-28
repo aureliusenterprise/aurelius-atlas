@@ -63,6 +63,11 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         "atlas-elasticsearch",
         "atlas-keycloak",
         "atlas-keycloak-postgres",
+        "atlas-server",
+        "atlas-data2model",
+        "atlas-lineage-model",
+        "atlas-validate-entity",
+        "atlas-edge-tls",  # the browser-facing edge leaf (CHT-29)
     }
     for cert in certs:
         if cert["metadata"]["name"] == "aurelius-atlas-selfsigned-ca":

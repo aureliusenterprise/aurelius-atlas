@@ -1,0 +1,32 @@
+{{/*
+/config.json (CHT-26, SHL-02): the SPA's bootstrap fetch (fails loudly),
+shape in src/app/config.ts. Rendered from values; the Keycloak URL derives
+from the issuer (CHT-03) and appVersion from the chart's appVersion, which
+the release sets to the image tag (DD-245). Mounted as one file over
+/usr/share/nginx/html/config.json — the prod build bundles neither the
+config nor a way to write it (SHL-02).
+*/}}
+{{- $cfg := .Values.config -}}
+{{- $configJson := dict
+    "apiBaseUrl" $cfg.apiBaseUrl
+    "appCopyright" $cfg.appCopyright
+    "appName" $cfg.appName
+    "appVersion" (default .Chart.AppVersion $cfg.appVersion)
+    "keycloak" (dict
+        "clientId" $cfg.keycloak.clientId
+        "realm" $cfg.keycloak.realm
+        "url" (default (include "atlas-webapp.issuerUrl" .) $cfg.keycloak.url))
+    "otelExporterUrl" $cfg.otelExporterUrl
+-}}
+{{- with $cfg.otelMetricsExporterUrl -}}
+{{- $configJson = set $configJson "otelMetricsExporterUrl" . -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ include "atlas-webapp.fullname" . }}-config
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-webapp.labels" . | nindent 8 }}
+data:
+    config.json: {{ $configJson | toJson | quote }}

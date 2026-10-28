@@ -17,3 +17,15 @@ global:
         issuerRef:
             name: atlas-public
             kind: ClusterIssuer
+
+# Client-IP trust for the two-hop edge (DD-261/CHT-32): the Gateway data
+# plane and the webapp pods both live in the cluster's alias IP range —
+# confirm it with `gcloud container clusters describe <c> -o
+# json | jq .ipAllocationPolicy` and set both to it. The range below is
+# GKE's VPC-native default (validated in the 10.5 GKE increment).
+atlas-webapp:
+    nginx:
+        trustedProxyCIDRs:
+            - 10.4.0.0/14
+atlas-server:
+    forwardedAllowIps: "10.4.0.0/14"

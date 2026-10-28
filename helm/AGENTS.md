@@ -6,8 +6,10 @@ umbrella deploys the whole system, so it sits next to the whole repo
 `apps/<app>/helm/`, `dev/<name>/helm/` (DD-247). Every chart in the tree is
 a `helm/` directory; `charts/` is gone. Workspace-wide rules, including the
 conversion workflow, live in the root `AGENTS.md`. Increment 10.1 is the
-foundation (charts, plugin, CI); the workloads land in 10.2 (stateful),
-10.3 (apps + edge), 10.4 (secrets + publish), 10.5 (cluster validation).
+foundation (charts, plugin, CI); 10.2 landed the stateful charts
+(elasticsearch, keycloak); 10.3a lands the app charts (server, webapp, the
+three aux APIs) and the umbrella's Gateway-API edge; 10.3b is the
+observability workloads; 10.4 secrets + publish; 10.5 cluster validation.
 
 ## Layout
 
@@ -52,6 +54,36 @@ helper drops the prefix when the release name already starts with it, so the
 release `atlas` keeps names bare (`atlas-server`) and service DNS matches
 what the components' settings reference.
 
+## The edge (CHT-29..32)
+
+`global.gateway.enabled` (default on) renders: one `Gateway` named after the
+release, one HTTPS listener per **enabled browser host** (`global.hosts.*`
+gated on the owning component's `enabled` — `aurelius-atlas.edge.listeners`
+in `_helpers.tpl` builds the list once and `gateway.yaml`/`httproutes.yaml`
+both loop the same `fromJsonArray`), and one HTTPRoute per listener with a
+single coarse `backendRef` (DD-242 — no per-path split; the webapp's nginx is
+the path router). TLS backends (`atlas-server`, `atlas-keycloak`) also get a
+`BackendTLSPolicy` (v1) pinning `validation.caCertificateRefs` to the trust CA
+Secret and `validation.hostname` to the Service name — the Gateway verifies
+the leaf the same way an in-cluster client does. The browser leaf
+`atlas-edge-tls` covers
+the atlas/dashboard/grafana hosts; the keycloak listener reuses
+`<release>-keycloak-tls` (the keycloak chart owns that Certificate — never
+re-issue another name for the same hostname, SAN duplication is not free).
+`atlas-collector-legacy` (CHT-31) is the webapp's browser-side OTLP token,
+generated like every other credential (DD-254) and gated on either consumer.
+The chart **never renders a GatewayClass** — it is a runbook prerequisite
+(the cluster's Gateway API implementation is the deployment's choice).
+`global.gateway.enabled=false` must take the edge cert with it (a leaf with
+no listener is a dangling SAN). With the gateway on and no host resolving to
+an enabled component, the render `fail`s — silence here is a misinstall.
+The two-hop client-IP trust (DD-261/CHT-32): stock renders trust nothing
+(loopback / empty); the `environments/*.yaml` name their pod CIDRs in
+`atlas-webapp.nginx.trustedProxyCIDRs` and `atlas-server.forwardedAllowIps`.
+That value composes into `AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK` **on one line**
+— it is `sed`-substituted into nginx at pod start, and a newline breaks the
+substitution.
+
 Helpers are chart-local by design (DD-247): each chart's `templates/_helpers.tpl`
 carries the helpers its templates use, following the same naming convention
 (`<chart>.fullname`, `<chart>.labels`, …). The convention is the dedupe, not a
@@ -68,7 +100,14 @@ abstraction this tree rejects.
   dash (`-   name:`), all siblings aligned.
 - Go templates have no `nil` literal — "nil is not a command". Use `""` for
   absent.
-- `range` over a missing key throws (nil pointer) — guard with `with`.
+- `range` over a missing key throws (nil pointer) — guard with `with`. Deep
+  access (`index .Values "x"`).enabled`panics the same way when the map is
+absent; read optional component blocks as`index .Values "x" | default dict`.
+- On helm 4.3.1, `fromJson` **mis-decodes arrays of objects**: each element
+  comes back as a string, so `{{ $l.name }}` fails with "can't evaluate field
+  name in type interface {}". Use `fromJsonArray` for lists (elements are
+  proper maps) and `index $l "key"` for field access. Single-object
+  `fromJson` is fine.
 - A chart's `required:` guard fires on BARE renders by design (CHT-02: the
   deployment supplies). Tests/CI pass the chart's `tests/values.test.yaml`.
 - `Chart.lock` is committed; resolved dependency tarballs (`**/helm/charts/`)

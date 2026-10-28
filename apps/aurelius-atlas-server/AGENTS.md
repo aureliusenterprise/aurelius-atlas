@@ -78,11 +78,20 @@ uv run pytest apps/aurelius-atlas-server/tests
 
 ## Helm chart
 
-`helm/` — the `atlas-server` chart (CHT-02): container port, probes, the
-`AURELIUS_ATLAS_SERVER_` settings env, and the trust mounts of this app. The
-workload manifests land in 10.3; the chart renders standalone (test values)
-and through the umbrella (`helm/`). Chart conventions and
-gotchas: `helm/AGENTS.md`.
+`helm/` — the `atlas-server` chart (10.3a, CHT-20/21/22): the Deployment and
+ClusterIP Service on 21000 with **HTTPS** probes (the server never serves
+plaintext, SRV-06); every settings value naming a peer is a join — the store
+Service (`ELASTICSEARCH_HOSTS` + its password Secret), the issuer URL (the
+OTLP token-URL join), the CA/TLS file paths on the whole-Secret mount of the
+chart's own `Certificate` (SANs = Service name + FQDNs, which is exactly what
+the webapp's nginx pins with `proxy_ssl_name`). `telemetry.enabled` is off by
+default — with it on, the collector leg joins (`:4319`, client `otel-atlas-server`,
+Secret `atlas-otel-clients`). `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
+— stock render is loopback-only; the environment overlays name the pod CIDRs
+(the two-hop client-IP trust, DD-261/CHT-32). The chart renders standalone
+(test values) and through the umbrella (`helm/`); the chart-contract tests are
+`tests/test__charts_server.py`. Chart conventions and gotchas:
+`helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-server:helm-template

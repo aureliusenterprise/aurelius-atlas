@@ -1,0 +1,38 @@
+{{/*
+The server's TLS certificate (CHT-22, DD-243): cert-manager issues it from
+the umbrella's issuer into the Secret the Deployment mounts. The SANs are the
+in-cluster names a peer dials — the ClusterIP Service and its FQDNs; the
+webapp's nginx verifies this name via proxy_ssl_name (DD-142), so the Service
+name must be a SAN. cert-manager is a cluster prerequisite (runbook), never
+installed by the chart. tls.secretName brings your own and this renders
+nothing (the same rule as the stateful charts, CHT-12/16).
+*/}}
+{{- if and .Values.certificate.enabled (not .Values.tls.secretName) }}
+{{- $fullname := include "atlas-server.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+{{- $issuerRef := .Values.global.trust.issuerRef -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+spec:
+    secretName: {{ include "atlas-server.tlsSecretName" . }}
+    duration: {{ .Values.certificate.duration }}
+    renewBefore: {{ .Values.certificate.renewBefore }}
+    subject:
+        organizations:
+            - aurelius-atlas
+    dnsNames:
+        - {{ $fullname }}
+        - {{ printf "%s.%s" $fullname $ns }}
+        - {{ printf "%s.%s.svc" $fullname $ns }}
+        - {{ printf "%s.%s.svc.cluster.local" $fullname $ns }}
+    issuerRef:
+        name: {{ required "global.trust.issuerRef.name is required (DD-243)" $issuerRef.name }}
+        {{- with $issuerRef.kind }}
+        kind: {{ . }}
+        {{- end }}
+{{- end }}

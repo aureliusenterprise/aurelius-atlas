@@ -1,7 +1,13 @@
 {{/*
 The Deployment. TLS is a cert/key pair (the apps accept both-set or
 both-unset, the settings module enforces it); the chart mounts the pair when
-tls.enabled, and the probes' scheme follows it.
+tls.enabled, and the probes' scheme follows it. The Secret is the chart's own
+Certificate's output, which carries ca.crt beside the pair — the CA files the
+AUTH_CA_FILE/OTEL_CA_FILE settings name live in this same mount (CHT-27,
+DD-251). The two required upstream URLs (ATLAS_BASE_URL, DATA2MODEL_URL)
+render as joins to the co-deployed siblings (CHT-28: settings.py requires
+both, no defaults — the hand check boots this pod with no out-of-band
+values).
 */}}
 {{- $fullname := include "atlas-lineage-model.fullname" . -}}
 {{- $ns := default .Release.Namespace .Values.global.namespace -}}
@@ -53,6 +59,15 @@ spec:
                           value: {{ int .Values.port | quote }}
                         - name: {{ .Values.componentEnvPrefix }}AUTH_SERVER_URL
                           value: {{ include "atlas-lineage-model.issuerUrl" . | quote }}
+                        # The upstream joins (CHT-28, DD-251): settings.py
+                        # requires both URLs; each derives from the
+                        # co-deployed chart's Service unless overridden.
+                        {{- $atlas := include "atlas-lineage-model.siblingService" (dict "name" "atlas-server" "release" .Release.Name "override" .Values.atlas.service) }}
+                        {{- $d2m := include "atlas-lineage-model.siblingService" (dict "name" "atlas-data2model" "release" .Release.Name "override" .Values.data2model.service) }}
+                        - name: {{ .Values.componentEnvPrefix }}ATLAS_BASE_URL
+                          value: {{ printf "https://%s:%d/" $atlas (int .Values.atlas.port) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}DATA2MODEL_URL
+                          value: {{ printf "https://%s:%d/" $d2m (int .Values.data2model.port) | quote }}
                         {{- with .Values.config }}
                         {{- range $key, $value := . }}
                         - name: {{ $key }}

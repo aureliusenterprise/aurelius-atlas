@@ -68,11 +68,16 @@ the webapp's parser's input.
 
 ## Helm chart
 
-`helm/` — the `atlas-data2model` chart (CHT-02): port 21001, probes, the
-`AURELIUS_ATLAS_DATA2MODEL_` settings env, the Keycloak audience
-(`aurelius-atlas-data2model`), and the OTLP ingest identity. Its
-deployment/service/sa/pdb templates are the shipped aux-API shape, kept as a
-copy per chart by design (DD-247) — no shared library chart. Conventions:
+`helm/` — the `atlas-data2model` chart (CHT-02, workloads in 10.3a):
+port 21001, probes, the `AURELIUS_ATLAS_DATA2MODEL_` settings env, the
+Keycloak audience (`aurelius-atlas-data2model`), and the OTLP ingest
+identity. Its deployment/service/sa/pdb/certificate templates are the shipped
+aux-API shape, kept as a copy per chart by design (DD-247) — no shared
+library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
+FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
+`/etc/aurelius-atlas/tls`, which is where the AUTH_CA_FILE/OTEL_CA_FILE
+config paths point (DD-251's closure — the dead caConfigMap pair is gone).
+Chart-contract tests: `tests/test__charts_aux.py`. Conventions:
 `helm/AGENTS.md`.
 
 ```bash

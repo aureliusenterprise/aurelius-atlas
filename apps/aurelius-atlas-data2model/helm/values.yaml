@@ -20,6 +20,12 @@ global:
         url: ""
     domain: ""
     dnsResolver: ""
+    trust:
+        # The issuer the chart's Certificate is signed by (umbrella default;
+        # DD-243/DD-259). Standalone renders need it present.
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
 
 enabled: true
 component: data2model
@@ -52,13 +58,23 @@ probes:
 
 tls:
     # cert/key pair, mounted together (the settings module requires both-set
-    # or both-unset). TLS on: every in-cluster hop is TLS (ADR 039).
+    # or both-unset). TLS on: every in-cluster hop is TLS (ADR 039). The
+    # mounted Secret is the Certificate's output below, which carries ca.crt
+    # beside the pair — cert-manager's contract — so the AUTH_CA_FILE/
+    # OTEL_CA_FILE paths in config exist (DD-251: the dead caConfigMap/
+    # caPath pair retired; nothing ever mounted them). The files live where
+    # the config block names them; the mount is whole-Secret.
     enabled: true
     secretName: ""
-    certPath: /etc/aurelius-atlas/tls/tls.crt
-    keyPath: /etc/aurelius-atlas/tls/tls.key
-    caConfigMap: ""
-    caPath: /etc/aurelius-atlas/tls/ca.crt
+
+# The Certificate cert-manager issues for this Service (CHT-27): SANs are the
+# Service name and its FQDNs. cert-manager is a cluster prerequisite
+# (runbook), never installed by the chart; tls.secretName brings your own and
+# this renders nothing.
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
 
 service:
     type: ClusterIP
@@ -95,9 +111,11 @@ podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:
+    # The image's declared user (DD-257): dhi.io/python-3.14-alpine runs as
+    # `nonroot` (uid/gid 65532, verified from the image), no privilege drop.
     runAsNonRoot: true
-    runAsUser: 1000
-    fsGroup: 1000
+    runAsUser: 65532
+    fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault
 securityContext:

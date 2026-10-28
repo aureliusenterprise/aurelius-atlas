@@ -1,0 +1,101 @@
+"""Chart-contract suite for the three aux API charts (CHT-27/28, 10.3a).
+
+The aux apps (data2model, lineage-model, validate-entity) share one template
+family, so the rules are parametrized across all three. CHT-27 pins the
+per-Service leaf certificate; CHT-28 applies to lineage-model only — its two
+upstream URLs are joins to the co-deployed Services (DD-251's second finding:
+settings.py requires both with no defaults).
+"""
+
+from typing import Any
+
+import pytest
+from conftest import AUX_CHARTS, env_map, env_value, find, helm_render, pod_spec
+
+AUX = sorted(AUX_CHARTS)
+
+
+@pytest.fixture(scope="session", params=AUX)
+def aux_docs(request: pytest.FixtureRequest) -> list[dict[str, Any]]:
+    """Each aux chart at its defaults (the bare render, CHT-27)."""
+    chart = AUX_CHARTS[request.param]
+    return helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+
+
+@pytest.mark.covers(rules=["CHT-27"])
+def test__leaf_certificate_san_is_the_service_name(aux_docs: list[dict[str, Any]]) -> None:
+    """One Certificate per Service; SANs are the Service name and its FQDNs."""
+    service_name = _expect(aux_docs)
+    assert {d["metadata"]["name"] for d in aux_docs if d["kind"] == "Service"} == {service_name}
+    cert = find(aux_docs, "Certificate", service_name)
+    assert cert["spec"]["dnsNames"] == [
+        service_name,
+        f"{service_name}.atlas",
+        f"{service_name}.atlas.svc",
+        f"{service_name}.atlas.svc.cluster.local",
+    ]
+    assert cert["spec"]["secretName"] == f"{service_name}-tls"
+    assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
+    # No Secret of the chart's own — cert-manager writes the leaf (CHT-22 twin).
+    assert "Secret" not in {d["kind"] for d in aux_docs if d["metadata"]["name"] == f"{service_name}-tls"}
+
+
+@pytest.mark.covers(rules=["CHT-27"])
+def test__leaf_secret_mounted_read_only(aux_docs: list[dict[str, Any]]) -> None:
+    """The whole leaf Secret rides the shared CA/TLS mount point, read-only."""
+    deployment = find(aux_docs, "Deployment", _expect(aux_docs))
+    volumes = {v["name"]: v for v in pod_spec(deployment)["volumes"]}
+    assert volumes["tls"]["secret"]["secretName"] == f"{_expect(aux_docs)}-tls"
+    mounts = {m["name"]: m for m in _app(aux_docs)["volumeMounts"]}
+    assert mounts["tls"]["mountPath"] == "/etc/aurelius-atlas/tls"
+    assert mounts["tls"]["readOnly"] is True
+
+
+@pytest.mark.covers(rules=["CHT-27"])
+def test__uid_pinned_with_fsgroup(aux_docs: list[dict[str, Any]]) -> None:
+    """The dhi.io nonroot uid (65532) and fsGroup, read-only rootfs (DD-257)."""
+    psc = pod_spec(find(aux_docs, "Deployment", _expect(aux_docs)))["securityContext"]
+    assert psc["runAsUser"] == 65532
+    assert psc["runAsNonRoot"] is True
+    assert psc["fsGroup"] == 65532
+    sc = _app(aux_docs)["securityContext"]
+    assert sc["readOnlyRootFilesystem"] is True
+
+
+def test__service_on_the_settings_port(aux_docs: list[dict[str, Any]]) -> None:
+    """ClusterIP Service; the port matches the app's settings default."""
+    name = _expect(aux_docs)
+    service = find(aux_docs, "Service", name)
+    assert service["spec"]["type"] == "ClusterIP"
+    (port,) = service["spec"]["ports"]
+    assert port["name"] == "https"
+    assert port["port"] == port["targetPort"]
+
+
+@pytest.mark.covers(rules=["CHT-28"])
+def test__lineage_upstreams_are_joins(lineage_docs: list[dict[str, Any]]) -> None:
+    """ATLAS_BASE_URL/DATA2MODEL_URL point at the co-deployed Services."""
+    envs = env_map(_app(lineage_docs))
+    assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL") == "https://atlas-server:21000/"
+    assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL") == "https://atlas-data2model:21001/"
+
+
+@pytest.fixture(scope="session")
+def lineage_docs() -> list[dict[str, Any]]:
+    """lineage-model at its defaults (the CHT-28 render)."""
+    chart = AUX_CHARTS["lineage-model"]
+    return helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+
+
+def _expect(docs: list[dict[str, Any]]) -> str:
+    """The single Deployment's name (== the aux Service name)."""
+    deploys = [d for d in docs if d["kind"] == "Deployment"]
+    assert len(deploys) == 1
+    return deploys[0]["metadata"]["name"]
+
+
+def _app(docs: list[dict[str, Any]]) -> dict[str, Any]:
+    """The app container (the chart names it after the short component)."""
+    deployment = find(docs, "Deployment", _expect(docs))
+    (app,) = pod_spec(deployment)["containers"]
+    return app
