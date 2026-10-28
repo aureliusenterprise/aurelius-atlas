@@ -98,12 +98,18 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
 
 ## Helm chart
 
-`helm/` — the `atlas-lineage-model` chart (CHT-02): port 21002, probes, the
-`AURELIUS_ATLAS_LINEAGE_MODEL_` settings env, the Keycloak audience
-(`aurelius-atlas-lineage-model`), and the OTLP ingest identity. Its
-deployment/service/sa/pdb templates are the shipped aux-API shape, kept as a
-copy per chart by design (DD-247) — no shared library chart. Conventions:
-`helm/AGENTS.md`.
+`helm/` — the `atlas-lineage-model` chart (CHT-02, workloads in 10.3a):
+port 21002, probes, the `AURELIUS_ATLAS_LINEAGE_MODEL_` settings env, the
+Keycloak audience (`aurelius-atlas-lineage-model`), and the OTLP ingest
+identity. Its deployment/service/sa/pdb/certificate templates are the shipped
+aux-API shape, kept as a copy per chart by design (DD-247) — no shared
+library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
+FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
+`/etc/aurelius-atlas/tls` (DD-251's closure). The two upstream URLs
+(CHT-28) — `ATLAS_BASE_URL`/`DATA2MODEL_URL`, both required by settings with
+no defaults — are joins to the co-deployed Services (`atlas.service`/
+`data2model.service` values override the name-rule join). Chart-contract
+tests: `tests/test__charts_aux.py`. Conventions: `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-lineage-model:helm-template

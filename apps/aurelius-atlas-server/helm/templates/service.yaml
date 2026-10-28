@@ -1,0 +1,21 @@
+{{/*
+The ClusterIP Service (CHT-20) on the settings port. The name is what the
+webapp's nginx dials and what its proxy_ssl_name pins (DD-142's tested data
+path), so it is a contract, not a detail.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ include "atlas-server.fullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+spec:
+    type: {{ .Values.service.type }}
+    ports:
+        - name: https
+          port: {{ int .Values.service.port }}
+          targetPort: {{ int .Values.port }}
+          protocol: TCP
+    selector:
+        {{- include "atlas-server.selectorLabels" . | nindent 12 }}

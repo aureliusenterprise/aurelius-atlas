@@ -1,0 +1,240 @@
+{{/*
+The Deployment (CHT-23/24/25). Plaintext 8080 — the Gateway terminates TLS
+(DD-242) — so the probes are HTTP and there is no leaf Secret: the webapp is a
+TLS *client* only, and mounts the trust root (the chain's CA Secret) for its
+two proxy_ssl_verify upstreams.
+
+The nginx config never reaches the container unresolved: the shipped image
+bakes the raw template (its parse-fails-loudly contract) and this pod mounts
+an emptyDir over /etc/nginx/conf.d that a resolve-nginx-config init container
+fills (same image — the hardened base has neither envsubst nor bash, so plain
+sh + sed; DD-262). The init's env is the ten template placeholders the chart
+computes (CHT-25): every one a join or a Secret ref, and the ingest bearer
+arrives from <release>-collector-legacy at *pod start* — never rendered into
+the ConfigMap, where Helm would re-draw the umbrella's generated value
+(DD-256's race, DD-262's reason).
+
+The writable paths nginx needs (pid, temp, logs — its compiled-in defaults)
+ride emptyDirs with fsGroup (CHT-23, DD-257's uid pin in values).
+*/}}
+{{- $fullname := include "atlas-webapp.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+{{- $server := include "atlas-webapp.serverService" . -}}
+{{- $collector := include "atlas-webapp.collectorService" . -}}
+{{- $tokenSecret := default (printf "%s-collector-legacy" .Release.Name) .Values.otelIngestToken.secret -}}
+{{- /* One line, semicolon-separated: nginx directives need no newlines and
+sed replacements must not carry them (DD-261). [] resolves to nothing. */ -}}
+{{- $realip := "" -}}
+{{- with .Values.nginx.trustedProxyCIDRs }}
+{{- $lines := list -}}
+{{- range . }}
+{{- $lines = append $lines (printf "set_real_ip_from %s;" .) -}}
+{{- end }}
+{{- $realip = printf "real_ip_header X-Forwarded-For; real_ip_recursive on; %s" (join " " $lines) -}}
+{{- end }}
+{{- /* The variable proxy_pass forces nginx's stub resolver, which ignores
+resolv.conf's search list — the defaults must be cluster FQDNs (the peer
+Certificates carry the .svc.cluster.local SAN, DD-243). */ -}}
+{{- $apiFqdn := printf "%s.%s.svc.cluster.local" $server $ns -}}
+{{- $collectorFqdn := printf "%s.%s.svc.cluster.local" $collector $ns -}}
+{{- $placeholders := dict
+    "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM" (default (printf "https://%s:%d" $apiFqdn (int .Values.server.port)) .Values.nginx.apiUpstream)
+    "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME" (default $apiFqdn .Values.nginx.apiUpstreamName)
+    "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM" (default (printf "https://%s:%d" $collectorFqdn (int .Values.collector.browserPort)) .Values.nginx.otelUpstream)
+    "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME" (default $collectorFqdn .Values.nginx.otelUpstreamName)
+    "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT" (default (printf "https://%s:%d" $collectorFqdn (int .Values.collector.legacyGrpcPort)) .Values.nginx.otlpEndpoint)
+    "AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE" .Values.tls.caPath
+    "AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER" (default "10.96.0.10" (default .Values.dnsResolver .Values.global.dnsResolver))
+    "AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS" (default (include "atlas-webapp.issuerUrl" .) .Values.nginx.keycloakOrigins)
+    "AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK" $realip
+-}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-webapp.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.replicaCount }}
+    selector:
+        matchLabels:
+            {{- include "atlas-webapp.selectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-webapp.labels" . | nindent 16 }}
+                {{- with .Values.podLabels }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            initContainers:
+                # DD-262: the template resolves here, from the environment,
+                # into the emptyDir nginx reads. Unresolved placeholders fail
+                # the init (the grep below) — never a booted nginx serving a
+                # literal ${...}. The image is the webapp's own: only it
+                # carries a POSIX sh (the hardened base's contract).
+                -   name: resolve-nginx-config
+                    image: {{ include "atlas-webapp.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    {{- /* The placeholder values, verbatim in the init's env
+                    (nothing secret but the token, which rides a secretKeyRef
+                    from the generated Secret — CHT-25/31). */}}
+                    env:
+                        {{- range $name, $value := $placeholders }}
+                        - name: {{ $name }}
+                          value: {{ $value | quote }}
+                        {{- end }}
+                        - name: AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ $tokenSecret }}
+                                  key: {{ .Values.otelIngestToken.key }}
+                    command: ["/bin/sh", "-ec"]
+                    {{- /* The ten names verbatim (CHT-25's contract): the
+                    pattern side anchors on ${NAME} — braces included, so
+                    _NAME siblings never match a prefix — and the shell
+                    expands ${NAME} from this container's env before sed
+                    ever sees it. A contract test pins these ten against the
+                    ConfigMap asset's placeholders and the init's env. */}}
+                    args:
+                        - |
+                            src=/mnt/nginx-template/nginx.conf.template
+                            out=/mnt/nginx-conf/default.conf
+                            sed \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM}|${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME}|${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER}|${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}|${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM}|${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME}|${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK}|${AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE}|${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN}|${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN}|g" \
+                                "$src" > "$out"
+                            if grep -Eq '\$\{AURELIUS_ATLAS_WEBAPP_[A-Z_]+\}' "$out"; then
+                                echo "unresolved placeholder in $out:" >&2
+                                grep -E '\$\{AURELIUS_ATLAS_WEBAPP_[A-Z_]+\}' "$out" >&2
+                                exit 1
+                            fi
+                    volumeMounts:
+                        - name: nginx-template
+                          mountPath: /mnt/nginx-template
+                          readOnly: true
+                        - name: nginx-conf
+                          mountPath: /mnt/nginx-conf
+            containers:
+                -   name: {{ .Values.component }}
+                    image: {{ include "atlas-webapp.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    ports:
+                        - name: http
+                          containerPort: {{ int .Values.port }}
+                          protocol: TCP
+                    {{- /* The nginx process reads no env (CHT-25's
+                    placeholders belong to the init container; the ingest
+                    bearer is inlined into the config there, never mounted).
+                    What it does read from disk: the resolved config, the
+                    config.json asset, and the CA file its two
+                    proxy_ssl_trusted_certificate/otel_exporter blocks pin
+                    (${..._TLS_CA_FILE} → the mounted trust-root Secret). */}}
+                    volumeMounts:
+                        - name: nginx-conf
+                          mountPath: /etc/nginx/conf.d
+                        - name: config-json
+                          mountPath: /usr/share/nginx/html/config.json
+                          subPath: config.json
+                          readOnly: true
+                        - name: ca
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                        - name: nginx-run
+                          mountPath: /run/nginx
+                        - name: nginx-lib
+                          mountPath: /var/lib/nginx/tmp
+                        - name: nginx-log
+                          mountPath: /var/log/nginx
+                        {{- with .Values.extraVolumeMounts }}
+                        {{- toYaml . | nindent 24 }}
+                        {{- end }}
+                    # HTTP probes (CHT-23): plaintext listener, TLS at the
+                    # Gateway (DD-242). Readiness on /config.json — the file
+                    # the SPA's bootstrap fetch needs, served by nginx with
+                    # the mounted ConfigMap (CHT-26).
+                    readinessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.readinessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: HTTP
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    livenessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.livenessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: HTTP
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            volumes:
+                -   name: nginx-template
+                    configMap:
+                        name: {{ $fullname }}-nginx
+                -   name: nginx-conf
+                    emptyDir: {}
+                -   name: config-json
+                    configMap:
+                        name: {{ $fullname }}-config
+                -   name: ca
+                    secret:
+                        # The trust root only (CHT-25): the webapp presents
+                        # nothing; its proxies verify the server/collector
+                        # leaves against this (DD-259's chain).
+                        secretName: {{ include "atlas-webapp.caSecretName" . }}
+                        items:
+                            - key: ca.crt
+                              path: ca.crt
+                {{- /* nginx's compiled-in writable paths (CHT-23): pid,
+                temp, logs. emptyDirs + fsGroup (values, DD-257). */}}
+                -   name: nginx-run
+                    emptyDir: {}
+                -   name: nginx-lib
+                    emptyDir: {}
+                -   name: nginx-log
+                    emptyDir: {}
+                {{- with .Values.extraVolumes }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}

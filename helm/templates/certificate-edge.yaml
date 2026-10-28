@@ -1,0 +1,50 @@
+{{/*
+The browser-host certificate (CHT-29). One umbrella Certificate covering the
+browser-facing names the umbrella owns — the atlas host and, when enabled, the
+dashboard and grafana hosts — into the Secret the HTTPS listeners terminate
+from (<release>-edge-tls). The keycloak host is deliberately absent: its
+certificate belongs to the Keycloak chart (its issuer pin, CHT-16) and the
+keycloak listener reuses that Secret. cert-manager is a cluster prerequisite
+(runbook), never installed here. The issuer is the system's trust issuer
+(DD-243) — the same root every in-cluster leaf chains to.
+*/}}
+{{- if .Values.global.gateway.enabled -}}
+{{- $hosts := list -}}
+{{- $webapp := index .Values "atlas-webapp" | default dict -}}
+{{- $server := index .Values "atlas-server" | default dict -}}
+{{- $obs := index .Values "atlas-observability" | default dict -}}
+{{- if and .Values.global.hosts.atlas.enabled $webapp.enabled -}}
+{{- $hosts = append $hosts (include "aurelius-atlas.atlasHost" .) -}}
+{{- end -}}
+{{- if and .Values.global.hosts.dashboard.enabled $server.enabled -}}
+{{- $hosts = append $hosts (include "aurelius-atlas.dashboardHost" .) -}}
+{{- end -}}
+{{- if and .Values.global.hosts.grafana.enabled $obs.enabled -}}
+{{- $hosts = append $hosts (include "aurelius-atlas.grafanaHost" .) -}}
+{{- end -}}
+{{- if $hosts }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: {{ printf "%s-edge-tls" .Release.Name }}
+    namespace: {{ include "aurelius-atlas.namespace" . }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    secretName: {{ printf "%s-edge-tls" .Release.Name }}
+    duration: {{ .Values.global.gateway.certificate.duration }}
+    renewBefore: {{ .Values.global.gateway.certificate.renewBefore }}
+    subject:
+        organizations:
+            - aurelius-atlas
+    dnsNames:
+        {{- range $h := $hosts }}
+        - {{ $h | quote }}
+        {{- end }}
+    issuerRef:
+        name: {{ required "global.trust.issuerRef.name is required (DD-243)" .Values.global.trust.issuerRef.name }}
+        {{- with .Values.global.trust.issuerRef.kind }}
+        kind: {{ . }}
+        {{- end }}
+{{- end }}
+{{- end }}

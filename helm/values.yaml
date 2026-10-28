@@ -76,26 +76,47 @@ global:
         caBundle: ""
 
     gateway:
+        # The Gateway API edge (CHT-29): Gateway + HTTPRoutes + the browser
+        # Certificate. Off for deployments that expose nothing through it
+        # (port-forward only); the GatewayClass itself is a cluster
+        # prerequisite either way (runbook).
+        enabled: true
         # GatewayClass serving the edge (DD-242). Envoy Gateway on a stock
         # cluster; a managed cluster names its own implementation
         # ("gke.l4-gateway-netsvc" et al.) — the chart renders the same API.
         className: envoy-gateway
-        # Port the Gateway listens on (TLS terminates at the gateway; the
+        # Port every listener binds (TLS terminates at the gateway; the
         # webapp→server hop stays TLS).
         port: 443
+        # The browser-host Certificate (<release>-edge-tls, CHT-29). The
+        # same durations as the component charts' leaves.
+        certificate:
+            duration: 2160h
+            renewBefore: 720h
 
-    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-242).
+    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-242). Each host
+    # joins to one backend Service; `service`/`port` override the name-rule
+    # join and the component's service port when a deployment diverges.
     hosts:
         atlas:
             enabled: true
             # "" defaults to atlas.<domain> — the webapp: SPA, /config.json,
             # and the /api and /otel proxies (the tested data path, DD-142).
             host: ""
+            # Backend: the webapp Service ("" = the CHT-13 name rule) and its
+            # port (matches atlas-webapp.service.port).
+            service: ""
+            port: 8080
         keycloak:
             enabled: true
             # "" defaults to keycloak.<domain> — the identity provider the
             # browser redirects to (ADR 007).
             host: ""
+            # Backend: the Keycloak Service ("" = the CHT-13 name rule) and
+            # its TLS port (matches atlas-keycloak.service.port; a
+            # BackendTLSPolicy pins the hop, CHT-30).
+            service: ""
+            port: 8443
         dashboard:
             # The vendored Apache Atlas dashboards (server /, /n/ — DD-018).
             # Off by default: the server is not browser-exposed while the
@@ -103,11 +124,20 @@ global:
             enabled: false
             # "" defaults to dashboard.<domain>.
             host: ""
+            # Backend: the server Service ("" = the CHT-13 name rule) and its
+            # TLS port (matches atlas-server.service.port; BackendTLSPolicy).
+            service: ""
+            port: 21000
         grafana:
             # Off by default; `kubectl port-forward` reaches it (runbook).
             enabled: false
             # "" defaults to grafana.<domain>.
             host: ""
+            # Backend: the observability chart's Grafana Service ("" = the
+            # CHT-13 name rule + "-grafana") and its plaintext UI port. The
+            # Service exists once 10.3b renders the observability workloads.
+            service: ""
+            port: 3000
 
 # Shared runtime credentials (DD-244). The umbrella generates what is empty,
 # preserves generated values across upgrades (lookup), and writes one Secret

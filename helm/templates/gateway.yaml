@@ -1,0 +1,47 @@
+{{/*
+The edge (CHT-29, DD-242). One Gateway, one TLS listener per enabled browser
+host; the GatewayClass is a cluster prerequisite (the runbook installs Envoy
+Gateway), never a chart resource — naming it here would fight whichever
+implementation the cluster runs. TLS terminates here; behind it the webapp is
+plaintext (its /api hop to the server stays TLS, CHT-25), the keycloak and
+dashboard listeners forward to TLS backends pinned by BackendTLSPolicy
+(httproutes.yaml, CHT-30).
+
+The listener Secret is whatever cert-manager wrote: the umbrella's
+<release>-edge-tls Certificate for the browser hosts it owns, and the
+Keycloak chart's own <release>-keycloak-tls for the keycloak host — reusing
+that Secret per the name contract means one certificate serves both the
+browser SNI and Keycloak's issuer pin (CHT-16), no second issuance.
+*/}}
+{{- if .Values.global.gateway.enabled -}}
+{{- $ns := include "aurelius-atlas.namespace" . -}}
+{{- $class := required "global.gateway.className is required (the GatewayClass the cluster provides, DD-242)" .Values.global.gateway.className -}}
+{{- $listeners := fromJsonArray (include "aurelius-atlas.edge.listeners" .) -}}
+{{- if not $listeners -}}
+{{- fail "global.gateway.enabled but no browser host resolves to an enabled component (global.hosts.* / component enabled flags)" -}}
+{{- end -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+    name: {{ .Release.Name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    gatewayClassName: {{ $class }}
+    listeners:
+        {{- range $l := $listeners }}
+        - name: {{ index $l "name" }}
+          port: {{ int $.Values.global.gateway.port }}
+          protocol: HTTPS
+          hostname: {{ index $l "host" | quote }}
+          allowedRoutes:
+              namespaces:
+                  from: Same
+          tls:
+              mode: Terminate
+              certificateRefs:
+                  - name: {{ index $l "secret" }}
+                    kind: Secret
+        {{- end }}
+{{- end }}

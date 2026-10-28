@@ -1,0 +1,152 @@
+{{/*
+The Deployment (CHT-20/21). Every setting the server needs renders as a join
+to a named sibling or a generated Secret — never a literal credential:
+ELASTICSEARCH_HOSTS from the store chart's Service (CHT-21), the password from
+the umbrella's <release>-elasticsearch Secret (DD-254), the trust files from
+the mounted Certificate Secret, which carries ca.crt beside tls.crt/tls.key
+(cert-manager's own contract — DD-251's dead caConfigMap value retired).
+The probes are HTTPS: the server never serves plaintext (SRV-06, DD-234), so
+an HTTP probe is DD-260's crash waiting to happen — applied before the crash
+this time.
+*/}}
+{{- $fullname := include "atlas-server.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+{{- $esSecret := default (printf "%s-elasticsearch" .Release.Name) .Values.credentialSecrets.elasticsearch -}}
+{{- $otelSecret := default (printf "%s-otel-clients" .Release.Name) .Values.credentialSecrets.otelClients -}}
+{{- $store := include "atlas-server.storeService" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.replicaCount }}
+    selector:
+        matchLabels:
+            {{- include "atlas-server.selectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-server.labels" . | nindent 16 }}
+                {{- with .Values.podLabels }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: {{ .Values.component }}
+                    image: {{ include "atlas-server.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    ports:
+                        - name: https
+                          containerPort: {{ int .Values.port }}
+                          protocol: TCP
+                    env:
+                        # The store join (CHT-21): the JSON list pydantic parses,
+                        # built from the store chart's Service and port.
+                        - name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS
+                          value: {{ printf "[\"https://%s:%d\"]" $store (int .Values.store.port) | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ $esSecret }}
+                                  key: elastic-password
+                        - name: AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS
+                          value: {{ .Values.forwardedAllowIps | quote }}
+                        {{- if .Values.telemetry.enabled }}
+                        # The per-service OTLP leg (DD-196): a minted client JWT
+                        # against the issuer, exported to the collector (10.3b).
+                        - name: AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT
+                          {{- $collector := include "atlas-server.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.telemetry.service) }}
+                          value: {{ printf "https://%s:%d" $collector (int .Values.telemetry.port) | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL
+                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-server.issuerUrl" .) .Values.auth.realm | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ $otelSecret }}
+                                  key: OTEL_INGEST_CLIENT_SECRET
+                        {{- end }}
+                        {{- with .Values.config }}
+                        {{- range $key, $value := . }}
+                        - name: {{ $key }}
+                          value: {{ $value | quote }}
+                        {{- end }}
+                        {{- end }}
+                        {{- with .Values.secretRefs }}
+                        {{- range . }}
+                        - name: {{ .name }}
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ .secret }}
+                                  key: {{ .key }}
+                        {{- end }}
+                        {{- end }}
+                        {{- with .Values.extraEnv }}
+                        {{- toYaml . | nindent 24 }}
+                        {{- end }}
+                    volumeMounts:
+                        - name: tls
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                    # HTTPS probes (CHT-20): the server serves TLS always
+                    # (SRV-06); kubelet HTTPS probes skip certificate
+                    # verification, so this is liveness, not a trust check
+                    # (DD-260's lesson, pre-applied).
+                    readinessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.readinessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: HTTPS
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    livenessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.livenessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: HTTPS
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            volumes:
+                -   name: tls
+                    secret:
+                        # The Certificate's Secret (CHT-22) or a brought one;
+                        # cert-manager's issued Secret carries ca.crt beside
+                        # the pair, which is what the store/collector trust
+                        # settings point at (DD-243, DD-251).
+                        secretName: {{ include "atlas-server.tlsSecretName" . }}
+            {{- with .Values.extraVolumes }}
+            {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}

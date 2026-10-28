@@ -45,10 +45,28 @@ app.kubernetes.io/name: {{ include "atlas-lineage-model.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
+{{/*
+A sibling chart's Service by chart name (CHT-28): "override" wins, else this
+release's name under the store chart's fullname rule (CHT-13) — a release name
+that prefixes the chart name yields the bare chart name.
+*/}}
+{{- define "atlas-lineage-model.siblingService" -}}
+{{- if .override -}}
+{{- .override -}}
+{{- else -}}
+{{- $name := .name -}}
+{{- if hasPrefix (lower .release) (lower $name) -}}
+{{- lower $name -}}
+{{- else -}}
+{{- printf "%s-%s" .release $name -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "atlas-lineage-model.image" -}}
 {{- $registry := default "ghcr.io" .Values.global.image.registry -}}
 {{- $namespace := default "aureliusenterprise" .Values.global.image.namespace -}}
-{{- $name := required "image.name is required (the published image name, e.g. aurelius-atlas-server)" .Values.image.name -}}
+{{- $name := required "image.name is required (the published image name, e.g. aurelius-atlas-lineage-model)" .Values.image.name -}}
 {{- $tag := default .Chart.AppVersion .Values.image.tag -}}
 {{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
 {{- end -}}

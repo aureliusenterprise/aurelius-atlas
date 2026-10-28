@@ -1,0 +1,22 @@
+{{/*
+The ClusterIP Service (CHT-23) on 8080, plaintext: the Gateway terminates TLS
+at the edge (DD-242) and the webapp's own listener stays inside the cluster
+boundary. The Gateway's HTTPRoute names this Service (CHT-30) — plaintext
+backend, no BackendTLSPolicy.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ include "atlas-webapp.fullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-webapp.labels" . | nindent 8 }}
+spec:
+    type: {{ .Values.service.type }}
+    ports:
+        - name: http
+          port: {{ int .Values.service.port }}
+          targetPort: {{ int .Values.port }}
+          protocol: TCP
+    selector:
+        {{- include "atlas-webapp.selectorLabels" . | nindent 12 }}

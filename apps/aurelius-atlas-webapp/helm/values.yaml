@@ -21,6 +21,15 @@ global:
     # The umbrella's dnsResolver: nginx's per-request upstream resolution
     # (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER).
     dnsResolver: ""
+    trust:
+        # The issuer whose root this nginx trusts as a TLS client (DD-259).
+        # caSecretName "" defaults to "<issuerRef.name>-ca", the umbrella's
+        # trust-root Secret (the webapp mounts the CA only — it presents
+        # nothing, CHT-25).
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+        caSecretName: ""
 
 enabled: true
 component: webapp
@@ -54,11 +63,23 @@ nginx:
     apiUpstreamName: ""
     otelUpstream: ""
     otelUpstreamName: ""
-    # The browser leg's OTLP endpoint the SPA is told about (config.json).
-    otlpEndpoint: /otel/v1/traces
+    # Override for the edge exporter's endpoint — the template's
+    # _OTLP_ENDPOINT, nginx's own edge-span leg (DD-239). "" derives
+    # https://<collector>:<collector.legacyGrpcPort> (CHT-25). The SPA's
+    # endpoint is a different leg: config.otelExporterUrl.
+    otlpEndpoint: ""
     # CSP connect-src/frame-src additions — the Keycloak origins (the template's
     # ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}); "" derives from the issuer URL.
     keycloakOrigins: ""
+    # The proxy hop(s) whose X-Forwarded-For nginx trusts (DD-261): the
+    # Gateway's network(s), CIDR list — the in-cluster edge is two hops
+    # (Gateway → nginx → server), and the browser's address only survives
+    # the first when the second hop resolves the header. [] trusts no hop
+    # (stock render: every client shares the Gateway's address for the
+    # limiter); the environment overlays name their clusters (minikube:
+    # ["10.244.0.0/16"]). Rendered into the template's realip block, which
+    # the init container substitutes as a contiguous nginx-directive string.
+    trustedProxyCIDRs: []
 
 # /config.json (SHL-02): served at bootstrap, shape in src/app/config.ts.
 # "" values derive in 10.3: keycloak.url from the umbrella's issuer URL,
@@ -85,11 +106,33 @@ probes:
     timeoutSeconds: 3
     failureThreshold: 3
 
+# The upstreams this nginx dials (CHT-25): "" derives each chart's Service
+# name in this release (the CHT-13 name rule), set it to point elsewhere.
+# The collector's workload is 10.3b — the join renders now and may point at
+# nothing until then; nginx resolves upstream names per request, by design
+# (the template's resolver comment: a missing backend answers 502, the SPA
+# still boots).
+server:
+    service: ""
+    port: 21000
+collector:
+    service: ""
+    # The browser leg (OTLP/HTTP + OIDC) — the /otel/ proxy's upstream
+    # (DD-193: the SPA pushes with its Keycloak JWT).
+    browserPort: 4318
+    # The legacy leg (gRPC + static bearer) — nginx's own edge-span export
+    # (DD-239; the token from <release>-collector-legacy).
+    legacyGrpcPort: 4320
+
 tls:
     # The CA the nginx proxy verifies the API/collector upstreams against
-    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}).
+    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}). The webapp is a
+    # TLS client only — it presents no certificate (plaintext 8080 behind
+    # the Gateway, DD-242) — so it mounts the trust-root Secret alone,
+    # never a leaf. "" derives the umbrella's <issuerRef.name>-ca (DD-259);
+    # secretName brings your own. The dead caConfigMap value of the
+    # skeleton is retired (DD-251's finding — nothing ever mounted it).
     secretName: ""
-    caConfigMap: ""
     caPath: /etc/aurelius-atlas/tls/ca.crt
 
 service:
@@ -104,6 +147,8 @@ serviceAccount:
 # credential. Browser-reachable by design (DD-244) — a public ingest
 # constant, not a secret to protect. From <release>-collector-legacy.
 otelIngestToken:
+    # "" derives <release>-collector-legacy (the umbrella generates it,
+    # CHT-31).
     secret: ""
     key: token
 
@@ -117,14 +162,21 @@ affinity: {}
 podAnnotations: {}
 podLabels: {}
 
+# The image's declared user (DD-257): dhi.io/nginx runs as `nginx`
+# (uid/gid 65532, verified from the image) with no privilege drop. The root
+# filesystem is read-only; nginx's writable paths (pid in /run/nginx, temp
+# dirs under /var/lib/nginx/tmp — its compiled-in defaults) ride emptyDirs,
+# and fsGroup makes those group-writable for the image user (CHT-23).
 podSecurityContext:
     runAsNonRoot: true
     runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault
 securityContext:
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: false
+    readOnlyRootFilesystem: true
     capabilities:
         drop:
             - ALL

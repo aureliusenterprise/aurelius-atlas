@@ -25,6 +25,13 @@ import yaml
 WORKSPACE = Path(__file__).resolve().parents[1]
 ES_CHART = WORKSPACE / "dev/elasticsearch/helm"
 KC_CHART = WORKSPACE / "dev/keycloak/helm"
+SERVER_CHART = WORKSPACE / "apps/aurelius-atlas-server/helm"
+WEBAPP_CHART = WORKSPACE / "apps/aurelius-atlas-webapp/helm"
+AUX_CHARTS = {
+    "data2model": WORKSPACE / "apps/aurelius-atlas-data2model/helm",
+    "lineage-model": WORKSPACE / "apps/aurelius-atlas-lineage-model/helm",
+    "validate-entity": WORKSPACE / "apps/aurelius-atlas-validate-entity/helm",
+}
 UMBRELLA_CHART = WORKSPACE / "helm"
 
 
@@ -62,14 +69,14 @@ def helm_render(
     return [doc for doc in yaml.safe_load_all(done.stdout) if doc]
 
 
-def helm_render_fails(chart: Path, *, sets: tuple[str, ...]) -> str:
+def helm_render_fails(chart: Path, *, sets: tuple[str, ...] = (), value_files: tuple[Path, ...] = ()) -> str:
     """Assert a render fails and return helm's stderr (guard tests)."""
-    done = subprocess.run(
-        ["helm", "template", "atlas", str(chart), "--namespace", "atlas", *(x for s in sets for x in ("--set", s))],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    cmd = ["helm", "template", "atlas", str(chart), "--namespace", "atlas"]
+    for values in value_files:
+        cmd += ["-f", str(values)]
+    for arg in sets:
+        cmd += ["--set", arg]
+    done = subprocess.run(cmd, capture_output=True, text=True, check=False)
     assert done.returncode != 0, f"expected a failing render for {sets}, got success"
     return done.stderr
 
@@ -139,5 +146,17 @@ def kc_docs() -> list[dict[str, Any]]:
 
 @pytest.fixture(scope="session")
 def umbrella_docs() -> list[dict[str, Any]]:
-    """The umbrella under its CI test values (CHT-19; issuer + secrets render)."""
+    """The umbrella under its CI test values (CHT-19; issuer, secrets, edge)."""
     return helm_render(UMBRELLA_CHART, value_files=(UMBRELLA_CHART / "tests/values.test.yaml",))
+
+
+@pytest.fixture(scope="session")
+def server_docs() -> list[dict[str, Any]]:
+    """The server chart under its CI test values (CHT-20..22)."""
+    return helm_render(SERVER_CHART, value_files=(SERVER_CHART / "tests/values.test.yaml",))
+
+
+@pytest.fixture(scope="session")
+def webapp_docs() -> list[dict[str, Any]]:
+    """The webapp chart under its CI test values (CHT-23..26)."""
+    return helm_render(WEBAPP_CHART, value_files=(WEBAPP_CHART / "tests/values.test.yaml",))
