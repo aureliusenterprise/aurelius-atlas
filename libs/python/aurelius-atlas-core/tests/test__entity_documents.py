@@ -88,9 +88,12 @@ async def test__bulk_writes_create_or_replace_conditionally(documents: Elasticse
     assert await documents.get([]) == {}
 
 
-@pytest.mark.covers(f"{E}.restore", rules=["ENS-07"])
-async def test__restore_puts_back_or_removes(documents: ElasticsearchEntityDocuments) -> None:
-    """A state before is indexed again; an entity that did not exist is deleted, twice without error."""
+@pytest.mark.covers(f"{E}.restore", rules=["ENS-07", "ENS-11"])
+async def test__restore_puts_back_or_removes(documents: ElasticsearchEntityDocuments, fake: FakeClient) -> None:
+    """A state before is indexed again; an entity that did not exist is deleted, twice without error.
+
+    Every one of these writes carries the refresh (ENS-11).
+    """
     await documents.write([(entity("a", x=2), None), (entity("b"), None)])
 
     await documents.restore("a", entity("a", x=1))
@@ -100,13 +103,18 @@ async def test__restore_puts_back_or_removes(documents: ElasticsearchEntityDocum
     read = await documents.get(["a", "b"])
     assert set(read) == {"a"}
     assert read["a"].entity.attributes == {"x": 1}
+    assert set(fake.write_refreshes) == {("t-entities", "wait_for")}
+    assert fake.refreshes == []
 
 
-@pytest.mark.covers(f"{E}.reserve", f"{E}.reservations", f"{E}.release", rules=["ENS-05"])
+@pytest.mark.covers(f"{E}.reserve", f"{E}.reservations", f"{E}.release", rules=["ENS-05", "ENS-11"])
 async def test__a_reservation_is_create_only_and_released_by_its_holder(
-    documents: ElasticsearchEntityDocuments,
+    documents: ElasticsearchEntityDocuments, fake: FakeClient
 ) -> None:
-    """The second reservation of a key answers the holder; only the holder's GUID releases it."""
+    """The second reservation of a key answers the holder; only the holder's GUID releases it.
+
+    Reservations carry no refresh: ``mget`` reads them in real time (ENS-11, ENS-04).
+    """
     first = Reservation("k", "a", "w1")
 
     assert await documents.reserve(first) is None
@@ -118,11 +126,12 @@ async def test__a_reservation_is_create_only_and_released_by_its_holder(
     await documents.release("k", "a")
     assert await documents.reservations(["k"]) == {}
     assert await documents.reservations([]) == {}
+    assert fake.write_refreshes == []
 
 
-@pytest.mark.covers(f"{E}.put_journal", f"{E}.journal", f"{E}.delete_journal", rules=["ENS-07"])
+@pytest.mark.covers(f"{E}.put_journal", f"{E}.journal", f"{E}.delete_journal", rules=["ENS-07", "ENS-11"])
 async def test__the_journal_holds_writes_in_flight(documents: ElasticsearchEntityDocuments, fake: FakeClient) -> None:
-    """Entries are listed after a refresh and deleted by write id, twice without error."""
+    """Entries are listed once the write's own refresh lands, and deleted by write id, twice without error."""
     entry = JournalEntry(write_id="w", lease_until=5, before={"a": None}, reserved=["k"])
 
     await documents.put_journal(entry)
@@ -133,7 +142,8 @@ async def test__the_journal_holds_writes_in_flight(documents: ElasticsearchEntit
     assert listed == [entry]
     assert listed[0].before_entity("a") is None
     assert await documents.journal() == []
-    assert "t-entity-journal" in fake.refreshes
+    assert set(fake.write_refreshes) == {("t-entity-journal", "wait_for")}
+    assert fake.refreshes == []
 
 
 @pytest.mark.covers(f"{D}.JournalEntry.before_entity", rules=["ENS-07"])
@@ -145,17 +155,22 @@ def test__a_journal_entry_keeps_the_state_before() -> None:
     assert entry.before_entity("b") is None
 
 
-@pytest.mark.covers(f"{E}.count_type", rules=["ENS-09"])
-async def test__entities_of_a_type_are_counted_after_a_refresh(
+@pytest.mark.covers(f"{E}.count_type", rules=["ENS-09", "ENS-11"])
+async def test__entities_of_a_type_are_counted_on_the_written_index(
     documents: ElasticsearchEntityDocuments, fake: FakeClient
 ) -> None:
-    """Exactly the type, any state (DD-048)."""
+    """Exactly the type, any state (DD-048).
+
+    The count is a search, so the write that made the entities visible carried the refresh (ENS-11) —
+    the count itself pays for none.
+    """
     deleted = entity("b").model_copy(update={"state": EntityStatus.DELETED})
     await documents.write([(entity("a"), None), (deleted, None)])
 
     assert await documents.count_type("table") == 2
     assert await documents.count_type("view") == 0
-    assert fake.refreshes == ["t-entities", "t-entities"]
+    assert set(fake.write_refreshes) == {("t-entities", "wait_for")}
+    assert fake.refreshes == []
 
 
 @pytest.mark.covers(
@@ -192,11 +207,14 @@ def test__both_implementations_are_entity_documents(documents: ElasticsearchEnti
     assert isinstance(MemoryEntityDocuments(), EntityDocuments)
 
 
-@pytest.mark.covers(f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10"])
+@pytest.mark.covers(f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10", "ENS-11"])
 async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_deletes(
     documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """After a refresh, by ``references``, in pages; a removal is conditional; prepare maps new fields."""
+    """By ``references``, in pages; a removal is conditional; prepare maps new fields.
+
+    The writes carry the refresh, the referring search pays for none (ENS-11).
+    """
     monkeypatch.setattr(entity_documents, "REFERRING_PAGE", 1)
     written = [
         entity("a").model_copy(update={"references": ["x"]}),
@@ -217,7 +235,8 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
         ("a", False, True),
     ]
     assert set(await documents.get(["a", "c"])) == {"a"}
-    assert "t-entities" in fake.refreshes
+    assert set(fake.write_refreshes) == {("t-entities", "wait_for")}
+    assert fake.refreshes == []
     assert fake.mapping_updates == ["t-entities"]
 
 
@@ -225,7 +244,7 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
 async def test__classified_entities_are_found_by_their_listed_instances(
     documents: ElasticsearchEntityDocuments,
 ) -> None:
-    """After a refresh, by ``classificationGuids``, as referring entities are found (DD-076)."""
+    """By ``classificationGuids``, as referring entities are found (DD-076); the write carries the refresh (ENS-11)."""
     written = [
         entity("a").model_copy(update={"classification_guids": ["k"]}),
         entity("b").model_copy(update={"classification_guids": ["k", "m"]}),
@@ -261,7 +280,7 @@ async def test__tasks_are_listed_oldest_first_all_or_open(
     f"{E}.get_linked",
     f"{E}.restore_linked",
     f"{E}.count_linked_type",
-    rules=["REL-05", "REL-08", "REL-10", "CLS-12"],
+    rules=["REL-05", "REL-08", "REL-10", "CLS-12", "ENS-11"],
 )
 @pytest.mark.parametrize(
     ("kind", "document"),
@@ -273,7 +292,10 @@ async def test__tasks_are_listed_oldest_first_all_or_open(
 async def test__linked_documents_are_written_with_entities_in_one_bulk_request(
     documents: ElasticsearchEntityDocuments, fake: FakeClient, kind: LinkedKind, document: Linked
 ) -> None:
-    """All indices in one request, each result marked by kind; the documents are read, restored and counted."""
+    """All indices in one request, each result marked by kind; the documents are read, restored and counted.
+
+    The bulk and the restores carry the refresh, the count pays for none (ENS-11).
+    """
     results = await documents.write([(entity("a"), None)], [], {kind: LinkedWrite([(document, None)])})
     found = await documents.get_linked(kind, ["r", "nope"])
     removed = await documents.write([], [], {kind: LinkedWrite(removed=[("r", found["r"][1])])})
@@ -287,7 +309,8 @@ async def test__linked_documents_are_written_with_entities_in_one_bulk_request(
     assert await documents.get_linked(kind, []) == {}
     await documents.restore_linked(kind, "r", None)
     assert await documents.count_linked_type(kind, "link") == 0
-    assert f"t-{kind.value}" in fake.refreshes
+    assert set(fake.write_refreshes) == {("t-entities", "wait_for"), (f"t-{kind.value}", "wait_for")}
+    assert fake.refreshes == []
 
 
 def searchable(guid: str, created: int, **fields: object) -> StoredEntity:
