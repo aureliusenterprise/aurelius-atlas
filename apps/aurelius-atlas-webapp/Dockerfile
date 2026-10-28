@@ -8,27 +8,37 @@ FROM dhi.io/nginx:1.30-alpine3.24-dev AS otel-builder
 
 # The python-3.14 pin is apk arithmetic, not taste: the image's xcb-proto is
 # resolved against 3.14 and bare `python` now means 3.15, which breaks it.
-# nginx-stable-mod-dev ships the 1.30.6 source kit the binary was built from
-# (/usr/src/nginx-1.30.6); the rest is the nginx-otel build recipe. The cache
+# nginx-stable-mod-dev ships the source kit the running binary was built
+# from (/usr/src/nginx-<version>); the rest is the nginx-otel build recipe. The cache
 # mount carries apk's index + package tarballs across builds (plain `apk add`,
 # not --no-cache: the flag is what discards them; a cold pass is ~300 MB of
 # downloads).
 RUN --mount=type=cache,id=webapp-otel-apk,target=/var/cache/apk \
     apk add \
-        python-3.14 \
-        nginx-stable-mod-dev \
-        gcc g++ cmake make ninja git \
-        openssl-dev c-ares-dev zlib-dev re2-dev \
-        protobuf-dev grpc-dev
+    c-ares-dev cmake g++ gcc \
+    git grpc-dev make nginx-stable-mod-dev \
+    ninja openssl-dev protobuf-dev python-3.14 \
+    re2-dev zlib-dev
 
 # Configure the exact source tree of the running binary — the image's own
 # configure args with the out-of-tree dynamic modules dropped (their sources
 # are not shipped, and the module signature is feature flags only, which
 # --with-compat already satisfies; verified against 1.30.6's ngx_module.h).
+# eval, not bare quoting: nginx -V quotes values that contain spaces
+# (--with-cc-opt='-O2 ...'), and the substitution must be re-parsed into
+# arguments — "$ARGS" alone would pass the whole string as one argument.
+#
+# The source kit sits in a versioned dir (nginx-1.30.6) while FROM pins only
+# the 1.30 minor, so the patch level is read from the running binary and
+# routed through a stable symlink — the recipe never hardcodes it, a dhi
+# patch bump needs no edit, and a missing source kit fails loudly here.
+RUN NGINX_VER=$(nginx -v 2>&1 | sed 's|.*/||') \
+    && test -d "/usr/src/nginx-$NGINX_VER" \
+    && ln -sfn "/usr/src/nginx-$NGINX_VER" /usr/src/nginx-src
+WORKDIR /usr/src/nginx-src
 RUN ARGS=$(nginx -V 2>&1 | grep '^configure arguments:' \
-            | sed -e 's/^configure arguments: //' -e 's/--add-dynamic-module=[^ ]*//g') \
-    && cd /usr/src/nginx-1.30.6 \
-    && sh ./configure $ARGS --with-compat
+    | sed -e 's/^configure arguments: //' -e 's/--add-dynamic-module=[^ ]*//g') \
+    && eval sh ./configure "$ARGS" --with-compat
 
 # nginx-otel v0.1.2 (latest release): pinned by tag, built against system
 # gRPC/protobuf (NGX_OTEL_GRPC=package — the from-source fetch is 40+ min);
@@ -43,17 +53,17 @@ RUN ARGS=$(nginx -V 2>&1 | grep '^configure arguments:' \
 # what the mount carries (measured: warm = cold, ~17s). The clone + cmake +
 # ninja is cheap next to the apk layer.
 RUN git clone --depth 1 --branch v0.1.2 https://github.com/nginx/nginx-otel.git /nginx-otel \
-    && mkdir -p /out-stage /nginx-otel/build \
-    && cd /nginx-otel/build \
+    && mkdir -p /out-stage \
     && cmake -G Ninja \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DNGX_OTEL_GRPC=package \
-            -DNGX_OTEL_NGINX_BUILD_DIR=/usr/src/nginx-1.30.6/objs \
-            .. \
-    && ninja ngx_otel_module \
-    && ldd ngx_otel_module.so | awk '{print $3}' | grep '^/usr' | sort -u \
-            | tar -hcf - -T - | tar -xf - -C /out-stage \
-    && cp ngx_otel_module.so /out-stage/
+    -S /nginx-otel -B /nginx-otel/build \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DNGX_OTEL_GRPC=package \
+    -DNGX_OTEL_NGINX_BUILD_DIR=/usr/src/nginx-src/objs \
+    && ninja -C /nginx-otel/build ngx_otel_module \
+    && ldd /nginx-otel/build/ngx_otel_module.so \
+    | awk '{print $3}' | grep '^/usr' | sort -u \
+    | tar -hcf - -T - | tar -xf - -C /out-stage \
+    && cp /nginx-otel/build/ngx_otel_module.so /out-stage/
 
 # The load_module directive must live in the *main* context, which the
 # hardened image provides: its nginx.conf includes /etc/nginx/modules/*.conf
