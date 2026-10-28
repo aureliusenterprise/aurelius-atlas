@@ -3,11 +3,14 @@
 # with <base href="/<locale>/">. See https://angular.dev/guide/i18n/deploy
 # Baked at image build to /etc/nginx/conf.d/default.conf. This file is a
 # *template*: the ${AURELIUS_ATLAS_WEBAPP_*} placeholders (API/OTLP upstream
-# origins + TLS names, trust anchor path, DNS resolver) are resolved by the
-# deployment, which mounts its filled-in copy over that path — see
-# e2e/config/nginx.conf for a static resolved variant. The hardened runtime
-# image has no shell tooling to render at start, on purpose; an unresolved
-# container fails at config parse instead of serving with template defaults.
+# origins + TLS names, trust anchor path, DNS resolver, the realip trust block)
+# are resolved by the deployment, which mounts its filled-in copy over that
+# path — see e2e/config/nginx.conf for a static resolved variant. The runtime
+# image ships neither envsubst nor bash (the hardened base's contract), so a
+# deployment resolves the template with its own tooling: the compose stack at
+# compose time, the Helm chart at pod start in an init container running the
+# same image's sh + sed (DD-262). An unresolved container fails at config
+# parse instead of serving with template defaults.
 # NOTE: the hardened image includes this file inside its *http* block (the
 # last line of the stock nginx.conf), so http-scoped directives (the
 # limit_req_zone and otel_exporter blocks below) are legal at file top; the
@@ -23,6 +26,15 @@
 # allowlist pattern). The limit is the browser's: an internal caller bursting
 # is working, an attacker bursting is browsing. Extend the geo block (a 0 entry
 # per range) for deployment networks that are not RFC 1918.
+#
+# Client-IP trust first (DD-261): the placeholder below resolves to the
+# deployment's realip block — `set_real_ip_from` for the proxy hop(s) whose
+# X-Forwarded-For resolves to the browser (a Gateway sitting in front of this
+# nginx, in-cluster). It lands before the geo bucket so a behind-gateway
+# deployment buckets per browser, not per Gateway; the compose/e2e shape
+# resolves it to nothing — there nginx is the front door and
+# $binary_remote_addr already is the browser.
+${AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK}
 geo $atlas_api_limit_key {
     default 1;
     127.0.0.0/8 0;

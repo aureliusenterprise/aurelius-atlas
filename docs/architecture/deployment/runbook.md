@@ -23,12 +23,21 @@ the sequence to run.
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
     ```
 
-- **A GatewayClass** matching `global.gateway.className`:
+- **A GatewayClass** matching `global.gateway.className` (default `envoy-gateway`):
 
     ```bash
-    # minikube (Envoy Gateway)
-    helm repo add envoy https://envoyproxy.github.io/charts
-    helm install eg oci://docker.io/envoyproxy/gateway-helm --version <v> -n envoy-gateway-system --create-namespace
+    # minikube (Envoy Gateway). The EG chart installs the controller and the
+    # Gateway API CRDs but ships NO GatewayClass — create one:
+    helm install eg oci://docker.io/envoyproxy/gateway-helm --version 1.9.3 \
+        -n envoy-gateway-system --create-namespace
+    kubectl apply -f - <<'EOF'
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: GatewayClass
+    metadata:
+        name: envoy-gateway
+    spec:
+        controllerName: gateway.envoyproxy.io/gatewayclass-controller
+    EOF
     ```
 
 - **Pull secrets** (private registries) in the target namespace:

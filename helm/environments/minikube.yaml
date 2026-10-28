@@ -7,3 +7,14 @@ global:
     gateway:
         className: envoy-gateway
     storageClass: ""
+
+# Client-IP trust for the two-hop edge (DD-261/CHT-32): minikube's pod
+# network is 10.244.0.0/16, and both the Envoy Gateway data plane and the
+# webapp pods live in it — the webapp resolves X-Forwarded-For only from
+# that network, and the server trusts X-Forwarded-For only from it.
+atlas-webapp:
+    nginx:
+        trustedProxyCIDRs:
+            - 10.244.0.0/16
+atlas-server:
+    forwardedAllowIps: "10.244.0.0/16"
