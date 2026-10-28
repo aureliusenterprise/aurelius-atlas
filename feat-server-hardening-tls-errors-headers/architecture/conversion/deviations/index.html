@@ -8199,8 +8199,8 @@ Atlas clients expect when it lands).</p>
 <td>DV-86</td>
 <td>Server</td>
 <td>Atlas ships no Content-Security-Policy; the legacy dashboard's inline bootstrap is unscored</td>
-<td>The dashboard CSP allows <code>'unsafe-inline'</code> scripts and styles; the JSON API CSP is <code>default-src 'none'</code> — it serves no documents</td>
-<td>The vendored <code>index.html.tpl</code> inlines the build-varying <code>&lt;%- bust %&gt;</code> value, so script hashes/nonces churn every build; the strict form returns with the dashboard retirement (6.3) (SRV-08, DD-236)</td>
+<td>The dashboard CSP allows <code>'unsafe-inline'</code> + <code>'unsafe-eval'</code> scripts and <code>'unsafe-inline'</code> styles; the JSON API CSP is <code>default-src 'none'</code> — it serves no documents</td>
+<td>The vendored <code>index.html.tpl</code> inlines the build-varying <code>&lt;%- bust %&gt;</code> value (hashes churn every build), and the require-handlebars-plugin compiles its templates at runtime with <code>new Function</code> (e2e-proven: <code>EvalError</code> kills the boot without <code>'unsafe-eval'</code>); the strict form returns with the dashboard retirement (6.3) (SRV-08, DD-236)</td>
 <td>9.2</td>
 </tr>
 </tbody>

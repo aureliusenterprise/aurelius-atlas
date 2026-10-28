@@ -8005,7 +8005,7 @@
 </tr>
 <tr>
 <td>SRV-08</td>
-<td>Every response carries security headers: <code>/api/**</code> gets <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>, a <code>Permissions-Policy</code>, <code>Cache-Control: no-store</code> and a CSP that serves no documents; the dashboard documents get a same-origin CSP with inline scripts/styles (DV-86) and <code>X-Frame-Options: SAMEORIGIN</code>; dashboard assets served with a <code>bust=</code> query get immutable cache headers; <code>Strict-Transport-Security</code> is sent when <code>HSTS_ENABLED</code> (default true, off in the dev arrangement, ADR 039)</td>
+<td>Every response carries security headers: <code>/api/**</code> gets <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>, a <code>Permissions-Policy</code>, <code>Cache-Control: no-store</code> and a CSP that serves no documents; the dashboard documents get a same-origin CSP that allows the legacy app's inline bootstrap and runtime template compilation (DV-86) with <code>object-src</code>/<code>base-uri</code>/<code>frame-ancestors</code> closed, and <code>X-Frame-Options: SAMEORIGIN</code>; dashboard assets served with a <code>bust=</code> query get immutable cache headers; <code>Strict-Transport-Security</code> is sent when <code>HSTS_ENABLED</code> (default true, off in the dev arrangement, ADR 039)</td>
 </tr>
 </tbody>
 </table>
@@ -8017,8 +8017,10 @@ echoes <code>exception.getMessage()</code> into <code>errorCause</code> on every
 <h2 id="deviations">Deviations<a class="headerlink" href="#deviations" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../deviations/">DV-85</a>: 5xx answers drop the <code>errorCause</code> echo, adding <code>requestId</code>.</li>
-<li><a href="../../deviations/">DV-86</a>: the dashboard CSP allows inline scripts (the vendored bootstrap
-  inlines a build-varying <code>bust</code> value, so hashes are not stable).</li>
+<li><a href="../../deviations/">DV-86</a>: the dashboard CSP allows inline and eval'd scripts — the
+  vendored bootstrap inlines a build-varying <code>bust</code> value (hashes are not stable) and the
+  require-handlebars-plugin compiles templates at runtime with <code>new Function</code> (the e2e
+  dashboard boot is the regression guard).</li>
 </ul>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>

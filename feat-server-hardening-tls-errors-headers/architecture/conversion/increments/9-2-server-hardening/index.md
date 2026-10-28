@@ -27,7 +27,7 @@ Not in scope:
 | --- | --- |
 | SRV-06 | The server serves HTTPS, always: `TLS_CERT_FILE` and `TLS_KEY_FILE` are required settings (SRV-01 idiom) and a missing one stops start-up naming it — the both-or-neither rule of SRV-03 is superseded because the "neither" arm no longer exists |
 | SRV-07 | An Atlas error of status 500+ answers with `{"errorCode": ..., "errorMessage": ...}` and never an `errorCause` (superseding SRV-04's cause echo for 5xx only); the cause is logged, and the answer carries the current trace id as `requestId` in the body and `X-Request-Id` in the headers. 4xx answers keep SRV-04 unchanged |
-| SRV-08 | Every response carries security headers: `/api/**` gets `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a `Permissions-Policy`, `Cache-Control: no-store` and a CSP that serves no documents; the dashboard documents get a same-origin CSP with inline scripts/styles (DV-86) and `X-Frame-Options: SAMEORIGIN`; dashboard assets served with a `bust=` query get immutable cache headers; `Strict-Transport-Security` is sent when `HSTS_ENABLED` (default true, off in the dev arrangement, ADR 039) |
+| SRV-08 | Every response carries security headers: `/api/**` gets `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a `Permissions-Policy`, `Cache-Control: no-store` and a CSP that serves no documents; the dashboard documents get a same-origin CSP that allows the legacy app's inline bootstrap and runtime template compilation (DV-86) with `object-src`/`base-uri`/`frame-ancestors` closed, and `X-Frame-Options: SAMEORIGIN`; dashboard assets served with a `bust=` query get immutable cache headers; `Strict-Transport-Security` is sent when `HSTS_ENABLED` (default true, off in the dev arrangement, ADR 039) |
 
 ## Java origin
 
@@ -36,7 +36,7 @@ Apache Atlas 2.4.0 has no security-header filter to port — the headers are Aur
 ## Deviations
 
 - [DV-85](<https://aureliusenterprise.github.io/feat-server-hardening-tls-errors-headers/architecture/conversion/deviations/index.md>): 5xx answers drop the `errorCause` echo, adding `requestId`.
-- [DV-86](<https://aureliusenterprise.github.io/feat-server-hardening-tls-errors-headers/architecture/conversion/deviations/index.md>): the dashboard CSP allows inline scripts (the vendored bootstrap inlines a build-varying `bust` value, so hashes are not stable).
+- [DV-86](<https://aureliusenterprise.github.io/feat-server-hardening-tls-errors-headers/architecture/conversion/deviations/index.md>): the dashboard CSP allows inline and eval'd scripts — the vendored bootstrap inlines a build-varying `bust` value (hashes are not stable) and the require-handlebars-plugin compiles templates at runtime with `new Function` (the e2e dashboard boot is the regression guard).
 
 ## Acceptance
 
