@@ -4010,6 +4010,8 @@
       
         
       
+        
+      
     
     
     
@@ -5590,6 +5592,33 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
 
     
   </span>
@@ -8218,6 +8247,13 @@ checks a PR must pass:</p>
 <td>Targeted resilience e2e</td>
 <td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
 <td>— (no Java twin; Atlas ships no resilience e2e)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.2</td>
+<td>Server hardening</td>
+<td>TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86)</td>
+<td><code>AtlasBaseExceptionMapper</code> (cause echo, superseded for 5xx); no header filter to port</td>
 <td>in progress</td>
 </tr>
 </tbody>

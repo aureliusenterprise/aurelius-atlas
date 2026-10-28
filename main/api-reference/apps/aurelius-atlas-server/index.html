@@ -1277,6 +1277,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.hsts_enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hsts_enabled
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.log_level" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -4854,6 +4865,8 @@
       
         
       
+        
+      
     
     
     
@@ -6434,6 +6447,33 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/conversion/increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
 
     
   </span>
@@ -8447,6 +8487,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.hsts_enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hsts_enabled
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.log_level" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9295,30 +9346,19 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"info"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"tls_cert_file"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file-path"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">      </span><span class="p">],</span>
-<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tls Cert File"</span>
+<span class="w">      </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file-path"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tls Cert File"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"tls_key_file"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file-path"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">      </span><span class="p">],</span>
-<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tls Key File"</span>
+<span class="w">      </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file-path"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tls Key File"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"hsts_enabled"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Hsts Enabled"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"dashboard_dir"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -9456,6 +9496,8 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">"tls_cert_file"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"tls_key_file"</span><span class="p">,</span>
 <span class="w">    </span><span class="s2">"elasticsearch_hosts"</span><span class="p">,</span>
 <span class="w">    </span><span class="s2">"elasticsearch_password"</span><span class="p">,</span>
 <span class="w">    </span><span class="s2">"elasticsearch_ca_certs"</span>
@@ -9509,7 +9551,7 @@ Elasticsearch settings; it does not start without its store.</p>
   
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.tls_cert_file)" href="./#aurelius_atlas_server.settings.ServerSettings.tls_cert_file">tls_cert_file</a></code>
-                (<code><span title="pydantic.FilePath">FilePath</span> | None</code>)
+                (<code><span title="pydantic.FilePath">FilePath</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            tls_key_file
@@ -9518,7 +9560,16 @@ Elasticsearch settings; it does not start without its store.</p>
   
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.tls_key_file)" href="./#aurelius_atlas_server.settings.ServerSettings.tls_key_file">tls_key_file</a></code>
-                (<code><span title="pydantic.FilePath">FilePath</span> | None</code>)
+                (<code><span title="pydantic.FilePath">FilePath</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            hsts_enabled
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.hsts_enabled)" href="./#aurelius_atlas_server.settings.ServerSettings.hsts_enabled">hsts_enabled</a></code>
+                (<code><span title="bool">bool</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            dashboard_dir
@@ -9675,12 +9726,6 @@ Elasticsearch settings; it does not start without its store.</p>
             </li>
         </ul>
 
-        <p>Validators:</p>
-        <ul>
-            <li>
-              <code><span title="aurelius_atlas_server.settings.ServerSettings._tls_pair">_tls_pair</span></code>
-            </li>
-        </ul>
 
 
 
@@ -9880,6 +9925,32 @@ Elasticsearch settings; it does not start without its store.</p>
     <div class="doc doc-contents ">
 
         <p>The interface to listen on; the container image sets <code>0.0.0.0</code>.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.hsts_enabled" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">hsts_enabled</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.hsts_enabled" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">hsts_enabled</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Whether responses carry <code>Strict-Transport-Security</code> (SRV-08, DD-236). The image ships True; the dev
+arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the
+plaintext dev surfaces (ADR 039's named relaxations).</p>
 
     </div>
 
@@ -10199,12 +10270,12 @@ DD-081).</p>
   </span>
 
 <a href="#aurelius_atlas_server.settings.ServerSettings.tls" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tls</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tls</span><span class="p">:</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>The certificate and key to serve HTTPS with, or None for plain HTTP.</p>
+        <p>The certificate and key to serve HTTPS with (SRV-03, SRV-06, DD-234).</p>
 
     </div>
 
@@ -10223,12 +10294,13 @@ DD-081).</p>
   </span>
 
 <a href="#aurelius_atlas_server.settings.ServerSettings.tls_cert_file" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tls_cert_file</span><span class="p">:</span> <span class="n"><span title="pydantic.FilePath">FilePath</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tls_cert_file</span><span class="p">:</span> <span class="n"><span title="pydantic.FilePath">FilePath</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>PEM certificate to serve HTTPS with; requires <code>tls_key_file</code> (SRV-03).</p>
+        <p>PEM certificate to serve HTTPS with (SRV-06, DD-234): required — the server never serves plaintext,
+the way the store's password is required (SRV-01, SRV-02).</p>
 
     </div>
 
@@ -10247,12 +10319,12 @@ DD-081).</p>
   </span>
 
 <a href="#aurelius_atlas_server.settings.ServerSettings.tls_key_file" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tls_key_file</span><span class="p">:</span> <span class="n"><span title="pydantic.FilePath">FilePath</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tls_key_file</span><span class="p">:</span> <span class="n"><span title="pydantic.FilePath">FilePath</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>PEM private key of <code>tls_cert_file</code>.</p>
+        <p>PEM private key of <code>tls_cert_file</code> (SRV-06).</p>
 
     </div>
 
@@ -10318,9 +10390,9 @@ DD-081).</p>
 architecture: <a href="../../../architecture/platform/delivery/configuration-management/">Configuration Management</a>
 (ADR 018), <a href="../../../architecture/platform/components-and-interfaces/">Components &amp; Interfaces</a>.</p>
 <p><strong>Settings.</strong> Read once at start-up into a frozen <code>ServerSettings</code>; a validation failure (missing
-key, bad scheme, half a TLS pair) stops start-up with a message naming the variable (SRV-01,
-SRV-02). All names carry the <code>AURELIUS_ATLAS_SERVER_</code> prefix. What a deployment must supply, with
-no defaults:</p>
+key, bad scheme, missing TLS material) stops start-up with a message naming the variable (SRV-01,
+SRV-02, SRV-06). All names carry the <code>AURELIUS_ATLAS_SERVER_</code> prefix. What a deployment must supply,
+with no defaults:</p>
 <table>
 <thead>
 <tr>
@@ -10343,27 +10415,34 @@ no defaults:</p>
 </tr>
 <tr>
 <td><code>..._TLS_CERT_FILE</code> + <code>..._TLS_KEY_FILE</code></td>
-<td>PEM pair for serving HTTPS: both set, or both unset — enforced at start-up</td>
+<td>PEM pair for serving HTTPS: both required — the server never serves plaintext (SRV-06, DD-234)</td>
 </tr>
 </tbody>
 </table>
 <p>With defaults: <code>HOST</code> (<code>0.0.0.0</code> in the image), <code>PORT</code> (21000, Atlas's port — kept so existing
 clients find the catalogue where Atlas was, ADR 046), <code>LOG_LEVEL</code>, <code>REVISION</code> (reported by
-<code>admin/version</code>, ADM-01), <code>DASHBOARD_DIR</code> (None serves the API only, DSH-04), <code>MODELS_DIR</code>
+<code>admin/version</code>, ADM-01), <code>HSTS_ENABLED</code> (true — the dev arrangement sets it false, SRV-08/DD-236),
+<code>DASHBOARD_DIR</code> (None serves the API only, DSH-04), <code>MODELS_DIR</code>
 (default: the vendored Atlas 2.4.0 <code>addons/models</code>, MDL-16/DD-032),
 <code>TYPEDEF_REFRESH_SECONDS</code> (5.0 — how long the server answers from its type registry before
 checking for another process's type change, TDS-13/DD-029).</p>
 <div class="admonition warning">
-<p class="admonition-title">A half TLS pair stops the server from starting</p>
-<p><code>TLS_CERT_FILE</code> and <code>TLS_KEY_FILE</code> are both set, or both unset — the pairing is enforced at
-start-up. A container that mounts only the certificate exits with a message naming the
-missing variable; this is the design working, not a broken image.</p>
+<p class="admonition-title">The server does not start without TLS material</p>
+<p><code>TLS_CERT_FILE</code> and <code>TLS_KEY_FILE</code> are required settings — there is no plaintext mode
+(SRV-06, DD-234, superseding the both-or-neither rule of SRV-03). A container that mounts
+no material exits with a message naming the missing variable; this is the design working,
+not a broken image. The image's <code>ENV</code> names where the pair lives (<code>/certs/server.pem</code>,
+<code>/certs/server-key.pem</code> — DD-216's stack-owned mount).</p>
 </div>
 <p><strong>The image</strong> (<code>apps/aurelius-atlas-server/Dockerfile</code>: hardened base, runs as <code>nonroot</code>) bakes in
 the production defaults — listen on <code>0.0.0.0:21000</code>, dashboards served from
-<code>/application/dashboard</code> — and a liveness healthcheck against <code>/api/atlas/admin/liveness</code> that
-verifies the server's own certificate when TLS is on. Liveness is the probe a restart decision
+<code>/application/dashboard</code> — and a liveness healthcheck against <code>/api/atlas/admin/liveness</code> over
+HTTPS, verifying the served certificate (SRV-06). Liveness is the probe a restart decision
 uses; readiness also fails while the store is away (DD-016).</p>
+<p><strong>Security headers.</strong> Every answer carries them (SRV-08, DD-236): <code>security_headers.py</code> stamps
+the JSON API with no-store/nosniff/framing-closed headers and a documents-free CSP, the
+dashboards with a same-origin CSP (DV-86) and immutable caching on bust-versioned assets,
+and HSTS when <code>HSTS_ENABLED</code>.</p>
 <p><strong>Parity scenarios.</strong> <code>scenarios/&lt;resource&gt;/*.scenario.yaml</code> state each expectation as Atlas's own
 answer — e.g. <code>scenarios/admin/version.scenario.yaml</code> expects <code>Version: "2.4.0"</code>,
 <code>Name: apache-atlas</code>, the exact content type — each cited to the Java source that produces it.
@@ -10644,8 +10723,9 @@ models are loaded and patched (MDL-16); the entity store's indices are created a
 
     <div class="doc doc-contents first">
 
-        <p>The body Atlas errors are answered with (SRV-04, SRV-05), as <code>AtlasBaseExceptionMapper</code> does.</p>
-<p>The errors themselves live in <code>aurelius_atlas_model.errors</code> (DD-023) and are re-exported here.</p>
+        <p>The body Atlas errors are answered with (SRV-04, SRV-05, SRV-07), as <code>AtlasBaseExceptionMapper</code> does.</p>
+<p>The errors themselves live in <code>aurelius_atlas_model.errors</code> (DD-023) and are re-exported here.
+5xx bodies are opaque: the cause is logged, and the trace id rides along for correlation (DD-235, DV-85).</p>
 
 
 
@@ -10935,6 +11015,11 @@ models are loaded and patched (MDL-16); the entity store's indices are created a
     <div class="doc doc-contents ">
 
         <p>Answer an <code>AtlasError</code> with its status and <code>{"errorCode", "errorMessage"[, "errorCause"]}</code> (SRV-04).</p>
+<p>A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the request as
+<code>requestId</code> (SRV-07, DD-235): the cause's text goes to the log, never to the wire, so a
+wrapped store or transport failure cannot leak internals; the id ties the response to the
+logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) —
+there the cause is the request's own defect, not server internals.</p>
 
 
     </div>

@@ -6125,6 +6125,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-234 — TLS material is a required setting; the server never serves plaintext
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-235 — A 5xx answer is opaque and carries the trace id as <code>requestId</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-236 — Security response headers are a pure-ASGI middleware split on <code>/api</code> path
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6204,6 +6237,8 @@
       
         
           
+        
+      
         
       
         
@@ -7900,6 +7935,33 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
 
     
   </span>
@@ -12047,6 +12109,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-234 — TLS material is a required setting; the server never serves plaintext
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-235 — A 5xx answer is opaque and carries the trace id as <code>requestId</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-236 — Security response headers are a pure-ASGI middleware split on <code>/api</code> path
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13381,6 +13476,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-233--the-toolchain-caches-bridge-pod-churn-through-the-cache-server">DD-233</a></td>
 <td>Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)</td>
 <td>cross-cutting</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-234--tls-material-is-a-required-setting-the-server-never-serves-plaintext">DD-234</a></td>
+<td>TLS material is a required setting: the server never serves plaintext</td>
+<td>9.2</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-235--a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid">DD-235</a></td>
+<td>A 5xx answer is opaque and carries the trace id as <code>requestId</code></td>
+<td>9.2</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-236--security-response-headers-are-a-pure-asgi-middleware-split-on-api-path">DD-236</a></td>
+<td>Security response headers are a pure-ASGI middleware split on <code>/api</code> path</td>
+<td>9.2</td>
 <td>Accepted</td>
 </tr>
 </tbody>
@@ -19703,6 +19816,113 @@ pipeline 27m 48s -&gt; <strong>25m 48s</strong> with the e2e suites now the crit
 path. The restore step's metadata bug (subPath mount roots stay
 root-owned under fsGroup - k8s applies it to volume roots only;
 cache-init chowns them now) shipped in the same change.</p>
+<h3 id="dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext">DD-234 — TLS material is a required setting; the server never serves plaintext<a class="headerlink" href="#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 9.2</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Decision.</strong> <code>TLS_CERT_FILE</code> and <code>TLS_KEY_FILE</code> become required settings with no
+default, joining the store endpoints/password/CA in the SRV-01/SRV-02 idiom: a
+missing one stops start-up with a pydantic error naming the field. The
+both-or-neither pair check is deleted — the "neither" arm no longer exists — and
+<code>ServerSettings.tls</code> always returns the pair. <code>uvicorn_options</code> always carries
+<code>ssl_certfile</code>/<code>ssl_keyfile</code>. The image bakes <code>ENV</code> defaults pointing at
+<code>/certs/server.pem</code> / <code>/certs/server-key.pem</code> (DD-216's stack-owned mount), and
+its healthcheck speaks HTTPS with CA verification. SRV-06 supersedes the second
+sentence of SRV-03.</p>
+<p><strong>Reason.</strong> ADR 039 states TLS is the only serving mode, and every deployment
+arrangement (dev, e2e, CI, the compose stacks) already supplies the pair —
+plaintext is reachable only by misconfiguration, and a pentest (H3) counts a
+plaintext listener as the finding it is. Making the setting required turns the
+deployment's silent failure mode (an HTTP listener answering where HTTPS was
+expected) into a start-up error that names itself, which is how every other
+required setting already behaves.</p>
+<p><strong>Alternatives.</strong> (a) Keep the pair rule and fail when both are unset — refused:
+"unset is valid" is the whole hole; it also keeps a dead code path (plaintext
+uvicorn options) in <code>__main__</code>. (b) Terminate TLS at the proxy and serve
+plaintext on loopback — refused: ADR 039's store-side pinning applies equally
+server-side, the e2e/dashboards ride the server's own HTTPS, and a loopback-only
+assumption is unenforceable inside a shared pod network. (c) Self-signed
+material generated at start-up when unset — refused: silently untrusted
+material is the failure mode users report as "the browser blocks the site",
+and start-up crypto is the anti-pattern DD-216 removed for the stacks.</p>
+<p><strong>Consequences.</strong> Unit tests supply a stub pair (the <code>tls_pair</code> fixture;
+<code>FilePath</code> validates existence, uvicorn never starts under test). A bare
+<code>docker run</code> of the image without a mounted pair fails at start-up naming
+<code>AURELIUS_ATLAS_SERVER_TLS_CERT_FILE</code> — the design working, documented as such.
+The healthcheck no longer has a plaintext branch. Next free DD: 235.</p>
+<h3 id="dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid">DD-235 — A 5xx answer is opaque and carries the trace id as <code>requestId</code><a class="headerlink" href="#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 9.2</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Decision.</strong> <code>atlas_error_handler</code> stops echoing <code>errorCause</code> for a 5xx: the
+body keeps <code>errorCode</code>/<code>errorMessage</code>, the cause's text goes only to the log (as
+<code>exc_info</code>, as before), and the answer gains the current OTel trace id — 32-hex
+<code>requestId</code> in the body, <code>X-Request-Id</code> in the headers — so a user's screenshot
+correlates to the logged stack trace and the trace. 4xx answers keep SRV-04's
+cause echo; Atlas's own validation messages are client-facing and the parity
+scenarios pin them. DV-85 records the deviation from <code>AtlasBaseExceptionMapper</code>.</p>
+<p><strong>Reason.</strong> Pentest M5: the 5xx echo leaks internals (store URLs, index names,
+exception classes from the ES client) to any caller who can trigger a server
+fault — readiness against a downed store leaks the store URI. Atlas echoes
+because its own logs were the only consumer of its UI's error dialogs; Aurelius
+ships the whole OTel pipeline, so a trace id is the correlation key the support
+flow needs, and the body stays Atlas's shape for every field the scenarios pin.</p>
+<p><strong>Alternatives.</strong> (a) Env flag for verbose errors — refused: an always-on
+leak-by-default with a mitigation nobody enables; DD-016's fail-loud philosophy
+is loud in the log, not on the wire. (b) Random per-request uuid as the id —
+refused: the logs carry the trace id already (structlog/OTel), a random id
+correlates to nothing. (c) Suppress 4xx causes too — refused: they are
+parity-pinned client-facing messages (<code>UNKNOWN_TYPENAME</code>, validation detail).</p>
+<p><strong>Consequences.</strong> The client model's <code>errorCause</code> stays optional (4xx fills it).
+In-process tests have recording spans (instrumented app + SDK provider), so
+<code>requestId</code> is assertable; when telemetry is off the field is simply absent.
+The header is additive, so parity scenarios (expected-response headers only) are
+unaffected. Next free DD: 236.</p>
+<h3 id="dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path">DD-236 — Security response headers are a pure-ASGI middleware split on <code>/api</code> path<a class="headerlink" href="#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 9.2</li>
+<li><strong>Date:</strong> 2026-10-27</li>
+</ul>
+<p><strong>Decision.</strong> One pure-ASGI <code>SecurityHeadersMiddleware</code>, added first in
+<code>create_app</code> so it wraps routers, mounts, and the exception handler. <code>/api/**</code>
+answers (by path prefix, so error and 404 answers are covered) get
+<code>nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>, a
+<code>Permissions-Policy</code>, <code>Cache-Control: no-store</code>, and a CSP that serves no
+documents (<code>default-src 'none'; base-uri 'none'; frame-ancestors 'none'</code>). The
+dashboard documents get a same-origin CSP with <code>'unsafe-inline'</code> +
+<code>'unsafe-eval'</code> scripts and <code>'unsafe-inline'</code> styles (DV-86: the vendored
+<code>index.html.tpl</code> inlines the build-varying bust value, and the
+require-handlebars-plugin compiles templates at runtime with <code>new Function</code> —
+the e2e dashboard boot is the regression guard; what CSP does enforce there is
+<code>object-src</code>/<code>base-uri</code>/<code>frame-ancestors</code> closed and same-origin sources) and
+<code>SAMEORIGIN</code> framing; assets fetched with the legacy <code>?bust=</code> get
+<code>public, max-age=31536000, immutable</code> (the bust param is the legacy's own
+content-versioning; HTML is excluded so a stale page cannot pin itself). HSTS
+(max-age 1y, includeSubDomains) rides every answer when <code>hsts_enabled</code> —
+default true, false in the dev <code>.env</code> (ADR 039's named dev relaxations: the
+mkcert CA is not browser-trusted, and localhost must not pin). SRV-08.</p>
+<p><strong>Reason.</strong> Pentest L1: clickjacking on the dashboard, MIME sniffing on API
+answers, cacheable API JSON, and a missing HSTS policy. A pure-ASGI stamp on
+<code>http.response.start</code> reaches every response path — including the exception
+handler's <code>JSONResponse</code> and static-file answers — where <code>BaseHTTPMiddleware</code>
+wraps streaming awkwardly and StaticFiles bypasses route-level answers.</p>
+<p><strong>Alternatives.</strong> (a) nginx-terminated headers — refused: the server answers
+directly in e2e and any deployment without the webapp proxy; headers belong to
+the origin. (b) Strict CSP with hashes/nonces for the dashboards — refused for
+now: the vendored <code>index.html.tpl</code> inline bootstrap inlines the build-varying
+<code>&lt;%- bust %&gt;</code> value, so hashes churn per build (DV-86); the dashboard
+retirement (6.3) removes the surface. (c) starlette <code>CORSMiddleware</code>/<code>GZip</code>
+stacking — refused: none of them set these headers; this is one small
+middleware, not a framework feature.</p>
+<p><strong>Consequences.</strong> Header tests cover API, 404, dashboard, bust-asset and
+HSTS-off answers. The parity runner compares expected response headers only, so
+additive headers keep every scenario green. The dev compose stacks carry
+<code>HSTS_ENABLED=false</code> explicitly (e2e images do not read <code>.env</code>). Next free DD: 237.</p>
 
 
 
