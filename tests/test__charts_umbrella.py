@@ -64,6 +64,7 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         "atlas-keycloak",
         "atlas-keycloak-postgres",
         "atlas-server",
+        "atlas-webapp",  # the listener leaf the BackendTLSPolicy validates (DD-270)
         "atlas-data2model",
         "atlas-lineage-model",
         "atlas-validate-entity",

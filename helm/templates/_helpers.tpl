@@ -102,7 +102,7 @@ backend speaks TLS and gets the BackendTLSPolicy trust pin (CHT-30).
 {{- $server := index .Values "atlas-server" | default dict -}}
 {{- $obs := index .Values "atlas-observability" | default dict -}}
 {{- if and .Values.global.hosts.atlas.enabled $webapp.enabled -}}
-{{- $l = append $l (dict "name" "atlas" "host" (include "aurelius-atlas.atlasHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-webapp" "release" .Release.Name "override" .Values.global.hosts.atlas.service)) "port" (int .Values.global.hosts.atlas.port) "tlsBackend" false) -}}
+{{- $l = append $l (dict "name" "atlas" "host" (include "aurelius-atlas.atlasHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-webapp" "release" .Release.Name "override" .Values.global.hosts.atlas.service)) "port" (int .Values.global.hosts.atlas.port) "tlsBackend" true) -}}
 {{- end -}}
 {{- if and .Values.global.hosts.keycloak.enabled $keycloak.enabled -}}
 {{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.keycloak.service) -}}

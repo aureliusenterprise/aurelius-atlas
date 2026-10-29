@@ -2,10 +2,10 @@
 The edge (CHT-29, DD-242). One Gateway, one TLS listener per enabled browser
 host; the GatewayClass is a cluster prerequisite (the runbook installs Envoy
 Gateway), never a chart resource — naming it here would fight whichever
-implementation the cluster runs. TLS terminates here; behind it the webapp is
-plaintext (its /api hop to the server stays TLS, CHT-25), the keycloak and
-dashboard listeners forward to TLS backends pinned by BackendTLSPolicy
-(httproutes.yaml, CHT-30).
+implementation the cluster runs. TLS terminates here; behind it every backend
+but Grafana speaks TLS — the webapp (DD-270), keycloak, and dashboard
+listeners forward to TLS backends pinned by BackendTLSPolicy (httproutes.yaml,
+CHT-30).
 
 The listener Secret is whatever cert-manager wrote: the umbrella's
 <release>-edge-tls Certificate for the browser hosts it owns, and the

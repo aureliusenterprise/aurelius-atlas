@@ -1,8 +1,9 @@
 {{/*
-The ClusterIP Service (CHT-23) on 8080, plaintext: the Gateway terminates TLS
-at the edge (DD-242) and the webapp's own listener stays inside the cluster
-boundary. The Gateway's HTTPRoute names this Service (CHT-30) — plaintext
-backend, no BackendTLSPolicy.
+The ClusterIP Service (CHT-23) on 8080, TLS end to end (DD-270): the Gateway
+terminates browser TLS at the edge (DD-242) and dials this Service's backend
+over TLS, validated by the BackendTLSPolicy the umbrella renders for the
+webapp listener (CHT-30). The Gateway's HTTPRoute names this Service; the
+policy pins the trust root and uses this name as the SNI/SAN pair.
 */}}
 apiVersion: v1
 kind: Service
@@ -14,7 +15,7 @@ metadata:
 spec:
     type: {{ .Values.service.type }}
     ports:
-        - name: http
+        - name: https
           port: {{ int .Values.service.port }}
           targetPort: {{ int .Values.port }}
           protocol: TCP

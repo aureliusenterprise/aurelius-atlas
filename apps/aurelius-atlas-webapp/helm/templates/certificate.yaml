@@ -1,0 +1,40 @@
+{{/*
+The webapp's TLS leaf (DD-270): the Gateway's BackendTLSPolicy dials the
+webapp Service over TLS and validates against the trust root with the Service
+name as SNI, so this Certificate carries the in-cluster names a peer dials —
+the ClusterIP Service and its FQDNs — as SANs (CHT-22's rule, the server
+chart's pattern). cert-manager issues it from the umbrella's CA issuer into
+the Secret the Deployment mounts beside the trust root. cert-manager is a
+cluster prerequisite (runbook), never installed by the chart.
+tls.certSecretName brings your own leaf and this renders nothing (the same
+rule as every other chart's Certificate, CHT-12/16/22).
+*/}}
+{{- if and .Values.certificate.enabled (not .Values.tls.certSecretName) }}
+{{- $fullname := include "atlas-webapp.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+{{- $issuerRef := .Values.global.trust.issuerRef -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-webapp.labels" . | nindent 8 }}
+spec:
+    secretName: {{ include "atlas-webapp.tlsSecretName" . }}
+    duration: {{ .Values.certificate.duration }}
+    renewBefore: {{ .Values.certificate.renewBefore }}
+    subject:
+        organizations:
+            - aurelius-atlas
+    dnsNames:
+        - {{ $fullname }}
+        - {{ printf "%s.%s" $fullname $ns }}
+        - {{ printf "%s.%s.svc" $fullname $ns }}
+        - {{ printf "%s.%s.svc.cluster.local" $fullname $ns }}
+    issuerRef:
+        name: {{ required "global.trust.issuerRef.name is required (DD-243)" $issuerRef.name }}
+        {{- with $issuerRef.kind }}
+        kind: {{ . }}
+        {{- end }}
+{{- end }}

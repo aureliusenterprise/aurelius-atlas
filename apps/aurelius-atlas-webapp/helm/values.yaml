@@ -97,8 +97,9 @@ config:
     otelMetricsExporterUrl: /otel/v1/metrics
 
 probes:
-    # Plain HTTP: the container serves 8080 plaintext; TLS terminates at the
-    # gateway (DD-242). The liveness probe answers when nginx is up.
+    # HTTPS: the container serves 8080 with TLS (DD-270); the Gateway dials it
+    # over TLS too (BackendTLSPolicy). The liveness probe answers when nginx
+    # is up; kubelet skips cert verification on HTTPS probes.
     livenessPath: /
     readinessPath: /config.json
     initialDelaySeconds: 5
@@ -126,14 +127,28 @@ collector:
 
 tls:
     # The CA the nginx proxy verifies the API/collector upstreams against
-    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}). The webapp is a
-    # TLS client only — it presents no certificate (plaintext 8080 behind
-    # the Gateway, DD-242) — so it mounts the trust-root Secret alone,
-    # never a leaf. "" derives the umbrella's <issuerRef.name>-ca (DD-259);
-    # secretName brings your own. The dead caConfigMap value of the
-    # skeleton is retired (DD-251's finding — nothing ever mounted it).
+    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}). "" derives the
+    # umbrella's <issuerRef.name>-ca (DD-259); secretName brings your own
+    # trust root. The dead caConfigMap value of the skeleton is retired
+    # (DD-251's finding — nothing ever mounted it).
     secretName: ""
     caPath: /etc/aurelius-atlas/tls/ca.crt
+    # The leaf this nginx serves its TLS listener with (DD-270): the
+    # Gateway's BackendTLSPolicy validates it with the Service name as SNI.
+    # certSecretName brings your own (tls.crt/tls.key keys) and the chart's
+    # Certificate renders nothing; "" uses the chart-issued one.
+    certSecretName: ""
+    certPath: /etc/aurelius-atlas/tls/leaf/tls.crt
+    keyPath: /etc/aurelius-atlas/tls/leaf/tls.key
+
+# The webapp's listener certificate (DD-270, CHT-22's SAN rule): cert-manager
+# issues it from the umbrella's CA issuer; the SANs are the Service names the
+# Gateway's BackendTLSPolicy dials (and a browser never reaches this name —
+# the edge leaf covers the browser hosts, CHT-29).
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
 
 service:
     type: ClusterIP

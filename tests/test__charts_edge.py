@@ -2,7 +2,8 @@
 
 The edge is one Gateway with one HTTPS listener per enabled browser host, one
 coarse HTTPRoute per listener, and a BackendTLSPolicy only where the backend
-speaks TLS (DD-242). The listener set, the SAN list on the shared edge leaf,
+speaks TLS (DD-242, DD-270 — webapp/server/keycloak TLS, Grafana the lone
+plaintext backend). The listener set, the SAN list on the shared edge leaf,
 and the legacy collector token all follow from the same enabled flags, so the
 matrix renders are the interesting part — each render here is a scenario.
 """
@@ -123,9 +124,12 @@ def test__one_route_per_listener_with_one_backend(umbrella_docs: list[dict[str, 
 
 @pytest.mark.covers(rules=["CHT-30"])
 def test__backend_tls_policies_pin_the_trusted_ca(umbrella_docs: list[dict[str, Any]]) -> None:
-    """TLS backends get a BackendTLSPolicy; plaintext ones (webapp) never do."""
+    """Every TLS backend (webapp, DD-270; keycloak) gets a CA-pinned BackendTLSPolicy."""
     policies = {p["metadata"]["name"]: p for p in find_all(umbrella_docs, "BackendTLSPolicy")}
-    assert set(policies) == {"atlas-atlas-keycloak"}  # the only TLS backend on the default render
+    assert set(policies) == {"atlas-atlas-keycloak", "atlas-atlas-webapp"}
+    webapp_policy = policies["atlas-atlas-webapp"]
+    assert webapp_policy["spec"]["targetRefs"][0]["name"] == "atlas-webapp"
+    assert webapp_policy["spec"]["validation"]["hostname"] == "atlas-webapp"
     policy = policies["atlas-atlas-keycloak"]
     (target,) = policy["spec"]["targetRefs"]
     assert target == {"group": "", "kind": "Service", "name": "atlas-keycloak"}
@@ -143,14 +147,17 @@ def test__dashboard_route_joins_server_with_a_tls_policy() -> None:
     route = find(docs, "HTTPRoute", "atlas-dashboard")
     assert route["spec"]["rules"][0]["backendRefs"] == [{"name": "atlas-server", "port": 21000}]
     policies = {p["metadata"]["name"]: p for p in find_all(docs, "BackendTLSPolicy")}
-    assert set(policies) == {"atlas-atlas-keycloak", "atlas-atlas-server"}
+    assert set(policies) == {"atlas-atlas-keycloak", "atlas-atlas-server", "atlas-atlas-webapp"}
     assert policies["atlas-atlas-server"]["spec"]["targetRefs"][0]["name"] == "atlas-server"
-    # grafana's route (when on) is plaintext — no policy.
+    # grafana's route (when on) is the plaintext one — no policy.
     docs_g = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("global.hosts.grafana.enabled=true",))
     assert find(docs_g, "HTTPRoute", "atlas-grafana")["spec"]["rules"][0]["backendRefs"] == [
         {"name": "atlas-observability-grafana", "port": 3000}
     ]
-    assert {p["metadata"]["name"] for p in find_all(docs_g, "BackendTLSPolicy")} == {"atlas-atlas-keycloak"}
+    assert {p["metadata"]["name"] for p in find_all(docs_g, "BackendTLSPolicy")} == {
+        "atlas-atlas-keycloak",
+        "atlas-atlas-webapp",
+    }
 
 
 @pytest.mark.covers(rules=["CHT-31"])

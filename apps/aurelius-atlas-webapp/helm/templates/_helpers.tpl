@@ -96,6 +96,15 @@ issuer — the same default as the umbrella's helper.
 {{- default (printf "%s-ca" .Values.global.trust.issuerRef.name) (default .Values.tls.secretName .Values.global.trust.caSecretName) -}}
 {{- end -}}
 
+{{/*
+The leaf Secret this nginx serves its TLS listener with (DD-270): its own
+Certificate's output; tls.certSecretName brings your own. tls.crt / tls.key,
+the cert-manager convention (the server chart's rule).
+*/}}
+{{- define "atlas-webapp.tlsSecretName" -}}
+{{- default (printf "%s-tls" (include "atlas-webapp.fullname" .)) .Values.tls.certSecretName -}}
+{{- end -}}
+
 {{- define "atlas-webapp.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 app.kubernetes.io/name: {{ include "atlas-webapp.name" . }}

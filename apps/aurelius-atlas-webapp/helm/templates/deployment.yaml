@@ -1,18 +1,19 @@
 {{/*
-The Deployment (CHT-23/24/25). Plaintext 8080 — the Gateway terminates TLS
-(DD-242) — so the probes are HTTP and there is no leaf Secret: the webapp is a
-TLS *client* only, and mounts the trust root (the chain's CA Secret) for its
-two proxy_ssl_verify upstreams.
+The Deployment (CHT-23/24/25, DD-270). TLS on 8080 — the Gateway terminates
+browser TLS and dials this listener over TLS itself (BackendTLSPolicy,
+CHT-30) — so the probes are HTTPS and the pod mounts two secrets: its own
+leaf (the Certificate's Secret, CHT-22's SAN rule) and the trust root (the
+chain's CA Secret) for its two proxy_ssl_verify upstreams.
 
 The nginx config never reaches the container unresolved: the shipped image
 bakes the raw template (its parse-fails-loudly contract) and this pod mounts
 an emptyDir over /etc/nginx/conf.d that a resolve-nginx-config init container
 fills (same image — the hardened base has neither envsubst nor bash, so plain
-sh + sed; DD-262). The init's env is the ten template placeholders the chart
-computes (CHT-25): every one a join or a Secret ref, and the ingest bearer
-arrives from <release>-collector-legacy at *pod start* — never rendered into
-the ConfigMap, where Helm would re-draw the umbrella's generated value
-(DD-256's race, DD-262's reason).
+sh + sed; DD-262). The init's env is the twelve template placeholders the
+chart computes (CHT-25, DD-270): every one a join or a Secret ref, and the
+ingest bearer arrives from <release>-collector-legacy at *pod start* — never
+rendered into the ConfigMap, where Helm would re-draw the umbrella's
+generated value (DD-256's race, DD-262's reason).
 
 The writable paths nginx needs (pid, temp, logs — its compiled-in defaults)
 ride emptyDirs with fsGroup (CHT-23, DD-257's uid pin in values).
@@ -44,6 +45,8 @@ Certificates carry the .svc.cluster.local SAN, DD-243). */ -}}
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME" (default $collectorFqdn .Values.nginx.otelUpstreamName)
     "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT" (default (printf "https://%s:%d" $collectorFqdn (int .Values.collector.legacyGrpcPort)) .Values.nginx.otlpEndpoint)
     "AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE" .Values.tls.caPath
+    "AURELIUS_ATLAS_WEBAPP_TLS_CERT_FILE" .Values.tls.certPath
+    "AURELIUS_ATLAS_WEBAPP_TLS_KEY_FILE" .Values.tls.keyPath
     "AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER" (default "10.96.0.10" (default .Values.dnsResolver .Values.global.dnsResolver))
     "AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS" (default (include "atlas-webapp.issuerUrl" .) .Values.nginx.keycloakOrigins)
     "AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK" $realip
@@ -104,11 +107,11 @@ spec:
                                   name: {{ $tokenSecret }}
                                   key: {{ .Values.otelIngestToken.key }}
                     command: ["/bin/sh", "-ec"]
-                    {{- /* The ten names verbatim (CHT-25's contract): the
+                    {{- /* The twelve names verbatim (CHT-25's contract, DD-270): the
                     pattern side anchors on ${NAME} — braces included, so
                     _NAME siblings never match a prefix — and the shell
                     expands ${NAME} from this container's env before sed
-                    ever sees it. A contract test pins these ten against the
+                    ever sees it. A contract test pins these twelve against the
                     ConfigMap asset's placeholders and the init's env. */}}
                     args:
                         - |
@@ -124,6 +127,8 @@ spec:
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK}|${AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE}|${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_TLS_CERT_FILE}|${AURELIUS_ATLAS_WEBAPP_TLS_CERT_FILE}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_TLS_KEY_FILE}|${AURELIUS_ATLAS_WEBAPP_TLS_KEY_FILE}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN}|${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN}|g" \
                                 "$src" > "$out"
                             if grep -Eq '\$\{AURELIUS_ATLAS_WEBAPP_[A-Z_]+\}' "$out"; then
@@ -144,16 +149,17 @@ spec:
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}
                     ports:
-                        - name: http
+                        - name: https
                           containerPort: {{ int .Values.port }}
                           protocol: TCP
                     {{- /* The nginx process reads no env (CHT-25's
                     placeholders belong to the init container; the ingest
                     bearer is inlined into the config there, never mounted).
                     What it does read from disk: the resolved config, the
-                    config.json asset, and the CA file its two
+                    config.json asset, the CA file its two
                     proxy_ssl_trusted_certificate/otel_exporter blocks pin
-                    (${..._TLS_CA_FILE} → the mounted trust-root Secret). */}}
+                    (${..._TLS_CA_FILE} → the mounted trust-root Secret), and
+                    the leaf pair its own listener serves (DD-270). */}}
                     volumeMounts:
                         - name: nginx-conf
                           mountPath: /etc/nginx/conf.d
@@ -164,6 +170,9 @@ spec:
                         - name: ca
                           mountPath: /etc/aurelius-atlas/tls
                           readOnly: true
+                        - name: leaf
+                          mountPath: /etc/aurelius-atlas/tls/leaf
+                          readOnly: true
                         - name: nginx-run
                           mountPath: /run/nginx
                         - name: nginx-lib
@@ -173,15 +182,17 @@ spec:
                         {{- with .Values.extraVolumeMounts }}
                         {{- toYaml . | nindent 24 }}
                         {{- end }}
-                    # HTTP probes (CHT-23): plaintext listener, TLS at the
-                    # Gateway (DD-242). Readiness on /config.json — the file
-                    # the SPA's bootstrap fetch needs, served by nginx with
-                    # the mounted ConfigMap (CHT-26).
+                    # HTTPS probes (CHT-23 as amended by DD-270): the listener
+                    # serves TLS; kubelet HTTPS probes skip certificate
+                    # verification, so this is liveness, not a trust check.
+                    # Readiness on /config.json — the file the SPA's bootstrap
+                    # fetch needs, served by nginx with the mounted
+                    # ConfigMap (CHT-26).
                     readinessProbe:
                         httpGet:
                             path: {{ .Values.probes.readinessPath }}
                             port: {{ int .Values.port }}
-                            scheme: HTTP
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
@@ -190,7 +201,7 @@ spec:
                         httpGet:
                             path: {{ .Values.probes.livenessPath }}
                             port: {{ int .Values.port }}
-                            scheme: HTTP
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
@@ -208,13 +219,21 @@ spec:
                         name: {{ $fullname }}-config
                 -   name: ca
                     secret:
-                        # The trust root only (CHT-25): the webapp presents
-                        # nothing; its proxies verify the server/collector
-                        # leaves against this (DD-259's chain).
+                        # The trust root (CHT-25): the proxies verify the
+                        # server/collector leaves against this (DD-259's
+                        # chain).
                         secretName: {{ include "atlas-webapp.caSecretName" . }}
                         items:
                             - key: ca.crt
                               path: ca.crt
+                -   name: leaf
+                    secret:
+                        # The webapp's own listener leaf (DD-270): the
+                        # Gateway's BackendTLSPolicy validates it against the
+                        # CA with the Service name as SNI, so its SANs carry
+                        # that name (CHT-22). cert-manager's Secret shape:
+                        # tls.crt/tls.key whole.
+                        secretName: {{ include "atlas-webapp.tlsSecretName" . }}
                 {{- /* nginx's compiled-in writable paths (CHT-23): pid,
                 temp, logs. emptyDirs + fsGroup (values, DD-257). */}}
                 -   name: nginx-run
