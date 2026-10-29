@@ -9,7 +9,7 @@ endpoint (which now resolves in-cluster through the CoreDNS entry). The
 exported_job pins are the contract (DD-265). No credential in here (R5):
 the database password and the client secret arrive as env.
 */}}
-{{- if and .Values.telemetry.enabled .Values.postgres.enabled -}}
+{{- if and .Values.telemetry.enabled (eq .Values.database.flavor "bundled") .Values.postgres.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

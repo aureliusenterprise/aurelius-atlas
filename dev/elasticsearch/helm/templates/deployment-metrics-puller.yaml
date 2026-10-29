@@ -49,6 +49,10 @@ spec:
                 runAsNonRoot: true
                 runAsUser: 65532
                 runAsGroup: 65532
+                # No writable volume here (config/tls arrive read-only), but
+                # the CHT-44 posture names fsGroup: it pins the group any
+                # Secret/ConfigMap volume acquires too.
+                fsGroup: 65532
                 seccompProfile:
                     type: RuntimeDefault
             initContainers:

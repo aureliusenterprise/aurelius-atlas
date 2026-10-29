@@ -32,6 +32,7 @@ AUX_CHARTS = {
     "lineage-model": WORKSPACE / "apps/aurelius-atlas-lineage-model/helm",
     "validate-entity": WORKSPACE / "apps/aurelius-atlas-validate-entity/helm",
 }
+OBS_CHART = WORKSPACE / "dev/observability/helm"
 UMBRELLA_CHART = WORKSPACE / "helm"
 
 
@@ -160,3 +161,9 @@ def server_docs() -> list[dict[str, Any]]:
 def webapp_docs() -> list[dict[str, Any]]:
     """The webapp chart under its CI test values (CHT-23..26)."""
     return helm_render(WEBAPP_CHART, value_files=(WEBAPP_CHART / "tests/values.test.yaml",))
+
+
+@pytest.fixture(scope="session")
+def obs_docs() -> list[dict[str, Any]]:
+    """The observability chart under its CI test values (CHT-33..44)."""
+    return helm_render(OBS_CHART, value_files=(OBS_CHART / "tests/values.test.yaml",))

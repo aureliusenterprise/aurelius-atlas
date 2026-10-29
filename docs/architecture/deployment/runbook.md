@@ -54,6 +54,41 @@ the sequence to run.
   `global.domain` and tokens embed it; changing it after entities exist
   invalidates every token. Choose the domain at first install.
 
+- **Split-horizon DNS for the issuer** (DD-265, with `atlas-observability`
+  enabled): in-cluster producers (the collector's OIDC validator, the apps'
+  OTLP mints, the store pullers) reach the issuer over its **public** name —
+  `keycloak.<domain>` — so that name must resolve to the Keycloak Service
+  inside the cluster too (the cluster port of the dev stack's per-producer
+  `extra_hosts`). A real deployment's DNS usually does this already:
+  `atlas.test` is your domain, and its internal view points at the cluster.
+  On a dev cluster, give CoreDNS the entry:
+
+    ```bash
+    # minikube: add a `rewrite name` stanza to the Corefile
+    kubectl -n kube-system edit configmap coredns
+    ```
+
+    ```text
+    # inside the `Corefile:` data, beside the `kubernetes` block:
+    rewrite stop name keycloak.atlas.test atlas-keycloak.atlas.svc.cluster.local
+    ```
+
+    Then `kubectl -n kube-system rollout restart deployment coredns`. The
+    Keycloak Service answers the public URL's implicit port (it serves 443
+    beside 8443, CHT-41), and the request's Host stays the public name, so
+    every token keeps the canonical `iss` whichever horizon it dials from.
+    Verify both horizons after install:
+
+    ```bash
+    kubectl -n atlas run mint-probe --rm -i --restart=Never --image=curlimages/curl -- \
+      -s -k "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token" \
+      -d grant_type=client_credentials -d client_id=otel-atlas-server \
+      -d client_secret="$(kubectl -n atlas get secret atlas-otel-clients -o jsonpath='{.data.OTEL_INGEST_CLIENT_SECRET}' | base64 -d)" | tr ',' '\n' | grep -A1 '"iss"'
+    ```
+
+    The `iss` must be `https://keycloak.atlas.test/realms/master` — no port,
+    no Service name.
+
 ## 1. Install
 
 ```bash
