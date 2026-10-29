@@ -57,12 +57,12 @@ collector:
     # dev compose's unbounded restart (10.1's committed shape).
     issuerWait:
         enabled: true
-        # busybox's wget fetches the issuer over TLS without pinning —
-        # acceptable for a boot gate (the collector itself verifies the
-        # issuer CA-pinned, DD-216).
+        # curl fetches the issuer over TLS without pinning — acceptable for
+        # a boot gate (the collector itself verifies the issuer CA-pinned,
+        # DD-216) — and retries natively; the image declares uid 65532 (DD-269).
         image:
-            repository: dhi.io/busybox
-            tag: "1.37"
+            repository: dhi.io/curl
+            tag: "8"
     # deployment.environment.name stamped on every signal (DD-268): the
     # compose keeps "development"; a cluster install is its own environment.
     deploymentEnvironment: cluster
@@ -78,7 +78,7 @@ collector:
 # producer-facing, never browser-facing (DD-242's audience split).
 certificate:
     enabled: true
-    duration: 90d
+    duration: 2160h
     renewBefore: 24h
 
 prometheus:

@@ -265,6 +265,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-266](#dd-266--scrape-with-static-configs-and-slice-owned-puller-deployments)                                    | The cluster answers 10.2's deferred scrape question the compose's way: Prometheus static configs over chart Services, plus ES/Keycloak `metrics-puller` Deployments; no Prometheus Operator                                     | 10.3b         | Accepted                   |
 | [DD-267](#dd-267--grafanas-admin-password-is-a-generated-secret-and-the-login-form-stays-disabled)                  | Grafana gets an umbrella-generated `-grafana-admin` Secret; with `adminPasswordSecret` unset the dev anonymous-Viewer-only posture (login disabled) stands unchanged                                                            | 10.3b         | Accepted                   |
 | [DD-268](#dd-268--the-clusters-deployment-environment-is-named-by-values-not-baked-as-development)                  | The collector's `deployment.environment.name` comes from values (default `cluster`); the dev compose keeps `development` — environment, not drift                                                                               | 10.3b         | Accepted                   |
+| [DD-269](#dd-269--the-boot-gate-image-is-curl-not-busybox-wget-cannot-handshake-keycloaks-tls)                      | The issuer-wait init ships as `dhi.io/curl` with native retry; busybox wget resets against Keycloak's TLS, and the hardened curl image has no shell for a loop                                                                  | 10.3b         | Accepted                   |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -8616,4 +8617,39 @@ matching depend on a value existing.
 
 **Consequences.** The CHT-34 structural test compares dev vs cluster configs
 everywhere except this attribute's value (the one slot the test knows to
-allow); a values-level override is the documented fork. Next free DD: 269.
+allow); a values-level override is the documented fork.
+
+### DD-269 — The boot-gate image is curl, not busybox: wget cannot handshake Keycloak's TLS
+
+- **Status:** Accepted
+- **Increment:** 10.3b
+
+**Context.** The hand check's first live boot left the three `issuer-wait` init
+containers spinning forever with the issuer healthy: busybox's `wget`
+(`--no-check-certificate`) fails Keycloak's TLS listener with `got bad TLS
+record (len:0) while expecting handshake record` / `Connection reset by peer`
+against a server openssl, python, and curl all complete handshakes to
+(TLS 1.2 and 1.3, ECDHE-RSA-AES256-GCM-SHA384 and TLS_AES_256_GCM_SHA384).
+The uClibc busybox TLS stack is the failing side, and it fails on every
+attempt — an init loop with a fixed `sleep` would never end, so a workload
+whose whole job is "wait for the issuer" blocks the collector, the server
+puller, and the Keycloak puller forever.
+
+**Decision.** The issuer-wait init ships as `dhi.io/curl:8` (uid 65532, as
+busybox did) with `curl -sSf --insecure --retry 0 --retry-connrefused
+--retry-delay 5 <well-known>` — an infinite native retry, no `sh` needed
+(the hardened curl image has no shell), exit 0 the moment the realm answers.
+
+**Alternatives.** (a) A richer init image with a shell (alpine-class) —
+rejected: one more base image to harden for a six-line poll, and the retry
+semantics are identical. (b) A TCP-only wait (`nc -z`) — rejected: a listening
+socket does not mean the realm's JWKS endpoint answers, and the OIDC extension
+reads exactly that endpoint (DD-195's race is an HTTP-level one). (c) Keep
+busybox, retry the init from Kubernetes instead of in-process — rejected: a
+backoff-waiting Pod is exactly what the init container exists to prevent
+(DD-252's lesson applies to crash-looping inits too).
+
+**Consequences.** CHT-37's rule text names the image honestly; the chart tests
+pin `dhi.io/curl:8` and the command shape (no shell, `--retry-connrefused`).
+The `--insecure` flag stays scoped to a boot gate (the collector verifies the
+issuer CA-pinned, DD-216). Next free DD: 270.

@@ -40,10 +40,10 @@ def test__collector_deployment_and_service_legs(obs_docs: list[dict[str, Any]]) 
     assert app["image"] == "dhi.io/opentelemetry-collector:0-debian13-contrib"
     assert {p["name"]: p["containerPort"] for p in app["ports"]} == {
         "otlp-browser": 4318,
-        "otlp-services-grpc": 4317,
-        "otlp-services-http": 4319,
-        "otlp-legacy-grpc": 4320,
-        "otlp-legacy-http": 4321,
+        "otlp-svc-grpc": 4317,
+        "otlp-svc-http": 4319,
+        "otlp-leg-grpc": 4320,
+        "otlp-leg-http": 4321,
         "metrics": 9464,
         "internal": 8888,
         "health": 13133,
@@ -55,10 +55,10 @@ def test__collector_deployment_and_service_legs(obs_docs: list[dict[str, Any]]) 
     assert service["spec"]["type"] == "ClusterIP"
     assert {p["name"]: p["port"] for p in service["spec"]["ports"]} == {
         "otlp-browser": 4318,
-        "otlp-services-grpc": 4317,
-        "otlp-services-http": 4319,
-        "otlp-legacy-grpc": 4320,
-        "otlp-legacy-http": 4321,
+        "otlp-svc-grpc": 4317,
+        "otlp-svc-http": 4319,
+        "otlp-leg-grpc": 4320,
+        "otlp-leg-http": 4321,
         "metrics": 9464,
         "internal": 8888,
     }
@@ -187,17 +187,22 @@ def test__only_the_collector_has_a_certificate_with_cluster_names(obs_docs: list
 
 @pytest.mark.covers(rules=["CHT-37"])
 def test__issuer_wait_polls_the_public_well_known(obs_docs: list[dict[str, Any]]) -> None:
-    """Busybox init waits for the issuer's well-known endpoint (CHT-37).
+    """The curl init waits for the issuer's well-known endpoint (CHT-37, DD-269).
 
     The Kubernetes port of the unbounded restart: the collector starts only
-    once the realm answers.
+    once the realm answers. Busybox's wget cannot handshake Keycloak's TLS at
+    all, so the boot gate ships as curl with native retry (no shell in the
+    hardened image).
     """
     (init,) = pod_spec(find(obs_docs, "Deployment", FULLNAME))["initContainers"]
     assert init["name"] == "issuer-wait"
-    assert init["image"] == "dhi.io/busybox:1.37"
-    command = " ".join(init["command"])
-    assert "https://keycloak.atlas.test/realms/master/.well-known/openid-configuration" in command
-    assert "--no-check-certificate" in command  # a boot gate, not a trust decision
+    assert init["image"] == "dhi.io/curl:8"
+    command = init["command"]
+    assert command[0] == "curl"
+    assert "--insecure" in command  # a boot gate, not a trust decision
+    assert "--retry" in command
+    assert "--retry-connrefused" in command
+    assert command[-1] == "https://keycloak.atlas.test/realms/master/.well-known/openid-configuration"
 
 
 @pytest.mark.covers(rules=["CHT-37"])

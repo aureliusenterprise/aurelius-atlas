@@ -107,11 +107,11 @@ telemetry:
         repository: dhi.io/opentelemetry-collector
         tag: "0-debian13-contrib"
     # The issuer-wait init image (CHT-37's pattern, DD-226): a poll, not a
-    # workload — busybox is enough and declares the same uid (65532).
+    # workload — curl retries natively and declares the same uid (65532, DD-269).
     issuerWait:
         image:
-            repository: dhi.io/busybox
-            tag: "1.37"
+            repository: dhi.io/curl
+            tag: "8"
     resources:
         requests:
             cpu: 50m

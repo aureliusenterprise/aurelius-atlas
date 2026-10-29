@@ -18,21 +18,21 @@ spec:
             port: {{ int .Values.service.browserPort }}
             targetPort: otlp-browser
             protocol: TCP
-        -   name: otlp-services-grpc
+        -   name: otlp-svc-grpc
             port: {{ int .Values.service.servicesGrpcPort }}
-            targetPort: otlp-services-grpc
+            targetPort: otlp-svc-grpc
             protocol: TCP
-        -   name: otlp-services-http
+        -   name: otlp-svc-http
             port: {{ int .Values.service.servicesHttpPort }}
-            targetPort: otlp-services-http
+            targetPort: otlp-svc-http
             protocol: TCP
-        -   name: otlp-legacy-grpc
+        -   name: otlp-leg-grpc
             port: {{ int .Values.service.legacyGrpcPort }}
-            targetPort: otlp-legacy-grpc
+            targetPort: otlp-leg-grpc
             protocol: TCP
-        -   name: otlp-legacy-http
+        -   name: otlp-leg-http
             port: {{ int .Values.service.legacyHttpPort }}
-            targetPort: otlp-legacy-http
+            targetPort: otlp-leg-http
             protocol: TCP
         -   name: metrics
             port: {{ int .Values.service.metricsPort }}
