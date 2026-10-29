@@ -80,6 +80,51 @@ def test__lineage_upstreams_are_joins(lineage_docs: list[dict[str, Any]]) -> Non
     assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL") == "https://atlas-data2model:21001/"
 
 
+@pytest.mark.covers(rules=["CHT-42"])
+@pytest.mark.parametrize("component", AUX)
+def test__telemetry_join_names_collector_and_public_issuer(component: str) -> None:
+    """telemetry.enabled wires the per-service OTLP join (CHT-21's twin, CHT-42).
+
+    OTEL_ENDPOINT/OTEL_TOKEN_URL/OTEL_CLIENT_SECRET exactly as the server
+    chart's join: the collector's HTTP+OIDC leg, the issuer's public realm
+    token URL — the same URL the browser authenticates against, resolvable
+    in-cluster per DD-265 — and the shared ingest client secret.
+    """
+    chart = AUX_CHARTS[component]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=("telemetry.enabled=true",))
+    prefix = _PREFIXES[component]
+    envs = env_map(_app(docs))
+    assert env_value(envs, f"{prefix}OTEL_ENDPOINT") == "https://atlas-observability:4319"
+    assert (
+        env_value(envs, f"{prefix}OTEL_TOKEN_URL")
+        == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"
+    )
+    secret = envs[f"{prefix}OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert secret == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
+
+
+@pytest.mark.covers(rules=["CHT-42"])
+@pytest.mark.parametrize("component", AUX)
+def test__telemetry_off_renders_no_collector_env(component: str) -> None:
+    """The default render carries no collector env (CHT-42).
+
+    The join is opt-in and the umbrella turns it on.
+    """
+    chart = AUX_CHARTS[component]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    prefix = _PREFIXES[component]
+    assert f"{prefix}OTEL_ENDPOINT" not in envs
+    assert f"{prefix}OTEL_CLIENT_SECRET" not in envs
+
+
+_PREFIXES = {
+    "data2model": "AURELIUS_ATLAS_DATA2MODEL_",
+    "lineage-model": "AURELIUS_ATLAS_LINEAGE_MODEL_",
+    "validate-entity": "AURELIUS_ATLAS_VALIDATE_ENTITY_",
+}
+
+
 @pytest.fixture(scope="session")
 def lineage_docs() -> list[dict[str, Any]]:
     """lineage-model at its defaults (the CHT-28 render)."""

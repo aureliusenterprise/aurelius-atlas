@@ -131,12 +131,23 @@ nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
 
 ## Helm chart
 
-`helm/` — the `atlas-observability` chart (CHT-02): the collector's three
-ingest legs and one egress (ADR 034, ADR 016) as a values contract. The
-collector ConfigMap (the shape of `config/otel-collector.yaml` with issuer
-URLs and backend endpoints computed from the chart's services) lands in 10.3.
-This `helm/` deploys to clusters; the `docker-compose.yaml` stays the
-dev-mode stack. Conventions: `helm/AGENTS.md`.
+`helm/` — the `atlas-observability` chart (CHT-33..44, 10.3b): the collector's
+three ingest legs and one egress (ADR 034, ADR 016) plus the four backends as
+Deployments + PVCs. The collector ConfigMap is `config/otel-collector.yaml`'s
+shape with the environment slots computed (issuer URL, backend Services,
+`deployment.environment.name` from values — default `cluster`, DD-268); the
+structural diff against the dev file is a chart-contract test
+(`tests/test__charts_observability.py`), and Loki/Tempo/Grafana-asset configs
+ship as `helm/files/` byte-copies with byte-identity tests (DD-265..268).
+Differences from the compose shape are deliberate: the single `oidc` provider
+(the public issuer resolves in-cluster too, DD-265 — runbook split-horizon
+step), the health_check extension pinned to `0.0.0.0:13133` (the probes need
+it; the dev default is loopback), and Prometheus scraping chart Services with
+static configs (no Prometheus Operator, DD-266). The legacy-leg token and the
+Grafana admin arrive from the umbrella's generated Secrets
+(`<release>-collector-legacy`, `<release>-grafana-admin`), never values. This
+`helm/` deploys to clusters; the `docker-compose.yaml` stays the dev-mode
+stack. Conventions: `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-dev-observability:helm-template

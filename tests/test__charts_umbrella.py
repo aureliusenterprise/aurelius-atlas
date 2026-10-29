@@ -11,7 +11,7 @@ import base64
 from typing import Any
 
 import pytest
-from conftest import UMBRELLA_CHART, find, find_all, helm_render, names
+from conftest import UMBRELLA_CHART, container, find, find_all, helm_render, names
 
 TEST_VALUES = (UMBRELLA_CHART / "tests/values.test.yaml",)
 
@@ -67,6 +67,7 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         "atlas-data2model",
         "atlas-lineage-model",
         "atlas-validate-entity",
+        "atlas-observability",  # the collector's cluster-names-only leaf (CHT-36)
         "atlas-edge-tls",  # the browser-facing edge leaf (CHT-29)
     }
     for cert in certs:
@@ -121,3 +122,42 @@ def test__secrets_gate_with_their_consumers() -> None:
     secret_names = names(docs, "Secret")
     assert not {n for n in secret_names if n.startswith("atlas-keycloak") or n.endswith("otel-clients")}
     assert "atlas-elasticsearch" in secret_names
+
+
+@pytest.mark.covers(rules=["CHT-19", "CHT-40"])
+def test__grafana_admin_secret_gates_on_observability(umbrella_docs: list[dict[str, Any]]) -> None:
+    """<release>-grafana-admin gates on the observability chart (CHT-19/40, DD-267).
+
+    Generated under the CHT-19 pattern, key pair user/password, and the
+    secret stops when the chart is disabled.
+    """
+    secret = find(umbrella_docs, "Secret", "atlas-grafana-admin")
+    assert set(secret["data"]) == {"user", "password"}
+    assert len(base64.b64decode(secret["data"]["password"])) == 32
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-observability.enabled=false",),
+    )
+    assert "atlas-grafana-admin" not in names(docs, "Secret")
+
+
+@pytest.mark.covers(rules=["CHT-42"])
+def test__stock_install_is_a_self_observing_system(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The stock install is a self-observing system (CHT-42, ADR 016).
+
+    The umbrella's enablement makes the stock render carry every telemetry
+    join: the server + aux per-service legs, Keycloak's legacy leg, the
+    collector's issuer-wait, and both puller Deployments.
+    """
+    deployments = names(umbrella_docs, "Deployment")
+    assert {"atlas-elasticsearch-metrics-puller", "atlas-keycloak-metrics-puller"} <= deployments
+    assert {"atlas-observability", "atlas-observability-prometheus", "atlas-observability-grafana"} <= deployments
+
+    server = find(umbrella_docs, "Deployment", "atlas-server")
+    server_envs = {e["name"] for e in container(server, "server")["env"]}
+    assert "AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT" in server_envs
+    keycloak = find(umbrella_docs, "StatefulSet", "atlas-keycloak")
+    keycloak_envs = {e["name"] for e in container(keycloak, "keycloak")["env"]}
+    assert {"OTEL_EXPORTER_OTLP_ENDPOINT", "QUARKUS_OTEL_EXPORTER_OTLP_TRUST_CERT_CERTS"} <= keycloak_envs

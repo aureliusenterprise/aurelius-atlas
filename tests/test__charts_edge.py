@@ -166,17 +166,25 @@ def test__collector_legacy_secret_keys_compose(umbrella_docs: list[dict[str, Any
 
 @pytest.mark.covers(rules=["CHT-31"])
 def test__collector_legacy_gates_on_its_consumers() -> None:
-    """Keycloak alone still gets the secret (the spec's consumer set is webapp OR keycloak)."""
+    """Keycloak alone still gets the secret (CHT-31/42).
+
+    The consumer set is webapp OR keycloak OR the collector itself.
+    """
     docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("atlas-webapp.enabled=false",))
     assert "atlas-collector-legacy" in names(docs, "Secret")
     # The gateway host guard would fail the render with nothing left to
     # publish, so the edge goes off too — the secret is what's under test.
-    docs_both_off = helm_render(
+    docs_all_off = helm_render(
         UMBRELLA_CHART,
         value_files=TEST_VALUES,
-        sets=("atlas-webapp.enabled=false", "atlas-keycloak.enabled=false", "global.gateway.enabled=false"),
+        sets=(
+            "atlas-webapp.enabled=false",
+            "atlas-keycloak.enabled=false",
+            "atlas-observability.enabled=false",
+            "global.gateway.enabled=false",
+        ),
     )
-    assert "atlas-collector-legacy" not in names(docs_both_off, "Secret")
+    assert "atlas-collector-legacy" not in names(docs_all_off, "Secret")
 
 
 @pytest.mark.covers(rules=["CHT-31"])
