@@ -249,6 +249,7 @@ nav:
           - Deployment:
                 - architecture/deployment/index.md
                 - Runbook: architecture/deployment/runbook.md
+                - Secret Storage: architecture/deployment/secret-storage.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md
