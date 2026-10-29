@@ -120,6 +120,11 @@
     "aliases": []
   },
   {
+    "version": "feat-observability-chart",
+    "title": "feat-observability-chart",
+    "aliases": []
+  },
+  {
     "version": "feat-docs-check-status",
     "title": "feat-docs-check-status",
     "aliases": []
