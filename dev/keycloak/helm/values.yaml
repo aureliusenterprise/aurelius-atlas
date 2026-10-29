@@ -99,8 +99,8 @@ telemetry:
         # The issuer-wait init image (CHT-37's pattern, DD-226).
         issuerWait:
             image:
-                repository: dhi.io/busybox
-                tag: "1.37"
+                repository: dhi.io/curl
+                tag: "8"
         resources:
             requests:
                 cpu: 50m

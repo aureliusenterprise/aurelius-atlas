@@ -85,6 +85,9 @@ spec:
                 -   name: config
                     configMap:
                         name: {{ $fullname }}-prometheus
+                -   name: data
+                    persistentVolumeClaim:
+                        claimName: {{ $fullname }}-prometheus
             {{- with .Values.nodeSelector }}
             nodeSelector:
                 {{- toYaml . | nindent 16 }}

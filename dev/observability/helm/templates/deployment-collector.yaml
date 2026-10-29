@@ -52,20 +52,24 @@ spec:
                 # stack boots with Keycloak. The compose absorbs it with an
                 # unbounded restart; Kubernetes gets this wait (10.1's
                 # committed shape): TCP to the issuer's port, then the realm's
-                # well-known endpoint until HTTP 200. wget skips verification
+                # well-known endpoint until HTTP 200. curl skips verification
                 # — a boot gate, not a trust decision (the collector itself
-                # pins the CA, DD-216).
+                # pins the CA, DD-216) — and retries natively: the hardened
+                # curl image has no shell for a loop (DD-269; busybox's wget
+                # cannot handshake Keycloak's TLS at all).
                 -   name: issuer-wait
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.issuerWait.image.repository "tag" .Values.collector.issuerWait.image.tag "defaultTag" "1.37") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.issuerWait.image.repository "tag" .Values.collector.issuerWait.image.tag "defaultTag" "8") | quote }}
                     imagePullPolicy: IfNotPresent
                     command:
-                        - /bin/sh
-                        - -c
-                        - |
-                            until wget -q -O /dev/null --no-check-certificate {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) .Values.realm) | quote }}; do
-                                echo "waiting for the issuer" >&2
-                                sleep 5
-                            done
+                        - curl
+                        - -sSf
+                        - --insecure
+                        - --retry
+                        - "0"
+                        - --retry-connrefused
+                        - --retry-delay
+                        - "5"
+                        - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) .Values.realm) | quote }}
                     {{- with .Values.securityContext }}
                     securityContext:
                         {{- toYaml . | nindent 24 }}
@@ -87,16 +91,16 @@ spec:
                         -   name: otlp-browser
                             containerPort: {{ int .Values.service.browserPort }}
                             protocol: TCP
-                        -   name: otlp-services-grpc
+                        -   name: otlp-svc-grpc
                             containerPort: {{ int .Values.service.servicesGrpcPort }}
                             protocol: TCP
-                        -   name: otlp-services-http
+                        -   name: otlp-svc-http
                             containerPort: {{ int .Values.service.servicesHttpPort }}
                             protocol: TCP
-                        -   name: otlp-legacy-grpc
+                        -   name: otlp-leg-grpc
                             containerPort: {{ int .Values.service.legacyGrpcPort }}
                             protocol: TCP
-                        -   name: otlp-legacy-http
+                        -   name: otlp-leg-http
                             containerPort: {{ int .Values.service.legacyHttpPort }}
                             protocol: TCP
                         -   name: metrics
