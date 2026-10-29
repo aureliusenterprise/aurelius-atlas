@@ -3,7 +3,8 @@
 # with <base href="/<locale>/">. See https://angular.dev/guide/i18n/deploy
 # Baked at image build to /etc/nginx/conf.d/default.conf. This file is a
 # *template*: the ${AURELIUS_ATLAS_WEBAPP_*} placeholders (API/OTLP upstream
-# origins + TLS names, trust anchor path, DNS resolver, the realip trust block)
+# origins + TLS names, trust anchor path, listener leaf paths, DNS resolver,
+# the realip trust block)
 # are resolved by the deployment, which mounts its filled-in copy over that
 # path — see e2e/config/nginx.conf for a static resolved variant. The runtime
 # image ships neither envsubst nor bash (the hardened base's contract), so a
@@ -66,7 +67,16 @@ otel_exporter {
 otel_service_name aurelius-atlas-webapp-edge;
 
 server {
-    listen 8080;
+    # TLS to the last hop (DD-270): the Gateway's BackendTLSPolicy dials this
+    # listener with CA validation and the Service name as SNI, so the leaf
+    # here carries that name as its SAN (the chart's Certificate). Plaintext
+    # behind the gateway was DD-242's shape until the browser's bearer tokens
+    # (7.3) and OTLP pushes started crossing this hop in the clear — the same
+    # reason the /api/ proxy below verifies its upstream.
+    listen 8080 ssl;
+
+    ssl_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CERT_FILE};
+    ssl_certificate_key ${AURELIUS_ATLAS_WEBAPP_TLS_KEY_FILE};
 
     # Assets produce no spans: tracing is opted in per location (/api/
     # below); the module's off/ignore defaults cover every other route.

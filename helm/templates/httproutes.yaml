@@ -5,13 +5,14 @@ is hostname-pinned to its listener's host with a single backend — the webapp's
 deliberately does not duplicate it with path rules.
 
 A BackendTLSPolicy attaches to the backend Service and is what makes Envoy
-speak TLS upstream: the server (dashboard host) and Keycloak serve TLS on
-their service ports (SRV-06; CHT-16), so their routes get one — validation
-pinned to the system's trust root (the CA Secret, key ca.crt; the Gateway API
-v1 field is caCertificateRefs, a list) with the Service name as the SNI
-hostname, which doubles as the SAN check and matches the SAN every chart
-Certificate carries (CHT-22). The webapp and Grafana are plaintext behind the
-gateway (DD-242) and get none.
+speak TLS upstream: the webapp (DD-270), the server (dashboard host), and
+Keycloak serve TLS on their service ports (SRV-06; CHT-16), so their routes
+get one — validation pinned to the system's trust root (the CA Secret, key
+ca.crt; the Gateway API v1 field is caCertificateRefs, a list) with the
+Service name as the SNI hostname, which doubles as the SAN check and matches
+the SAN every chart Certificate carries (CHT-22). Grafana is the one
+plaintext backend behind the gateway (anonymous Viewer, login disabled,
+DD-267) and gets none.
 */}}
 {{- if .Values.global.gateway.enabled -}}
 {{- $ns := include "aurelius-atlas.namespace" . -}}

@@ -14,9 +14,9 @@ edge, on one OIDC issuer:
 ```mermaid
 flowchart LR
     browser([Browser]) -->|HTTPS| gw[Gateway<br/>edge]
-    gw -->|atlas.host/api| server[atlas-server]
-    gw -->|atlas.host /| webapp[atlas-webapp<br/>nginx]
-    gw -->|keycloak.host| keycloak[atlas-keycloak]
+    gw -->|"/api, TLS"| server[atlas-server]
+    gw -->|"atlas.host /, TLS"| webapp[atlas-webapp<br/>nginx]
+    gw -->|"keycloak.host, TLS"| keycloak[atlas-keycloak]
     gw -.->|grafana.host, optional| grafana[Grafana]
 
     server --> es[(atlas-elasticsearch)]
@@ -40,17 +40,17 @@ flowchart LR
 
 The components and their charts:
 
-| Chart                   | Component                                               | Port      | Notes                                         |
-| ----------------------- | ------------------------------------------------------- | --------- | --------------------------------------------- |
-| `atlas-server`          | The Atlas REST API (FastAPI)                            | 21000/TLS | TLS mandatory in-cluster (SRV-06)             |
-| `atlas-webapp`          | The Atlas dashboard (nginx serving the Angular build)   | 8080      | `/config.json` resolved at bootstrap (SHL-02) |
-| `atlas-data2model`      | Natural-language → model API                            | 21001     | audience/client per chart values              |
-| `atlas-lineage-model`   | Lineage graph API                                       | 21002     | as above                                      |
-| `atlas-validate-entity` | Entity validation API                                   | 21003     | as above                                      |
-| `atlas-elasticsearch`   | Elasticsearch 9 — the system's one store                | 9200/TLS  | single-node now, HA later                     |
-| `atlas-keycloak`        | Keycloak — the one issuer (ADR 007), bundled Postgres   | 8443      | issuer URL is immutable once entities exist   |
-| `atlas-observability`   | OTel collector + Prometheus, Loki, Tempo, Grafana       | 4317–4321 | the three ingest legs (DD-193/196/202)        |
-| `aurelius-atlas`        | Umbrella: edge, trust, secrets, the `global.*` contract | 443       | composes the eight charts above               |
+| Chart                   | Component                                               | Port      | Notes                                                                       |
+| ----------------------- | ------------------------------------------------------- | --------- | --------------------------------------------------------------------------- |
+| `atlas-server`          | The Atlas REST API (FastAPI)                            | 21000/TLS | TLS mandatory in-cluster (SRV-06)                                           |
+| `atlas-webapp`          | The Atlas dashboard (nginx serving the Angular build)   | 8080/TLS  | TLS to the last hop (DD-270); `/config.json` resolved at bootstrap (SHL-02) |
+| `atlas-data2model`      | Natural-language → model API                            | 21001     | audience/client per chart values                                            |
+| `atlas-lineage-model`   | Lineage graph API                                       | 21002     | as above                                                                    |
+| `atlas-validate-entity` | Entity validation API                                   | 21003     | as above                                                                    |
+| `atlas-elasticsearch`   | Elasticsearch 9 — the system's one store                | 9200/TLS  | single-node now, HA later                                                   |
+| `atlas-keycloak`        | Keycloak — the one issuer (ADR 007), bundled Postgres   | 8443      | issuer URL is immutable once entities exist                                 |
+| `atlas-observability`   | OTel collector + Prometheus, Loki, Tempo, Grafana       | 4317–4321 | the three ingest legs (DD-193/196/202)                                      |
+| `aurelius-atlas`        | Umbrella: edge, trust, secrets, the `global.*` contract | 443       | composes the eight charts above                                             |
 
 Each component chart lives next to the project it deploys
 (`apps/<app>/helm/`, `dev/<name>/helm/`, DD-247); the umbrella `aurelius-atlas`
