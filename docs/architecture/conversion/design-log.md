@@ -266,6 +266,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-267](#dd-267--grafanas-admin-password-is-a-generated-secret-and-the-login-form-stays-disabled)                  | Grafana gets an umbrella-generated `-grafana-admin` Secret; with `adminPasswordSecret` unset the dev anonymous-Viewer-only posture (login disabled) stands unchanged                                                            | 10.3b         | Accepted             |
 | [DD-268](#dd-268--the-clusters-deployment-environment-is-named-by-values-not-baked-as-development)                  | The collector's `deployment.environment.name` comes from values (default `cluster`); the dev compose keeps `development` — environment, not drift                                                                               | 10.3b         | Accepted             |
 | [DD-269](#dd-269--the-boot-gate-image-is-curl-not-busybox-wget-cannot-handshake-keycloaks-tls)                      | The issuer-wait init ships as `dhi.io/curl` with native retry; busybox wget resets against Keycloak's TLS, and the hardened curl image has no shell for a loop                                                                  | 10.3b         | Accepted             |
+| [DD-270](#dd-270--the-webapp-serves-tls-behind-the-gateway-the-last-plaintext-hop-closes)                           | The webapp's listener serves TLS and the umbrella adds its BackendTLSPolicy; the last plaintext backend hop closes (supersedes DD-285's plaintext-backend clause)                                                               | 10.3c         | Accepted             |
 | [DD-283](#dd-283--one-chart-per-component-under-an-umbrella-published-as-oci-artifacts)                             | One chart per component under an umbrella, published as OCI artifacts from `charts/`                                                                                                                                            | 10.1          | Superseded by DD-290 |
 | [DD-284](#dd-284--helm-targets-are-inferred-from-chartyaml-by-a-plugin-mirroring-dockerts)                          | Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts`                                                                                                                                                   | 10.1          | Superseded by DD-293 |
 | [DD-285](#dd-285--the-edge-is-gateway-api-not-ingress-nginx)                                                        | The edge is Gateway API, not ingress-nginx (retired March 2026); instrumentation and Istio are out                                                                                                                              | 10.1          | Accepted             |
@@ -8457,6 +8458,60 @@ backoff-waiting Pod is exactly what the init container exists to prevent
 pin `dhi.io/curl:8` and the command shape (no shell, `--retry-connrefused`).
 The `--insecure` flag stays scoped to a boot gate (the collector verifies the
 issuer CA-pinned, DD-216). Next free DD: 270.
+
+### DD-270 — The webapp serves TLS behind the gateway: the last plaintext hop closes
+
+- **Status:** Accepted
+- **Increment:** 10.3c
+- **Date:** 2026-10-29
+
+**Context.** DD-285 shaped the webapp's listener as plaintext behind the
+gateway, and `helm/templates/httproutes.yaml` gave it no BackendTLSPolicy.
+The trust analysis of the OTel/API flows found the one inversion between the
+dev stacks and the cluster: the e2e nginx already listens `8080 ssl` with the
+project's mkcert leaf (`apps/aurelius-atlas-webapp/e2e/config/nginx.conf`),
+so the shipped chart was weaker than the tested dev shape. From 7.3 the
+browser's bearer token and per-user OTLP pushes arrive at the Gateway, whose
+HTTPS listener terminates there — and would then cross the gateway→nginx hop
+in plaintext, one hop before the same token's TLS-verified `/api/` proxy
+(whose comment names exactly that threat). The invariant "user tokens never
+cross plaintext" (ADR 039) needs the hop closed before the tokens flow.
+
+**Decision.** The webapp's nginx listener serves TLS: the shipped template
+gains `listen 8080 ssl` with `ssl_certificate`/`ssl_certificate_key` from two
+new placeholders (the contract grows ten → twelve, CHT-25 amended in place —
+PR #159 is still in review). The chart ships a `Certificate` following the
+server's pattern (CHT-22: SANs = the Service and its FQDNs, issued by the
+umbrella's CA issuer; `tls.certSecretName` brings your own and renders
+nothing), mounts the leaf whole beside the trust root, and flips its probes
+to HTTPS. The umbrella's `edge.listeners` helper flips the webapp entry's
+`tlsBackend` to true, so `httproutes.yaml` renders the third
+`BackendTLSPolicy` — CA-pinned via `caCertificateRefs`, SNI = the Service
+name = the SAN — with no template change of its own. Grafana stays the lone
+plaintext backend (anonymous Viewer, login disabled, DD-267): nothing
+secret-bearing crosses its hop, and DD-285's clause stands scoped to it.
+DD-285's gateway choice is untouched — this supersedes only its
+plaintext-backend clause.
+
+**Alternatives.** (a) Leave it until 7.3 — rejected: the e2e stack already
+runs TLS nginx (the cluster should not ship weaker than the test rig), and
+landing it beside the auth wiring bundles two unrelated slices. (b) mTLS to
+the webapp — rejected: the Gateway API `BackendTLS` validation is
+CA-and-SNI; client certificates would need Envoy Gateway BackendAuth policies
+for an identity the app layer already carries (DD-285's mesh argument).
+(c) Reuse the `<release>-edge-tls` leaf — rejected: its SANs are the browser
+hosts, not the Service name; the BackendTLSPolicy hostname check is the
+Service name (CHT-22's rule, as for every other backend).
+
+**Consequences.** CHT-23's and CHT-25's rule text in the 10.3a spec amend in
+place (unmerged); CHT-30's "plaintext backends (webapp) none" becomes
+Grafana-only. The webapp's placeholder count is twelve; the byte-copy drift
+guard covers the new template. The probes are HTTPS (kubelet skips
+verification — liveness, not trust, DD-260's lesson). A cluster upgrade to
+this chart is an atomic umbrella `helm upgrade`: the BackendTLSPolicy and the
+TLS listener ship together, so there is no window where Envoy dials TLS into
+a plaintext listener or plaintext into a TLS one.
+Next free DD: 271.
 
 ### DD-283 — One chart per component under an umbrella, published as OCI artifacts
 
