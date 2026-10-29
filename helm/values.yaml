@@ -163,6 +163,14 @@ secrets:
         # export credential. Browser-reachable by design (DD-239, DD-244):
         # treat it as a public ingest endpoint's constant.
         token: ""
+    grafanaAdmin:
+        # Grafana's admin identity (DD-267) → Secret <release>-grafana-admin,
+        # joined into the observability chart's GF_SECURITY_ADMIN_USER/
+        # PASSWORD. The login form stays disabled (anonymous-Viewer read
+        # posture, R5); this is the API/account-recovery credential, not a
+        # daily login.
+        user: admin
+        password: ""
     keycloakUsers:
         # Demo account passwords the realm import fills (${DEV_USER_*}).
         writerPassword: ""
@@ -173,6 +181,11 @@ secrets:
 # through to that chart (its own values.yaml documents its surface).
 atlas-elasticsearch:
     enabled: true
+    # CHT-42/43: a stock install is a self-observing system (ADR 016) — the
+    # store's metrics puller ships on, exporting to this release's collector
+    # (the name rule; telemetry.service overrides for a bring-your-own).
+    telemetry:
+        enabled: true
 atlas-keycloak:
     enabled: true
     # Keycloak's database, bundled by the atlas-keycloak chart (CHT-02):
@@ -180,16 +193,34 @@ atlas-keycloak:
     # Postgres via database.url.
     postgres:
         enabled: true
+    # CHT-42: Keycloak's own Quarkus OTLP rides the collector's legacy leg
+    # (it is the issuer — no self-minted JWT, DD-193/196); the endpoint and
+    # token Secret take the chart's name-rule defaults. Its metrics puller
+    # (the bundled Postgres, CHT-43) rides telemetry.enabled.
+    telemetry:
+        enabled: true
 atlas-server:
     enabled: true
+    # CHT-42: the server's per-service OTLP leg goes live (rendered in
+    # 10.3a, switched on here).
+    telemetry:
+        enabled: true
 atlas-webapp:
     enabled: true
 atlas-data2model:
     enabled: true
+    # CHT-42: the aux apps' OTLP joins go live (collector :4319, public
+    # issuer mint — DD-265).
+    telemetry:
+        enabled: true
 atlas-lineage-model:
     enabled: true
+    telemetry:
+        enabled: true
 atlas-validate-entity:
     enabled: true
+    telemetry:
+        enabled: true
 atlas-observability:
     # ADR 016: the system observes itself. Off only for deployments that
     # point telemetry at their own collector (values, not a fork).

@@ -1,11 +1,11 @@
-# The observability chart — its runtime contract (CHT-02).
+# The observability chart — its runtime contract (CHT-02, CHT-33..44).
 # The collector is the system's one seam for signals (ADR 034): three ingest
 # legs — browser (OIDC, 4318), per-service (OIDC client JWTs, 4317/4319),
 # legacy (static token, 4320/4321) — and one egress to Prometheus, Loki, and
 # Tempo, with Grafana reading them (ADR 016: nothing leaves the system).
-# The collector ConfigMap (dev/observability/config/otel-collector.yaml's
-# shape with issuer URLs and backend endpoints computed from this chart's
-# services) lands in 10.3.
+# The collector ConfigMap is dev/observability/config/otel-collector.yaml's
+# shape with the environment slots computed from this chart (CHT-34); Loki's,
+# Tempo's, and Grafana's dashboards ship as files/ byte-copies (DD-256).
 
 # The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
 global:
@@ -18,17 +18,27 @@ global:
         pullSecrets: []
     storageClass: ""
     domain: ""
-    # The OIDC issuer(s) the collector validates ingest tokens against
-    # (DD-202: the listener that minted the token is the issuer in it, so a
-    # plaintext-issuer deployment lists both). "" derives from global.issuer.url.
+    # The OIDC issuer the collector validates ingest tokens against. In the
+    # cluster this is the public URL, resolvable in-cluster too (DD-265's
+    # split-horizon); "" derives https://keycloak.<domain>.
     issuer:
         url: ""
+    # The issuer signing the collector's leaf (DD-243/DD-259), as in the
+    # store chart.
+    trust:
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
     dnsResolver: ""
 
 enabled: true
 component: observability
 nameOverride: ""
 fullnameOverride: ""
+
+# The realm the ingest audience mints in (7.18) — the same realm the apps
+# authenticate against, and the Keycloak chart's only realm.
+realm: master
 
 collector:
     replicaCount: 1
@@ -41,10 +51,35 @@ collector:
             memory: 256Mi
         limits:
             memory: 512Mi
-    # The JWKS boot race (DD-195/DD-226): the collector discovers Keycloak's
-    # JWKS at start; the chart's init container waits for the issuer before
-    # the collector boots, replacing the dev compose's unbounded restart.
-    readinessPath: ""
+    # The JWKS boot race (DD-195/DD-226): the collector discovers the
+    # issuer's JWKS at extension start; the issuer-wait init container below
+    # polls the realm's well-known endpoint until it answers, replacing the
+    # dev compose's unbounded restart (10.1's committed shape).
+    issuerWait:
+        enabled: true
+        # curl fetches the issuer over TLS without pinning — acceptable for
+        # a boot gate (the collector itself verifies the issuer CA-pinned,
+        # DD-216) — and retries natively; the image declares uid 65532 (DD-269).
+        image:
+            repository: dhi.io/curl
+            tag: "8"
+    # deployment.environment.name stamped on every signal (DD-268): the
+    # compose keeps "development"; a cluster install is its own environment.
+    deploymentEnvironment: cluster
+    probes:
+        # HTTP on the health_check extension's port (CHT-33).
+        port: 13133
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 6
+
+# The collector's Certificate (CHT-36): cluster names only — the collector is
+# producer-facing, never browser-facing (DD-242's audience split).
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 24h
 
 prometheus:
     enabled: true
@@ -52,48 +87,116 @@ prometheus:
         repository: dhi.io/prometheus
         tag: "3.13-debian13"
     retention: 15d
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 1Gi
     persistence:
         size: 20Gi
+    probes:
+        port: 9090
+        initialDelaySeconds: 10
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
 
 loki:
     enabled: true
     image:
         repository: dhi.io/loki
         tag: "3-debian13"
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 1Gi
     persistence:
         size: 20Gi
+    probes:
+        port: 3100
+        initialDelaySeconds: 15
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
 
 tempo:
     enabled: true
     image:
         repository: dhi.io/tempo
         tag: "3-debian13"
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 1Gi
     persistence:
         size: 20Gi
+    probes:
+        port: 3200
+        initialDelaySeconds: 15
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
 
 grafana:
     enabled: true
     image:
         repository: dhi.io/grafana
         tag: "13-debian13"
+    resources:
+        requests:
+            cpu: 50m
+            memory: 128Mi
+        limits:
+            memory: 512Mi
+    persistence:
+        size: 20Gi
+    # The admin credential (DD-267): "" derives <release>-grafana-admin, the
+    # umbrella's generated Secret (CHT-19 pattern); set to bring your own
+    # (keys user/password). The login form stays disabled either way —
+    # anonymous-Viewer is the deployed posture (the compose's), and the
+    # credential exists so the instance is never ship-defaulted.
+    adminPasswordSecret: ""
     # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
     # the default posture is kubectl port-forward (runbook).
-    adminPasswordSecret: ""
+    probes:
+        port: 3000
+        initialDelaySeconds: 15
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
 
 # Ingest legs (ports fixed by the collector contract, DD-193/DD-196):
 #   browser 4318 (HTTP, OIDC)  · services 4317 (gRPC) + 4319 (HTTP, OIDC)
 #   legacy 4320 (gRPC) + 4321 (HTTP, static token, DD-239)
 service:
+    type: ClusterIP
     browserPort: 4318
     servicesGrpcPort: 4317
     servicesHttpPort: 4319
     legacyGrpcPort: 4320
     legacyHttpPort: 4321
+    # The prometheus exporter (:9464) and the collector's own telemetry
+    # (:8888) — scraped by this chart's Prometheus (CHT-38).
+    metricsPort: 9464
+    internalPort: 8888
+
+# The legacy-leg token: <release>-collector-legacy (key token), the
+# umbrella's generated Secret (CHT-31, DD-244) shared with the webapp's edge
+# exporter. Never rendered into the ConfigMap (R5) — it arrives as env.
+secrets:
+    collectorLegacy: ""
 
 tls:
     secretName: ""
-    caConfigMap: ""
-    caPath: /etc/aurelius-atlas/tls/ca.crt
+    # Where the collector's leaf + the trust CA mount. The dev config's shape
+    # (/certs): the Secret's items are projected to otel-collector.pem /
+    # otel-collector-key.pem / ca.pem so the ConfigMap matches dev verbatim.
+    mountPath: /certs
 
 serviceAccount:
     create: true
@@ -111,5 +214,11 @@ podSecurityContext:
     fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault
+
+securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+        drop:
+            - ALL
 
 required: []

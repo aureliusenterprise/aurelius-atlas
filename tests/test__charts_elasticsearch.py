@@ -223,3 +223,59 @@ def test__bring_your_own_secret_suppresses_certificate() -> None:
     ss = find(docs, "StatefulSet", "atlas-elasticsearch")
     volumes = {v["name"]: v for v in pod_spec(ss)["volumes"]}
     assert volumes["tls"]["secret"]["secretName"] == "my-es-tls"
+
+
+@pytest.mark.covers(rules=["CHT-43"])
+def test__metrics_puller_renders_when_telemetry_enabled() -> None:
+    """telemetry.enabled renders the puller (CHT-43, DD-266).
+
+    The contrib image, the dev config's dev-elasticsearch service.name, the
+    store + client joins, the public mint URL, and the per-service collector
+    target.
+    """
+    docs = helm_render(ES_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    deployment = find(docs, "Deployment", "atlas-elasticsearch-metrics-puller")
+    app = container(deployment, "metrics-puller")
+    assert app["image"] == "dhi.io/opentelemetry-collector:0-debian13-contrib"
+    psc = pod_spec(deployment)["securityContext"]
+    assert psc["runAsNonRoot"] is True
+    assert psc["runAsUser"] == 65532
+    assert app["securityContext"]["capabilities"]["drop"] == ["ALL"]  # CHT-44
+    # The issuer-wait init (the oauth2client boot race, DD-195/226).
+    (init,) = pod_spec(deployment)["initContainers"]
+    assert init["name"] == "issuer-wait"
+
+    config = yaml.safe_load(find(docs, "ConfigMap", "atlas-elasticsearch-metrics-puller")["data"]["config.yaml"])
+    (upsert,) = config["processors"]["resource"]["attributes"]
+    assert upsert["value"] == "dev-elasticsearch"  # the dashboard's exported_job pin
+    receiver = config["receivers"]["elasticsearch"]
+    assert receiver["endpoint"] == "https://atlas-elasticsearch:9200"
+    assert config["exporters"]["otlp"]["endpoint"] == "https://atlas-observability:4317"
+    oauth = config["extensions"]["oauth2client"]
+    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
+    assert oauth["client_id"] == "otel-elasticsearch"
+    assert oauth["client_secret"] == "${env:OTEL_INGEST_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never material
+
+    envs = env_map(app)
+    assert envs["ELASTICSEARCH_PASSWORD"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-elasticsearch",
+        "key": "elastic-password",
+    }
+    assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-otel-clients",
+        "key": "OTEL_INGEST_CLIENT_SECRET",
+    }
+    # R5: no credential literal renders into the puller's ConfigMap.
+    assert (
+        "elastic-password" not in find(docs, "ConfigMap", "atlas-elasticsearch-metrics-puller")["data"]["config.yaml"]
+    )
+
+
+@pytest.mark.covers(rules=["CHT-43"])
+def test__puller_default_off() -> None:
+    """The bare render carries no puller (CHT-42/43).
+
+    Telemetry is opt-in; the umbrella turns it on for the stock install.
+    """
+    assert "atlas-elasticsearch-metrics-puller" not in names(helm_render(ES_CHART), "Deployment")
+    assert "atlas-elasticsearch-metrics-puller" not in names(helm_render(ES_CHART), "ConfigMap")

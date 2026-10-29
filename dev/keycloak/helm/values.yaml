@@ -64,17 +64,49 @@ realm:
     # import placeholders (CHT-16).
     otelClientsSecretName: ""
 
-# Native telemetry (CHT-16): Keycloak is the OIDC issuer, so its own OTLP
-# cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on the
-# collector's LEGACY leg with the shared token, and only when the operator
-# points at a collector (10.3 wires the observability slice).
+# Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so
+# its own OTLP cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on
+# the collector's LEGACY leg with the shared token.
 telemetry:
-    # Collector legacy-leg endpoint, e.g. https://atlas-observability:4320 —
-    # "" renders no telemetry env at all.
+    # The umbrella sets this true (CHT-42): a stock install is a
+    # self-observing system (ADR 016).
+    enabled: false
+    # The collector Service; "" derives this release's atlas-observability
+    # chart name (the siblingService name rule, as the server chart's
+    # telemetry join).
+    service: ""
+    # The collector legacy-leg gRPC port (Keycloak's own Quarkus OTLP speaks
+    # gRPC; the bearer arrives via OTEL_EXPORTER_OTLP_HEADERS).
+    port: 4320
+    # Explicit endpoint override; "" derives https://<service>:<port> when
+    # enabled. Set with no `enabled` renders telemetry too (10.3a shape).
     endpoint: ""
-    # The legacy-leg token: <release>-collector-legacy (key token).
+    # The legacy-leg token: <release>-collector-legacy (key token, header
+    # form under key otel-header).
     tokenSecretName: ""
     tracesSamplerArg: "0.1"
+    # The slice-owned metrics puller (CHT-43, DD-266): Keycloak's metadata
+    # Postgres speaks no OTLP, so the chart runs the dev
+    # config/metrics-puller.yaml as a Deployment next to the server's own
+    # native telemetry. Rendered with telemetry.enabled.
+    puller:
+        # The collector's per-service gRPC leg (DD-196) — the puller mints
+        # (otel-keycloak), unlike the server's legacy leg above.
+        port: 4317
+        image:
+            repository: dhi.io/opentelemetry-collector
+            tag: "0-debian13-contrib"
+        # The issuer-wait init image (CHT-37's pattern, DD-226).
+        issuerWait:
+            image:
+                repository: dhi.io/curl
+                tag: "8"
+        resources:
+            requests:
+                cpu: 50m
+                memory: 128Mi
+            limits:
+                memory: 256Mi
 
 database:
     # "bundled" renders the Postgres below; "external" uses the url.
@@ -115,6 +147,13 @@ service:
     # 9000 is the management port (health probes, never routed).
     port: 8443
     managementPort: 9000
+    # The HTTPS-standard port in-cluster producers dial when they reach the
+    # issuer by its public name (DD-265's split-horizon): `https://
+    # keycloak.<domain>/` implies 443, and CoreDNS resolves that name to this
+    # Service, so the Service must answer 443. Same targetPort as 8443 (one
+    # listener); the gateway route still joins 8443 directly (0. A 0 here
+    # renders no extra port for a standalone chart that never uses it).
+    issuerPort: 443
 
 probes:
     # Management-port probes (dev healthcheck's port). Prod mode puts TLS on

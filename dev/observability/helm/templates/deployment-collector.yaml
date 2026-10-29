@@ -1,0 +1,171 @@
+{{/*
+The collector Deployment (CHT-33/35/37). Five ingest ports + the two scrape
+ports (values' names, DD-193/DD-196's credential-typed legs); probes on the
+health_check extension's port (CHT-33 — dev's default binds loopback, the
+ConfigMap pins it to 0.0.0.0). The issuer-wait init container carries the
+collector over Keycloak's boot (DD-195/DD-226) — the Kubernetes port of the
+compose's unbounded restart. The leaf + trust CA mount at /certs with the
+dev file's projected names (otel-collector.pem/-key.pem/ca.pem) so the
+ConfigMap stays dev-shaped; the legacy-leg bearer arrives only as env from
+<release>-collector-legacy (R5).
+*/}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $ns := include "atlas-observability.namespace" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.collector.replicaCount }}
+    selector:
+        matchLabels:
+            {{- include "atlas-observability.selectorLabels" . | nindent 12 }}
+            {{/* The sibling workloads (prometheus, loki, tempo, grafana) carry
+            the same name/instance pair with their own component; the
+            collector pins its own so no selector here can adopt another
+            workload's pod. */}}
+            app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-observability.labels" . | nindent 16 }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            {{- if .Values.collector.issuerWait.enabled }}
+            initContainers:
+                # The JWKS boot race (DD-195/DD-226): the oidc extension
+                # discovers the issuer's keys at start and the collector exits
+                # 1 if the issuer is not answering yet — structural when the
+                # stack boots with Keycloak. The compose absorbs it with an
+                # unbounded restart; Kubernetes gets this wait (10.1's
+                # committed shape): TCP to the issuer's port, then the realm's
+                # well-known endpoint until HTTP 200. curl skips verification
+                # — a boot gate, not a trust decision (the collector itself
+                # pins the CA, DD-216) — and retries natively: the hardened
+                # curl image has no shell for a loop (DD-269; busybox's wget
+                # cannot handshake Keycloak's TLS at all).
+                -   name: issuer-wait
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.issuerWait.image.repository "tag" .Values.collector.issuerWait.image.tag "defaultTag" "8") | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - curl
+                        - -sSf
+                        - --insecure
+                        - --retry
+                        - "0"
+                        - --retry-connrefused
+                        - --retry-delay
+                        - "5"
+                        - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) .Values.realm) | quote }}
+                    {{- with .Values.securityContext }}
+                    securityContext:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+            {{- end }}
+            containers:
+                -   name: {{ .Values.component }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.image.repository "tag" .Values.collector.image.tag "defaultTag" "0-debian13-contrib") | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    env:
+                        -   name: OTEL_COLLECTOR_INGEST_TOKEN
+                            valueFrom:
+                                secretKeyRef:
+                                    name: {{ include "atlas-observability.legacySecretName" . }}
+                                    key: token
+                    ports:
+                        -   name: otlp-browser
+                            containerPort: {{ int .Values.service.browserPort }}
+                            protocol: TCP
+                        -   name: otlp-svc-grpc
+                            containerPort: {{ int .Values.service.servicesGrpcPort }}
+                            protocol: TCP
+                        -   name: otlp-svc-http
+                            containerPort: {{ int .Values.service.servicesHttpPort }}
+                            protocol: TCP
+                        -   name: otlp-leg-grpc
+                            containerPort: {{ int .Values.service.legacyGrpcPort }}
+                            protocol: TCP
+                        -   name: otlp-leg-http
+                            containerPort: {{ int .Values.service.legacyHttpPort }}
+                            protocol: TCP
+                        -   name: metrics
+                            containerPort: {{ int .Values.service.metricsPort }}
+                            protocol: TCP
+                        -   name: internal
+                            containerPort: {{ int .Values.service.internalPort }}
+                            protocol: TCP
+                        -   name: health
+                            containerPort: {{ int .Values.collector.probes.port }}
+                            protocol: TCP
+                    livenessProbe:
+                        httpGet:
+                            path: /
+                            port: health
+                        initialDelaySeconds: {{ int .Values.collector.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.collector.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.collector.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.collector.probes.failureThreshold }}
+                    readinessProbe:
+                        httpGet:
+                            path: /
+                            port: health
+                        initialDelaySeconds: {{ int .Values.collector.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.collector.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.collector.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.collector.probes.failureThreshold }}
+                    {{- with .Values.collector.resources }}
+                    resources:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+                    volumeMounts:
+                        -   name: config
+                            mountPath: /etc/otelcol-contrib/config.yaml
+                            subPath: config.yaml
+                            readOnly: true
+                        -   name: tls
+                            mountPath: {{ .Values.tls.mountPath }}
+                            readOnly: true
+            volumes:
+                -   name: config
+                    configMap:
+                        name: {{ $fullname }}
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-observability.tlsSecretName" . }}
+                        items:
+                            # The dev config's file names (CHT-34's pin): the
+                            # Secret's tls.crt/tls.key/ca.crt projected to the
+                            # names the ConfigMap references.
+                            -   key: tls.crt
+                                path: otel-collector.pem
+                            -   key: tls.key
+                                path: otel-collector-key.pem
+                            -   key: ca.crt
+                                path: ca.pem
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}

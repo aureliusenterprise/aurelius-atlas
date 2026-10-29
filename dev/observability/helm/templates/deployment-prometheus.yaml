@@ -1,0 +1,138 @@
+{{/*
+Prometheus (CHT-38): Deployment + PVC with the compose's argv
+(--config.file, --storage.tsdb.path, --web.enable-otlp-receiver — the flag
+the compose runs and the shape's contract even though this system pushes via
+the collector's exporter, CHT-38) and retention. The image's declared uid +
+fsGroup (DD-257); the dhi image runs 65532 (values' podSecurityContext).
+*/}}
+{{- if .Values.prometheus.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}-prometheus
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            {{- include "atlas-observability.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: prometheus
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-observability.labels" . | nindent 16 }}
+                app.kubernetes.io/component: prometheus
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: prometheus
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.prometheus.image.repository "tag" .Values.prometheus.image.tag "defaultTag" "3.13-debian13") | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    args:
+                        - "--config.file=/etc/prometheus/prometheus.yaml"
+                        - "--storage.tsdb.path=/var/prometheus"
+                        - "--storage.tsdb.retention.time={{ .Values.prometheus.retention }}"
+                        - "--web.enable-otlp-receiver"
+                    ports:
+                        -   name: http
+                            containerPort: {{ int .Values.prometheus.probes.port }}
+                            protocol: TCP
+                    livenessProbe:
+                        httpGet:
+                            path: /-/healthy
+                            port: http
+                        initialDelaySeconds: {{ int .Values.prometheus.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.prometheus.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.prometheus.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.prometheus.probes.failureThreshold }}
+                    readinessProbe:
+                        httpGet:
+                            path: /-/ready
+                            port: http
+                        initialDelaySeconds: {{ int .Values.prometheus.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.prometheus.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.prometheus.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.prometheus.probes.failureThreshold }}
+                    {{- with .Values.prometheus.resources }}
+                    resources:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+                    volumeMounts:
+                        -   name: config
+                            mountPath: /etc/prometheus/prometheus.yaml
+                            subPath: prometheus.yaml
+                            readOnly: true
+                        -   name: data
+                            mountPath: /var/prometheus
+            volumes:
+                -   name: config
+                    configMap:
+                        name: {{ $fullname }}-prometheus
+                -   name: data
+                    persistentVolumeClaim:
+                        claimName: {{ $fullname }}-prometheus
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: {{ $fullname }}-prometheus
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    accessModes:
+        - ReadWriteOnce
+    {{- with .Values.global.storageClass }}
+    storageClassName: {{ . | quote }}
+    {{- end }}
+    resources:
+        requests:
+            storage: {{ .Values.prometheus.persistence.size | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ $fullname }}-prometheus
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    ports:
+        -   name: http
+            port: {{ int .Values.prometheus.probes.port }}
+            targetPort: http
+            protocol: TCP
+    selector:
+        {{- include "atlas-observability.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: prometheus
+{{- end }}

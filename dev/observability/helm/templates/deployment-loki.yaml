@@ -1,0 +1,134 @@
+{{/*
+Loki (CHT-39): Deployment + PVC with the byte-copied config. The config's
+filesystem storage lives under /loki (the PVC's mount), the ring is in-memory
+(single replica), auth is off — the collector is the authenticated seam and
+this Service is cluster-internal (CHT-36).
+*/}}
+{{- if .Values.loki.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}-loki
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            {{- include "atlas-observability.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: loki
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-observability.labels" . | nindent 16 }}
+                app.kubernetes.io/component: loki
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: loki
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.loki.image.repository "tag" .Values.loki.image.tag "defaultTag" "3-debian13") | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    args:
+                        - "-config.file=/etc/loki/config.yaml"
+                    ports:
+                        -   name: http
+                            containerPort: {{ int .Values.loki.probes.port }}
+                            protocol: TCP
+                    livenessProbe:
+                        httpGet:
+                            path: /ready
+                            port: http
+                        initialDelaySeconds: {{ int .Values.loki.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.loki.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.loki.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.loki.probes.failureThreshold }}
+                    readinessProbe:
+                        httpGet:
+                            path: /ready
+                            port: http
+                        initialDelaySeconds: {{ int .Values.loki.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.loki.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.loki.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.loki.probes.failureThreshold }}
+                    {{- with .Values.loki.resources }}
+                    resources:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+                    volumeMounts:
+                        -   name: config
+                            mountPath: /etc/loki/config.yaml
+                            subPath: config.yaml
+                            readOnly: true
+                        -   name: data
+                            mountPath: /loki
+            volumes:
+                -   name: config
+                    configMap:
+                        name: {{ $fullname }}-loki
+                -   name: data
+                    persistentVolumeClaim:
+                        claimName: {{ $fullname }}-loki
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: {{ $fullname }}-loki
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    accessModes:
+        - ReadWriteOnce
+    {{- with .Values.global.storageClass }}
+    storageClassName: {{ . | quote }}
+    {{- end }}
+    resources:
+        requests:
+            storage: {{ .Values.loki.persistence.size | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ $fullname }}-loki
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+spec:
+    type: ClusterIP
+    ports:
+        -   name: http
+            port: {{ int .Values.loki.probes.port }}
+            targetPort: http
+            protocol: TCP
+    selector:
+        {{- include "atlas-observability.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: loki
+{{- end }}

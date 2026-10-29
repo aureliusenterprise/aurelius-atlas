@@ -53,6 +53,22 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
 {{- end -}}
 
+{{/* The sibling chart's Service in this release (CHT-42, name rule per
+DD-247 — each chart duplicates the join it makes): "" derives
+<release>-<name>, shortened when the release name already prefixes it. */}}
+{{- define "atlas-validate-entity.siblingService" -}}
+{{- if .override -}}
+{{- .override -}}
+{{- else -}}
+{{- $name := .name -}}
+{{- if hasPrefix (lower .release) (lower $name) -}}
+{{- lower $name -}}
+{{- else -}}
+{{- printf "%s-%s" .release $name -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "atlas-validate-entity.issuerUrl" -}}
 {{- $issuer := trimSuffix "/" (default "" .Values.global.issuer.url) -}}
 {{- if not $issuer -}}

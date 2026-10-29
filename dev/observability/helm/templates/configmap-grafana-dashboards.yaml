@@ -1,0 +1,23 @@
+{{/*
+The Grafana dashboards ConfigMap (CHT-40): the seven accepted dashboards as
+byte-copy assets (files/dashboards/, DD-256 — the suite byte-compares each
+against dev/observability/config/grafana/dashboards/). Their queries are the
+contract: the exported_job pins are what the pullers keep (DD-266), so the
+JSON must not be retargeted for the cluster.
+*/}}
+{{- if .Values.grafana.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-grafana-dashboards
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    {{- range $path, $content := .Files.Glob "files/dashboards/*.json" }}
+    {{- $name := base $path }}
+    {{ $name }}: |
+        {{- $.Files.Get (printf "files/dashboards/%s" $name) | nindent 8 }}
+    {{- end }}
+{{- end }}

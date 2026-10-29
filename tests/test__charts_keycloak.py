@@ -150,6 +150,98 @@ def test__telemetry_renders_only_when_pointed_at_a_collector() -> None:
     assert header == {"name": "atlas-collector-legacy", "key": "otel-header"}
 
 
+@pytest.mark.covers(rules=["CHT-42"])
+def test__telemetry_enabled_derives_the_sibling_collector() -> None:
+    """telemetry.enabled derives the sibling collector endpoint by the name rule (CHT-42).
+
+    The umbrella cannot template a values file — legacy gRPC :4320, 0.1
+    sampler. Quarkus' OTLP sender ignores the generic CERTIFICATE var, so the
+    chart also renders the runtime trust-cert knob (dev's p12 workaround).
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    envs = env_map(container(find(docs, "StatefulSet", "atlas-keycloak"), "keycloak"))
+    assert env_value(envs, "OTEL_EXPORTER_OTLP_ENDPOINT") == "https://atlas-observability:4320"
+    assert env_value(envs, "QUARKUS_OTEL_EXPORTER_OTLP_TRUST_CERT_CERTS") == "/etc/aurelius-atlas/tls/ca.crt"
+    assert env_value(envs, "OTEL_TRACES_SAMPLER_ARG") == "0.1"
+
+
+@pytest.mark.covers(rules=["CHT-41"])
+def test__service_answers_the_https_standard_port(kc_docs: list[dict[str, Any]]) -> None:
+    """The Service answers the https standard port (CHT-41, DD-265).
+
+    443 beside 8443 (both → the browser listener) so the public issuer URL
+    dials in-cluster without a port suffix.
+    """
+    service = find(kc_docs, "Service", "atlas-keycloak")
+    ports = {p["port"]: p["targetPort"] for p in service["spec"]["ports"]}
+    assert ports == {8443: "https", 443: "https"}
+    # The issuer host stays the browser hostname — the chart adds no
+    # hostname-v2 option; the claim follows the request's Host (CHT-41).
+    envs = env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))
+    assert "KC_HOSTNAME_URL" not in envs
+
+
+@pytest.mark.covers(rules=["CHT-43"])
+def test__metrics_puller_renders_when_telemetry_enabled() -> None:
+    """telemetry.enabled renders the puller (CHT-43, DD-266).
+
+    The contrib image, the dev config's keycloak-infra service.name, the db +
+    client joins, the public mint URL, and the per-service collector target.
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    deployment = find(docs, "Deployment", "atlas-keycloak-metrics-puller")
+    app = container(deployment, "metrics-puller")
+    assert app["image"] == "dhi.io/opentelemetry-collector:0-debian13-contrib"
+    psc = pod_spec(deployment)["securityContext"]
+    assert psc["runAsUser"] == 65532
+    assert psc["fsGroup"] == 65532
+
+    config = yaml.safe_load(find(docs, "ConfigMap", "atlas-keycloak-metrics-puller")["data"]["config.yaml"])
+    (upsert,) = config["processors"]["resource"]["attributes"]
+    assert upsert["value"] == "keycloak-infra"  # the dashboard's exported_job pin
+    receiver = config["receivers"]["postgresql"]
+    assert receiver["endpoint"] == "atlas-keycloak-postgres:5432"
+    assert receiver["databases"] == ["keycloak"]
+    assert config["exporters"]["otlp"]["endpoint"] == "https://atlas-observability:4317"
+    oauth = config["extensions"]["oauth2client"]
+    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
+    assert oauth["client_id"] == "otel-keycloak"
+
+    envs = env_map(app)
+    assert envs["KEYCLOAK_DATABASE_USERNAME"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-keycloak-database",
+        "key": "user",
+    }
+    assert envs["KEYCLOAK_DATABASE_PASSWORD"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-keycloak-database",
+        "key": "password",
+    }
+    assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-otel-clients",
+        "key": "OTEL_INGEST_CLIENT_SECRET",
+    }
+
+
+@pytest.mark.covers(rules=["CHT-43"])
+def test__puller_gates_on_telemetry_and_bundled_database() -> None:
+    """The puller gates on telemetry and the bundled database (CHT-43).
+
+    Default off; external flavour (no bundled Postgres to watch) renders no
+    puller even with telemetry on.
+    """
+    assert "atlas-keycloak-metrics-puller" not in names(helm_render(KC_CHART), "Deployment")
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "global.domain=atlas.test",
+            "telemetry.enabled=true",
+            "database.flavor=external",
+            "database.url=jdbc:postgresql://db.example:5432/keycloak?sslmode=verify-full&sslrootcert=/etc/aurelius-atlas/tls/ca.crt",
+        ),
+    )
+    assert "atlas-keycloak-metrics-puller" not in names(docs, "Deployment")
+
+
 @pytest.mark.covers(rules=["CHT-16"])
 def test__management_port_probes_and_tls_listener(kc_docs: list[dict[str, Any]]) -> None:
     """HTTPS management probes, TLS browser listener, no dev truststore (CHT-16).

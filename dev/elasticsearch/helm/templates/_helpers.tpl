@@ -35,6 +35,60 @@ convention the charts follow, not code they share.
 {{- default $default .Values.auth.secretName -}}
 {{- end -}}
 
+{{/* The sibling chart's Service in this release (CHT-43, name rule per
+DD-247 — each chart duplicates the join it makes): "" derives
+<release>-<name>, shortened when the release name already prefixes it. */}}
+{{- define "atlas-elasticsearch.siblingService" -}}
+{{- if .override -}}
+{{- .override -}}
+{{- else -}}
+{{- $name := .name -}}
+{{- if hasPrefix (lower .release) (lower $name) -}}
+{{- lower $name -}}
+{{- else -}}
+{{- printf "%s-%s" .release $name -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* The issuer root the puller mints its ingest JWT against (CHT-41,
+DD-265): the public name, split-horizon-resolved in-cluster. */}}
+{{- define "atlas-elasticsearch.keycloakHost" -}}
+{{- if .Values.global.issuer.url -}}
+{{- $u := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" .Values.global.issuer.url)) -}}
+{{- $u | trimSuffix "/" | splitList "/" | first -}}
+{{- else -}}
+{{- printf "keycloak.%s" (required "global.domain or global.issuer.url is required (the puller mints ingest tokens against the issuer)" .Values.global.domain) -}}
+{{- end -}}
+{{- end -}}
+{{- define "atlas-elasticsearch.issuerUrl" -}}
+{{- $url := default (printf "https://%s" (include "atlas-elasticsearch.keycloakHost" .)) .Values.global.issuer.url -}}
+{{- trimSuffix "/" $url -}}
+{{- end -}}
+
+{{/* The metrics puller (CHT-43, DD-266): its name, and its own label pair —
+the store's selectorLabels would also match the puller's pods, so the
+puller carries its own name/instance pair (the labelsPG pattern). */}}
+{{- define "atlas-elasticsearch.pullerName" -}}
+{{- printf "%s-metrics-puller" (include "atlas-elasticsearch.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- define "atlas-elasticsearch.pullerSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "atlas-elasticsearch.pullerName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+{{- define "atlas-elasticsearch.pullerLabels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/name: {{ include "atlas-elasticsearch.pullerName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ include "atlas-elasticsearch.versionLabel" . | quote }}
+app.kubernetes.io/component: metrics-puller
+app.kubernetes.io/part-of: aurelius-atlas
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.global.labels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
 {{- define "atlas-elasticsearch.versionLabel" -}}
 {{- default "undefined" .Chart.AppVersion | toString | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
