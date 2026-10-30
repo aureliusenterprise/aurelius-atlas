@@ -66,7 +66,7 @@ jobs:
             # the active builder, and its --load flag keeps the image in the
             # local docker store for the run/smoke step.
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+              uses: docker/setup-buildx-action@v4
 
             # Feature installers (Playwright browsers, the JDK, ...) are the
             # slow part of the build. devcontainers/ci can stage them under a
