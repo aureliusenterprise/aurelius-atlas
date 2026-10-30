@@ -188,3 +188,49 @@ async def test__terms_are_created_related_updated_and_deleted(client: httpx.Asyn
         assert (status, body["errorCode"]) == (expected, code), (method, url, body)
     assert (await send(client, "DELETE", f"{GLOSSARY}/term/{savings['guid']}"))[0] == 204
     assert (await send(client, "GET", f"{GLOSSARY}/term/{savings['guid']}"))[0] == 404
+
+
+@pytest.mark.covers(
+    f"{R}.assign_term_to_entities",
+    f"{R}.get_entities_assigned_with_term",
+    f"{R}.remove_term_assignment_from_entities",
+    f"{R}.disassociate_term_assignment_from_entities",
+    rules=["GTA-01", "GTA-02", "GTA-03", "GTA-04", "GTA-05", "GTA-06", "GTA-07"],
+)
+async def test__a_term_is_assigned_audited_searched_and_removed(client: httpx.AsyncClient) -> None:
+    """The assignment endpoints, the entity's meanings and audit, and the searches by term."""
+    _, glossary = await send(client, "POST", GLOSSARY, json={"name": "bank"})
+    _, term = await send(
+        client, "POST", f"{GLOSSARY}/term", json={"name": "loan", "anchor": {"glossaryGuid": glossary["guid"]}}
+    )
+    _, created = await send(
+        client,
+        "POST",
+        "/api/atlas/v2/entity",
+        json={"entity": {"typeName": "Asset", "attributes": {"qualifiedName": "a", "name": "a"}}},
+    )
+    entity = created["mutatedEntities"]["CREATE"][0]["guid"]
+    assigned_url = f"{GLOSSARY}/terms/{term['guid']}/assignedEntities"
+    status, _ = await send(client, "POST", assigned_url, json=[{"guid": entity, "typeName": "Asset"}])
+    assert status == 204
+    _, (assigned,) = await send(client, "GET", assigned_url)
+    assert (assigned["guid"], assigned["displayText"], assigned["relationshipStatus"]) == (entity, "a", "ACTIVE")
+    _, header = await send(client, "GET", f"/api/atlas/v2/entity/guid/{entity}/header")
+    assert (header["meaningNames"], header["meanings"][0]["qualifiedName"]) == (["loan"], "loan@bank")
+    _, events = await send(client, "GET", f"/api/atlas/v2/entity/{entity}/audit", params={"auditAction": "TERM_ADD"})
+    assert [event["details"][:12] for event in events] == ["Added term: "]
+    _, basic = await send(client, "POST", "/api/atlas/v2/search/basic", json={"termName": "loan@bank"})
+    assert [found["guid"] for found in basic["entities"]] == [entity]
+    _, dsl = await send(client, "GET", "/api/atlas/v2/search/dsl", params={"query": "Asset hasTerm loan"})
+    assert [found["guid"] for found in dsl["entities"]] == [entity]
+    status, unknown = await send(client, "POST", "/api/atlas/v2/search/basic", json={"termName": "loan"})
+    assert (status, unknown["errorCode"]) == (400, "ATLAS-400-00-06E")
+    no_guid = [{"guid": entity, "typeName": "Asset"}]
+    status, missing = await send(client, "PUT", assigned_url, json=no_guid)
+    assert (status, missing["errorCode"]) == (400, "ATLAS-400-00-078")
+    wrong = [{"guid": entity, "relationshipGuid": "other"}]
+    status, invalid = await send(client, "DELETE", assigned_url, json=wrong)
+    assert (status, invalid["errorCode"]) == (400, "ATLAS-400-00-080")
+    status, _ = await send(client, "DELETE", assigned_url, json=[assigned])
+    assert status == 204
+    assert (await send(client, "GET", assigned_url))[1] == []

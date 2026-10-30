@@ -1,7 +1,7 @@
-"""``EntityAuditListener``: an audit event for each entity and classification change (AUD-03 to AUD-05, CAU-01).
+"""``EntityAuditListener``: an audit event for each entity, classification and term change (AUD-03 to AUD-05, CAU-01).
 
 Atlas's ``EntityAuditListenerV2``: ``onEntitiesAdded``, ``onEntitiesUpdated``, ``onEntitiesDeleted``,
-``onEntitiesPurged``, ``getAuditEventDetail``, and the classification methods.
+``onEntitiesPurged``, ``getAuditEventDetail``, the classification methods, ``onTermAdded`` and ``onTermDeleted``.
 """
 
 from collections.abc import Callable, Mapping, Sequence
@@ -9,6 +9,7 @@ from collections.abc import Callable, Mapping, Sequence
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from aurelius_atlas_model.errors import java_string
+from aurelius_atlas_model.glossary import AtlasGlossaryTerm
 from aurelius_atlas_model.instance import AtlasClassification, AtlasEntity
 
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository
@@ -122,6 +123,16 @@ class EntityAuditListener:
                 items.append((guid, action, DELETED[own] + name))
         await self._put_events(items, user)
 
+    async def on_term_added(self, term: AtlasGlossaryTerm, guids: Sequence[str], *, user: str | None) -> None:
+        """``onTermAdded``: ``TERM_ADD`` on each entity, ``Added term: `` and the term's audit string (GTA-04)."""
+        details = _PREFIXES[EntityAuditActionV2.TERM_ADD] + term_audit_string(term)
+        await self._put_events([(guid, EntityAuditActionV2.TERM_ADD, details) for guid in guids], user)
+
+    async def on_term_deleted(self, term: AtlasGlossaryTerm, guids: Sequence[str], *, user: str | None) -> None:
+        """``onTermDeleted``: ``TERM_DELETE`` on each entity, ``Deleted term: `` and the audit string (GTA-04)."""
+        details = _PREFIXES[EntityAuditActionV2.TERM_DELETE] + term_audit_string(term)
+        await self._put_events([(guid, EntityAuditActionV2.TERM_DELETE, details) for guid in guids], user)
+
     async def _put(
         self, items: Sequence[tuple[AtlasEntity, EntityAuditActionV2, str | None]], user: str | None
     ) -> None:
@@ -185,6 +196,13 @@ def audit_detail(entity: AtlasEntity, action: EntityAuditActionV2) -> str:
         version=entity.version,
     )
     return prefix + _json(shallow)
+
+
+def term_audit_string(term: AtlasGlossaryTerm) -> str:
+    """``AtlasGlossaryTerm.toAuditString``: the JSON of its GUID, qualified name and name (GTA-04)."""
+    return codec.dumps(
+        AtlasGlossaryTerm(guid=term.guid, qualified_name=term.qualified_name, name=term.name).to_json()
+    ).decode()
 
 
 def _json(value: AtlasEntity | AtlasClassification) -> str:

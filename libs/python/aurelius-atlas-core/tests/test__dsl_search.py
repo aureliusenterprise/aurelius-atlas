@@ -547,7 +547,7 @@ async def test__semantic_errors_are_joined_in_order(store: EntityStore) -> None:
 @pytest.mark.parametrize(
     ("query", "reason"),
     [
-        ("Table hasTerm sales", "hasTerm is not supported"),
+        ("Table hasTerm (sales)", "hasTerm with an expression is not supported"),
         ("Table where retention + 1 = 2", "a comparison takes a name and a value, not retention+1"),
         ("Table where retention = 1 * 2", "a comparison takes a name and a value, not 1*2"),
         ("Table where count()", "count() is not a condition"),

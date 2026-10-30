@@ -27,7 +27,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | `/api/atlas/v2/search/quick`      | Entities by a query as a prefix, with facets; and term suggestions    |
 | `GET /api/atlas/v2/search/dsl`    | Entities, or an attribute table, of a DSL query                       |
 | `/api/atlas/v2/lineage/...`       | A data set's or process's lineage, by GUID or unique attributes       |
-| `/api/atlas/v2/glossary/...`      | Glossaries, their categories and terms: read, create, update, delete  |
+| `/api/atlas/v2/glossary/...`      | Glossaries, categories and terms: CRUD; terms assigned to entities    |
 
 ## Dashboards
 

@@ -14,7 +14,14 @@ from aurelius_atlas_dsl.atlas_dsl import QueryMetadata, parse
 from aurelius_atlas_model.discovery import AtlasQueryType, AtlasSearchResult, AttributeSearchResult, Condition
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 
-from aurelius_atlas_core.dsl_query_composer import Classified, DslPlan, DslQueryComposer, Referring, UnsupportedError
+from aurelius_atlas_core.dsl_query_composer import (
+    Classified,
+    DslPlan,
+    DslQueryComposer,
+    HasTerm,
+    Referring,
+    UnsupportedError,
+)
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.graph_helper import other_end
@@ -22,6 +29,7 @@ from aurelius_atlas_core.search_fields import CLASSIFICATION_GUIDS, classificati
 from aurelius_atlas_core.search_query import GUID_FIELD, Criterion, Filter, Group, SearchQuery, Test, matches
 from aurelius_atlas_core.select_clause_projections import get_sublist_for_group_by, projection_rows
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.term_search_processor import has_term_guids
 
 DSL_KEYWORD_LIMIT = "limit"
 DSL_KEYWORD_OFFSET = "offset"
@@ -122,6 +130,10 @@ class DslQueryExecutor:
             return _guids_criterion(GUID_FIELD, await self._referring(node.value))
         if isinstance(node.value, Classified):
             return _guids_criterion(CLASSIFICATION_GUIDS, await self._classified(node.value))
+        if isinstance(node.value, HasTerm):
+            return _guids_criterion(
+                GUID_FIELD, await has_term_guids(self._store, node.value.attribute, node.value.value)
+            )
         return node
 
     async def _referring(self, referring: Referring) -> set[str]:

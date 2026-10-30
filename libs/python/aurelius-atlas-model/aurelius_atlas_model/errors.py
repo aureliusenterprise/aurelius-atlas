@@ -175,6 +175,7 @@ class AtlasErrorCode(Enum):
     INVALID_QUERY_LENGTH = (400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit")
     LINEAGE_ON_DEMAND_NOT_ENABLED = (400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled")
     UNEXPECTED_TYPE = (400, "ATLAS-400-00-00F", "expected type {0}; found {1}")
+    UNKNOWN_GLOSSARY_TERM = (400, "ATLAS-400-00-06E", "{0}: Unknown/invalid glossary term")
     MISSING_MANDATORY_ANCHOR = (400, "ATLAS-400-00-072", "Mandatory anchor attribute is missing")
     INVALID_PARTIAL_UPDATE_ATTR = (400, "ATLAS-400-00-074", "Invalid attribute {0} for partial update of {1}")
     MISSING_TERM_ID_FOR_CATEGORIZATION = (
@@ -183,6 +184,11 @@ class AtlasErrorCode(Enum):
         "Term guid cannot be empty/null when adding to a category",
     )
     INVALID_NEW_ANCHOR_GUID = (400, "ATLAS-400-00-077", "New Anchor guid cannot be empty/null")
+    TERM_DISSOCIATION_MISSING_RELATION_GUID = (
+        400,
+        "ATLAS-400-00-078",
+        "Missing mandatory attribute, TermAssignment relationship guid",
+    )
     GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED = (
         400,
         "ATLAS-400-00-079",
@@ -213,6 +219,11 @@ class AtlasErrorCode(Enum):
         400,
         "ATLAS-400-00-07F",
         "Invalid child category relationship: Child category (guid = {0}) belongs to different glossary",
+    )
+    INVALID_TERM_DISSOCIATION = (
+        400,
+        "ATLAS-400-00-080",
+        "Given relationshipGuid({0}) is invalid for term (guid={1}) and entity(guid={2})",
     )
     INVALID_DISPLAY_NAME = (400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.', '<', '>')")
     TERM_HAS_ENTITY_ASSOCIATION = (

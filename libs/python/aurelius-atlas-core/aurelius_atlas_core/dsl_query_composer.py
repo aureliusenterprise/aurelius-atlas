@@ -75,7 +75,7 @@ _TESTS = {
     Operator.GT: Test.GT,
     Operator.GTE: Test.GTE,
 }
-HAS_TERM = "hasTerm is not supported"
+HAS_TERM_EXPRESSION = "hasTerm with an expression is not supported"
 IS_A_EXPRESSION = "isa takes a classification name, not an expression"
 WHERE_FIRST = "a where clause needs a type or classification before it"
 NOT_A_CONDITION = "{text} is not a condition"
@@ -126,6 +126,16 @@ class Referring:
 
     attribute_name: str
     filter: Filter
+
+
+@dataclass(frozen=True)
+class HasTerm:
+    """The entities assigned a term whose ``attribute`` has ``value`` (GTA-07): a ``Criterion`` value on the GUID
+    field the executor resolves before searching.
+    """  # noqa: D205 - one sentence
+
+    attribute: str
+    value: str
 
 
 @dataclass(frozen=True)
@@ -317,21 +327,22 @@ class DslQueryComposer:
         return _joined(previous, items)
 
     def _comp_e(self, comp_e: CompE, *, nested: bool) -> Filter | None:
+        subject = _subject(comp_e)
+        if subject is not None and not nested:
+            self._add_from(subject.text)
         match comp_e:
             case ComparisonClause():
                 return self._where(comp_e)
             case IsClause(target=Identifier(text=target)):
-                if not nested:
-                    self._add_from(comp_e.arith_e.text)
                 return self._is_a(target)
             case HasClause(identifier=Identifier(text=attribute)):
-                if not nested:
-                    self._add_from(comp_e.arith_e.text)
                 return self._has(attribute)
             case IsClause():
                 raise UnsupportedError(IS_A_EXPRESSION)
+            case HasTermClause(target=Identifier(text=term)):
+                return Criterion(GUID_FIELD, Test.ANY_OF, _has_term(term))
             case HasTermClause():
-                raise UnsupportedError(HAS_TERM)
+                raise UnsupportedError(HAS_TERM_EXPRESSION)
             case ArithE(multi_e=multi_e, rights=()) if isinstance(multi_e.atom_e, Parenthesised) and not multi_e.rights:
                 return self._expr(multi_e.atom_e.expr, nested=nested)
             case _:
@@ -580,6 +591,16 @@ def _referred_type(registry: TypeRegistry, attribute: AtlasAttribute) -> EntityT
     if isinstance(element, ObjectIdType):
         return registry.entity_type(element.object_type)
     return element if isinstance(element, EntityType) else None
+
+
+def _has_term(text: str) -> HasTerm:
+    """``addHasTerm``: by qualified name when the name holds ``@``, else by name; quotes removed (GTA-07)."""
+    parts = text.split("@")
+    while len(parts) > 1 and not parts[-1]:
+        parts.pop()  # String.split drops trailing empty strings
+    if len(parts) > 1:
+        return HasTerm("qualifiedName", ih.remove_quotes(text))
+    return HasTerm("name", ih.remove_quotes(parts[0]))
 
 
 def _subject(comp_e: CompE) -> ArithE | None:

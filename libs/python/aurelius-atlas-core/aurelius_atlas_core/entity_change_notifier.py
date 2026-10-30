@@ -1,8 +1,8 @@
 """``EntityChangeNotifier``: the entities and classifications a request changed, told to its listeners.
 
 Atlas's ``AtlasEntityChangeNotifier`` (``onEntitiesMutated``, ``pruneResponse``, ``toAtlasEntities``, the
-classification methods, ``notifyPropagatedEntities``) for the entity change listeners of version 2, of which the
-audit listener is the one Aurelius Atlas has (AUD-02, CAU-01 to CAU-06, DD-084, DD-085).
+classification methods, ``notifyPropagatedEntities``, the term methods) for the entity change listeners of version 2,
+of which the audit listener is the one Aurelius Atlas has (AUD-02, CAU-01 to CAU-06, GTA-04, DD-084, DD-085).
 """
 
 from collections.abc import Callable, Collection, Mapping, Sequence
@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from aurelius_atlas_model.errors import AtlasError
+from aurelius_atlas_model.glossary import AtlasGlossaryTerm
 from aurelius_atlas_model.instance import (
     AtlasClassification,
     AtlasEntity,
@@ -60,6 +61,14 @@ class EntityChangeListener(Protocol):
         self, guids: Sequence[str], classifications: Sequence[AtlasClassification], *, user: str | None
     ) -> None:
         """``onClassificationsDeleted``: the classifications removed from each entity, directly or propagated."""
+        ...
+
+    async def on_term_added(self, term: AtlasGlossaryTerm, guids: Sequence[str], *, user: str | None) -> None:
+        """``onTermAdded``: the term assigned to each entity."""
+        ...
+
+    async def on_term_deleted(self, term: AtlasGlossaryTerm, guids: Sequence[str], *, user: str | None) -> None:
+        """``onTermDeleted``: the term's assignment to each entity removed."""
         ...
 
 
@@ -150,6 +159,29 @@ class EntityChangeNotifier:
         read = await self._read(classifications)
         for listener in self._listeners:
             await listener.on_classifications_deleted(guids, read, user=user)
+
+    async def on_term_added_to_entities(
+        self, term: AtlasGlossaryTerm, guids: Sequence[str], *, user: str | None
+    ) -> None:
+        """``onTermAddedToEntities``: the term assigned to the entities of these GUIDs that exist (GTA-04)."""
+        found = await self._existing(guids)
+        if found:
+            for listener in self._listeners:
+                await listener.on_term_added(term, found, user=user)
+
+    async def on_term_deleted_from_entities(
+        self, term: AtlasGlossaryTerm, guids: Sequence[str], *, user: str | None
+    ) -> None:
+        """``onTermDeletedFromEntities``: the term's assignment to the entities that exist removed (GTA-04)."""
+        found = await self._existing(guids)
+        if found:
+            for listener in self._listeners:
+                await listener.on_term_deleted(term, found, user=user)
+
+    async def _existing(self, guids: Sequence[str]) -> list[str]:
+        """``getAndCacheEntity``: the GUIDs of entities there are, in order."""
+        found = await self._store.get_many(list(dict.fromkeys(guids)))
+        return [guid for guid in guids if guid in found]
 
     async def notify_propagated_entities(
         self,

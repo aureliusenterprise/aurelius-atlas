@@ -60,7 +60,7 @@ class EntityDiscoveryService:
 
         Raises:
             AtlasError: As ``SearchContext`` checks; ``INVALID_SEARCH_PARAMS`` for a search of no type,
-                classification or query (DV-46).
+                classification, query or term (DV-46).
         """
         parameters = parameters.model_copy(deep=True)
         if parameters.query:
@@ -90,10 +90,15 @@ class EntityDiscoveryService:
 
         Raises:
             AtlasError: As ``SearchContext`` checks; ``INVALID_SEARCH_PARAMS`` for a search of no type,
-                classification or query (DV-46).
+                classification, query or term (DV-46).
         """
         context = SearchContext(parameters, self._store.registry)
-        if not context.entity_types and context.classification_mode is None and context.text is None:
+        if (
+            not context.entity_types
+            and context.classification_mode is None
+            and context.text is None
+            and not parameters.term_name
+        ):
             raise AtlasError(AtlasErrorCode.INVALID_SEARCH_PARAMS)
         result = AtlasSearchResult(
             query_type=AtlasQueryType.BASIC, query_text=parameters.query, search_parameters=parameters

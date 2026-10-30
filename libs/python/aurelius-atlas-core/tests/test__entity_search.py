@@ -377,14 +377,14 @@ async def test__headers_carry_requested_and_filtered_attributes_and_referred_ent
     assert ("entities" in nothing, nothing["approximateCount"]) == (False, 0)
 
 
-@pytest.mark.covers(f"{S}", rules=["SRC-03"])
-async def test__parameters_not_supported_yet_and_no_type_are_refused(store: EntityStore) -> None:
-    """``termName`` until 5.2; no type, classification or query at all (DV-46)."""
+@pytest.mark.covers(f"{S}", rules=["SRC-03", "GTA-06"])
+async def test__an_unknown_term_and_no_type_are_refused(store: EntityStore) -> None:
+    """A ``termName`` no term has (GTA-06); no type, classification, query or term at all (DV-46)."""
     messages = []
     for body in ({"termName": "t"}, {}):
         with pytest.raises(AtlasError) as failed:
             await search(store, **body)
         messages.append((failed.value.code, failed.value.message))
 
-    assert messages[0] == (AtlasErrorCode.BAD_REQUEST, "Search by termName is not supported yet")
+    assert messages[0] == (AtlasErrorCode.UNKNOWN_GLOSSARY_TERM, "t: Unknown/invalid glossary term")
     assert messages[1][0] is AtlasErrorCode.INVALID_SEARCH_PARAMS

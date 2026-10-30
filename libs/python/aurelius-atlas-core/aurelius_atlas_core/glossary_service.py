@@ -1,6 +1,6 @@
-"""``GlossaryService``: glossaries, their categories and terms (GLS-01 to GLS-06, GCT-01 to GCT-07, GTM-01 to GTM-07).
+"""``GlossaryService``: glossaries, their categories and terms, and the terms' assignment to entities.
 
-The assignment of terms to entities follows in 5.2c.
+GLS-01 to GLS-06, GCT-01 to GCT-07, GTM-01 to GTM-07 and GTA-01 to GTA-04.
 """
 
 import contextlib
@@ -18,7 +18,9 @@ from aurelius_atlas_model.glossary import (
     AtlasTermCategorizationHeader,
     Relation,
 )
+from aurelius_atlas_model.instance import AtlasRelatedObjectId
 
+from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.glossary_category_utils import GlossaryCategoryUtils
@@ -75,11 +77,20 @@ def paginate[T](items: Sequence[T], offset: int, limit: int) -> list[T]:
 class GlossaryService:
     """Glossaries, categories and terms of the entities of ``store``."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
+    def __init__(
+        self,
+        store: EntityStore,
+        *,
+        user: str | None = None,
+        tasks: bool = False,
+        notifier: EntityChangeNotifier | None = None,
+    ) -> None:
         self._store = store
+        self._user = user
+        self._notifier = notifier
         self._data_access = DataAccess(store, user=user)
         self._category_utils = GlossaryCategoryUtils(store, self._data_access, user=user)
-        self._term_utils = GlossaryTermUtils(store, self._data_access, user=user)
+        self._term_utils = GlossaryTermUtils(store, self._data_access, user=user, tasks=tasks, notifier=notifier)
 
     async def get_glossaries(self, limit: int, offset: int, sort_order: SortOrder) -> list[AtlasGlossary]:
         """``getGlossaries``: every glossary, deleted ones too, by qualified name, paged (GLS-05, DV-100)."""
@@ -342,6 +353,40 @@ class GlossaryService:
             )
         await self._term_utils.process_term_relations(stored, stored, RelationshipOperation.DELETE)
         await self._data_access.delete(guid)
+
+    async def get_assigned_entities(
+        self, guid: str, offset: int, limit: int, sort_order: SortOrder
+    ) -> list[AtlasRelatedObjectId]:
+        """``getAssignedEntities``: the term's active assignments by display text, paged (GTA-01, DV-101)."""
+        term = await self._data_access.load(term_skeleton(guid))
+        found = sorted(
+            term.assigned_entities or [],
+            key=lambda entity: entity.display_text or "",
+            reverse=sort_order is SortOrder.DESCENDING,
+        )
+        return paginate(found, offset, limit)
+
+    async def assign_term_to_entities(self, guid: str, entities: list[AtlasRelatedObjectId]) -> None:
+        """``assignTermToEntities``: the term assigned to each entity, the assignments audited (GTA-02, GTA-04)."""
+        term = await self._data_access.load(term_skeleton(guid))
+        await self._term_utils.process_term_assignments(term, entities)
+        if self._notifier is not None:
+            await self._notifier.on_term_added_to_entities(
+                term, [str(entity.guid) for entity in entities], user=self._user
+            )
+
+    async def remove_term_from_entities(self, guid: str, entities: list[AtlasRelatedObjectId]) -> None:
+        """``removeTermFromEntities``: the assignments removed, the removals audited (GTA-03, GTA-04).
+
+        Raises:
+            AtlasError: ``TERM_DISSOCIATION_MISSING_RELATION_GUID`` or ``INVALID_TERM_DISSOCIATION``.
+        """
+        term = await self._data_access.load(term_skeleton(guid))
+        await self._term_utils.process_term_dissociation(term, entities)
+        if self._notifier is not None:
+            await self._notifier.on_term_deleted_from_entities(
+                term, [str(entity.guid) for entity in entities], user=self._user
+            )
 
     async def get_glossary_terms_headers(
         self, guid: str, offset: int, limit: int, sort_order: SortOrder

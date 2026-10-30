@@ -244,6 +244,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-245](#dd-245-lineage-walks-the-relationships-of-the-process-edges)                                              | Lineage walks the relationships of the process edges                                                                              | 5.1           | Proposed         |
 | [DD-246](#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores)                  | Glossary objects are entities written through the entity and relationship stores                                                  | 5.2           | Proposed         |
 | [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                          | Journal writes do not wait for a refresh                                                                                          | cross-cutting | Proposed         |
+| [DD-248](#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships)                                        | An entity's meanings are read from its listed relationships                                                                       | 5.2           | Proposed         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7488,3 +7489,28 @@ the glossary's writes: helps one feature, and departs from Atlas's sequence of w
 
 **Consequences.** A journal entry may be missing from a search for up to the refresh interval after it is
 written; nothing but recovery searches it. ENS-11's text names the journal as unrefreshed.
+
+### DD-248. An entity's meanings are read from its listed relationships
+
+- **Status:** Proposed
+- **Increment:** 5.2c
+- **Date:** 2026-10-31
+
+**Decision.** An entity header's `meanings` (GTA-05) are read from the relationships the entity lists
+(DD-061): those of type `AtlasGlossarySemanticAssignment` whose second end is the entity, in the order listed,
+with their terms read in one request. The relationships are read once per response, as the header's
+relationship attributes already read them. Basic search's `termName` and the DSL's `hasTerm` read the terms'
+listed relationships the same way and search the entities by GUID, as a DSL condition on referred entities
+does (DD-243).
+
+**Reason.** Atlas reads the entity's incoming edges with the assignment's label. The listing is the one place
+an entity's relationships are known by real-time `get`s, so a header read right after an assignment shows it,
+as every other relationship attribute does.
+
+**Alternatives.** A search of the relationship index by type and end: one request per page of headers, but it
+sees an assignment only after a refresh. A field of meanings on the entity document: every assignment would
+write the entity too.
+
+**Consequences.** A header costs a read of all the entity's relationships, also for an entity with many and no
+meanings; a header that reads relationship attributes pays it once. A term assigned to more entities than one
+search window holds is not searched beyond it.
