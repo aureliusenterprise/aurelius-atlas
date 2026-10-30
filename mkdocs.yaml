@@ -221,6 +221,7 @@ nav:
                       - 4.4a DSL search of entities: architecture/conversion/increments/4-4-dsl-entities.md
                       - 4.4b DSL projections and traversals: architecture/conversion/increments/4-4-dsl-projections.md
                       - 5.1 Lineage: architecture/conversion/increments/5-1-lineage.md
+                      - 5.2a Glossaries and categories: architecture/conversion/increments/5-2-glossaries-and-categories.md
                       - 7.0 Webapp foundation (umbrella): architecture/conversion/increments/7-0-webapp-foundation.md
                       - 7.1 Webapp shell and localisation: architecture/conversion/increments/7-1-webapp-shell.md
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md

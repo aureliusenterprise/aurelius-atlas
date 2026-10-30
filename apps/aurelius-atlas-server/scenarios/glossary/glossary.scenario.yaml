@@ -1,0 +1,126 @@
+name: A glossary and its categories are created, read, related and deleted
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/GlossaryREST.java
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#createGlossary
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#createCategory
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#getRelatedCategories
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryCategoryUtils.java
+    - repository/src/main/java/org/apache/atlas/repository/ogm/glossary/AtlasGlossaryDTO.java
+    - repository/src/test/java/org/apache/atlas/glossary/GlossaryServiceTest.java
+rules: [GLS-01, GLS-02, GLS-03, GLS-04, GCT-01, GCT-02, GCT-03, GCT-07]
+covers:
+    - aurelius_atlas_server.routes.glossary.create_glossary
+    - aurelius_atlas_server.routes.glossary.create_glossary_category
+    - aurelius_atlas_server.routes.glossary.get_related_categories
+    - aurelius_atlas_server.routes.glossary.partial_update_glossary
+    - aurelius_atlas_server.routes.glossary.delete_glossary
+stages:
+    - name: create a glossary named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary
+          json: { name: "scenario_glossary_{run}", shortDescription: "a glossary" }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "scenario_glossary_{run}"
+              name: "scenario_glossary_{run}"
+              shortDescription: "a glossary"
+          volatile:
+              - $.guid
+          save:
+              glossary: $.guid
+    - name: the same name again is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary
+          json: { name: "scenario_glossary_{run}" }
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-007
+              errorMessage: "Glossary with name scenario_glossary_{run} already exists"
+    - name: a category in it
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/category
+          json: { name: parent, anchor: { glossaryGuid: "{glossary}" } }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "parent@scenario_glossary_{run}"
+              name: parent
+              anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+          volatile:
+              - $.guid
+              - $.anchor.relationGuid
+          save:
+              parent: $.guid
+    - name: a child category below it, named below its parent
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/category
+          json: { name: child, anchor: { glossaryGuid: "{glossary}" }, parentCategory: { categoryGuid: "{parent}" } }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "child.parent@scenario_glossary_{run}"
+              name: child
+              anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+              parentCategory: { categoryGuid: "{parent}", relationGuid: a relationship GUID, displayText: parent }
+          volatile:
+              - $.guid
+              - $.anchor.relationGuid
+              - $.parentCategory.relationGuid
+          save:
+              child: $.guid
+    - name: the parent's related categories are its child
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/category/{parent}/related
+      response:
+          status: 200
+          json:
+              children:
+                  - {
+                        categoryGuid: "{child}",
+                        parentCategoryGuid: "{parent}",
+                        relationGuid: a relationship GUID,
+                        displayText: child,
+                    }
+          volatile:
+              - $.children[0].relationGuid
+    - name: a partial update of the glossary's description
+      request:
+          method: PUT
+          url: /api/atlas/v2/glossary/{glossary}/partial
+          json: { longDescription: "longer" }
+      response:
+          status: 200
+          json:
+              guid: "{glossary}"
+              qualifiedName: "scenario_glossary_{run}"
+              name: "scenario_glossary_{run}"
+              shortDescription: "a glossary"
+              longDescription: "longer"
+              categories: the two categories' headers
+          volatile:
+              - $.categories
+    - name: deleting the glossary deletes its categories
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/{glossary}
+      response:
+          status: 204
+    - name: its category is gone
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/category/{child}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: "Given instance guid {child} is invalid/not found"

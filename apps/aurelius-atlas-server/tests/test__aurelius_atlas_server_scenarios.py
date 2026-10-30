@@ -5,24 +5,27 @@ import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
-from aurelius_atlas_server.settings import ServerSettings
 
 SCENARIOS = Path(__file__).parents[1] / "scenarios"
-BASE_MODEL = Path("0000-Area0") / "0010-base_model.json"
-NEEDS_BASE_MODEL = ("lineage/",)
-"""Scenarios on the base model's types (``DataSet``, ``Process``), which the e2e server loads with every model."""
+CORE_MODELS = (Path("0000-Area0") / "0010-base_model.json", Path("0000-Area0") / "0011-glossary_model.json")
+NEEDS_CORE_MODELS = ("glossary/", "lineage/")
+"""Scenarios on the base and glossary models' types (``DataSet``, ``Process``, ``AtlasGlossary``), which the e2e
+server loads with every model."""
+
+
+def core_models(directory: Path) -> Path:
+    """A models directory holding Atlas's base and glossary models alone (MDL-16)."""
+    for model in CORE_MODELS:
+        (directory / model.parent).mkdir(parents=True, exist_ok=True)
+        shutil.copy(BUILTIN_MODELS_DIR / model, directory / model)
+    return directory
 
 
 @pytest.fixture
-def settings(settings: ServerSettings, tmp_path: Path, request: pytest.FixtureRequest) -> ServerSettings:
-    """The conftest's settings; for a scenario on the base model's types, that model alone (MDL-16)."""
+def models_dir(models_dir: Path, tmp_path: Path, request: pytest.FixtureRequest) -> Path:
+    """No models, but for a scenario on the core models' types those models alone."""
     scenario: Scenario = request.node.callspec.params["scenario"]
-    if not scenario.id.startswith(NEEDS_BASE_MODEL):
-        return settings
-    models = tmp_path / "base-model"
-    (models / BASE_MODEL.parent).mkdir(parents=True)
-    shutil.copy(BUILTIN_MODELS_DIR / BASE_MODEL, models / BASE_MODEL)
-    return settings.model_copy(update={"models_dir": models})
+    return core_models(tmp_path / "core-models") if scenario.id.startswith(NEEDS_CORE_MODELS) else models_dir
 
 
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
