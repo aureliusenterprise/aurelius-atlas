@@ -53,7 +53,9 @@ suggestions (DD-093, DD-094). Since
 [4.4a](../../../docs/architecture/conversion/increments/4-4-dsl-entities.md): DSL search of entities, the
 query parsed by `aurelius-atlas-dsl` and composed into the same search query (DD-242). Since
 [4.4b](../../../docs/architecture/conversion/increments/4-4-dsl-projections.md): DSL projections,
-aggregates and groups, and traversals into referred entities and classification attributes (DD-243).
+aggregates and groups, and traversals into referred entities and classification attributes (DD-243). Since
+[5.1](../../../docs/architecture/conversion/increments/5-1-lineage.md): lineage over the process
+edges' relationships, also on demand (DD-245).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -164,6 +166,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.select_clause_composer
 
 ::: aurelius_atlas_core.select_clause_projections
+
+::: aurelius_atlas_core.entity_lineage_service
 
 ::: aurelius_atlas_core.identifier_helper
 

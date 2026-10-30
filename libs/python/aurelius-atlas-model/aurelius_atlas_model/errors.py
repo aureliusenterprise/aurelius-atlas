@@ -173,6 +173,7 @@ class AtlasErrorCode(Enum):
     )
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
     INVALID_QUERY_LENGTH = (400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit")
+    LINEAGE_ON_DEMAND_NOT_ENABLED = (400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled")
     INVALID_DSL_QUERY = (
         400,
         "ATLAS-400-00-059",
@@ -321,6 +322,16 @@ class AtlasErrorCode(Enum):
         ),
     )
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
+    INVALID_LINEAGE_ENTITY_TYPE = (
+        404,
+        "ATLAS-404-00-011",
+        "Given instance guid {0} with type {1} is not a valid lineage entity type.",
+    )
+    NO_LINEAGE_CONSTRAINTS_FOR_GUID = (
+        404,
+        "ATLAS-404-00-016",
+        "No lineage constraints found for requested entity with guid : {0}",
+    )
     TYPE_GUID_NOT_FOUND = (404, "ATLAS-404-00-002", "Given type guid {0} was invalid")
     NO_CLASSIFICATIONS_FOUND_FOR_ENTITY = (404, "ATLAS-404-00-003", "No classifications associated with entity: {0}")
     INSTANCE_GUID_NOT_FOUND = (404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found")

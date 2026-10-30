@@ -75,6 +75,16 @@ class ServerSettings(BaseSettings):
     task_poll_seconds: float = Field(default=10.0, gt=0)
     """How often the worker looks for tasks other processes recorded or left behind (DD-080)."""
 
+    lineage_on_demand_enabled: bool = False
+    """Whether ``POST v2/lineage/{guid}`` answers lineage on demand: ``atlas.lineage.on.demand.enabled`` (LIN-06)."""
+
+    lineage_on_demand_default_node_count: int = Field(default=3, ge=1)
+    """The relations each way lineage on demand takes by default: ``atlas.lineage.on.demand.default.node.count``
+    (LIN-06)."""
+
+    lineage_max_node_count: int = Field(default=9000, ge=1)
+    """The relations past which lineage adds none (at most 9,000): ``atlas.lineage.max.node.count`` (LIN-04)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
 
