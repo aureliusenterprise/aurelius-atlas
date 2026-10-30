@@ -1,7 +1,7 @@
 # 4.4a DSL search of entities
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [\#164](<https://github.com/aureliusenterprise/aurelius-atlas/pull/164>)
 - **Records:** DD-242, DV-89 to DV-96; relies on DD-087 to DD-092, DD-240, DD-241
 
 The first part of increment 4.4: `GET /api/atlas/v2/search/dsl` answering the entities a DSL query finds, as `DiscoveryREST.searchUsingDSL` and the traversal executor of `EntityDiscoveryService.searchUsingDslQuery` answer them. `DSLVisitor` and `GremlinQueryComposer` are replaced: the syntax tree of 4.3 is composed into the filter tree of the basic search (DD-242), searched in one Elasticsearch query. Projections (`select`, `groupby`, aggregates) and traversals into referred entities are 4.4b.
