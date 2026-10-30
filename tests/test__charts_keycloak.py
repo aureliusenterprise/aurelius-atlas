@@ -21,7 +21,9 @@ from conftest import (
     helm_render,
     helm_render_fails,
     names,
+    peer_labels,
     pod_spec,
+    policy_peers_by_port,
 )
 
 
@@ -383,3 +385,115 @@ def test__postgres_volume_claim_storage_class() -> None:
     docs = helm_render(KC_CHART, sets=("global.storageClass=fast-ssd",))
     ss = find(docs, "StatefulSet", "atlas-keycloak-postgres")
     assert ss["spec"]["volumeClaimTemplates"][0]["spec"]["storageClassName"] == "fast-ssd"
+
+
+@pytest.mark.covers(rules=["CHT-62", "CHT-71"])
+def test__keycloak_admits_the_in_cluster_dialers(kc_docs: list[dict[str, Any]]) -> None:
+    """8443 accepts every credential-holder; 7800 only Keycloak; never 9000 (CHT-62/71).
+
+    The dialer set is the full one — the four apps, the collector (JWKS and
+    issuer-wait, DD-265's split-horizon), and the ES puller (its mint URL) —
+    not a per-flag negotiation the chart cannot see. The management port
+    appears in no rule; kubelet probes ride the node.
+    """
+    policy = find(kc_docs, "NetworkPolicy", "atlas-keycloak-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak")
+    assert policy_peers_by_port(kc_docs, "atlas-keycloak-ingress") == {
+        8443: {
+            "atlas-server",
+            "atlas-data2model",
+            "atlas-lineage-model",
+            "atlas-validate-entity",
+            "atlas-observability",
+            "atlas-elasticsearch-metrics-puller",
+        },
+        7800: {"atlas-keycloak"},
+    }
+    collector = [
+        e["podSelector"]["matchLabels"]
+        for r in policy["spec"]["ingress"]
+        for e in r["from"]
+        if e["podSelector"]["matchLabels"]["app.kubernetes.io/name"] == "atlas-observability"
+    ]
+    assert collector == [peer_labels("atlas-observability", component="observability")]
+    ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
+    assert ports == {8443, 7800}  # CHT-71: no management 9000
+
+
+@pytest.mark.covers(rules=["CHT-62", "CHT-63"])
+def test__telemetry_adds_the_keycloak_puller_to_both_policies() -> None:
+    """The chart's own puller (telemetry-gated) dials Keycloak and Postgres."""
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    dialers = policy_peers_by_port(docs, "atlas-keycloak-ingress")
+    assert dialers[8443] == {
+        "atlas-server",
+        "atlas-data2model",
+        "atlas-lineage-model",
+        "atlas-validate-entity",
+        "atlas-observability",
+        "atlas-elasticsearch-metrics-puller",
+        "atlas-keycloak-metrics-puller",
+    }
+    assert dialers[7800] == {"atlas-keycloak"}
+    assert policy_peers_by_port(docs, "atlas-keycloak-postgres-ingress") == {
+        5432: {"atlas-keycloak", "atlas-keycloak-metrics-puller"}
+    }
+
+
+@pytest.mark.covers(rules=["CHT-63"])
+def test__bundled_postgres_admits_only_keycloak(kc_docs: list[dict[str, Any]]) -> None:
+    """5432 accepts the Keycloak pods only (CHT-63, bare render)."""
+    policy = find(kc_docs, "NetworkPolicy", "atlas-keycloak-postgres-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak-postgres")
+    assert policy_peers_by_port(kc_docs, "atlas-keycloak-postgres-ingress") == {5432: {"atlas-keycloak"}}
+    ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
+    assert ports == {5432}
+
+
+@pytest.mark.covers(rules=["CHT-63"])
+def test__external_database_renders_no_postgres_policy() -> None:
+    """An external database moves the target off-cluster — no policy here (CHT-63)."""
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "global.domain=atlas.test",
+            "database.flavor=external",
+            "database.url=jdbc:postgresql://db.example:5432/keycloak?sslmode=verify-full&sslrootcert=/etc/aurelius-atlas/tls/ca.crt",
+        ),
+    )
+    assert names(docs, "NetworkPolicy") == {"atlas-keycloak-ingress"}
+
+
+@pytest.mark.covers(rules=["CHT-70"])
+def test__puller_peers_follow_the_release_prefix() -> None:
+    """fullname-derived peers carry the release-qualified pod name (CHT-70)."""
+    docs = helm_render(KC_CHART, release="foo", sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    peers = [
+        e["podSelector"]["matchLabels"]
+        for r in find(docs, "NetworkPolicy", "foo-atlas-keycloak-ingress")["spec"]["ingress"]
+        if r["ports"][0]["port"] == 8443
+        for e in r["from"]
+    ]
+    assert peer_labels("foo-atlas-keycloak-metrics-puller", instance="foo") in peers
+    assert peer_labels("atlas-server", instance="foo") in peers
+    pg_peers = [
+        e["podSelector"]["matchLabels"]
+        for r in find(docs, "NetworkPolicy", "foo-atlas-keycloak-postgres-ingress")["spec"]["ingress"]
+        for e in r["from"]
+    ]
+    assert peer_labels("foo-atlas-keycloak-metrics-puller", instance="foo") in pg_peers
+    assert peer_labels("atlas-keycloak", instance="foo") in pg_peers
+
+
+@pytest.mark.covers(rules=["CHT-62", "CHT-72"])
+def test__keycloak_network_policy_off_changes_nothing_else() -> None:
+    """The disable switch removes both policies and nothing else (CHT-72)."""
+    on = helm_render(KC_CHART)
+    off = helm_render(KC_CHART, sets=("networkPolicy.enabled=false",))
+    assert names(on, "NetworkPolicy") == {"atlas-keycloak-ingress", "atlas-keycloak-postgres-ingress"}
+    assert names(off, "NetworkPolicy") == set()
+
+    def rest(docs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
+
+    assert rest(on) == rest(off)

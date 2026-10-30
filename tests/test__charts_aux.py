@@ -10,7 +10,17 @@ settings.py requires both with no defaults).
 from typing import Any
 
 import pytest
-from conftest import AUX_CHARTS, env_map, env_value, find, helm_render, pod_spec
+from conftest import (
+    AUX_CHARTS,
+    env_map,
+    env_value,
+    find,
+    helm_render,
+    names,
+    peer_labels,
+    pod_spec,
+    policy_peers_by_port,
+)
 
 AUX = sorted(AUX_CHARTS)
 
@@ -144,3 +154,26 @@ def _app(docs: list[dict[str, Any]]) -> dict[str, Any]:
     deployment = find(docs, "Deployment", _expect(docs))
     (app,) = pod_spec(deployment)["containers"]
     return app
+
+
+@pytest.mark.covers(rules=["CHT-66"])
+def test__data2model_admits_only_lineage_model() -> None:
+    """21001 accepts the lineage-model join only (CHT-66)."""
+    chart = AUX_CHARTS["data2model"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    policy = find(docs, "NetworkPolicy", "atlas-data2model-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-data2model")
+    assert policy_peers_by_port(docs, "atlas-data2model-ingress") == {21001: {"atlas-lineage-model"}}
+
+
+@pytest.mark.covers(rules=["CHT-66"])
+def test__lineage_model_and_validate_entity_render_no_policies() -> None:
+    """Nothing in the system dials them, so no allow is rendered (CHT-66).
+
+    A policy here would be a lie about a caller that does not exist; the
+    charts render zero NetworkPolicy even with the default-on gate.
+    """
+    for component in ("lineage-model", "validate-entity"):
+        chart = AUX_CHARTS[component]
+        docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+        assert names(docs, "NetworkPolicy") == set()

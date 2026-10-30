@@ -90,8 +90,10 @@ Secret `atlas-otel-clients`). `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
 — stock render is loopback-only; the environment overlays name the pod CIDRs
 (the two-hop client-IP trust, DD-261/CHT-32). The chart renders standalone
 (test values) and through the umbrella (`helm/`); the chart-contract tests are
-`tests/test__charts_server.py`. Chart conventions and gotchas:
-`helm/AGENTS.md`.
+`tests/test__charts_server.py`. 10.6 adds the ingress allow (CHT-65): 21000
+from the webapp and lineage-model pods only (`networkPolicy.peers.*` rename
+the pod-name labels); the dashboard's gateway allow belongs to the umbrella.
+Chart conventions and gotchas: `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-server:helm-template

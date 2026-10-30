@@ -147,7 +147,11 @@ pg_hba ConfigMap, the `/tmp` tmpfs). The JVM trusts the cluster CA through the
 mounted issuer `ca.crt` — the dev truststore workaround is never rendered.
 Remember the
 issuer pin (runbook): Keycloak fixes its realm issuer at first boot, so the
-chart's `global.domain`/issuer URL is immutable for a volume. Conventions:
+chart's `global.domain`/issuer URL is immutable for a volume. 10.6 adds the
+ingress allows (CHT-62/63): 8443 from the credential-holding pods (server,
+the aux APIs, the collector, both pullers) plus jgroups 7800 self, and the
+bundled Postgres' 5432 from Keycloak and its puller only; the management
+port 9000 is rule-free (kubelet-exempt, CHT-71). Conventions:
 `helm/AGENTS.md`.
 
 ```bash
