@@ -1,7 +1,7 @@
 # 5.1 Lineage
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [\#167](<https://github.com/aureliusenterprise/aurelius-atlas/pull/167>)
 - **Records:** DD-244, DD-245; relies on DD-061, DD-065, DV-39
 
 Lineage as `LineageREST` and `EntityLineageService` answer it with Atlas's default traversal (`atlas.lineage.query.use.gremlin` false, `getLineageInfoV2`) and lineage on demand (`getLineageInfoOnDemand`): the processes and data sets an entity's `__Process.inputs` and `__Process.outputs` edges reach, here the relationships of those labels (DD-245).
