@@ -1,7 +1,7 @@
 # 5.2a Glossaries and categories
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#168](https://github.com/aureliusenterprise/aurelius-atlas/pull/168)
 - **Records:** DD-246, DV-99, DV-100; relies on DD-043, DD-061, DD-064, DV-39
 
 The first part of increment 5.2 (split by the user on 2026-10-30): glossaries and their categories, as
