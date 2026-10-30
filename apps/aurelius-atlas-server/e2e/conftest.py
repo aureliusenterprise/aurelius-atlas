@@ -14,6 +14,9 @@ CA_FILE = PROJECT / "certs" / "ca.pem"
 """The dev CA (`nx certgen`) that signed the server's and the store's certificates."""
 
 SERVICE = "aurelius-atlas-server"
+TIMEOUT = httpx.Timeout(30.0)
+"""Per request: httpx's 5-second default was hit on shared CI runners by entity writes that refresh the store's
+indices (``ReadTimeout`` in ``entity-owned-drop`` and ``entity-classification-propagation``)."""
 
 
 @pytest.fixture(scope="session")
@@ -36,7 +39,9 @@ def _environment() -> None:
 @pytest_asyncio.fixture(loop_scope="function")
 async def client(server: str) -> AsyncIterator[httpx.AsyncClient]:
     """A client for the running server over HTTPS, verifying it against the dev CA."""
-    async with httpx.AsyncClient(base_url=server, verify=ssl.create_default_context(cafile=CA_FILE)) as client:
+    async with httpx.AsyncClient(
+        base_url=server, verify=ssl.create_default_context(cafile=CA_FILE), timeout=TIMEOUT
+    ) as client:
         yield client
 
 
@@ -52,5 +57,7 @@ async def api(server: str) -> AsyncIterator[AtlasClient]:
     routes are open until 6.1, so the token source is empty — an empty source
     travels unauthenticated (CL-03), exactly as the dashboard calls arrive.
     """
-    async with httpx.AsyncClient(base_url=server, verify=ssl.create_default_context(cafile=CA_FILE)) as http:
+    async with httpx.AsyncClient(
+        base_url=server, verify=ssl.create_default_context(cafile=CA_FILE), timeout=TIMEOUT
+    ) as http:
         yield AtlasClient(http, "")
