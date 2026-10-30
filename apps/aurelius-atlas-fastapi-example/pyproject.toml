@@ -3,7 +3,7 @@ dependencies = [
     "aurelius-atlas-example",
     "aurelius-atlas-otel",
     "aurelius-atlas-sdk[postgresql]",
-    "cachetools>=7.2.1",
+    "cachetools>=7.2.6",
     "cryptography>=50.0.1",
     "fastapi>=0.162.0",
     "httpx2>=2.0.0",
