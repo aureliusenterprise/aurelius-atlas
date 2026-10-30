@@ -376,6 +376,7 @@ name = "aurelius-atlas-core"
 version = "0.6.1"
 source = { editable = "libs/python/aurelius-atlas-core" }
 dependencies = [
+    { name = "aurelius-atlas-dsl" },
     { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-store-es" },
     { name = "aurelius-atlas-typesystem" },
@@ -384,6 +385,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aurelius-atlas-dsl", editable = "libs/python/aurelius-atlas-dsl" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
     { name = "aurelius-atlas-typesystem", editable = "libs/python/aurelius-atlas-typesystem" },

@@ -769,6 +769,10 @@ def _es_filter(node: Filter) -> dict[str, Any]:  # noqa: C901, PLR0911, PLR0912 
         case Test.MATCHES:
             pattern = "*".join(_escape_wildcard(part) for part in str(value).split("*"))
             return {"wildcard": {path: {"value": pattern, "case_insensitive": True}}}
+        case Test.REGEX:
+            return {"regexp": {path: {"value": value, "flags": "NONE"}}}
+        case Test.WORD_REGEX:
+            return {"regexp": {f"{path}.{TEXT}": {"value": value, "flags": "NONE", "case_insensitive": True}}}
         case Test.EQ:
             return {"term": {path: value}}
         case Test.NEQ:

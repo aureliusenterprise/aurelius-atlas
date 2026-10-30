@@ -1,7 +1,7 @@
-"""The search endpoints of ``DiscoveryREST`` under ``/api/atlas/v2/search`` (SRC-02, FTX-05, QSR-01, SUG-01).
+"""The search endpoints of ``DiscoveryREST`` under ``/api/atlas/v2/search`` (SRC-02, FTX-05, QSR-01, SUG-01, DSE-01).
 
 ``searchUsingBasic``, ``searchWithParameters``, ``searchUsingAttribute``, ``searchUsingFullText``, both
-``quickSearch`` and ``getSuggestions``; the other searches follow in later increments (4.4, 4.5).
+``quickSearch``, ``getSuggestions`` and ``searchUsingDSL``; the other searches follow in later increments (4.5).
 """
 
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
@@ -34,6 +34,9 @@ FILTERS_WITHOUT_TAG = "TagFilters specified without tag name"
 SORT_WITHOUT_TYPE = "SortBy specified without Type name"
 NO_ATTRIBUTE_SEARCH = "attrName : {name}, attrValue: {value} for attribute search."
 MAX_FULLTEXT_QUERY_STR_LENGTH = "atlas.graph.fulltext-max-query-str-length"
+MAX_DSL_QUERY_STR_LENGTH = "atlas.graph.dsl-max-query-str-length"
+MAX_DSL_QUERY_LENGTH = 4096
+"""``atlas.graph.dsl-max-query-str-length``'s default."""
 
 
 def _empty(criteria: FilterCriteria | None) -> bool:
@@ -126,6 +129,37 @@ async def search_using_full_text(request: Request, store: Store) -> AtlasJSONRes
         offset=java_number(request, "offset", 0, INT_RANGE),
     )
     return AtlasJSONResponse(content=result.to_json())
+
+
+@DISCOVERY.get("/dsl")
+async def search_using_dsl(request: Request, store: Store) -> AtlasJSONResponse:
+    """``searchUsingDSL``: the entities a DSL query finds, of ``typeName`` and ``classification`` (DSE-01, DSE-02)."""
+    query = first_value(request, "query")
+    type_name = first_value(request, "typeName")
+    classification = first_value(request, "classification")
+    validate_dsl_search_parameters(query, type_name, classification)
+    service = EntityDiscoveryService(store)
+    result = await service.search_using_dsl_query(
+        service.get_dsl_query_using_type_name_classification(query, type_name, classification),
+        java_number(request, "limit", 0, INT_RANGE),
+        java_number(request, "offset", 0, INT_RANGE),
+    )
+    return AtlasJSONResponse(content=result.to_json())
+
+
+def validate_dsl_search_parameters(query: str | None, type_name: str | None, classification: str | None) -> None:
+    """``validateDSLSearchParameters``: ``typeName`` and ``classification`` at most 4,096 characters, the query at
+    most ``atlas.graph.dsl-max-query-str-length`` (DSE-01).
+
+    Raises:
+        AtlasError: ``INVALID_QUERY_PARAM_LENGTH`` or ``INVALID_QUERY_LENGTH``.
+    """  # noqa: D205 - one sentence
+    if type_name is not None:
+        validate_param_length("typeName", type_name)
+    if classification is not None:
+        validate_param_length("classification", classification)
+    if query and len(query) > MAX_DSL_QUERY_LENGTH:
+        raise AtlasError(AtlasErrorCode.INVALID_QUERY_LENGTH, MAX_DSL_QUERY_STR_LENGTH)
 
 
 def validate_quick_search_parameters(parameters: QuickSearchParameters) -> None:

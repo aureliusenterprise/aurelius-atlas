@@ -45,4 +45,5 @@ npx nx generate-parser aurelius-atlas-dsl  # needs Java 11+; then commit generat
 
 ## Removal
 
-Remove it together with DSL search (4.4), which composes its queries from the tree.
+Not removable on its own: `aurelius-atlas-core` composes DSL search (4.4) from its tree; remove both together
+with `GET /search/dsl`.

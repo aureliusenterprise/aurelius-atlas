@@ -1,5 +1,6 @@
 [project]
 dependencies = [
+    "aurelius-atlas-dsl",
     "aurelius-atlas-model",
     "aurelius-atlas-store-es",
     "aurelius-atlas-typesystem",
@@ -12,6 +13,9 @@ version = "0.6.1"
 
 [[project.authors]]
 name = "Aurelius Enterprise"
+
+[tool.uv.sources.aurelius-atlas-dsl]
+workspace = true
 
 [tool.uv.sources.aurelius-atlas-model]
 workspace = true

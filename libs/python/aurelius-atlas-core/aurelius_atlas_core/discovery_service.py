@@ -2,7 +2,7 @@
 
 Atlas's ``EntityDiscoveryService.searchWithParameters`` and ``searchWithSearchContext`` with
 ``QueryParams.getNormalizedParams``, for the entity search of 4.1a (DD-087), with the free text of 4.2a and
-``searchUsingFullTextQuery`` (DD-091), and the quick search of 4.2b.
+``searchUsingFullTextQuery`` (DD-091), the quick search of 4.2b, and DSL search (4.4a).
 """
 
 from collections.abc import Iterable
@@ -25,6 +25,7 @@ from aurelius_atlas_typesystem.atlas_type import resolved
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.entity_type import EntityType
 
+from aurelius_atlas_core.dsl_query_executor import DslQueryExecutor
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_search_processor import EntitySearchProcessor
 from aurelius_atlas_core.entity_store import EntityStore
@@ -132,6 +133,30 @@ class EntityDiscoveryService:
         return AtlasSearchResult(
             query_type=AtlasQueryType.FULL_TEXT, query_text=query, full_text_result=found, approximate_count=total
         )
+
+    async def search_using_dsl_query(self, dsl_query: str, limit: int, offset: int) -> AtlasSearchResult:
+        """``searchUsingDslQuery``: the entities a DSL query finds, its limit and offset normalised (DSE-01, DSE-03).
+
+        Raises:
+            AtlasError: ``INVALID_DSL_QUERY``, as ``DslQueryExecutor.execute`` raises it.
+        """
+        limit, offset = normalized(limit, offset)
+        return await DslQueryExecutor(self._store).execute(dsl_query, limit, offset)
+
+    @staticmethod
+    def get_dsl_query_using_type_name_classification(
+        query: str | None, type_name: str | None, classification: str | None
+    ) -> str:
+        """``getDslQueryUsingTypeNameClassification``: the type in backticks before the query, and ``isa`` the
+        classification after a type without a query (DSE-02).
+        """  # noqa: D205 - one sentence
+        query_str = query or ""
+        if type_name:
+            escaped = type_name if type_name.startswith("`") and type_name.endswith("`") else f"`{type_name}`"
+            query_str = f"{escaped} {query_str}"
+        if classification and not query:
+            query_str += f" isa {classification}"
+        return query_str
 
     async def _headers(self, context: SearchContext, found: list[StoredEntity], result: AtlasSearchResult) -> None:
         """Each entity's header with the result attributes, and the headers of the entities they refer to (SRC-09)."""

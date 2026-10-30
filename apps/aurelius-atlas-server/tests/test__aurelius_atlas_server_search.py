@@ -222,3 +222,43 @@ async def test__suggestions_answer_the_prefix_and_its_terms(client: httpx.AsyncC
     assert default == {"prefixString": "t", "suggestions": []}
     assert typed == {"prefixString": "s_", "fieldName": "__typeName", "suggestions": ["s_table"]}
     assert tables
+
+
+@pytest.mark.covers(
+    f"{D}.search_using_dsl", f"{D}.validate_dsl_search_parameters", rules=["DSE-01", "DSE-02", "DSE-13"]
+)
+async def test__a_dsl_search_answers_the_entities_it_finds(client: httpx.AsyncClient, tables: list[str]) -> None:
+    """``typeName`` before the query, the request's limit; a header per table found."""
+    status, found = await send(
+        client, "GET", f"{SEARCH}/dsl", params={"typeName": "s_table", "query": "where name != 'two'", "limit": "1"}
+    )
+    _, by_query = await send(client, "GET", f"{SEARCH}/dsl", params={"query": "s_table orderby name desc"})
+
+    assert (status, found["queryType"], found["queryText"]) == (200, "DSL", "`s_table` where name != 'two'")
+    assert len(found["entities"]) == 1
+    assert found["entities"][0]["guid"] in {tables[0], tables[2]}
+    assert [entity["attributes"]["name"] for entity in by_query["entities"]] == ["two", "three", "one"]
+
+
+@pytest.mark.covers(f"{D}.search_using_dsl", f"{D}.validate_dsl_search_parameters", rules=["DSE-01", "DSE-14"])
+async def test__a_dsl_search_fails_with_atlas_errors(client: httpx.AsyncClient, tables: list[str]) -> None:  # noqa: ARG001 - the types
+    """Over-long parameters and query, a query that does not parse, one naming no type."""
+    cases = [
+        (
+            {"query": "x" * 4097},
+            "ATLAS-400-00-058",
+            "Invalid query length, update atlas.graph.dsl-max-query-str-length",
+        ),
+        ({"query": "s_table", "typeName": "x" * 4097}, "ATLAS-400-00-057", "Length of query param typeName exceeds"),
+        (
+            {"query": "s_table", "classification": "x" * 4097},
+            "ATLAS-400-00-057",
+            "Length of query param classification",
+        ),
+        ({"query": "s_table where"}, "ATLAS-400-00-059", "Invalid DSL query: s_table where limit 100 offset 0 | "),
+        ({"query": "nope"}, "ATLAS-400-00-059", "Invalid DSL query: nope limit 100 offset 0 | Reason: DSL Semantic"),
+    ]
+    for params, code, message in cases:
+        status, body = await send(client, "GET", f"{SEARCH}/dsl", params=params)
+        assert (status, body["errorCode"]) == (400, code), params
+        assert body["errorMessage"].startswith(message), body

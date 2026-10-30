@@ -356,6 +356,13 @@ CRITERIA = [
     Criterion("long.t.n", Test.ANY_OF, frozenset({2}), array=False),
     Criterion("keyword.t.name", Test.MATCHES, "AL*"),
     Criterion("keyword.t.tags", Test.MATCHES, "X", array=True),
+    Criterion("keyword.t.name", Test.REGEX, "al.*"),
+    Criterion("keyword.t.name", Test.REGEX, "AL.*"),
+    Criterion("keyword.t.name", Test.REGEX, "a\\*b"),
+    Criterion("keyword.t.tags", Test.REGEX, "[xz]"),
+    Criterion("keyword.t.name", Test.WORD_REGEX, "AL.*"),
+    Criterion("keyword.t.name", Test.WORD_REGEX, "b"),
+    Criterion("keyword.t.tags", Test.WORD_REGEX, "Y"),
     Group(Condition.AND, (Criterion("long.t.n", Test.NOT_NULL), Criterion("keyword.t.name", Test.CONTAINS, "a"))),
 ]
 

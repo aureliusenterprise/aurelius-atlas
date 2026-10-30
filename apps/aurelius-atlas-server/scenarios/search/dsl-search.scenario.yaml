@@ -1,0 +1,230 @@
+name: Entities are found by a DSL query, of a type and a classification
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#searchUsingDSL
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#validateDSLSearchParameters
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#searchUsingDslQuery
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#getDslQueryUsingTypeNameClassification
+    - repository/src/main/java/org/apache/atlas/query/executors/TraversalBasedExecutor.java
+    - repository/src/main/java/org/apache/atlas/query/GremlinQueryComposer.java#addWhere
+    - repository/src/main/java/org/apache/atlas/query/AtlasDSL.java#Parser
+    - repository/src/test/java/org/apache/atlas/query/DSLQueriesTest.java
+rules: [DSE-02, DSE-03, DSE-04, DSE-06, DSE-10, DSE-13, DSE-14]
+covers:
+    - aurelius_atlas_server.routes.discovery.search_using_dsl
+stages:
+    - name: create a table type and a classification type with a level, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              classificationDefs:
+                  - name: scenario_dtag_{run}
+                    attributeDefs:
+                        - { name: level, typeName: int, isOptional: true }
+              entityDefs:
+                  - name: scenario_dtable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_dtag_{run}
+                    description: scenario_dtag_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: level
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: admin
+                    updatedBy: admin
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_dtable_{run}
+                    description: scenario_dtable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: admin
+                    updatedBy: admin
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.classificationDefs[*].guid
+              - $.classificationDefs[*].createTime
+              - $.classificationDefs[*].updateTime
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+          deviations:
+              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
+              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
+    - name: create two tables
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - { typeName: "scenario_dtable_{run}", guid: "-1", attributes: { qualifiedName: "dt1_{run}" } }
+                  - { typeName: "scenario_dtable_{run}", guid: "-2", attributes: { qualifiedName: "dt2_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_dtable_{run}
+                        attributes: { qualifiedName: "dt1_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: dt1_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+                      - typeName: scenario_dtable_{run}
+                        attributes: { qualifiedName: "dt2_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: dt2_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID, "-2": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+              - $.guidAssignments['-2']
+          save:
+              first: $.guidAssignments['-1']
+              second: $.guidAssignments['-2']
+    - name: classify the first at level 3
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{first}/classifications
+          json: [{ typeName: "scenario_dtag_{run}", attributes: { level: 3 } }]
+      response:
+          status: 204
+    - name: "typeName and classification: the type isa the classification"
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { typeName: "scenario_dtable_{run}", classification: "scenario_dtag_{run}" }
+      response:
+          status: 200
+          json:
+              queryType: DSL
+              queryText: "`scenario_dtable_{run}`  isa scenario_dtag_{run}"
+              entities:
+                  - typeName: scenario_dtable_{run}
+                    attributes: { qualifiedName: "dt1_{run}" }
+                    guid: "{first}"
+                    status: ACTIVE
+                    displayText: dt1_{run}
+                    classificationNames: ["scenario_dtag_{run}"]
+                    classifications:
+                        - typeName: scenario_dtag_{run}
+                          attributes: { level: 3 }
+                          entityGuid: "{first}"
+                          entityStatus: ACTIVE
+                          propagate: true
+                          removePropagationsOnEntityDelete: false
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: -1
+    - name: a query comparing an attribute, the request's offset not counting with the query's own limit
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_dtable_{run} where qualifiedName != 'dt1_{run}' limit 5", offset: "3" }
+      response:
+          status: 200
+          json:
+              queryType: DSL
+              queryText: "scenario_dtable_{run} where qualifiedName != 'dt1_{run}' limit 5"
+              entities:
+                  - typeName: scenario_dtable_{run}
+                    attributes: { qualifiedName: "dt2_{run}" }
+                    guid: "{second}"
+                    status: ACTIVE
+                    displayText: dt2_{run}
+                    classificationNames: []
+                    classifications: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: -1
+    - name: none found, no entities
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_dtable_{run} isa _NOT_CLASSIFIED and qualifiedName = 'dt1_{run}'" }
+      response:
+          status: 200
+          json:
+              queryType: DSL
+              queryText: "scenario_dtable_{run} isa _NOT_CLASSIFIED and qualifiedName = 'dt1_{run}'"
+              approximateCount: -1
+    - name: a query that does not parse names the text parsed, limit and offset appended
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_dtable_{run} where" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-059
+              errorMessage: "Invalid DSL query: scenario_dtable_{run} where limit 100 offset 0 | Reason: no viable alternative at input 'scenario_dtable_{run} where limit'. Please refer to Atlas DSL grammar for more information"
+    - name: a type is no classification
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_dtable_{run} isa scenario_dtable_{run}" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-059
+              errorMessage: "Invalid DSL query: scenario_dtable_{run} isa scenario_dtable_{run} limit 100 offset 0 | Reason: DSL Semantic Error - scenario_dtable_{run} classification not found. Please refer to Atlas DSL grammar for more information"

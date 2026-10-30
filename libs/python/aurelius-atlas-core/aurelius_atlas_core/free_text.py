@@ -108,10 +108,15 @@ def text_matches(query: str, values: Mapping[str, object], fields: Mapping[str, 
     for field, weight in fields.items():
         value = values.get(field)
         items = value if isinstance(value, list) else [] if value is None else [value]
-        words = {word.lower() for item in items for word in _WORD.findall(str(item))}
-        if any(_term_matches(term, words) for term in terms):
+        found = {word for item in items for word in words(str(item))}
+        if any(_term_matches(term, found) for term in terms):
             score += weight
     return score
+
+
+def words(value: str) -> list[str]:
+    """The words of a value, lower-cased: the in-memory reading of the text sub-field's analysis (DD-092)."""
+    return [word.lower() for word in _WORD.findall(value)]
 
 
 MIN_SUGGESTION_WEIGHT = 8
@@ -133,7 +138,7 @@ def field_terms(found: Sequence[Mapping[str, object]], field: str, prefix: str) 
     for values in found:
         value = values.get(field)
         items = value if isinstance(value, list) else [] if value is None else [value]
-        tally.update({word.lower() for item in items for word in _WORD.findall(str(item))})
+        tally.update({word for item in items for word in words(str(item))})
     matching = [(term, count) for term, count in tally.items() if term.startswith(prefix)]
     return sorted(matching, key=lambda item: (-item[1], item[0]))[:TERM_COUNT]
 
