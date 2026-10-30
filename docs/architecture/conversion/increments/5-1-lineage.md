@@ -1,7 +1,7 @@
 # 5.1 Lineage
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#167](https://github.com/aureliusenterprise/aurelius-atlas/pull/167)
 - **Records:** DD-244, DD-245; relies on DD-061, DD-065, DV-39
 
 Lineage as `LineageREST` and `EntityLineageService` answer it with Atlas's default traversal
