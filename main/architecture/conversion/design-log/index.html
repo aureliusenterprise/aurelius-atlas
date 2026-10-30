@@ -6242,6 +6242,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-242. A DSL query is composed into the basic search's filter tree
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6321,6 +6332,8 @@
       
         
           
+        
+      
         
       
         
@@ -7404,6 +7417,33 @@
     
   
   4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
 
     
   </span>
@@ -12368,6 +12408,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-242. A DSL query is composed into the basic search's filter tree
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13750,6 +13801,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes">DD-241</a></td>
 <td>The parse tree is handed on as typed, immutable nodes</td>
 <td>4.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree">DD-242</a></td>
+<td>A DSL query is composed into the basic search's filter tree</td>
+<td>4.4</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -20374,6 +20431,32 @@ to the generated code. An abstract tree that folds Atlas's rules into precedence
 joins conditions left to right, and the folding belongs to the composer that reproduces it.</p>
 <p><strong>Consequences.</strong> 4.4 composes Elasticsearch queries from <code>dsl_tree</code> alone. A grammar change touches
 <code>dsl_tree</code> and <code>tree_builder</code> too.</p>
+<h3 id="dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree">DD-242. A DSL query is composed into the basic search's filter tree<a class="headerlink" href="#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.4</li>
+<li><strong>Date:</strong> 2026-10-30</li>
+</ul>
+<p><strong>Decision.</strong> <code>DSLVisitor</code> and <code>GremlinQueryComposer</code> are replaced by one composer in <code>aurelius-atlas-core</code>
+(<code>dsl_query_composer</code>) that walks the syntax tree of 4.3 (DD-241) and writes the <code>SearchQuery</code> of the basic
+search (DD-089): the sources and conditions as one filter tree of <code>Criterion</code> and <code>Group</code> over the search
+fields (DD-088), the <code>orderby</code> as its sort, the limit and offset as its page. <code>like</code> adds two tests to the
+search query: <code>REGEX</code>, a regular expression the whole keyword value matches in case, and <code>WORD_REGEX</code>, one a
+word of the text sub-field (DD-092) matches in any case; Elasticsearch answers both with <code>regexp</code>, the
+in-memory documents with Python's <code>re</code>. The composer keeps Atlas's name resolution (<code>IdentifierHelper.Info</code>,
+<code>RegistryBasedLookup</code>), its left-to-right joining of <code>and</code> and <code>or</code>, and its semantic errors, collected and
+joined into one <code>INVALID_DSL_QUERY</code>. <code>aurelius-atlas-core</code> depends on <code>aurelius-atlas-dsl</code>.</p>
+<p><strong>Reason.</strong> Atlas's composer writes Gremlin text that its executor turns back into a traversal; every clause
+of 4.4a is a test of the entity's own fields, which the basic search already translates to Elasticsearch and
+evaluates in memory. One filter tree keeps a DSL query to one Elasticsearch request, reuses the paging,
+sorting and tie-breaking of the basic search, and lets the in-memory documents answer the core tests.</p>
+<p><strong>Alternatives.</strong> Port <code>GremlinQueryComposer</code> clause by clause and translate the clause list: the closest
+port, but a second translation of every predicate the basic search already has. Elasticsearch's query string
+syntax: a client's query would reach Elasticsearch's parser, with neither Atlas's grammar nor its errors.</p>
+<p><strong>Consequences.</strong> Traversals into referred entities, classification attributes and projections (4.4b) are not
+tests of one document's fields; 4.4b decides how they are evaluated, over the relationship documents (DD-061).
+Lucene's regular expressions are not Java's or Python's: the patterns <code>like</code> writes (<code>.</code>, <code>.*</code>, escaped
+characters, classes) read the same in all three, which the e2e tests check.</p>
 
 
 

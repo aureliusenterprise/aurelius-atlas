@@ -4059,6 +4059,8 @@
       
         
       
+        
+      
     
     
     
@@ -5018,6 +5020,33 @@
     
   
   4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
 
     
   </span>
@@ -8334,6 +8363,70 @@ Atlas clients expect when it lands).</p>
 <td><code>INVALID_DSL_QUERY</code>, naming the number</td>
 <td>A number the query got wrong is the client's error</td>
 <td>4.3</td>
+</tr>
+<tr>
+<td>DV-89</td>
+<td>Search</td>
+<td>DSL operator words (<code>lt</code>, <code>eq</code>, ...) fail with an internal error: the upper-cased word is no operator symbol</td>
+<td>They compare as their symbols</td>
+<td>A documented spelling of the grammar should work</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-90</td>
+<td>Search</td>
+<td>A DSL number gets <code>L</code>, <code>f</code> or <code>d</code> appended before it is read; a <code>long</code> attribute cannot read it and compares with <code>null</code></td>
+<td>The number is read as the attribute's type</td>
+<td>Comparing a <code>long</code> attribute should find entities</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-91</td>
+<td>Search</td>
+<td>A DSL value array is compared as strings</td>
+<td>Its values are read as the attribute's type</td>
+<td>Numbers in an array should match numbers</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-92</td>
+<td>Search</td>
+<td>DSL <code>like</code> on words matches the index's tokens, the pattern in case against lower-cased words</td>
+<td>The words of the text sub-field (DD-092), in any case</td>
+<td>One reading of words for every search; an upper-case pattern should match</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-93</td>
+<td>Search</td>
+<td>A DSL query's reason lists every message the composer adds, some following from an earlier one</td>
+<td>The messages of the rules of 4.4a</td>
+<td>The follow-on messages depend on the Gremlin composer's internals</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-94</td>
+<td>Search</td>
+<td>DSL entities come in the order the graph finds them</td>
+<td>By creation time, then GUID</td>
+<td>A stable answer and stable pages</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-95</td>
+<td>Search</td>
+<td><code>hasTerm</code>, arithmetic, aggregates or a bare name as a condition, an expression after <code>isa</code>, a <code>where</code> before any source fail with an internal error, a malformed traversal or no condition</td>
+<td><code>INVALID_DSL_QUERY</code> with a reason (<code>hasTerm</code> until 5.2)</td>
+<td>A client error should say what is wrong</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-96</td>
+<td>Search</td>
+<td>DSL <code>select</code>, <code>groupby</code>, referred attributes and classification attributes are searched</td>
+<td><code>INVALID_DSL_QUERY</code> with a reason, until 4.4b</td>
+<td>Temporary: 4.4 is split (4.4a, 4.4b)</td>
+<td>4.4</td>
 </tr>
 </tbody>
 </table>
