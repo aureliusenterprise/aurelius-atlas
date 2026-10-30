@@ -1,4 +1,4 @@
-"""DSL search of entities (DSE-02 to DSE-15) on the in-memory documents.
+"""DSL search of entities (DSE-02 to DSE-15) on the in-memory documents; 4.4b's in ``test__dsl_projections``.
 
 Read from ``EntityDiscoveryService.searchUsingDslQuery`` and ``getDslQueryUsingTypeNameClassification``,
 ``TraversalBasedExecutor``, ``DSLVisitor``, ``GremlinQueryComposer``, ``GremlinClause``, ``IdentifierHelper``,
@@ -372,7 +372,7 @@ def test__not_equal_holds_without_a_value_only_for_strings(store: EntityStore, q
     defaults for numbers, dates and booleans, so the difference shows in the query composed.
     """  # noqa: D205 - one sentence
     tree = parse(f"{query} limit 10 offset 0")
-    found = DslQueryComposer(store.registry, QueryMetadata.of(tree), 10, 0).compose(tree).filter
+    found = DslQueryComposer(store.registry, QueryMetadata.of(tree), 10, 0).compose(tree).search.filter
     assert isinstance(found, sq.Group)
     condition = found.criteria[1]
     if string_like:
@@ -554,13 +554,8 @@ async def test__semantic_errors_are_joined_in_order(store: EntityStore) -> None:
         ("Table where name", "name is not a condition"),
         ("Table isa (PII)", "isa takes a classification name, not an expression"),
         ("where name = 'x'", "a where clause needs a type or classification before it"),
-        ("Table select name", "select is not supported yet"),
-        ("Table groupby(owner)", "groupby is not supported yet"),
-        ("Table where db.name = 'Sales'", "the referred attribute db is not supported yet"),
-        ("Table, db", "the referred attribute db is not supported yet"),
-        ("Table where Dimension.tagAttr1 = 'x'", "classification attributes are not supported yet"),
     ],
 )
 async def test__forms_not_searched_fail_with_a_reason(store: EntityStore, query: str, reason: str) -> None:
-    """Declared (DV-95) and, until 4.4b, temporary (DV-96)."""
+    """Declared (DV-95)."""
     assert await failure(store, query) == reason

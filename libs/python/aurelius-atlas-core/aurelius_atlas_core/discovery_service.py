@@ -32,7 +32,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.free_text import TextQuery, basic_query, has_tokenize_char, weighted_fields
 from aurelius_atlas_core.search_aggregator import SearchAggregator
 from aurelius_atlas_core.search_context import SearchContext, encode_marker
-from aurelius_atlas_core.search_fields import field_name
+from aurelius_atlas_core.search_fields import vertex_property
 from aurelius_atlas_core.search_query import SearchQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
 
@@ -202,16 +202,5 @@ def _table(context: SearchContext, found: list[StoredEntity]) -> AttributeSearch
     names = list(context.parameters.attributes or [])
     first = context.first_type
     attributes: list[AtlasAttribute | None] = [None if first is None else first.attribute(name) for name in names]
-    rows = [[_stored(stored, attribute) for attribute in attributes] for stored in found]
+    rows = [[vertex_property(stored, attribute) for attribute in attributes] for stored in found]
     return AttributeSearchResult(name=names, values=rows)
-
-
-def _stored(stored: StoredEntity, attribute: AtlasAttribute | None) -> Any:  # noqa: ANN401 - a vertex property
-    """``vertex.getProperty``: the stored value, a system attribute's from its search field; ``""`` for none."""
-    if attribute is None:
-        return ""
-    value = stored.attributes.get(attribute.qualified_name)
-    if value is None:
-        name = field_name(attribute)
-        value = None if name is None else (stored.search or {}).get(name)
-    return "" if value is None else value

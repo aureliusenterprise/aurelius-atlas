@@ -1,9 +1,11 @@
-"""``DSLVisitor`` and ``GremlinQueryComposer``: the entities a DSL query asks for, as a search query (DD-242).
+"""``DSLVisitor`` and ``GremlinQueryComposer``: the entities a DSL query asks for, as a search plan (DD-242, DD-243).
 
 Atlas's visitor walks the parse tree and its composer writes Gremlin; here one composer walks the syntax tree of
 4.3 and writes the filter tree of the basic search (``SearchQuery``), with the name resolution of
-``IdentifierHelper.Info`` and ``RegistryBasedLookup``. Semantic errors are collected as Atlas collects them
-(DSE-14); a form Aurelius Atlas does not search ends the composition with its reason (DSE-15).
+``IdentifierHelper.Info`` and ``RegistryBasedLookup``. What one document's fields cannot answer, the plan leaves
+to the executor: the moves to referred entities (``Step``), conditions on referred entities (``Referring``) and on
+classification attributes (``Classified``), and the ``select`` and ``groupby``. Semantic errors are collected as
+Atlas collects them (DSE-14); a form Aurelius Atlas does not search ends the composition with its reason (DSE-15).
 """
 
 import re
@@ -41,6 +43,7 @@ from aurelius_atlas_model.typedef import ATLAS_TYPE_DATE, IndexType, TypeCategor
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.atlas_type import AtlasType, resolved
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
+from aurelius_atlas_typesystem.builtin.object_id_type import ObjectIdType
 from aurelius_atlas_typesystem.classification_type import ClassificationType
 from aurelius_atlas_typesystem.entity_type import ENTITY_ROOT, EntityType
 from aurelius_atlas_typesystem.map_type import MapType
@@ -48,8 +51,16 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 
 from aurelius_atlas_core import identifier_helper as ih
 from aurelius_atlas_core.search_context import ALL_CLASSIFICATIONS, ALL_ENTITY_TYPES, NO_CLASSIFICATIONS
-from aurelius_atlas_core.search_fields import KEYWORD, PROPAGATED_TRAIT_NAMES, TRAIT_NAMES, field_name, search_value
-from aurelius_atlas_core.search_query import TYPE_NAME_FIELD, Criterion, Filter, Group, SearchQuery, Test
+from aurelius_atlas_core.search_fields import (
+    CLASSIFICATION_GUIDS,
+    KEYWORD,
+    PROPAGATED_TRAIT_NAMES,
+    TRAIT_NAMES,
+    field_name,
+    search_value,
+)
+from aurelius_atlas_core.search_query import GUID_FIELD, TYPE_NAME_FIELD, Criterion, Filter, Group, SearchQuery, Test
+from aurelius_atlas_core.select_clause_composer import Aggregator, SelectClauseComposer
 
 IS_INCOMPLETE = "__isIncomplete"
 _NUMERIC = frozenset({"byte", "short", "int", "long", "float", "double", "biginteger", "bigdecimal"})
@@ -64,23 +75,20 @@ _TESTS = {
     Operator.GT: Test.GT,
     Operator.GTE: Test.GTE,
 }
-SELECT = "select is not supported yet"
-GROUP_BY = "groupby is not supported yet"
-REFERRED = "the referred attribute {name} is not supported yet"
-CLASSIFICATION_ATTRIBUTE = "classification attributes are not supported yet"
 HAS_TERM = "hasTerm is not supported"
 IS_A_EXPRESSION = "isa takes a classification name, not an expression"
 WHERE_FIRST = "a where clause needs a type or classification before it"
 NOT_A_CONDITION = "{text} is not a condition"
 ARITHMETIC = "a comparison takes a name and a value, not {text}"
-"""The reasons a form is not searched (DSE-15): the first two and the referred and classification attributes until
-4.4b (DV-96), the others declared (DV-95)."""
+"""The reasons a form is not searched (DSE-15, DV-95)."""
+UNABLE_TO_FIND_QUALIFIED_NAME = "Unable to find qualified name for {name}"
+"""The one semantic error Atlas adds as a plain message, not from an error code (DSP-04)."""
 _ANYTHING = Criterion(TYPE_NAME_FIELD, Test.ANYTHING)
 _NOTHING = Criterion(TYPE_NAME_FIELD, Test.NOTHING)
 
 
 class UnsupportedError(Exception):
-    """A form of the DSL Aurelius Atlas does not search (DSE-15, DV-95, DV-96)."""
+    """A form of the DSL Aurelius Atlas does not search (DSE-15, DV-95)."""
 
 
 @dataclass(frozen=True)
@@ -98,6 +106,7 @@ class _Info:
     """``IdentifierHelper.Info``: a name resolved against the active type."""
 
     raw: str
+    type_name: str | None
     attribute_name: str | None
     attribute: AtlasAttribute | None
     field: str | None
@@ -107,6 +116,47 @@ class _Info:
     @property
     def is_primitive(self) -> bool:
         return self.attribute is not None and _is_primitive(self.attribute.attribute_type)
+
+
+@dataclass(frozen=True)
+class Referring:
+    """The entities whose attribute refers to one ``filter`` finds (DSP-07): a ``Criterion`` value on the GUID
+    field the executor resolves before searching.
+    """  # noqa: D205 - one sentence
+
+    attribute_name: str
+    filter: Filter
+
+
+@dataclass(frozen=True)
+class Classified:
+    """The classification instances of ``type_names`` ``filter`` holds for (DSP-08): a ``Criterion`` value on the
+    entities' classification GUIDs the executor resolves before searching.
+    """  # noqa: D205 - one sentence
+
+    type_names: frozenset[str]
+    filter: Filter
+
+
+@dataclass(frozen=True)
+class Step:
+    """The entities ``filter`` finds, from which the query moves to those ``attribute_name`` refers to (DSP-06)."""
+
+    filter: Filter | None
+    attribute_name: str
+
+
+@dataclass(frozen=True)
+class DslPlan:
+    """A query's search: the ``steps`` before its final entities, the ``search`` for them (paged and sorted), its
+    ``select`` and the field of its ``groupby``.
+    """  # noqa: D205 - one sentence
+
+    steps: tuple[Step, ...]
+    search: SearchQuery
+    select: SelectClauseComposer | None
+    group_by: str | None
+    metadata: QueryMetadata
 
 
 class DslQueryComposer:
@@ -121,34 +171,51 @@ class DslQueryComposer:
         self._aliases: dict[str, str] = {}
         self._filters: list[Filter] = []
         self._has_type_source = False
+        self._steps: list[Step] = []
         self.errors: list[str] = []
 
-    def compose(self, query: Query) -> SearchQuery:
-        """The search for the entities ``query`` finds (DSE-04 to DSE-12).
+    def compose(self, query: Query) -> DslPlan:
+        """The plan for the entities ``query`` finds, and its projection (DSE-04 to DSE-12, DSP-01 to DSP-08).
 
         Raises:
             UnsupportedError: For a form Aurelius Atlas does not search (DSE-15).
         """
-        if query.select is not None:
-            raise UnsupportedError(SELECT)
-        if query.group_by is not None:
-            raise UnsupportedError(GROUP_BY)
         for source in query.sources:
             self._source(source)
-        sort_field, descending = self._order_by(query)
+        group_by = self._group_by(query) if query.group_by is not None else None
+        select = None
+        if query.select is not None:
+            select = SelectClauseComposer.of(query.select)
+            self._select(select)
+        sort_field, descending = None, False
+        if not (query.select is not None and query.group_by is not None):
+            sort_field, descending = self._order_by(query)
         if self._metadata.has_limit_offset:
             limit, offset = self._metadata.resolved_limit, self._metadata.resolved_offset
         else:
             limit, offset = self._limit, self._offset
-        filters = self._filters
-        return SearchQuery(
+        search = SearchQuery(
             type_names=None,
-            filter=filters[0] if len(filters) == 1 else Group(Condition.AND, tuple(filters)) if filters else None,
+            filter=self._combined(),
             sort_field=sort_field,
             descending=descending,
             offset=offset,
             size=limit,
         )
+        return DslPlan(tuple(self._steps), search, select, group_by, self._metadata)
+
+    def _combined(self) -> Filter | None:
+        filters = self._filters
+        return filters[0] if len(filters) == 1 else Group(Condition.AND, tuple(filters)) if filters else None
+
+    def _hop(self, attribute: AtlasAttribute) -> None:
+        """``introduceType``: from the entities found so far to those the attribute refers to (DSP-06)."""
+        self._steps.append(Step(self._combined(), str(attribute.name)))
+        self._filters = []
+        referred = _referred_type(self._registry, attribute)
+        self._active = _UNKNOWN if referred is None else referred
+        if referred is not None:
+            self._aliases.setdefault(str(referred.type_name), str(referred.type_name))
 
     def _source(self, source: SingleQrySrc) -> None:
         """``visitFromExpression``, ``visitWhereClause`` and ``visitSingleQrySrc`` (DSE-04, DSE-11)."""
@@ -185,8 +252,8 @@ class DslQueryComposer:
         name = ih.remove_quotes(text)
         if not self._should_register(name):
             attribute = self._attribute(name)
-            if attribute is not None and not _is_primitive(attribute.attribute_type):
-                raise UnsupportedError(REFERRED.format(name=name))
+            if attribute is not None and not _is_primitive(attribute.attribute_type) and name not in self._aliases:
+                self._hop(attribute)
             return
         self._aliases[name] = name
         if name in {ALL_CLASSIFICATIONS, NO_CLASSIFICATIONS}:
@@ -208,12 +275,14 @@ class DslQueryComposer:
         if found is not ENTITY_ROOT:
             self._add(Criterion(TYPE_NAME_FIELD, Test.ANY_OF, frozenset(found.type_and_all_sub_types)))
 
-    def _add_alias(self, alias: str) -> None:
-        """``registerAlias``: the alias names the active type; a second of the same name fails (DSE-05)."""
+    def _add_alias(self, alias: str, name: str | None = None) -> None:
+        """``addAlias``: the alias names ``name``, by default the active type (``registerAlias``); a second of the
+        same name fails (DSE-05).
+        """  # noqa: D205 - one sentence
         if alias in self._aliases:
             self._error(AtlasErrorCode.INVALID_DSL_DUPLICATE_ALIAS, alias, self._active_name())
             return
-        self._aliases[alias] = self._active_name() or ""
+        self._aliases[alias] = name if name is not None else self._active_name() or ""
 
     def _should_register(self, name: str) -> bool:
         """``shouldRegister``: no active type yet, or a name neither the active type nor one of its attributes."""
@@ -288,22 +357,63 @@ class DslQueryComposer:
         return _NOTHING if info.field is None else Criterion(info.field, Test.NOT_NULL)
 
     def _where(self, comparison: ComparisonClause) -> Filter | None:
-        """``addWhere``: an attribute compared with a value (DSE-06 to DSE-09)."""
+        """``addWhere``: an attribute compared with a value (DSE-06 to DSE-09), also of a referred entity (DSP-07)
+        or of a classification (DSP-08).
+        """  # noqa: D205 - one sentence
         lhs = _single(comparison.lhs)
         rhs = _single(comparison.rhs)
-        if isinstance(self._active, (ClassificationType, str)):
+        current = self._active
+        if isinstance(current, (ClassificationType, str)):
             self._active = _UNKNOWN
         info = self._resolve(lhs.text)
         if info.classification_attribute:
-            raise UnsupportedError(CLASSIFICATION_ATTRIBUTE)
-        if info.referred:
-            raise UnsupportedError(REFERRED.format(name=info.attribute_name))
+            classification = self._registry.classification_type(info.type_name)
+            found = self._inner(classification, comparison, lhs, rhs, current)
+            if found is None or classification is None:
+                return found
+            names = frozenset(classification.type_and_all_sub_types)
+            return Criterion(CLASSIFICATION_GUIDS, Test.ANY_OF, Classified(names, found), array=True)
+        if info.referred and info.attribute is not None:
+            found = self._inner(_referred_type(self._registry, info.attribute), comparison, lhs, rhs, current)
+            return (
+                None
+                if found is None
+                else Criterion(GUID_FIELD, Test.ANY_OF, Referring(str(info.attribute_name), found))
+            )
         if info.attribute is None:
             self._error(AtlasErrorCode.INVALID_DSL_UNKNOWN_TYPE, info.raw)
             self._error(AtlasErrorCode.INVALID_DSL_QUALIFIED_NAME, info.raw)
             return None
         if not info.is_primitive:
-            raise UnsupportedError(REFERRED.format(name=info.attribute_name))
+            self._error(AtlasErrorCode.INVALID_DSL_QUALIFIED_NAME, info.raw)
+            return None
+        return self._comparison(info, comparison, rhs)
+
+    def _inner(
+        self,
+        active: EntityType | ClassificationType | None,
+        comparison: ComparisonClause,
+        lhs: Identifier | Literal,
+        rhs: Identifier | Literal,
+        current: _Active,
+    ) -> Filter | None:
+        """The comparison of a referred entity's or a classification's attribute, ``lhs`` resolved against it; the
+        active type is ``current`` again after it (``registerActive(currentType)``).
+        """  # noqa: D205 - one sentence
+        self._active = _UNKNOWN if active is None else active
+        info = self._resolve(lhs.text)
+        found = None
+        if info.attribute is None or not info.is_primitive:
+            self._error(AtlasErrorCode.INVALID_DSL_QUALIFIED_NAME, info.raw)
+        else:
+            found = self._comparison(info, comparison, rhs)
+        self._active = current
+        return found
+
+    def _comparison(self, info: _Info, comparison: ComparisonClause, rhs: Identifier | Literal) -> Filter | None:
+        """``HAS_OPERATOR`` and its kinds on a primitive attribute (DSE-06 to DSE-09)."""
+        if info.attribute is None:  # pragma: no cover - the callers resolved one
+            return None
         field = info.field
         if field is None:
             return _NOTHING
@@ -383,6 +493,7 @@ class DslQueryComposer:
         target = own or attribute
         return _Info(
             raw=raw,
+            type_name=type_name,
             attribute_name=attribute_name,
             attribute=attribute,
             field=None if target is None else field_name(target),
@@ -403,8 +514,72 @@ class DslQueryComposer:
         descending = order_by.sort_order is not None and order_by.sort_order.lower() == "desc"
         return info.field, descending
 
+    def _group_by(self, query: Query) -> str | None:
+        """``addGroupBy``: the field of a primitive attribute, entities without a value left out (DSP-05)."""
+        if query.group_by is None:  # pragma: no cover - the caller checked
+            return None
+        info = self._resolve(query.group_by.select_expr.text)
+        if not info.is_primitive or info.field is None:
+            self._error(AtlasErrorCode.INVALID_DSL_SELECT_INVALID_AGG, info.raw)
+            return None
+        self._filters.append(Criterion(info.field, Test.NOT_NULL))
+        return info.field
+
+    def _select(self, select: SelectClauseComposer) -> None:
+        """``process``: what each item reads, a move to referred entities, and Atlas's checks (DSP-01 to DSP-04)."""
+        for index, item in enumerate(select.items):
+            info = self._resolve(item)
+            qualified_name = self._qualified_name(info)
+            if not qualified_name:
+                self.errors.append(UNABLE_TO_FIND_QUALIFIED_NAME.format(name=info.attribute_name))
+                continue
+            if select.is_aggregator_with_argument(index) and not info.is_primitive:
+                self._error(AtlasErrorCode.INVALID_DSL_SELECT_INVALID_AGG, qualified_name)
+                return
+            if item != select.labels[index]:
+                self._add_alias(select.labels[index], qualified_name)
+            if select.aggregators[index] is not Aggregator.NONE:
+                select.attributes[index] = info.attribute
+                continue
+            if not info.is_primitive and info.attribute is None and info.raw in self._aliases:
+                select.is_select_noop = True
+                return
+            if info.attribute is not None and not info.is_primitive:
+                self._hop(info.attribute)
+                select.introduced_types += 1
+                select.is_select_noop = len([part for part in info.raw.split(".") if part]) == 1
+            else:
+                select.attributes[index] = info.attribute
+                select.primitive.add(index)
+        if select.has_multiple_referred_types:
+            self._error(AtlasErrorCode.INVALID_DSL_SELECT_REFERRED_ATTR, str(select.introduced_types))
+        if select.has_mixed_attributes:
+            self._error(AtlasErrorCode.INVALID_DSL_SELECT_ATTR_MIXING)
+
+    def _qualified_name(self, info: _Info) -> str | None:
+        """``Info.qualifiedName``: an attribute's, else for one name an alias's type or an aggregate's keyword."""
+        if info.attribute is not None:
+            return str(info.attribute.qualified_name)
+        if info.attribute_name is None or "." in info.raw:
+            return None
+        if info.attribute_name in self._aliases:
+            return self._aliases[info.attribute_name]
+        return info.attribute_name if info.attribute_name in _KEYWORDS else None
+
     def _error(self, code: AtlasErrorCode, *params: object) -> None:
         self.errors.append(code.message(*params))
+
+
+_KEYWORDS = frozenset({"count", "min", "max", "sum"})
+"""``SelectClauseComposer.isKeyword``."""
+
+
+def _referred_type(registry: TypeRegistry, attribute: AtlasAttribute) -> EntityType | None:
+    """``getTypeFromEdge``: the entity type a reference, or an array or map of them, refers to."""
+    element = _element(resolved(attribute.attribute_type))
+    if isinstance(element, ObjectIdType):
+        return registry.entity_type(element.object_type)
+    return element if isinstance(element, EntityType) else None
 
 
 def _subject(comp_e: CompE) -> ArithE | None:
