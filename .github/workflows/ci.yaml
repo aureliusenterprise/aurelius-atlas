@@ -80,7 +80,7 @@ jobs:
             # install). The save step below runs with if: always().
             - name: Restore node_modules
               id: restore-node-modules
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -103,7 +103,7 @@ jobs:
             # validate only (single writer, node_modules' shape).
             - name: Restore uv cache
               id: restore-uv-cache
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: /var/cache/ci/uv
                   key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
@@ -111,7 +111,7 @@ jobs:
 
             - name: Restore pre-commit cache
               id: restore-pre-commit-cache
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: /var/cache/ci/pre-commit
                   key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -144,7 +144,7 @@ jobs:
             # re-upload cost of saving unconditionally.
             - name: Save uv cache
               if: always() && steps.restore-uv-cache.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v5
+              uses: actions/cache/save@v6
               with:
                   path: /var/cache/ci/uv
                   key: ${{ steps.restore-uv-cache.outputs.cache-primary-key }}
@@ -161,7 +161,7 @@ jobs:
             # is a race for nothing.
             - name: Save node_modules
               if: always() && steps.restore-node-modules.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v5
+              uses: actions/cache/save@v6
               with:
                   path: node_modules
                   key: ${{ steps.restore-node-modules.outputs.cache-primary-key }}
@@ -175,7 +175,7 @@ jobs:
             # rebuilds once, every pod everywhere rides the artifact.
             - name: Save pre-commit cache
               if: always() && steps.restore-pre-commit-cache.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v5
+              uses: actions/cache/save@v6
               with:
                   path: /var/cache/ci/pre-commit
                   key: ${{ steps.restore-pre-commit-cache.outputs.cache-primary-key }}
@@ -263,7 +263,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Restore node_modules
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -272,7 +272,7 @@ jobs:
             # uv wheels from the cache server - the per-pod emptyDir is
             # cold on a fresh pod (validate saves; see its cache steps).
             - name: Restore uv cache
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: /var/cache/ci/uv
                   key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
@@ -411,7 +411,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Restore node_modules
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -420,7 +420,7 @@ jobs:
             # uv wheels from the cache server - the per-pod emptyDir is
             # cold on a fresh pod (validate saves; see its cache steps).
             - name: Restore uv cache
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: /var/cache/ci/uv
                   key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
@@ -460,7 +460,7 @@ jobs:
             # only sonar runner, so it is also the only writer.
             - name: Restore sonar cache
               id: restore-sonar-cache
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: /var/cache/ci/sonar
                   key: ${{ runner.os }}-sonar-home
@@ -517,7 +517,7 @@ jobs:
             # shape node_modules uses falls out for free.
             - name: Save sonar cache
               if: always() && steps.restore-sonar-cache.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v5
+              uses: actions/cache/save@v6
               with:
                   path: /var/cache/ci/sonar
                   key: ${{ steps.restore-sonar-cache.outputs.cache-primary-key }}
@@ -547,7 +547,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Restore node_modules
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: node_modules
                   key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
@@ -556,7 +556,7 @@ jobs:
             # uv wheels from the cache server - the per-pod emptyDir is
             # cold on a fresh pod (validate saves; see its cache steps).
             - name: Restore uv cache
-              uses: actions/cache/restore@v5
+              uses: actions/cache/restore@v6
               with:
                   path: /var/cache/ci/uv
                   key: ${{ runner.os }}-uv-cache-${{ hashFiles('uv.lock') }}
