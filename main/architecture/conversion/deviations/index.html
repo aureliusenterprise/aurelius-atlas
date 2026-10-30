@@ -1348,6 +1348,8 @@
       
         
       
+        
+      
     
     
     
@@ -1470,6 +1472,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4028,6 +4057,8 @@
       
         
       
+        
+      
     
     
     
@@ -4960,6 +4991,33 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
 
     
   </span>
@@ -8268,6 +8326,14 @@ Atlas clients expect when it lands).</p>
 <td>The webapp's nginx <code>/api/</code> proxy limits each public client address (leaky bucket, refusals answered nginx's 429 with an HTML body); the server answers every request it receives, and a caller reaching it directly (internal apps, deployments without the webapp) sees Atlas's answer-everything behaviour</td>
 <td>Search-cost hardening at the browser's front door (the pentest's M6): a service bursting the API is working, a browser flooding it is attacking, and the webapp arrangement is where the browser is (SRV-09, DD-238)</td>
 <td>9.3</td>
+</tr>
+<tr>
+<td>DV-88</td>
+<td>Search</td>
+<td>A <code>limit</code> or <code>offset</code> Java's <code>Integer.parseInt</code> cannot read (<code>limit 1e3</code>) escapes as an internal error</td>
+<td><code>INVALID_DSL_QUERY</code>, naming the number</td>
+<td>A number the query got wrong is the client's error</td>
+<td>4.3</td>
 </tr>
 </tbody>
 </table>

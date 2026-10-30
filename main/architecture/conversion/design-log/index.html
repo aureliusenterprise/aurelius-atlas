@@ -1348,6 +1348,8 @@
       
         
       
+        
+      
     
     
     
@@ -1470,6 +1472,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -6191,6 +6220,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-240. The DSL parser is generated from Atlas's own grammar
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-241. The parse tree is handed on as typed, immutable nodes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6270,6 +6321,8 @@
       
         
           
+        
+      
         
       
         
@@ -7324,6 +7377,33 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
 
     
   </span>
@@ -12266,6 +12346,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-240. The DSL parser is generated from Atlas's own grammar
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-241. The parse tree is handed on as typed, immutable nodes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -13637,6 +13739,18 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td>The webapp's nginx exports <code>/api/</code> spans on the collector's legacy leg; the module builds in the image's dev-stage</td>
 <td>9.4</td>
 <td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar">DD-240</a></td>
+<td>The DSL parser is generated from Atlas's own grammar</td>
+<td>4.3</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes">DD-241</a></td>
+<td>The parse tree is handed on as typed, immutable nodes</td>
+<td>4.3</td>
+<td>Proposed</td>
 </tr>
 </tbody>
 </table>
@@ -20217,6 +20331,49 @@ real, proven in the prototype burst). The v0.1.x line is 2023-frozen
 (4 open issues, no maintainer activity); re-evaluate at the next nginx
 baseline (the 1.30 signature check is the compatibility gate — a mismatched
 module fails at config parse, loudly, at boot). Next free DD: 240.</p>
+<h3 id="dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar">DD-240. The DSL parser is generated from Atlas's own grammar<a class="headerlink" href="#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.3</li>
+<li><strong>Date:</strong> 2026-10-30</li>
+</ul>
+<p><strong>Decision.</strong> <code>aurelius-atlas-dsl</code> keeps Atlas's <code>AtlasDSLLexer.g4</code> and <code>AtlasDSLParser.g4</code> unchanged in
+<code>grammar/</code> and generates its lexer and parser from them with the ANTLR 4.13.2 tool (<code>npx nx generate-parser
+aurelius-atlas-dsl</code>, Java needed only then). The generated modules are committed in
+<code>aurelius_atlas_dsl/generated</code> and run on <code>antlr4-python3-runtime</code>, pinned to the tool's version. They are
+left out of ruff, pyright, coverage, Sonar, the hooks, the traceability check and the increment's line budget:
+nobody writes or reviews them.</p>
+<p><strong>Reason.</strong> The grammar is ambiguous and its lexer has quirks a client can see: the longest match decides
+between a keyword and a name (<code>fromDate</code>, <code>db.name</code>, <code>a.b.c</code> as <code>a.b</code> and <code>.c</code>), a sign joins a number (<code>a -5</code>
+is two sources), and ANTLR's adaptive prediction picks among the readings of <code>singleQrySrc</code>. Generating from
+the same grammar reproduces all of it, and ANTLR's syntax error messages, which Atlas puts in
+<code>INVALID_DSL_QUERY</code>. Every query of Atlas's DSL tests reads as Atlas reads it. A warm parse takes about 13 ms.</p>
+<p><strong>Alternatives.</strong> A hand-written recursive descent parser: no runtime dependency and faster, but every lexer
+rule and every ambiguity resolution re-derived by hand, and ANTLR's error messages imitated. A parser library
+such as Lark: a second grammar to keep equal to Atlas's. ANTLR 4.7, Atlas's own version: its Python runtime
+dates from 2017 and is no longer maintained; 4.13 runs the same parsing algorithm.</p>
+<p><strong>Consequences.</strong> A grammar change is Atlas's grammar changed and the package regenerated, never the generated
+code edited. The runtime is a pure-Python dependency without type information; <code>tree_builder</code> reads the
+contexts through small typed helpers.</p>
+<h3 id="dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes">DD-241. The parse tree is handed on as typed, immutable nodes<a class="headerlink" href="#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.3</li>
+<li><strong>Date:</strong> 2026-10-30</li>
+</ul>
+<p><strong>Decision.</strong> <code>parse</code> returns a tree of frozen dataclasses (<code>dsl_tree</code>), not ANTLR's contexts: one node per
+grammar rule that <code>DSLVisitor</code> reads, named after it, a choosing rule as the union of its alternatives. Every
+node keeps its <code>getText()</code>, and an operator, sort order or literal the text it was written with besides its
+kind.</p>
+<p><strong>Reason.</strong> <code>DSLVisitor</code> and <code>GremlinQueryComposer</code> work on rule texts (<code>getText()</code>) and on which alternative
+matched; the nodes keep both, so 4.4 can port that logic, Atlas's quirks included (it upper-cases the
+operator's spelling before looking it up). Typed nodes let pyright check 4.4's composer and keep the generated
+code behind one module; equality makes trees easy to assert in tests.</p>
+<p><strong>Alternatives.</strong> Hand ANTLR's contexts to 4.4 as Java does: the closest port, but untyped, mutable and tied
+to the generated code. An abstract tree that folds Atlas's rules into precedence (<code>and</code> before <code>or</code>): Atlas
+joins conditions left to right, and the folding belongs to the composer that reproduces it.</p>
+<p><strong>Consequences.</strong> 4.4 composes Elasticsearch queries from <code>dsl_tree</code> alone. A grammar change touches
+<code>dsl_tree</code> and <code>tree_builder</code> too.</p>
 
 
 

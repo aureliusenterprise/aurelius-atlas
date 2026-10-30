@@ -46,6 +46,9 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-data2model-client/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-dsl/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/</loc>
       </url>
       <url>
@@ -368,6 +371,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-2-quick-search/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-3-dsl-parser/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-0-webapp-foundation/</loc>
