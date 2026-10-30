@@ -174,6 +174,34 @@ class AtlasErrorCode(Enum):
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
     INVALID_QUERY_LENGTH = (400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit")
     LINEAGE_ON_DEMAND_NOT_ENABLED = (400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled")
+    UNEXPECTED_TYPE = (400, "ATLAS-400-00-00F", "expected type {0}; found {1}")
+    MISSING_MANDATORY_ANCHOR = (400, "ATLAS-400-00-072", "Mandatory anchor attribute is missing")
+    INVALID_PARTIAL_UPDATE_ATTR = (400, "ATLAS-400-00-074", "Invalid attribute {0} for partial update of {1}")
+    MISSING_TERM_ID_FOR_CATEGORIZATION = (
+        400,
+        "ATLAS-400-00-076",
+        "Term guid cannot be empty/null when adding to a category",
+    )
+    INVALID_NEW_ANCHOR_GUID = (400, "ATLAS-400-00-077", "New Anchor guid cannot be empty/null")
+    GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED = (
+        400,
+        "ATLAS-400-00-079",
+        "Attributes qualifiedName and name are missing. Failed to derive a unique name for Glossary",
+    )
+    GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED = (
+        400,
+        "ATLAS-400-00-07B",
+        (
+            "Attributes qualifiedName, name & glossary name are missing. Failed to derive a unique name for "
+            "Glossary category"
+        ),
+    )
+    INVALID_CHILD_CATEGORY_DIFFERENT_GLOSSARY = (
+        400,
+        "ATLAS-400-00-07F",
+        "Invalid child category relationship: Child category (guid = {0}) belongs to different glossary",
+    )
+    INVALID_DISPLAY_NAME = (400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.', '<', '>')")
     INVALID_DSL_QUERY = (
         400,
         "ATLAS-400-00-059",
@@ -322,6 +350,13 @@ class AtlasErrorCode(Enum):
         ),
     )
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
+    INSTANCE_GUID_DELETED = (404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted")
+    GLOSSARY_ALREADY_EXISTS = (409, "ATLAS-409-00-007", "Glossary with name {0} already exists")
+    GLOSSARY_CATEGORY_ALREADY_EXISTS = (
+        409,
+        "ATLAS-409-00-00A",
+        "Glossary category with qualifiedName {0} already exists",
+    )
     INVALID_LINEAGE_ENTITY_TYPE = (
         404,
         "ATLAS-404-00-011",

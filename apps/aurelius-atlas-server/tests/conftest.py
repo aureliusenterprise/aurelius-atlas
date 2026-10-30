@@ -45,7 +45,13 @@ def tls_pair(tmp_path: Path) -> tuple[Path, Path]:
 
 
 @pytest.fixture
-def settings(ca_file: Path, tls_pair: tuple[Path, Path], tmp_path: Path) -> ServerSettings:
+def models_dir(tmp_path: Path) -> Path:
+    """The server's models directory: none, as loading Atlas's takes seconds (MDL-16); a module may give some."""
+    return tmp_path / "no-models"
+
+
+@pytest.fixture
+def settings(ca_file: Path, tls_pair: tuple[Path, Path], models_dir: Path) -> ServerSettings:
     """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16).
 
     Propagation happens in the request (TSK-08), so responses show it at once; the task tests turn tasks on.
@@ -59,7 +65,7 @@ def settings(ca_file: Path, tls_pair: tuple[Path, Path], tmp_path: Path) -> Serv
             "tls_cert_file": certificate,
             "tls_key_file": key,
             "revision": "abc123",
-            "models_dir": tmp_path / "no-models",
+            "models_dir": models_dir,
             "tasks_enabled": False,
         }
     )
