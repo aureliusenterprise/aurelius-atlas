@@ -1,0 +1,115 @@
+name: A data set's lineage reaches the processes and data sets of its process edges
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/LineageREST.java
+    - repository/src/main/java/org/apache/atlas/discovery/EntityLineageService.java#getLineageInfoV2
+    - repository/src/main/java/org/apache/atlas/discovery/EntityLineageService.java#traverseEdges
+    - repository/src/main/java/org/apache/atlas/discovery/EntityLineageService.java#processEdge
+    - intg/src/main/java/org/apache/atlas/model/lineage/AtlasLineageInfo.java
+    - webapp/src/test/java/org/apache/atlas/web/integration/EntityLineageJerseyResourceIT.java
+rules: [LIN-01, LIN-02, LIN-03, LIN-04, LIN-05, LIN-06]
+covers:
+    - aurelius_atlas_server.routes.lineage.get_lineage_graph
+    - aurelius_atlas_server.routes.lineage.get_lineage_graph_on_demand
+stages:
+    - name: create a data set type and a process type, named for this run (DD-055); setup only
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - { name: "scenario_lset_{run}", superTypes: [DataSet] }
+                  - { name: "scenario_lproc_{run}", superTypes: [Process] }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs: the two types
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs
+    - name: create a source and a target data set and the process loading one into the other; setup only
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - {
+                        typeName: "scenario_lset_{run}",
+                        guid: "-1",
+                        attributes: { qualifiedName: "src_{run}", name: "src_{run}" },
+                    }
+                  - {
+                        typeName: "scenario_lset_{run}",
+                        guid: "-2",
+                        attributes: { qualifiedName: "dst_{run}", name: "dst_{run}" },
+                    }
+                  - typeName: scenario_lproc_{run}
+                    guid: "-3"
+                    attributes:
+                        qualifiedName: "load_{run}"
+                        name: "load_{run}"
+                        inputs: [{ guid: "-1", typeName: "scenario_lset_{run}" }]
+                        outputs: [{ guid: "-2", typeName: "scenario_lset_{run}" }]
+      response:
+          status: 200
+          json:
+              mutatedEntities: the three entities
+              guidAssignments: the three GUIDs
+          volatile:
+              - $.mutatedEntities
+              - $.guidAssignments
+          save:
+              src: $.guidAssignments['-1']
+              dst: $.guidAssignments['-2']
+              load: $.guidAssignments['-3']
+    - name: the input lineage of the target, one step deep
+      request:
+          method: GET
+          url: /api/atlas/v2/lineage/{dst}
+          params: { direction: INPUT, depth: "1" }
+      response:
+          status: 200
+          json:
+              baseEntityGuid: "{dst}"
+              lineageDirection: INPUT
+              lineageDepth: 1
+              guidEntityMap: the three entities' headers
+              relations:
+                  - { fromEntityId: "{load}", toEntityId: "{dst}", relationshipId: a relationship GUID }
+                  - { fromEntityId: "{src}", toEntityId: "{load}", relationshipId: a relationship GUID }
+              relationsOnDemand: {}
+          volatile:
+              - $.guidEntityMap
+              - $.relations[*].relationshipId
+    - name: the source's output lineage by its unique attribute
+      request:
+          method: GET
+          url: /api/atlas/v2/lineage/uniqueAttribute/type/scenario_lset_{run}
+          params: { "attr:qualifiedName": "src_{run}", direction: OUTPUT }
+      response:
+          status: 200
+          json:
+              baseEntityGuid: "{src}"
+              lineageDirection: OUTPUT
+              lineageDepth: 3
+              guidEntityMap: the three entities' headers
+              relations:
+                  - { fromEntityId: "{src}", toEntityId: "{load}", relationshipId: a relationship GUID }
+                  - { fromEntityId: "{load}", toEntityId: "{dst}", relationshipId: a relationship GUID }
+              relationsOnDemand: {}
+          volatile:
+              - $.guidEntityMap
+              - $.relations[*].relationshipId
+    - name: lineage on demand is not enabled
+      request:
+          method: POST
+          url: /api/atlas/v2/lineage/{dst}
+          json: {}
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-100
+              errorMessage: "Lineage on demand config: atlas.lineage.on.demand.enabled is not enabled"

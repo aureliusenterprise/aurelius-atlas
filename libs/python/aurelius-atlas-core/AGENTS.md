@@ -44,6 +44,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   conditions the executor resolves first (DD-242, DD-243); `select_clause_composer.py` and
   `select_clause_projections.py` answer `select` and `groupby`; `identifier_helper.py` unquotes names and
   reads `like` patterns
+- `aurelius_atlas_core/entity_lineage_service.py` — `EntityLineageService`: lineage and lineage on demand over
+  the `__Process.inputs` and `__Process.outputs` relationships (DD-245)
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task

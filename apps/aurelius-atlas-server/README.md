@@ -25,6 +25,8 @@ Atlas resource. What is ported, and how, is tracked in the
 | `/api/atlas/v2/search/basic`      | Entities by type, attribute filters, sort and paging                  |
 | `/api/atlas/v2/search/fulltext`   | Entities by free text, best first, with their scores                  |
 | `/api/atlas/v2/search/quick`      | Entities by a query as a prefix, with facets; and term suggestions    |
+| `GET /api/atlas/v2/search/dsl`    | Entities, or an attribute table, of a DSL query                       |
+| `/api/atlas/v2/lineage/...`       | A data set's or process's lineage, by GUID or unique attributes       |
 
 ## Dashboards
 
@@ -98,6 +100,15 @@ their attributes (DD-090). `query` and `GET search/fulltext` find entities by fr
 attributes' search weights (DD-092). `search/quick` answers a basic search of its query as a prefix with
 facets by type, state, owner and service type, and `search/suggestions` the most frequent words of the fields
 weighted 8 or more (DD-093, DD-094).
+`GET search/dsl` answers a DSL query, parsed by Atlas's grammar (DD-240), with the entities it finds or its
+`select`'s attribute table, following references and classification attributes (DD-242, DD-243).
+
+## Lineage
+
+`LineageREST` (`aurelius_atlas_server/routes/lineage.py`) answers the lineage of a data set or process
+over the `__Process.inputs` and `__Process.outputs` relationships, by GUID or unique attributes, in a
+direction and to a depth (DD-245). Lineage on demand (`POST v2/lineage/{guid}`) answers once
+`lineage_on_demand_enabled` is set, as `atlas.lineage.on.demand.enabled` does in Atlas.
 
 ## Running it
 

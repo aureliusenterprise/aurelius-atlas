@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
-from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, RELATIONSHIP, TYPES
+from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, LINEAGE, RELATIONSHIP, TYPES
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.task_worker import TaskWorker
@@ -116,11 +116,8 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     # them all; the instrumentor below wraps this middleware.
     app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
     app.add_exception_handler(AtlasError, atlas_error_handler)
-    app.include_router(ADMIN)
-    app.include_router(TYPES)
-    app.include_router(ENTITY)
-    app.include_router(RELATIONSHIP)
-    app.include_router(DISCOVERY)
+    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE):
+        app.include_router(router)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
 
