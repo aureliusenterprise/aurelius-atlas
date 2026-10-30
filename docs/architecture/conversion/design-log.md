@@ -242,6 +242,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-243](#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps)                                             | DSL traversals and projections are evaluated in steps                                                                             | 4.4           | Proposed         |
 | [DD-244](#dd-244-saved-searches-wait-for-authentication)                                                            | Saved searches wait for authentication                                                                                            | 4.5           | Accepted         |
 | [DD-245](#dd-245-lineage-walks-the-relationships-of-the-process-edges)                                              | Lineage walks the relationships of the process edges                                                                              | 5.1           | Proposed         |
+| [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                          | Journal writes do not wait for a refresh                                                                                          | cross-cutting | Proposed         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7433,3 +7434,30 @@ edges into its document: a second copy every relationship write would keep equal
 **Consequences.** A lineage costs two reads per entity it reaches (the entity and its relationships); the
 9,000 relation cap bounds it. Lineage on demand, off by default as in Atlas, is answered once the setting is
 on.
+
+### DD-247. Journal writes do not wait for a refresh
+
+- **Status:** Proposed
+- **Increment:** cross-cutting (no roadmap row; found by 5.2a's e2e)
+- **Date:** 2026-10-30
+
+**Decision.** The journal entry's write, its commit and its delete (DD-046) no longer carry
+`refresh="wait_for"`; the entity bulk, the restores and the audit append keep it (DD-237, ENS-11). Recovery
+lists the journal's entries by a search, as before, and acts on each as a real-time `get` by its write id
+reads it now: an entry already deleted, or still within its lease, is left alone. This supersedes DD-237's
+choice for the journal only; the rest of DD-237 stands.
+
+**Reason.** On the dev store every entity write cost about 2.8 s: four writes each waiting for a refresh
+(about 1 s each with the default refresh interval), three of them the journal's. A glossary write is several
+entity and relationship writes, so creating a child category took 9 s and deleting a glossary 18 s, past the
+e2e client's timeout. DD-237 kept the journal's refresh for recovery, which "reads entries written moments
+before"; but recovery acts only on entries whose 60-second lease has passed, long after the index's own
+refresh has made them searchable, and the real-time `get` closes the remaining gap: a listing that lags an
+entry's commit or delete cannot make recovery undo a write that finished. With the change a write costs about
+0.9 s on the dev store.
+
+**Alternatives.** A shorter refresh interval: every write still pays for refreshes no reader needs. Trimming
+the glossary's writes: helps one feature, and departs from Atlas's sequence of writes.
+
+**Consequences.** A journal entry may be missing from a search for up to the refresh interval after it is
+written; nothing but recovery searches it. ENS-11's text names the journal as unrefreshed.

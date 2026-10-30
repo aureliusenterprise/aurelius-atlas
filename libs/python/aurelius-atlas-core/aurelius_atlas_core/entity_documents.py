@@ -331,7 +331,11 @@ class EntityDocuments(Protocol):
         ...
 
     async def journal(self) -> list[JournalEntry]:
-        """Every journal entry."""
+        """Every journal entry, as the last refresh shows them."""
+        ...
+
+    async def get_journal(self, write_id: str) -> JournalEntry | None:
+        """The journal entry of a write as of now, None when there is none."""
         ...
 
     async def count_type(self, type_name: str) -> int:
@@ -607,23 +611,32 @@ class ElasticsearchEntityDocuments:
             return
 
     async def put_journal(self, entry: JournalEntry) -> None:
-        """Index the entry under its write id; recovery's search reads it (ENS-11)."""
+        """Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247)."""
         await self._client.index(
             index=self._journal,
             id=entry.write_id,
             document=codec.dumps(entry.to_json()),  # type: ignore[arg-type]
-            refresh=WRITE_REFRESH,
         )
 
     async def delete_journal(self, write_id: str) -> None:
-        """Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11)."""
+        """Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247)."""
         try:
-            await self._client.delete(index=self._journal, id=write_id, refresh=WRITE_REFRESH)
+            await self._client.delete(index=self._journal, id=write_id)
         except NotFoundError:
             return
 
+    async def get_journal(self, write_id: str) -> JournalEntry | None:
+        """The entry by its write id, real time: what recovery acts on (ENS-07, DD-247)."""
+        try:
+            response = await self._client.get(index=self._journal, id=write_id)
+        except NotFoundError:
+            return None
+        return JournalEntry.model_validate(response["_source"])
+
     async def journal(self) -> list[JournalEntry]:
-        """The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11)."""
+        """The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
+        passed, long after the index's own refresh (DD-247), and acts on each as ``get_journal`` reads it.
+        """  # noqa: D205 - one sentence
         response = await self._client.search(index=self._journal, size=JOURNAL_PAGE, query={"match_all": {}})
         return [JournalEntry.model_validate(hit["_source"]) for hit in response["hits"]["hits"]]
 
