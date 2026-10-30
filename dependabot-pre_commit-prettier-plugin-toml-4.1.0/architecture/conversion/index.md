@@ -69,7 +69,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 4.1b | Classification search | Classification filters, wildcards, sub classifications | `ClassificationSearchProcessor` | in progress |
 | 4.2a | Free text | Free-text index, basic search `query`, `search/fulltext` | `FreeTextSearchProcessor`, `SolrIndexHelper` | in progress |
 | 4.2b | Quick search and suggestions | `search/quick` with facets, `search/suggestions` | `AtlasDiscoveryService`, `SearchAggregatorImpl` | in progress |
-| 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | planned |
+| 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | in progress |
 | 4.4 | DSL execution | AST to search queries; declared unsupported forms | `GremlinQueryComposer` (replaced) | planned |
 | 4.5 | Saved searches and user profile | Saved search CRUD | `UserProfileService` | planned |
 | 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | planned |
@@ -109,6 +109,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 8.6 | Aux API failure hardening | Test-completeness of the 8.1–8.3 failure paths (DD-125): engine view/dynamic-view paths, transport-failure 502, d2m fast-fail, timeout, negative parity scenarios — no new rule ids | — (proves DTM-04/06/07, LM-07/12/13, VE-01) | in progress |
 | 8.7 | Client failure contract | Test-completeness of the four client libraries (DD-125): 2xx-with-garbage-body, timeout vs connect error, raising token source, concurrent `with_token` (adds CL-08; proves CL-03/04/05) | — (the 8.4 clients, unproven failure paths) | in progress |
 | 9.1 | Targeted resilience e2e | Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03) | — (no Java twin; Atlas ships no resilience e2e) | in progress |
+| 9.2 | Server hardening | TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86) | `AtlasBaseExceptionMapper` (cause echo, superseded for 5xx); no header filter to port | in progress |
+| 9.3 | Search cost and client IP | Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87) | — (Atlas refreshes nothing on reads, JanusGraph; no limiter to port) | in progress |
+| 9.4 | Edge tracing | The webapp's nginx exports `/api/` spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239) | — (no Java twin; nginx/OTLP are Aurelius infrastructure) | in progress |
 
 ## After phase 0
 

@@ -1348,6 +1348,8 @@
       
         
       
+        
+      
     
     
     
@@ -1470,6 +1472,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4008,6 +4037,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4959,6 +4996,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../conversion/increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../conversion/increments/7-0-webapp-foundation/" class="md-nav__link">
         
   
@@ -5588,6 +5652,87 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/9-4-edge-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.4 Edge tracing
 
     
   </span>
@@ -7762,8 +7907,8 @@ Production is first below, and the development and CI arrangements come after.</
 <p>The unit that ships is the container image
 (<a href="../release-management/">release management</a>). Its configuration is the environment, read once at
 start-up into a frozen settings object — no library reads the environment afterwards, and apps
-pass settings objects down. Validation failures (missing key, bad scheme, half a TLS pair) stop
-start-up with a message naming the variable, so a misconfigured deployment never serves traffic.</p>
+pass settings objects down. Validation failures (missing key, bad scheme, missing TLS material)
+stop start-up with a message naming the variable, so a misconfigured deployment never serves traffic.</p>
 <p>What a deployment must supply has no defaults — the service does not start without it (SRV-01,
 SRV-02): the store's endpoints and credentials, and the CA that signs the store's certificate.
 Where those values come from — an orchestrator secret store, certificate provisioning — is the
@@ -7771,10 +7916,10 @@ Where those values come from — an orchestrator secret store, certificate provi
 validation, in the server's design documentation:
 <a href="../../../../api-reference/apps/aurelius-atlas-server/#configuration">Configuration</a>.</p>
 <div class="admonition warning">
-<p class="admonition-title">A half TLS pair stops the server from starting</p>
-<p>The serving certificate and key are a pair: both set, or both unset — enforced at start-up.
-A container that mounts only the certificate exits with a message naming the missing
-variable; this is the design working, not a broken image.</p>
+<p class="admonition-title">The server does not start without TLS material</p>
+<p>The serving certificate and key are required settings (SRV-06, DD-234) — the server never
+serves plaintext (ADR 039). A container that mounts no material exits with a message naming
+the missing variable; this is the design working, not a broken image.</p>
 </div>
 <p><strong>Naming.</strong> App-owned settings carry a per-project prefix, so two projects in one workspace can
 never read each other's values. Keys that third-party code (the platform's, the observability
