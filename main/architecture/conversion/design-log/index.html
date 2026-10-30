@@ -6287,6 +6287,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-246. Glossary objects are entities written through the entity and relationship stores
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dd-247-journal-writes-do-not-wait-for-a-refresh" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6376,6 +6387,8 @@
       
         
           
+        
+      
         
       
         
@@ -7546,6 +7559,33 @@
     
   
   5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
 
     
   </span>
@@ -12555,6 +12595,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-246. Glossary objects are entities written through the entity and relationship stores
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dd-247-journal-writes-do-not-wait-for-a-refresh" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13971,6 +14022,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-245-lineage-walks-the-relationships-of-the-process-edges">DD-245</a></td>
 <td>Lineage walks the relationships of the process edges</td>
 <td>5.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores">DD-246</a></td>
+<td>Glossary objects are entities written through the entity and relationship stores</td>
+<td>5.2</td>
 <td>Proposed</td>
 </tr>
 <tr>
@@ -20693,6 +20750,28 @@ edges into its document: a second copy every relationship write would keep equal
 <p><strong>Consequences.</strong> A lineage costs two reads per entity it reaches (the entity and its relationships); the
 9,000 relation cap bounds it. Lineage on demand, off by default as in Atlas, is answered once the setting is
 on.</p>
+<h3 id="dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores">DD-246. Glossary objects are entities written through the entity and relationship stores<a class="headerlink" href="#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 5.2</li>
+<li><strong>Date:</strong> 2026-10-30</li>
+</ul>
+<p><strong>Decision.</strong> Glossaries and categories (and from 5.2b terms) are entities of Atlas's glossary model
+(<code>0011-glossary_model</code>), as <code>DataAccess</code> and the glossary DTOs keep them: an object is saved by creating or
+updating its entity with <code>EntityWriter</code>, which also writes a category's mandatory <code>anchor</code>, and loaded back
+from the entity and its relationship attributes with <code>EntityRetriever</code>; the relationships between glossary
+objects (anchors, the category hierarchy, term categorizations) are written with the <code>RelationshipStore</code> as
+<code>GlossaryCategoryUtils</code> writes them, <code>getOrCreate</code> taking an existing relationship of the type and ends, and a
+removed one deleted for good. 5.2 is split by the user into 5.2a (glossaries and categories), 5.2b (terms) and
+5.2c (term assignment); glossary import is a later increment.</p>
+<p><strong>Reason.</strong> Atlas's glossary is entities and relationships of internal types, read and written through its
+stores; the stores here already keep entities, relationships, unique qualified names and internal types' hard
+deletes as Atlas does, so the glossary's behaviour follows from them without a store of its own.</p>
+<p><strong>Alternatives.</strong> Glossary documents of their own index: simpler reads, but the glossary would no longer be
+entities the entity API, search and lineage see, as they are in Atlas.</p>
+<p><strong>Consequences.</strong> A glossary write is several entity and relationship writes, each all or nothing on its own,
+as in Atlas within its graph transaction only when the graph commits; a failure part way leaves what was
+written. The server's models carry <code>0011-glossary_model</code>, as they do with every model loaded.</p>
 <h3 id="dd-247-journal-writes-do-not-wait-for-a-refresh">DD-247. Journal writes do not wait for a refresh<a class="headerlink" href="#dd-247-journal-writes-do-not-wait-for-a-refresh" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Proposed</li>

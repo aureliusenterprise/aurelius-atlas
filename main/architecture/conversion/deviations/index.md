@@ -88,3 +88,5 @@ Every behaviour of Aurelius Atlas that a client could observe and that differs f
 | DV-95 | Search | `hasTerm`, arithmetic, aggregates or a bare name as a condition, an expression after `isa`, a `where` before any source fail with an internal error, a malformed traversal or no condition | `INVALID_DSL_QUERY` with a reason (`hasTerm` until 5.2) | A client error should say what is wrong | 4.4 |
 | DV-97 | Search | A DSL select's rows and groups come in no order (a `HashSet`, Gremlin's map) | Rows in the order of the entities found, groups by their value | A stable answer and stable pages | 4.4 |
 | DV-98 | Search | A DSL query follows every edge, aggregates and groups every vertex | A step that reads every entity found reads at most 10,000 | A bounded request (DD-243) | 4.4 |
+| DV-99 | Glossary | A glossary list's `limit` or `offset` that is no number escapes as an internal error (`Integer.parseInt`) | `BAD_REQUEST`, as DV-39 | A client error should say what is wrong | 5.2 |
+| DV-100 | Glossary | Glossaries are listed by `Referenceable.qualifiedName`, which a glossary lacks: in no order | By their qualified name | A stable answer and stable pages | 5.2 |
