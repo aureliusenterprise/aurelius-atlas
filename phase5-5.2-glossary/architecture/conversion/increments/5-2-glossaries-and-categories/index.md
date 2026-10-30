@@ -1,7 +1,7 @@
 # 5.2a Glossaries and categories
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [\#168](<https://github.com/aureliusenterprise/aurelius-atlas/pull/168>)
 - **Records:** DD-246, DV-99, DV-100; relies on DD-043, DD-061, DD-064, DV-39
 
 The first part of increment 5.2 (split by the user on 2026-10-30): glossaries and their categories, as `GlossaryREST` and `GlossaryService` with `GlossaryCategoryUtils` answer them. Atlas keeps them as entities of `AtlasGlossary` and `AtlasGlossaryCategory` (`0011-glossary_model`) through `DataAccess` and the glossary DTOs; Aurelius Atlas does the same through its entity and relationship stores (DD-246). Terms are 5.2b, their assignment to entities 5.2c; glossary import is a later increment.
