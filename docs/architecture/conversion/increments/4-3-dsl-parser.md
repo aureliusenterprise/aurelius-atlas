@@ -1,7 +1,7 @@
 # 4.3 DSL parser
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#163](https://github.com/aureliusenterprise/aurelius-atlas/pull/163)
 - **Records:** DD-217, DD-218, DV-83; relies on DD-002, DD-023
 
 The Atlas DSL as Atlas reads it: `AtlasDSL.Parser` turns a query string into the parse tree of
