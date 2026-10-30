@@ -71,7 +71,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 4.2b | Quick search and suggestions | `search/quick` with facets, `search/suggestions` | `AtlasDiscoveryService`, `SearchAggregatorImpl` | in progress |
 | 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | in progress |
 | 4.4a | DSL search of entities | `search/dsl` answering entities: sources, conditions, order, paging; declared unsupported forms | `GremlinQueryComposer` (replaced), `TraversalBasedExecutor` | in progress |
-| 4.4b | DSL projections and traversals | `select`, `groupby`, aggregates; referred entities and classification attributes | `SelectClauseComposer`, `SelectClauseProjections` | planned |
+| 4.4b | DSL projections and traversals | `select`, `groupby`, aggregates; referred entities and classification attributes | `SelectClauseComposer`, `SelectClauseProjections` | in progress |
 | 4.5 | Saved searches and user profile | Saved search CRUD | `UserProfileService` | planned |
 | 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | planned |
 | 5.2 | Glossary | Glossaries, terms, categories, term assignment | `GlossaryREST`, `GlossaryService` | planned |

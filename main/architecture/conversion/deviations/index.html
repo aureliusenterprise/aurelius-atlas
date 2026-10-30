@@ -4061,6 +4061,8 @@
       
         
       
+        
+      
     
     
     
@@ -5047,6 +5049,33 @@
     
   
   4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
 
     
   </span>
@@ -8421,11 +8450,19 @@ Atlas clients expect when it lands).</p>
 <td>4.4</td>
 </tr>
 <tr>
-<td>DV-96</td>
+<td>DV-97</td>
 <td>Search</td>
-<td>DSL <code>select</code>, <code>groupby</code>, referred attributes and classification attributes are searched</td>
-<td><code>INVALID_DSL_QUERY</code> with a reason, until 4.4b</td>
-<td>Temporary: 4.4 is split (4.4a, 4.4b)</td>
+<td>A DSL select's rows and groups come in no order (a <code>HashSet</code>, Gremlin's map)</td>
+<td>Rows in the order of the entities found, groups by their value</td>
+<td>A stable answer and stable pages</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>DV-98</td>
+<td>Search</td>
+<td>A DSL query follows every edge, aggregates and groups every vertex</td>
+<td>A step that reads every entity found reads at most 10,000</td>
+<td>A bounded request (DD-243)</td>
 <td>4.4</td>
 </tr>
 </tbody>
