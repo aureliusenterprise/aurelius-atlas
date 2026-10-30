@@ -60,6 +60,11 @@
     "aliases": []
   },
   {
+    "version": "fix-journal-refresh",
+    "title": "fix-journal-refresh",
+    "aliases": []
+  },
+  {
     "version": "fix-ingest-one-issuer",
     "title": "fix-ingest-one-issuer",
     "aliases": []
