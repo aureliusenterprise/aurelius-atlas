@@ -49,8 +49,8 @@ class RelationshipMapper:
 
     ``known`` holds the entities the request read, and gains those the mapper reads; ``created`` the entities it
     creates. Entities a relationship change makes updated are added to ``touched``; ``hard`` deletes replaced
-    relationships rather than marking them ``DELETED`` (REL-15); owned entities whose relationships were deleted
-    are added to ``dropped`` (OWN-01).
+    relationships rather than marking them ``DELETED`` (REL-15), as an entity of an internal type always does
+    (GTM-08); owned entities whose relationships were deleted are added to ``dropped`` (OWN-01).
     """
 
     def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext`` and ``RequestContext``
@@ -80,6 +80,7 @@ class RelationshipMapper:
         self._new: set[str] = set()
         self._removed: set[str] = set()
         self._listed: dict[str, list[str]] = {}
+        self._internal = False
         self.dropped = dropped
 
     def relationship_changes(self) -> list[RelationshipChange]:
@@ -122,6 +123,7 @@ class RelationshipMapper:
         """``mapRelationshipAttributes``: every relationship attribute on create, the given ones else (REL-11)."""
         if not entity.relationship_attributes:
             return
+        self._internal = entity_type.is_internal
         for name in entity_type.relationship_attributes:
             if operation is not EntityOperation.CREATE and not entity.has_relationship_attribute(name):
                 continue
@@ -156,7 +158,7 @@ class RelationshipMapper:
         if current is not None and (new is None or new.guid != current.guid):
             if target is not None:
                 self._touch(target)
-            await self._delete_reference(current, attribute, guid, direction)
+            await self._delete_reference(current, attribute, guid, direction, force=self._internal)
 
     async def _array(
         self,
@@ -191,7 +193,7 @@ class RelationshipMapper:
                 appending
                 or _appends_relationships(entity_type, str(attribute.name))
                 or not await self._delete_reference(
-                    relationship, attribute, guid, attribute.relationship_edge_direction
+                    relationship, attribute, guid, attribute.relationship_edge_direction, force=self._internal
                 )
             ):
                 kept.append(relationship.guid)
@@ -310,11 +312,18 @@ class RelationshipMapper:
             self._touch(guid)
 
     async def _delete_reference(
-        self, relationship: StoredRelationship, attribute: AtlasAttribute, guid: str, direction: EdgeDirection
+        self,
+        relationship: StoredRelationship,
+        attribute: AtlasAttribute,
+        guid: str,
+        direction: EdgeDirection,
+        *,
+        force: bool = False,
     ) -> bool:
         """``deleteEdgeReference``: delete a relationship an update replaced or dropped (REL-15).
 
-        Answers whether it was removed. An owned one drops its end 2, which the writer deletes (OWN-01).
+        Answers whether it was removed: ``force``, for an entity of an internal type, removes it (GTM-08). An owned
+        one drops its end 2, which the writer deletes (OWN-01).
         """
         relationship = self._relationships.get(relationship.guid, relationship)
         if attribute.is_owned_ref:
@@ -324,13 +333,13 @@ class RelationshipMapper:
             return self._hard
         if not self._hard and relationship.state is RelationshipStatus.DELETED:
             return False
-        await self._delete(relationship)
+        await self._delete(relationship, force=force)
         self._touch(referenced_end(relationship, direction, guid))
-        return self._hard
+        return self._hard or force
 
-    async def _delete(self, relationship: StoredRelationship) -> None:
+    async def _delete(self, relationship: StoredRelationship, *, force: bool = False) -> None:
         """``deleteEdge``: mark it ``DELETED``, or remove it and drop it from its ends' lists."""
-        if not self._hard:
+        if not (self._hard or force):
             if relationship.state is not RelationshipStatus.DELETED:
                 self._put(
                     relationship.model_copy(

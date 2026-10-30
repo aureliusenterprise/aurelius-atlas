@@ -188,6 +188,14 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-079",
         "Attributes qualifiedName and name are missing. Failed to derive a unique name for Glossary",
     )
+    GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED = (
+        400,
+        "ATLAS-400-00-07A",
+        (
+            "Attributes qualifiedName, name & glossary name are missing. Failed to derive a unique name for "
+            "Glossary term"
+        ),
+    )
     GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED = (
         400,
         "ATLAS-400-00-07B",
@@ -196,12 +204,22 @@ class AtlasErrorCode(Enum):
             "Glossary category"
         ),
     )
+    INVALID_TERM_RELATION_TO_SELF = (
+        400,
+        "ATLAS-400-00-07E",
+        "Invalid Term relationship: Term cannot have a relationship with self",
+    )
     INVALID_CHILD_CATEGORY_DIFFERENT_GLOSSARY = (
         400,
         "ATLAS-400-00-07F",
         "Invalid child category relationship: Child category (guid = {0}) belongs to different glossary",
     )
     INVALID_DISPLAY_NAME = (400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.', '<', '>')")
+    TERM_HAS_ENTITY_ASSOCIATION = (
+        400,
+        "ATLAS-400-00-084",
+        "Term (guid={0}) cannot be deleted as it has been assigned to {1} entities.",
+    )
     INVALID_DSL_QUERY = (
         400,
         "ATLAS-400-00-059",
@@ -352,6 +370,7 @@ class AtlasErrorCode(Enum):
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     INSTANCE_GUID_DELETED = (404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted")
     GLOSSARY_ALREADY_EXISTS = (409, "ATLAS-409-00-007", "Glossary with name {0} already exists")
+    GLOSSARY_TERM_ALREADY_EXISTS = (409, "ATLAS-409-00-009", "Glossary term with qualifiedName {0} already exists")
     GLOSSARY_CATEGORY_ALREADY_EXISTS = (
         409,
         "ATLAS-409-00-00A",

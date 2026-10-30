@@ -1,4 +1,4 @@
-"""The glossary and category endpoints of ``GlossaryREST`` (GLS-01 to GCT-07), on the fake Elasticsearch.
+"""The glossary, category and term endpoints of ``GlossaryREST`` (GLS-01 to GTM-07), on the fake Elasticsearch.
 
 Read from ``GlossaryREST`` of Apache Atlas 2.4.0; the service is tested on ``GlossaryService`` in
 ``aurelius-atlas-core``.
@@ -119,3 +119,72 @@ async def test__categories_are_created_related_updated_and_deleted(client: httpx
     assert (status, missing_many["errorCode"]) == (400, "ATLAS-400-00-072")
     assert (await send(client, "DELETE", f"{GLOSSARY}/category/{child['guid']}"))[0] == 204
     assert (await send(client, "GET", f"{GLOSSARY}/category/{child['guid']}"))[0] == 404
+
+
+@pytest.mark.covers(
+    f"{R}.create_glossary_term",
+    f"{R}.create_glossary_terms",
+    f"{R}.get_glossary_term",
+    f"{R}.update_glossary_term",
+    f"{R}.partial_update_glossary_term",
+    f"{R}.get_related_terms",
+    f"{R}.get_category_terms",
+    f"{R}.get_glossary_terms",
+    f"{R}.get_glossary_term_headers",
+    f"{R}.delete_glossary_term",
+    rules=["GTM-01", "GTM-02", "GTM-03", "GTM-04", "GTM-05", "GTM-06", "GTM-07"],
+)
+async def test__terms_are_created_related_updated_and_deleted(client: httpx.AsyncClient) -> None:
+    """The term endpoints in turn, with Atlas's failures and its swapped partial update message."""
+    _, glossary = await send(client, "POST", GLOSSARY, json={"name": "bank"})
+    anchor = {"glossaryGuid": glossary["guid"]}
+    _, category = await send(client, "POST", f"{GLOSSARY}/category", json={"name": "accounts", "anchor": anchor})
+    _, checking = await send(
+        client,
+        "POST",
+        f"{GLOSSARY}/term",
+        json={"name": "checking", "anchor": anchor, "categories": [{"categoryGuid": category["guid"]}]},
+    )
+    assert (checking["qualifiedName"], checking["categories"][0]["displayText"]) == ("checking@bank", "accounts")
+    _, (savings,) = await send(
+        client,
+        "POST",
+        f"{GLOSSARY}/terms",
+        json=[{"name": "savings", "anchor": anchor, "seeAlso": [{"termGuid": checking["guid"], "status": "DRAFT"}]}],
+    )
+    assert [(h["termGuid"], h["qualifiedName"], h["status"]) for h in savings["seeAlso"]] == [
+        (checking["guid"], "checking@bank", "DRAFT")
+    ]
+    _, related = await send(client, "GET", f"{GLOSSARY}/terms/{checking['guid']}/related")
+    assert [header["termGuid"] for header in related["seeAlso"]] == [savings["guid"]]
+    _, headers = await send(client, "GET", f"{GLOSSARY}/{glossary['guid']}/terms/headers", params={"sort": "DESC"})
+    assert [header["displayText"] for header in headers] == ["savings", "checking"]
+    _, terms = await send(client, "GET", f"{GLOSSARY}/{glossary['guid']}/terms", params={"limit": "1"})
+    assert [found["name"] for found in terms] == ["checking"]
+    _, in_category = await send(client, "GET", f"{GLOSSARY}/category/{category['guid']}/terms")
+    assert [header["termGuid"] for header in in_category] == [checking["guid"]]
+    _, detailed = await send(client, "GET", f"{GLOSSARY}/{glossary['guid']}/detailed")
+    assert set(detailed["termInfo"]) == {checking["guid"], savings["guid"]}
+    _, partial = await send(client, "PUT", f"{GLOSSARY}/term/{savings['guid']}/partial", json={"abbreviation": "SAV"})
+    assert (partial["abbreviation"], partial["seeAlso"][0]["termGuid"]) == ("SAV", checking["guid"])
+    _, bad = await send(client, "PUT", f"{GLOSSARY}/term/{savings['guid']}/partial", json={"language": "x"})
+    assert bad["errorMessage"] == "Invalid attribute Glossary Term for partial update of language"
+    full = (await send(client, "GET", f"{GLOSSARY}/term/{savings['guid']}"))[1]
+    full["seeAlso"], full["usage"] = [], "u"
+    _, updated = await send(client, "PUT", f"{GLOSSARY}/term/{savings['guid']}", json=full)
+    assert (updated["guid"], updated["usage"], "seeAlso" in updated) == (savings["guid"], "u", False)
+    _, unrelated = await send(client, "GET", f"{GLOSSARY}/terms/{checking['guid']}/related")
+    assert unrelated == {}
+    failures = [
+        ("POST", f"{GLOSSARY}/term", {"json": {"name": "x"}}, 400, "ATLAS-400-00-072"),
+        ("POST", f"{GLOSSARY}/terms", {"json": [{"name": "x"}]}, 400, "ATLAS-400-00-072"),
+        ("POST", f"{GLOSSARY}/term", {"json": {"anchor": anchor}}, 400, "ATLAS-400-00-07A"),
+        ("POST", f"{GLOSSARY}/term", {"json": {"name": "checking", "anchor": anchor}}, 409, "ATLAS-409-00-009"),
+        ("GET", f"{GLOSSARY}/terms/{checking['guid']}/related", {"params": {"offset": "x"}}, 400, "ATLAS-400-00-029"),
+        ("GET", f"{GLOSSARY}/term/nope", {}, 404, "ATLAS-404-00-005"),
+    ]
+    for method, url, kwargs, expected, code in failures:
+        status, body = await send(client, method, url, **kwargs)
+        assert (status, body["errorCode"]) == (expected, code), (method, url, body)
+    assert (await send(client, "DELETE", f"{GLOSSARY}/term/{savings['guid']}"))[0] == 204
+    assert (await send(client, "GET", f"{GLOSSARY}/term/{savings['guid']}"))[0] == 404

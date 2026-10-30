@@ -194,6 +194,7 @@ async def test__entities_of_a_type_are_counted_on_the_written_index(
             "put_journal",
             "delete_journal",
             "journal",
+            "get_journal",
             "count_type",
             "referring",
             "classified",

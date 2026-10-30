@@ -23,7 +23,7 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 
 S = "aurelius_atlas_core.glossary_service.GlossaryService"
 D = "aurelius_atlas_core.glossary_dto"
-U = "aurelius_atlas_core.glossary_category_utils"
+U = "aurelius_atlas_core.glossary_utils"
 MODELS = BUILTIN_MODELS_DIR / "0000-Area0"
 
 
@@ -152,7 +152,7 @@ async def test__a_read_of_another_entity_fails(service: GlossaryService) -> None
     f"{D}.category_from",
     f"{D}.related_category_header",
     f"{D}.related_term_header",
-    f"{U}.GlossaryCategoryUtils.process_category_relations",
+    "aurelius_atlas_core.glossary_category_utils.GlossaryCategoryUtils.process_category_relations",
     f"{U}.category_skeleton",
     rules=["GCT-01", "GCT-02", "GLS-06"],
 )

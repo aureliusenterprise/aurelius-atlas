@@ -1,13 +1,14 @@
-"""The glossary and category endpoints of ``GlossaryREST`` under ``/api/atlas/v2/glossary`` (GLS-01 to GCT-07).
+"""The glossary, category and term endpoints of ``GlossaryREST`` under ``/api/atlas/v2/glossary``.
 
-Terms (5.2b) and their assignment (5.2c) follow; glossary import is a later increment.
+GLS-01 to GLS-06, GCT-01 to GCT-07 and GTM-01 to GTM-07; the assignment of terms (5.2c) and glossary import (5.2d)
+follow.
 """
 
 from typing import Any
 
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.glossary_service import GlossaryService, SortOrder
-from aurelius_atlas_model.glossary import AtlasGlossary, AtlasGlossaryCategory
+from aurelius_atlas_model.glossary import AtlasGlossary, AtlasGlossaryCategory, AtlasGlossaryTerm
 from fastapi import APIRouter, Request, Response
 
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
@@ -44,6 +45,10 @@ def _category(body: Any) -> AtlasGlossaryCategory | None:  # noqa: ANN401 - the 
     return None if body is None else AtlasGlossaryCategory.model_validate(body)
 
 
+def _term(body: Any) -> AtlasGlossaryTerm | None:  # noqa: ANN401 - the request body
+    return None if body is None else AtlasGlossaryTerm.model_validate(body)
+
+
 @GLOSSARY.get("")
 async def get_glossaries(request: Request, store: Store) -> AtlasJSONResponse:
     """``getGlossaries``: every glossary, paged and sorted (GLS-05)."""
@@ -56,6 +61,86 @@ async def get_glossaries(request: Request, store: Store) -> AtlasJSONResponse:
 async def create_glossary(body: Body, store: Store) -> AtlasJSONResponse:
     """``createGlossary`` (GLS-02)."""
     return _json((await _service(store).create_glossary(_glossary(body))).to_json())
+
+
+@GLOSSARY.get("/term/{term_guid}")
+async def get_glossary_term(term_guid: str, store: Store) -> AtlasJSONResponse:
+    """``getGlossaryTerm`` (GTM-01)."""
+    validate_param_length("termGuid", term_guid)
+    return _json((await _service(store).get_term(term_guid)).to_json())
+
+
+@GLOSSARY.post("/term")
+async def create_glossary_term(body: Body, store: Store) -> AtlasJSONResponse:
+    """``createGlossaryTerm``: the anchor checked first (GTM-02)."""
+    term = _term(body)
+    if term is not None and term.anchor is None:
+        raise AtlasError(AtlasErrorCode.MISSING_MANDATORY_ANCHOR)
+    return _json((await _service(store).create_term(term)).to_json())
+
+
+@GLOSSARY.post("/terms")
+async def create_glossary_terms(body: Body, store: Store) -> AtlasJSONResponse:
+    """``createGlossaryTerms``: every anchor checked first (GTM-02)."""
+    terms = None if body is None else [AtlasGlossaryTerm.model_validate(item) for item in body]
+    if any(term.anchor is None for term in terms or []):
+        raise AtlasError(AtlasErrorCode.MISSING_MANDATORY_ANCHOR)
+    created = await _service(store).create_terms(terms)
+    return _json([term.to_json() for term in created])
+
+
+@GLOSSARY.put("/term/{term_guid}")
+async def update_glossary_term(term_guid: str, body: Body, store: Store) -> AtlasJSONResponse:
+    """``updateGlossaryTerm``: the term of the path's GUID (GTM-04)."""
+    validate_param_length("termGuid", term_guid)
+    term = _term(body)
+    if term is not None:
+        term.guid = term_guid
+    return _json((await _service(store).update_term(term)).to_json())
+
+
+@GLOSSARY.put("/term/{term_guid}/partial")
+async def partial_update_glossary_term(term_guid: str, body: Body, store: Store) -> AtlasJSONResponse:
+    """``partialUpdateGlossaryTerm``: name, descriptions, abbreviation and usage; arguments swapped (GTM-04)."""
+    validate_param_length("termGuid", term_guid)
+    if not body:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, NO_PARTIAL_UPDATES)
+    service = _service(store)
+    term = await service.get_term(term_guid)
+    for key, value in dict(body).items():
+        try:
+            term.set_attribute(str(key), value)
+        except ValueError as error:
+            raise AtlasError(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Term", key) from error
+    return _json((await service.update_term(term)).to_json())
+
+
+@GLOSSARY.delete("/term/{term_guid}", status_code=204)
+async def delete_glossary_term(term_guid: str, store: Store) -> Response:
+    """``deleteGlossaryTerm`` (GTM-05)."""
+    validate_param_length("termGuid", term_guid)
+    await _service(store).delete_term(term_guid)
+    return Response(status_code=204)
+
+
+@GLOSSARY.get("/terms/{term_guid}/related")
+async def get_related_terms(term_guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getRelatedTerms``: by relation; the page parameters read and unused, as in Atlas (GTM-06)."""
+    validate_param_length("termGuid", term_guid)
+    _page(request)
+    related = await _service(store).get_related_terms(term_guid)
+    return _json(
+        {relation.attr_name: [header.to_json() for header in headers] for relation, headers in related.items()}
+    )
+
+
+@GLOSSARY.get("/category/{category_guid}/terms")
+async def get_category_terms(category_guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getCategoryTerms`` (GTM-06)."""
+    validate_param_length("categoryGuid", category_guid)
+    limit, offset, sort = _page(request)
+    found = await _service(store).get_category_terms(category_guid, offset, limit, sort)
+    return _json([header.to_json() for header in found])
 
 
 @GLOSSARY.get("/category/{category_guid}")
@@ -155,6 +240,24 @@ async def get_glossary_categories_headers(glossary_guid: str, request: Request, 
     validate_param_length("glossaryGuid", glossary_guid)
     limit, offset, sort = _page(request)
     found = await _service(store).get_glossary_categories_headers(glossary_guid, offset, limit, sort)
+    return _json([header.to_json() for header in found])
+
+
+@GLOSSARY.get("/{glossary_guid}/terms")
+async def get_glossary_terms(glossary_guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getGlossaryTerms`` (GTM-06)."""
+    validate_param_length("glossaryGuid", glossary_guid)
+    limit, offset, sort = _page(request)
+    found = await _service(store).get_glossary_terms(glossary_guid, offset, limit, sort)
+    return _json([term.to_json() for term in found])
+
+
+@GLOSSARY.get("/{glossary_guid}/terms/headers")
+async def get_glossary_term_headers(glossary_guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getGlossaryTermHeaders`` (GTM-06)."""
+    validate_param_length("glossaryGuid", glossary_guid)
+    limit, offset, sort = _page(request)
+    found = await _service(store).get_glossary_terms_headers(glossary_guid, offset, limit, sort)
     return _json([header.to_json() for header in found])
 
 
