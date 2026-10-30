@@ -246,9 +246,12 @@ nav:
                       - 10.1 Deployment chart foundation: architecture/conversion/increments/10-1-chart-foundation.md
                       - 10.2 Stateful platform charts: architecture/conversion/increments/10-2-stateful-platform.md
                       - 10.3a App and edge charts: architecture/conversion/increments/10-3-app-edge-charts.md
+                      - 10.3b Observability chart: architecture/conversion/increments/10-3b-observability-chart.md
+                      - 10.6 Network segmentation: architecture/conversion/increments/10-6-network-segmentation.md
           - Deployment:
                 - architecture/deployment/index.md
                 - Runbook: architecture/deployment/runbook.md
+                - Secret Storage: architecture/deployment/secret-storage.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

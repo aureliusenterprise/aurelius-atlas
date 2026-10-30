@@ -77,6 +77,7 @@ library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
 FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
 `/etc/aurelius-atlas/tls`, which is where the AUTH_CA_FILE/OTEL_CA_FILE
 config paths point (DD-251's closure — the dead caConfigMap pair is gone).
+10.6 adds the ingress allow (CHT-66): 21001 from the lineage-model pods only.
 Chart-contract tests: `tests/test__charts_aux.py`. Conventions:
 `helm/AGENTS.md`.
 

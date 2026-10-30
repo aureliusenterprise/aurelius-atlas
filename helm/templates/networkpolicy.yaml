@@ -1,0 +1,86 @@
+{{/*
+Namespace-wide default-deny for ingress, plus the gateway's ingress allows
+(CHT-60, CHT-61/62/65/69's edge half, DD-271). One deny, one purpose:
+select every pod in the namespace and allow nothing — the component charts'
+own networkpolicy.yaml files are the only other allows, joined per chart like
+the Services (CHT-13's rule). The deny lives here, not in the component
+charts, because it is a namespace contract: per-chart denies would stack N
+identical policies and let one chart's networkPolicy.enabled=false silently
+open the whole namespace.
+
+The edge allows follow the same gate as the HTTPRoutes: one policy per
+listener the `aurelius-atlas.edge.listeners` helper resolves, admitting the
+Gateway data plane (networkPolicy.gatewayNamespaces, DD-272 — [] is all
+namespaces, the honest default for a public edge whose data-plane placement
+varies per cluster) to the backend's container port. The peer is the owning
+component's pods by their labels (name = chart name, instance = release,
+component where a chart shares one name), never a Service rename: a
+hosts.*.service override renames the Service, and the pods stay the pods.
+
+Known exemptions (DD-271, documented assumptions, not policy): kubelet
+probes and kubectl port-forward ride the node/Kubelet API, not the pod
+network, and every CNI this project runs (Calico, Cilium, GKE dataplane)
+exempts them. That is what keeps the HTTPS probes (CHT-20), the management
+port (CHT-71), and the Grafana port-forward runbook (CHT-69) working under
+deny-all. Egress is unrestricted by choice (CHT-73): a deny-egress posture
+is a cluster-policy decision, and the compose dev shape (no policies at all)
+stays byte-identical.
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-deny-all-ingress" .Release.Name }}
+    namespace: {{ include "aurelius-atlas.namespace" . }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    podSelector: {}
+    policyTypes:
+        - Ingress
+{{- if .Values.global.gateway.enabled }}
+{{/* Listener name -> the owning component's pod labels (CHT-70). The chart
+names are the constants the dependencies block already fixes. */}}
+{{- $peers := dict
+    "atlas" (dict "name" "atlas-webapp")
+    "keycloak" (dict "name" "atlas-keycloak")
+    "dashboard" (dict "name" "atlas-server")
+    "grafana" (dict "name" "atlas-observability" "component" "grafana")
+-}}
+{{- range $l := fromJsonArray (include "aurelius-atlas.edge.listeners" .) }}
+{{- $peer := index $peers (index $l "name") }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-edge-%s" $.Release.Name (index $l "name") }}
+    namespace: {{ include "aurelius-atlas.namespace" $ }}
+    labels:
+        {{- include "aurelius-atlas.labels" $ | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            app.kubernetes.io/name: {{ $peer.name | quote }}
+            app.kubernetes.io/instance: {{ $.Release.Name | quote }}
+            {{- with $peer.component }}
+            app.kubernetes.io/component: {{ . | quote }}
+            {{- end }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                {{- if $.Values.networkPolicy.gatewayNamespaces }}
+                {{- range $.Values.networkPolicy.gatewayNamespaces }}
+                -   namespaceSelector:
+                        matchLabels:
+                            kubernetes.io/metadata.name: {{ . | quote }}
+                {{- end }}
+                {{- else }}
+                -   namespaceSelector: {}
+                {{- end }}
+            ports:
+                -   port: {{ int (index $l "port") }}
+                    protocol: TCP
+{{- end }}
+{{- end }}
+{{- end }}

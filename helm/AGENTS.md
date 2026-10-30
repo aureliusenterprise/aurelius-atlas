@@ -9,7 +9,8 @@ conversion workflow, live in the root `AGENTS.md`. Increment 10.1 is the
 foundation (charts, plugin, CI); 10.2 landed the stateful charts
 (elasticsearch, keycloak); 10.3a lands the app charts (server, webapp, the
 three aux APIs) and the umbrella's Gateway-API edge; 10.3b is the
-observability workloads; 10.4 secrets + publish; 10.5 cluster validation.
+observability workloads; 10.4 secrets + publish; 10.5 cluster validation;
+10.6 network segmentation.
 
 ## Layout
 
@@ -89,6 +90,33 @@ carries the helpers its templates use, following the same naming convention
 (`<chart>.fullname`, `<chart>.labels`, …). The convention is the dedupe, not a
 shared library — a library chart is a component with no runtime, which is the
 abstraction this tree rejects.
+
+## Network segmentation (CHT-60..73)
+
+Two owners, never overlapping (DD-271): the umbrella renders the namespace
+default-deny (`<release>-deny-all-ingress`, `podSelector: {}`) plus one
+browser-edge allow per enabled listener (`<release>-edge-<host>`, the same
+`edge.listeners` gate as the HTTPRoutes — no allow exists for an unrouted
+backend); every chart renders only **additive** ingress allows for its own
+pods, gated by its own `networkPolicy.enabled`. A chart's switch never
+opens the namespace — the deny is the umbrella's alone.
+
+Peers join by **pod** labels — `app.kubernetes.io/name` is the chart-name
+constant (`atlas-server`, never release-prefixed) and
+`app.kubernetes.io/instance` the release; the observability workloads share
+one name and split on `app.kubernetes.io/component`; the pullers and the
+bundled Postgres carry fullname-derived name labels (release-prefixed under
+a non-matching release). The Service-name joins (`atlas.service` et al.)
+rename Services, not pods — never feed them a selector; renaming a peer for
+a policy is `networkPolicy.peers.<peer>`. Policies are `<fullname>-ingress`
+(one per chart workload-set), Ingress-only (no egress posture in the
+charts), and the peer sets are the **verified call graph**: read them off
+`helm template` renders, not from docs. Probe ports (collector 13133,
+Keycloak management 9000) get no rule — kubelet and port-forward ride the
+CNI's node path (CHT-71). `networkPolicy.gatewayNamespaces` (default `[]` =
+all namespaces) pins the edge allows' source (DD-272). The contract suite
+(`tests/test__charts_*.py`) names every rule id with exact peer sets and
+ports — widen a rule and a named rule breaks.
 
 ## Gotchas (all hit, all verified on helm 4.3.1)
 

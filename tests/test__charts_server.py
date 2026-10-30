@@ -10,7 +10,18 @@ names the webapp's nginx pins with proxy_ssl_name (CHT-25's twin).
 from typing import Any
 
 import pytest
-from conftest import SERVER_CHART, container, env_map, env_value, find, helm_render, pod_spec
+from conftest import (
+    SERVER_CHART,
+    container,
+    env_map,
+    env_value,
+    find,
+    helm_render,
+    names,
+    peer_labels,
+    pod_spec,
+    policy_peers_by_port,
+)
 
 TEST_VALUES = (SERVER_CHART / "tests/values.test.yaml",)
 
@@ -111,3 +122,25 @@ def test__no_password_renders_anywhere(server_docs: list[dict[str, Any]]) -> Non
     assert not any(d["kind"] == "Secret" for d in server_docs)
     text = str(server_docs)
     assert "password:" not in text  # refs only carry key names, e.g. elastic-password
+
+
+@pytest.mark.covers(rules=["CHT-65"])
+def test__server_admits_webapp_and_lineage_model(server_docs: list[dict[str, Any]]) -> None:
+    """21000 accepts the webapp proxy and the lineage-model join only (CHT-65)."""
+    policy = find(server_docs, "NetworkPolicy", "atlas-server-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-server")
+    assert policy_peers_by_port(server_docs, "atlas-server-ingress") == {21000: {"atlas-webapp", "atlas-lineage-model"}}
+
+
+@pytest.mark.covers(rules=["CHT-65", "CHT-72"])
+def test__server_network_policy_off_changes_nothing_else() -> None:
+    """The disable switch removes the policy and nothing else (CHT-72's chart half)."""
+    on = helm_render(SERVER_CHART, value_files=TEST_VALUES)
+    off = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=("networkPolicy.enabled=false",))
+    assert "atlas-server-ingress" in names(on, "NetworkPolicy")
+    assert names(off, "NetworkPolicy") == set()
+
+    def rest(docs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
+
+    assert rest(on) == rest(off)

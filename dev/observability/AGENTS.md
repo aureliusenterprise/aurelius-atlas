@@ -145,9 +145,14 @@ step), the health_check extension pinned to `0.0.0.0:13133` (the probes need
 it; the dev default is loopback), and Prometheus scraping chart Services with
 static configs (no Prometheus Operator, DD-266). The legacy-leg token and the
 Grafana admin arrive from the umbrella's generated Secrets
-(`<release>-collector-legacy`, `<release>-grafana-admin`), never values. This
-`helm/` deploys to clusters; the `docker-compose.yaml` stays the dev-mode
-stack. Conventions: `helm/AGENTS.md`.
+(`<release>-collector-legacy`, `<release>-grafana-admin`), never values. 10.6
+adds the ingress allows (CHT-67/68): the collector's four rules per leg
+(4318 browser ← webapp, 4317/4319 per-service ← apps + pullers, 4320/4321
+legacy ← webapp + keycloak, 9464/8888 ← prometheus), and the
+prometheus/loki/tempo policies by component label; Grafana renders none
+(CHT-69 — its only allow is the umbrella's gateway rule when the host is
+enabled). This `helm/` deploys to clusters; the `docker-compose.yaml` stays
+the dev-mode stack. Conventions: `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-dev-observability:helm-template
