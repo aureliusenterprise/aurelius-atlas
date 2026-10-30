@@ -101,6 +101,7 @@ nav:
                       - aurelius-atlas-auth: api-reference/libs/python/aurelius-atlas-auth.md
                       - aurelius-atlas-core: api-reference/libs/python/aurelius-atlas-core.md
                       - aurelius-atlas-data2model-client: api-reference/libs/python/aurelius-atlas-data2model-client.md
+                      - aurelius-atlas-dsl: api-reference/libs/python/aurelius-atlas-dsl.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
                       - aurelius-atlas-lineage-model-client: api-reference/libs/python/aurelius-atlas-lineage-model-client.md
                       - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
@@ -216,6 +217,7 @@ nav:
                       - 4.1b Classification search: architecture/conversion/increments/4-1-classification-search.md
                       - 4.2a Free text: architecture/conversion/increments/4-2-free-text.md
                       - 4.2b Quick search: architecture/conversion/increments/4-2-quick-search.md
+                      - 4.3 DSL parser: architecture/conversion/increments/4-3-dsl-parser.md
                       - 7.0 Webapp foundation (umbrella): architecture/conversion/increments/7-0-webapp-foundation.md
                       - 7.1 Webapp shell and localisation: architecture/conversion/increments/7-1-webapp-shell.md
                       - 7.2 Design system: architecture/conversion/increments/7-2-design-system.md
