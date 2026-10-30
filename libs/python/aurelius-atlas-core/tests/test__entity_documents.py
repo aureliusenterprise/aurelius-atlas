@@ -129,20 +129,27 @@ async def test__a_reservation_is_create_only_and_released_by_its_holder(
     assert fake.write_refreshes == []
 
 
-@pytest.mark.covers(f"{E}.put_journal", f"{E}.journal", f"{E}.delete_journal", rules=["ENS-07", "ENS-11"])
+@pytest.mark.covers(
+    f"{E}.put_journal", f"{E}.journal", f"{E}.get_journal", f"{E}.delete_journal", rules=["ENS-07", "ENS-11"]
+)
 async def test__the_journal_holds_writes_in_flight(documents: ElasticsearchEntityDocuments, fake: FakeClient) -> None:
-    """Entries are listed once the write's own refresh lands, and deleted by write id, twice without error."""
+    """Entries are written and deleted without waiting for a refresh (DD-247), read by write id in real time, and
+    deleted twice without error.
+    """  # noqa: D205 - one sentence
     entry = JournalEntry(write_id="w", lease_until=5, before={"a": None}, reserved=["k"])
 
     await documents.put_journal(entry)
     listed = await documents.journal()
+    found = await documents.get_journal("w")
     await documents.delete_journal("w")
     await documents.delete_journal("w")
 
     assert listed == [entry]
+    assert found == entry
     assert listed[0].before_entity("a") is None
     assert await documents.journal() == []
-    assert set(fake.write_refreshes) == {("t-entity-journal", "wait_for")}
+    assert await documents.get_journal("w") is None
+    assert fake.write_refreshes == []
     assert fake.refreshes == []
 
 

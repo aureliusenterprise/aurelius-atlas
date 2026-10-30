@@ -312,12 +312,16 @@ class EntityStore:
     async def recover(self) -> int:
         """Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
 
+        The journal's listing may lag its writes (DD-247): each entry is acted on as it is now, one already
+        deleted or still leased left alone.
+
         A committed write only releases what it no longer holds; any other is undone: an entity is restored only
         while it carries the write's id, a reservation released only while the write holds it.
         """
         now, handled = self.now(), 0
-        for entry in await self._documents.journal():
-            if entry.lease_until >= now:
+        for listed in await self._documents.journal():
+            entry = await self._documents.get_journal(listed.write_id)
+            if entry is None or entry.lease_until >= now:
                 continue
             if entry.committed:
                 await self._finish_releases(entry)

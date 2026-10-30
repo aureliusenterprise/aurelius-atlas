@@ -337,3 +337,28 @@ async def test__a_type_is_in_use_while_an_entity_of_it_exists(store: EntityStore
 
     assert await store.type_in_use("table")
     assert not await store.type_in_use("ref")
+
+
+@pytest.mark.covers(f"{S}.recover", rules=["ENS-07"])
+async def test__recovery_acts_on_each_entry_as_it_is_now(
+    store: EntityStore, documents: MemoryEntityDocuments, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The listing may lag the journal's writes (DD-247): an entry already deleted, or committed since, as listed
+    uncommitted, is not undone.
+    """  # noqa: D205 - one sentence
+    table = new(store, qualifiedName="t")
+    await store.write([EntityChange(table)])
+    stale = JournalEntry(write_id="gone", lease_until=0, before={table.guid: None})
+    committed = JournalEntry(write_id="done", lease_until=0, before={table.guid: None}, committed=True)
+    await documents.put_journal(committed)
+    listed = [stale, committed.model_copy(update={"committed": False})]
+
+    async def lagging() -> list[JournalEntry]:
+        return listed
+
+    monkeypatch.setattr(documents, "journal", lagging)
+
+    assert await store.recover() == 1
+
+    assert await store.get(table.guid) is not None
+    assert await documents.get_journal("done") is None
