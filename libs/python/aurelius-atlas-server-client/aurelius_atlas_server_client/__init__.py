@@ -8,7 +8,7 @@ response shapes the routes never stated (CL-10) and the client every consumer ca
 (CL-11), the Python twin of ``libs/angular/aurelius-atlas-data-access``.
 """
 
-from aurelius_atlas_server_client.client import AtlasClient, AtlasClientError, TokenSource
+from aurelius_atlas_server_client.client import AtlasClient, AtlasClientError, SearchApi, TokenSource
 from aurelius_atlas_server_client.lineage import (
     Direction,
     EntityHeaderLite,
@@ -33,5 +33,6 @@ __all__ = [
     "EntityHeaderLite",
     "LineageInfo",
     "LineageRelation",
+    "SearchApi",
     "TokenSource",
 ]

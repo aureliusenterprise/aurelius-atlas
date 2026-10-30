@@ -52,7 +52,7 @@ def parse(query: str) -> Query:
 
     Raises:
         AtlasError: ``INVALID_DSL_QUERY`` with ANTLR's message of the last syntax error (DSL-04), or naming a
-            limit or offset Java cannot read as an ``int`` (DSL-07, DV-83).
+            limit or offset Java cannot read as an ``int`` (DSL-07, DV-88).
     """
     lexer = AtlasDSLLexer(InputStream(query))
     lexer.removeErrorListeners()  # DSL-02: Atlas leaves the lexer's errors to the console

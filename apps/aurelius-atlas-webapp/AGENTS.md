@@ -25,7 +25,9 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   (HTTPS, CA-verified)
 - `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the built
   image, with the real atlas-server container behind nginx `/api/` (DD-142) and
-  Keycloak sign-in via the `authenticated` fixture (APC-10)
+  Keycloak sign-in via the `authenticated` fixture (APC-10), which replays a
+  per-browser session state — one form login per browser, silent check-sso for
+  every test, form-login self-heal when the shared session dies (DD-224)
 
 ## Porting rules (every slice)
 
@@ -73,6 +75,14 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
 - Every new component gets a Storybook story (7.2 wires the ui library pattern);
   every new route gets an e2e scenario.
 - Template strings carry `i18n="@@legacy.key"` markers matching the catalogue ids.
+- The nginx configs (shipped template + `e2e/config/nginx.conf`) are
+  **http-context includes**: the hardened image loads `conf.d/*.conf` inside
+  its `http{}` block, so http-scoped directives (`otel_exporter`, `map`,
+  `geo`, limit zones) belong at file top. Tracing is opted in per location
+  (`otel_trace on` on `/api/`, off server-wide, ETR-01); the OTel module and
+  its library closure ship in the image (builder stage, DD-239) — do not
+  `load_module` from conf.d, it is main-context only and lives in
+  `etc/nginx/modules/otel.conf`.
 
 ## Removal
 

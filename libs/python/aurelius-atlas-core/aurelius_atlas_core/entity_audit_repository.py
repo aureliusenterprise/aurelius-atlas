@@ -13,7 +13,7 @@ from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from elasticsearch import AsyncElasticsearch
 
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX
+from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
 
 AUDIT_INDEX = f"{INDEX_PREFIX}-entity-audits"
 """The alias of the audit index (DD-082)."""
@@ -90,6 +90,8 @@ class ElasticsearchEntityAuditRepository:
     async def put_events(self, events: Sequence[EntityAuditEventV2]) -> None:
         """Index each event as a new document, in one bulk request.
 
+        The append is refreshed, so the listing that follows it is current (ENS-11).
+
         Raises:
             RuntimeError: Elasticsearch did not keep an event.
         """
@@ -103,17 +105,19 @@ class ElasticsearchEntityAuditRepository:
                 codec.dumps(_document(event, audit_id)),
             ]
         body = b"\n".join(lines) + b"\n"  # NDJSON bytes: the transport sends them as they are
-        response = await self._client.bulk(operations=body)  # pyright: ignore[reportArgumentType]
+        response = await self._client.bulk(operations=body, refresh=WRITE_REFRESH)  # pyright: ignore[reportArgumentType]
         if response.get("errors"):
             raise RuntimeError(PUT_FAILED.format(alias=self.alias))
 
     async def list_events(
         self, entity_id: str, action: EntityAuditActionV2 | None, start_key: str | None, count: int
     ) -> list[EntityAuditEventV2]:
-        """Refresh the index, then page through the entity's events by event key, newest first (DD-083)."""
+        """Page through the entity's events by event key, newest first (DD-083).
+
+        Appends refresh, so a listed event is current (ENS-11).
+        """
         if count == 0 or count < -1:
             return []
-        await self._client.indices.refresh(index=self.alias)
         clauses: list[dict[str, Any]] = [{"term": {"entityId": entity_id}}]
         if action is not None:
             clauses.append({"term": {"action": action.value}})
@@ -138,8 +142,7 @@ class ElasticsearchEntityAuditRepository:
         return found
 
     async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
-        """Refresh the index, then page through the classification events of the time range."""
-        await self._client.indices.refresh(index=self.alias)
+        """Page through the classification events of the time range (ENS-11: appends refresh)."""
         query = {
             "bool": {
                 "filter": [

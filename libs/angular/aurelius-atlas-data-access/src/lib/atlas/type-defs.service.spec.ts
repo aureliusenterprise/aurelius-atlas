@@ -1,7 +1,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { API_BASE_URL, provideApiBaseUrl } from "./api-config";
+import { API_BASE_URL, provideApiBaseUrl } from "../api-config";
 import { AtlasTypeDef, AtlasTypesDef } from "./atlas-typedef";
 import { TypeDefsService } from "./type-defs.service";
 

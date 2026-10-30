@@ -15,8 +15,10 @@ propagates as ``httpx``'s own error — mapping it to an HTTP status is the app'
 (LM-07's DV-80), not the client's (CL-05).
 
 The paths mirror the server's routes verbatim: ``routes/admin.py`` under
-``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, and the
-``v2/lineage/{guid}`` feed of the server root (whose route lands with 5.1, CL-11).
+``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, the
+discovery routes of ``routes/discovery.py`` under ``/api/atlas/v2/search``
+(CL-13), and the ``v2/lineage/{guid}`` feed of the server root (whose route
+lands with 5.1, CL-11).
 """
 
 from collections.abc import Callable, Mapping
@@ -25,6 +27,14 @@ from typing import Any
 from uuid import UUID
 
 import httpx2 as httpx
+from aurelius_atlas_model.discovery import (
+    AtlasQuickSearchResult,
+    AtlasSearchResult,
+    AtlasSuggestionsResult,
+    QuickSearchParameters,
+    SearchParameters,
+    SortOrder,
+)
 from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
     AtlasBusinessMetadataDef,
@@ -54,8 +64,10 @@ DEFAULT_TIMEOUT_SECONDS = 10.0
 
 ADMIN_ROOT = "api/atlas/admin"
 TYPES_ROOT = "api/atlas/v2/types"
+DISCOVERY_ROOT = "api/atlas/v2/search"
 LINEAGE_ROOT = "v2/lineage"
-"""The route prefixes of the server's resources (``routes/admin.py``, ``routes/types.py``, 5.1's feed).
+"""The route prefixes of the server's resources (``routes/admin.py``, ``routes/types.py``,
+``routes/discovery.py``, 5.1's feed).
 
 Relative to the httpx client's base URL (CL-01): httpx appends them, so the base
 URL the app passes — trailing slash included, as a pydantic ``HttpUrl`` renders
@@ -290,6 +302,136 @@ class TypesApi:
         return model.model_validate(answer)
 
 
+class SearchApi:
+    """The discovery resource of an :class:`AtlasClient` (CL-13): ``client.search``.
+
+    The paths mirror ``routes/discovery.py``; the bodies are ``aurelius-atlas-model``'s,
+    reused whole (CL-10). The GET searches carry their parameters as query parameters,
+    the POST searches as the model's JSON body — as the server's JAX-RS routes read them.
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def search_with_parameters(self, parameters: SearchParameters) -> AtlasSearchResult:
+        """``POST /api/atlas/v2/search/basic``: the entities the body's search finds (SRC-02)."""
+        return AtlasSearchResult.model_validate(
+            await self._api.json("POST", f"{DISCOVERY_ROOT}/basic", body=parameters.to_json())
+        )
+
+    async def search_using_basic(  # noqa: PLR0913 - the GET route's query parameters, as routes/discovery.py reads them
+        self,
+        *,
+        query: str | None = None,
+        type_name: str | None = None,
+        classification: str | None = None,
+        sort_by: str | None = None,
+        sort_order: SortOrder | None = None,
+        exclude_deleted_entities: bool = False,
+        limit: int = 0,
+        offset: int = 0,
+        marker: str | None = None,
+    ) -> AtlasSearchResult:
+        """``GET /api/atlas/v2/search/basic``: a search of the query parameters, not body-validated (SRC-11)."""
+        params = _present(
+            query=query,
+            typeName=type_name,
+            classification=classification,
+            sortBy=sort_by,
+            sortOrder=sort_order,
+            excludeDeletedEntities=exclude_deleted_entities,
+            limit=limit,
+            offset=offset,
+            marker=marker,
+        )
+        return AtlasSearchResult.model_validate(await self._api.json("GET", f"{DISCOVERY_ROOT}/basic", params=params))
+
+    async def search_using_attribute(
+        self,
+        *,
+        type_name: str | None = None,
+        attr_name: str | None = None,
+        attr_value_prefix: str | None = None,
+        limit: int = 0,
+        offset: int = 0,
+    ) -> AtlasSearchResult:
+        """``GET /api/atlas/v2/search/attribute``: entities whose attribute starts with the prefix (SRC-11)."""
+        params = _present(
+            typeName=type_name, attrName=attr_name, attrValuePrefix=attr_value_prefix, limit=limit, offset=offset
+        )
+        return AtlasSearchResult.model_validate(
+            await self._api.json("GET", f"{DISCOVERY_ROOT}/attribute", params=params)
+        )
+
+    async def search_using_full_text(
+        self,
+        query: str,
+        *,
+        exclude_deleted_entities: bool = False,
+        limit: int = 0,
+        offset: int = 0,
+    ) -> AtlasSearchResult:
+        """``GET /api/atlas/v2/search/fulltext``: the entities matching the query, best first, with scores (FTX-05)."""
+        params = _present(
+            query=query,
+            excludeDeletedEntities=exclude_deleted_entities,
+            limit=limit,
+            offset=offset,
+        )
+        return AtlasSearchResult.model_validate(
+            await self._api.json("GET", f"{DISCOVERY_ROOT}/fulltext", params=params)
+        )
+
+    async def quick_search(self, parameters: QuickSearchParameters) -> AtlasQuickSearchResult:
+        """``POST /api/atlas/v2/search/quick``: the quick search of the body, with its facets (QSR-01)."""
+        return AtlasQuickSearchResult.model_validate(
+            await self._api.json("POST", f"{DISCOVERY_ROOT}/quick", body=parameters.to_json())
+        )
+
+    async def quick_search_using_query(  # noqa: PLR0913 - the GET route's query parameters, as routes/discovery.py reads them
+        self,
+        *,
+        query: str | None = None,
+        type_name: str | None = None,
+        exclude_deleted_entities: bool = False,
+        limit: int = 0,
+        offset: int = 0,
+        sort_by: str | None = None,
+        sort_order: SortOrder | None = None,
+    ) -> AtlasQuickSearchResult:
+        """``GET /api/atlas/v2/search/quick``: a quick search of the query parameters (QSR-01, QSR-02)."""
+        params = _present(
+            query=query,
+            typeName=type_name,
+            excludeDeletedEntities=exclude_deleted_entities,
+            limit=limit,
+            offset=offset,
+            sortBy=sort_by,
+            sortOrder=sort_order,
+        )
+        answer = await self._api.json("GET", f"{DISCOVERY_ROOT}/quick", params=params)
+        return AtlasQuickSearchResult.model_validate(answer)
+
+    async def get_suggestions(
+        self, prefix_string: str | None = None, field_name: str | None = None
+    ) -> AtlasSuggestionsResult:
+        """``GET /api/atlas/v2/search/suggestions``: terms beginning with the prefix (SUG-01, SUG-02)."""
+        params = _present(prefixString=prefix_string, fieldName=field_name)
+        answer = await self._api.json("GET", f"{DISCOVERY_ROOT}/suggestions", params=params)
+        return AtlasSuggestionsResult.model_validate(answer)
+
+
+def _present(**params: Any) -> dict[str, Any]:  # noqa: ANN401 - the query parameter values
+    """The endpoint's query parameters: a given value, its Java defaults left out.
+
+    The server reads an absent boolean as false and an absent number as 0 — the
+    defaults the routes pass their parameters on — so a false flag or a zero page
+    travels as its absence; httpx renders a set flag as ``true``, the shape the
+    route's ``flag`` parses.
+    """
+    return {name: value for name, value in params.items() if value is not None and value != 0}
+
+
 def _parse_def(payload: dict[str, Any]) -> AtlasBaseTypeDef:
     """The definition of any kind, parsed into its category's model (TYR-01, TYR-02)."""
     kind = TypeCategory.__members__.get(str(payload.get("category", "")))
@@ -313,6 +455,7 @@ class AtlasClient:
         api = _Api(self._http, token)
         self.admin = AdminApi(api)
         self.types = TypesApi(api)
+        self.search = SearchApi(api)
 
     def with_token(self, token: TokenSource) -> AtlasClient:
         """The same client speaking with ``token`` — sharing the connection pool (CL-03, LM-04).

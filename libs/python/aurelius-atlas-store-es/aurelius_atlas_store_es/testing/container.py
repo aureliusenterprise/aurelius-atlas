@@ -34,6 +34,17 @@ STARTUP_TIMEOUT_SECONDS = 180.0
 
 _CONFIG_DIR = "/usr/share/elasticsearch/config"
 
+_REPO_ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "tools/es-coredump-agent/coredump-noop.jar").is_file()
+)
+
+_AGENT_JAR = _REPO_ROOT / "tools" / "es-coredump-agent" / "coredump-noop.jar"
+"""The coredump-redirect javaagent (``tools/es-coredump-agent``): the ES image is
+started with it via ``ES_JAVA_OPTS``. Without it, Elasticsearch 9.x aborts at
+bootstrap on hosts that deny writes to ``/proc/self/coredump_filter`` (GKE's
+container lockdown does this for every Docker container on its nodes); the
+agent swaps the path for a harmless one. No-op elsewhere."""
+
 _ELASTICSEARCH_YML = """\
 cluster.name: aurelius-atlas-test
 network.host: 0.0.0.0
@@ -44,12 +55,16 @@ xpack.security.http.ssl.enabled: true
 xpack.security.http.ssl.certificate: tls/server.pem
 xpack.security.http.ssl.key: tls/server-key.pem
 xpack.security.transport.ssl.enabled: false
+xpack.ml.enabled: false
 node.store.allow_mmap: false
 cluster.routing.allocation.disk.threshold_enabled: false
 """
 """The settings of ``dev/elasticsearch/config/elasticsearch.yml`` that matter for tests."""
 
 STARTUP_TIMEOUT_ERROR = "Elasticsearch did not become healthy within {timeout} seconds"
+
+LOG_TAIL_SUFFIX = "\n\nElasticsearch container log (last lines):\n{lines}"
+"""Appended to the timeout message so a failed boot shows the server's own output."""
 
 
 def _write_material(work_dir: Path) -> Path:
@@ -127,7 +142,8 @@ def elasticsearch_container(
         container = (
             DockerContainer(image)
             .with_env("ELASTIC_PASSWORD", password)
-            .with_env("ES_JAVA_OPTS", f"-Xms{heap} -Xmx{heap}")
+            .with_env("ES_JAVA_OPTS", f"-Xms{heap} -Xmx{heap} -javaagent:/agent/coredump-noop.jar")
+            .with_volume_mapping(str(_AGENT_JAR), "/agent/coredump-noop.jar", "ro")
             .with_volume_mapping(str(work_dir / "elasticsearch.yml"), f"{_CONFIG_DIR}/elasticsearch.yml", "ro")
             .with_volume_mapping(str(work_dir / "tls"), f"{_CONFIG_DIR}/tls", "ro")
             .with_exposed_ports(9200)
@@ -141,7 +157,13 @@ def elasticsearch_container(
                     "ca_certs": ca_file,
                 },
             )
-            _wait_until_healthy(settings, timeout)
+            try:
+                _wait_until_healthy(settings, timeout)
+            except TimeoutError:
+                stdout, stderr = container.get_logs()
+                log_tail = "\n".join((stdout + stderr).decode(errors="replace").splitlines()[-200:])
+                detail = STARTUP_TIMEOUT_ERROR.format(timeout=timeout) + LOG_TAIL_SUFFIX.format(lines=log_tail)
+                raise TimeoutError(detail) from None
             yield settings
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)

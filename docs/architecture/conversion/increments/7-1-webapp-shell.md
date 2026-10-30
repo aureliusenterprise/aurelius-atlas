@@ -97,7 +97,9 @@ untouched (WBP-07). Against the Aurelius product, the two intended differences a
   failure modes of SHL-02, the metrics-endpoint derivation of SHL-14; the route table of SHL-04,
   SHL-05, SHL-06; the root component of SHL-03; the locale service of SHL-07. SHL-13.
 - `apps/aurelius-atlas-webapp/e2e/` — pytest + Playwright against the built image: SHL-12, plus
-  SHL-11's TLS and proxy paths and the CSP check.
+  SHL-11's TLS and proxy paths and the CSP check. (DD-228: SHL-11's TLS half lost its e2e check —
+  the CA-verified handshake pinned the workspace mkcert CA, i.e. dev deployment material; the
+  shipped nginx config's TLS block is reviewed, the proxy paths and CSP stay e2e-guarded.)
 - `scripts/check-webapp-purity.sh` (or an ESLint rule set) — WBP-02, SHL-01, SHL-09, SHL-10:
   greps the tree for `@NgModule`, `platformBrowserDynamic`, `@models4insight/`,
   `@ngx-translate/`, `environment`, and a state-owning `new BehaviorSubject` outside RxJS interop.

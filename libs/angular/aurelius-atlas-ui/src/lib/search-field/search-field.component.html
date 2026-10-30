@@ -3,10 +3,12 @@
 @let _withSubmitButton = withSubmitButton();
 
 <div class="field has-addons">
-    <div class="control has-icons-right is-expanded">
+    <div class="control has-icons-left has-icons-right is-expanded">
         <!-- The ControlShell's label was the Aurelius context's chrome ('Search');
              the accessible name rides the submit label, the component's
-             search-string of that name. -->
+             search-string of that name. The left plate is the ControlShell's
+             icon (the context's default `faSearch`, in the hero and every
+             card); the demo renders it cyan (has-text-info). -->
         <input
             class="input"
             type="search"
@@ -16,6 +18,9 @@
             (ngModelChange)="onQueryChange($event)"
             (search)="submitQuery()"
         />
+        <span class="icon is-small is-left has-text-info">
+            <fa-icon [icon]="faSearch"></fa-icon>
+        </span>
         @if (_query) {
             <span class="icon is-small is-right">
                 <button

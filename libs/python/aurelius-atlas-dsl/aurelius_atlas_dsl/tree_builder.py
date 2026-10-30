@@ -1,4 +1,4 @@
-"""Turns ANTLR's parse tree of a query into the nodes of ``dsl_tree`` (DD-218, DSL-05).
+"""Turns ANTLR's parse tree of a query into the nodes of ``dsl_tree`` (DD-241, DSL-05).
 
 Each function reads one context of ``AtlasDSLParser``: the parts ``DSLVisitor`` reads through the generated
 accessors, here by their context class or token type, which pyright can follow. A context that ``parse`` accepted

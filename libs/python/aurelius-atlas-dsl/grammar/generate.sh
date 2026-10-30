@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates ../aurelius_atlas_dsl/generated from Atlas's grammar with the ANTLR tool (DD-217).
+# Regenerates ../aurelius_atlas_dsl/generated from Atlas's grammar with the ANTLR tool (DD-240).
 # The tool's version must equal antlr4-python3-runtime's in ../pyproject.toml. Needs Java 11 or later.
 set -euo pipefail
 

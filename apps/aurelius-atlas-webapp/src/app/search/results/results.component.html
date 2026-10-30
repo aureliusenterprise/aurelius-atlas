@@ -1,0 +1,76 @@
+<!-- The legacy `results.component.html` shape: `data.length` shows the
+     columns, the `#noData` template is the TOP-LEVEL twin — the card
+     replaces the whole two-column block (the demo's no-results card spans
+     the container, the filter column is gone with it). -->
+@if (search.hasResults()) {
+    <div class="columns">
+        <!-- The filter column: the shell (SRH-07). Facets arrive with 7.4b. -->
+        <aside class="column is-one-third">
+            <div class="box filter-box">
+                <!-- The legacy filter component's #noFilters: a content
+                     paragraph, italic and centered ("No filters available"). -->
+                <div class="content">
+                    <p class="is-italic has-text-centered no-filters">{{ noFilters }}</p>
+                </div>
+            </div>
+        </aside>
+        <div class="column results-column">
+            <div class="box results-box">
+                <!-- The count header inside the box, the legacy
+                     `h6.title.is-6` (results.component.html). -->
+                <h6 class="title is-6 results-count">
+                    {{ search.approximateCount() }} <span>{{ resultsWord }}</span>
+                </h6>
+                <!-- The scroll owner is the container, not the box (the
+                     legacy split: the box is the 80vh flex column, the
+                     container scrolls inside it). -->
+                <div class="results-container">
+                    <aurelius-atlas-ui-infinite-scroll-container
+                        [loading]="search.loading()"
+                        [allLoaded]="search.allLoaded()"
+                        [loadLabel]="loadLabel"
+                        (nextPage)="search.nextPage()"
+                    >
+                        @for (entity of search.entries(); track trackByGuid($index, entity)) {
+                            <!-- The legacy row: `div.column > details-card`.
+                                 The column's auto height is what keeps the
+                                 card's min-height:100% inert, and its 0.75rem
+                                 padding is the gap between rows. -->
+                            <div class="column result-row">
+                                <aurelius-atlas-ui-entity-card
+                                    [guid]="entity.guid ?? undefined"
+                                    [name]="displayName(entity)"
+                                    [typeName]="entity.typeName ?? undefined"
+                                    (entityClicked)="openDetails($event)"
+                                />
+                            </div>
+                        }
+                    </aurelius-atlas-ui-infinite-scroll-container>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@if (search.noResults()) {
+    <!-- The no-results card (SRH-06): the legacy `#noData` template
+         verbatim — a .card whose card-content centers (the legacy
+         `.card-content` rule), the message as `p.title.is-4`, the advice
+         as `h6.title.is-6`. -->
+    <div class="card no-results-card">
+        <div class="card-content">
+            <div class="media">
+                <div class="media-content">
+                    <p class="title is-4 no-results">{{ noResultsMessage }}</p>
+                </div>
+            </div>
+            <article class="media">
+                <div class="media-left"></div>
+                <div class="media-content">
+                    <div class="content">
+                        <h6 class="title is-6 another-query">{{ anotherQueryMessage }}</h6>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+}

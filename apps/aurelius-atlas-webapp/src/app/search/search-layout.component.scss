@@ -1,0 +1,14 @@
+/*
+ * The hero's search field stretches the title row's column (the legacy
+ * `.input-bar { width: 100% }`), and the routed content sits in the Bulma
+ * container under the hero (the legacy `.under-navbar` band — the navbar's
+ * fixed-top padding is the body's, SHM-05).
+ */
+.input-bar {
+    width: 100%;
+}
+
+.search-content {
+    padding-bottom: 3rem;
+    padding-top: 1.5rem;
+}

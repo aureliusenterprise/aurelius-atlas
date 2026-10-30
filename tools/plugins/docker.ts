@@ -87,7 +87,17 @@ function createNodesInternal(
                                 command: `docker buildx build . -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version}`,
                             },
                             ci: {
-                                command: `docker buildx build . -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --load --cache-from="type=gha,key={projectName}-cache-main" --cache-from="type=gha,key={projectName}-cache-${branchName}" --cache-to="type=gha,key={projectName}-cache-${branchName},mode=max,scope={projectName}"`,
+                                // Registry-backed layer cache (GHCR, same namespace as
+                                // the images). Chosen over type=gha: the Actions cache
+                                // service is the least reliable part of the pipeline
+                                // (Azure Front Door 400s fail whole builds, 2026-10-25),
+                                // it is capped at 10 GB/repo, and it needs the job's
+                                // runtime token. The registry backend supports mode=max,
+                                // shares cache across jobs/runners, and a cache-import
+                                // miss degrades to a cold build instead of failing it.
+                                // Writes go to the branch's own tag; main's tag is the
+                                // shared baseline every build imports.
+                                command: `docker buildx build . -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --load --cache-from="type=registry,ref={args.namespace}/{projectName}:buildcache-main" --cache-from="type=registry,ref={args.namespace}/{projectName}:buildcache-${branchName}" --cache-to="type=registry,ref={args.namespace}/{projectName}:buildcache-${branchName},mode=max,image-manifest=true,oci-mediatypes=true"`,
                             },
                         },
                         defaultConfiguration: "local",

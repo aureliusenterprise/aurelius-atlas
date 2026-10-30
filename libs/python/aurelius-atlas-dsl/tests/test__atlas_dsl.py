@@ -159,7 +159,7 @@ def test__parse_reads_a_value_array() -> None:
 @pytest.mark.covers(f"{A}.parse", f"{A}.QueryMetadata.of", rules=["DSL-07"])
 @pytest.mark.parametrize("query", ["t limit 1e3", "t limit 3000000000", "t limit 10 offset 2147483648"])
 def test__parse_rejects_a_limit_java_cannot_read_as_int(query: str) -> None:
-    """A ``NUMBER`` ``Integer.parseInt`` rejects fails the query, naming the number (DV-83)."""
+    """A ``NUMBER`` ``Integer.parseInt`` rejects fails the query, naming the number (DV-88)."""
     with pytest.raises(AtlasError) as raised:
         parse(query)
     assert raised.value.code is AtlasErrorCode.INVALID_DSL_QUERY

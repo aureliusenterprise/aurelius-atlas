@@ -10,10 +10,8 @@ from urllib.request import Request, urlopen
 
 import dotenv
 import pytest
-from docker import from_env as docker_from_env
-from docker.models.containers import Container
+from playwright.sync_api import Browser, Page
 from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import Page
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from tenacity import RetryCallState, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
@@ -34,7 +32,6 @@ ATLAS_SERVER_HOST_PORT = 18445
 # reach it on 127.0.0.1; the certificate carries the "otel-collector" SAN, so
 # that is the TLS server hostname. The shared ingest token (DD-193) is Nx's
 # injected dev default from the project .env.
-OBSERVABILITY_PROJECT = "aurelius-atlas-dev-observability"
 COLLECTOR_HOST = "127.0.0.1"
 COLLECTOR_PORT = 4318
 SERVICE_PORT = 4319
@@ -61,7 +58,6 @@ KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
 # The dev plaintext listener (ADR 039, the collector's second provider): the
 # mint the human dev browser does, and the mint the CIA-11 fixture below
 # reproduces, to prove the collector accepts that iss too (DD-202).
-KEYCLOAK_DEV_ISSUER = "http://keycloak.localhost:8080/realms/master"
 
 
 class Settings(BaseSettings):
@@ -222,26 +218,14 @@ def _clear_cookies(retry_state: RetryCallState) -> None:
     page.context.clear_cookies()
 
 
-@pytest.fixture
-@retry(
-    retry=retry_if_exception_type(PlaywrightError),
-    stop=stop_after_attempt(2),
-    wait=wait_fixed(1),
-    reraise=True,
-    before_sleep=_clear_cookies,
-)
-def authenticated(page: Page, base_url: str, settings: Settings) -> Page:
-    """
-    Sign in through Keycloak and return the page (APC-05 / APC-10).
+def _sign_in(page: Page, base_url: str, settings: Settings) -> None:
+    """Run the Keycloak form login, and wait for the authenticated app.
 
-    Every webapp route sits behind the auth guard (DD-141), so the page tests
-    start from here. A navigation can be aborted mid-login when the e2e stack
-    starts its compose networks while tests run (net::ERR_NETWORK_CHANGED), so
-    each retry starts from a clean cookie jar: Keycloak may already have
-    issued the session on the failed pass.
+    The page sits on the login form (the auth guard's redirect landed there);
+    fill it, sign in, and settle: the navbar renders once the SPA's check-sso
+    handshake has traded the SSO session for tokens, so a caller can trust
+    the page — and the context's cookies — as signed in (APC-05, APC-10).
     """
-    page.goto(base_url)
-
     page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
 
     page.locator("#username").fill(settings.username)
@@ -250,7 +234,110 @@ def authenticated(page: Page, base_url: str, settings: Settings) -> Page:
 
     page.wait_for_url(re.compile(base_url))
 
-    return page
+    page.locator("nav.navbar").wait_for(state="visible", timeout=30_000)
+
+
+def _wait_signed_in(page: Page) -> bool:
+    """Watch the boot: True when the app renders, False when Keycloak's form answers.
+
+    The auth guard's redirect and the SPA boot race by design; the navbar is
+    the app's own chrome (the Keycloak form has none), so the first of the two
+    to appear decides. The poll interval bounds the common path's cost: a
+    replayed session shows the navbar in ~1s, a form lands within the first
+    polls (DD-224).
+    """
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        if "/realms/" in page.url:
+            return False
+        if page.locator("nav.navbar").count() > 0:
+            return True
+        page.wait_for_timeout(250)
+    return False
+
+
+@pytest.fixture(scope="session")
+def _storage_state(
+    tmp_path_factory: pytest.TempPathFactory,
+    browser: Browser,
+    base_url: str,
+    settings: Settings,
+) -> str:
+    """Sign in once per browser and save the session as a Playwright storage state (DD-224).
+
+    The suite's ~37 authenticated tests per browser each used to run the full
+    Keycloak form login. What a login leaves behind is the realm's SSO session
+    (``KEYCLOAK_IDENTITY``, a 30-minute idle window refreshed by every visit),
+    and the SPA boots with ``check-sso`` and a silent-iframe redirect (APC-05):
+    a test context that starts from this state mints its own 60s access tokens
+    from the stored SSO session, with no login form. The user's password never
+    enters the state — it carries cookies, not credentials.
+
+    A navigation can be aborted mid-login when the e2e stack starts its
+    compose networks while tests run (net::ERR_NETWORK_CHANGED), so each
+    retry starts from a clean cookie jar: Keycloak may already have issued
+    the session on the failed pass.
+    """
+    state_path = str(tmp_path_factory.mktemp("auth") / "state.json")
+
+    @retry(
+        retry=retry_if_exception_type(PlaywrightError),
+        stop=stop_after_attempt(2),
+        wait=wait_fixed(1),
+        reraise=True,
+        before_sleep=_clear_cookies,
+    )
+    def sign_in(page: Page) -> None:
+        page.goto(base_url)
+
+        _sign_in(page, base_url, settings)
+
+    context = browser.new_context(ignore_https_errors=True)
+    try:
+        sign_in(page=context.new_page())
+
+        context.storage_state(path=state_path)
+    finally:
+        context.close()
+
+    return state_path
+
+
+@pytest.fixture
+def authenticated(
+    browser: Browser,
+    browser_context_args: dict,
+    _storage_state: str,
+    base_url: str,
+    settings: Settings,
+) -> Generator[Page]:
+    """
+    Return a page signed in through Keycloak (APC-05 / APC-10, DD-224).
+
+    Every webapp route sits behind the auth guard (DD-141), so the page tests
+    start from here. The Keycloak SSO session captured once per browser
+    (``_storage_state``) rides the new context: the SPA's check-sso boot
+    mints the test's own 60s access tokens from it, and no login form runs.
+    The context is the test's own — cookies, storage and cache stay isolated
+    the way the per-test form login left them.
+
+    Self-healing: when the page lands on the login form anyway — the shared
+    session died (the resilience suite's logout test ends the realm session,
+    DD-153/RSL-02) — the fixture runs the form login and refreshes the shared
+    state, so the next test replays from a live session again.
+    """
+    context = browser.new_context(storage_state=_storage_state, **browser_context_args)
+    try:
+        page = context.new_page()
+        page.goto(base_url)
+
+        if not _wait_signed_in(page):
+            _sign_in(page, base_url, settings)
+            context.storage_state(path=_storage_state)
+
+        yield page
+    finally:
+        context.close()
 
 
 @pytest.fixture(scope="session")
@@ -337,64 +424,3 @@ def service_token(keycloak: DockerCompose) -> str:
 
     with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
         return json.load(response)["access_token"]
-
-
-@pytest.fixture
-def plaintext_service_token(keycloak: DockerCompose) -> str:
-    """A client-credentials token minted from the plaintext :8080 listener (CIA-11, DD-202).
-
-    Keycloak stamps ``iss`` from the listener that served the mint, so this
-    token carries ``iss=http://keycloak.localhost:8080/realms/master`` — the
-    issuer the human dev browser presents (ADR 039's listener), which the
-    collector's second OIDC provider must accept. The mint needs no CA pin:
-    the listener is plaintext HTTP.
-
-    Function-scoped: the dev realm mints 60s tokens (the ``service_token``
-    fixture's rule).
-    """
-    _ = keycloak
-    body = urlencode(
-        {
-            "grant_type": "client_credentials",
-            "client_id": "otel-atlas-server",
-            "client_secret": os.environ.get("OTEL_INGEST_CLIENT_SECRET", DEFAULT_INGEST_CLIENT_SECRET),
-        }
-    ).encode()
-    request = Request(f"{KEYCLOAK_DEV_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # the dev stack's plaintext listener, by design (ADR 039)
-
-    with urlopen(request) as response:  # noqa: S310  # plaintext dev issuer, mint-side by design
-        return json.load(response)["access_token"]
-
-
-@pytest.fixture(scope="session")
-def collector_container(observability: DockerCompose) -> Container:  # noqa: ARG001
-    """The running collector container of the dev observability stack (CIA-03).
-
-    Found by compose labels rather than name, mirroring how the fixture above
-    starts it. ``observability`` guarantees the stack is up. The collector
-    crash-loops until Keycloak answers its OIDC discovery (DD-193/DD-195) and
-    the restart policy brings it back, so the fixture polls for the settled
-    state — running with its port bindings in place — rather than reading the
-    container mid-restart (a restarting container reports no bindings).
-    """
-    client = docker_from_env()
-    deadline = time.monotonic() + 120
-    while True:
-        containers = client.containers.list(
-            filters={
-                "label": [
-                    f"com.docker.compose.project={OBSERVABILITY_PROJECT}",
-                    "com.docker.compose.service=otel-collector",
-                ]
-            }
-        )
-        if containers:
-            container = containers[0]
-            container.reload()
-            ports = container.attrs["NetworkSettings"]["Ports"]
-            if container.status == "running" and any(ports.values()):
-                return container
-        if time.monotonic() >= deadline:
-            message = "the dev/observability collector did not settle into a running state"
-            raise ValueError(message)
-        time.sleep(2)

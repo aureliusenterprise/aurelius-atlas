@@ -4,34 +4,30 @@
     #browse-placeholder id the 7.1 shell tests anchor to — and the three
     context cards in Aurelius's order: business, technical, governance.
 
-    The legacy page anatomy (SHM-07, DD-150): `section > container` is how
-    the legacy pages inset their content (the demo's landing box sits at
-    x=56 in a 1280 viewport on exactly this grid — the same column the
-    navbar brand sits in). The margins are Bulma's, not hand-rolled.
+    The legacy page anatomy (SHM-07, DD-150, DD-218): the legacy browse
+    template's box and columns sit top-level, and the search hero insets them
+    (`section.section > div.container` around the outlet, the legacy
+    `hero.component.html`) — the layout owns the inset, the page does not
+    double it. The margins are Bulma's, not hand-rolled.
 -->
-<section class="section">
-    <div class="container">
-        <div class="box">
-            <h2 class="title is-2" i18n="@@search.browse.title">Getting started</h2>
-            <div class="content">
-                <p id="browse-placeholder" i18n="@@search.browse.description">
-                    Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest
-                    below.
-                </p>
-            </div>
-        </div>
-        <div class="columns is-multiline">
-            <div class="column">
-                <aurelius-atlas-webapp-business-context class="hints"></aurelius-atlas-webapp-business-context>
-            </div>
-            <div class="column">
-                <aurelius-atlas-webapp-technical-context class="hints"></aurelius-atlas-webapp-technical-context>
-            </div>
-            <div class="column">
-                <aurelius-atlas-webapp-governance-responsibilities
-                    class="hints"
-                ></aurelius-atlas-webapp-governance-responsibilities>
-            </div>
-        </div>
+<div class="box">
+    <h2 class="title is-2" i18n="@@search.browse.title">Getting started</h2>
+    <div class="content">
+        <p id="browse-placeholder" i18n="@@search.browse.description">
+            Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below.
+        </p>
     </div>
-</section>
+</div>
+<div class="columns is-multiline">
+    <div class="column">
+        <aurelius-atlas-webapp-business-context class="hints"></aurelius-atlas-webapp-business-context>
+    </div>
+    <div class="column">
+        <aurelius-atlas-webapp-technical-context class="hints"></aurelius-atlas-webapp-technical-context>
+    </div>
+    <div class="column">
+        <aurelius-atlas-webapp-governance-responsibilities
+            class="hints"
+        ></aurelius-atlas-webapp-governance-responsibilities>
+    </div>
+</div>

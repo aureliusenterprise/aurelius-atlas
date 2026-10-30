@@ -15,7 +15,10 @@ and `libs/python/AGENTS.md`.
 - `aurelius_atlas_server_client/lineage.py` — `LineageInfo`, `LineageRelation`,
   `EntityHeaderLite`, `Direction` (the `v2/lineage/{guid}` body, CL-12)
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`.admin`, `.types`,
-  `get_lineage`, `with_token`), `AtlasClientError`, `TokenSource`
+  `.search`, `get_lineage`, `with_token`), `AtlasClientError`, `TokenSource`.
+  `.search` (CL-13) answers the discovery routes: the basic POST/GET, attribute,
+  fulltext, the quick POST/GET, and suggestions — bodies reused whole from
+  `aurelius-atlas-model` (CL-10)
 
 ## Wiring Checklist
 
@@ -26,7 +29,7 @@ and `libs/python/AGENTS.md`.
   `with_token(...)` wrapper shares the pool and closes nothing.
 - The typedef bodies are `aurelius-atlas-model`'s, reused whole (CL-10) — never
   fork them here.
-- The rules it keeps (CL-01..CL-05, CL-10..CL-12) are specified by the 8.4 spec
+- The rules it keeps (CL-01..CL-05, CL-10..CL-13) are specified by the 8.4 spec
   (`docs/architecture/conversion/increments/8-4-api-client-libraries.md`).
 
 ## Conventions

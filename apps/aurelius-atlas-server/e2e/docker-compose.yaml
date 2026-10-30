@@ -17,6 +17,9 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # HSTS off in e2e (DD-236): the e2e browser signs in over keycloak.localhost,
+            # and includeSubDomains on localhost would pin that name to HTTPS.
+            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
             # OTLP ingest identity (7.18, DD-196): the server exports through
             # its own pipeline (aurelius-atlas-otel), minting client-credentials
             # JWTs as otel-atlas-server for the per-service leg — the OIDC
@@ -31,6 +34,11 @@ services:
             AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+            # The SDK's BatchSpanProcessor exports on a 5s cycle by default,
+            # which is the floor under the suite's Tempo read-back probes.
+            # Test containers export every second (DD-225); prod images keep
+            # the default. The name stays bare (OTEL_*, third-party consumer).
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
         extra_hosts:
             # The mint target: the e2e Keycloak's :8443 listener, published
             # loopback-wide on this machine (as the webapp stack's nginx uses

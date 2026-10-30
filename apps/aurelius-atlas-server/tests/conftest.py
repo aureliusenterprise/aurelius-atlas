@@ -36,16 +36,28 @@ def ca_file(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def settings(ca_file: Path, tmp_path: Path) -> ServerSettings:
+def tls_pair(tmp_path: Path) -> tuple[Path, Path]:
+    """Files standing in for the serving certificate and key (SRV-06); unit tests never start uvicorn."""
+    certificate, key = tmp_path / "server.pem", tmp_path / "server-key.pem"
+    certificate.write_text("cert\n")
+    key.write_text("key\n")
+    return certificate, key
+
+
+@pytest.fixture
+def settings(ca_file: Path, tls_pair: tuple[Path, Path], tmp_path: Path) -> ServerSettings:
     """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16).
 
     Propagation happens in the request (TSK-08), so responses show it at once; the task tests turn tasks on.
     """
+    certificate, key = tls_pair
     return ServerSettings.model_validate(
         {
             "elasticsearch_hosts": ["https://localhost:9200"],
             "elasticsearch_password": "test-password",
             "elasticsearch_ca_certs": ca_file,
+            "tls_cert_file": certificate,
+            "tls_key_file": key,
             "revision": "abc123",
             "models_dir": tmp_path / "no-models",
             "tasks_enabled": False,

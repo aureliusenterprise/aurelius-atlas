@@ -14,7 +14,7 @@ workspace = true
 [tool.hatch.build.targets.wheel]
 packages = ["aurelius_atlas_dsl"]
 
-# The parser ANTLR generates is not ours to cover (DD-217).
+# The parser ANTLR generates is not ours to cover (DD-240).
 [tool.coverage.run]
 omit = ["aurelius_atlas_dsl/generated/*"]
 

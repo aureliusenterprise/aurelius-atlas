@@ -1,4 +1,4 @@
-"""The Atlas DSL's parse tree as typed, immutable nodes (DD-218).
+"""The Atlas DSL's parse tree as typed, immutable nodes (DD-241).
 
 One node per rule of ``AtlasDSLParser.g4`` that ``DSLVisitor`` reads, named after it; a rule that only chooses
 (``literal``, ``atomE``, ``compE``, ``fromSrc``, ``singleQrySrc``) is the union of its alternatives, and

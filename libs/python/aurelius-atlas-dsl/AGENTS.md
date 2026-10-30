@@ -1,6 +1,6 @@
 # aurelius-atlas-dsl
 
-The Atlas DSL (DD-002, DD-217, DD-218). This file covers wiring specific to this lib; workspace-wide rules —
+The Atlas DSL (DD-002, DD-240, DD-241). This file covers wiring specific to this lib; workspace-wide rules —
 including the scaffold recipe for Python libs — live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
 
 ## Layout
@@ -11,7 +11,7 @@ including the scaffold recipe for Python libs — live in the root `AGENTS.md` a
   out of ruff, pyright, coverage, Sonar, the hooks and the traceability check
 - `aurelius_atlas_dsl/atlas_dsl.py` — `AtlasDSL`: `parse` (`Parser#parse` with its `Validator`),
   `QueryMetadata`
-- `aurelius_atlas_dsl/dsl_tree.py` — the typed syntax tree, one node per grammar rule (DD-218)
+- `aurelius_atlas_dsl/dsl_tree.py` — the typed syntax tree, one node per grammar rule (DD-241)
 - `aurelius_atlas_dsl/tree_builder.py` — ANTLR's contexts to those nodes
 - `tests/` — DSL-01 to DSL-07; `tests/fixtures/atlas_queries.json` holds the queries of Atlas's DSL tests with
   their source lines

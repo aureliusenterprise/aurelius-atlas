@@ -1,0 +1,18 @@
+<!-- The projected list (UIC-21). -->
+<ng-content></ng-content>
+
+<!--
+    The sentinel row (UIC-22): the legacy `*ngIf`'s twin — the row exists
+    only while pages remain. Its #sentinel ref appears/disappears with the
+    row, and the component's effect (re)watches it: intersection emits
+    nextPage once, suppressed while loading. The button is the legacy
+    keyboard/no-API fallback and carries the spinner while a page is in
+    flight.
+-->
+@if (!allLoaded()) {
+    <p #sentinel>
+        <button type="button" class="button is-fullwidth" [class.is-loading]="loading()" (click)="requestPage()">
+            <span>{{ loadLabel() }}</span>
+        </button>
+    </p>
+}

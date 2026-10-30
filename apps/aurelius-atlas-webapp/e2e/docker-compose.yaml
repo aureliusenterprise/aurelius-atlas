@@ -59,6 +59,16 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
             AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # Client-IP trust (SRV-10, DD-238): the nginx proxy is the front
+            # door and rewrites X-Forwarded-For, so the server is told to trust
+            # the Docker bridge range — uvicorn's default (loopback) would make
+            # every proxied request look like it came from the proxy. With the
+            # hop declared, the server's access log and OTel peer attributes
+            # name the browser's address.
+            AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS: 172.16.0.0/12
+            # HSTS off in e2e (DD-236): the webapp e2e browser reaches Keycloak over
+            # keycloak.localhost; includeSubDomains on localhost would pin it to HTTPS.
+            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
             # OTLP ingest identity (7.18, DD-196): the server exports through
             # its own pipeline (aurelius-atlas-otel), minting client-credentials
             # JWTs as otel-atlas-server for the per-service leg — the OIDC
@@ -71,6 +81,9 @@ services:
             AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+            # Export every second in test containers so Tempo read-back
+            # probes land sooner (DD-225); mirrors the server e2e compose.
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
         extra_hosts:
             # The mint target: the e2e Keycloak's :8443 listener, published
             # loopback-wide on this machine (the webapp service maps it for

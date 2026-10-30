@@ -20,6 +20,14 @@ xpack.security.http.ssl.certificate_authorities: [tls/ca.pem]
 # A single node has no peers to talk to over the transport layer.
 xpack.security.transport.ssl.enabled: false
 
+# Machine learning is off: this cluster never runs ML jobs, and ES 9.x runs a
+# native-code self-check at bootstrap that aborts the node ("fatal exception
+# while booting Elasticsearch: Failure running machine learning native code")
+# on hosts where the bundled natives cannot execute - GKE's containerd nodes
+# are such hosts (CI run 40277651130). Disabling it is ES's own suggested
+# remedy and standard for containerized single-node clusters.
+xpack.ml.enabled: false
+
 # No memory-mapped index files: avoids depending on the host's vm.max_map_count
 # (dev machines and CI runners differ). Slower on large indices, irrelevant at
 # dev scale.

@@ -3,6 +3,9 @@ name: aurelius-atlas-dev-postgres
 services:
     postgres:
         image: dhi.io/postgres:18-alpine3.23
+        # Memory cap (CI capacity): the e2e fan-out runs this stack inside
+        # the CI runner's dind daemon on a shared node.
+        mem_limit: 512m
         environment:
             # ${VAR:?} guards: empty credentials would reinitialise the data
             # volume differently or crash-loop initdb obscurely; abort
@@ -14,18 +17,38 @@ services:
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256
         # The image runs as a fixed non-root user that cannot read bind-mounted
         # key material it does not own, so the certificates are copied to the
-        # container filesystem with strict permissions before startup.
+        # container filesystem with strict permissions before startup - and
+        # Postgres insists the key is 0600, owned by the server user, so a
+        # direct bind-mount at the ssl paths is not an option (host ownership).
+        # mktemp -d, not a fixed /tmp path: the target must be born with the
+        # running user's ownership every boot. Fixed paths collide on a warm
+        # daemon - "File exists" (install, run 40225940082), then EACCES on
+        # cp -f over a file owned by a previous run's uid (sticky /tmp
+        # forbids unlinking foreign files; userns-remapped daemons change
+        # uids across runs - run 40228376483).
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                install -m 600 /certs/postgres.pem /tmp/server.pem &&
-                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
+                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) &&
+                install -m 600 /certs/postgres.pem $$d/server.pem &&
+                install -m 600 /certs/postgres-key.pem $$d/server-key.pem &&
                 exec docker-entrypoint.sh
                 -c ssl=on
-                -c ssl_cert_file=/tmp/server.pem
-                -c ssl_key_file=/tmp/server-key.pem
+                -c ssl_cert_file=$$d/server.pem
+                -c ssl_key_file=$$d/server-key.pem
                 -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
+        # An explicit tmpfs for the certificate copy above. The image's own
+        # /tmp is not writable by the server user on every host: the digest
+        # this stack runs on Shape A (a warm image store on a PVC - see
+        # docs/architecture/self-hosted-ci.md) ships /tmp as 2775 root:999,
+        # setgid and without the sticky bit, so uid 70 gets EACCES on
+        # `mktemp -d` (run 40240896184); a current fresh pull of the same
+        # tag ships 1777 root:root and boots clean. Mounting the tmpfs
+        # explicitly pins the mode, so the boot does not depend on which
+        # build the daemon happens to have cached.
+        tmpfs:
+            - /tmp:mode=1777
         healthcheck:
             test:
                 [
@@ -47,12 +70,14 @@ services:
         # to the dev collector, so dev/observability never learns this slice
         # exists. Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
-        # their export.
-        restart: on-failure:15
+        # their export. Unbounded, per DD-226: an attempt count burns out
+        # ~6 min in, before Keycloak is reliably up (dev/elasticsearch).
+        restart: on-failure
         environment:
             # Same dev defaults the postgres service gets; the collector
             # expands ${env:...} in its config.

@@ -31,35 +31,43 @@ architecture: [Configuration Management](../../architecture/platform/delivery/co
 (ADR 018), [Components & Interfaces](../../architecture/platform/components-and-interfaces.md).
 
 **Settings.** Read once at start-up into a frozen `ServerSettings`; a validation failure (missing
-key, bad scheme, half a TLS pair) stops start-up with a message naming the variable (SRV-01,
-SRV-02). All names carry the `AURELIUS_ATLAS_SERVER_` prefix. What a deployment must supply, with
-no defaults:
+key, bad scheme, missing TLS material) stops start-up with a message naming the variable (SRV-01,
+SRV-02, SRV-06). All names carry the `AURELIUS_ATLAS_SERVER_` prefix. What a deployment must supply,
+with no defaults:
 
-| Variable                                 | Purpose                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| `..._ELASTICSEARCH_HOSTS`                | JSON list of store node URLs, e.g. `["https://es-0:9200"]` — `https` only  |
-| `..._ELASTICSEARCH_PASSWORD`             | Store password — a `SecretStr`, never shown in logs                        |
-| `..._ELASTICSEARCH_CA_CERTS`             | PEM CA of the store certificate; the store link is https-only (ADR 039)    |
-| `..._TLS_CERT_FILE` + `..._TLS_KEY_FILE` | PEM pair for serving HTTPS: both set, or both unset — enforced at start-up |
+| Variable                                 | Purpose                                                                                        |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `..._ELASTICSEARCH_HOSTS`                | JSON list of store node URLs, e.g. `["https://es-0:9200"]` — `https` only                      |
+| `..._ELASTICSEARCH_PASSWORD`             | Store password — a `SecretStr`, never shown in logs                                            |
+| `..._ELASTICSEARCH_CA_CERTS`             | PEM CA of the store certificate; the store link is https-only (ADR 039)                        |
+| `..._TLS_CERT_FILE` + `..._TLS_KEY_FILE` | PEM pair for serving HTTPS: both required — the server never serves plaintext (SRV-06, DD-234) |
 
 With defaults: `HOST` (`0.0.0.0` in the image), `PORT` (21000, Atlas's port — kept so existing
 clients find the catalogue where Atlas was, ADR 046), `LOG_LEVEL`, `REVISION` (reported by
-`admin/version`, ADM-01), `DASHBOARD_DIR` (None serves the API only, DSH-04), `MODELS_DIR`
+`admin/version`, ADM-01), `HSTS_ENABLED` (true — the dev arrangement sets it false, SRV-08/DD-236),
+`DASHBOARD_DIR` (None serves the API only, DSH-04), `MODELS_DIR`
 (default: the vendored Atlas 2.4.0 `addons/models`, MDL-16/DD-032),
 `TYPEDEF_REFRESH_SECONDS` (5.0 — how long the server answers from its type registry before
 checking for another process's type change, TDS-13/DD-029).
 
-!!! WARNING "A half TLS pair stops the server from starting"
+!!! WARNING "The server does not start without TLS material"
 
-    `TLS_CERT_FILE` and `TLS_KEY_FILE` are both set, or both unset — the pairing is enforced at
-    start-up. A container that mounts only the certificate exits with a message naming the
-    missing variable; this is the design working, not a broken image.
+    `TLS_CERT_FILE` and `TLS_KEY_FILE` are required settings — there is no plaintext mode
+    (SRV-06, DD-234, superseding the both-or-neither rule of SRV-03). A container that mounts
+    no material exits with a message naming the missing variable; this is the design working,
+    not a broken image. The image's `ENV` names where the pair lives (`/certs/server.pem`,
+    `/certs/server-key.pem` — DD-216's stack-owned mount).
 
 **The image** (`apps/aurelius-atlas-server/Dockerfile`: hardened base, runs as `nonroot`) bakes in
 the production defaults — listen on `0.0.0.0:21000`, dashboards served from
-`/application/dashboard` — and a liveness healthcheck against `/api/atlas/admin/liveness` that
-verifies the server's own certificate when TLS is on. Liveness is the probe a restart decision
+`/application/dashboard` — and a liveness healthcheck against `/api/atlas/admin/liveness` over
+HTTPS, verifying the served certificate (SRV-06). Liveness is the probe a restart decision
 uses; readiness also fails while the store is away (DD-016).
+
+**Security headers.** Every answer carries them (SRV-08, DD-236): `security_headers.py` stamps
+the JSON API with no-store/nosniff/framing-closed headers and a documents-free CSP, the
+dashboards with a same-origin CSP (DV-86) and immutable caching on bust-versioned assets,
+and HSTS when `HSTS_ENABLED`.
 
 **Parity scenarios.** `scenarios/<resource>/*.scenario.yaml` state each expectation as Atlas's own
 answer — e.g. `scenarios/admin/version.scenario.yaml` expects `Version: "2.4.0"`,

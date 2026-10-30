@@ -7,11 +7,14 @@ from pydantic import ValidationError
 
 
 @pytest.fixture
-def environment(monkeypatch: pytest.MonkeyPatch, ca_file: Path) -> pytest.MonkeyPatch:
+def environment(monkeypatch: pytest.MonkeyPatch, ca_file: Path, tls_pair: tuple[Path, Path]) -> pytest.MonkeyPatch:
     """The required settings as environment variables."""
+    certificate, key = tls_pair
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS", '["https://es:9200"]')
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD", "secret")
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS", str(ca_file))
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE", str(certificate))
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE", str(key))
     return monkeypatch
 
 
@@ -43,6 +46,7 @@ def test__settings_are_read_from_prefixed_variables(environment: pytest.MonkeyPa
         ("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD", None, "elasticsearch_password"),
         ("AURELIUS_ATLAS_SERVER_PORT", "70000", "port"),
         ("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS", "/does/not/exist.pem", "elasticsearch_ca_certs"),
+        ("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE", None, "tls_cert_file"),
     ],
 )
 def test__a_missing_or_invalid_setting_names_itself(
@@ -58,18 +62,22 @@ def test__a_missing_or_invalid_setting_names_itself(
         ServerSettings()  # pyright: ignore[reportCallIssue] - read from the environment
 
 
-@pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.tls", rules=["SRV-03"])
-def test__tls_needs_both_certificate_and_key(environment: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Certificate and key together enable HTTPS; one without the other is an error."""
-    certificate, key = tmp_path / "server.pem", tmp_path / "server-key.pem"
-    certificate.write_text("cert\n")
-    key.write_text("key\n")
+@pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.tls", rules=["SRV-03", "SRV-06"])
+def test__tls_material_is_required(environment: pytest.MonkeyPatch, tls_pair: tuple[Path, Path]) -> None:
+    """The server serves HTTPS only: certificate and key are required settings (SRV-06, DD-234).
 
-    assert ServerSettings().tls is None  # pyright: ignore[reportCallIssue]
+    The pair from the environment fixture is the settings' ``tls``; dropping either names the
+    missing setting at start-up — the same failure shape as the store password (SRV-01).
+    """
+    certificate, key = tls_pair
 
-    environment.setenv("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE", str(certificate))
-    with pytest.raises(ValidationError, match="must both be set"):
+    assert ServerSettings().tls == (certificate, key)  # pyright: ignore[reportCallIssue]
+
+    environment.delenv("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE")
+    with pytest.raises(ValidationError, match="tls_cert_file"):
         ServerSettings()  # pyright: ignore[reportCallIssue]
 
-    environment.setenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE", str(key))
-    assert ServerSettings().tls == (certificate, key)  # pyright: ignore[reportCallIssue]
+    environment.setenv("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE", str(certificate))
+    environment.delenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE")
+    with pytest.raises(ValidationError, match="tls_key_file"):
+        ServerSettings()  # pyright: ignore[reportCallIssue]

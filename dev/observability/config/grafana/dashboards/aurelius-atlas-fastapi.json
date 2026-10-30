@@ -2,7 +2,7 @@
     "annotations": {
         "list": []
     },
-    "description": "Metrics emitted by the FastAPI example via OpenTelemetry (OTLP), exported to Prometheus, logs in Loki, traces in Tempo. Count panels show raw requests per auto-sized time bucket; Duration p95 and Response Bytes/s use rate() over the current window. Long-lived SSE streams are excluded from request duration and in-flight and shown in their own row.",
+    "description": "Metrics emitted by the FastAPI example via OpenTelemetry (OTLP), exported to Prometheus, logs in Loki, traces in Tempo. Count panels show raw requests per auto-sized time bucket; Duration p95 and Response Bytes/s use rate() over the current window. Long-lived SSE streams are excluded from request duration and in-flight and shown in their own row. Stable HTTP semantic conventions (DD-222): http.server.request.duration (seconds, scaled to ms in the panels), http_route and http_response_status_code labels.",
     "id": null,
     "panels": [
         {
@@ -68,7 +68,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(histogram_count(increase(http_server_duration_milliseconds{exported_job=\"aurelius-atlas-fastapi-example\"}[$__interval])))",
+                    "expr": "sum(histogram_count(increase(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\"}[$__interval])))",
                     "interval": "1m",
                     "legendFormat": "requests/s",
                     "refId": "A"
@@ -107,7 +107,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(histogram_count(increase(http_server_duration_milliseconds{exported_job=\"aurelius-atlas-fastapi-example\",http_status_code=~\"5..\"}[$__interval]))) or vector(0)",
+                    "expr": "sum(histogram_count(increase(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_response_status_code=~\"5..\"}[$__interval]))) or vector(0)",
                     "interval": "1m",
                     "legendFormat": "5xx",
                     "refId": "A"
@@ -146,7 +146,7 @@
             },
             "targets": [
                 {
-                    "expr": "histogram_quantile(0.95, sum(rate(http_server_duration_milliseconds{exported_job=\"aurelius-atlas-fastapi-example\",http_target!=\"/sse\"}[5m])))",
+                    "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_route!=\"/entities/sse\"}[5m]))) * 1000",
                     "legendFormat": "p95",
                     "refId": "A"
                 }
@@ -222,7 +222,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(histogram_sum(rate(http_server_response_size_bytes{exported_job=\"aurelius-atlas-fastapi-example\"}[5m])))",
+                    "expr": "sum(histogram_sum(rate(http_server_response_body_size_bytes{exported_job=\"aurelius-atlas-fastapi-example\"}[5m])))",
                     "legendFormat": "out",
                     "refId": "A"
                 }
@@ -260,7 +260,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum by (http_target) (label_replace(histogram_count(increase(http_server_duration_milliseconds{exported_job=\"aurelius-atlas-fastapi-example\"}[$__interval])), \"http_target\", \"(no route)\", \"http_target\", \"^$\"))",
+                    "expr": "sum by (http_route) (label_replace(histogram_count(increase(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\"}[$__interval])), \"http_route\", \"(no route)\", \"http_route\", \"^$\"))",
                     "interval": "1m",
                     "legendFormat": "{{http_target}}",
                     "refId": "A"
@@ -368,7 +368,7 @@
                                 "type": "prometheus",
                                 "uid": "prometheus"
                             },
-                            "expr": "histogram_quantile(0.5, sum(rate(http_server_duration_milliseconds{exported_job=\"aurelius-atlas-fastapi-example\",http_target=\"/sse\"}[5m])))",
+                            "expr": "histogram_quantile(0.5, sum(rate(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_route=\"/entities/sse\"}[5m]))) * 1000",
                             "legendFormat": "p50",
                             "refId": "A"
                         },
@@ -377,7 +377,7 @@
                                 "type": "prometheus",
                                 "uid": "prometheus"
                             },
-                            "expr": "histogram_quantile(0.95, sum(rate(http_server_duration_milliseconds{exported_job=\"aurelius-atlas-fastapi-example\",http_target=\"/sse\"}[5m])))",
+                            "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_route=\"/entities/sse\"}[5m]))) * 1000",
                             "legendFormat": "p95",
                             "refId": "B"
                         }
@@ -408,7 +408,7 @@
                 "type": "tempo",
                 "uid": "tempo"
             },
-            "description": "Recent traces of incoming requests (root span = the FastAPI request): open a row to see the handler, its database queries (psycopg spans) and the calling browser span — joined via W3C traceparent. Search covers the recent ingest window.",
+            "description": "Recent traces of incoming requests (root span = the FastAPI request): open a row to see the handler, its database queries (psycopg spans) and the calling browser span \u2014 joined via W3C traceparent. Search covers the recent ingest window.",
             "gridPos": {
                 "h": 10,
                 "w": 24,

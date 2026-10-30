@@ -1,0 +1,22 @@
+{
+    "containerEnv": {
+        "CLOUDSDK_CORE_DISABLE_PROMPTS": "1"
+    },
+    "description": "Install google-cloud-cli (vendored from ghcr.io/dhoeric/features/google-cloud-cli, see NOTES.md).",
+    "id": "google-cloud-cli",
+    "installsAfter": ["ghcr.io/devcontainers/features/common-utils"],
+    "name": "Google Cloud CLI",
+    "options": {
+        "installGkeGcloudAuthPlugin": {
+            "default": false,
+            "description": "Install 'gke-gcloud-auth-plugin' plugin?",
+            "type": "boolean"
+        },
+        "version": {
+            "default": "latest",
+            "description": "Select or enter a gcloud CLI version",
+            "type": "string"
+        }
+    },
+    "version": "1.0.1"
+}

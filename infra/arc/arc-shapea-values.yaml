@@ -1,0 +1,343 @@
+# ARC gha-runner-scale-set - Shape A, the live CI shape (docs/architecture/
+# self-hosted-ci.md). Release name: atlas-ci-shapea, namespace: arc-runners.
+#
+# Shape A = "the job runs IN the dev container image": the runner pod's job
+# container IS ghcr.io/aureliusenterprise/atlas-ci-runner (the dev container,
+# built by build-devcontainer-image.yaml; branch builds publish a
+# sha-<full-sha> tag, main publishes :main). The ci job has direct steps -
+# no devcontainers/ci action, no sibling container, no per-job image pull.
+#
+# How the pieces fit (verified against chart 0.15.1 templates + the baked
+# feature scripts):
+#   - containerMode omitted => "default" mode: the chart passes every field
+#     of the "runner" container through verbatim and injects nothing (no
+#     dind sidecar, no k8s container hooks). Docker-in-docker is IN the
+#     image: the docker-in-docker feature baked dockerd +
+#     /usr/local/share/docker-init.sh (starts dockerd as root via the
+#     image's passwordless sudo, waits for `docker info`, then exec "$@"),
+#     and the ci-runner feature baked the Actions runner binaries at
+#     /opt/actions-runner (owned by vscode). The command chains them.
+#   - Steps run directly on this container's filesystem: the runner's
+#     RunMode=docker only spawns a job container for jobs that request a
+#     `container:` - the ci job requests none.
+#   - The image ships NO entrypoint/user (the devcontainer CLI injects
+#     those for developers), so command + runAs* are explicit here.
+#     uid 1000 = the image's vscode (sudoers.d entry, owns
+#     /opt/actions-runner); gid/supplemental 999 = the docker group -
+#     dockerd's socket is root:docker 0660 by default, and k8s drops the
+#     image user's supplementary groups, so they must be declared.
+#   - privileged: the docker-in-docker feature's own
+#     devcontainer-feature.json says the same for developer containers;
+#     dockerd needs iptables, cgroup nesting, and overlay mounts.
+githubConfigUrl: https://github.com/aureliusenterprise/aurelius-atlas
+githubConfigSecret: atlas-arc-auth
+runnerScaleSetName: atlas-ci-shapea
+# Two warm (idle) runner pods, always: the fan-out DAG (ci.yaml DD-232)
+# runs three jobs concurrently, and the validate job is fast - a queued
+# fan-out job then starts on an already-registered runner instead of
+# paying pod creation + JIT registration first (spike 40520070483: jobs
+# started 15-17s after queue on warm pods; a cold node pays ~3 min for
+# the 546 MB runner image). int (NOT 2.0): helm's --set passes a float as
+# a STRING and the chart's template omits runnersMin unless the value is
+# numeric (rev 13: minRunners="1.0" silently = no warm runner). Keep it
+# here in the file - YAML numbers all arrive as the same type, so the
+# chart's gt(minRunners, maxRunners) comparison type-checks.
+minRunners: 2
+# Three pods at most: the three fan-out jobs (e2e, scan-sonar, chromatic)
+# run concurrently (validate + one fan-out ride a warm pair). The old cap
+# of 1 died with the RWO cache PD: the work volume is a per-pod emptyDir
+# now (volumes below), so pods are independent and spread via the
+# anti-affinity below (spike 40520070483 proved concurrency + isolation).
+maxRunners: 3
+
+# runs-on: atlas-ci-shapea (ci.yaml hardcodes it - the job targets this
+# scale set's label explicitly).
+scaleSetLabels:
+    - atlas-ci-shapea
+
+template:
+    spec:
+        # Spread the fan-out: three runner pods on three nodes is the plan
+        # (e2e saturates a node's CPUs and ~10 Gi for the compose stacks;
+        # two jobs packed on one node share 4 CPUs/13.6 Gi and OOM-risk
+        # the stacks). PREFERRED, not required: a packed pod degrades
+        # (CPU contention, DD-229's lesson) where "required" would leave
+        # a job queued forever while the autoscaler provisions.
+        affinity:
+            podAntiAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                    - weight: 100
+                      podAffinityTerm:
+                          topologyKey: kubernetes.io/hostname
+                          labelSelector:
+                              matchLabels:
+                                  actions.github.com/scale-set-name: atlas-ci-shapea
+                                  actions.github.com/scale-set-namespace: arc-runners
+        # Pull atlas-ci-runner (private GHCR package) - see README "Shape A"
+        # for the one-liner that creates it from the CI PAT.
+        imagePullSecrets:
+            - name: atlas-ghcr-pull
+        # devcontainer.json runArgs: --add-host=keycloak.localhost:127.0.0.1
+        # (e2e tests resolve the local Keycloak by that name).
+        hostAliases:
+            - ip: 127.0.0.1
+              hostnames:
+                  - keycloak.localhost
+        securityContext:
+            runAsUser: 1000 # vscode
+            runAsGroup: 999 # docker (socket group)
+            supplementalGroups: [999]
+            # The work volume root becomes group-writable for vscode on
+            # (re-)mount. OnRootMismatch: recursive chown only when the
+            # volume root's perms change - never on warm pods (the default,
+            # Always, chowns the whole volume on every start).
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        # Creates the cache dirs setgid group-999 (the docker group = the
+        # runner's runAsGroup, so every file uv/npm/pre-commit/dockerd write
+        # under them inherits gid 999 and all can write). 999 not 1001:
+        # this scale set's user is uid 1000 with group 999. Runs as root:
+        # dockerd also creates bind-mount sources root:root without it.
+        initContainers:
+            - name: cache-init
+              image: ghcr.io/actions/actions-runner:latest
+              securityContext:
+                  runAsUser: 0
+                  runAsGroup: 0
+              command:
+                  - /bin/bash
+                  - -c
+                  - |
+                      mkdir -p /work/.ci-cache/uv /work/.ci-cache/npm /work/.ci-cache/pre-commit /work/.ci-cache/docker /work/.ci-cache/containerd /work/.ci-cache/sops /work/.ci-cache/sonar
+                      # sops needs SOPS_AGE_KEY_FILE to EXIST even when
+                      # SOPS_AGE_KEY carries the key; the checkout is
+                      # ephemeral (clean tree, no keys.txt exclude), so the
+                      # file lives on the cache volume. Content irrelevant
+                      # (the env key wins); cache-init owns it root:root
+                      # 644, readable by uid 1000.
+                      touch /work/.ci-cache/sops/keys.txt
+                      chmod 644 /work/.ci-cache/sops/keys.txt
+                      # NON-recursive on purpose: the tree is multi-GB
+                      # (containerd alone ~5 GB), and `chgrp -R`/`chmod -R`
+                      # over it made every pod boot take minutes - init
+                      # never finished before the controller recycled the
+                      # pod (observed 19:01-19:07, jobs stuck queued).
+                      # The setgid top dirs make every NEW file inherit
+                      # gid 999 + group-writability; existing files were
+                      # already created under those dirs.
+                      chgrp 999 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
+                      chmod 2775 /work/.ci-cache /work/.ci-cache/* 2>/dev/null || true
+                      # The cache dirs are MOUNT roots (volumeMounts below),
+                      # so their ownership is the DIR ON THE VOLUME - root's
+                      # until chowned here. fsGroup does not reach subPath
+                      # mounts (k8s applies it to volume roots only). The
+                      # runner (uid 1000) writing content under them works
+                      # (2775), but actions/cache RESTORE applies tar
+                      # metadata (utime/chmod) to the mount root itself,
+                      # which uid 1000 may not do on a root-owned dir:
+                      # "Cannot utime: Operation not permitted" - restore
+                      # silently degrades to a miss on every cross-pod hit
+                      # (run 40541811557, DD-233's first e2e/scan-sonar/
+                      # chromatic restores). chown the dirs, non-recursive.
+                      chown 1000:999 /work/.ci-cache/* 2>/dev/null || true
+                      # The checkout tree must be uid-1000-owned: e2e
+                      # compose/bind mounts run as container root and
+                      # write INTO the checkout (dist/, dev/*/certs,
+                      # coverage), and root-owned dirs make the next
+                      # job's checkout die with "EACCES: permission
+                      # denied, rmdir" (gate 40225615871, dev/). Runs as
+                      # root (this container), so it fixes what the
+                      # uid-1000 worker cannot. Scoped to the checkout
+                      # ONLY - recursive over .ci-cache (7 GB containerd)
+                      # is the boot stall; over the tree (~1 GB) it is
+                      # seconds.
+                      chown -R 1000:999 /work/aurelius-atlas 2>/dev/null || true
+                      # BuildKit metadata (/var/lib/docker/buildkit) pairs
+                      # with containerd's snapshot store (the layer
+                      # snapshots ARE containerd snapshots - "buildkit-
+                      # layer-snapshot-v1-*"). Both persist on this volume
+                      # together, but a pod that dies mid-build (or an
+                      # infra change that moves one store, trial runs
+                      # 40217828572 -> 40219350705) leaves the metadata
+                      # referencing snapshots that no longer exist: every
+                      # build then dies with "parent snapshot ... does not
+                      # exist: not found". The pairing is pod-scoped, so
+                      # wipe the metadata on every boot - builds use
+                      # --cache-from type=registry, so it is disposable.
+                      rm -rf /work/.ci-cache/docker/buildkit
+              resources:
+                  requests:
+                      cpu: 10m
+                      memory: 32Mi
+                  limits:
+                      cpu: 500m
+                      memory: 128Mi
+              volumeMounts:
+                  - name: work
+                    mountPath: /work
+        containers:
+            - name: runner
+              # The dev container image; the deploy-time tag comes from the
+              # CI_SHAPEA_IMAGE_TAG repo var (install.sh; set it to
+              # sha-<full-sha> to run a branch build's image, :main is the
+              # merged default).
+              image: ghcr.io/aureliusenterprise/atlas-ci-runner:main
+              securityContext:
+                  privileged: true # dockerd (see header)
+              env:
+                  # actions/cache -> the in-cluster cache server
+                  # (cache-server-values.yaml, README "Cache server").
+                  # ONLY honoured by the forked runner the ci-runner
+                  # feature bakes (falcondev-oss/github-actions-runner);
+                  # stock runners hard-code GitHub's results URL. The fork
+                  # also skips runner self-update while this is set
+                  # (a self-update would unpatch the binary and silently
+                  # revert caching to GitHub's central service). Trailing
+                  # slash required by the cache client.
+                  - name: CUSTOM_ACTIONS_RESULTS_URL
+                    value: http://gha-cache-server.arc-runners.svc.cluster.local:3000/
+              command:
+                  - /bin/bash
+                  - -c
+                  - |
+                      set -e
+                      # Baked toolchains live outside k8s' minimal PATH
+                      # (the devcontainer CLI injects them for developers,
+                      # and login files are skipped for `bash -c`), so
+                      # assemble them explicitly: nvm node, /usr/local/bin
+                      # (sops, kubectl, helm, trivy, gcloud, npm -g nx),
+                      # py-utils uv, sdkman java, sonar-scanner (the
+                      # sonar-scanner-cli feature bakes it to its own bin
+                      # dir on the image ENV PATH, which this command
+                      # overrides - run 40279621021: "sonar-scanner: not
+                      # found" across all 25 sonar tasks).
+                      export PATH="/usr/local/share/nvm/versions/node/$(ls /usr/local/share/nvm/versions/node | tail -1)/bin:/usr/local/bin:/usr/local/py-utils/bin:/usr/local/sdkman/bin:/usr/local/sdkman/candidates/java/current/bin:/usr/local/sonar-scanner/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+                      # devcontainer.json containerEnv, injected verbatim:
+                      export NX_DAEMON=true
+                      export PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
+                      # Toolchain caches = the cache subPaths mounted below,
+                      # OUTSIDE the checkout: inside it, the root-owned
+                      # mount roots break the next git clean.
+                      export UV_CACHE_DIR=/var/cache/ci/uv
+                      export npm_config_cache=/var/cache/ci/npm
+                      export PRE_COMMIT_HOME=/var/cache/ci/pre-commit
+                      # SonarScanner's download cache (the cloud engine jar,
+                      # the JRE, the per-language plugin jars - ~380 MB):
+                      # without it, every pod's first sonar task pays the
+                      # cold bootstrap (run 40471177041: otel:sonar 109s vs
+                      # ~15s steady-state; the rest ride the warm in-pod
+                      # cache). Content-addressed - safe to share.
+                      export SONAR_USER_HOME=/var/cache/ci/sonar
+                      # docker-in-docker feature containerEnv:
+                      export DOCKER_BUILDKIT=1
+                      # Work folder: the JIT self-registration (the
+                      # controller's ACTIONS_RUNNER_INPUT_JITCONFIG env,
+                      # consumed by Runner.Listener) has NO relocatable
+                      # work folder - config.sh 2.338 has no --jitconfig
+                      # flag at all (pod crash loop 19:20: "Unrecognized
+                      # command-line input arguments for command
+                      # configure: 'jitconfig'"), and RUNNER_WORKSPACE is
+                      # a kubernetes-mode hook input the standalone
+                      # listener ignores. The default WorkFolder is _work
+                      # RELATIVE to the runner root, so the fix is the
+                      # ARC kubernetes-mode trick: mount the work volume
+                      # AT /opt/actions-runner/_work (volumeMounts below)
+                      # - the default then lands on the work volume. Jobs run as
+                      # uid 1000 with the volume group-writable (fsGroup),
+                      # so the old "'/opt/actions-runner/_work/_tool' is
+                      # denied" (container layer, root-owned) is gone.
+                      # The checkout is EPHEMERAL (sanitized every job,
+                      # see ci.yaml), so the sops key file lives on the
+                      # cache volume - cache-init touches it every boot
+                      # (sops needs the file to EXIST; SOPS_AGE_KEY
+                      # carries the key, content irrelevant).
+                      export SOPS_AGE_KEY_FILE=/var/cache/ci/sops/keys.txt
+                      # docker-init.sh: starts dockerd (privileged), waits
+                      # for `docker info`, then exec "$@" = the runner.
+                      exec /usr/local/share/docker-init.sh /opt/actions-runner/run.sh
+              volumeMounts:
+                  # The chart does NOT auto-mount `work` in default mode
+                  # (the dind/kubernetes-mode helpers add it; default mode
+                  # passes fields verbatim), so mount it explicitly - AT
+                  # THE RUNNER ROOT'S _work (see the command comment:
+                  # the JIT registration's WorkFolder is the relative
+                  # `_work`, relative to /opt/actions-runner). The volume
+                  # exists for the runner's OWN writes (_work/_tool setup
+                  # actions, the job workspace must be uid-1000-writable -
+                  # the container layer is root-owned: "Access to the path
+                  # '/opt/actions-runner/_work/_tool' is denied"). The
+                  # checkout under it is sanitized every job: nothing in
+                  # the tree persists by design - the cache subPaths below
+                  # are the only persistent state.
+                  - name: work
+                    mountPath: /opt/actions-runner/_work
+                  # Toolchain caches (cache subPaths, pre-created setgid by
+                  # cache-init). Must match the exports in the command.
+                  - name: work
+                    mountPath: /var/cache/ci/uv
+                    subPath: .ci-cache/uv
+                  - name: work
+                    mountPath: /var/cache/ci/npm
+                    subPath: .ci-cache/npm
+                  - name: work
+                    mountPath: /var/cache/ci/pre-commit
+                    subPath: .ci-cache/pre-commit
+                  # sops key file (cache-init touches it; see the command
+                  # comment) - lives off the ephemeral checkout.
+                  - name: work
+                    mountPath: /var/cache/ci/sops
+                    subPath: .ci-cache/sops
+                  # SonarScanner download cache (see SONAR_USER_HOME in the
+                  # command): plugin/engine jars survive the per-pod wipe.
+                  - name: work
+                    mountPath: /var/cache/ci/sonar
+                    subPath: .ci-cache/sonar
+                  # dockerd's image store ON THE WORK VOLUME: compose base images
+                  # (e2e), pulled base layers, etc. survive the per-pod
+                  # wipe. ext4 on a PD supports overlayfs (NFS would not -
+                  # Filestore is not used here).
+                  - name: work
+                    mountPath: /var/lib/docker
+                    subPath: .ci-cache/docker
+                  # containerd's root ON THE WORK VOLUME - the critical one. The
+                  # image's /etc/containerd/config.toml starts containerd
+                  # with root=/var/lib/containerd and dockerd runs with the
+                  # containerd-snapshotter enabled (storage-driver=overlayfs,
+                  # devcontainers/features#1642), so every image/snapshot
+                  # layer lives there, NOT under /var/lib/docker. Left on
+                  # the pod root (the node's overlayfs), the overlay mounts
+                  # are nested and the kernel rejects them: trial run
+                  # 40217828572 died with "failed to mount
+                  # /tmp/containerd-mount...: invalid argument" on every
+                  # e2e container (ryuk) and docker-build.
+                  - name: work
+                    mountPath: /var/lib/containerd
+                    subPath: .ci-cache/containerd
+              resources:
+                  # Sized for the full pipeline fan-out target (dev-compose
+                  # caps ~8.75 Gi + runner overhead); requests stay low so
+                  # the runner schedules on the default pool's headroom
+                  # (n2-standard-8, 13.9 Gi allocatable).
+                  requests:
+                      cpu: "1"
+                      memory: 4Gi
+                  limits:
+                      cpu: "6"
+                      memory: 11Gi
+        volumes:
+            # One PER-POD work volume (DD-232): the runner's _work, the
+            # .ci-cache/* caches, docker's store, and containerd's root.
+            # The RWO cache PD (shapea-cache-pvc.yaml) is retired - it
+            # pinned maxRunners to 1, and the fan-out's jobs share no
+            # files (artifacts + the GHCR buildcache cross the boundary,
+            # ci.yaml). emptyDir = the node's local PD: warm within a pod
+            # (the registry logins, base-image layers, uv/npm/pre-commit
+            # caches persist across jobs on the same pod), cold across
+            # pods (the runner image + dev-stack bases are baked; spike
+            # probe-b: 48s worst cold, 0.0s when the node has the layers).
+            # 20Gi sizeLimit: per-pod steady state is ~12 Gi (containerd
+            # ~5, work ~1, caches ~3, docker ~3); node allocatable is
+            # 47 Gi, so two packed pods (40 Gi) stay under it.
+            - name: work
+              emptyDir:
+                  sizeLimit: 20Gi

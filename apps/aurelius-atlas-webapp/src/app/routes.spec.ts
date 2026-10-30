@@ -60,13 +60,30 @@ describe("routes", () => {
     it("routes the details skeleton at search/details/:guid (DET-01)", async () => {
         // The Aurelius `details` module's `:id` child (DET-01): the deep
         // link is the screen's whole state until the 2.3 wiring increment
-        // feeds it (DD-186).
-        const details = SEARCH_ROUTES.find((route) => route.path === "details/:guid");
+        // feeds it (DD-186). Since 7.4a it is a child of the search layout
+        // (DD-218), so the hero stays mounted across search screens.
+        const layout = SEARCH_ROUTES[0];
+        const details = layout.children?.find((route) => route.path === "details/:guid");
         expect(details).toBeDefined();
 
         const loadComponent = details?.loadComponent as unknown as () => Promise<unknown>;
         const { Details } = await import("./search/details/details.component");
         await expect(loadComponent()).resolves.toBe(Details);
+    });
+
+    it("routes the results screen at search/results under the layout (SRH-02, DD-218)", async () => {
+        // The layout wraps the screens so its hero — the design's search
+        // bar (DD-145 superseded) — and its SearchState store (SRH-02)
+        // span browse, results, and details.
+        const layout = SEARCH_ROUTES[0];
+        expect(layout.path).toBe("");
+        expect(layout.loadComponent).toBeDefined();
+        const results = layout.children?.find((route) => route.path === "results");
+        expect(results).toBeDefined();
+
+        const loadComponent = results?.loadComponent as unknown as () => Promise<unknown>;
+        const { Results } = await import("./search/results/results.component");
+        await expect(loadComponent()).resolves.toBe(Results);
     });
 
     it("redirects unknown paths to the default destination, as the Aurelius '**' fallback (SHL-05, DD-132)", () => {
@@ -154,15 +171,25 @@ describe("routes", () => {
 });
 
 describe("SEARCH_ROUTES", () => {
-    it("redirects the empty path to browse", () => {
-        expect(SEARCH_ROUTES[0]).toMatchObject({ path: "", redirectTo: "browse", pathMatch: "full" });
+    it("wraps the screens in the layout, whose empty path redirects to browse (SRH-01, DD-218)", () => {
+        const layout = SEARCH_ROUTES[0];
+        expect(layout.path).toBe("");
+        expect(layout.children?.[0]).toMatchObject({ path: "", redirectTo: "browse", pathMatch: "full" });
+    });
+
+    it("lazy-loads the search layout (SRH-01, DD-218)", async () => {
+        const layout = SEARCH_ROUTES[0];
+
+        const loadComponent = layout.loadComponent as unknown as () => Promise<unknown>;
+        const { SearchLayout } = await import("./search/search-layout.component");
+        await expect(loadComponent()).resolves.toBe(SearchLayout);
     });
 
     it("lazy-loads the browse placeholder", async () => {
-        const browse = SEARCH_ROUTES[1];
-        expect(browse.path).toBe("browse");
+        const browse = SEARCH_ROUTES[0].children?.find((route) => route.path === "browse");
+        expect(browse).toBeDefined();
 
-        const loadComponent = browse.loadComponent as unknown as () => Promise<unknown>;
+        const loadComponent = browse?.loadComponent as unknown as () => Promise<unknown>;
         await expect(loadComponent()).resolves.toBeTruthy();
     });
 });

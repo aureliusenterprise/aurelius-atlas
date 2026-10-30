@@ -26,11 +26,16 @@ def event(entity_id: str, n: int, action: EntityAuditActionV2) -> EntityAuditEve
     )
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.put_events", f"{E}.list_events", rules=["AUD-01", "AUD-05", "AUD-08"])
+@pytest.mark.covers(
+    f"{E}.prepare", f"{E}.put_events", f"{E}.list_events", rules=["AUD-01", "AUD-05", "AUD-08", "ENS-11"]
+)
 async def test__events_are_written_in_one_bulk_request_and_listed_by_entity(
     fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Without their entity; by entity, action and start key, page by page; an alias created once."""
+    """Without their entity; by entity, action and start key, page by page; an alias created once.
+
+    The append carries the refresh, the listings pay for none (ENS-11).
+    """
     monkeypatch.setattr(entity_audit_repository, "AUDIT_PAGE", 1)
     repository = ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t")
     await repository.prepare()
@@ -51,7 +56,8 @@ async def test__events_are_written_in_one_bulk_request_and_listed_by_entity(
     assert [e.timestamp for e in bounded] == [1]
     assert len(await repository.list_events("a", None, None, 1)) == 1
     assert await repository.list_events("a", None, None, 0) == []
-    assert "t-entity-audits" in fake.refreshes
+    assert set(fake.write_refreshes) == {("t-entity-audits", "wait_for")}
+    assert fake.refreshes == []
 
 
 @pytest.mark.covers(f"{E}.put_events", rules=["AUD-05"])
@@ -92,11 +98,14 @@ def fake() -> FakeClient:
     return FakeClient()
 
 
-@pytest.mark.covers(f"{E}.entities_with_tag_changes", rules=["CAU-07"])
+@pytest.mark.covers(f"{E}.entities_with_tag_changes", rules=["CAU-07", "ENS-11"])
 async def test__entities_with_classification_events_in_a_range_are_found(
     fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Their own classification events from the start, before the end; each entity once; page by page."""
+    """Their own classification events from the start, before the end; each entity once; page by page.
+
+    The append carries the refresh, the read pays for none (ENS-11).
+    """
     monkeypatch.setattr(entity_audit_repository, "AUDIT_PAGE", 1)
     repository = ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t")
     await repository.prepare()
@@ -113,3 +122,5 @@ async def test__entities_with_classification_events_in_a_range_are_found(
 
     assert sorted(await repository.entities_with_tag_changes(1, 6)) == ["a", "d"]
     assert await repository.entities_with_tag_changes(2, 5) == ["a"]
+    assert set(fake.write_refreshes) == {("t-entity-audits", "wait_for")}
+    assert fake.refreshes == []

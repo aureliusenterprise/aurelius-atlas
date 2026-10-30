@@ -181,6 +181,19 @@ do not add central lists of projects or libraries to this file.
 - **Backend**: pytest-based E2E tests using `testcontainers` for
   spinning up Elasticsearch, Keycloak, etc. Run with
   `nx run <project>:e2e`.
+- **E2E suites must not restart the shared `dev/*` services** (DD-223). Taking a
+  shared store down/up (or cycling its containers) mid-suite races every other
+  suite riding it in CI's parallel `nx affected -t test e2e` — lost-connection
+  failures are on record. A rule that can only be exercised by a restart (e.g.
+  ESD-04's volume persistence) goes untested by choice, with a note in the spec.
+  Writes to shared dev stores are fine when namespaced and self-cleaned.
+- **E2E tests prove Aurelius behaviour, not framework defaults.** Probes that can
+  only fail for framework reasons (a FastAPI `/docs` 200 check, an ES
+  "the image starts" smoke) belong in unit tests or the compose healthcheck.
+- **E2E tests guard user interactions, not layout.** Computed-style and
+  bounding-box parity pins (fonts, colours, band heights, insets) belong in
+  Storybook visual tests or component unit tests. Once legacy parity is
+  established, the pixels are stable; the interactions are what regress.
 
 ### Test Conventions
 

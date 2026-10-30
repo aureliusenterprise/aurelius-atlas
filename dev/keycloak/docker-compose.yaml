@@ -7,6 +7,11 @@ services:
         # vertx-core still at 4.5.28) and fails to start with
         # NoClassDefFoundError: io/vertx/core/net/PqcEnforcementPolicy.
         image: dhi.io/keycloak:26.7-debian13
+        # Memory cap (CI capacity): Quarkus defaults its heap to 25% of host
+        # RAM - 4 Gi on a CI runner node, for a dev realm. The -Xmx in
+        # JAVA_OPTS below fixes the heap; mem_limit caps the container
+        # (heap + metaspace + code cache).
+        mem_limit: 1g
         command:
             [
                 "start-dev",
@@ -49,7 +54,7 @@ services:
             # Quarkus' OTLP gRPC sender (Vert.x) ignores OTEL_EXPORTER_OTLP_CERTIFICATE,
             # so the local development CA is provided as the JVM truststore instead.
             # The password is the project's encrypted dev default (.env.enc).
-            JAVA_OPTS: -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
+            JAVA_OPTS: -Xms256m -Xmx512m -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
             # (replace-placeholders lets ${VAR} placeholders in import/*.json
             # resolve from this container's environment; Keycloak reads them
             # via System.getenv and leaves startup imports unsubstituted
@@ -103,6 +108,7 @@ services:
 
     postgres-keycloak:
         image: dhi.io/postgres:18-alpine3.23
+        mem_limit: 512m
         environment:
             POSTGRES_USER: ${KEYCLOAK_DATABASE_USERNAME}
             POSTGRES_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD}
@@ -110,18 +116,30 @@ services:
             POSTGRES_HOST_AUTH_METHOD: scram-sha-256
         # The image runs as a fixed non-root user that cannot read bind-mounted
         # key material it does not own, so the certificates are copied to the
-        # container filesystem with strict permissions before startup.
+        # container filesystem with strict permissions before startup - and
+        # Postgres insists the key is 0600, owned by the server user, so a
+        # direct bind-mount at the ssl paths is not an option (host
+        # ownership). mktemp -d, not a fixed /tmp path: the target must be
+        # born with the running user's ownership every boot; fixed paths
+        # collide on a warm daemon (runs 40225940082, 40228376483).
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                install -m 600 /certs/postgres.pem /tmp/server.pem &&
-                install -m 600 /certs/postgres-key.pem /tmp/server-key.pem &&
+                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) &&
+                install -m 600 /certs/postgres.pem $$d/server.pem &&
+                install -m 600 /certs/postgres-key.pem $$d/server-key.pem &&
                 exec docker-entrypoint.sh
                 -c ssl=on
-                -c ssl_cert_file=/tmp/server.pem
-                -c ssl_key_file=/tmp/server-key.pem
+                -c ssl_cert_file=$$d/server.pem
+                -c ssl_key_file=$$d/server-key.pem
                 -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
+        # Explicit tmpfs for the certificate copy: the image's own /tmp is
+        # not writable by the server user on every host (Shape A's warm
+        # store digest ships /tmp 2775 root:999 - uid 70 EACCES, run
+        # 40240896184). Pinning the mode makes the boot digest-independent.
+        tmpfs:
+            - /tmp:mode=1777
         healthcheck:
             test:
                 [
@@ -144,12 +162,14 @@ services:
         # the dev collector.
         # Targets and attribution live in config/metrics-puller.yaml.
         image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
         # startup (DD-196): the collector's DD-195 restart pattern, applied
         # to the pullers now that the issuer — not a static token — gates
-        # their export.
-        restart: on-failure:15
+        # their export. Unbounded, per DD-226: an attempt count burns out
+        # ~6 min in, before Keycloak is reliably up (dev/elasticsearch).
+        restart: on-failure
         environment:
             # Same dev defaults the keycloak service uses for KC_DB_*; the
             # collector expands ${env:...} in its config.

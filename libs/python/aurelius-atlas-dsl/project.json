@@ -9,7 +9,7 @@
         "generate-parser": {
             "command": "bash grammar/generate.sh",
             "metadata": {
-                "description": "Regenerate aurelius_atlas_dsl/generated from grammar/*.g4 with ANTLR (needs Java, DD-217)"
+                "description": "Regenerate aurelius_atlas_dsl/generated from grammar/*.g4 with ANTLR (needs Java, DD-240)"
             },
             "options": {
                 "cwd": "{projectRoot}"

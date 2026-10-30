@@ -215,7 +215,7 @@ log_level = "INFO"
 required_plugins = ["pytest-asyncio"]
 
 [tool.ruff]
-# The parser ANTLR generates from Atlas's grammar (DD-217).
+# The parser ANTLR generates from Atlas's grammar (DD-240).
 extend-exclude = ["libs/python/aurelius-atlas-dsl/aurelius_atlas_dsl/generated"]
 line-length = 120
 target-version = "py314"

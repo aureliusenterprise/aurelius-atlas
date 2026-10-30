@@ -24,6 +24,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, RELATIONSHIP, TYPES
+from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.task_worker import TaskWorker
 
@@ -110,6 +111,10 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     app.state.settings = settings
     app.state.store = store
     app.state.type_registry = registry
+    # Security response headers on every answer — the API and the dashboards
+    # alike (SRV-08, DD-236). Added before the routers mount, so it wraps
+    # them all; the instrumentor below wraps this middleware.
+    app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
     app.add_exception_handler(AtlasError, atlas_error_handler)
     app.include_router(ADMIN)
     app.include_router(TYPES)

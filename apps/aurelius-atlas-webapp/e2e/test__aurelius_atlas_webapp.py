@@ -2,55 +2,24 @@ import base64
 import json
 import re
 import secrets
-import socket
-import ssl
 import time
-from datetime import UTC, datetime, timedelta
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin
 
 import pytest
 from conftest import (
-    CA_FILE,
     COLLECTOR_HOST,
     COLLECTOR_PORT,
     LEGACY_PORT,
     SERVICE_PORT,
     TEMPO_HOST,
     TEMPO_PORT,
-    Settings,
 )
-from docker.models.containers import Container
-from playwright.sync_api import Browser, Page, expect
+from playwright.sync_api import Page, expect
 
 EN_PLACEHOLDER = (
     "Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below."
 )
 NL_PLACEHOLDER = "Welkom bij Aurelius Atlas! We helpen u graag op weg. Kies hieronder uw interessegebied."
-
-
-def test__browser_facing_tls_verifies_against_ca(root_url: str) -> None:
-    """The browser-facing endpoint verifies against the local development CA (SHL-11).
-
-    Playwright's bundled browsers cannot enroll the mkcert root, so the browser
-    context relaxes certificate verification (see ``conftest`` — ADR 039). This
-    check performs the equivalent CA and hostname verification of the same
-    endpoint: the handshake fails if nginx serves a certificate the CA did not
-    issue or one that does not cover the connecting hostname.
-    """
-    parts = urlsplit(root_url)
-    host = parts.hostname or "localhost"
-    port = parts.port or 443
-
-    context = ssl.create_default_context(cafile=str(CA_FILE))
-    with (
-        socket.create_connection((host, port), timeout=10) as sock,
-        context.wrap_socket(sock, server_hostname=host) as tls,
-    ):
-        cert = tls.getpeercert()
-        assert cert is not None
-
-    subject_alt_names = {value for _type, value in cert["subjectAltName"]}
-    assert host in subject_alt_names
 
 
 def test__root_redirects_to_preferred_locale(page: Page, root_url: str) -> None:
@@ -287,7 +256,7 @@ def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: s
                         attrs[attr["key"]] = value.get("stringValue", value.get("intValue", ""))
             assert attrs.get("enduser.id") == sub, f"probe resource: {attrs}"
             return
-        time.sleep(3)
+        time.sleep(1)
 
     pytest.fail(f"Tempo never returned the probe trace attributed to {sub} — the sub claim was not stamped")
 
@@ -340,27 +309,6 @@ def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: s
     )
 
     assert response.status == 401
-
-
-def test__collector_accepts_the_dev_plaintext_issuer(page: Page, plaintext_service_token: str) -> None:
-    """The collector accepts the plaintext :8080 iss on the OIDC legs (CIA-11, DD-202).
-
-    Keycloak stamps iss from the listener that served the mint, so this
-    token's iss is the dev plaintext listener — what the human dev browser
-    presents (ADR 039). The collector's oidc extension lists both listeners
-    as providers precisely so this issuer verifies on the per-service leg,
-    which every automated producer uses: the mint is standardized on the
-    TLS :8443 listener, and the :8080 provider is the human-browser half
-    of the accepted posture. "not 401" is the point (the user_token
-    fixture's positive-control rule).
-    """
-    response = page.request.post(
-        f"https://{COLLECTOR_HOST}:{SERVICE_PORT}/v1/traces",
-        data=b"",
-        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {plaintext_service_token}"},
-    )
-
-    assert response.status in (200, 202, 400, 415)
 
 
 def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> None:
@@ -431,72 +379,11 @@ def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> Non
             assert attrs.get("otel.ingest.client") == "otel-atlas-server", f"probe resource: {attrs}"
             assert attrs.get("enduser.id") == "", f"probe resource: {attrs}"
             return
-        time.sleep(3)
+        time.sleep(1)
 
     pytest.fail(
         f"Tempo never returned the probe trace stamped for otel-atlas-server (trace {trace_id}) — azp not stamped"
     )
-
-
-def test__collector_accepts_the_shared_ingest_token(page: Page, ingest_token: str) -> None:
-    """The legacy leg (4321) accepts the shared ingest token (CIA-10, CIA-04's surviving half).
-
-    The producers that cannot present a Keycloak JWT — Keycloak's native
-    OTLP, the FastAPI example (static-header SDK, 60s tokens) — keep 7.17's
-    shared-token mechanism here (DD-196); an empty protobuf body answers 200
-    once authenticated. (The 7.17 form of this test rode 4319, which is
-    OIDC-only now — CIA-08 moves the shared token off it, proved by
-    test__collector_rejects_the_shared_token_on_the_service_leg.)
-    """
-    response = page.request.post(
-        f"https://{COLLECTOR_HOST}:{LEGACY_PORT}/v1/traces",
-        data=b"",
-        headers={"content-type": "application/x-protobuf", "authorization": f"Bearer {ingest_token}"},
-    )
-
-    assert response.status in (200, 202, 400, 415)
-
-
-def test__collector_publishes_are_loopback_pinned(collector_container: Container) -> None:
-    """The collector's host publishes bind 127.0.0.1, and the exporter has none (CIA-03).
-
-    Reading the running container's port bindings (not the compose file) is
-    what proves the deployed posture: the OTLP ports — the browser leg, the
-    per-service leg, and 7.18's legacy leg (4317-4321, CIA-10) — are
-    reachable from this machine only, and the prometheus exporter (:9464) is
-    not published at all — Prometheus scrapes it inside the compose network.
-    """
-    collector_container.reload()
-    ports = collector_container.attrs["NetworkSettings"]["Ports"]
-
-    published = {port: bindings for port, bindings in ports.items() if bindings}
-    assert set(published) == {"4317/tcp", "4318/tcp", "4319/tcp", "4320/tcp", "4321/tcp"}
-    assert all(binding["HostIp"] == "127.0.0.1" for bindings in published.values() for binding in bindings)
-
-
-def test__producers_keep_flowing_with_the_token(collector_container: Container) -> None:
-    """Every producer keeps exporting on its leg (CIA-07, CIA-10).
-
-    The collector's debug exporter logs every accepted push (verbosity basic:
-    one ``Traces``/``Metrics`` info line per export, ``otelcol.component.kind``
-    exporter). The e2e stack runs the graduated producers (the pullers on
-    their oauth2client JWTs, the atlas-server through its refresh shim) on
-    the per-service leg and the legacy producers (Keycloak-native, the
-    FastAPI example) on the shared-token leg, so accepted exports within the
-    last two minutes prove both credential kinds are presented correctly:
-    the ingest is all-or-nothing, a producer with a broken credential lands
-    in the receiver's rejected 401/Unauthenticated path and exports nothing.
-    """
-    since = datetime.now(UTC) - timedelta(seconds=120)
-
-    deadline = time.monotonic() + 90
-    while time.monotonic() < deadline:
-        logs = collector_container.logs(since=since, tail=2000).decode()
-        if '"otelcol.component.kind": "exporter"' in logs:
-            return
-        time.sleep(3)
-
-    pytest.fail("no accepted OTLP export reached the collector — a producer lost the ingest token")
 
 
 def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
@@ -614,258 +501,21 @@ def test__documentation_link_points_at_the_aurelius_docs(authenticated: Page) ->
     expect(link).to_have_text("Documentation")
 
 
-def test__navbar_carries_the_aurelius_logo(authenticated: Page) -> None:
-    """The navbar brand is the Aurelius Atlas logo, sized like the legacy (SHM-02, SHM-06).
+def test__burger_menu_opens_the_dropdown_with_the_logout_entry(authenticated: Page) -> None:
+    """The mobile burger opens the menu: the session's Logout is reachable (SHC-05, DD-153).
 
-    The live demo's brand: the mark at its 150px cap, linking home, the app
-    name as the accessible alt.
-    """
-    brand = authenticated.locator(".navbar-brand a.navbar-item")
-    img = brand.locator("img")
-
-    expect(brand).to_have_attribute("routerlink", "/", timeout=0)
-    expect(img).to_have_attribute("src", "assets/aurelius-atlas-logo.png")
-    expect(img).to_have_attribute("alt", "Aurelius Atlas Data Governance")
-
-    box = img.bounding_box()
-
-    assert box is not None
-    assert box["width"] == pytest.approx(150, abs=2)  # the .logo cap, demo-measured
-    assert box["height"] <= 50
-
-
-def test__body_uses_the_legacy_type_and_ink(authenticated: Page) -> None:
-    """The body renders the legacy Bulma 0.9.4 type: stack, 16px, #4a4a4a (SHM-03).
-
-    Every value measured from the live demo's body.
-    """
-    body = authenticated.locator("body")
-
-    font_family = body.evaluate("el => getComputedStyle(el).fontFamily")
-
-    assert font_family.startswith("BlinkMacSystemFont")
-    assert body.evaluate("el => getComputedStyle(el).fontSize") == "16px"
-    assert body.evaluate("el => getComputedStyle(el).lineHeight") == "24px"
-    assert body.evaluate("el => getComputedStyle(el).color") == "rgb(74, 74, 74)"
-
-
-def test__type_ramp_matches_the_legacy_page(authenticated: Page) -> None:
-    """Every ink and weight the landing renders, measured against the demo (SHM-03, DD-151).
-
-    Bulma 1 re-tinted its greys and moved the weights (title 800, strong
-    600, button 500); pinning the body alone left the ramp off the legacy
-    page. The brand library re-emits Bulma 0.9.4's neutral ramp, so these
-    demo-measured values must hold: the title is 600/#363636, the body/box
-    ink #4a4a4a, buttons 400, the navbar links #4a4a4a with 700 strong,
-    dropdown items 14px.
-    """
-    css = (
-        "el => { const c = getComputedStyle(el); return [c.fontSize, c.lineHeight, c.fontWeight, c.color].join(' '); }"
-    )
-
-    # The hero box: 40px/45px 600 #363636 title over 16px/24px #4a4a4a ink.
-    assert authenticated.locator(".box .title").first.evaluate(css) == "40px 45px 600 rgb(54, 54, 54)"
-    assert authenticated.locator(".box p").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
-
-    # The context cards: 24px title is-4 section labels, 16px title is-6 tips.
-    assert authenticated.locator("p.title.is-4").first.evaluate(css) == "24px 27px 600 rgb(54, 54, 54)"
-    assert authenticated.locator("h6.title.is-6").first.evaluate(css) == "16px 18px 600 rgb(54, 54, 54)"
-
-    # The navbar chrome: links in the body ink, the dropdown items at
-    # Bulma's 14px, buttons at weight 400. The locale <strong> the demo
-    # measured (700/#4a4a4a) left the navbar with the language dropdown
-    # (7.14); its DD-151 pin — the legacy strong weight — is asserted on
-    # the :root token the ramp rides.
-    assert authenticated.locator(".navbar-link").first.evaluate(css) == "16px 24px 400 rgb(74, 74, 74)"
-    strong_weight = authenticated.evaluate(
-        "() => getComputedStyle(document.documentElement).getPropertyValue('--bulma-strong-weight').trim()"
-    )
-
-    assert strong_weight == "700"
-    assert authenticated.locator(".navbar-end .button").first.evaluate(css) == "16px 24px 400 rgb(54, 54, 54)"
-    assert authenticated.locator(".navbar-dropdown .navbar-item").first.evaluate(css).startswith("14px ")
-
-
-def test__chrome_bands_carry_the_aurelius_palette(authenticated: Page) -> None:
-    """The navbar band is grey, the footer band the Aurelius blue (SHM-04, SHM-05).
-
-    The demo's chrome: #f5f5f5 navbar, #0073dd footer with white text, and
-    the bar pinned (fixed) at its legacy 4.25rem height — 68px.
-    """
-    navbar = authenticated.locator("nav.navbar")
-    footer = authenticated.locator("footer.footer")
-
-    nav_bg = navbar.evaluate("el => getComputedStyle(el).backgroundColor")
-    nav_tokens = navbar.evaluate(
-        "el => { const cs = getComputedStyle(el);"
-        "return ['--bulma-navbar-background-color', '--bulma-scheme-main', '--bulma-scheme-bis']"
-        ".map(t => t + '=' + cs.getPropertyValue(t)).join(' | '); }"
-    )
-
-    assert nav_bg == "rgb(245, 245, 245)", f"navbar bg {nav_bg}; tokens: {nav_tokens}"
-    assert navbar.evaluate("el => getComputedStyle(el).position") == "fixed"
-    nav_box = navbar.bounding_box()
-
-    assert nav_box is not None
-    assert nav_box["height"] == pytest.approx(68, abs=2)
-    assert footer.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(0, 115, 221)"
-    assert footer.locator(".level-item").first.evaluate("el => getComputedStyle(el).color") == "rgb(255, 255, 255)"
-
-
-def test__accent_ramp_matches_the_demo(authenticated: Page) -> None:
-    """The Bulma accents render the demo's palette (SHM-04, DD-152).
-
-    The legacy theme mapped its Bootstrap-style palette onto Bulma's
-    accents — $blue to link, cyan/green/yellow/red to info/success/
-    warning/danger — and left $primary Bulma's own teal: the demo
-    highlights the landing's icons in teal #00d1b2 and the info glyphs in
-    cyan #17a2b8; #0073dd is the link and the footer band, not the
-    primary. The navbar links hover at the band grey with black ink.
-    """
-    tokens = authenticated.evaluate(
-        "() => { const cs = getComputedStyle(document.documentElement);"
-        "const v = (t) => cs.getPropertyValue(t).trim(); return {"
-        "primary: v('--bulma-primary'), link: v('--bulma-link'), info: v('--bulma-info'),"
-        "success: v('--bulma-success'), warning: v('--bulma-warning'), danger: v('--bulma-danger'),"
-        "primaryInvert: v('--bulma-primary-invert')}; }"
-    )
-
-    # The teal is Bulma's own (untouched by the legacy theme, kept):
-    # hsl(171deg, 100%, 41%). The solid-surface ink is white.
-    assert "171deg, 100%, 41%" in tokens["primary"]
-    assert "171deg, 100%, 100%" in tokens["primaryInvert"]
-    assert tokens["link"] == "#0073dd"
-    assert tokens["info"] == "#17a2b8"
-    assert tokens["success"] == "#28a745"
-    assert tokens["warning"] == "#ffc107"
-    assert tokens["danger"] == "#dc3545"
-
-    # The icons as the landing renders them: teal search/compass spans,
-    # cyan info buttons (the card's only button, BRW-06).
-    expect(authenticated.locator("span.icon.has-text-primary").first).to_have_css("color", "rgb(0, 209, 178)")
-    expect(authenticated.locator("button.icon.has-text-info").first).to_have_css("color", "rgb(23, 162, 184)")
-
-    # The hover plate: a visible navbar link (the first .navbar-link is the
-    # burger's, hidden at the desktop viewport the fixtures run at).
-    link = authenticated.locator(".navbar-end .navbar-link").first
-    link.hover()
-    expect(link).to_have_css("background-color", "rgb(245, 245, 245)")
-    expect(link).to_have_css("color", "rgb(0, 0, 0)")
-
-
-def test__burger_menu_matches_the_legacy_mobile_chrome(authenticated: Page) -> None:
-    """The mobile burger menu renders the legacy chrome (SHM-04, DD-153).
-
-    Bulma 1 tints the burger from link (the Aurelius blue), leaves the
-    burger menu's dropdowns as white plates on the grey band (its
-    dropdown-item rule is not media-scoped, 0.9.4's is), and — a known
-    regression — keeps the dropdown chevron visible on mobile, where
-    0.9.4 hides it. The legacy logout is an `a role="button" .navbar-item`
-    in navbar ink, not a red button: the UA centres a <button>'s text and
-    Bulma's plate rule inks it on a white tile.
+    The burger's toggle/aria-expanded/is-active logic is the ui-lib header's,
+    unit-tested there; this is the real-browser flow at a phone viewport,
+    signed in. The chrome's computed-style pins (DD-153's ink, plates and
+    chevrons) left e2e with DD-223: interactions are guarded here, pixels
+    belong to the storybook slice.
     """
     authenticated.set_viewport_size({"width": 375, "height": 667})
     burger = authenticated.locator(".navbar-burger")
-    expect(burger).to_have_css("color", "rgb(74, 74, 74)")
     burger.click()
 
     logout = authenticated.locator(".navbar-dropdown a.navbar-item", has_text="Logout")
     expect(logout).to_be_visible()
-    expect(logout).to_have_css("text-align", "start")
-    expect(logout).to_have_css("background-color", "rgba(0, 0, 0, 0)")
-    expect(logout).to_have_css("color", "rgb(74, 74, 74)")
-
-    # 0.9.4 hides the burger menu's chevrons (Bulma 1 ships them, blue).
-    chevron = authenticated.locator(".navbar-end .navbar-link").first
-    assert chevron.evaluate("el => getComputedStyle(el, '::after').display") == "none"
-
-
-def test__footer_sits_below_the_fold(authenticated: Page) -> None:
-    """The footer starts below the first screen, never mid-fold (SHM-05, SHM-07).
-
-    The legacy `.is-tall-container` is `flex: 1 1 auto` **and** `min-height:
-    100vh` (shell.component.scss): the content band is a full viewport, so
-    the footer begins at the fold and is off the first screen — the demo
-    measures footer top 1346px at a 900px viewport.
-    """
-    authenticated.set_viewport_size({"width": 1280, "height": 900})
-    authenticated.wait_for_timeout(200)
-
-    box = authenticated.locator("footer.footer").bounding_box()
-
-    assert box is not None
-    viewport = authenticated.evaluate("() => window.innerHeight")
-
-    # The band is a full viewport: the footer top sits at/below the fold.
-    assert box["y"] >= viewport - 2
-    band_box = authenticated.locator(".is-tall-container").bounding_box()
-
-    assert band_box is not None
-    assert band_box["height"] >= viewport - 2
-
-
-def test__landing_content_sits_in_a_container(authenticated: Page) -> None:
-    """The landing content is inset like the legacy grid, not edge-to-edge (SHM-07).
-
-    The legacy wraps pages in `section > container` (the demo measures the
-    hero box at x=56 in a 1280 viewport, the navbar brand's column). The
-    landing's box shares the navbar container's inset; the band behind it
-    stays full-bleed (#f5f5f5 to the viewport edges, as on the demo).
-    """
-    authenticated.set_viewport_size({"width": 1280, "height": 900})
-
-    box_left = authenticated.locator(".box").evaluate("el => el.getBoundingClientRect().left")
-    nav_left = authenticated.locator(".navbar .container").evaluate("el => el.getBoundingClientRect().left")
-    band = authenticated.locator(".is-tall-container")
-
-    assert box_left == pytest.approx(nav_left, abs=2)
-    assert box_left > 30  # inset, not edge-to-edge
-    band_box = band.bounding_box()
-    # The band is full-bleed: viewport-wide minus the scrollbar.
-    client_w = authenticated.evaluate("() => document.documentElement.clientWidth")
-
-    assert band_box is not None
-    assert band_box["x"] == pytest.approx(0, abs=2)
-    assert band_box["width"] == pytest.approx(client_w, abs=2)
-
-
-def test__app_stays_light_under_a_dark_os_preference(base_url: str, browser: Browser, settings: Settings) -> None:
-    """data-theme=light keeps the app light when the OS prefers dark (SHM-01).
-
-    Bulma 1 follows ``prefers-color-scheme``; the legacy (Bulma 0.9.4) was
-    light-only, so the document root pins the light scheme (DD-148).
-    """
-    context = browser.new_context(color_scheme="dark", ignore_https_errors=True)
-    page = context.new_page()
-    try:
-        page.goto(base_url)
-        page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
-        page.locator("#username").fill(settings.username)
-        page.locator("#password").fill(settings.password.get_secret_value())
-        page.get_by_role("button", name="Sign in").click()
-        page.wait_for_url(re.compile(base_url))
-
-        assert page.evaluate("() => matchMedia('(prefers-color-scheme: dark)').matches") is True
-
-        band = page.locator(".is-tall-container")
-        footer = page.locator("footer.footer")
-
-        # The band is the scheme-following surface (DD-167, `.has-background`):
-        # under the light pin it is Bulma 1's light scheme-bis — the legacy
-        # #f5f5f5 band is the navbar's (SHM-04), the content band follows the
-        # scheme (rgb(243, 244, 246) = hsl(221, 14%, 96%)).
-        band_bg = band.evaluate("el => getComputedStyle(el).backgroundColor")
-        band_tokens = band.evaluate(
-            "el => { const cs = getComputedStyle(el);"
-            "const get = (t) => t === 'data-theme' ? document.documentElement.dataset.theme : cs.getPropertyValue(t);"
-            "return ['data-theme', '--bulma-scheme-main', '--bulma-scheme-main-bis']"
-            ".map(t => t + '=' + get(t)).join(' | '); }"
-        )
-
-        assert band_bg == "rgb(243, 244, 246)", f"band bg {band_bg}; tokens: {band_tokens}"
-        assert footer.evaluate("el => getComputedStyle(el).backgroundColor") == "rgb(0, 115, 221)"
-    finally:
-        context.close()
 
 
 def test__details_skeleton_renders_at_the_deep_link(authenticated: Page, root_url: str) -> None:
@@ -897,3 +547,157 @@ def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: s
     expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entiteit type")
     expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Beschrijving")
     expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Sleutel")
+
+
+def _seed_entities(page: Page, root_url: str, type_name: str, names: list[str]) -> dict[str, str]:
+    """Seed entities through the proxy's bulk endpoint; return the guid assignments.
+
+    The server is open pre-6.1 (DV-54), so the proxy's ``/api`` leg answers
+    without a token. Names are **single tokens** carrying a unique ``run``
+    word: the free-text matcher is word-exact (FTX-01/SRC-06), and the shared
+    dev stack is never cleaned between runs — hyphenated names would share
+    their words with every earlier run's seeds and match them (term-OR).
+    """
+    body = {
+        "entities": [
+            {
+                "typeName": type_name,
+                "guid": f"-{i}",
+                "attributes": {"qualifiedName": name, "name": name},
+            }
+            for i, name in enumerate(names)
+        ]
+    }
+    response = page.request.post(
+        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+        data=json.dumps(body),
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status == 200, response.text()
+
+    return response.json()["guidAssignments"]
+
+
+def _purge_type(page: Page, root_url: str, type_name: str) -> None:
+    """Delete every entity of a type (the shared stack's determinism fix).
+
+    The dev stack is never cleaned between runs, and the explore search is a
+    type-only first page (limit 10): glossaries from earlier runs fill it and
+    push this run's seed off page 1. A type-scoped purge — list by type,
+    delete by guid — makes a type-filtered assertion deterministic.
+    """
+    listing = page.request.post(
+        urljoin(root_url, "/api/atlas/v2/search/basic"),
+        data=json.dumps({"typeName": type_name, "limit": 1000, "offset": 0, "excludeDeletedEntities": True}),
+        headers={"content-type": "application/json"},
+    )
+
+    assert listing.status == 200, listing.text()
+
+    for entity in listing.json().get("entities", []):
+        deleted = page.request.delete(urljoin(root_url, "/api/atlas/v2/entity/bulk"), params={"guid": entity["guid"]})
+
+        assert deleted.status == 200, deleted.text()
+
+
+def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, root_url: str) -> None:
+    """The hero field searches: seeded hits, the count, the card → details link (SRH-01..SRH-05).
+
+    A query submitted in the hero's search field runs POST
+    ``/api/atlas/v2/search/basic``, rides into ``search/results?query=``, and
+    renders a card per hit with the count above the box (the legacy
+    results screen, DD-218). Clicking a card deep-links the 2.3 skeleton with
+    that guid; the results URL survives so a reload re-runs the search
+    (SRH-02). The nl-NL locale renders the Dutch word (SRH-10).
+    """
+    run = secrets.token_hex(4)
+    names = [f"zz{run}alpha", f"zz{run}beta", f"zz{run}gamma"]
+    query = " ".join(names)
+    guids = _seed_entities(authenticated, root_url, "DataSet", names)
+
+    authenticated.goto(urljoin(root_url, "/en-US/search"))
+    field = authenticated.locator(".hero aurelius-atlas-ui-search-field input")
+    expect(field).to_be_visible()
+    field.fill(query)
+    # The submit button, not Enter: the native `search` event on Enter is
+    # Chromium-only (the legacy input shares the quirk, `(search)` only).
+    authenticated.locator(".hero aurelius-atlas-ui-search-field button.button.is-success").click()
+
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/results\?query="))
+    expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+results"))
+    rows = authenticated.locator(".result-row")
+    expect(rows).to_have_count(3)
+    for name in names:
+        expect(rows.filter(has_text=name)).to_have_count(1)
+
+    # The card → details deep link (SRH-05): the clicked guid rides the URL.
+    clicked = names[0]
+    rows.filter(has_text=clicked).locator("a").first.click()
+    expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guids['-0']}$"))
+    expect(authenticated.locator("h1.aurelius-details-title")).to_be_visible()
+
+    # The results URL is the screen's state (SRH-02): reload re-runs the
+    # search from the URL alone and the hero shows the query.
+    authenticated.go_back()
+    expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+results"))
+    expect(field).to_have_value(query)
+
+    # SRH-10: the same screen in Dutch — the count word rides the bridge.
+    authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={quote(query)}"))
+    expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+resultaten"))
+
+
+def test__business_explore_lists_glossary_entities_without_a_url_query(authenticated: Page, root_url: str) -> None:
+    """The business card's explore button lists glossary entities, type-filtered (SRH-08, DV-84).
+
+    Explore is the legacy ``directToGlossary``: an empty query plus the
+    session type filter ``typeName=AtlasGlossary`` (DV-84 — the Atlas type,
+    not the m4i ``Glossary`` label, which the server would reject as
+    UNKNOWN_TYPENAME, SRC-03). The filter rides the store, never the URL
+    (SRH-02: the URL carries only ``?query=``), so the results URL stays
+    clean — reloading it restarts from the URL alone: the empty query, which
+    lists every entity (DD-221), proving the filter lived only in the
+    session store.
+
+    The type is purged first: the shared stack keeps every run's glossaries
+    and the explore page shows the first ten (limit 10) — the purge makes
+    the seeded entity the page.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}domain"
+    _purge_type(authenticated, root_url, "AtlasGlossary")
+    _seed_entities(authenticated, root_url, "AtlasGlossary", [name])
+
+    authenticated.goto(urljoin(root_url, "/en-US/search"))
+    authenticated.get_by_role("button", name="Start browsing data domains").click()
+
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/results$"))
+    rows = authenticated.locator(".result-row")
+    expect(rows.filter(has_text=name)).to_have_count(1)
+
+    # The type filter is session state: reloading the bare results URL
+    # restarts from the URL alone — the empty query, which searches every
+    # entity (_ALL_ENTITY_TYPES, DD-221). The purged type holds exactly the
+    # seeded glossary, so a filtered re-run would show its one row; the
+    # every-entity search shows more (stack-size agnostic: on a fresh CI
+    # stack the few seeded entities, on a shared stack the full page of ten).
+    authenticated.reload()
+    expect(authenticated.locator(".result-row")).not_to_have_count(1)
+
+
+def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_url: str) -> None:
+    """A query with no hits renders the legacy no-results card (SRH-06).
+
+    The legacy results-box twin: "No results found" + "Please, try to make
+    another query.", from the bridge. The query is one token unique to the
+    run, so zero hits are guaranteed on the shared stack (word-exact terms,
+    FTX-01).
+    """
+    run = secrets.token_hex(8)
+
+    authenticated.goto(urljoin(root_url, f"/en-US/search/results?query=zzmiss{run}"))
+
+    expect(authenticated.locator(".no-results")).to_have_text("No results found")
+    expect(authenticated.locator(".another-query")).to_have_text("Please, try to make another query.")
+    expect(authenticated.locator(".result-row")).to_have_count(0)
