@@ -2835,6 +2835,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_journal
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_linked" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3065,6 +3076,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.get_journal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_journal
       </span>
     </span>
   </a>
@@ -12803,6 +12825,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_journal
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_linked" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13033,6 +13066,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.get_journal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_journal
       </span>
     </span>
   </a>
@@ -18277,6 +18321,8 @@ Elasticsearch with reserved unique values, conditional writes and a journal (DD-
     <div class="doc doc-contents ">
 
         <p>Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).</p>
+<p>The journal's listing may lag its writes (DD-247): each entry is acted on as it is now, one already
+deleted or still leased left alone.</p>
 <p>A committed write only releases what it no longer holds; any other is undone: an entity is restored only
 while it carries the write's id, a reservation released only while the write holds it.</p>
 
@@ -20152,7 +20198,7 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.delete_journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.delete_journal">delete_journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).</p>
+              <p>Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20165,6 +20211,18 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
             –
             <div class="doc-md-description">
               <p><code>mget</code> of the entity index: real time, as a get by id is (ENS-04).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_journal
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal">get_journal</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20188,7 +20246,7 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.journal">journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).</p>
+              <p>The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20224,7 +20282,7 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.put_journal)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.put_journal">put_journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Index the entry under its write id; recovery's search reads it (ENS-11).</p>
+              <p>Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -20514,7 +20572,7 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
 
     <div class="doc doc-contents ">
 
-        <p>Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).</p>
+        <p>Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).</p>
 
 
     </div>
@@ -20544,6 +20602,30 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
     <div class="doc doc-contents ">
 
         <p><code>mget</code> of the entity index: real time, as a get by id is (ENS-04).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_journal</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_journal</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.get_journal(write_id)">write_id</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            JournalEntry (aurelius_atlas_core.entity_documents.JournalEntry)" href="./#aurelius_atlas_core.entity_documents.JournalEntry">JournalEntry</a></span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).</p>
 
 
     </div>
@@ -20596,7 +20678,8 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
 
     <div class="doc doc-contents ">
 
-        <p>The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).</p>
+        <p>The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
+passed, long after the index's own refresh (DD-247), and acts on each as <code>get_journal</code> reads it.</p>
 
 
     </div>
@@ -20674,7 +20757,7 @@ for the concurrent writes' refresh, which is the pair that keeps a reader from s
 
     <div class="doc doc-contents ">
 
-        <p>Index the entry under its write id; recovery's search reads it (ENS-11).</p>
+        <p>Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).</p>
 
 
     </div>
@@ -21057,6 +21140,18 @@ aggregations of the same query (DD-093).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_journal
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.EntityDocuments.get_journal)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.get_journal">get_journal</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The journal entry of a write as of now, None when there is none.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            get_linked
 
 
@@ -21077,7 +21172,7 @@ aggregations of the same query (DD-093).</p>
    (aurelius_atlas_core.entity_documents.EntityDocuments.journal)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.journal">journal</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Every journal entry.</p>
+              <p>Every journal entry, as the last refresh shows them.</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -21399,6 +21494,30 @@ aggregations of the same query (DD-093).</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="aurelius_atlas_core.entity_documents.EntityDocuments.get_journal" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_journal</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.EntityDocuments.get_journal" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_journal</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.get_journal(write_id)">write_id</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            JournalEntry (aurelius_atlas_core.entity_documents.JournalEntry)" href="./#aurelius_atlas_core.entity_documents.JournalEntry">JournalEntry</a></span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The journal entry of a write as of now, None when there is none.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="aurelius_atlas_core.entity_documents.EntityDocuments.get_linked" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_linked</span>
 
@@ -21442,7 +21561,7 @@ aggregations of the same query (DD-093).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Every journal entry.</p>
+        <p>Every journal entry, as the last refresh shows them.</p>
 
 
     </div>
