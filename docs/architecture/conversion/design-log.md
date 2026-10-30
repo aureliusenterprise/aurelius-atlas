@@ -240,6 +240,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-241](#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes)                                              | The parse tree is handed on as typed, immutable nodes                                                                             | 4.3           | Proposed         |
 | [DD-242](#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree)                                        | A DSL query is composed into the basic search's filter tree                                                                       | 4.4           | Proposed         |
 | [DD-243](#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps)                                             | DSL traversals and projections are evaluated in steps                                                                             | 4.4           | Proposed         |
+| [DD-244](#dd-244-saved-searches-wait-for-authentication)                                                            | Saved searches wait for authentication                                                                                            | 4.5           | Accepted         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7383,3 +7384,25 @@ Java's comparison for `min` and `max` (no value least, kinds equal) and row dedu
 **Consequences.** A step reads at most 10,000 entities (DV-98); a query reaching past them answers from the
 first 10,000. A condition on a referred entity costs a search, a read of the candidates and of their
 references.
+
+### DD-244. Saved searches wait for authentication
+
+- **Status:** Accepted
+- **Increment:** 4.5
+- **Date:** 2026-10-30
+
+**Decision.** Increment 4.5 (saved searches and the user profile) follows 6.1 (authentication) instead of
+preceding 5.1. The roadmap keeps its number; 5.1 lineage is the next increment. The user chose this on
+2026-10-30.
+
+**Reason.** Atlas owns every saved search by the logged-in user: `addSavedSearch` sets the owner from the
+request's user, `getSavedSearches` defaults to that user, and reading, updating, deleting and executing a
+search check ownership (`checkSavedSearchOwnership`). Until 6.1 the server has no user (DV-04, DV-06); porting
+4.5 now would need a temporary owner, a deviation 6.1 would have to undo, and ownership checks that test
+nothing.
+
+**Alternatives.** One anonymous owner until 6.1: the endpoints sooner, the checks trivially passing. An owner
+taken from a request header until 6.1: testable checks, but a spoofable identity to remove later.
+
+**Consequences.** `search/saved*` stays unanswered until after 6.1; the dashboards' saved-search menus fail
+until then, as they did before.
