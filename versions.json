@@ -155,6 +155,11 @@
     "aliases": []
   },
   {
+    "version": "feat-chart-network-segmentation",
+    "title": "feat-chart-network-segmentation",
+    "aliases": []
+  },
+  {
     "version": "feat-chart-foundation",
     "title": "feat-chart-foundation",
     "aliases": []
