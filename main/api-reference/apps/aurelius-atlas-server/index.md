@@ -130,6 +130,23 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Task Poll Seconds",
 >       "type": "number"
 >     },
+>     "lineage_on_demand_enabled": {
+>       "default": false,
+>       "title": "Lineage On Demand Enabled",
+>       "type": "boolean"
+>     },
+>     "lineage_on_demand_default_node_count": {
+>       "default": 3,
+>       "minimum": 1,
+>       "title": "Lineage On Demand Default Node Count",
+>       "type": "integer"
+>     },
+>     "lineage_max_node_count": {
+>       "default": 9000,
+>       "minimum": 1,
+>       "title": "Lineage Max Node Count",
+>       "type": "integer"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
@@ -249,6 +266,9 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `delete_type_override` (`bool`)
 > - `tasks_enabled` (`bool`)
 > - `task_poll_seconds` (`float`)
+> - `lineage_on_demand_enabled` (`bool`)
+> - `lineage_on_demand_default_node_count` (`int`)
+> - `lineage_max_node_count` (`int`)
 > - `revision` (`str`)
 > - `elasticsearch_hosts` (`list[HttpUrl]`)
 > - `elasticsearch_username` (`str`)
@@ -339,6 +359,30 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Whether responses carry `Strict-Transport-Security` (SRV-08, DD-236). The image ships True; the dev arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the plaintext dev surfaces (ADR 039's named relaxations).
+>
+> ### lineage\_max\_node\_count
+>
+> ```
+> lineage_max_node_count: int = 9000
+> ```
+>
+> The relations past which lineage adds none (at most 9,000): `atlas.lineage.max.node.count` (LIN-04).
+>
+> ### lineage\_on\_demand\_default\_node\_count
+>
+> ```
+> lineage_on_demand_default_node_count: int = 3
+> ```
+>
+> The relations each way lineage on demand takes by default: `atlas.lineage.on.demand.default.node.count` (LIN-06).
+>
+> ### lineage\_on\_demand\_enabled
+>
+> ```
+> lineage_on_demand_enabled: bool = False
+> ```
+>
+> Whether `POST v2/lineage/{guid}` answers lineage on demand: `atlas.lineage.on.demand.enabled` (LIN-06).
 >
 > ### log\_level
 >

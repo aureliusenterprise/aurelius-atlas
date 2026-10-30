@@ -72,11 +72,11 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | in progress |
 | 4.4a | DSL search of entities | `search/dsl` answering entities: sources, conditions, order, paging; declared unsupported forms | `GremlinQueryComposer` (replaced), `TraversalBasedExecutor` | in progress |
 | 4.4b | DSL projections and traversals | `select`, `groupby`, aggregates; referred entities and classification attributes | `SelectClauseComposer`, `SelectClauseProjections` | in progress |
-| 4.5 | Saved searches and user profile | Saved search CRUD | `UserProfileService` | planned |
-| 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | planned |
+| 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | in progress |
 | 5.2 | Glossary | Glossaries, terms, categories, term assignment | `GlossaryREST`, `GlossaryService` | planned |
 | 5.3 | Business metadata and labels | Business metadata attributes, labels | `EntityREST` | planned |
 | 6.1 | Authentication | Keycloak OIDC, session endpoints | `AtlasKeycloakAuthenticationProvider` | planned |
+| 4.5 | Saved searches and user profile | Saved search CRUD; after 6.1, its owners being users (DD-244) | `UserProfileService` | planned |
 | 6.2 | Authorization | Simple authorizer policies on every endpoint | `atlas-simple-authz-policy` | planned |
 | 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |
 | 6.4 | Hardening | Metrics, observability, load test, index tuning | `AdminResource` metrics | planned |

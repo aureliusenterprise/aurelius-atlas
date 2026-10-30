@@ -236,6 +236,8 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-241](<#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes>) | The parse tree is handed on as typed, immutable nodes | 4.3 | Proposed |
 | [DD-242](<#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree>) | A DSL query is composed into the basic search's filter tree | 4.4 | Proposed |
 | [DD-243](<#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps>) | DSL traversals and projections are evaluated in steps | 4.4 | Proposed |
+| [DD-244](<#dd-244-saved-searches-wait-for-authentication>) | Saved searches wait for authentication | 4.5 | Accepted |
+| [DD-245](<#dd-245-lineage-walks-the-relationships-of-the-process-edges>) | Lineage walks the relationships of the process edges | 5.1 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3258,3 +3260,31 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 **Alternatives.** Denormalising referred attributes into the referring document's search fields: one query, but every write would have to rewrite the entities referring to the one written. Elasticsearch `terms` lookups across indices: they read one document's field, not a relationship's other end. Aggregating in Elasticsearch: Java's comparison for `min` and `max` (no value least, kinds equal) and row deduplication are not its.
 
 **Consequences.** A step reads at most 10,000 entities (DV-98); a query reaching past them answers from the first 10,000. A condition on a referred entity costs a search, a read of the candidates and of their references.
+
+### DD-244. Saved searches wait for authentication
+
+- **Status:** Accepted
+- **Increment:** 4.5
+- **Date:** 2026-10-30
+
+**Decision.** Increment 4.5 (saved searches and the user profile) follows 6.1 (authentication) instead of preceding 5.1. The roadmap keeps its number; 5.1 lineage is the next increment. The user chose this on 2026-10-30.
+
+**Reason.** Atlas owns every saved search by the logged-in user: `addSavedSearch` sets the owner from the request's user, `getSavedSearches` defaults to that user, and reading, updating, deleting and executing a search check ownership (`checkSavedSearchOwnership`). Until 6.1 the server has no user (DV-04, DV-06); porting 4.5 now would need a temporary owner, a deviation 6.1 would have to undo, and ownership checks that test nothing.
+
+**Alternatives.** One anonymous owner until 6.1: the endpoints sooner, the checks trivially passing. An owner taken from a request header until 6.1: testable checks, but a spoofable identity to remove later.
+
+**Consequences.** `search/saved*` stays unanswered until after 6.1; the dashboards' saved-search menus fail until then, as they did before.
+
+### DD-245. Lineage walks the relationships of the process edges
+
+- **Status:** Proposed
+- **Increment:** 5.1
+- **Date:** 2026-10-30
+
+**Decision.** `EntityLineageService` ports Atlas's default traversal (`getLineageInfoV2`) and lineage on demand over the relationship documents (DD-061): an edge `__Process.inputs` or `__Process.outputs` is a relationship of that label, going out of end 1 (the process) into end 2 (the data set), read through the relationships an entity lists, as `graph_helper.edges_for_label` reads them for the other edge lookups. Each entity's relationships are read once per lineage. The Gremlin lineage (`atlas.lineage.query.use.gremlin`) is not ported. Atlas's lineage settings are server settings with Atlas's defaults: on demand off, 3 relations each way, at most 9,000 relations.
+
+**Reason.** The relationships are the edges Atlas walks: one document per edge, listed by both ends, in any state as Atlas's `getEdges` returns them. Walking them keeps Atlas's order of visits, its visited sets and its cap, which decide what a deep or wide lineage answers.
+
+**Alternatives.** A search per step for the relationships of a label whose end is the entity: an index on ends the relationship documents do not have, and a refresh before each read. Denormalising each entity's process edges into its document: a second copy every relationship write would keep equal.
+
+**Consequences.** A lineage costs two reads per entity it reaches (the entity and its relationships); the 9,000 relation cap bounds it. Lineage on demand, off by default as in Atlas, is answered once the setting is on.
