@@ -69,7 +69,7 @@ spec:
                         - --retry-connrefused
                         - --retry-delay
                         - "5"
-                        - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) .Values.realm) | quote }}
+                        - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) (include "atlas-observability.realm" .)) | quote }}
                     {{- with .Values.securityContext }}
                     securityContext:
                         {{- toYaml . | nindent 24 }}

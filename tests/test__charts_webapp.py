@@ -186,6 +186,7 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     config = yaml.safe_load(configmap["data"]["config.json"])
     assert config["apiBaseUrl"] == "/api"
     assert config["keycloak"]["url"] == "https://keycloak.atlas.test"
+    assert config["keycloak"]["realm"] == "aurelius-atlas"  # CHT-74: global.realm
     assert config["otelExporterUrl"] == "/otel/v1/traces"
     mounts = {
         m["mountPath"]: m for m in container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")["volumeMounts"]

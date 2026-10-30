@@ -8,9 +8,12 @@ umbrella composes them with the issuer and secrets under the CI test values.
 """
 
 import base64
+import json
+import re
 from typing import Any
 
 import pytest
+import yaml
 from conftest import UMBRELLA_CHART, container, find, find_all, helm_render, names
 
 TEST_VALUES = (UMBRELLA_CHART / "tests/values.test.yaml",)
@@ -78,26 +81,40 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         assert cert["spec"]["issuerRef"]["kind"] == "Issuer"
 
 
-@pytest.mark.covers(rules=["CHT-19"])
-def test__five_generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any]]) -> None:
-    """The five secrets 10.2's workloads consume, with the keys they read."""
+@pytest.mark.covers(rules=["CHT-19", "CHT-80"])
+def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The secrets 10.2's workloads consume, with the keys they read.
+
+    The demo-user Secret is the master realm's (CHT-80): the stock render —
+    the hardened aurelius-atlas realm — generates no demo passwords.
+    """
     secrets = {s["metadata"]["name"]: s for s in find_all(umbrella_docs, "Secret")}
     expected = {
         "atlas-elasticsearch": {"elastic-password"},
         "atlas-keycloak-admin": {"user", "password"},
         "atlas-keycloak-database": {"user", "password"},
-        "atlas-keycloak-users": {"writer-password", "reader-password"},
         "atlas-otel-clients": {"OTEL_INGEST_CLIENT_SECRET"},
     }
+    assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
     for name, keys in expected.items():
         assert set(secrets[name]["data"]) == keys, name
     # Generated credentials are 32 random chars (b64 >= 44); the usernames are
     # short values by design, so only the secret-bearing keys are length-checked.
-    for name in ("atlas-elasticsearch", "atlas-keycloak-users", "atlas-otel-clients"):
+    for name in ("atlas-elasticsearch", "atlas-otel-clients"):
         assert all(len(v) >= 44 for v in secrets[name]["data"].values()), name
     for name in ("atlas-keycloak-admin", "atlas-keycloak-database"):
         assert len(secrets[name]["data"]["password"]) >= 44, name
+
+    master_docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=(UMBRELLA_CHART / "tests/values.test.yaml",),
+        sets=("atlas-keycloak.realm.name=master",),
+    )
+    master_secrets = {s["metadata"]["name"]: s for s in find_all(master_docs, "Secret")}
+    users = master_secrets["atlas-keycloak-users"]
+    assert set(users["data"]) == {"writer-password", "reader-password"}
+    assert all(len(v) >= 44 for v in users["data"].values())
 
 
 @pytest.mark.covers(rules=["CHT-19"])
@@ -221,3 +238,28 @@ def test__network_policy_off_drops_umbrella_scope(umbrella_docs: list[dict[str, 
         )
 
     assert inventory(docs) == inventory(umbrella_docs)
+
+
+@pytest.mark.covers(rules=["CHT-74"])
+def test__every_consumer_names_the_imported_realm(umbrella_docs: list[dict[str, Any]]) -> None:
+    """One realm fact, every join (CHT-74).
+
+    The realm the Keycloak chart imports is the realm every realm-bearing
+    value names: rather than enumerate the env slots, the pin is that every
+    ``/realms/<x>`` URL and the SPA's bare realm in the composed render name
+    the imported one. A consumer drifting from global.realm fails here.
+    """
+    realm_cm = find(umbrella_docs, "ConfigMap", "atlas-keycloak-realm")
+    (realm_file,) = realm_cm["data"].keys()
+    realm = json.loads(realm_cm["data"][realm_file])["realm"]
+    assert realm == "aurelius-atlas" == realm_file.removesuffix(".json")
+
+    webapp = find(umbrella_docs, "ConfigMap", "atlas-webapp-config")
+    assert yaml.safe_load(webapp["data"]["config.json"])["keycloak"]["realm"] == realm
+
+    named = set()
+    for doc in umbrella_docs:
+        text = yaml.dump(doc)
+        for match in re.finditer(r"/realms/([^/\"'\s\\]+)", text):
+            named.add(match.group(1))
+    assert named == {realm}

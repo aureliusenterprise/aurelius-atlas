@@ -84,6 +84,12 @@ standalone render derives the same name (CHT-03). */}}
 {{- trimSuffix "/" $url -}}
 {{- end -}}
 
+{{/* The realm the ingest audience mints in (CHT-74): global.realm, whose
+chart default is the production realm. */}}
+{{- define "atlas-observability.realm" -}}
+{{- default "aurelius-atlas" .Values.global.realm -}}
+{{- end -}}
+
 {{/* The namespace this chart's resources land in. */}}
 {{- define "atlas-observability.namespace" -}}
 {{- default .Release.Namespace .Values.global.namespace -}}

@@ -56,6 +56,12 @@ keycloak host. */}}
 {{- trimSuffix "/" $url -}}
 {{- end -}}
 
+{{/* The Keycloak realm the OTLP mint URL names (CHT-74): global.realm, whose
+chart default is the production realm. */}}
+{{- define "atlas-server.realm" -}}
+{{- default "aurelius-atlas" .Values.global.realm -}}
+{{- end -}}
+
 {{/*
 The Elasticsearch Service this server dials (CHT-21). "" derives the sibling
 chart's name in this release — the store chart's fullname rule (its

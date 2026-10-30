@@ -116,7 +116,8 @@ spec:
                           value: {{ printf "%s/tls.key" (trimSuffix "/" .Values.tls.mountPath) | quote }}
                         - name: JAVA_OPTS
                           value: {{ include "atlas-keycloak.javaOpts" . | quote }}
-                        {{- /* Realm placeholders resolved at import (DD-256). */}}
+                        {{- /* Realm placeholders resolved at import (DD-256). The demo users are the master asset's only (CHT-80): the hardened realm seeds no users, so its env — and the users Secret behind it — render for master alone. */}}
+                        {{- if eq (include "atlas-keycloak.realmName" .) "master" }}
                         - name: DEV_USER_WRITER_PASSWORD
                           valueFrom:
                               secretKeyRef:
@@ -127,6 +128,7 @@ spec:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.usersSecretName" . }}
                                   key: reader-password
+                        {{- end }}
                         - name: OTEL_INGEST_CLIENT_SECRET
                           valueFrom:
                               secretKeyRef:

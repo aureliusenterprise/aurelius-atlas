@@ -14,7 +14,7 @@ config nor a way to write it (SHL-02).
     "appVersion" (default .Chart.AppVersion $cfg.appVersion)
     "keycloak" (dict
         "clientId" $cfg.keycloak.clientId
-        "realm" $cfg.keycloak.realm
+        "realm" (include "atlas-webapp.realm" .)
         "url" (default (include "atlas-webapp.issuerUrl" .) $cfg.keycloak.url))
     "otelExporterUrl" $cfg.otelExporterUrl
 -}}

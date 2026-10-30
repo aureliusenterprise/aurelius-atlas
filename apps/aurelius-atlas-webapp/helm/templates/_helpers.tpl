@@ -58,6 +58,12 @@ keycloak host. */}}
 {{- trimSuffix "/" $url -}}
 {{- end -}}
 
+{{/* The Keycloak realm /config.json names for the SPA (CHT-74): global.realm,
+whose chart default is the production realm. */}}
+{{- define "atlas-webapp.realm" -}}
+{{- default "aurelius-atlas" .Values.global.realm -}}
+{{- end -}}
+
 {{/*
 A sibling chart's Service by chart name (CHT-25): "override" wins, else this
 release's name under the store chart's fullname rule (CHT-13) — a release name

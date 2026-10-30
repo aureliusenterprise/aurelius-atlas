@@ -1,15 +1,33 @@
 {{/*
-The realm ConfigMap (CHT-16, DD-256): the chart's files/master.json — a
-byte-copy of dev/keycloak/import/master.json (the chart-contract test guards
-the copy) — mounted at the import directory for --import-realm. The secret
-placeholders stay verbatim: Keycloak's own replace-placeholders mechanism
-(the JAVA_OPTS flag) resolves ${DEV_USER_*} and ${OTEL_INGEST_CLIENT_SECRET}
-at import time from this container's environment, fed from the generated
-Secrets (CHT-19). Helm does not substitute: a render must not produce a
-credential a later render would regenerate (the DD-244 preserve rule lives in
-the umbrella's lookup, not here).
+The realm ConfigMap (CHT-16, DD-256, DD-274): the chart's
+files/<realm>.json — the asset global.realm selects (CHT-74) — mounted at
+the import directory for --import-realm. Both shipped assets are chart
+copies the chart-contract suite guards: master.json is a byte-copy of
+dev/keycloak/import/master.json (DD-256), aurelius-atlas.json the
+minimally-authored hardened realm (CHT-75/76). Selecting a realm with no
+asset fails the render (CHT-78).
+
+The secret placeholders stay verbatim: Keycloak's own replace-placeholders
+mechanism (the JAVA_OPTS flag) resolves ${DEV_USER_*} and
+${OTEL_INGEST_CLIENT_SECRET} at import time from this container's
+environment, fed from the generated Secrets (CHT-19). Helm does not
+substitute credentials: a render must not produce a credential a later
+render would regenerate (the DD-244 preserve rule lives in the umbrella's
+lookup, not here).
+
+The __ATLAS_HOST__/__DASHBOARD_HOST__ tokens in the aurelius-atlas asset
+are a different substitution (CHT-77): browser hosts are deployment
+topology, not credentials, and Helm owns them — a literal replace over the
+asset text, so the JSON itself carries no templating. master.json has no
+tokens, which keeps its render byte-equal to the asset (DD-256's copy
+guard compares the asset to the dev import, not to this render).
 */}}
 {{- if .Values.realm.import }}
+{{- $realm := include "atlas-keycloak.realmName" . -}}
+{{- $asset := printf "files/%s.json" $realm -}}
+{{- $json := required (printf "%s is not a shipped realm asset (files/ carries master.json and aurelius-atlas.json)" $asset) (.Files.Get $asset) -}}
+{{- $json = replace "__ATLAS_HOST__" (include "atlas-keycloak.atlasHost" .) $json -}}
+{{- $json = replace "__DASHBOARD_HOST__" (include "atlas-keycloak.dashboardHost" .) $json -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -18,6 +36,6 @@ metadata:
     labels:
         {{- include "atlas-keycloak.labels" . | nindent 8 }}
 data:
-    master.json: |
-        {{- .Files.Get "files/master.json" | nindent 8 }}
+    {{ printf "%s.json" $realm | quote }}: |
+        {{- $json | nindent 8 }}
 {{- end }}

@@ -69,6 +69,12 @@ DD-247 — each chart duplicates the join it makes): "" derives
 {{- end -}}
 {{- end -}}
 
+{{/* The Keycloak realm the OTLP mint URL names (CHT-74): global.realm, whose
+chart default is the production realm. */}}
+{{- define "atlas-data2model.realm" -}}
+{{- default "aurelius-atlas" .Values.global.realm -}}
+{{- end -}}
+
 {{- define "atlas-data2model.issuerUrl" -}}
 {{- $issuer := trimSuffix "/" (default "" .Values.global.issuer.url) -}}
 {{- if not $issuer -}}

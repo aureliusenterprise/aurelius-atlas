@@ -7,6 +7,7 @@ copy boot, the pg_hba, the verify-full JDBC pin (the dev compose sibling is
 the reference, ``dev/keycloak/docker-compose.yaml``).
 """
 
+import json
 from typing import Any
 
 import pytest
@@ -81,12 +82,13 @@ def test__hostname_chain() -> None:
     assert hostname(("global.domain=atlas.example", "hostname=", "global.issuer.url=")) == "keycloak.atlas.example"
 
 
-@pytest.mark.covers(rules=["CHT-16"])
+@pytest.mark.covers(rules=["CHT-16", "CHT-80"])
 def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> None:
     """Every credential arrives via secretKeyRef, none inline (CHT-16/19).
 
-    Admin, database, demo-user, and otel-client credentials point at the
-    <release>-<purpose> Secret names the umbrella generates.
+    Admin, database, and otel-client credentials point at the
+    <release>-<purpose> Secret names the umbrella generates; the demo-user
+    pair rides the master realm only (CHT-80), asserted on the master render.
     """
     ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
     envs = env_map(container(ss, "keycloak"))
@@ -95,24 +97,33 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
         "KC_BOOTSTRAP_ADMIN_PASSWORD": ("atlas-keycloak-admin", "password"),
         "KC_DB_USERNAME": ("atlas-keycloak-database", "user"),
         "KC_DB_PASSWORD": ("atlas-keycloak-database", "password"),
-        "DEV_USER_WRITER_PASSWORD": ("atlas-keycloak-users", "writer-password"),
-        "DEV_USER_READER_PASSWORD": ("atlas-keycloak-users", "reader-password"),
         "OTEL_INGEST_CLIENT_SECRET": ("atlas-otel-clients", "OTEL_INGEST_CLIENT_SECRET"),
     }
     for name, (secret, key) in refs.items():
         ref = envs[name]["valueFrom"]["secretKeyRef"]
         assert ref == {"name": secret, "key": key}, name
         assert "value" not in envs[name], name
+    # The hardened realm seeds no users, so its pod carries no DEV_USER env.
+    assert not [n for n in envs if n.startswith("DEV_USER_")]
+
+    master = find(helm_render(KC_CHART, sets=("realm.name=master",)), "StatefulSet", "atlas-keycloak")
+    master_envs = env_map(container(master, "keycloak"))
+    for name, key in (("DEV_USER_WRITER_PASSWORD", "writer-password"), ("DEV_USER_READER_PASSWORD", "reader-password")):
+        ref = master_envs[name]["valueFrom"]["secretKeyRef"]
+        assert ref == {"name": "atlas-keycloak-users", "key": key}, name
 
 
-@pytest.mark.covers(rules=["CHT-16"])
-def test__realm_configmap_byte_copies_the_dev_import(kc_docs: list[dict[str, Any]]) -> None:
-    """The realm asset is byte-identical to the dev import (the drift guard).
+@pytest.mark.covers(rules=["CHT-16", "CHT-78"])
+def test__realm_configmap_byte_copies_the_dev_import() -> None:
+    """The master asset renders byte-identical to the dev import (the drift guard).
 
     DD-256: one authored realm file; editing the dev import means re-running
-    the copy, and this test is what enforces it.
+    the copy, and this test is what enforces it. CHT-78: selecting master
+    keeps that path exactly — the asset carries no host tokens, so the
+    substitution is a no-op on it.
     """
-    cm = find(kc_docs, "ConfigMap", "atlas-keycloak-realm")
+    docs = helm_render(KC_CHART, sets=("realm.name=master",))
+    cm = find(docs, "ConfigMap", "atlas-keycloak-realm")
     asset = (KC_CHART / "files/master.json").read_bytes()
     assert cm["data"]["master.json"].encode() == asset
     dev_import = (WORKSPACE / "dev/keycloak/import/master.json").read_bytes()
@@ -206,7 +217,7 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     assert receiver["databases"] == ["keycloak"]
     assert config["exporters"]["otlp"]["endpoint"] == "https://atlas-observability:4317"
     oauth = config["extensions"]["oauth2client"]
-    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
+    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
     assert oauth["client_id"] == "otel-keycloak"
 
     envs = env_map(app)
@@ -497,3 +508,221 @@ def test__keycloak_network_policy_off_changes_nothing_else() -> None:
         return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
 
     assert rest(on) == rest(off)
+
+
+# --------------------------------------------------------------------------
+# 10.7 — the production identity realm (CHT-74..80).
+
+
+def _rendered_asset(docs: list[dict[str, Any]], realm: str = "aurelius-atlas") -> dict[str, Any]:
+    """The imported realm asset, parsed out of the rendered ConfigMap."""
+    cm = find(docs, "ConfigMap", "atlas-keycloak-realm")
+    return json.loads(cm["data"][f"{realm}.json"])
+
+
+def _dev_asset() -> dict[str, Any]:
+    return json.loads((KC_CHART / "files/master.json").read_text())
+
+
+@pytest.mark.covers(rules=["CHT-74"])
+def test__stock_import_selects_the_production_realm(kc_docs: list[dict[str, Any]]) -> None:
+    """The chart's default realm is aurelius-atlas, asset and stamp alike.
+
+    CHT-74: files/<global.realm>.json is what Keycloak imports, and the file
+    stamps realm/id = that name — a renamed global.realm selects the peer
+    asset in the same render.
+    """
+    asset = _rendered_asset(kc_docs)
+    assert asset["realm"] == "aurelius-atlas"
+
+    docs = helm_render(KC_CHART, sets=("global.realm=master",))
+    assert find(docs, "ConfigMap", "atlas-keycloak-realm")["data"].keys() == {"master.json"}
+
+    # realm.name overrides global.realm (the chart-level pin wins).
+    docs = helm_render(KC_CHART, sets=("global.realm=master", "realm.name=aurelius-atlas"))
+    assert find(docs, "ConfigMap", "atlas-keycloak-realm")["data"].keys() == {"aurelius-atlas.json"}
+
+
+@pytest.mark.covers(rules=["CHT-78"])
+def test__unknown_realm_fails_the_render() -> None:
+    """A realm with no shipped asset is a render error, never a silent no-import."""
+    error = helm_render_fails(KC_CHART, sets=("realm.name=does-not-exist",))
+    assert "not a shipped realm asset" in error
+
+
+@pytest.mark.covers(rules=["CHT-75"])
+def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str, Any]]) -> None:
+    """Minimal authoring: the app's clients/roles/scope, no Keycloak built-ins.
+
+    CHT-75: Keycloak recreates its own per-realm defaults when the realm is
+    imported, so the asset never carries them (and never master's admin
+    composites); no end-users are seeded — the hardened realm is empty of
+    people, an operator provisions them.
+    """
+    asset = _rendered_asset(kc_docs)
+    client_ids = {c["clientId"] for c in asset["clients"]}
+    otel = {
+        "otel-atlas-server",
+        "otel-data2model",
+        "otel-elasticsearch",
+        "otel-keycloak",
+        "otel-lineage-model",
+        "otel-postgres",
+        "otel-validate-entity",
+    }
+    assert client_ids == {"aurelius"} | otel
+    assert (
+        not {
+            "account",
+            "account-console",
+            "admin-cli",
+            "broker",
+            "security-admin-console",
+            "realm-management",
+            "master-realm",
+        }
+        & client_ids
+    )
+    assert not asset.get("users")
+    assert "defaultRole" not in asset
+    assert not asset.get("realmRoles")
+    assert [s["name"] for s in asset["clientScopes"]] == ["otel-ingest"]
+    assert not asset.get("components")
+    assert not asset.get("authenticationFlows")
+    roles = asset["roles"]["client"]
+    assert {r["name"] for r in roles["aurelius"]} == {"aurelius-write"}
+    assert not set(roles) - {"aurelius"}
+
+
+@pytest.mark.covers(rules=["CHT-76"])
+def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
+    """The pentest H3 list, read off the imported asset.
+
+    Realm flags: TLS everywhere, brute force on, self-service off, a real
+    password policy, events on. The aurelius browser client stays public +
+    standard-flow, loses ROPC, gains PKCE S256, and pins its post-logout
+    URIs; the otel-* accounts stay confidential service accounts sharing the
+    ${OTEL_INGEST_CLIENT_SECRET} placeholder (never a rendered secret).
+    """
+    asset = _rendered_asset(kc_docs)
+    assert asset["sslRequired"] == "all"
+    assert asset["bruteForceProtected"] is True
+    assert asset["failureFactor"] <= 30
+    assert asset["registrationAllowed"] is False
+    assert asset["resetPasswordAllowed"] is False
+    assert asset["rememberMe"] is False
+    assert "length(" in asset["passwordPolicy"]
+    assert "complexity(" in asset["passwordPolicy"]
+    assert asset["eventsEnabled"] is True
+    assert asset["adminEventsEnabled"] is True
+
+    (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
+    assert aur["publicClient"] is True
+    assert aur["standardFlowEnabled"] is True
+    assert aur["directAccessGrantsEnabled"] is False
+    assert aur["bearerOnly"] is False
+    assert aur["serviceAccountsEnabled"] is False
+    assert aur["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert aur["attributes"]["post.logout.redirect.uris"] != "*"  # dev's pin, replaced by hosts
+
+    for client in asset["clients"]:
+        if client["clientId"] == "aurelius":
+            continue
+        assert client["publicClient"] is False
+        assert client["serviceAccountsEnabled"] is True
+        assert client["standardFlowEnabled"] is False
+        assert client["secret"] == "${OTEL_INGEST_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
+
+
+@pytest.mark.covers(rules=["CHT-77"])
+def test__browser_origins_carry_the_deployed_hosts() -> None:
+    """Host tokens substitute to real hosts; localhost never reaches a cluster.
+
+    CHT-77: values hosts win, else <name>.<domain>; the bare render falls
+    back to <release>.localhost so lint/template succeed. Credential
+    placeholders survive substitution verbatim (DD-256's rule).
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.example",))
+    asset = _rendered_asset(docs)
+    (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
+    assert aur["redirectUris"] == ["https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"]
+    assert aur["webOrigins"] == ["https://atlas.atlas.example", "https://dashboard.atlas.example"]
+    post_logout = aur["attributes"]["post.logout.redirect.uris"].splitlines()
+    assert set(post_logout) == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
+
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "global.domain=atlas.example",
+            "global.hosts.atlas.host=docs.example",
+            "global.hosts.dashboard.host=dash.example",
+        ),
+    )
+    text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+    assert "https://docs.example/*" in text
+    assert "https://dash.example" in text
+    assert "atlas.atlas.example" not in text
+
+    # No cluster render of the prod asset carries a localhost origin or a +.
+    for text in (
+        find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"],
+        find(helm_render(KC_CHART, sets=("global.domain=atlas.example",)), "ConfigMap", "atlas-keycloak-realm")["data"][
+            "aurelius-atlas.json"
+        ],
+    ):
+        assert "localhost" not in text
+        assert "127.0.0.1" not in text
+        assert '"+"' not in text
+    assert "${OTEL_INGEST_CLIENT_SECRET}" in text  # placeholders survive
+
+
+@pytest.mark.covers(rules=["CHT-79"])
+def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
+    """The two-realm drift guard (CHT-79): application peers must match.
+
+    Structural, not byte — the prod asset is minimally authored (DD-273):
+    the otel-* clients and the otel-ingest scope equal their dev peers
+    exactly (modulo ids), and the aurelius client differs only in the
+    hardening fields. An identity change in the dev realm that is neither
+    mirrored here nor named in its commit fails this test.
+    """
+    prod = json.loads((KC_CHART / "files/aurelius-atlas.json").read_text())
+    dev = _dev_asset()
+    dev_by_id = {c["clientId"]: c for c in dev["clients"]}
+    prod_by_id = {c["clientId"]: c for c in prod["clients"]}
+
+    assert set(prod_by_id) - {"aurelius"} == {c for c in dev_by_id if c.startswith("otel-")}
+    for name in set(prod_by_id) - {"aurelius"}:
+        assert prod_by_id[name] == dev_by_id[name], name
+
+    def strip_ids(obj: dict[str, Any]) -> dict[str, Any]:
+        out = {k: v for k, v in obj.items() if k != "id"}
+        if "protocolMappers" in out:
+            out["protocolMappers"] = [{k: v for k, v in pm.items() if k != "id"} for pm in out["protocolMappers"]]
+        return out
+
+    dev_scope = next(s for s in dev["clientScopes"] if s["name"] == "otel-ingest")
+    (prod_scope,) = prod["clientScopes"]
+    assert strip_ids(prod_scope) == strip_ids(dev_scope)
+
+    dev_aur, prod_aur = dev_by_id["aurelius"], prod_by_id["aurelius"]
+    assert set(dev_aur) == set(prod_aur)
+    hardened = {"id", "directAccessGrantsEnabled", "attributes", "redirectUris", "webOrigins"}
+    changed = {k for k in dev_aur if dev_aur[k] != prod_aur[k]}
+    assert changed <= hardened, changed
+    # The aurelius-write role is dev's, re-pointed at the prod client id.
+    dev_role = next(r for r in dev["roles"]["client"]["aurelius"] if r["name"] == "aurelius-write")
+    (prod_role,) = prod["roles"]["client"]["aurelius"]
+    (prod_client,) = [c for c in prod["clients"] if c["clientId"] == "aurelius"]
+    assert strip_ids(prod_role) == {**strip_ids(dev_role), "containerId": prod_client["id"]}
+
+
+@pytest.mark.covers(rules=["CHT-80"])
+def test__demo_user_placeholders_are_master_only() -> None:
+    """The prod asset carries only the otel placeholder (no user secrets)."""
+    prod_text = (KC_CHART / "files/aurelius-atlas.json").read_text()
+    assert "${OTEL_INGEST_CLIENT_SECRET}" in prod_text  # the placeholder, never a secret
+    assert "${DEV_USER_WRITER_PASSWORD}" not in prod_text
+    assert "${DEV_USER_READER_PASSWORD}" not in prod_text
+    master_text = (KC_CHART / "files/master.json").read_text()
+    assert "${DEV_USER_WRITER_PASSWORD}" in master_text
