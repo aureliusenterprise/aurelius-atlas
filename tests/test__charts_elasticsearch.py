@@ -20,7 +20,9 @@ from conftest import (
     helm_render,
     helm_render_fails,
     names,
+    peer_labels,
     pod_spec,
+    policy_peers_by_port,
 )
 
 
@@ -279,3 +281,56 @@ def test__puller_default_off() -> None:
     """
     assert "atlas-elasticsearch-metrics-puller" not in names(helm_render(ES_CHART), "Deployment")
     assert "atlas-elasticsearch-metrics-puller" not in names(helm_render(ES_CHART), "ConfigMap")
+
+
+@pytest.mark.covers(rules=["CHT-64", "CHT-71"])
+def test__store_admits_server_only_bare(es_docs: list[dict[str, Any]]) -> None:
+    """9200 accepts the server pods only; 9300 has no rule (CHT-64).
+
+    The transport port is denied by absence — a single-node store has no
+    peer node to admit — and no rule opens anything else.
+    """
+    policy = find(es_docs, "NetworkPolicy", "atlas-elasticsearch-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-elasticsearch")
+    assert policy_peers_by_port(es_docs, "atlas-elasticsearch-ingress") == {9200: {"atlas-server"}}
+    ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
+    assert ports == {9200}
+
+
+@pytest.mark.covers(rules=["CHT-64", "CHT-70"])
+def test__store_puller_joins_by_qualified_pod_name() -> None:
+    """With telemetry the puller joins 9200 under its fullname name (CHT-64/70).
+
+    A puller pod's name label is the fullname-qualified name, and the
+    qualifier follows the release: the same override-free rule the pod
+    carries (a peer renamed for a policy is the ``peers`` override, never
+    the Service-name join).
+    """
+    docs = helm_render(ES_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    assert policy_peers_by_port(docs, "atlas-elasticsearch-ingress") == {
+        9200: {"atlas-server", "atlas-elasticsearch-metrics-puller"}
+    }
+    other = helm_render(ES_CHART, release="foo", sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    assert policy_peers_by_port(other, "foo-atlas-elasticsearch-ingress") == {
+        9200: {"atlas-server", "foo-atlas-elasticsearch-metrics-puller"}
+    }
+    peers = [
+        e["podSelector"]["matchLabels"]
+        for r in find(other, "NetworkPolicy", "foo-atlas-elasticsearch-ingress")["spec"]["ingress"]
+        for e in r["from"]
+    ]
+    assert peer_labels("foo-atlas-elasticsearch-metrics-puller", instance="foo") in peers
+
+
+@pytest.mark.covers(rules=["CHT-64", "CHT-72"])
+def test__store_network_policy_off_changes_nothing_else() -> None:
+    """The chart's disable switch is surgical (CHT-72)."""
+    on = helm_render(ES_CHART)
+    off = helm_render(ES_CHART, sets=("networkPolicy.enabled=false",))
+    assert names(on, "NetworkPolicy") == {"atlas-elasticsearch-ingress"}
+    assert names(off, "NetworkPolicy") == set()
+
+    def rest(docs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
+
+    assert rest(on) == rest(off)

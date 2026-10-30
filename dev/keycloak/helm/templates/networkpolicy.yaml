@@ -1,0 +1,102 @@
+{{/*
+The identity provider's ingress allow (CHT-62/63, DD-271). Who dials
+Keycloak's 8443: every workload that verifies tokens against it or mints
+ingest JWTs against it — the server and the three aux APIs (AUTH_SERVER_URL /
+the OTLP token URLs), both metrics pullers (their oauth2client mints), and
+the collector (its oidc extension's JWKS discovery and the issuer-wait init,
+DD-265's split-horizon making the public name land on this Service). Peers
+whose pods a deployment does not run admit nothing — the peer list is the
+full dialer set (CHT-62), not a per-flag negotiation the chart cannot see.
+The browser's path to Keycloak is the gateway's, rendered by the umbrella
+with the keycloak HTTPRoute (CHT-62's edge half). jgroups 7800 admits
+Keycloak pods only (the RSS mesh, one release). The management port 9000
+gets no rule (CHT-71): kubelet probes ride the node. The bundled Postgres
+(CHT-63) admits only the Keycloak pods (KC_DB_URL, sslmode=verify-full) and
+the puller (its postgresql receiver) — no one else in the namespace reads
+the Idp's data. Puller peer names are fullname-derived (pullerName /
+siblingService — the same release-prefix rule, applied to pods, CHT-70); the
+collector shares the observability chart's name, so its component label
+joins too.
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+{{- $release := .Release.Name -}}
+{{- $np := .Values.networkPolicy -}}
+{{- $mint := list
+    (dict "name" "atlas-server" "override" $np.peers.server)
+    (dict "name" "atlas-data2model" "override" $np.peers.data2model)
+    (dict "name" "atlas-lineage-model" "override" $np.peers.lineageModel)
+    (dict "name" "atlas-validate-entity" "override" $np.peers.validateEntity)
+    (dict "name" "atlas-observability" "override" $np.peers.observability "component" "observability")
+    (dict "name" (include "atlas-keycloak.siblingService" (dict "name" "atlas-elasticsearch-metrics-puller" "release" $release "override" $np.peers.elasticsearchPuller)) "override" "")
+-}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" (include "atlas-keycloak.fullname" .) }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labels" . | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            {{- include "atlas-keycloak.selectorLabels" . | nindent 12 }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                {{- range $p := $mint }}
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ default $p.name $p.override | quote }}
+                            app.kubernetes.io/instance: {{ $release | quote }}
+                            {{- with $p.component }}
+                            app.kubernetes.io/component: {{ . | quote }}
+                            {{- end }}
+                {{- end }}
+                {{- if .Values.telemetry.enabled }}
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ include "atlas-keycloak.pullerName" . | quote }}
+                            app.kubernetes.io/instance: {{ $release | quote }}
+                {{- end }}
+            ports:
+                -   port: {{ int .Values.service.port }}
+                    protocol: TCP
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            {{- include "atlas-keycloak.selectorLabels" . | nindent 28 }}
+            ports:
+                -   port: 7800
+                    protocol: TCP
+{{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" (include "atlas-keycloak.pgFullname" .) }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labels" . | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            {{- include "atlas-keycloak.selectorLabelsPG" . | nindent 12 }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            {{- include "atlas-keycloak.selectorLabels" . | nindent 28 }}
+                {{- if .Values.telemetry.enabled }}
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ include "atlas-keycloak.pullerName" . | quote }}
+                            app.kubernetes.io/instance: {{ $release | quote }}
+                {{- end }}
+            ports:
+                -   port: {{ int .Values.postgres.service.port }}
+                    protocol: TCP
+{{- end }}
+{{- end }}

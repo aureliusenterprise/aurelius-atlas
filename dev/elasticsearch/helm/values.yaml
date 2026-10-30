@@ -178,4 +178,13 @@ podSecurityContext:
 containerSecurityContext:
     allowPrivilegeEscalation: false
 
+# Network segmentation (CHT-64, DD-271): the ingress allow for the store —
+# the server and this chart's metrics puller (when telemetry is on). 9300
+# (transport) gets no rule: single-node has no peers (DD-006). peers.<peer>
+# renames a peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        server: ""
+
 required: []

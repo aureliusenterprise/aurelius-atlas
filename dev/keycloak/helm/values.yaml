@@ -230,4 +230,20 @@ podSecurityContext:
     seccompProfile:
         type: RuntimeDefault
 
+# Network segmentation (CHT-62/63, DD-271): the ingress allows — Keycloak
+# admits the token minters/verifiers (server + aux APIs) and this chart's
+# puller; the bundled Postgres admits Keycloak and the puller; jgroups admits
+# Keycloak pods; the management port gets no rule (CHT-71). The browser path
+# (the gateway) rides the umbrella with the keycloak HTTPRoute. peers.<peer>
+# renames a peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        server: ""
+        data2model: ""
+        lineageModel: ""
+        validateEntity: ""
+        observability: ""
+        elasticsearchPuller: ""
+
 required: []

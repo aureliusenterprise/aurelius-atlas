@@ -13,7 +13,20 @@ from typing import Any
 
 import pytest
 import yaml
-from conftest import OBS_CHART, WORKSPACE, container, env_map, env_value, find, find_all, helm_render, names, pod_spec
+from conftest import (
+    OBS_CHART,
+    WORKSPACE,
+    container,
+    env_map,
+    env_value,
+    find,
+    find_all,
+    helm_render,
+    names,
+    peer_labels,
+    pod_spec,
+    policy_peers_by_port,
+)
 
 DEV_CONFIG = WORKSPACE / "dev/observability/config"
 TEST_VALUES = (OBS_CHART / "tests/values.test.yaml",)
@@ -368,3 +381,142 @@ def test__bare_render_needs_no_cluster() -> None:
     assert len(names(docs, "Deployment")) == 5
     assert len(names(docs, "Service")) == 5
     assert len(names(docs, "PersistentVolumeClaim")) == 4
+
+
+@pytest.mark.covers(rules=["CHT-67", "CHT-71"])
+def test__collector_legs_admit_their_producers(obs_docs: list[dict[str, Any]]) -> None:
+    """Each collector leg accepts exactly its producers; 13133 never (CHT-67/71)."""
+    policy = find(obs_docs, "NetworkPolicy", "atlas-observability-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-observability", component="observability")
+    assert policy_peers_by_port(obs_docs, "atlas-observability-ingress") == {
+        4318: {"atlas-webapp"},
+        4317: {
+            "atlas-server",
+            "atlas-data2model",
+            "atlas-lineage-model",
+            "atlas-validate-entity",
+            "atlas-elasticsearch-metrics-puller",
+            "atlas-keycloak-metrics-puller",
+        },
+        4319: {
+            "atlas-server",
+            "atlas-data2model",
+            "atlas-lineage-model",
+            "atlas-validate-entity",
+            "atlas-elasticsearch-metrics-puller",
+            "atlas-keycloak-metrics-puller",
+        },
+        4320: {"atlas-webapp", "atlas-keycloak"},
+        4321: {"atlas-webapp", "atlas-keycloak"},
+        9464: {"atlas-observability"},
+        8888: {"atlas-observability"},
+    }
+    ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
+    assert ports == {4318, 4317, 4319, 4320, 4321, 9464, 8888}  # CHT-71: no health 13133
+    scrape = [
+        e["podSelector"]["matchLabels"]
+        for r in policy["spec"]["ingress"]
+        if 9464 in [p["port"] for p in r["ports"]]
+        for e in r["from"]
+    ]
+    assert scrape == [peer_labels("atlas-observability", component="prometheus")]
+
+
+@pytest.mark.covers(rules=["CHT-68"])
+def test__backends_admit_prometheus_grafana_and_the_collector(obs_docs: list[dict[str, Any]]) -> None:
+    """The backend joins per CHT-68: scrape/datasource/export legs by component."""
+    assert policy_peers_by_port(obs_docs, "atlas-observability-prometheus-ingress") == {
+        9090: {"atlas-observability"}  # self-scrape + Grafana panels, both by component
+    }
+    prom = find(obs_docs, "NetworkPolicy", "atlas-observability-prometheus-ingress")
+    assert prom["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-observability", component="prometheus")
+    assert {
+        e["podSelector"]["matchLabels"]["app.kubernetes.io/component"] for e in prom["spec"]["ingress"][0]["from"]
+    } == {
+        "prometheus",
+        "grafana",
+    }
+    assert policy_peers_by_port(obs_docs, "atlas-observability-loki-ingress") == {
+        3100: {"atlas-observability"}  # collector export + Prometheus scrape + Grafana datasource
+    }
+    loki = find(obs_docs, "NetworkPolicy", "atlas-observability-loki-ingress")
+    assert {
+        e["podSelector"]["matchLabels"]["app.kubernetes.io/component"] for e in loki["spec"]["ingress"][0]["from"]
+    } == {
+        "observability",
+        "prometheus",
+        "grafana",
+    }
+    tempo_peers = policy_peers_by_port(obs_docs, "atlas-observability-tempo-ingress")
+    assert tempo_peers == {4318: {"atlas-observability"}, 3200: {"atlas-observability"}}
+    tempo = find(obs_docs, "NetworkPolicy", "atlas-observability-tempo-ingress")
+    ingest = next(r for r in tempo["spec"]["ingress"] if r["ports"][0]["port"] == 4318)
+    assert [e["podSelector"]["matchLabels"] for e in ingest["from"]] == [
+        peer_labels("atlas-observability", component="observability")
+    ]
+    scrape = next(r for r in tempo["spec"]["ingress"] if r["ports"][0]["port"] == 3200)
+    assert {e["podSelector"]["matchLabels"]["app.kubernetes.io/component"] for e in scrape["from"]} == {
+        "prometheus",
+        "grafana",
+    }
+
+
+@pytest.mark.covers(rules=["CHT-69"])
+def test__grafana_receives_no_chart_owned_allow(obs_docs: list[dict[str, Any]]) -> None:
+    """No policy in this chart selects Grafana's pods (CHT-69).
+
+    Grafana's only allow is the umbrella's gateway rule, and only when the
+    host is enabled — tested there. Port-forward rides the kubelet.
+    """
+    grafana_targets = [
+        p["metadata"]["name"]
+        for p in find_all(obs_docs, "NetworkPolicy")
+        if p["spec"]["podSelector"]["matchLabels"].get("app.kubernetes.io/component") == "grafana"
+    ]
+    assert grafana_targets == []
+    # Grafana appears as a dialer of the backends (panels/datasources), never a target.
+    dialers = [
+        e["podSelector"]["matchLabels"]
+        for p in find_all(obs_docs, "NetworkPolicy")
+        for r in p["spec"].get("ingress", [])
+        for e in r["from"]
+        if e["podSelector"]["matchLabels"].get("app.kubernetes.io/component") == "grafana"
+    ]
+    assert dialers
+
+
+@pytest.mark.covers(rules=["CHT-70"])
+def test__puller_peers_join_by_qualified_pod_name() -> None:
+    """A puller peer's name label carries the release qualifier (CHT-70)."""
+    docs = helm_render(OBS_CHART, release="foo", value_files=(OBS_CHART / "tests/values.test.yaml",))
+    policy = find(docs, "NetworkPolicy", "foo-atlas-observability-ingress")
+    peers = [
+        e["podSelector"]["matchLabels"]
+        for r in policy["spec"]["ingress"]
+        if r["ports"][0]["port"] == 4317
+        for e in r["from"]
+    ]
+    assert peer_labels("foo-atlas-elasticsearch-metrics-puller", instance="foo") in peers
+    assert peer_labels("foo-atlas-keycloak-metrics-puller", instance="foo") in peers
+    assert peer_labels("atlas-server", instance="foo") in peers
+
+
+@pytest.mark.covers(rules=["CHT-67", "CHT-72"])
+def test__observability_network_policy_off_changes_nothing_else() -> None:
+    """The disable switch removes the four policies and nothing else (CHT-72)."""
+    on = helm_render(OBS_CHART, value_files=(OBS_CHART / "tests/values.test.yaml",))
+    off = helm_render(
+        OBS_CHART, value_files=(OBS_CHART / "tests/values.test.yaml",), sets=("networkPolicy.enabled=false",)
+    )
+    assert names(on, "NetworkPolicy") == {
+        "atlas-observability-ingress",
+        "atlas-observability-prometheus-ingress",
+        "atlas-observability-loki-ingress",
+        "atlas-observability-tempo-ingress",
+    }
+    assert names(off, "NetworkPolicy") == set()
+
+    def rest(docs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
+
+    assert rest(on) == rest(off)

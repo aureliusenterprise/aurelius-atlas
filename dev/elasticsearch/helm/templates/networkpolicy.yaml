@@ -1,0 +1,42 @@
+{{/*
+The store's ingress allow (CHT-64, DD-271). The reader set of the system of
+record is exact (ADR 047): the server (its ELASTICSEARCH_HOSTS join) and this
+chart's own metrics puller. 9300 (transport) gets no rule — single-node has
+no peers (DD-006), and denied-by-absence is the honest rendering of that.
+Peers join by pod labels (CHT-70): the server pod's app.kubernetes.io/name is
+the sibling chart's name constant; the puller's name label is fullname-derived
+(the pullerName helper, same chart), so it joins by its own name. An external
+store (--set store elsewhere in the app charts) moves the dials off this
+cluster; the default render pins the default topology. The probe/exec
+healthcheck surface rides the kubelet (CHT-71).
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" (include "atlas-elasticsearch.fullname" .) }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-elasticsearch.labels" . | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            {{- include "atlas-elasticsearch.selectorLabels" . | nindent 12 }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ default "atlas-server" .Values.networkPolicy.peers.server | quote }}
+                            app.kubernetes.io/instance: {{ .Release.Name | quote }}
+                {{- if .Values.telemetry.enabled }}
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ include "atlas-elasticsearch.pullerName" . | quote }}
+                            app.kubernetes.io/instance: {{ .Release.Name | quote }}
+                {{- end }}
+            ports:
+                -   port: {{ int .Values.service.port }}
+                    protocol: TCP
+{{- end }}

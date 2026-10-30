@@ -79,8 +79,10 @@ healthcheck (`/_cluster/health`, green-or-yellow, CA-pinned).
 (`<release>-elasticsearch`, key `elastic-password`) — the chart never renders
 a password. `replicas > 1` fails the render (the quorum switch is a later
 increment). This `helm/` deploys to clusters; the `docker-compose.yaml` stays
-the dev-mode service (they are siblings, not duplicates). Conventions:
-`helm/AGENTS.md`.
+the dev-mode service (they are siblings, not duplicates). 10.6 adds the
+ingress allow (CHT-64): 9200 from the server pods and this release's metrics
+puller only (9300 denied by absence); `networkPolicy.peers.server` renames
+the server's pod-name label. Conventions: `helm/AGENTS.md`.
 
 ```bash
 npx nx run aurelius-atlas-dev-elasticsearch:helm-template

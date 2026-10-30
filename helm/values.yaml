@@ -176,6 +176,21 @@ secrets:
         writerPassword: ""
         readerPassword: ""
 
+# Network segmentation (CHT-60/61, DD-271/DD-272). The umbrella renders the
+# namespace-wide default-deny and the gateway's ingress allows (one per
+# listener the edge resolves); the component charts render the in-cluster
+# allows. Disable here to drop the deny and the edge allows together; each
+# chart's own networkPolicy.enabled gates its share (CHT-72).
+networkPolicy:
+    enabled: true
+    # The namespaces the Gateway data plane runs in (envoy-gateway, the GKE
+    # managed-proxy namespace, …). [] admits all namespaces — the honest
+    # default for a public browser edge whose data-plane placement varies per
+    # cluster (DD-272); the runbook names the pin. The pod network is already
+    # segmented by the component charts' allows, so [] exposes only the
+    # browser-facing listeners.
+    gatewayNamespaces: []
+
 # ─── Component charts ───────────────────────────────────────────────────────
 # Key = chart name; `enabled` gates the subchart, everything else passes
 # through to that chart (its own values.yaml documents its surface).

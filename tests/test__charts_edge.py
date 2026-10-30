@@ -23,6 +23,7 @@ from conftest import (
     helm_render,
     helm_render_fails,
     names,
+    peer_labels,
     pod_spec,
 )
 
@@ -201,6 +202,77 @@ def test__supplied_legacy_token_wins() -> None:
     secret = find(docs, "Secret", "atlas-collector-legacy")
     assert base64.b64decode(secret["data"]["token"]).decode() == "supplied-token"
     assert base64.b64decode(secret["data"]["otel-header"]).decode() == "Authorization=Bearer supplied-token"
+
+
+@pytest.mark.covers(rules=["CHT-61"])
+def test__gateway_admits_browsers_to_every_listener(umbrella_docs: list[dict[str, Any]]) -> None:
+    """One gateway ingress policy per listener, pinning the backend's pod labels (CHT-61).
+
+    The peer is the owning component's pods by labels (name = chart name,
+    instance = release, CHT-70), and with gatewayNamespaces unset the
+    namespaceSelector is {} — all namespaces, the honest default for a
+    public browser edge (DD-272); the component charts' allows segment the
+    pod network, so [] exposes only the browser-facing listeners.
+    """
+    edge_atlas = find(umbrella_docs, "NetworkPolicy", "atlas-edge-atlas")
+    assert edge_atlas["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-webapp")
+    assert edge_atlas["spec"]["policyTypes"] == ["Ingress"]
+    rule = edge_atlas["spec"]["ingress"][0]
+    assert rule["from"] == [{"namespaceSelector": {}}]
+    assert rule["ports"] == [{"port": 8080, "protocol": "TCP"}]
+
+    edge_kc = find(umbrella_docs, "NetworkPolicy", "atlas-edge-keycloak")
+    assert edge_kc["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak")
+    assert edge_kc["spec"]["ingress"][0]["ports"] == [{"port": 8443, "protocol": "TCP"}]
+
+
+@pytest.mark.covers(rules=["CHT-61", "CHT-65", "CHT-69"])
+def test__edge_policies_follow_the_httproute_gates() -> None:
+    """Dashboard/grafana policies render exactly when their host is enabled (CHT-65/69).
+
+    Who the edge exposes is one fact: the HTTPRoute and its NetworkPolicy
+    share a gate, so no allow exists for an unrouted backend — grafana's
+    stock posture is port-forward-only, with no allow at all (CHT-69).
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("global.hosts.dashboard.enabled=true", "global.hosts.grafana.enabled=true"),
+    )
+    policies = names(docs, "NetworkPolicy")
+    assert {"atlas-edge-atlas", "atlas-edge-keycloak", "atlas-edge-dashboard", "atlas-edge-grafana"} <= policies
+    dashboard = find(docs, "NetworkPolicy", "atlas-edge-dashboard")
+    assert dashboard["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-server")
+    assert dashboard["spec"]["ingress"][0]["ports"] == [{"port": 21000, "protocol": "TCP"}]
+    grafana = find(docs, "NetworkPolicy", "atlas-edge-grafana")
+    assert grafana["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-observability", component="grafana")
+    assert grafana["spec"]["ingress"][0]["ports"] == [{"port": 3000, "protocol": "TCP"}]
+
+    # Gateway off: the umbrella's deny-all survives, every edge allow goes
+    # with the routes (the component charts' own allows are not the
+    # gateway's scope — they stay, tested per chart).
+    docs_off = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("global.gateway.enabled=false",),
+    )
+    policies_off = names(docs_off, "NetworkPolicy")
+    assert "atlas-deny-all-ingress" in policies_off
+    assert {n for n in policies_off if n.startswith("atlas-edge-")} == set()
+
+
+@pytest.mark.covers(rules=["CHT-61"])
+def test__gateway_namespaces_pin_admits_only_them() -> None:
+    """networkPolicy.gatewayNamespaces replaces the all-namespaces default (DD-272)."""
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("networkPolicy.gatewayNamespaces[0]=envoy-gateway",),
+    )
+    edge_atlas = find(docs, "NetworkPolicy", "atlas-edge-atlas")
+    assert edge_atlas["spec"]["ingress"][0]["from"] == [
+        {"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "envoy-gateway"}}}
+    ]
 
 
 @pytest.mark.covers(rules=["CHT-32"])

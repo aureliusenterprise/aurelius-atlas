@@ -139,6 +139,14 @@ securityContext:
         drop:
             - ALL
 
+# Network segmentation (CHT-66, DD-271): the ingress allow for this Service —
+# lineage-model only (its DATA2MODEL_URL join). peers.<peer> renames a peer's
+# pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        lineageModel: ""
+
 # The issuer guard is the chart's own (validate.yaml): AUTH_SERVER_URL may
 # arrive as global.issuer.url (the umbrella) or derive from global.domain.
 required: []

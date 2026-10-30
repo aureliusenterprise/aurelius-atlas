@@ -221,4 +221,22 @@ securityContext:
         drop:
             - ALL
 
+# Network segmentation (CHT-67/68/69, DD-271): the collector's per-leg
+# ingress allows, and the Prometheus/Loki/Tempo scrape/export/panel joins.
+# Grafana renders no allow: port-forward is its access path (CHT-69), and the
+# only allow it can get is the umbrella's gateway rule when its host is
+# enabled. peers.<peer> renames a peer's pods (the pullers' names are
+# fullname-derived, the apps' are chart-name constants — CHT-70).
+networkPolicy:
+    enabled: true
+    peers:
+        webapp: ""
+        keycloak: ""
+        server: ""
+        data2model: ""
+        lineageModel: ""
+        validateEntity: ""
+        elasticsearchPuller: ""
+        keycloakPuller: ""
+
 required: []

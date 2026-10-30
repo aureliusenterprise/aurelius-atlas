@@ -162,3 +162,62 @@ def test__stock_install_is_a_self_observing_system(umbrella_docs: list[dict[str,
     keycloak = find(umbrella_docs, "StatefulSet", "atlas-keycloak")
     keycloak_envs = {e["name"] for e in container(keycloak, "keycloak")["env"]}
     assert {"OTEL_EXPORTER_OTLP_ENDPOINT", "QUARKUS_OTEL_EXPORTER_OTLP_TRUST_CERT_CERTS"} <= keycloak_envs
+
+
+@pytest.mark.covers(rules=["CHT-60"])
+def test__namespace_default_deny_renders_once(umbrella_docs: list[dict[str, Any]]) -> None:
+    """One deny-all-ingress policy selects every pod and allows nothing (CHT-60).
+
+    The namespace contract lives here, not in the component charts: a
+    component's networkPolicy.enabled=false must never open the whole
+    namespace by removing a deny it never owned.
+    """
+    deny = find(umbrella_docs, "NetworkPolicy", "atlas-deny-all-ingress")
+    assert deny["spec"]["podSelector"] == {}
+    assert deny["spec"]["policyTypes"] == ["Ingress"]
+    assert "ingress" not in deny["spec"]
+    assert "egress" not in deny["spec"]
+    # Exactly one deny in the render — the component charts never render one.
+    denies = [d for d in umbrella_docs if d["kind"] == "NetworkPolicy" and d["spec"]["podSelector"] == {}]
+    assert len(denies) == 1
+
+
+def _umbrella_scope(policy_names: set[str]) -> set[str]:
+    """The policies the umbrella itself owns: the deny-all and the edge allows."""
+    return {n for n in policy_names if n == "atlas-deny-all-ingress" or n.startswith("atlas-edge-")}
+
+
+@pytest.mark.covers(rules=["CHT-72", "CHT-73"])
+def test__network_policy_off_drops_umbrella_scope(umbrella_docs: list[dict[str, Any]]) -> None:
+    """Umbrella networkPolicy.enabled=false drops exactly its own policies (CHT-72).
+
+    The umbrella's switch owns the deny-all and the edge allows; the
+    component charts keep their own (each chart's switch is tested there —
+    the split is the point, and no switch re-renders anything else).
+    CHT-73: every rendered policy is Ingress-only — egress is unrestricted
+    by design (a cluster-policy decision, not a chart one).
+    """
+    policies = [d for d in umbrella_docs if d["kind"] == "NetworkPolicy"]
+    assert policies, "the stock render must carry policies"
+    for policy in policies:
+        assert policy["spec"]["policyTypes"] == ["Ingress"], policy["metadata"]["name"]
+        assert "egress" not in policy["spec"], policy["metadata"]["name"]
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("networkPolicy.enabled=false",),
+    )
+    after = names(docs, "NetworkPolicy")
+    umbrella_before = _umbrella_scope(names(umbrella_docs, "NetworkPolicy"))
+    assert _umbrella_scope(after) == set()
+    assert after == names(umbrella_docs, "NetworkPolicy") - umbrella_before
+
+    def inventory(render: list[dict[str, Any]]) -> list[str]:
+        return sorted(
+            f"{d['kind']}/{d['metadata']['name']}"
+            for d in render
+            if d["kind"] != "NetworkPolicy" or d["metadata"]["name"] not in umbrella_before
+        )
+
+    assert inventory(docs) == inventory(umbrella_docs)

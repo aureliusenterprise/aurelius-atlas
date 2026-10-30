@@ -114,6 +114,49 @@ app.kubernetes.io/name: {{ include "atlas-observability.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
+{{/*
+A peer's pod name for NetworkPolicy selectors (CHT-70, DD-271). External
+workload pods carry their chart name as app.kubernetes.io/name (a constant),
+but another chart's fullname-derived workloads (its metrics pullers) carry
+<fullname>-suffix — the same release-prefix rule as every sibling join, so
+this helper is the CHT-13 name rule speaking about pods instead of Services.
+An override renames the peer (networkPolicy.peers.<peer>).
+*/}}
+{{- define "atlas-observability.peerName" -}}
+{{- if .override -}}
+{{- .override -}}
+{{- else -}}
+{{- $name := .name -}}
+{{- if hasPrefix (lower .release) (lower $name) -}}
+{{- lower $name -}}
+{{- else -}}
+{{- printf "%s-%s" .release $name -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/* One peer's podSelector block (name = chart-name constant or fullname-
+derived puller name; component only where a chart shares one name, CHT-70). */}}
+{{- define "atlas-observability.peerFrom" -}}
+-   podSelector:
+        matchLabels:
+            app.kubernetes.io/name: {{ .name | quote }}
+            app.kubernetes.io/instance: {{ .release | quote }}
+            {{- with .component }}
+            app.kubernetes.io/component: {{ . | quote }}
+            {{- end }}
+{{- end -}}
+
+{{/* A list of peers, each rendered by peerFrom (concatenated — the caller
+nindents the whole run). */}}
+{{- define "atlas-observability.peerFromList" -}}
+{{- $out := "" -}}
+{{- range $p := . -}}
+{{- $out = printf "%s\n%s" $out (include "atlas-observability.peerFrom" $p) -}}
+{{- end -}}
+{{- trim $out -}}
+{{- end -}}
+
 {{- define "atlas-observability.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 app.kubernetes.io/name: {{ include "atlas-observability.name" . }}

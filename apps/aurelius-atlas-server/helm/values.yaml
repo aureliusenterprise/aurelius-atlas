@@ -147,6 +147,16 @@ affinity: {}
 podAnnotations: {}
 podLabels: {}
 
+# Network segmentation (CHT-65, DD-271): the ingress allow for this Service —
+# the webapp's /api/ proxy and lineage-model, joined by pod labels. The
+# gateway→server rule (the dashboard host) rides the umbrella with the
+# HTTPRoute. peers.<peer> renames a peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        webapp: ""
+        lineageModel: ""
+
 # The image's declared user (DD-257): dhi.io/python-3.14-alpine runs as
 # `nonroot` (uid/gid 65532, verified from the image) and does no privilege
 # drop, so the pod must pin it. fsGroup mirrors the compose volume-init shape.

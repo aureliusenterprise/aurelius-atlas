@@ -44,6 +44,7 @@ def _require_helm() -> None:
 def helm_render(
     chart: Path,
     *,
+    release: str = "atlas",
     sets: tuple[str, ...] = (),
     value_files: tuple[Path, ...] = (),
 ) -> list[dict[str, Any]]:
@@ -51,6 +52,8 @@ def helm_render(
 
     Args:
         chart: The chart directory.
+        release: The release name (``atlas`` by default; the CHT-70 join pins
+            both the prefix-equal and the prefixed spellings).
         sets: ``--set`` arguments, in order.
         value_files: ``-f`` value files, in order.
 
@@ -60,7 +63,7 @@ def helm_render(
     Raises:
         AssertionError: The render failed; the helm stderr rides along.
     """
-    cmd = ["helm", "template", "atlas", str(chart), "--namespace", "atlas"]
+    cmd = ["helm", "template", release, str(chart), "--namespace", "atlas"]
     for values in value_files:
         cmd += ["-f", str(values)]
     for arg in sets:
@@ -123,6 +126,42 @@ def env_value(envs: dict[str, dict[str, Any]], name: str) -> str:
     env = envs[name]
     assert "value" in env, f"{name} is not a literal value: {env}"
     return env["value"]
+
+
+def peer_labels(name: str, instance: str = "atlas", component: str | None = None) -> dict[str, str]:
+    """The matchLabels a NetworkPolicy peer selector carries for a workload's pods.
+
+    The CHT-70 join: a pod's name label is its chart-name constant (or,
+    for fullname-derived workloads like the pullers, the fullname-qualified
+    name) and its instance label is the release.
+    """
+    labels = {"app.kubernetes.io/name": name, "app.kubernetes.io/instance": instance}
+    if component:
+        labels["app.kubernetes.io/component"] = component
+    return labels
+
+
+def policy_peers_by_port(docs: list[dict[str, Any]], name: str) -> dict[int, set[str]]:
+    """A NetworkPolicy's pod-peer name labels per port (namespace peers omitted).
+
+    Args:
+        docs: A render's documents.
+        name: The NetworkPolicy's metadata name.
+
+    Returns:
+        Port to the set of peer pod name labels allowed to it.
+    """
+    doc = find(docs, "NetworkPolicy", name)
+    out: dict[int, set[str]] = {}
+    for rule in doc["spec"].get("ingress", []):
+        peers = {
+            e["podSelector"]["matchLabels"]["app.kubernetes.io/name"]
+            for e in rule.get("from", [])
+            if "podSelector" in e
+        }
+        for port in rule.get("ports", []):
+            out[port["port"]] = peers
+    return out
 
 
 @pytest.fixture(scope="session", autouse=True)
