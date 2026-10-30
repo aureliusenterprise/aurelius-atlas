@@ -8217,7 +8217,7 @@ core library, the server and the webapp's nginx edge:</p>
 <tbody>
 <tr>
 <td>ENS-11</td>
-<td>A write makes its documents visible to the next read: the bulk and every single-document write a search reads (entity restore, journal write and delete, linked restore, audit append) carry <code>refresh="wait_for"</code>, and no read path calls <code>indices.refresh</code>. Reservations need none — they are read by <code>mget</code>, real time as ENS-04 says of entities. A write's response is sent after the refresh, so a reader never sees a partially visible write (ENS-07's "a reader may see part of a write while it is being written" is unchanged).</td>
+<td>A write makes its documents visible to the next read: the bulk and every single-document write a search reads (entity restore, linked restore, audit append) carry <code>refresh="wait_for"</code>, and no read path calls <code>indices.refresh</code>. Reservations need none — they are read by <code>mget</code>, real time as ENS-04 says of entities; nor does the journal, whose entries recovery reads by id, in real time (DD-247). A write's response is sent after the refresh, so a reader never sees a partially visible write (ENS-07's "a reader may see part of a write while it is being written" is unchanged).</td>
 </tr>
 <tr>
 <td>SRV-09</td>
