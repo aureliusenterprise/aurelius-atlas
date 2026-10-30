@@ -205,6 +205,11 @@
     "aliases": []
   },
   {
+    "version": "dependabot-github_actions-dot-github-workflows-actions-cache-6",
+    "title": "dependabot-github_actions-dot-github-workflows-actions-cache-6",
+    "aliases": []
+  },
+  {
     "version": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
     "title": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
     "aliases": []
