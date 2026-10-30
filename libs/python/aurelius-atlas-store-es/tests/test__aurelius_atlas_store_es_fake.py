@@ -239,6 +239,30 @@ async def test__bool_queries_exclude_require_any_and_test_presence() -> None:
     assert await found({"term": {"nested.x.q": "z"}}) == []
 
 
+async def test__regexp_queries_match_whole_values_or_words_of_a_text_sub_field() -> None:
+    """``regexp`` on a field: a string value whole, in case unless ``case_insensitive``; on ``.text``: a word."""
+    fake = FakeClient()
+    documents = {
+        "a": {"search": {"keyword.t.name": "Sales fact", "long.t.n": 1}},
+        "b": {"search": {"keyword.t.name": ["x-ray/1", "beta"]}},
+    }
+    for document_id, document in documents.items():
+        await fake.index(index="docs", id=document_id, document=document)
+
+    async def found(field: str, value: str, **options: object) -> list[str]:
+        query = {"regexp": {f"search.{field}": {"value": value, "flags": "NONE", **options}}}
+        return sorted(hit["_id"] for hit in (await fake.search(index="docs", query=query))["hits"]["hits"])
+
+    assert await found("keyword.t.name", "Sales.*") == ["a"]
+    assert await found("keyword.t.name", "sales.*") == []
+    assert await found("keyword.t.name", "sales.*", case_insensitive=True) == ["a"]
+    assert await found("keyword.t.name", "x-ray\\/.*") == ["b"]
+    assert await found("keyword.t.name.text", "FACT", case_insensitive=True) == ["a"]
+    assert await found("keyword.t.name.text", "ray") == ["b"]
+    assert await found("keyword.t.name.text", "Ray") == []
+    assert await found("long.t.n", "1") == []
+
+
 async def test__search_sorts_with_options_and_pages_from_an_offset() -> None:
     """Missing values last either way; arrays by least ascending, largest descending; ``from_`` skips."""
     fake = FakeClient()

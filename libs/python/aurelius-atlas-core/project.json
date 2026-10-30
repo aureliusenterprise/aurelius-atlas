@@ -2,6 +2,7 @@
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": [
         "aurelius-atlas-dev-elasticsearch",
+        "aurelius-atlas-dsl",
         "aurelius-atlas-store-es",
         "aurelius-atlas-typesystem"
     ],

@@ -178,6 +178,21 @@ class AtlasErrorCode(Enum):
         "ATLAS-400-00-059",
         "Invalid DSL query: {0} | Reason: {1}. Please refer to Atlas DSL grammar for more information",
     )
+    INVALID_DSL_UNKNOWN_TYPE = (400, "ATLAS-400-00-05B", "DSL Semantic Error - {0} type not found")
+    INVALID_DSL_UNKNOWN_CLASSIFICATION = (400, "ATLAS-400-00-05C", "DSL Semantic Error - {0} classification not found")
+    INVALID_DSL_ORDERBY = (400, "ATLAS-400-00-05E", "DSL Semantic Error - OrderBy attribute {0} is non-primitive")
+    INVALID_DSL_QUALIFIED_NAME = (400, "ATLAS-400-00-064", "DSL Semantic Error - Qualified name for {0} failed!")
+    INVALID_DSL_DUPLICATE_ALIAS = (
+        400,
+        "ATLAS-400-00-066",
+        "DSL Semantic Error - Duplicate alias found: '{0}' for type '{1}' already present.",
+    )
+    INVALID_DSL_INVALID_DATE = (400, "ATLAS-400-00-067", "DSL Semantic Error - Date format: {0}.")
+    INVALID_DSL_HAS_PROPERTY = (
+        400,
+        "ATLAS-400-00-068",
+        "DSL Semantic Error - Property needs to be a primitive type: {0}",
+    )
     INVALID_ENTITY_FOR_CLASSIFICATION = (
         400,
         "ATLAS-400-00-055",

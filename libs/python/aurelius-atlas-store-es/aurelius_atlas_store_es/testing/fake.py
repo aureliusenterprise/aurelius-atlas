@@ -278,10 +278,10 @@ def _read(body: bytes) -> dict[str, Any]:
     return json.loads(body, parse_float=Decimal)
 
 
-def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # noqa: PLR0911 - one per kind
+def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
     """Whether ``source`` matches a query: ``match_all``, ``match_none``, ``bool`` (``filter``, ``must``,
     ``must_not``, ``should``), ``simple_query_string``, and single-field ``term``, ``terms``, ``range``,
-    ``prefix``, ``wildcard`` and ``exists``.
+    ``prefix``, ``wildcard``, ``regexp`` (Python's, whole values or a ``.text`` sub-field's words) and ``exists``.
     """  # noqa: D205 - one sentence
     if query is None or "match_all" in query:
         return True
@@ -301,6 +301,13 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # n
         return _held(source, query["exists"]["field"]) != []
     ((kind, condition),) = query.items()
     ((field, operand),) = condition.items()
+    return _field_matches(source, kind, field, operand)
+
+
+def _field_matches(source: dict[str, Any], kind: str, field: str, operand: Any) -> bool:  # noqa: ANN401 - a query operand
+    """A single-field query: ``term``, ``terms``, ``range``, ``prefix``, ``wildcard`` or ``regexp``."""
+    if kind == "regexp":
+        return _regexp(source, field, operand)
     held = _held(source, field)
     if kind == "range":
         return any(_in_range(value, operand) for value in held)
@@ -313,6 +320,18 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:  # n
         pattern = _wildcard(options["value"], ignore_case=bool(options.get("case_insensitive")))
         return any(isinstance(value, str) and pattern.fullmatch(value) is not None for value in held)
     return operand in held
+
+
+def _regexp(source: dict[str, Any], field: str, options: dict[str, Any]) -> bool:
+    """A ``regexp``: a value, or for a ``.text`` sub-field a lower-cased word of one, matching whole."""
+    pattern = re.compile(options["value"], re.IGNORECASE if options.get("case_insensitive") else 0)
+    if field.endswith(".text"):
+        values = [
+            word.lower() for value in _held(source, field.removesuffix(".text")) for word in _WORD.findall(str(value))
+        ]
+    else:
+        values = [value for value in _held(source, field) if isinstance(value, str)]
+    return any(pattern.fullmatch(value) is not None for value in values)
 
 
 def _score(source: dict[str, Any], query: dict[str, Any] | None) -> float:

@@ -38,6 +38,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   `classification_search_processor.py` adds the classification criterion (DD-090); `free_text.py` holds the
   free-text fields, their weights and the in-memory matching (DD-092); `search_aggregator.py` (facets) and
   `suggestions_provider.py` (suggestions) serve quick search (DD-093, DD-094)
+- `aurelius_atlas_core/dsl_query_executor.py` — `DslQueryExecutor`: a DSL query parsed
+  (`aurelius-atlas-dsl`), composed by `dsl_query_composer.py` (`DslQueryComposer`, replacing `DSLVisitor`
+  and `GremlinQueryComposer`) into a `SearchQuery`, and searched (DD-242); `identifier_helper.py` unquotes
+  names and reads `like` patterns
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task
@@ -65,7 +69,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 ## Wiring Checklist
 
 - Registered in root `pyproject.toml` (workspace members, dev group, `uv.sources`); depends on
-  `aurelius-atlas-model`, `aurelius-atlas-typesystem` and `aurelius-atlas-store-es`.
+  `aurelius-atlas-model`, `aurelius-atlas-typesystem`, `aurelius-atlas-store-es` and `aurelius-atlas-dsl`.
 - `project.json` `implicitDependencies` on `aurelius-atlas-dev-elasticsearch`, so `nx e2e` starts it.
 - `sonar-project.properties` and `.env.enc` (`SONAR_TOKEN`) for the CI Sonar job.
 - `docs/api-reference/libs/python/aurelius-atlas-core.md` and its `mkdocs.yaml` nav entry.
