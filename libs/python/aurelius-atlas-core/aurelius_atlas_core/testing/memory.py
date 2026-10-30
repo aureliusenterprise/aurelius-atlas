@@ -224,6 +224,11 @@ class MemoryEntityDocuments:
         """Drop the entry."""
         self.journal_entries.pop(write_id, None)
 
+    async def get_journal(self, write_id: str) -> JournalEntry | None:
+        """The entry of the write, None when there is none."""
+        source = self.journal_entries.get(write_id)
+        return None if source is None else JournalEntry.model_validate(source)
+
     async def journal(self) -> list[JournalEntry]:
         """Every entry."""
         return [JournalEntry.model_validate(source) for source in self.journal_entries.values()]
