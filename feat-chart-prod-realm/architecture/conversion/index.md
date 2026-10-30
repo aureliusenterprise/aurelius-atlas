@@ -119,7 +119,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 10.3c | Webapp backend TLS | The webapp's listener serves TLS behind the gateway (DD-270): chart Certificate + leaf mount, `listen 8080 ssl`, the webapp BackendTLSPolicy, HTTPS probes; supersedes DD-242's plaintext-backend clause (CHT-23/25/30 amended) | \#161 | in review |
 | 10.5 | Cluster validation | minikube install script and the smoke suite that proves the install end to end (CHT-50..59) | – | planned |
 | 10.6 | Network segmentation | Namespace default-deny at the umbrella plus per-chart additive ingress allows along the call graph: the gateway browser edges, the server/aux/store/Keycloak-postgres joins, the collector's per-leg and backend peers; the gateway-source knob; probe ports rule-free (CHT-60..73, DD-271/272; pentest finding H2) | \#176 | in review |
-| 10.7 | Production identity realm | The hardened `aurelius-atlas` realm replaces `master` on clusters: `global.realm` joins the values contract, a minimally-authored prod asset (ROPC off, PKCE, sslRequired all, no seeded users, chart-substituted browser hosts), `master` stays the dev/e2e shape and a supported escape hatch (CHT-74..80, DD-273/274; pentest finding H3) | – | planned |
+| 10.7 | Production identity realm | The hardened `aurelius-atlas` realm replaces `master` on clusters: `global.realm` joins the values contract, a minimally-authored prod asset (ROPC off, PKCE, sslRequired all, no seeded users, chart-substituted browser hosts), `master` stays the dev/e2e shape and a supported escape hatch (CHT-74..80, DD-273/274; pentest finding H3) | \#178 | in review |
 
 ## After phase 0
 
