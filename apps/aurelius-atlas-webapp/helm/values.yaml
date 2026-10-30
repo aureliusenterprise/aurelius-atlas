@@ -21,6 +21,9 @@ global:
     # The umbrella's dnsResolver: nginx's per-request upstream resolution
     # (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER).
     dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm config.json's keycloak.realm
+    # carries. "" takes the chart default (aurelius-atlas).
+    realm: ""
     trust:
         # The issuer whose root this nginx trusts as a TLS client (DD-259).
         # caSecretName "" defaults to "<issuerRef.name>-ca", the umbrella's
@@ -91,7 +94,6 @@ config:
     appVersion: ""
     keycloak:
         clientId: aurelius
-        realm: master
         url: ""
     otelExporterUrl: /otel/v1/traces
     otelMetricsExporterUrl: /otel/v1/metrics

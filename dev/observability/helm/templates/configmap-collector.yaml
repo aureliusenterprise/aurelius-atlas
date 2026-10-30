@@ -9,7 +9,7 @@ contract suite; the bearer token is NOT here (R5) — bearertokenauth reads it
 from the env the deployment fills from <release>-collector-legacy (CHT-35).
 */}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
-{{- $issuer := printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) .Values.realm -}}
+{{- $issuer := printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) (include "atlas-observability.realm" .) -}}
 {{- $cert := printf "%s/otel-collector.pem" (trimSuffix "/" .Values.tls.mountPath) -}}
 {{- $key := printf "%s/otel-collector-key.pem" (trimSuffix "/" .Values.tls.mountPath) -}}
 {{- $ca := printf "%s/ca.pem" (trimSuffix "/" .Values.tls.mountPath) -}}

@@ -71,6 +71,12 @@ that prefixes the chart name yields the bare chart name.
 {{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
 {{- end -}}
 
+{{/* The Keycloak realm the OTLP mint URL names (CHT-74): global.realm, whose
+chart default is the production realm. */}}
+{{- define "atlas-lineage-model.realm" -}}
+{{- default "aurelius-atlas" .Values.global.realm -}}
+{{- end -}}
+
 {{- define "atlas-lineage-model.issuerUrl" -}}
 {{- $issuer := trimSuffix "/" (default "" .Values.global.issuer.url) -}}
 {{- if not $issuer -}}

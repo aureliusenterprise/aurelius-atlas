@@ -74,7 +74,7 @@ spec:
                           {{- $collector := include "atlas-server.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.telemetry.service) }}
                           value: {{ printf "https://%s:%d" $collector (int .Values.telemetry.port) | quote }}
                         - name: AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL
-                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-server.issuerUrl" .) .Values.auth.realm | quote }}
+                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-server.issuerUrl" .) (include "atlas-server.realm" .) | quote }}
                         - name: AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET
                           valueFrom:
                               secretKeyRef:

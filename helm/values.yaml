@@ -53,6 +53,16 @@ global:
         # "" defaults to https://keycloak.<domain> (the keycloak host below).
         url: ""
 
+    # The Keycloak realm the whole system authenticates against (CHT-74):
+    # every component's issuer URL carries /realms/<realm>, and the Keycloak
+    # chart imports files/<realm>.json from its chart directory. The default
+    # is the hardened production realm; `master` is the development escape
+    # hatch (demo users, localhost redirect URIs — DD-273, never on a
+    # cluster). WARNING (runbook): Keycloak pins its issuer at first boot —
+    # the realm name is part of the issuer, so set it before the first
+    # install; renaming afterwards needs a realm rebuild.
+    realm: aurelius-atlas
+
     trust:
         # Build the private trust root in-cluster: a self-signed bootstrap
         # Issuer signs one CA Certificate, and a CA-type Issuer of that CA

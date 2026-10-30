@@ -14,6 +14,8 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 - `helm/` — the `atlas-keycloak` chart (its own section below)
 - `import/master.json` — the dev realm; the **single authored source** the
   chart's `files/master.json` byte-copies (a chart-contract test fails on drift — re-run the copy after editing)
+- `helm/files/aurelius-atlas.json` — the cluster realm asset (10.7): minimally
+  authored, hardened, no users (its own section below — not a master export)
 
 ## Wiring Checklist
 
@@ -134,12 +136,21 @@ Postgres (`postgres.*` values; `flavor=external` points at an existing
 database). Landed in 10.2 (CHT-16/17): the prod-mode StatefulSet
 (`kc.sh start --import-realm` — never `start-dev`) running as the image's uid
 (65532, which owns `/opt/keycloak/lib/quarkus` where the start re-augments —
-a foreign uid cannot write it, DD-257), the realm ConfigMap (the
-`files/master.json` chart asset — a byte-copy of `import/master.json`, the
-drift guard is a chart-contract test, DD-256; the `${DEV_USER_*}` /
-`${OTEL_INGEST_CLIENT_SECRET}` placeholders resolve inside Keycloak via
-`-Dkeycloak.migration.replace-placeholders=true` fed from the generated
-Secrets, never by Helm substitution), the RSS headless Service JGroups
+a foreign uid cannot write it, DD-257), the realm ConfigMap (10.7's two-asset
+model, DD-273: `global.realm` — or the chart's `realm.name` override — selects
+`files/<realm>.json`; the default `aurelius-atlas` is the hardened cluster
+realm (CHT-75/76: sslRequired all, brute force, no self-service, password
+policy, ROPC off + PKCE S256 on the `aurelius` client, the seven `otel-*`
+accounts, no seeded users), and `realm.name: master` loads `master.json`
+byte-for-byte as the dev escape hatch (its byte-copy of `import/master.json`
+stays DD-256-guarded; a realm with no asset fails the render, CHT-78). The
+asset's `__ATLAS_HOST__`/`__DASHBOARD_HOST__` tokens are Helm-replaced from
+`global.hosts`/`global.domain` at render (CHT-77 — hosts are topology, unlike
+the `${DEV_USER_*}` / `${OTEL_INGEST_CLIENT_SECRET}` credential placeholders,
+which stay verbatim for Keycloak's own
+`-Dkeycloak.migration.replace-placeholders=true` resolver); the `DEV_USER_*`
+env and the umbrella's users Secret render for `master` only (CHT-80)), the
+RSS headless Service JGroups
 discovers through, HTTPS management-port probes (prod mode puts TLS there
 too — DD-260), and the bundled Postgres section
 (the compose's cert-copy boot: mktemp + `install -m 600`, `ssl=on` flags, the

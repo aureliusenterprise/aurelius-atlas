@@ -42,7 +42,12 @@ empty defaults, so it renders standalone; through the umbrella, Helm's
 source of truth. Deep access into a missing value map panics the Go template
 (nil pointer) — a chart that reads `global.x.y` must ship the whole shape.
 The contract: `namespace`, `labels`, `image{registry,namespace,tag,pullSecrets}`,
-`storageClass`, `domain`, `issuer.url`, `dnsResolver`, and
+`storageClass`, `domain`, `realm` (CHT-74: the Keycloak realm every issuer URL
+names and the Keycloak chart imports `files/<realm>.json` from — default
+`aurelius-atlas`, first-boot-immutable like the issuer; `master` is the dev
+escape hatch, DD-273; the KC chart additionally declares `hosts.{atlas,
+dashboard}.host` for the realm asset's browser-host substitution, CHT-77),
+`issuer.url`, `dnsResolver`, and
 `trust.issuerRef` (`{name, kind}` — the issuer every component `Certificate`
 signs against; with `trust.createIssuer` on (the default) the umbrella
 renders the chain itself — bootstrap self-signed `Issuer` → `isCA` root

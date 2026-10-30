@@ -254,7 +254,7 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     assert receiver["endpoint"] == "https://atlas-elasticsearch:9200"
     assert config["exporters"]["otlp"]["endpoint"] == "https://atlas-observability:4317"
     oauth = config["extensions"]["oauth2client"]
-    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
+    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
     assert oauth["client_id"] == "otel-elasticsearch"
     assert oauth["client_secret"] == "${env:OTEL_INGEST_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never material
 

@@ -156,6 +156,44 @@ https://<host> — validate.yaml guards it. */}}
 {{- default (printf "%s-keycloak-users" .Release.Name) .Values.realm.usersSecretName -}}
 {{- end -}}
 
+{{/* The realm this chart imports (CHT-74): realm.name, then global.realm,
+then the chart default (the hardened production realm). The asset
+files/<name>.json must exist or the realm ConfigMap's render fails
+(CHT-78). */}}
+{{- define "atlas-keycloak.realmName" -}}
+{{- $name := default .Values.global.realm .Values.realm.name -}}
+{{- default "aurelius-atlas" $name -}}
+{{- end -}}
+
+{{/*
+The browser hosts the realm asset's redirect URIs / web origins substitute
+for (CHT-77). They mirror the umbrella's host rule (its
+aurelius-atlas.atlasHost/dashboardHost) so a standalone render derives the
+same hosts: an explicit host wins, else <name>.<domain>; the last-resort
+<release>.localhost exists only so the bare helm lint/template renders
+succeed — the realm ConfigMap itself fails render when no domain, issuer
+URL, or host is set anywhere and the asset needs one.
+*/}}
+{{- define "atlas-keycloak.atlasHost" -}}
+{{- if .Values.global.hosts.atlas.host -}}
+{{- .Values.global.hosts.atlas.host -}}
+{{- else if .Values.global.domain -}}
+{{- printf "atlas.%s" .Values.global.domain -}}
+{{- else -}}
+{{- printf "%s.localhost" .Release.Name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "atlas-keycloak.dashboardHost" -}}
+{{- if .Values.global.hosts.dashboard.host -}}
+{{- .Values.global.hosts.dashboard.host -}}
+{{- else if .Values.global.domain -}}
+{{- printf "dashboard.%s" .Values.global.domain -}}
+{{- else -}}
+{{- printf "%s.localhost" .Release.Name -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "atlas-keycloak.otelClientsSecretName" -}}
 {{- default (printf "%s-otel-clients" .Release.Name) .Values.realm.otelClientsSecretName -}}
 {{- end -}}

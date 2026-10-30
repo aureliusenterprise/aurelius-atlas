@@ -75,7 +75,7 @@ spec:
                       - --retry-connrefused
                       - --retry-delay
                       - "5"
-                      - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-elasticsearch.issuerUrl" .) .Values.telemetry.realm) | quote }}
+                      - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-elasticsearch.issuerUrl" .) (include "atlas-elasticsearch.realm" .)) | quote }}
                   securityContext:
                       runAsNonRoot: true
                       runAsUser: 65532

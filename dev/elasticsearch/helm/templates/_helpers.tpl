@@ -66,6 +66,12 @@ DD-265): the public name, split-horizon-resolved in-cluster. */}}
 {{- trimSuffix "/" $url -}}
 {{- end -}}
 
+{{/* The Keycloak realm the puller's ingest JWT mints against (CHT-74):
+global.realm, whose chart default is the production realm. */}}
+{{- define "atlas-elasticsearch.realm" -}}
+{{- default "aurelius-atlas" .Values.global.realm -}}
+{{- end -}}
+
 {{/* The metrics puller (CHT-43, DD-266): its name, and its own label pair —
 the store's selectorLabels would also match the puller's pods, so the
 puller carries its own name/instance pair (the labelsPG pattern). */}}

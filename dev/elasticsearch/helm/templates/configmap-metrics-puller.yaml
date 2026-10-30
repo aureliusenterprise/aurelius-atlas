@@ -57,7 +57,7 @@ data:
             # port in-cluster — the same issuer the collector validates
             # against, so one world in dev and cluster alike.
             oauth2client:
-                token_url: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-elasticsearch.issuerUrl" .) .Values.telemetry.realm | quote }}
+                token_url: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-elasticsearch.issuerUrl" .) (include "atlas-elasticsearch.realm" .) | quote }}
                 client_id: otel-elasticsearch
                 client_secret: ${env:OTEL_INGEST_CLIENT_SECRET}
                 tls:

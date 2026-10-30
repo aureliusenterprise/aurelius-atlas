@@ -114,7 +114,7 @@ def test__collector_pipeline_is_the_dev_shape(obs_docs: list[dict[str, Any]]) ->
     # the health_check extension pinned off loopback (CHT-33).
     (provider,) = rendered["extensions"]["oidc"]["providers"]
     assert provider == {
-        "issuer_url": "https://keycloak.atlas.test/realms/master",
+        "issuer_url": "https://keycloak.atlas.test/realms/aurelius-atlas",
         "audience": "otel-collector",
         "issuer_ca_path": "/certs/ca.pem",
     }
@@ -215,7 +215,7 @@ def test__issuer_wait_polls_the_public_well_known(obs_docs: list[dict[str, Any]]
     assert "--insecure" in command  # a boot gate, not a trust decision
     assert "--retry" in command
     assert "--retry-connrefused" in command
-    assert command[-1] == "https://keycloak.atlas.test/realms/master/.well-known/openid-configuration"
+    assert command[-1] == "https://keycloak.atlas.test/realms/aurelius-atlas/.well-known/openid-configuration"
 
 
 @pytest.mark.covers(rules=["CHT-37"])

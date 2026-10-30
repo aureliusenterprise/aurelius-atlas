@@ -75,7 +75,7 @@ def test__telemetry_join_names_collector_and_issuer() -> None:
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT") == "https://atlas-observability:4319"
     assert (
         env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"
+        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     client_secret = envs["AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert client_secret == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}

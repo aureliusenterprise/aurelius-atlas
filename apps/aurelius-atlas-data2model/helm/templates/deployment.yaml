@@ -62,7 +62,7 @@ spec:
                         - name: {{ .Values.componentEnvPrefix }}OTEL_ENDPOINT
                           value: {{ printf "https://%s:%d" $collector (int .Values.telemetry.port) | quote }}
                         - name: {{ .Values.componentEnvPrefix }}OTEL_TOKEN_URL
-                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-data2model.issuerUrl" .) .Values.telemetry.realm | quote }}
+                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-data2model.issuerUrl" .) (include "atlas-data2model.realm" .) | quote }}
                         - name: {{ .Values.componentEnvPrefix }}OTEL_CLIENT_SECRET
                           valueFrom:
                               secretKeyRef:
