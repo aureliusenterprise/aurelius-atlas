@@ -55,11 +55,6 @@
     "aliases": []
   },
   {
-    "version": "fix-server-e2e-client-timeout",
-    "title": "fix-server-e2e-client-timeout",
-    "aliases": []
-  },
-  {
     "version": "fix-journal-refresh",
     "title": "fix-journal-refresh",
     "aliases": []
