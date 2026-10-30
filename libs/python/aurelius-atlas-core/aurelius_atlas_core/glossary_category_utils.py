@@ -1,4 +1,4 @@
-"""``GlossaryCategoryUtils`` with ``GlossaryUtils``: a category's relationships and its children's names (GCT-02).
+"""``GlossaryCategoryUtils``: a category's relationships and its children's names (GCT-02).
 
 A category's anchor, parent, children and terms are relationships the service writes apart from the category's
 entity, as Atlas's ``processCategoryRelations`` writes them; a change of anchor or parent renames the category and,
@@ -6,59 +6,32 @@ down the hierarchy, its children, which are answered as the impacted categories 
 """
 
 from collections.abc import Iterable
-from enum import Enum
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.glossary import (
-    AtlasGlossary,
     AtlasGlossaryCategory,
     AtlasRelatedCategoryHeader,
     AtlasRelatedTermHeader,
 )
-from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelationship
 
-from aurelius_atlas_core.delete_type import DeleteType
-from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.glossary_dto import DataAccess
-from aurelius_atlas_core.relationship_store import RelationshipStore
+from aurelius_atlas_core.glossary_utils import (
+    GlossaryUtils,
+    RelationshipOperation,
+    category_skeleton,
+    glossary_skeleton,
+    relationship,
+    term_relation_attributes,
+)
 
 CATEGORY_ANCHOR = "AtlasGlossaryCategoryAnchor"
 CATEGORY_HIERARCHY = "AtlasGlossaryCategoryHierarchyLink"
 TERM_CATEGORIZATION = "AtlasGlossaryTermCategorization"
 
-
-class RelationshipOperation(Enum):
-    """``GlossaryUtils.RelationshipOperation``."""
-
-    CREATE = "CREATE"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
-
-
-def glossary_skeleton(guid: str | None) -> AtlasGlossary:
-    """``getGlossarySkeleton``."""
-    glossary = AtlasGlossary()
-    glossary.guid = guid or ""
-    return glossary
-
-
-def category_skeleton(guid: str | None) -> AtlasGlossaryCategory:
-    """``getAtlasGlossaryCategorySkeleton``."""
-    category = AtlasGlossaryCategory()
-    category.guid = guid or ""
-    return category
-
-
 type Impacted = dict[str, AtlasGlossaryCategory]
 
 
-class GlossaryCategoryUtils:
+class GlossaryCategoryUtils(GlossaryUtils):
     """The category relationships of ``store``, written through ``data_access`` and its relationship store."""
-
-    def __init__(self, store: EntityStore, data_access: DataAccess, *, user: str | None = None) -> None:
-        self._store = store
-        self._data_access = data_access
-        self._relationships = RelationshipStore(store, user=user)
 
     async def process_category_relations(
         self, stored: AtlasGlossaryCategory, updated: AtlasGlossaryCategory, op: RelationshipOperation
@@ -120,9 +93,9 @@ class GlossaryCategoryUtils:
                 await self._parent_removed(stored, updated, existing, impacted)
             elif new is not None and existing is not None:
                 if existing.category_guid == new.category_guid:
-                    relationship = await self._relationships.get_by_id(str(existing.relation_guid))
-                    relationship.set_attribute("description", new.description)
-                    await self._relationships.update(relationship)
+                    found = await self._relationships.get_by_id(str(existing.relation_guid))
+                    found.set_attribute("description", new.description)
+                    await self._relationships.update(found)
                 else:
                     await self._delete(existing.relation_guid)
                     await self._create(CATEGORY_HIERARCHY, new.category_guid, stored.guid, description=new.description)
@@ -177,9 +150,9 @@ class GlossaryCategoryUtils:
         await self._update_children(stored, added, impacted, parent_removed=False)
         for guid, header in new.items():
             if header.relation_guid is not None and _key(header) != _key(existing.get(guid)):
-                relationship = await self._relationships.get_by_id(header.relation_guid)
-                relationship.set_attribute("description", header.description)
-                await self._relationships.update(relationship)
+                found = await self._relationships.get_by_id(header.relation_guid)
+                found.set_attribute("description", header.description)
+                await self._relationships.update(found)
         await self._delete_all(header.relation_guid for guid, header in existing.items() if guid not in new)
 
     async def _link_children(
@@ -240,9 +213,9 @@ class GlossaryCategoryUtils:
         await self._categorize(stored, [header for guid, header in new.items() if guid not in existing])
         for guid, header in new.items():
             if header.relation_guid is not None and header.key() != existing[guid].key():
-                relationship = await self._relationships.get_by_id(header.relation_guid)
-                _term_relation_attributes(relationship, header)
-                await self._relationships.update(relationship)
+                found = await self._relationships.get_by_id(header.relation_guid)
+                term_relation_attributes(found, header)
+                await self._relationships.update(found)
         await self._delete_all(header.relation_guid for guid, header in existing.items() if guid not in new)
 
     async def _categorize(self, stored: AtlasGlossaryCategory, terms: Iterable[AtlasRelatedTermHeader]) -> None:
@@ -253,48 +226,17 @@ class GlossaryCategoryUtils:
                 raise AtlasError(AtlasErrorCode.MISSING_TERM_ID_FOR_CATEGORIZATION)
             if term.key() in listed:
                 continue
-            relationship = _relationship(TERM_CATEGORIZATION, stored.guid, term.term_guid)
-            _term_relation_attributes(relationship, term)
-            await self._get_or_create(relationship)
+            created = relationship(TERM_CATEGORIZATION, stored.guid, term.term_guid)
+            term_relation_attributes(created, term)
+            await self._get_or_create(created)
 
     async def _create(
         self, type_name: str, end1: str | None, end2: str | None, *, description: str | None = None
     ) -> None:
-        relationship = _relationship(type_name, end1, end2)
+        created = relationship(type_name, end1, end2)
         if type_name == CATEGORY_HIERARCHY:
-            relationship.set_attribute("description", description)
-        await self._get_or_create(relationship)
-
-    async def _get_or_create(self, relationship: AtlasRelationship) -> None:
-        """``getOrCreate``: a relationship of the type between the ends exists already, or is created."""
-        try:
-            await self._relationships.create(relationship)
-        except AtlasError as error:
-            if error.code is not AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS:
-                raise
-
-    async def _delete(self, guid: str | None) -> None:
-        """``deleteById(guid, true)``: the relationship removed for good."""
-        if guid:
-            await self._relationships.delete_by_id(guid, DeleteType.HARD)
-
-    async def _delete_all(self, guids: Iterable[str | None]) -> None:
-        for guid in list(guids):
-            await self._delete(guid)
-
-
-def _relationship(type_name: str, end1: str | None, end2: str | None) -> AtlasRelationship:
-    return AtlasRelationship(
-        type_name=type_name, end1=AtlasObjectId(guid=end1), end2=AtlasObjectId(guid=end2), attributes={}
-    )
-
-
-def _term_relation_attributes(relationship: AtlasRelationship, header: AtlasRelatedTermHeader) -> None:
-    """``updateRelationshipAttributes`` of a term relation."""
-    for name in ("expression", "description", "steward", "source"):
-        relationship.set_attribute(name, getattr(header, name))
-    if header.status is not None:
-        relationship.set_attribute("status", header.status.value)
+            created.set_attribute("description", description)
+        await self._get_or_create(created)
 
 
 def _key(header: AtlasRelatedCategoryHeader | None) -> tuple[object, ...] | None:

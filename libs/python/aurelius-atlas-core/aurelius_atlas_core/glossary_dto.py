@@ -1,7 +1,8 @@
-"""``DataAccess`` with ``AtlasGlossaryDTO`` and ``AtlasGlossaryCategoryDTO``: glossary objects as entities (DD-246).
+"""``DataAccess`` with the glossary, category and term DTOs: glossary objects as entities (DD-246).
 
 A glossary object is saved as its entity, created or updated, and loaded back from the entity and its relationship
-attributes (GLS-01, GCT-01, GLS-06). Relationships between glossary objects are the glossary utilities' to write.
+attributes (GLS-01, GCT-01, GLS-06, GTM-01). Relationships between glossary objects are the glossary utilities' to
+write.
 """
 
 from collections.abc import Iterable, Sequence
@@ -12,9 +13,12 @@ from aurelius_atlas_model.glossary import (
     AtlasGlossary,
     AtlasGlossaryCategory,
     AtlasGlossaryHeader,
+    AtlasGlossaryTerm,
     AtlasRelatedCategoryHeader,
     AtlasRelatedTermHeader,
+    AtlasTermCategorizationHeader,
     AtlasTermRelationshipStatus,
+    Relation,
 )
 from aurelius_atlas_model.instance import (
     AtlasEntitiesWithExtInfo,
@@ -32,8 +36,9 @@ from aurelius_atlas_core.entity_writer import EntityWriter
 
 ATLAS_GLOSSARY_TYPENAME = "AtlasGlossary"
 ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory"
+ATLAS_GLOSSARY_TERM_TYPENAME = "AtlasGlossaryTerm"
 
-type GlossaryObject = AtlasGlossary | AtlasGlossaryCategory
+type GlossaryObject = AtlasGlossary | AtlasGlossaryCategory | AtlasGlossaryTerm
 
 
 def glossary_from(entity: AtlasEntity) -> AtlasGlossary:
@@ -82,6 +87,47 @@ def category_from(entity: AtlasEntity) -> AtlasGlossaryCategory:
     return category
 
 
+def term_from(entity: AtlasEntity) -> AtlasGlossaryTerm:
+    """``AtlasGlossaryTermDTO.from``: the attributes, anchor, categories, active assigned entities and relations."""
+    term = AtlasGlossaryTerm(
+        guid=str(entity.guid),
+        qualified_name=entity.get_attribute("qualifiedName"),
+        name=entity.get_attribute("name"),
+        short_description=entity.get_attribute("shortDescription"),
+        long_description=entity.get_attribute("longDescription"),
+        examples=entity.get_attribute("examples"),
+        abbreviation=entity.get_attribute("abbreviation"),
+        usage=entity.get_attribute("usage"),
+        additional_attributes=entity.get_attribute("additionalAttributes"),
+        classifications=entity.classifications or None,
+    )
+    anchor = _related(entity, "anchor")
+    if anchor:
+        term.anchor = AtlasGlossaryHeader(glossary_guid=anchor[0].guid, relation_guid=anchor[0].relationship_guid)
+    term.categories = [categorization_header(found) for found in _related(entity, "categories")] or None
+    term.assigned_entities = [
+        found
+        for found in _related(entity, "assignedEntities")
+        if found.relationship_status is RelationshipStatus.ACTIVE
+    ] or None
+    for relation in Relation:
+        headers = [related_term_header(found) for found in _related(entity, relation.attr_name)]
+        setattr(term, relation.field, headers or None)
+    return term
+
+
+def categorization_header(found: AtlasRelatedObjectId) -> AtlasTermCategorizationHeader:
+    """``constructTermCategorizationId``."""
+    attributes = found.relationship_attributes
+    header = AtlasTermCategorizationHeader(category_guid=found.guid, relation_guid=found.relationship_guid)
+    if attributes is not None:
+        header.description = attributes.get_attribute("description")
+        status = attributes.get_attribute("status")
+        if isinstance(status, str):
+            header.status = AtlasTermRelationshipStatus(status)
+    return header
+
+
 def related_category_header(found: AtlasRelatedObjectId) -> AtlasRelatedCategoryHeader:
     """``constructRelatedCategoryId``."""
     attributes = found.relationship_attributes
@@ -112,7 +158,7 @@ def related_term_header(found: AtlasRelatedObjectId) -> AtlasRelatedTermHeader:
 
 
 def to_entity(obj: GlossaryObject) -> AtlasEntity:
-    """``toEntity``: the object's attributes, a category's anchor too; its other relationships are written apart."""
+    """``toEntity``: the object's attributes, a category's or term's anchor too; other relationships are apart."""
     attributes: dict[str, Any] = {
         "qualifiedName": obj.qualified_name,
         "name": obj.name,
@@ -120,11 +166,15 @@ def to_entity(obj: GlossaryObject) -> AtlasEntity:
         "longDescription": obj.long_description,
         "additionalAttributes": obj.additional_attributes,
     }
+    classifications = None
     if isinstance(obj, AtlasGlossary):
         attributes |= {"language": obj.language, "usage": obj.usage}
-    elif obj.anchor is not None:
+    elif isinstance(obj, AtlasGlossaryTerm):
+        attributes |= {"examples": obj.examples, "abbreviation": obj.abbreviation, "usage": obj.usage}
+        classifications = obj.classifications or None
+    if not isinstance(obj, AtlasGlossary) and obj.anchor is not None:
         attributes["anchor"] = AtlasObjectId(guid=obj.anchor.glossary_guid)
-    return AtlasEntity(type_name=_type_name(obj), guid=obj.guid, attributes=attributes)
+    return AtlasEntity(type_name=_type_name(obj), guid=obj.guid, attributes=attributes, classifications=classifications)
 
 
 class DataAccess:
@@ -171,7 +221,11 @@ class DataAccess:
             raise AtlasError(AtlasErrorCode.UNEXPECTED_TYPE, expected, entity.type_name)
         if entity.status is EntityStatus.DELETED:
             raise AtlasError(AtlasErrorCode.INSTANCE_GUID_DELETED, obj.guid)
-        return glossary_from(entity) if isinstance(obj, AtlasGlossary) else category_from(entity)  # type: ignore[return-value]  # the loader of T's class
+        if isinstance(obj, AtlasGlossary):
+            return glossary_from(entity)  # type: ignore[return-value]  # the loader of T's class
+        if isinstance(obj, AtlasGlossaryTerm):
+            return term_from(entity)  # type: ignore[return-value]
+        return category_from(entity)  # type: ignore[return-value]
 
     async def load_all[T: GlossaryObject](self, objects: Sequence[T]) -> list[T]:
         """``load`` of each, those failing to load left out."""
@@ -189,7 +243,11 @@ class DataAccess:
 
 
 def _type_name(obj: GlossaryObject) -> str:
-    return ATLAS_GLOSSARY_TYPENAME if isinstance(obj, AtlasGlossary) else ATLAS_GLOSSARY_CATEGORY_TYPENAME
+    if isinstance(obj, AtlasGlossary):
+        return ATLAS_GLOSSARY_TYPENAME
+    if isinstance(obj, AtlasGlossaryTerm):
+        return ATLAS_GLOSSARY_TERM_TYPENAME
+    return ATLAS_GLOSSARY_CATEGORY_TYPENAME
 
 
 def _related(entity: AtlasEntity, name: str) -> list[AtlasRelatedObjectId]:

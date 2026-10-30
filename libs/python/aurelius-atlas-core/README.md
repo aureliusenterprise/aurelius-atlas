@@ -57,7 +57,9 @@ aggregates and groups, and traversals into referred entities and classification 
 [5.1](../../../docs/architecture/conversion/increments/5-1-lineage.md): lineage over the process
 edges' relationships, also on demand (DD-245). Since
 [5.2a](../../../docs/architecture/conversion/increments/5-2-glossaries-and-categories.md): glossaries and
-their categories, as entities of Atlas's glossary model (DD-246).
+their categories, as entities of Atlas's glossary model (DD-246). Since
+[5.2b](../../../docs/architecture/conversion/increments/5-2-glossary-terms.md): glossary terms, their related
+terms and categories.
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -173,7 +175,11 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 
 ::: aurelius_atlas_core.glossary_service
 
+::: aurelius_atlas_core.glossary_utils
+
 ::: aurelius_atlas_core.glossary_category_utils
+
+::: aurelius_atlas_core.glossary_term_utils
 
 ::: aurelius_atlas_core.glossary_dto
 

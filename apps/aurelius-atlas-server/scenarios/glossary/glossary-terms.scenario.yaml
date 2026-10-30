@@ -1,0 +1,205 @@
+name: Glossary terms are created, related, updated and deleted
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/GlossaryREST.java
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#createTerm
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#updateTerm
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#getRelatedTerms
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#setInfoForRelations
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryTermUtils.java
+    - repository/src/main/java/org/apache/atlas/repository/ogm/glossary/AtlasGlossaryTermDTO.java
+    - repository/src/test/java/org/apache/atlas/glossary/GlossaryServiceTest.java#testTermCreateWithRelation
+rules: [GTM-01, GTM-02, GTM-03, GTM-04, GTM-05, GTM-06]
+covers:
+    - aurelius_atlas_server.routes.glossary.create_glossary_term
+    - aurelius_atlas_server.routes.glossary.get_related_terms
+    - aurelius_atlas_server.routes.glossary.partial_update_glossary_term
+    - aurelius_atlas_server.routes.glossary.get_glossary_term_headers
+    - aurelius_atlas_server.routes.glossary.delete_glossary_term
+stages:
+    - name: create a glossary named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary
+          json: { name: "scenario_terms_{run}" }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "scenario_terms_{run}"
+              name: "scenario_terms_{run}"
+          volatile:
+              - $.guid
+          save:
+              glossary: $.guid
+    - name: a term in it, named below the glossary (testTermCreationWithoutAnyRelations)
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/term
+          json:
+              name: A checking account
+              shortDescription: Short description
+              abbreviation: CHK
+              examples: [Personal, Joint]
+              usage: N/A
+              anchor: { glossaryGuid: "{glossary}" }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "A checking account@scenario_terms_{run}"
+              name: A checking account
+              shortDescription: Short description
+              abbreviation: CHK
+              examples: [Personal, Joint]
+              usage: N/A
+              anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+          volatile:
+              - $.guid
+              - $.anchor.relationGuid
+          save:
+              checking: $.guid
+    - name: a term of a name with an invalid character is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/term
+          json: { name: "current@account", anchor: { glossaryGuid: "{glossary}" } }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-083
+              # MessageFormat drops the quotes of AtlasErrorCode's ('@', '.', '<', '>')
+              errorMessage: "name cannot contain following special chars (@, ., <, >)"
+    - name: the same name again is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/term
+          json: { name: A checking account, anchor: { glossaryGuid: "{glossary}" } }
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-009
+              errorMessage: "Glossary term with qualifiedName A checking account@scenario_terms_{run} already exists"
+    - name: a term related to the first (testTermCreateWithRelation)
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/term
+          json:
+              name: A savings account
+              anchor: { glossaryGuid: "{glossary}" }
+              seeAlso:
+                  - termGuid: "{checking}"
+                    description: test description
+                    expression: test expression
+                    source: UT
+                    steward: UT
+                    status: ACTIVE
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "A savings account@scenario_terms_{run}"
+              name: A savings account
+              anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+              seeAlso:
+                  - termGuid: "{checking}"
+                    relationGuid: a relationship GUID
+                    displayText: A checking account
+                    description: test description
+                    expression: test expression
+                    steward: UT
+                    source: UT
+                    status: ACTIVE
+                    qualifiedName: "A checking account@scenario_terms_{run}"
+          volatile:
+              - $.guid
+              - $.anchor.relationGuid
+              - $.seeAlso[0].relationGuid
+          save:
+              savings: $.guid
+    - name: the first term's related terms are the second
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/terms/{checking}/related
+      response:
+          status: 200
+          json:
+              seeAlso:
+                  - termGuid: "{savings}"
+                    relationGuid: a relationship GUID
+                    displayText: A savings account
+                    description: test description
+                    expression: test expression
+                    steward: UT
+                    source: UT
+                    status: ACTIVE
+                    qualifiedName: "A savings account@scenario_terms_{run}"
+          volatile:
+              - $.seeAlso[0].relationGuid
+    - name: a partial update of the second term's abbreviation
+      request:
+          method: PUT
+          url: /api/atlas/v2/glossary/term/{savings}/partial
+          json: { abbreviation: SAV }
+      response:
+          status: 200
+          json:
+              guid: "{savings}"
+              qualifiedName: "A savings account@scenario_terms_{run}"
+              name: A savings account
+              abbreviation: SAV
+              anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+              seeAlso: the related term's header, as before
+          volatile:
+              - $.anchor.relationGuid
+              - $.seeAlso
+    - name: a partial update of another attribute is refused, Atlas's arguments swapped
+      request:
+          method: PUT
+          url: /api/atlas/v2/glossary/term/{savings}/partial
+          json: { language: en }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-074
+              errorMessage: "Invalid attribute Glossary Term for partial update of language"
+    - name: the glossary's term headers by display text, descending
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/{glossary}/terms/headers
+          params: { sort: DESC }
+      response:
+          status: 200
+          json:
+              - { termGuid: "{savings}", relationGuid: a relationship GUID, displayText: A savings account }
+              - { termGuid: "{checking}", relationGuid: a relationship GUID, displayText: A checking account }
+          volatile:
+              - $[0].relationGuid
+              - $[1].relationGuid
+    - name: deleting the second term removes its relation
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/term/{savings}
+      response:
+          status: 204
+    - name: the first term has no related terms left
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/terms/{checking}/related
+      response:
+          status: 200
+          json: {}
+    - name: deleting the glossary deletes its terms
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/{glossary}
+      response:
+          status: 204
+    - name: its term is gone
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/term/{checking}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: "Given instance guid {checking} is invalid/not found"

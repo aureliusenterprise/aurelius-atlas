@@ -1,18 +1,19 @@
-"""The glossary models: ``AtlasGlossary``, ``AtlasGlossaryCategory`` and their headers (GLS-01, GCT-01).
+"""The glossary models: ``AtlasGlossary``, ``AtlasGlossaryCategory``, ``AtlasGlossaryTerm`` and their headers.
 
 Atlas's ``AtlasBaseModelObject`` gives a new object a negative GUID; its sets of headers are JSON arrays.
-``set_attribute`` is the partial update of ``GlossaryREST`` (GLS-03, GCT-05).
+``set_attribute`` is the partial update of ``GlossaryREST`` (GLS-03, GCT-05, GTM-04).
 """
 
 import itertools
+import json
 import time
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import Any
 
 from pydantic import Field
 
 from aurelius_atlas_model.base import AtlasModel
-from aurelius_atlas_model.instance import AtlasClassification
+from aurelius_atlas_model.instance import AtlasClassification, AtlasRelatedObjectId
 
 _NEXT_ID = itertools.count(time.monotonic_ns())
 
@@ -85,6 +86,20 @@ class AtlasRelatedTermHeader(AtlasModel):
             self.source,
             self.status,
         )
+
+
+class AtlasTermCategorizationHeader(AtlasModel):
+    """``AtlasTermCategorizationHeader``: a term's category and the categorization's attributes."""
+
+    category_guid: str | None = None
+    relation_guid: str | None = None
+    description: str | None = None
+    display_text: str | None = None
+    status: AtlasTermRelationshipStatus | None = None
+
+    def key(self) -> tuple[Any, ...]:
+        """What ``equals`` compares: all but the display text."""
+        return (self.category_guid, self.relation_guid, self.description, self.status)
 
 
 class AtlasGlossaryBaseObject(AtlasModel):
@@ -182,12 +197,137 @@ class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
         )
 
 
-class AtlasGlossaryExtInfo(AtlasGlossary):
-    """``AtlasGlossaryExtInfo``: the glossary with its terms and categories by GUID (GLS-06)."""
+class Relation(Enum):
+    """``AtlasGlossaryTerm.Relation``: a term relation's relationship type, attribute and side (GTM-03).
 
-    term_info: dict[str, Any] | None = None
+    A relation whose attribute is the relationship's second end points from the related term to this one.
+    """
+
+    SEE_ALSO = ("AtlasGlossaryRelatedTerm", "seeAlso", False)
+    SYNONYMS = ("AtlasGlossarySynonym", "synonyms", False)
+    ANTONYMS = ("AtlasGlossaryAntonym", "antonyms", False)
+    PREFERRED_TO_TERMS = ("AtlasGlossaryPreferredTerm", "preferredToTerms", True)
+    PREFERRED_TERMS = ("AtlasGlossaryPreferredTerm", "preferredTerms", False)
+    REPLACEMENT_TERMS = ("AtlasGlossaryReplacementTerm", "replacementTerms", True)
+    REPLACED_BY = ("AtlasGlossaryReplacementTerm", "replacedBy", False)
+    TRANSLATION_TERMS = ("AtlasGlossaryTranslation", "translationTerms", True)
+    TRANSLATED_TERMS = ("AtlasGlossaryTranslation", "translatedTerms", False)
+    ISA = ("AtlasGlossaryIsARelationship", "isA", True)
+    CLASSIFIES = ("AtlasGlossaryIsARelationship", "classifies", False)
+    VALID_VALUES = ("AtlasGlossaryValidValue", "validValues", True)
+    VALID_VALUES_FOR = ("AtlasGlossaryValidValue", "validValuesFor", False)
+
+    @property
+    def type_name(self) -> str:
+        """``getName``: the relationship type."""
+        return self.value[0]
+
+    @property
+    def attr_name(self) -> str:
+        """``getAttrName``: the term's attribute, the relation's JSON name."""
+        return self.value[1]
+
+    @property
+    def is_end2_attr(self) -> bool:
+        """``isEnd2Attr``."""
+        return self.value[2]
+
+    @property
+    def field(self) -> str:
+        """The model field holding the relation's headers."""
+        return _SNAKE.get(self.attr_name, self.attr_name)
+
+
+_SNAKE = {
+    "seeAlso": "see_also",
+    "preferredToTerms": "preferred_to_terms",
+    "preferredTerms": "preferred_terms",
+    "replacementTerms": "replacement_terms",
+    "replacedBy": "replaced_by",
+    "translationTerms": "translation_terms",
+    "translatedTerms": "translated_terms",
+    "isA": "is_a",
+    "validValues": "valid_values",
+    "validValuesFor": "valid_values_for",
+}
+_TERM_ATTRIBUTES = {**_CAMEL, "abbreviation": "abbreviation", "usage": "usage"}
+
+
+class AtlasGlossaryTerm(AtlasGlossaryBaseObject):
+    """``AtlasGlossaryTerm``: its glossary, categories, assigned entities and related terms by relation (GTM-01)."""
+
+    examples: list[str] | None = None
+    abbreviation: str | None = None
+    usage: str | None = None
+    anchor: AtlasGlossaryHeader | None = None
+    assigned_entities: list[AtlasRelatedObjectId] | None = None
+    categories: list[AtlasTermCategorizationHeader] | None = None
+    see_also: list[AtlasRelatedTermHeader] | None = None
+    synonyms: list[AtlasRelatedTermHeader] | None = None
+    antonyms: list[AtlasRelatedTermHeader] | None = None
+    preferred_terms: list[AtlasRelatedTermHeader] | None = None
+    preferred_to_terms: list[AtlasRelatedTermHeader] | None = None
+    replacement_terms: list[AtlasRelatedTermHeader] | None = None
+    replaced_by: list[AtlasRelatedTermHeader] | None = None
+    translation_terms: list[AtlasRelatedTermHeader] | None = None
+    translated_terms: list[AtlasRelatedTermHeader] | None = None
+    is_a: list[AtlasRelatedTermHeader] | None = None
+    classifies: list[AtlasRelatedTermHeader] | None = None
+    valid_values: list[AtlasRelatedTermHeader] | None = None
+    valid_values_for: list[AtlasRelatedTermHeader] | None = None
+
+    def related_terms(self) -> dict[Relation, list[AtlasRelatedTermHeader]]:
+        """``getRelatedTerms``: the relations holding terms; empty when ``hasTerms`` is false (GTM-06)."""
+        return {relation: headers for relation in Relation if (headers := self.relation_terms(relation))}
+
+    def relation_terms(self, relation: Relation) -> list[AtlasRelatedTermHeader] | None:
+        """The headers of one relation."""
+        return getattr(self, relation.field)
+
+    def set_attribute(self, name: str, value: str) -> None:
+        """``setAttribute``: ``name``, the descriptions, ``abbreviation`` or ``usage`` (GTM-04).
+
+        Raises:
+            ValueError: For any other attribute.
+        """
+        field = _TERM_ATTRIBUTES.get(name)
+        if field is None:
+            msg = f"Invalid attribute '{name}' for object AtlasGlossaryTerm"
+            raise ValueError(msg)
+        setattr(self, field, value)
+
+    def same_as(self, other: AtlasGlossaryTerm) -> bool:
+        """``equals``: the shared fields, the anchor, examples, assigned entities and the headers as sets."""
+        anchors_equal = (self.anchor is None and other.anchor is None) or (
+            self.anchor is not None and self.anchor.same_as(other.anchor)
+        )
+        return (
+            self.base_key() == other.base_key()
+            and (self.examples, self.abbreviation, self.usage) == (other.examples, other.abbreviation, other.usage)
+            and anchors_equal
+            and _entity_keys(self.assigned_entities) == _entity_keys(other.assigned_entities)
+            and _keys(self.categories) == _keys(other.categories)
+            and all(
+                _keys(self.relation_terms(relation)) == _keys(other.relation_terms(relation)) for relation in Relation
+            )
+        )
+
+
+class AtlasGlossaryExtInfo(AtlasGlossary):
+    """``AtlasGlossaryExtInfo``: the glossary with its terms and categories by GUID (GLS-06, GTM-07)."""
+
+    term_info: dict[str, AtlasGlossaryTerm] | None = None
     category_info: dict[str, AtlasGlossaryCategory] | None = None
 
 
-def _keys(headers: list[AtlasRelatedTermHeader] | list[AtlasRelatedCategoryHeader] | None) -> frozenset[Any] | None:
+def _keys(
+    headers: list[AtlasRelatedTermHeader]
+    | list[AtlasRelatedCategoryHeader]
+    | list[AtlasTermCategorizationHeader]
+    | None,
+) -> frozenset[Any] | None:
     return None if headers is None else frozenset(header.key() for header in headers)
+
+
+def _entity_keys(found: list[AtlasRelatedObjectId] | None) -> frozenset[str] | None:
+    return None if found is None else frozenset(json.dumps(item.to_json(), sort_keys=True) for item in found)
