@@ -1348,6 +1348,8 @@
       
         
       
+        
+      
     
     
     
@@ -1470,6 +1472,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4022,6 +4051,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4973,6 +5010,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../increments/7-0-webapp-foundation/" class="md-nav__link">
         
   
@@ -5602,6 +5666,87 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-4-edge-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.4 Edge tracing
 
     
   </span>
@@ -8157,6 +8302,38 @@ Atlas clients expect when it lands).</p>
 <td>Business explores <code>typeName=AtlasGlossary</code>, technical explores <code>typeName=Infrastructure</code>; governance searches the signed-in user's plain e-mail, no type filter</td>
 <td>The m4i types name Aurelius's own type model, which Aurelius Atlas does not ship (ADR 046 keeps Atlas's built-in model); the mappings are model types the server knows — an unknown <code>typeName</code> answers <code>UNKNOWN_TYPENAME</code> (SRC-03) — and the Atlas glossary, not a plain <code>Glossary</code>, is the model's data-domain kind; the e-mail term is the search text Atlas can match</td>
 <td>7.4a</td>
+</tr>
+<tr>
+<td>DV-85</td>
+<td>Server</td>
+<td><code>AtlasBaseExceptionMapper</code> echoes the exception's message into <code>errorCause</code> on every error status, including 5xx</td>
+<td>A 5xx answer has no <code>errorCause</code> — the cause's text is logged only — and carries the trace id as <code>requestId</code> (body) and <code>X-Request-Id</code> (header); 4xx answers keep the echo</td>
+<td>A 5xx cause leaks internals (store URIs, index names, client exception classes) to any caller who can trigger a server fault; the trace id is the support correlation key the OTel pipeline already logs (SRV-07, DD-235)</td>
+<td>9.2</td>
+</tr>
+<tr>
+<td>DV-86</td>
+<td>Server</td>
+<td>Atlas ships no Content-Security-Policy; the legacy dashboard's inline bootstrap is unscored</td>
+<td>The dashboard CSP allows <code>'unsafe-inline'</code> + <code>'unsafe-eval'</code> scripts and <code>'unsafe-inline'</code> styles; the JSON API CSP is <code>default-src 'none'</code> — it serves no documents</td>
+<td>The vendored <code>index.html.tpl</code> inlines the build-varying <code>&lt;%- bust %&gt;</code> value (hashes churn every build), and the require-handlebars-plugin compiles its templates at runtime with <code>new Function</code> (e2e-proven: <code>EvalError</code> kills the boot without <code>'unsafe-eval'</code>); the strict form returns with the dashboard retirement (6.3) (SRV-08, DD-236)</td>
+<td>9.2</td>
+</tr>
+<tr>
+<td>DV-87</td>
+<td>Server</td>
+<td>Atlas has no rate limiter: every request is answered, and it has no 429 in its error-code enum</td>
+<td>The webapp's nginx <code>/api/</code> proxy limits each public client address (leaky bucket, refusals answered nginx's 429 with an HTML body); the server answers every request it receives, and a caller reaching it directly (internal apps, deployments without the webapp) sees Atlas's answer-everything behaviour</td>
+<td>Search-cost hardening at the browser's front door (the pentest's M6): a service bursting the API is working, a browser flooding it is attacking, and the webapp arrangement is where the browser is (SRV-09, DD-238)</td>
+<td>9.3</td>
+</tr>
+<tr>
+<td>DV-88</td>
+<td>Search</td>
+<td>A <code>limit</code> or <code>offset</code> Java's <code>Integer.parseInt</code> cannot read (<code>limit 1e3</code>) escapes as an internal error</td>
+<td><code>INVALID_DSL_QUERY</code>, naming the number</td>
+<td>A number the query got wrong is the client's error</td>
+<td>4.3</td>
 </tr>
 </tbody>
 </table>

@@ -1348,6 +1348,8 @@
       
         
       
+        
+      
     
     
     
@@ -1470,6 +1472,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4081,6 +4110,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5032,6 +5069,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../increments/7-0-webapp-foundation/" class="md-nav__link">
         
   
@@ -5661,6 +5725,87 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/9-4-edge-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.4 Edge tracing
 
     
   </span>
@@ -7824,7 +7969,7 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <tr>
 <td><code>AtlasBaseExceptionMapper</code></td>
 <td><code>aurelius_atlas_server.errors</code></td>
-<td>0.5</td>
+<td>0.5, 9.2</td>
 <td>ported</td>
 </tr>
 <tr>
@@ -7957,6 +8102,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>SearchAggregatorImpl</code>, <code>SuggestionsProviderImpl</code>, <code>EntityDiscoveryService#quickSearch</code>, <code>DiscoveryREST#quickSearch</code>, <code>DiscoveryREST#getSuggestions</code></td>
 <td><code>aurelius_atlas_core.search_aggregator</code>, <code>aurelius_atlas_core.suggestions_provider</code>, <code>aurelius_atlas_core.discovery_service</code>, <code>aurelius_atlas_server.routes.discovery</code></td>
 <td>4.2b</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>AtlasDSLLexer.g4</code>, <code>AtlasDSLParser.g4</code> (generated <code>AtlasDSLLexer</code>, <code>AtlasDSLParser</code>), <code>AtlasDSL#Parser</code>, <code>AtlasDSL#Validator</code>, <code>AtlasDSL#QueryMetadata</code></td>
+<td><code>aurelius_atlas_dsl.generated</code>, <code>aurelius_atlas_dsl.atlas_dsl</code>, <code>aurelius_atlas_dsl.dsl_tree</code>, <code>aurelius_atlas_dsl.tree_builder</code></td>
+<td>4.3</td>
 <td>in progress</td>
 </tr>
 <tr>

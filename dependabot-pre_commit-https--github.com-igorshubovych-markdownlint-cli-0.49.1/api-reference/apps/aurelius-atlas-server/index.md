@@ -61,30 +61,24 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": "info"
 >     },
 >     "tls_cert_file": {
->       "anyOf": [
->         {
->           "format": "file-path",
->           "type": "string"
->         },
->         {
->           "type": "null"
->         }
->       ],
->       "default": null,
->       "title": "Tls Cert File"
+>       "format": "file-path",
+>       "title": "Tls Cert File",
+>       "type": "string"
 >     },
 >     "tls_key_file": {
->       "anyOf": [
->         {
->           "format": "file-path",
->           "type": "string"
->         },
->         {
->           "type": "null"
->         }
->       ],
->       "default": null,
->       "title": "Tls Key File"
+>       "format": "file-path",
+>       "title": "Tls Key File",
+>       "type": "string"
+>     },
+>     "hsts_enabled": {
+>       "default": true,
+>       "title": "Hsts Enabled",
+>       "type": "boolean"
+>     },
+>     "forwarded_allow_ips": {
+>       "default": "127.0.0.1",
+>       "title": "Forwarded Allow Ips",
+>       "type": "string"
 >     },
 >     "dashboard_dir": {
 >       "anyOf": [
@@ -222,6 +216,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >     }
 >   },
 >   "required": [
+>     "tls_cert_file",
+>     "tls_key_file",
 >     "elasticsearch_hosts",
 >     "elasticsearch_password",
 >     "elasticsearch_ca_certs"
@@ -242,8 +238,10 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `host` (`str`)
 > - `port` (`int`)
 > - `log_level` (`LogLevel`)
-> - `tls_cert_file` (`FilePath | None`)
-> - `tls_key_file` (`FilePath | None`)
+> - `tls_cert_file` (`FilePath`)
+> - `tls_key_file` (`FilePath`)
+> - `hsts_enabled` (`bool`)
+> - `forwarded_allow_ips` (`str`)
 > - `dashboard_dir` (`DirectoryPath | None`)
 > - `models_dir` (`Path`)
 > - `typedef_refresh_seconds` (`float`)
@@ -261,10 +259,6 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `otel_client_secret` (`SecretStr | None`)
 > - `otel_endpoint` (`str`)
 > - `otel_ca_file` (`FilePath | None`)
->
-> Validators:
->
-> - `_tls_pair`
 >
 > ### dashboard\_dir
 >
@@ -322,6 +316,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > User for the store.
 >
+> ### forwarded\_allow\_ips
+>
+> ```
+> forwarded_allow_ips: str = '127.0.0.1'
+> ```
+>
+> Which peers may rewrite the client address through `X-Forwarded-For` (SRV-10, DD-238), passed to uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network, so the access log and OTel peer attributes key on the browser's address, not the proxy's. The rate limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).
+>
 > ### host
 >
 > ```
@@ -329,6 +331,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The interface to listen on; the container image sets `0.0.0.0`.
+>
+> ### hsts\_enabled
+>
+> ```
+> hsts_enabled: bool = True
+> ```
+>
+> Whether responses carry `Strict-Transport-Security` (SRV-08, DD-236). The image ships True; the dev arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the plaintext dev surfaces (ADR 039's named relaxations).
 >
 > ### log\_level
 >
@@ -427,26 +437,26 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ### tls
 >
 > ```
-> tls: tuple[Path, Path] | None
+> tls: tuple[Path, Path]
 > ```
 >
-> The certificate and key to serve HTTPS with, or None for plain HTTP.
+> The certificate and key to serve HTTPS with (SRV-03, SRV-06, DD-234).
 >
 > ### tls\_cert\_file
 >
 > ```
-> tls_cert_file: FilePath | None = None
+> tls_cert_file: FilePath
 > ```
 >
-> PEM certificate to serve HTTPS with; requires `tls_key_file` (SRV-03).
+> PEM certificate to serve HTTPS with (SRV-06, DD-234): required — the server never serves plaintext, the way the store's password is required (SRV-01, SRV-02).
 >
 > ### tls\_key\_file
 >
 > ```
-> tls_key_file: FilePath | None = None
+> tls_key_file: FilePath
 > ```
 >
-> PEM private key of `tls_cert_file`.
+> PEM private key of `tls_cert_file` (SRV-06).
 >
 > ### typedef\_refresh\_seconds
 >
@@ -468,24 +478,26 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 
 The technology-specific detail of how the server runs. The properties it must keep are in the architecture: [Configuration Management](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/platform/delivery/configuration-management/index.md>) (ADR 018), [Components &amp; Interfaces](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/platform/components-and-interfaces/index.md>).
 
-**Settings.** Read once at start-up into a frozen `ServerSettings`; a validation failure (missing key, bad scheme, half a TLS pair) stops start-up with a message naming the variable (SRV-01, SRV-02). All names carry the `AURELIUS_ATLAS_SERVER_` prefix. What a deployment must supply, with no defaults:
+**Settings.** Read once at start-up into a frozen `ServerSettings`; a validation failure (missing key, bad scheme, missing TLS material) stops start-up with a message naming the variable (SRV-01, SRV-02, SRV-06). All names carry the `AURELIUS_ATLAS_SERVER_` prefix. What a deployment must supply, with no defaults:
 
 | Variable | Purpose |
 | --- | --- |
 | `..._ELASTICSEARCH_HOSTS` | JSON list of store node URLs, e.g. `["https://es-0:9200"]` — `https` only |
 | `..._ELASTICSEARCH_PASSWORD` | Store password — a `SecretStr`, never shown in logs |
 | `..._ELASTICSEARCH_CA_CERTS` | PEM CA of the store certificate; the store link is https-only (ADR 039) |
-| `..._TLS_CERT_FILE` + `..._TLS_KEY_FILE` | PEM pair for serving HTTPS: both set, or both unset — enforced at start-up |
+| `..._TLS_CERT_FILE` + `..._TLS_KEY_FILE` | PEM pair for serving HTTPS: both required — the server never serves plaintext (SRV-06, DD-234) |
 
-With defaults: `HOST` (`0.0.0.0` in the image), `PORT` (21000, Atlas's port — kept so existing clients find the catalogue where Atlas was, ADR 046), `LOG_LEVEL`, `REVISION` (reported by `admin/version`, ADM-01), `DASHBOARD_DIR` (None serves the API only, DSH-04), `MODELS_DIR` (default: the vendored Atlas 2.4.0 `addons/models`, MDL-16/DD-032), `TYPEDEF_REFRESH_SECONDS` (5.0 — how long the server answers from its type registry before checking for another process's type change, TDS-13/DD-029).
+With defaults: `HOST` (`0.0.0.0` in the image), `PORT` (21000, Atlas's port — kept so existing clients find the catalogue where Atlas was, ADR 046), `LOG_LEVEL`, `REVISION` (reported by `admin/version`, ADM-01), `HSTS_ENABLED` (true — the dev arrangement sets it false, SRV-08/DD-236), `DASHBOARD_DIR` (None serves the API only, DSH-04), `MODELS_DIR` (default: the vendored Atlas 2.4.0 `addons/models`, MDL-16/DD-032), `TYPEDEF_REFRESH_SECONDS` (5.0 — how long the server answers from its type registry before checking for another process's type change, TDS-13/DD-029).
 
 > [!WARNING]
 >
-> **A half TLS pair stops the server from starting**
+> **The server does not start without TLS material**
 >
-> `TLS_CERT_FILE` and `TLS_KEY_FILE` are both set, or both unset — the pairing is enforced at start-up. A container that mounts only the certificate exits with a message naming the missing variable; this is the design working, not a broken image.
+> `TLS_CERT_FILE` and `TLS_KEY_FILE` are required settings — there is no plaintext mode (SRV-06, DD-234, superseding the both-or-neither rule of SRV-03). A container that mounts no material exits with a message naming the missing variable; this is the design working, not a broken image. The image's `ENV` names where the pair lives (`/certs/server.pem`, `/certs/server-key.pem` — DD-216's stack-owned mount).
 
-**The image** (`apps/aurelius-atlas-server/Dockerfile`: hardened base, runs as `nonroot`) bakes in the production defaults — listen on `0.0.0.0:21000`, dashboards served from `/application/dashboard` — and a liveness healthcheck against `/api/atlas/admin/liveness` that verifies the server's own certificate when TLS is on. Liveness is the probe a restart decision uses; readiness also fails while the store is away (DD-016).
+**The image** (`apps/aurelius-atlas-server/Dockerfile`: hardened base, runs as `nonroot`) bakes in the production defaults — listen on `0.0.0.0:21000`, dashboards served from `/application/dashboard` — and a liveness healthcheck against `/api/atlas/admin/liveness` over HTTPS, verifying the served certificate (SRV-06). Liveness is the probe a restart decision uses; readiness also fails while the store is away (DD-016).
+
+**Security headers.** Every answer carries them (SRV-08, DD-236): `security_headers.py` stamps the JSON API with no-store/nosniff/framing-closed headers and a documents-free CSP, the dashboards with a same-origin CSP (DV-86) and immutable caching on bust-versioned assets, and HSTS when `HSTS_ENABLED`.
 
 **Parity scenarios.** `scenarios/<resource>/*.scenario.yaml` state each expectation as Atlas's own answer — e.g. `scenarios/admin/version.scenario.yaml` expects `Version: "2.4.0"`, `Name: apache-atlas`, the exact content type — each cited to the Java source that produces it. Build-varying fields are marked volatile; the two places Aurelius Atlas must answer differently (name, description) carry a `deviations: DV-03` entry. Anything else that differs fails the scenario (ADR 052).
 
@@ -567,9 +579,9 @@ Mounted after the API routes, so the API takes precedence (DSH-03).
 
 ## aurelius\_atlas\_server.errors
 
-The body Atlas errors are answered with (SRV-04, SRV-05), as `AtlasBaseExceptionMapper` does.
+The body Atlas errors are answered with (SRV-04, SRV-05, SRV-07), as `AtlasBaseExceptionMapper` does.
 
-The errors themselves live in `aurelius_atlas_model.errors` (DD-023) and are re-exported here.
+The errors themselves live in `aurelius_atlas_model.errors` (DD-023) and are re-exported here. 5xx bodies are opaque: the cause is logged, and the trace id rides along for correlation (DD-235, DV-85).
 
 Classes:
 
@@ -646,6 +658,8 @@ atlas_error_handler(_request: Request, error: Exception) -> AtlasJSONResponse
 ```
 
 Answer an `AtlasError` with its status and `{"errorCode", "errorMessage"[, "errorCause"]}` (SRV-04).
+
+A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the request as `requestId` (SRV-07, DD-235): the cause's text goes to the log, never to the wire, so a wrapped store or transport failure cannot leak internals; the id ties the response to the logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) — there the cause is the request's own defect, not server internals.
 
 ## aurelius\_atlas\_server.routes.admin
 

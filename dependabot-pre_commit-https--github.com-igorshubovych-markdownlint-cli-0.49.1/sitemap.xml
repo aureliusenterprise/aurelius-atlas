@@ -46,6 +46,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/api-reference/libs/python/aurelius-atlas-data2model-client/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/api-reference/libs/python/aurelius-atlas-dsl/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/api-reference/libs/python/aurelius-atlas-example/</loc>
       </url>
       <url>
@@ -370,6 +373,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/4-2-quick-search/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/4-3-dsl-parser/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/7-0-webapp-foundation/</loc>
       </url>
       <url>
@@ -443,6 +449,15 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/9-1-targeted-resilience-e2e/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/9-2-server-hardening/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/9-3-search-cost-client-ip/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/9-4-edge-tracing/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/conversion/increments/template/</loc>

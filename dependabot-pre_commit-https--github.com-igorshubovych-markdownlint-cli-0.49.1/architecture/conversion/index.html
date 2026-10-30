@@ -1348,6 +1348,8 @@
       
         
       
+        
+      
     
     
     
@@ -1470,6 +1472,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4010,6 +4039,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4961,6 +4998,33 @@
   
   
     <li class="md-nav__item">
+      <a href="./increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./increments/7-0-webapp-foundation/" class="md-nav__link">
         
   
@@ -5590,6 +5654,87 @@
     
   
   9.1 Targeted resilience e2e
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-2-server-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.2 Server hardening
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-3-search-cost-client-ip/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.3 Search cost and client IP
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/9-4-edge-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  9.4 Edge tracing
 
     
   </span>
@@ -7945,7 +8090,7 @@ checks a PR must pass:</p>
 <td>DSL parser</td>
 <td>Atlas DSL grammar to AST</td>
 <td><code>AtlasDSLParser.g4</code>, <code>query/</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>4.4</td>
@@ -8218,6 +8363,27 @@ checks a PR must pass:</p>
 <td>Targeted resilience e2e</td>
 <td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
 <td>— (no Java twin; Atlas ships no resilience e2e)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.2</td>
+<td>Server hardening</td>
+<td>TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86)</td>
+<td><code>AtlasBaseExceptionMapper</code> (cause echo, superseded for 5xx); no header filter to port</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.3</td>
+<td>Search cost and client IP</td>
+<td>Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87)</td>
+<td>— (Atlas refreshes nothing on reads, JanusGraph; no limiter to port)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>9.4</td>
+<td>Edge tracing</td>
+<td>The webapp's nginx exports <code>/api/</code> spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239)</td>
+<td>— (no Java twin; nginx/OTLP are Aurelius infrastructure)</td>
 <td>in progress</td>
 </tr>
 </tbody>

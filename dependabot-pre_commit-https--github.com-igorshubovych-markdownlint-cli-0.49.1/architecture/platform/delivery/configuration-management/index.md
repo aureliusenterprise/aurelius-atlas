@@ -4,15 +4,15 @@ Settings arrive at start-up through one channel and fail loudly ([ADR 018](<http
 
 ## Production
 
-The unit that ships is the container image ([release management](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/platform/delivery/release-management/index.md>)). Its configuration is the environment, read once at start-up into a frozen settings object — no library reads the environment afterwards, and apps pass settings objects down. Validation failures (missing key, bad scheme, half a TLS pair) stop start-up with a message naming the variable, so a misconfigured deployment never serves traffic.
+The unit that ships is the container image ([release management](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/platform/delivery/release-management/index.md>)). Its configuration is the environment, read once at start-up into a frozen settings object — no library reads the environment afterwards, and apps pass settings objects down. Validation failures (missing key, bad scheme, missing TLS material) stop start-up with a message naming the variable, so a misconfigured deployment never serves traffic.
 
 What a deployment must supply has no defaults — the service does not start without it (SRV-01, SRV-02): the store's endpoints and credentials, and the CA that signs the store's certificate. Where those values come from — an orchestrator secret store, certificate provisioning — is the [deployment](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/architecture/platform/delivery/deployment/index.md>) page's subject (6.4). The knobs are named, with defaults and validation, in the server's design documentation: [Configuration](<https://aureliusenterprise.github.io/dependabot-pre_commit-https--github.com-igorshubovych-markdownlint-cli-0.49.1/api-reference/apps/aurelius-atlas-server/#configuration>).
 
 > [!WARNING]
 >
-> **A half TLS pair stops the server from starting**
+> **The server does not start without TLS material**
 >
-> The serving certificate and key are a pair: both set, or both unset — enforced at start-up. A container that mounts only the certificate exits with a message naming the missing variable; this is the design working, not a broken image.
+> The serving certificate and key are required settings (SRV-06, DD-234) — the server never serves plaintext (ADR 039). A container that mounts no material exits with a message naming the missing variable; this is the design working, not a broken image.
 
 **Naming.** App-owned settings carry a per-project prefix, so two projects in one workspace can never read each other's values. Keys that third-party code (the platform's, the observability exporter's, infrastructure images) reads must stay bare to be read at all — the prefix list lives in the root `AGENTS.md`.
 
