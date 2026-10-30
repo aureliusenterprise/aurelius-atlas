@@ -1,0 +1,1850 @@
+{
+    "_comment": "Every query of Apache Atlas 2.4.0's repository/src/test/java/org/apache/atlas/query tests DSLQueriesTest, GremlinQueryComposerTest (both fail on a syntax error) and DSLParsingTest (each must fail to parse), with the line it is on; DSLQueriesTest's errorQueries are left to 4.4, Atlas not saying whether they fail parsing or translation.",
+    "queries": [
+        {
+            "parses": true,
+            "query": "Asset where name=['t1', 't2', 't3']",
+            "source": "GremlinQueryComposerTest.java:48"
+        },
+        {
+            "parses": true,
+            "query": "Asset where name=[\"t1\", \"t2\", \"t3\"]",
+            "source": "GremlinQueryComposerTest.java:49"
+        },
+        {
+            "parses": true,
+            "query": "PII",
+            "source": "GremlinQueryComposerTest.java:55"
+        },
+        {
+            "parses": true,
+            "query": "Table isa Dimension",
+            "source": "GremlinQueryComposerTest.java:61"
+        },
+        {
+            "parses": true,
+            "query": "Table is Dimension",
+            "source": "GremlinQueryComposerTest.java:62"
+        },
+        {
+            "parses": true,
+            "query": "Table where Table is Dimension",
+            "source": "GremlinQueryComposerTest.java:63"
+        },
+        {
+            "parses": true,
+            "query": "Dimension where Dimension.timeAttr = 'value'",
+            "source": "GremlinQueryComposerTest.java:73"
+        },
+        {
+            "parses": true,
+            "query": "Dimension as d where d.timeAttr = 'value'",
+            "source": "GremlinQueryComposerTest.java:74"
+        },
+        {
+            "parses": true,
+            "query": "Table where (name = 'time_dim' and Dimension.timeAttr = 'value')",
+            "source": "GremlinQueryComposerTest.java:75"
+        },
+        {
+            "parses": true,
+            "query": "Table where Dimension.timeAttr = 'value'",
+            "source": "GremlinQueryComposerTest.java:76"
+        },
+        {
+            "parses": true,
+            "query": "from DB",
+            "source": "GremlinQueryComposerTest.java:82"
+        },
+        {
+            "parses": true,
+            "query": "from DB limit 10",
+            "source": "GremlinQueryComposerTest.java:83"
+        },
+        {
+            "parses": true,
+            "query": "DB limit 10",
+            "source": "GremlinQueryComposerTest.java:84"
+        },
+        {
+            "parses": true,
+            "query": "DB has name",
+            "source": "GremlinQueryComposerTest.java:90"
+        },
+        {
+            "parses": true,
+            "query": "DB where DB has name",
+            "source": "GremlinQueryComposerTest.java:91"
+        },
+        {
+            "parses": true,
+            "query": "DB as d",
+            "source": "GremlinQueryComposerTest.java:96"
+        },
+        {
+            "parses": true,
+            "query": "DB as d select d.name, d.owner",
+            "source": "GremlinQueryComposerTest.java:105"
+        },
+        {
+            "parses": true,
+            "query": "DB as d select d.name, d.owner limit 10",
+            "source": "GremlinQueryComposerTest.java:106"
+        },
+        {
+            "parses": true,
+            "query": "DB as d select d",
+            "source": "GremlinQueryComposerTest.java:107"
+        },
+        {
+            "parses": true,
+            "query": "Table select columns limit 10",
+            "source": "GremlinQueryComposerTest.java:116"
+        },
+        {
+            "parses": true,
+            "query": "Table select db",
+            "source": "GremlinQueryComposerTest.java:119"
+        },
+        {
+            "parses": true,
+            "query": "Table select db.name",
+            "source": "GremlinQueryComposerTest.java:122"
+        },
+        {
+            "parses": true,
+            "query": "DB where owner = ['hdfs', 'anon']",
+            "source": "GremlinQueryComposerTest.java:128"
+        },
+        {
+            "parses": true,
+            "query": "DB owner = ['hdfs', 'anon']",
+            "source": "GremlinQueryComposerTest.java:129"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as d owner = ['hdfs', 'anon']",
+            "source": "GremlinQueryComposerTest.java:130"
+        },
+        {
+            "parses": true,
+            "query": "from DB groupby (owner) select min(name) orderby name limit 2",
+            "source": "GremlinQueryComposerTest.java:134"
+        },
+        {
+            "parses": true,
+            "query": "Table groupby(owner) select name, owner, clusterName orderby name",
+            "source": "GremlinQueryComposerTest.java:141"
+        },
+        {
+            "parses": true,
+            "query": "from DB limit 5",
+            "source": "GremlinQueryComposerTest.java:153"
+        },
+        {
+            "parses": true,
+            "query": "from DB limit 5 offset 2",
+            "source": "GremlinQueryComposerTest.java:154"
+        },
+        {
+            "parses": true,
+            "query": "DB orderby name",
+            "source": "GremlinQueryComposerTest.java:160"
+        },
+        {
+            "parses": true,
+            "query": "from DB orderby name",
+            "source": "GremlinQueryComposerTest.java:161"
+        },
+        {
+            "parses": true,
+            "query": "from DB as d orderby d.owner limit 3",
+            "source": "GremlinQueryComposerTest.java:162"
+        },
+        {
+            "parses": true,
+            "query": "DB as d orderby d.owner limit 3",
+            "source": "GremlinQueryComposerTest.java:163"
+        },
+        {
+            "parses": true,
+            "query": "DB as d select d.name, d.owner orderby (d.owner) limit 25",
+            "source": "GremlinQueryComposerTest.java:169"
+        },
+        {
+            "parses": true,
+            "query": "Table where (name = \"sales_fact\" and createTime > \"2014-12-11T02:35:0.0Z\" ) select name as _col_0, createTime as _col_1 orderby _col_1",
+            "source": "GremlinQueryComposerTest.java:175"
+        },
+        {
+            "parses": true,
+            "query": "from DB orderby name DESC",
+            "source": "GremlinQueryComposerTest.java:181"
+        },
+        {
+            "parses": true,
+            "query": "from DB select DB.name, DB.owner",
+            "source": "GremlinQueryComposerTest.java:190"
+        },
+        {
+            "parses": true,
+            "query": "from DB groupby (DB.owner)",
+            "source": "GremlinQueryComposerTest.java:195"
+        },
+        {
+            "parses": true,
+            "query": "from DB where name = \"Reporting\" select name, owner",
+            "source": "GremlinQueryComposerTest.java:204"
+        },
+        {
+            "parses": true,
+            "query": "from DB where (name = \"Reporting\") select name, owner",
+            "source": "GremlinQueryComposerTest.java:205"
+        },
+        {
+            "parses": true,
+            "query": "Table where Asset.name like \"Tab*\"",
+            "source": "GremlinQueryComposerTest.java:206"
+        },
+        {
+            "parses": true,
+            "query": "Table where owner like \"Tab*\"",
+            "source": "GremlinQueryComposerTest.java:208"
+        },
+        {
+            "parses": true,
+            "query": "Table where owner like \"*Tab_*\"",
+            "source": "GremlinQueryComposerTest.java:210"
+        },
+        {
+            "parses": true,
+            "query": "from Table where (db.name = \"Reporting\")",
+            "source": "GremlinQueryComposerTest.java:212"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t.name = \"testtable_1\" select t.name, t.owner",
+            "source": "GremlinQueryComposerTest.java:226"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t.createTime = \"2017-12-12T02:35:58.440Z\" select t.name, t.owner",
+            "source": "GremlinQueryComposerTest.java:235"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t.createTime = \"2017-12-12\" select t.name, t.owner",
+            "source": "GremlinQueryComposerTest.java:236"
+        },
+        {
+            "parses": true,
+            "query": "Asset select name, owner",
+            "source": "GremlinQueryComposerTest.java:246"
+        },
+        {
+            "parses": true,
+            "query": "from DB groupby (owner) select count()",
+            "source": "GremlinQueryComposerTest.java:251"
+        },
+        {
+            "parses": true,
+            "query": "from DB groupby (owner) select max(name)",
+            "source": "GremlinQueryComposerTest.java:253"
+        },
+        {
+            "parses": true,
+            "query": "from DB groupby (owner) select min(name)",
+            "source": "GremlinQueryComposerTest.java:255"
+        },
+        {
+            "parses": true,
+            "query": "from Table select sum(createTime)",
+            "source": "GremlinQueryComposerTest.java:257"
+        },
+        {
+            "parses": true,
+            "query": "`Log Data`",
+            "source": "GremlinQueryComposerTest.java:263"
+        },
+        {
+            "parses": true,
+            "query": "Table where name=\"sales_fact\" or name=\"testtable_1\"",
+            "source": "GremlinQueryComposerTest.java:279"
+        },
+        {
+            "parses": true,
+            "query": "Table where name=\"sales_fact\" and name=\"testtable_1\"",
+            "source": "GremlinQueryComposerTest.java:281"
+        },
+        {
+            "parses": true,
+            "query": "Table where name=\"sales_fact\" or name=\"testtable_1\" or name=\"testtable_2\"",
+            "source": "GremlinQueryComposerTest.java:283"
+        },
+        {
+            "parses": true,
+            "query": "Table where name=\"sales_fact\" and name=\"testtable_1\" and name=\"testtable_2\"",
+            "source": "GremlinQueryComposerTest.java:290"
+        },
+        {
+            "parses": true,
+            "query": "Table where (name=\"sales_fact\" or name=\"testtable_1\") and name=\"testtable_2\"",
+            "source": "GremlinQueryComposerTest.java:297"
+        },
+        {
+            "parses": true,
+            "query": "Table where name=\"sales_fact\" or (name=\"testtable_1\" and name=\"testtable_2\")",
+            "source": "GremlinQueryComposerTest.java:306"
+        },
+        {
+            "parses": true,
+            "query": "Table where name=\"sales_fact\" or name=\"testtable_1\" and name=\"testtable_2\"",
+            "source": "GremlinQueryComposerTest.java:315"
+        },
+        {
+            "parses": true,
+            "query": "Table where (name=\"sales_fact\" and owner=\"Joe\") OR (name=\"sales_fact_daily_mv\" and owner=\"Joe BI\")",
+            "source": "GremlinQueryComposerTest.java:324"
+        },
+        {
+            "parses": true,
+            "query": "Table where owner=\"hdfs\" or ((name=\"testtable_1\" or name=\"testtable_2\") and createTime < \"2017-12-12T02:35:58.440Z\")",
+            "source": "GremlinQueryComposerTest.java:336"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z'",
+            "source": "GremlinQueryComposerTest.java:338"
+        },
+        {
+            "parses": true,
+            "query": "Table where db.name='Sales' and db.clusterName='cl1'",
+            "source": "GremlinQueryComposerTest.java:340"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (hive_db.name='Reporting' or ((hive_db.name='Reporting' and hive_db.createTime > '2017-12-12T02:35:58.440Z') and (hive_db.name='Reporting' and hive_db.createTime < '2017-12-12T02:35:58.440Z')))",
+            "source": "GremlinQueryComposerTest.java:342"
+        },
+        {
+            "parses": true,
+            "query": "Table hasTerm sales",
+            "source": "GremlinQueryComposerTest.java:355"
+        },
+        {
+            "parses": true,
+            "query": "Table hasTerm \"sales@glossary\"",
+            "source": "GremlinQueryComposerTest.java:358"
+        },
+        {
+            "parses": true,
+            "query": "Table hasTerm \"sales@glossary\" and owner = \"fetl\"",
+            "source": "GremlinQueryComposerTest.java:361"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t has name and t isa Dimension",
+            "source": "GremlinQueryComposerTest.java:372"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t has name and t.name = 'sales_fact'",
+            "source": "GremlinQueryComposerTest.java:374"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t is Dimension and t.name = 'sales_fact'",
+            "source": "GremlinQueryComposerTest.java:376"
+        },
+        {
+            "parses": true,
+            "query": "Table isa 'Dimension' and name = 'sales_fact'",
+            "source": "GremlinQueryComposerTest.java:378"
+        },
+        {
+            "parses": true,
+            "query": "Table has name and name = 'sales_fact'",
+            "source": "GremlinQueryComposerTest.java:379"
+        },
+        {
+            "parses": true,
+            "query": "Table is 'Dimension' and Table has owner and name = 'sales_fact'",
+            "source": "GremlinQueryComposerTest.java:380"
+        },
+        {
+            "parses": true,
+            "query": "Table has name and Table has owner and name = 'sales_fact'",
+            "source": "GremlinQueryComposerTest.java:381"
+        },
+        {
+            "parses": true,
+            "query": "Table where partitionSize = 2048",
+            "source": "GremlinQueryComposerTest.java:387"
+        },
+        {
+            "parses": true,
+            "query": "Table where partitionSize = 2048 or partitionSize = 10",
+            "source": "GremlinQueryComposerTest.java:388"
+        },
+        {
+            "parses": true,
+            "query": "Table has __state",
+            "source": "GremlinQueryComposerTest.java:393"
+        },
+        {
+            "parses": true,
+            "query": "Table select __guid",
+            "source": "GremlinQueryComposerTest.java:394"
+        },
+        {
+            "parses": true,
+            "query": "Table as t where t.__state = 'ACTIVE'",
+            "source": "GremlinQueryComposerTest.java:397"
+        },
+        {
+            "parses": true,
+            "query": "Table where db.name = \"Reporting\" and name =\"sales_fact\" select name",
+            "source": "GremlinQueryComposerTest.java:405"
+        },
+        {
+            "parses": true,
+            "query": "Table where db.name = \"Reporting\" and name =\"sales_fact\"",
+            "source": "GremlinQueryComposerTest.java:406"
+        },
+        {
+            "parses": true,
+            "query": "Table where owner != 'random'",
+            "source": "GremlinQueryComposerTest.java:411"
+        },
+        {
+            "parses": true,
+            "query": "hdfs_path like h1",
+            "source": "GremlinQueryComposerTest.java:417"
+        },
+        {
+            "parses": true,
+            "query": "PIII",
+            "source": "GremlinQueryComposerTest.java:422"
+        },
+        {
+            "parses": true,
+            "query": "TableTTT where name = 'abcd'",
+            "source": "GremlinQueryComposerTest.java:423"
+        },
+        {
+            "parses": true,
+            "query": "Table isa Table",
+            "source": "GremlinQueryComposerTest.java:424"
+        },
+        {
+            "parses": true,
+            "query": "Table has xxx",
+            "source": "GremlinQueryComposerTest.java:425"
+        },
+        {
+            "parses": true,
+            "query": "Table where createType = '2010-03-30'",
+            "source": "GremlinQueryComposerTest.java:426"
+        },
+        {
+            "parses": true,
+            "query": "Table has db",
+            "source": "GremlinQueryComposerTest.java:427"
+        },
+        {
+            "parses": true,
+            "query": "Table groupby(db) select name",
+            "source": "GremlinQueryComposerTest.java:428"
+        },
+        {
+            "parses": true,
+            "query": "Table groupby(name) select name, max(db)",
+            "source": "GremlinQueryComposerTest.java:429"
+        },
+        {
+            "parses": true,
+            "query": "Table select db, columns",
+            "source": "GremlinQueryComposerTest.java:430"
+        },
+        {
+            "parses": true,
+            "query": "Table select db, owner, columns",
+            "source": "GremlinQueryComposerTest.java:431"
+        },
+        {
+            "parses": true,
+            "query": "'Asset'",
+            "source": "GremlinQueryComposerTest.java:610"
+        },
+        {
+            "parses": true,
+            "query": "hive_db",
+            "source": "DSLQueriesTest.java:74"
+        },
+        {
+            "parses": true,
+            "query": "hive_process",
+            "source": "DSLQueriesTest.java:75"
+        },
+        {
+            "parses": true,
+            "query": "hive_table",
+            "source": "DSLQueriesTest.java:76"
+        },
+        {
+            "parses": true,
+            "query": "hive_column",
+            "source": "DSLQueriesTest.java:77"
+        },
+        {
+            "parses": true,
+            "query": "hive_storagedesc",
+            "source": "DSLQueriesTest.java:78"
+        },
+        {
+            "parses": true,
+            "query": "Manager",
+            "source": "DSLQueriesTest.java:79"
+        },
+        {
+            "parses": true,
+            "query": "Employee",
+            "source": "DSLQueriesTest.java:80"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name = \"Julius\" )",
+            "source": "DSLQueriesTest.java:150"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name like \"Jul*\" )",
+            "source": "DSLQueriesTest.java:151"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name like \"J*\" )",
+            "source": "DSLQueriesTest.java:152"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name like \"*us\" )",
+            "source": "DSLQueriesTest.java:153"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name like \"*uli*\" )",
+            "source": "DSLQueriesTest.java:154"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name like \"Julius\" )",
+            "source": "DSLQueriesTest.java:155"
+        },
+        {
+            "parses": true,
+            "query": "Person where (name like \"Jul\" )",
+            "source": "DSLQueriesTest.java:156"
+        },
+        {
+            "parses": true,
+            "query": "Person where (birthday < \"1950-01-01T02:35:58.440Z\" )",
+            "source": "DSLQueriesTest.java:158"
+        },
+        {
+            "parses": true,
+            "query": "Person where (birthday > \"1975-01-01T02:35:58.440Z\" )",
+            "source": "DSLQueriesTest.java:159"
+        },
+        {
+            "parses": true,
+            "query": "Person where (birthday >= \"1975-01-01T02:35:58.440Z\" )",
+            "source": "DSLQueriesTest.java:160"
+        },
+        {
+            "parses": true,
+            "query": "Person where (birthday <= \"1950-01-01T02:35:58.440Z\" )",
+            "source": "DSLQueriesTest.java:161"
+        },
+        {
+            "parses": true,
+            "query": "Person where (birthday = \"1975-01-01T02:35:58.440Z\" )",
+            "source": "DSLQueriesTest.java:162"
+        },
+        {
+            "parses": true,
+            "query": "Person where (birthday != \"1975-01-01T02:35:58.440Z\" )",
+            "source": "DSLQueriesTest.java:163"
+        },
+        {
+            "parses": true,
+            "query": "Person where (hasPets = true)",
+            "source": "DSLQueriesTest.java:165"
+        },
+        {
+            "parses": true,
+            "query": "Person where (hasPets = false)",
+            "source": "DSLQueriesTest.java:166"
+        },
+        {
+            "parses": true,
+            "query": "Person where (hasPets != false)",
+            "source": "DSLQueriesTest.java:167"
+        },
+        {
+            "parses": true,
+            "query": "Person where (hasPets != true)",
+            "source": "DSLQueriesTest.java:168"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars > 0)",
+            "source": "DSLQueriesTest.java:170"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars > 1)",
+            "source": "DSLQueriesTest.java:171"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars >= 1)",
+            "source": "DSLQueriesTest.java:172"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars < 2)",
+            "source": "DSLQueriesTest.java:173"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars <= 2)",
+            "source": "DSLQueriesTest.java:174"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars = 2)",
+            "source": "DSLQueriesTest.java:175"
+        },
+        {
+            "parses": true,
+            "query": "Person where (numberOfCars != 2)",
+            "source": "DSLQueriesTest.java:176"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber > 0)",
+            "source": "DSLQueriesTest.java:178"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber > 17)",
+            "source": "DSLQueriesTest.java:179"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber >= 17)",
+            "source": "DSLQueriesTest.java:180"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber < 153)",
+            "source": "DSLQueriesTest.java:181"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber <= 153)",
+            "source": "DSLQueriesTest.java:182"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber =  17)",
+            "source": "DSLQueriesTest.java:183"
+        },
+        {
+            "parses": true,
+            "query": "Person where houseNumber >= 17 or numberOfCars = 2",
+            "source": "DSLQueriesTest.java:184"
+        },
+        {
+            "parses": true,
+            "query": "Person where (houseNumber != 17)",
+            "source": "DSLQueriesTest.java:185"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage > 0)",
+            "source": "DSLQueriesTest.java:187"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage > 13)",
+            "source": "DSLQueriesTest.java:188"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage >= 13)",
+            "source": "DSLQueriesTest.java:189"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage < 13364)",
+            "source": "DSLQueriesTest.java:190"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage <= 13364)",
+            "source": "DSLQueriesTest.java:191"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage =  13)",
+            "source": "DSLQueriesTest.java:192"
+        },
+        {
+            "parses": true,
+            "query": "Person where (carMileage != 13)",
+            "source": "DSLQueriesTest.java:193"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age > 36)",
+            "source": "DSLQueriesTest.java:195"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age > 49)",
+            "source": "DSLQueriesTest.java:196"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age >= 49)",
+            "source": "DSLQueriesTest.java:197"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age < 50)",
+            "source": "DSLQueriesTest.java:198"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age <= 35)",
+            "source": "DSLQueriesTest.java:199"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age =  35)",
+            "source": "DSLQueriesTest.java:200"
+        },
+        {
+            "parses": true,
+            "query": "Person where (age != 35)",
+            "source": "DSLQueriesTest.java:201"
+        },
+        {
+            "parses": true,
+            "query": "Person where (approximationOfPi > -3.4028235e+38)",
+            "source": "DSLQueriesTest.java:203"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm modernTrade",
+            "source": "DSLQueriesTest.java:221"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\"",
+            "source": "DSLQueriesTest.java:222"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" where hive_table.name = \"time_dim\"",
+            "source": "DSLQueriesTest.java:223"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" select name",
+            "source": "DSLQueriesTest.java:224"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" limit 1",
+            "source": "DSLQueriesTest.java:225"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" or hive_table hasTerm \"ecommerce@salesGlossary\"",
+            "source": "DSLQueriesTest.java:226"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" and hive_table isA Dimension",
+            "source": "DSLQueriesTest.java:227"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" and db.name = \"Sales\" or (hive_table.name = \"sales_fact_monthly_mv\")",
+            "source": "DSLQueriesTest.java:228"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where hive_table hasTerm \"modernTrade@salesGlossary\"",
+            "source": "DSLQueriesTest.java:229"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"product_dim\" and hive_table hasTerm \"ecommerce@salesGlossary\")",
+            "source": "DSLQueriesTest.java:230"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = 'product_dim' and hive_table hasTerm 'ecommerce@salesGlossary')",
+            "source": "DSLQueriesTest.java:231"
+        },
+        {
+            "parses": true,
+            "query": "hive_table isA Dimension",
+            "source": "DSLQueriesTest.java:238"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where hive_table isA Dimension",
+            "source": "DSLQueriesTest.java:239"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where name = 'time_dim' and hive_table isA Dimension",
+            "source": "DSLQueriesTest.java:240"
+        },
+        {
+            "parses": true,
+            "query": "Dimension where Dimension.timeAttr = 'timeValue'",
+            "source": "DSLQueriesTest.java:241"
+        },
+        {
+            "parses": true,
+            "query": "Dimension as d where d.productAttr = 'productValue'",
+            "source": "DSLQueriesTest.java:242"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where hive_table isA Dimension and Dimension.timeAttr = 'timeValue'",
+            "source": "DSLQueriesTest.java:243"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where Dimension.timeAttr = 'timeValue'",
+            "source": "DSLQueriesTest.java:244"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (Dimension.timeAttr = 'timeValue')",
+            "source": "DSLQueriesTest.java:245"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = 'time_dim' and Dimension.timeAttr = 'timeValue')",
+            "source": "DSLQueriesTest.java:246"
+        },
+        {
+            "parses": true,
+            "query": "hive_table hasTerm \"modernTrade@salesGlossary\" and Dimension.timeAttr = 'timeValue' and db.name = 'Sales'",
+            "source": "DSLQueriesTest.java:247"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where table.name = \"sales_fact_daily_mv\"",
+            "source": "DSLQueriesTest.java:276"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where columns.name = \"app_id\"",
+            "source": "DSLQueriesTest.java:277"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db",
+            "source": "DSLQueriesTest.java:278"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as d select d",
+            "source": "DSLQueriesTest.java:280"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\"",
+            "source": "DSLQueriesTest.java:281"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" select name, owner",
+            "source": "DSLQueriesTest.java:282"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where name='time_id' select name",
+            "source": "DSLQueriesTest.java:283"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has name",
+            "source": "DSLQueriesTest.java:284"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table",
+            "source": "DSLQueriesTest.java:285"
+        },
+        {
+            "parses": true,
+            "query": "hive_table isa Dimension",
+            "source": "DSLQueriesTest.java:287"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column isa PII",
+            "source": "DSLQueriesTest.java:288"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column isa PII select hive_column.qualifiedName",
+            "source": "DSLQueriesTest.java:289"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName",
+            "source": "DSLQueriesTest.java:290"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName, hive_column.description",
+            "source": "DSLQueriesTest.java:291"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName",
+            "source": "DSLQueriesTest.java:292"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName, description",
+            "source": "DSLQueriesTest.java:293"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\"",
+            "source": "DSLQueriesTest.java:294"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" select qualifiedName, description",
+            "source": "DSLQueriesTest.java:295"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select hive_table.qualifiedName",
+            "source": "DSLQueriesTest.java:296"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name = \"Reporting\")",
+            "source": "DSLQueriesTest.java:297"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1",
+            "source": "DSLQueriesTest.java:298"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db is JdbcAccess",
+            "source": "DSLQueriesTest.java:299"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name",
+            "source": "DSLQueriesTest.java:300"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as db1 hive_table where (db1.name = \"Reporting\")",
+            "source": "DSLQueriesTest.java:301"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1",
+            "source": "DSLQueriesTest.java:302"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1",
+            "source": "DSLQueriesTest.java:303"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and db.name = \"Sales\") select name, createTime",
+            "source": "DSLQueriesTest.java:304"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"time_dim\" and db.name = \"Sales\") or (name = \"sales_fact\" and db.name = \"Sales\") select name, createTime",
+            "source": "DSLQueriesTest.java:305"
+        },
+        {
+            "parses": true,
+            "query": "Dimension",
+            "source": "DSLQueriesTest.java:306"
+        },
+        {
+            "parses": true,
+            "query": "JdbcAccess",
+            "source": "DSLQueriesTest.java:307"
+        },
+        {
+            "parses": true,
+            "query": "ETL",
+            "source": "DSLQueriesTest.java:308"
+        },
+        {
+            "parses": true,
+            "query": "Metric",
+            "source": "DSLQueriesTest.java:309"
+        },
+        {
+            "parses": true,
+            "query": "DataSet where name='sales_fact'",
+            "source": "DSLQueriesTest.java:312"
+        },
+        {
+            "parses": true,
+            "query": "Asset where name='sales_fact'",
+            "source": "DSLQueriesTest.java:313"
+        },
+        {
+            "parses": true,
+            "query": "hive_db _NOT_CLASSIFIED",
+            "source": "DSLQueriesTest.java:314"
+        },
+        {
+            "parses": true,
+            "query": "_CLASSIFIED",
+            "source": "DSLQueriesTest.java:315"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where name = [\"Reporting\",\"Sales\"]",
+            "source": "DSLQueriesTest.java:316"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where name = ['Reporting', 'Sales']",
+            "source": "DSLQueriesTest.java:317"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has __state",
+            "source": "DSLQueriesTest.java:330"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has __state",
+            "source": "DSLQueriesTest.java:331"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as d where d.__state = 'ACTIVE'",
+            "source": "DSLQueriesTest.java:332"
+        },
+        {
+            "parses": true,
+            "query": "hive_db select __guid",
+            "source": "DSLQueriesTest.java:333"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where __state = 'ACTIVE' select name, __guid, __state",
+            "source": "DSLQueriesTest.java:334"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where __isIncomplete=true",
+            "source": "DSLQueriesTest.java:335"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where __isIncomplete=false",
+            "source": "DSLQueriesTest.java:336"
+        },
+        {
+            "parses": true,
+            "query": "hive_column limit 10",
+            "source": "DSLQueriesTest.java:357"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName limit 10",
+            "source": "DSLQueriesTest.java:358"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName limit 40 offset 10",
+            "source": "DSLQueriesTest.java:359"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where name = 'Reporting' limit 10 offset 0",
+            "source": "DSLQueriesTest.java:360"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where db.name = 'Reporting' limit 10",
+            "source": "DSLQueriesTest.java:361"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where name = 'test' ",
+            "source": "DSLQueriesTest.java:362"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where name = 'test_limit' ",
+            "source": "DSLQueriesTest.java:363"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where name = 'test_limit' limit 1 ",
+            "source": "DSLQueriesTest.java:364"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where name = 'test_limit' limit 1 offset 1",
+            "source": "DSLQueriesTest.java:365"
+        },
+        {
+            "parses": true,
+            "query": "hive_column  limit 10 ",
+            "source": "DSLQueriesTest.java:378"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName limit 10 ",
+            "source": "DSLQueriesTest.java:379"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db limit 2",
+            "source": "DSLQueriesTest.java:381"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db limit 2 offset 0",
+            "source": "DSLQueriesTest.java:382"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db limit 2 offset 1",
+            "source": "DSLQueriesTest.java:383"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db limit 3 offset 1",
+            "source": "DSLQueriesTest.java:384"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" or hive_db.name=\"Sales\" or hive_db.name=\"Logging\" limit 1 offset 1",
+            "source": "DSLQueriesTest.java:387"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" or hive_db.name=\"Sales\" or hive_db.name=\"Logging\" limit 1 offset 2",
+            "source": "DSLQueriesTest.java:388"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" or hive_db.name=\"Sales\" or hive_db.name=\"Logging\" limit 2 offset 1",
+            "source": "DSLQueriesTest.java:389"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" limit 10 ",
+            "source": "DSLQueriesTest.java:390"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has name limit 2 offset 0",
+            "source": "DSLQueriesTest.java:393"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has name limit 2 offset 1",
+            "source": "DSLQueriesTest.java:394"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has name limit 10 offset 1",
+            "source": "DSLQueriesTest.java:395"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has name limit 10 offset 0",
+            "source": "DSLQueriesTest.java:396"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table limit 5",
+            "source": "DSLQueriesTest.java:399"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table limit 5 offset 5",
+            "source": "DSLQueriesTest.java:400"
+        },
+        {
+            "parses": true,
+            "query": "hive_table limit 5",
+            "source": "DSLQueriesTest.java:403"
+        },
+        {
+            "parses": true,
+            "query": "hive_table limit 5 offset 5",
+            "source": "DSLQueriesTest.java:404"
+        },
+        {
+            "parses": true,
+            "query": "hive_table isa Dimension limit 2",
+            "source": "DSLQueriesTest.java:407"
+        },
+        {
+            "parses": true,
+            "query": "hive_table isa Dimension limit 2 offset 0",
+            "source": "DSLQueriesTest.java:408"
+        },
+        {
+            "parses": true,
+            "query": "hive_table isa Dimension limit 2 offset 1",
+            "source": "DSLQueriesTest.java:409"
+        },
+        {
+            "parses": true,
+            "query": "hive_table isa Dimension limit 3 offset 1",
+            "source": "DSLQueriesTest.java:410"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where db.name='Sales' and db.clusterName='cl1'",
+            "source": "DSLQueriesTest.java:411"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where name = 'sales_fact_monthly_mv' and db.name = 'Reporting' and columns.name = 'sales'",
+            "source": "DSLQueriesTest.java:412"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column isa PII limit 5",
+            "source": "DSLQueriesTest.java:415"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column isa PII limit 5 offset 1",
+            "source": "DSLQueriesTest.java:416"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column isa PII limit 5 offset 5",
+            "source": "DSLQueriesTest.java:417"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName limit 5",
+            "source": "DSLQueriesTest.java:420"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName limit 5 offset 36",
+            "source": "DSLQueriesTest.java:421"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName limit 5",
+            "source": "DSLQueriesTest.java:424"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName limit 5 offset 36 ",
+            "source": "DSLQueriesTest.java:425"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" limit 2",
+            "source": "DSLQueriesTest.java:428"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" limit 2 offset 1",
+            "source": "DSLQueriesTest.java:429"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" limit 10 offset 3",
+            "source": "DSLQueriesTest.java:430"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select hive_table.name",
+            "source": "DSLQueriesTest.java:432"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select hive_table.name limit 5",
+            "source": "DSLQueriesTest.java:433"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select hive_table.name limit 5 offset 5",
+            "source": "DSLQueriesTest.java:434"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name = \"Reporting\") limit 10",
+            "source": "DSLQueriesTest.java:437"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1 limit 10",
+            "source": "DSLQueriesTest.java:439"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name limit 5",
+            "source": "DSLQueriesTest.java:442"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name limit 2 offset 0",
+            "source": "DSLQueriesTest.java:443"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name limit 2 offset 1",
+            "source": "DSLQueriesTest.java:444"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10",
+            "source": "DSLQueriesTest.java:449"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0",
+            "source": "DSLQueriesTest.java:450"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 5",
+            "source": "DSLQueriesTest.java:451"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0",
+            "source": "DSLQueriesTest.java:454"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 1",
+            "source": "DSLQueriesTest.java:455"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10",
+            "source": "DSLQueriesTest.java:456"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 0 offset 1",
+            "source": "DSLQueriesTest.java:457"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as d where owner = ['John ETL', 'Jane BI']",
+            "source": "DSLQueriesTest.java:458"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10",
+            "source": "DSLQueriesTest.java:459"
+        },
+        {
+            "parses": true,
+            "query": "hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10 offset 1",
+            "source": "DSLQueriesTest.java:460"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where description != '/apps/warehouse/logging'",
+            "source": "DSLQueriesTest.java:461"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (owner = \"John ETL\" and description != Random)",
+            "source": "DSLQueriesTest.java:462"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where description != ''",
+            "source": "DSLQueriesTest.java:463"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name='Reporting' or ((name='Logging' and owner = 'Jane BI') and (name='Logging' and owner = 'John ETL')))",
+            "source": "DSLQueriesTest.java:464"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db as h orderby h.owner limit 3",
+            "source": "DSLQueriesTest.java:477"
+        },
+        {
+            "parses": true,
+            "query": "hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ",
+            "source": "DSLQueriesTest.java:478"
+        },
+        {
+            "parses": true,
+            "query": "hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5",
+            "source": "DSLQueriesTest.java:479"
+        },
+        {
+            "parses": true,
+            "query": "hive_column as c select c.qualifiedName orderby hive_column.qualifiedName desc limit 5",
+            "source": "DSLQueriesTest.java:480"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db orderby hive_db.owner limit 3",
+            "source": "DSLQueriesTest.java:482"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ",
+            "source": "DSLQueriesTest.java:483"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5",
+            "source": "DSLQueriesTest.java:484"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5",
+            "source": "DSLQueriesTest.java:485"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db orderby owner limit 3",
+            "source": "DSLQueriesTest.java:487"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby qualifiedName ",
+            "source": "DSLQueriesTest.java:488"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby qualifiedName limit 5",
+            "source": "DSLQueriesTest.java:489"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby qualifiedName desc limit 5",
+            "source": "DSLQueriesTest.java:490"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" orderby owner",
+            "source": "DSLQueriesTest.java:493"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" orderby hive_db.owner limit 10 ",
+            "source": "DSLQueriesTest.java:495"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name=\"Reporting\" select name, owner orderby hive_db.name ",
+            "source": "DSLQueriesTest.java:496"
+        },
+        {
+            "parses": true,
+            "query": "hive_db has name orderby hive_db.owner limit 10 offset 0",
+            "source": "DSLQueriesTest.java:497"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select hive_table.owner orderby hive_table.owner",
+            "source": "DSLQueriesTest.java:499"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select hive_table.owner orderby hive_table.owner limit 8",
+            "source": "DSLQueriesTest.java:500"
+        },
+        {
+            "parses": true,
+            "query": "hive_table orderby hive_table.name",
+            "source": "DSLQueriesTest.java:501"
+        },
+        {
+            "parses": true,
+            "query": "hive_table orderby hive_table.owner",
+            "source": "DSLQueriesTest.java:503"
+        },
+        {
+            "parses": true,
+            "query": "hive_table orderby hive_table.owner limit 8",
+            "source": "DSLQueriesTest.java:504"
+        },
+        {
+            "parses": true,
+            "query": "hive_table orderby hive_table.owner limit 8 offset 0",
+            "source": "DSLQueriesTest.java:505"
+        },
+        {
+            "parses": true,
+            "query": "hive_table orderby hive_table.owner desc limit 8 offset 0",
+            "source": "DSLQueriesTest.java:506"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5 offset 2",
+            "source": "DSLQueriesTest.java:511"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName orderby hive_column.qualifiedName",
+            "source": "DSLQueriesTest.java:513"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName orderby hive_column.qualifiedName limit 5",
+            "source": "DSLQueriesTest.java:514"
+        },
+        {
+            "parses": true,
+            "query": "hive_column select qualifiedName orderby hive_column.qualifiedName desc",
+            "source": "DSLQueriesTest.java:515"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" orderby hive_column.name",
+            "source": "DSLQueriesTest.java:517"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2",
+            "source": "DSLQueriesTest.java:518"
+        },
+        {
+            "parses": true,
+            "query": "hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2 offset 1",
+            "source": "DSLQueriesTest.java:519"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select owner orderby hive_table.owner",
+            "source": "DSLQueriesTest.java:521"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select owner orderby hive_table.owner limit 5",
+            "source": "DSLQueriesTest.java:522"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select owner orderby hive_table.owner desc limit 5",
+            "source": "DSLQueriesTest.java:523"
+        },
+        {
+            "parses": true,
+            "query": "from hive_table select owner orderby hive_table.owner limit 5 offset 5",
+            "source": "DSLQueriesTest.java:524"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name = \"Reporting\") orderby hive_db.name",
+            "source": "DSLQueriesTest.java:526"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where (name = \"Reporting\") orderby hive_db.name limit 10",
+            "source": "DSLQueriesTest.java:527"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name orderby hive_db.owner",
+            "source": "DSLQueriesTest.java:528"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name orderby hive_db.owner limit 5",
+            "source": "DSLQueriesTest.java:529"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name orderby hive_db.owner limit 2 offset 0",
+            "source": "DSLQueriesTest.java:530"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db has name orderby hive_db.owner limit 2 offset 1",
+            "source": "DSLQueriesTest.java:531"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime ",
+            "source": "DSLQueriesTest.java:533"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ",
+            "source": "DSLQueriesTest.java:534"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0",
+            "source": "DSLQueriesTest.java:535"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 5",
+            "source": "DSLQueriesTest.java:536"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name ",
+            "source": "DSLQueriesTest.java:538"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0",
+            "source": "DSLQueriesTest.java:539"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 1",
+            "source": "DSLQueriesTest.java:540"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10",
+            "source": "DSLQueriesTest.java:541"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1",
+            "source": "DSLQueriesTest.java:542"
+        },
+        {
+            "parses": true,
+            "query": "hive_table qualifiedName like \"*time_dim*\"",
+            "source": "DSLQueriesTest.java:584"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where qualifiedName like \"qualified:R*\"",
+            "source": "DSLQueriesTest.java:585"
+        },
+        {
+            "parses": true,
+            "query": "hive_table db.name=\"Sales\"",
+            "source": "DSLQueriesTest.java:586"
+        },
+        {
+            "parses": true,
+            "query": "hive_table qualifiedName =\"Sales.time_dim\" AND db.name=\"Sales\"",
+            "source": "DSLQueriesTest.java:587"
+        },
+        {
+            "parses": true,
+            "query": "hive_table qualifiedName like \"*time_dim*\" AND db.name=\"Sales\"",
+            "source": "DSLQueriesTest.java:588"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where name like \"sa?es*\"",
+            "source": "DSLQueriesTest.java:589"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where name like \"R*\"",
+            "source": "DSLQueriesTest.java:590"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"",
+            "source": "DSLQueriesTest.java:591"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"",
+            "source": "DSLQueriesTest.java:592"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where name like 'sales*' and db.name like 'Sa?es'",
+            "source": "DSLQueriesTest.java:593"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where db.name like \"Sa*\"",
+            "source": "DSLQueriesTest.java:594"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where db.name like \"Sa*\" and name like \"*dim\"",
+            "source": "DSLQueriesTest.java:595"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where userDescription like \"*/warehouse/*\"",
+            "source": "DSLQueriesTest.java:597"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where userDescription like \"/apps/warehouse/*\"",
+            "source": "DSLQueriesTest.java:598"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where description like \"*/warehouse/*\"",
+            "source": "DSLQueriesTest.java:600"
+        },
+        {
+            "parses": true,
+            "query": "hive_db where description like \"/apps/warehouse/*\"",
+            "source": "DSLQueriesTest.java:601"
+        },
+        {
+            "parses": true,
+            "query": "hive_table where name like \"table[0-2]\"",
+            "source": "DSLQueriesTest.java:602"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db select max(name), min(name)",
+            "source": "DSLQueriesTest.java:621"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select count() ",
+            "source": "DSLQueriesTest.java:624"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select owner, name orderby owner",
+            "source": "DSLQueriesTest.java:629"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select Asset.owner, Asset.name, count()",
+            "source": "DSLQueriesTest.java:634"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select Asset.owner, count() ",
+            "source": "DSLQueriesTest.java:644"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select Asset.owner, max(Asset.name) ",
+            "source": "DSLQueriesTest.java:660"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select max(Asset.name) ",
+            "source": "DSLQueriesTest.java:666"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select owner, Asset.name, min(Asset.name)  ",
+            "source": "DSLQueriesTest.java:672"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select owner, min(Asset.name)  ",
+            "source": "DSLQueriesTest.java:678"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select min(name)  ",
+            "source": "DSLQueriesTest.java:684"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db groupby (owner) select min('name') ",
+            "source": "DSLQueriesTest.java:689"
+        },
+        {
+            "parses": true,
+            "query": "from hive_db select count() ",
+            "source": "DSLQueriesTest.java:694"
+        },
+        {
+            "parses": true,
+            "query": "from Person select count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
+            "source": "DSLQueriesTest.java:697"
+        },
+        {
+            "parses": true,
+            "query": "from Person select count() as 'count', sum(Person.age) as 'sum'",
+            "source": "DSLQueriesTest.java:700"
+        },
+        {
+            "parses": true,
+            "query": "from Asset where __isIncomplete = false groupby (__typeName)  select __typeName, count()",
+            "source": "DSLQueriesTest.java:703"
+        },
+        {
+            "parses": false,
+            "query": "db orderby(name) orderby(owner)",
+            "source": "DSLParsingTest.java:33"
+        },
+        {
+            "parses": false,
+            "query": "db orderby(name) select name, owner orderby(owner)",
+            "source": "DSLParsingTest.java:34"
+        },
+        {
+            "parses": false,
+            "query": "db groupby(name) orderby(owner) select name, owner orderby(owner)",
+            "source": "DSLParsingTest.java:35"
+        },
+        {
+            "parses": false,
+            "query": "db groupby(name) select name, owner orderby(owner) orderby(owner)",
+            "source": "DSLParsingTest.java:36"
+        },
+        {
+            "parses": false,
+            "query": "db select name, owner orderby(owner) orderby(owner)",
+            "source": "DSLParsingTest.java:37"
+        },
+        {
+            "parses": false,
+            "query": "db select name, owner orderby(owner) groupby(owner)",
+            "source": "DSLParsingTest.java:38"
+        },
+        {
+            "parses": false,
+            "query": "db select name, owner groupby(owner) orderby(owner)",
+            "source": "DSLParsingTest.java:39"
+        },
+        {
+            "parses": false,
+            "query": "db groupby(name) groupby(name) select name, owner orderby(owner) orderby(owner)",
+            "source": "DSLParsingTest.java:40"
+        }
+    ]
+}

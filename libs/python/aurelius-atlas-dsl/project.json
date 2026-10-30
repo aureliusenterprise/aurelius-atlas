@@ -1,0 +1,19 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-atlas-model"],
+    "name": "aurelius-atlas-dsl",
+    "projectType": "library",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_dsl",
+    "tags": [],
+    "targets": {
+        "generate-parser": {
+            "command": "bash grammar/generate.sh",
+            "metadata": {
+                "description": "Regenerate aurelius_atlas_dsl/generated from grammar/*.g4 with ANTLR (needs Java, DD-217)"
+            },
+            "options": {
+                "cwd": "{projectRoot}"
+            }
+        }
+    }
+}

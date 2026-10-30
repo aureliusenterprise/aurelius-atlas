@@ -13,6 +13,7 @@ dev = [
     "aurelius-atlas-core",
     "aurelius-atlas-data2model",
     "aurelius-atlas-data2model-client",
+    "aurelius-atlas-dsl",
     "aurelius-atlas-example",
     "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
@@ -75,6 +76,9 @@ workspace = true
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-data2model-client]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-dsl]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-example]
@@ -141,6 +145,7 @@ members = [
     "libs/python/aurelius-atlas-auth",
     "libs/python/aurelius-atlas-core",
     "libs/python/aurelius-atlas-data2model-client",
+    "libs/python/aurelius-atlas-dsl",
     "libs/python/aurelius-atlas-example",
     "libs/python/aurelius-atlas-lineage-model-client",
     "libs/python/aurelius-atlas-model",
@@ -168,11 +173,11 @@ exclude-projects = [
     "reports/aurelius-atlas-license-report",
     "reports/aurelius-atlas-vulnerability-report",
 ]
-exclude-subpackages = ["testing"]
+exclude-subpackages = ["generated", "testing"]
 specs = "docs/architecture/conversion/increments"
 
 [tool.pyright]
-exclude = [".venv", "site", "coverage", "tmp", "**/dist", "**/target"]
+exclude = [".venv", "site", "coverage", "tmp", "**/dist", "**/target", "**/aurelius_atlas_dsl/generated"]
 pythonVersion = "3.14"
 reportUnnecessaryTypeIgnoreComment = "error"
 typeCheckingMode = "standard"
@@ -210,6 +215,8 @@ log_level = "INFO"
 required_plugins = ["pytest-asyncio"]
 
 [tool.ruff]
+# The parser ANTLR generates from Atlas's grammar (DD-217).
+extend-exclude = ["libs/python/aurelius-atlas-dsl/aurelius_atlas_dsl/generated"]
 line-length = 120
 target-version = "py314"
 
