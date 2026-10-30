@@ -69,7 +69,7 @@ spec:
                       - --retry-connrefused
                       - --retry-delay
                       - "5"
-                      - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-keycloak.issuerUrl" .) .Values.realm.name) | quote }}
+                      - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-keycloak.issuerUrl" .) (include "atlas-keycloak.realmName" .)) | quote }}
                   securityContext:
                       runAsNonRoot: true
                       runAsUser: 65532

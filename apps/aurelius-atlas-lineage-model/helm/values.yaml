@@ -18,6 +18,9 @@ global:
         url: ""
     domain: ""
     dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm the OTLP mint URL names.
+    # "" takes the chart default (aurelius-atlas).
+    realm: ""
     trust:
         # The issuer the chart's Certificate is signed by (umbrella default;
         # DD-243/DD-259). Standalone renders need it present.
@@ -102,8 +105,6 @@ telemetry:
     service: ""
     # The per-service leg (HTTP + OIDC, DD-196).
     port: 4319
-    # The Keycloak realm the OTLP client-credentials mint targets (7.18).
-    realm: master
 
 config:
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master

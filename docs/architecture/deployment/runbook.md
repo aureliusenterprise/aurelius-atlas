@@ -81,13 +81,18 @@ the sequence to run.
 
     ```bash
     kubectl -n atlas run mint-probe --rm -i --restart=Never --image=curlimages/curl -- \
-      -s -k "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token" \
+      -s -k "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token" \
       -d grant_type=client_credentials -d client_id=otel-atlas-server \
       -d client_secret="$(kubectl -n atlas get secret atlas-otel-clients -o jsonpath='{.data.OTEL_INGEST_CLIENT_SECRET}' | base64 -d)" | tr ',' '\n' | grep -A1 '"iss"'
     ```
 
-    The `iss` must be `https://keycloak.atlas.test/realms/master` — no port,
-    no Service name.
+    The `iss` must be `https://keycloak.atlas.test/realms/aurelius-atlas` — no
+    port, no Service name. (`aurelius-atlas` is `global.realm`'s default — the
+    hardened realm the chart imports, DD-273. Like the issuer hostname, the
+    realm name is first-boot-immutable: Keycloak pins the realm's issuer when
+    it creates the realm, so `global.realm` must be final before the first
+    install; renaming it later needs a realm rebuild. `master` is the dev
+    escape hatch, not a cluster default.)
 
 ## 1. Install
 
@@ -121,7 +126,7 @@ preserves them across upgrades; retrieve them with `kubectl get secret`.
 kubectl -n atlas get pods                          # all Running/Completed
 kubectl -n atlas get gateway,gatewayclass,httproute
 curl -k https://atlas.<domain>/api/atlas/admin/liveness
-curl -k https://keycloak.<domain>/realms/master    # issuer reachable
+curl -k https://keycloak.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
 (The full smoke suite — login, entity write/read, lineage, telemetry — lands

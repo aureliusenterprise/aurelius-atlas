@@ -30,15 +30,16 @@ global:
             name: aurelius-atlas-selfsigned
             kind: Issuer
     dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm the ingest audience mints in
+    # (7.18) — the same realm the apps authenticate against, and the realm
+    # the Keycloak chart imports. "" takes the chart default
+    # (aurelius-atlas).
+    realm: ""
 
 enabled: true
 component: observability
 nameOverride: ""
 fullnameOverride: ""
-
-# The realm the ingest audience mints in (7.18) — the same realm the apps
-# authenticate against, and the Keycloak chart's only realm.
-realm: master
 
 collector:
     replicaCount: 1

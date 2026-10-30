@@ -23,3 +23,5 @@ if the cluster cannot pull dhi.io images without credentials.
 
 WARNING: Keycloak pins its issuer at first boot. {{ include "aurelius-atlas.issuerUrl" . }}
 is now final for this install — changing global.domain later requires a realm rebuild.
+The realm name (global.realm: {{ default "aurelius-atlas" .Values.global.realm }}) is part of
+that issuer and is likewise final at first boot.

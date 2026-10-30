@@ -26,6 +26,19 @@ global:
     issuer:
         url: ""
     dnsResolver: ""
+    # The realm this chart imports (CHT-74): files/<realm>.json from this
+    # chart's files/, and the realm the puller's mint URL names. "" takes the
+    # chart default (aurelius-atlas, the hardened production realm).
+    realm: ""
+    # The browser hosts the realm asset's redirect URIs and web origins are
+    # substituted with (CHT-77). "" takes the umbrella's host rule: the host
+    # over the domain, else <name>.<domain>, else <release>.localhost for a
+    # bare render.
+    hosts:
+        atlas:
+            host: ""
+        dashboard:
+            host: ""
     # The issuer signing this pod's certificates (DD-243). Namespaced by
     # default — the umbrella's chart-managed chain is an Issuer (DD-259).
     trust:
@@ -53,11 +66,17 @@ bootstrap:
     adminSecretName: ""
 
 realm:
-    # Import master.json (the chart's files/ copy, DD-256) at first boot.
+    # Import files/<name>.json (the chart's own asset copy, DD-256/DD-274) at
+    # first boot. "" takes global.realm, whose chart default is
+    # aurelius-atlas — the hardened production realm (CHT-74). `master` is
+    # the documented dev escape hatch: it loads files/master.json
+    # byte-for-byte (the DD-256 asset) with its demo users and localhost
+    # origins, and brings back the DEV_USER_* plumbing (CHT-80).
     import: true
-    name: master
-    # Demo users: <release>-keycloak-users (keys writer-password/reader-password)
-    # feed the ${DEV_USER_*} import placeholders (CHT-16).
+    name: ""
+    # Demo users (master only, CHT-80): <release>-keycloak-users (keys
+    # writer-password/reader-password) feed the ${DEV_USER_*} import
+    # placeholders (CHT-16).
     usersSecretName: ""
     # The shared otel-* ingest secret: <release>-otel-clients (key
     # OTEL_INGEST_CLIENT_SECRET) feeds the ${OTEL_INGEST_CLIENT_SECRET}

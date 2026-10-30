@@ -17,6 +17,9 @@ global:
         url: ""
     domain: ""
     dnsResolver: ""
+    # The umbrella's realm (CHT-74): the Keycloak realm every issuer URL this
+    # chart builds carries. "" takes the chart default (aurelius-atlas).
+    realm: ""
     trust:
         # The issuer the chart's Certificate is signed by (umbrella default;
         # DD-243/DD-259). Standalone renders need it present.
@@ -87,10 +90,6 @@ telemetry:
     service: ""
     # The per-service leg (HTTP + OIDC, DD-196).
     port: 4319
-
-auth:
-    # The Keycloak realm the OTLP client-credentials mint targets (7.18).
-    realm: master
 
 # Credential Secret names (DD-244): "" derives <release>-<purpose>, the
 # umbrella's generated names. Set to bring your own (CHT-21's joins).

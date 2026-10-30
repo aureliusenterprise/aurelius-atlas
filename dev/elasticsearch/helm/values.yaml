@@ -19,6 +19,9 @@ global:
         url: ""
     domain: ""
     dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm the puller's ingest JWT mints
+    # against. "" takes the chart default (aurelius-atlas).
+    realm: ""
     # The issuer signing this store's HTTP certificate (DD-243). Namespaced
     # by default — the umbrella's chart-managed chain is an Issuer (DD-259).
     trust:
@@ -101,8 +104,6 @@ telemetry:
     service: ""
     # The collector's per-service gRPC leg (DD-196).
     port: 4317
-    # The OTel realm the ingest JWT mints against.
-    realm: master
     image:
         repository: dhi.io/opentelemetry-collector
         tag: "0-debian13-contrib"
