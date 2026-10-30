@@ -40,8 +40,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   `suggestions_provider.py` (suggestions) serve quick search (DD-093, DD-094)
 - `aurelius_atlas_core/dsl_query_executor.py` — `DslQueryExecutor`: a DSL query parsed
   (`aurelius-atlas-dsl`), composed by `dsl_query_composer.py` (`DslQueryComposer`, replacing `DSLVisitor`
-  and `GremlinQueryComposer`) into a `SearchQuery`, and searched (DD-242); `identifier_helper.py` unquotes
-  names and reads `like` patterns
+  and `GremlinQueryComposer`) into a plan: a `SearchQuery` and the steps, referred and classification
+  conditions the executor resolves first (DD-242, DD-243); `select_clause_composer.py` and
+  `select_clause_projections.py` answer `select` and `groupby`; `identifier_helper.py` unquotes names and
+  reads `like` patterns
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task

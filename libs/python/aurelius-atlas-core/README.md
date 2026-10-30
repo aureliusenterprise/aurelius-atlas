@@ -51,7 +51,9 @@ attributes' search weights, in basic search and full-text search (DD-091, DD-092
 [4.2b](../../../docs/architecture/conversion/increments/4-2-quick-search.md): quick search with its facets, and
 suggestions (DD-093, DD-094). Since
 [4.4a](../../../docs/architecture/conversion/increments/4-4-dsl-entities.md): DSL search of entities, the
-query parsed by `aurelius-atlas-dsl` and composed into the same search query (DD-242).
+query parsed by `aurelius-atlas-dsl` and composed into the same search query (DD-242). Since
+[4.4b](../../../docs/architecture/conversion/increments/4-4-dsl-projections.md): DSL projections,
+aggregates and groups, and traversals into referred entities and classification attributes (DD-243).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -158,6 +160,10 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.dsl_query_executor
 
 ::: aurelius_atlas_core.dsl_query_composer
+
+::: aurelius_atlas_core.select_clause_composer
+
+::: aurelius_atlas_core.select_clause_projections
 
 ::: aurelius_atlas_core.identifier_helper
 

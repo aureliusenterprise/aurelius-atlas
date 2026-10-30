@@ -181,6 +181,21 @@ class AtlasErrorCode(Enum):
     INVALID_DSL_UNKNOWN_TYPE = (400, "ATLAS-400-00-05B", "DSL Semantic Error - {0} type not found")
     INVALID_DSL_UNKNOWN_CLASSIFICATION = (400, "ATLAS-400-00-05C", "DSL Semantic Error - {0} classification not found")
     INVALID_DSL_ORDERBY = (400, "ATLAS-400-00-05E", "DSL Semantic Error - OrderBy attribute {0} is non-primitive")
+    INVALID_DSL_SELECT_REFERRED_ATTR = (
+        400,
+        "ATLAS-400-00-060",
+        "DSL Semantic Error - Select clause has multiple referred attributes {0}",
+    )
+    INVALID_DSL_SELECT_INVALID_AGG = (
+        400,
+        "ATLAS-400-00-061",
+        "DSL Semantic Error - Select clause has aggregation on referred attributes {0}",
+    )
+    INVALID_DSL_SELECT_ATTR_MIXING = (
+        400,
+        "ATLAS-400-00-062",
+        "DSL Semantic Error - Select clause has simple and referred attributes",
+    )
     INVALID_DSL_QUALIFIED_NAME = (400, "ATLAS-400-00-064", "DSL Semantic Error - Qualified name for {0} failed!")
     INVALID_DSL_DUPLICATE_ALIAS = (
         400,

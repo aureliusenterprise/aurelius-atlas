@@ -61,3 +61,51 @@ async def test__dsl_queries_search_the_same_on_elasticsearch(dev_store: Elastics
     assert await names("w_item where label like 'x-ray/*'") == ["i4"]
     assert sorted(await names("w_item where tags = 'y'")) == ["i1", "i2"]
     assert await names("w_item where `count` > 2 orderby `count` desc") == ["i2", "i4", "i3"]  # count is a keyword
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.dsl_query_executor.DslQueryExecutor.execute",
+    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.referring",
+    rules=["DSP-03", "DSP-05", "DSP-06", "DSP-07"],
+)
+async def test__dsl_traversals_and_groups_on_elasticsearch(dev_store: ElasticsearchStore, entity_prefix: str) -> None:
+    """A plain reference through ``references``, a relationship end through the relationships; a group's count."""
+    store = EntityStore(sample_registry(), ElasticsearchEntityDocuments(dev_store.client, prefix=entity_prefix))
+    await store.prepare()
+
+    def ref(type_name: str, name: str) -> dict[str, str]:
+        return {"typeName": type_name, "guid": f"-{name}"}
+
+    def table(name: str, db: str, home: str) -> dict[str, Any]:
+        return {
+            "typeName": "s_table",
+            "guid": f"-{name}",
+            "attributes": {"qualifiedName": name, "name": "t", "db": ref("s_database", db)},
+            "relationshipAttributes": {"home": ref("s_database", home)},
+        }
+
+    await EntityWriter(store).create_or_update(
+        AtlasEntitiesWithExtInfo.model_validate(
+            {
+                "entities": [
+                    {"typeName": "s_database", "guid": "-d1", "attributes": {"qualifiedName": "d1", "name": "Sales"}},
+                    {"typeName": "s_database", "guid": "-d2", "attributes": {"qualifiedName": "d2", "name": "Other"}},
+                    table("t1", "d1", "d2"),
+                    table("t2", "d2", "d2"),
+                ]
+            }
+        )
+    )
+    service = EntityDiscoveryService(store)
+
+    async def answer(query: str) -> dict[str, Any]:
+        return (await service.search_using_dsl_query(query, 0, 0)).to_json()
+
+    async def names(query: str) -> list[str]:
+        return sorted(entity["attributes"]["qualifiedName"] for entity in (await answer(query)).get("entities", []))
+
+    assert await names("s_table where db.name = 'Sales'") == ["t1"]
+    assert await names("s_table where home.name = 'Other'") == ["t1", "t2"]
+    assert await names("s_table where name = 't', db") == ["d1", "d2"]
+    assert await names("s_database where tables.qualifiedName = 't2'") == ["d2"]
+    assert (await answer("s_table groupby (name) select name, count()"))["attributes"]["values"] == [["t", 2]]

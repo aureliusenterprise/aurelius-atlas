@@ -1,0 +1,128 @@
+name: A DSL query selects attributes, aggregates, groups and follows references
+source:
+    - repository/src/main/java/org/apache/atlas/query/SelectClauseComposer.java
+    - repository/src/main/java/org/apache/atlas/query/executors/SelectClauseProjections.java
+    - repository/src/main/java/org/apache/atlas/query/executors/TraversalBasedExecutor.java
+    - repository/src/main/java/org/apache/atlas/query/GremlinQueryComposer.java#process
+    - repository/src/main/java/org/apache/atlas/query/GremlinQueryComposer.java#addWhere
+    - repository/src/test/java/org/apache/atlas/query/DSLQueriesTest.java
+rules: [DSP-01, DSP-03, DSP-05, DSP-07]
+covers:
+    - aurelius_atlas_server.routes.discovery.search_using_dsl
+stages:
+    - name: create a database type and a table type referring to it, named for this run (DD-055); setup only
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_pdb_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: owner, typeName: string, isOptional: true }
+                  - name: scenario_ptable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: db, typeName: "scenario_pdb_{run}", isOptional: true }
+                        - { name: rows, typeName: int, isOptional: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs: the two types
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs
+    - name: create two databases and three tables; setup only
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/bulk
+          json:
+              entities:
+                  - {
+                        typeName: "scenario_pdb_{run}",
+                        guid: "-1",
+                        attributes: { qualifiedName: "pdb1_{run}", owner: Ann },
+                    }
+                  - {
+                        typeName: "scenario_pdb_{run}",
+                        guid: "-2",
+                        attributes: { qualifiedName: "pdb2_{run}", owner: Bob },
+                    }
+                  - typeName: scenario_ptable_{run}
+                    guid: "-3"
+                    attributes:
+                        { qualifiedName: "pt1_{run}", rows: 10, db: { guid: "-1", typeName: "scenario_pdb_{run}" } }
+                  - typeName: scenario_ptable_{run}
+                    guid: "-4"
+                    attributes:
+                        { qualifiedName: "pt2_{run}", rows: 5, db: { guid: "-1", typeName: "scenario_pdb_{run}" } }
+                  - typeName: scenario_ptable_{run}
+                    guid: "-5"
+                    attributes:
+                        { qualifiedName: "pt3_{run}", rows: 1, db: { guid: "-2", typeName: "scenario_pdb_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities: the five entities
+              guidAssignments: the five GUIDs
+          volatile:
+              - $.mutatedEntities
+              - $.guidAssignments
+    - name: a select answers only attributes, a row per entity
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_pdb_{run} where owner = 'Ann' select qualifiedName as qn, owner" }
+      response:
+          status: 200
+          json:
+              attributes:
+                  name: [qn, owner]
+                  values:
+                      - ["pdb1_{run}", Ann]
+              approximateCount: -1
+    - name: aggregates are of every entity found
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_ptable_{run} select count(), max(rows), min(rows), sum(rows)", limit: "1" }
+      response:
+          status: 200
+          json:
+              attributes:
+                  name: ["count()", "max(rows)", "min(rows)", "sum(rows)"]
+                  values:
+                      - [3, 10, 1, 16.0]
+              approximateCount: -1
+    - name: groups give their rows, by value
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_pdb_{run} groupby (owner) select owner, count()" }
+      response:
+          status: 200
+          json:
+              attributes:
+                  name: [owner, "count()"]
+                  values:
+                      - [Ann, 1]
+                      - [Bob, 1]
+              approximateCount: -1
+    - name: a condition on the referred database finds its tables
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: "scenario_ptable_{run} where db.owner = 'Ann' select qualifiedName orderby qualifiedName" }
+      response:
+          status: 200
+          json:
+              attributes:
+                  name: [qualifiedName]
+                  values:
+                      - ["pt1_{run}"]
+                      - ["pt2_{run}"]
+              approximateCount: -1

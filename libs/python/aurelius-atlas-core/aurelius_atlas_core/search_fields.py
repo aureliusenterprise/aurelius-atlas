@@ -190,3 +190,14 @@ def search_value(kind: str, value: Any) -> Any:  # noqa: ANN401 - Atlas values
         return float(value)
     except TypeError, ValueError:
         return None
+
+
+def vertex_property(stored: StoredEntity, attribute: AtlasAttribute | None, missing: Any = "") -> Any:  # noqa: ANN401 - a vertex property
+    """``vertex.getProperty``: the stored value, a system attribute's from its search field; ``missing`` for none."""
+    if attribute is None:
+        return missing
+    value = stored.attributes.get(attribute.qualified_name)
+    if value is None:
+        name = field_name(attribute)
+        value = None if name is None else (stored.search or {}).get(name)
+    return missing if value is None else value
