@@ -1,7 +1,7 @@
 # 4.4b DSL projections and traversals
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [\#165](<https://github.com/aureliusenterprise/aurelius-atlas/pull/165>)
 - **Records:** DD-243, DV-97, DV-98; relies on DD-057, DD-061, DD-064, DD-090, DD-242; ends DV-96
 
 The second part of increment 4.4: what 4.4a declined until now (DV-96). `select` answers an attribute table, with `count()`, `max`, `min` and `sum`; `groupby` groups it; a DSL query follows references, from a source or a condition (`hive_table, columns`, `hive_table where db.name = 'Sales'`, `select db`), and compares the attributes of the entities' classifications (`hive_table where Dimension.tagAttr1 = 'x'`). These are not tests of one document's fields: the executor evaluates them in steps over the entity documents, the relationships and the classification instances (DD-243).
