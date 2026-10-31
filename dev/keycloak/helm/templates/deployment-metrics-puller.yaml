@@ -57,7 +57,7 @@ spec:
                     type: RuntimeDefault
             initContainers:
                 - name: issuer-wait
-                  image: {{ printf "%s:%s" .Values.telemetry.puller.issuerWait.image.repository .Values.telemetry.puller.issuerWait.image.tag | quote }}
+                  image: {{ include "atlas-keycloak.componentImage" (dict "repository" .Values.telemetry.puller.issuerWait.image.repository "tag" .Values.telemetry.puller.issuerWait.image.tag "digest" .Values.telemetry.puller.issuerWait.image.digest) | quote }}
                   imagePullPolicy: IfNotPresent
                   # curl retries natively — the hardened image has no shell for
                   # a loop (DD-269; busybox's wget cannot handshake Keycloak's TLS).
@@ -83,7 +83,7 @@ spec:
                           type: RuntimeDefault
             containers:
                 - name: metrics-puller
-                  image: {{ printf "%s:%s" .Values.telemetry.puller.image.repository .Values.telemetry.puller.image.tag | quote }}
+                  image: {{ include "atlas-keycloak.componentImage" (dict "repository" .Values.telemetry.puller.image.repository "tag" .Values.telemetry.puller.image.tag "digest" .Values.telemetry.puller.image.digest) | quote }}
                   imagePullPolicy: IfNotPresent
                   securityContext:
                       allowPrivilegeEscalation: false

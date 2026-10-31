@@ -49,8 +49,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- $registry := default "ghcr.io" .Values.global.image.registry -}}
 {{- $namespace := default "aureliusenterprise" .Values.global.image.namespace -}}
 {{- $name := required "image.name is required (the published image name, e.g. aurelius-atlas-server)" .Values.image.name -}}
-{{- $tag := default .Chart.AppVersion .Values.image.tag -}}
-{{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
+{{- $base := printf "%s/%s/%s" $registry $namespace $name -}}
+{{- with .Values.image.digest -}}
+{{- printf "%s@%s" $base . -}}
+{{- else -}}
+{{- printf "%s:%s" $base (default .Chart.AppVersion $.Values.image.tag) -}}
+{{- end -}}
 {{- end -}}
 
 {{/* The sibling chart's Service in this release (CHT-42, name rule per

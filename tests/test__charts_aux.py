@@ -15,6 +15,7 @@ from conftest import (
     env_map,
     env_value,
     find,
+    find_all,
     helm_render,
     names,
     peer_labels,
@@ -208,3 +209,18 @@ def test__lineage_model_and_validate_entity_render_no_policies() -> None:
         chart = AUX_CHARTS[component]
         docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
         assert names(docs, "NetworkPolicy") == set()
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+@pytest.mark.parametrize("component", AUX)
+def test__image_digest_override_replaces_the_tag(component: str) -> None:
+    """image.digest renders <base>@<digest> in every aux chart (CHT-92).
+
+    Same helper family as the server chart; the field stays empty in the
+    repo (CHT-94) and this is the operator override path.
+    """
+    chart = AUX_CHARTS[component]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=(f"image.digest=sha256:{9:064d}",))
+    (deployment,) = find_all(docs, "Deployment")
+    (app,) = pod_spec(deployment)["containers"]
+    assert app["image"] == f"ghcr.io/aureliusenterprise/aurelius-atlas-{component}@sha256:" + "0" * 63 + "9"

@@ -104,16 +104,36 @@ app.kubernetes.io/name: {{ include "atlas-keycloak.pgFullname" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
+{{/* Digest-pinned (CHT-92/93): a digest always wins over the tag. */}}
 {{- define "atlas-keycloak.image" -}}
 {{- $name := required "image.repository is required (the Keycloak image)" .Values.image.repository -}}
 {{- $tag := required "image.tag is required (the Keycloak image tag travels with the chart)" .Values.image.tag -}}
+{{- if .Values.image.digest -}}
+{{- printf "%s@%s" $name .Values.image.digest -}}
+{{- else -}}
 {{- printf "%s:%s" $name $tag -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "atlas-keycloak.pgImage" -}}
 {{- $name := required "postgres.image.repository is required" .Values.postgres.image.repository -}}
 {{- $tag := required "postgres.image.tag is required" .Values.postgres.image.tag -}}
+{{- if .Values.postgres.image.digest -}}
+{{- printf "%s@%s" $name .Values.postgres.image.digest -}}
+{{- else -}}
 {{- printf "%s:%s" $name $tag -}}
+{{- end -}}
+{{- end -}}
+
+{{/* A chart-pinned component image (the puller/issuer-wait pair, CHT-92):
+repository + tag, with the digest winning when set (CHT-93). The ES chart's
+twin, chart-local per DD-247. */}}
+{{- define "atlas-keycloak.componentImage" -}}
+{{- if .digest -}}
+{{- printf "%s@%s" .repository .digest -}}
+{{- else -}}
+{{- printf "%s:%s" .repository (default .defaultTag .tag) -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

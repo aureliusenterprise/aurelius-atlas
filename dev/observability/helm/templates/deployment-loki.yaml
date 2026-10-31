@@ -40,7 +40,7 @@ spec:
                 {{- toYaml .Values.podSecurityContext | nindent 16 }}
             containers:
                 -   name: loki
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.loki.image.repository "tag" .Values.loki.image.tag "defaultTag" "3-debian13") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.loki.image.repository "tag" .Values.loki.image.tag "digest" .Values.loki.image.digest "defaultTag" "3-debian13") | quote }}
                     imagePullPolicy: IfNotPresent
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}
