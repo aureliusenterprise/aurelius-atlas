@@ -31,6 +31,9 @@ HELM_TIMEOUT="${ATLAS_CLUSTER_HELM_TIMEOUT:-15m}"
 GATEWAY_CLASS="${ATLAS_CLUSTER_GATEWAY_CLASS:-envoy-gateway}"
 TMP="${ATLAS_CLUSTER_TMP:-$ROOT/tmp/cluster}"
 SKIP_BUILD="${ATLAS_CLUSTER_SKIP_BUILD:-0}"
+# The repo venv carries PyYAML (chart_tags); the bare python3 may not.
+PY="$ROOT/.venv/bin/python"
+[[ -x "$PY" ]] || PY=python3
 
 log() { printf '\033[1;36m[cluster]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[cluster] %s\033[0m\n' "$*" >&2; exit 1; }
@@ -159,9 +162,45 @@ image_refs() {
         grep -oE 'image: "[^"]+"' | cut -d'"' -f2 | sort -u
 }
 
+chart_tags() {
+    # Digest-pinned infra images carry no tag in the render; the charts declare
+    # the tag beside the digest (CHT-93). Map digest ref -> tag, one per line.
+    "$PY" - <<'PY'
+import glob
+import yaml
+
+def walk(node):
+    if isinstance(node, dict):
+        repo, tag, dig = node.get("repository"), node.get("tag"), node.get("digest")
+        if isinstance(repo, str) and isinstance(dig, str) and str(dig).startswith("sha256:"):
+            print(f"{repo}@{dig}\t{tag}")
+        for value in node.values():
+            walk(value)
+    elif isinstance(node, list):
+        for value in node:
+            walk(value)
+
+for f in (glob.glob("helm/values.yaml") + glob.glob("apps/*/helm/values.yaml") +
+          glob.glob("dev/*/helm/values.yaml")):
+    try:
+        walk(yaml.safe_load(open(f)))
+    except (OSError, yaml.YAMLError):
+        pass
+PY
+}
+
 load_images() {
-    local refs built=0
+    # CHT-52. minikube cannot load a digest-pinned reference: docker refuses to
+    # save one ("manifest for image ... does not exist") and `minikube image
+    # load <repo>@sha256:...` is a silent no-op (v1.39). So digest pins travel
+    # under the tag their chart declares beside the digest and the exact digest
+    # name is re-applied inside the node's containerd. Honesty chain: the local
+    # image *is* the verified digest, and `docker tag <digest> <tag>` (never
+    # the reverse) is what names it — a :latest drift can't sneak in.
+    local tags built=0 ref repo tag
     refs="$(image_refs)"
+    tags="$(chart_tags)"
+    look() { printf '%s\n' "$tags" | awk -F'\t' -v r="$1" '$1 == r { print $2; exit }'; }
     for ref in $refs; do
         case "$ref" in
             ghcr.io/*)
@@ -171,6 +210,16 @@ load_images() {
                 else
                     built=1
                 fi
+                ;;
+            *@sha256:*)
+                tag="$(look "$ref")"
+                [[ -n "$tag" ]] || die "no chart values tag declared for $ref"
+                repo="${ref%@*}"
+                if ! docker image inspect "$ref" >/dev/null 2>&1; then
+                    log "pull ${repo##*/}@${ref##*@}"
+                    docker pull "$ref" >/dev/null
+                fi
+                docker tag "$ref" "$repo:$tag"
                 ;;
             *)
                 if ! docker image inspect "$ref" >/dev/null 2>&1; then
@@ -187,8 +236,18 @@ load_images() {
             -- --version latest >/dev/null
     fi
     for ref in $refs; do
-        log "minikube image load ${ref##*/}"
-        minikube image load "$ref" >/dev/null
+        if [[ "$ref" == *@sha256:* ]]; then
+            repo="${ref%@*}"
+            tag="$(look "$ref")"
+            log "minikube load ${repo##*/}:$tag (pinned ${ref##*@})"
+            minikube image load "$repo:$tag" >/dev/null
+            # ctr re-tag is idempotent (re-tagging an existing name exits 0);
+            # a different image already under this digest fails loudly here.
+            minikube ssh -- "sudo ctr -n k8s.io images tag '$repo:$tag' '$ref'" >/dev/null
+        else
+            log "minikube image load ${ref##*/}"
+            minikube image load "$ref" >/dev/null
+        fi
     done
 }
 
@@ -222,7 +281,7 @@ wait_ready() {
     local deadline=$((SECONDS + 900))
     while ((SECONDS < deadline)); do
         local bad
-        bad="$(kubectl -n "$NS" get pods -no json |
+        bad="$(kubectl -n "$NS" get pods -o json |
             python3 -c '
 import json, sys
 pods = json.load(sys.stdin)["items"]

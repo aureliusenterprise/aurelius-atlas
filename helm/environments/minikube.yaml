@@ -18,3 +18,10 @@ atlas-webapp:
             - 10.244.0.0/16
 atlas-server:
     forwardedAllowIps: "10.244.0.0/16"
+    # The parity scenarios assert a tasks-disabled installation (DD-081), the
+    # same pin the compose e2e stack carries (AURELIUS_ATLAS_SERVER_TASKS_ENABLED
+    # in apps/aurelius-atlas-server/e2e/docker-compose.yaml). The 10.5 POC lane
+    # runs those scenarios here, so the cluster must answer /session with
+    # atlas.tasks.enabled=false too.
+    config:
+        AURELIUS_ATLAS_SERVER_TASKS_ENABLED: "false"
