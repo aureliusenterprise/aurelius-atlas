@@ -170,6 +170,11 @@
     "aliases": []
   },
   {
+    "version": "feat-chart-misconfig-scans",
+    "title": "feat-chart-misconfig-scans",
+    "aliases": []
+  },
+  {
     "version": "feat-chart-grafana-auth",
     "title": "feat-chart-grafana-auth",
     "aliases": []
