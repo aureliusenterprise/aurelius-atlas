@@ -51,6 +51,12 @@ map $atlas_api_limit_key $atlas_api_limit_addr {
 }
 
 limit_req_zone $atlas_api_limit_addr zone=atlas_api:10m rate=300r/m;
+# The browser-leg twin (CHT-100): /otel/ is auth-gated by the collector's own
+# OIDC receiver, but the 401 path is still work — a logged-in tab (or a
+# scripted flood behind one) otherwise reaches the collector unbounded while
+# /api/ buckets. Browser-sized with headroom: an OTLP push is bursty by
+# design, an attack is a sustained stream.
+limit_req_zone $atlas_api_limit_addr zone=atlas_otel:10m rate=600r/m;
 limit_req_status 429;
 
 # Native edge tracing (SHL-15, DD-239): every /api/ request gets an edge span
@@ -107,6 +113,13 @@ server {
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # HSTS (CHT-99): this listener only ever serves TLS (DD-270), so the
+    # downgrade window is the one hop in front of it. Whole-directive
+    # placeholder (the realip precedent): the chart renders the add_header
+    # when nginx.hsts.enabled, and the compose/e2e shapes resolve it to
+    # nothing — test posture, mirroring the server's dev HSTS_ENABLED=false.
+    ${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}
 
     # keycloak-js silent SSO iframe: same-origin only, and its one inline
     # script is allowed via hash (sha256 of the script element's content —
@@ -195,6 +208,11 @@ server {
     # (DD-193, CIA-01/02). A logged-out push has no token and is answered
     # 401 — accepted, the telemetry gate is the login (DD-193).
     location /otel/ {
+        # The browser-leg bucket (CHT-100): same trusted-address key as
+        # /api/, so behind a Gateway with trustedProxyCIDRs it buckets per
+        # browser, and without it per Gateway — same shape as SRV-09.
+        limit_req zone=atlas_otel burst=100 nodelay;
+
         set $otel_upstream ${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM};
         rewrite ^/otel(/.*)$ $1 break;
         proxy_pass $otel_upstream;

@@ -43,10 +43,16 @@ case "${1:-status}" in
         # NOTE: helm upgrade EVICTS in-flight runner pods (jobs die, queued
         # jobs requeue) - deploy between runs.
         TAG="${CI_SHAPEA_IMAGE_TAG:-main}"
+        # A sha256: digest joins with @, a tag with : (CHT-102c): the repo
+        # var pins bytes when the operator spells a digest, tags otherwise.
+        case "$TAG" in
+            sha256:*) JOIN="@" ;;
+            *) JOIN=":" ;;
+        esac
         helm upgrade --install atlas-ci-shapea \
             oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
             --namespace arc-runners -f "$HERE/arc-shapea-values.yaml" \
-            --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner:${TAG}"
+            --set "template.spec.containers[0].image=ghcr.io/aureliusenterprise/atlas-ci-runner${JOIN}${TAG}"
         ;;
     cache-server)
         # The actions/cache backend for self-hosted runners

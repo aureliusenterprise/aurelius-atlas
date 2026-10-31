@@ -16,10 +16,11 @@ from conftest import WEBAPP_CHART, container, env_map, env_value, find, helm_ren
 
 TEST_VALUES = (WEBAPP_CHART / "tests/values.test.yaml",)
 
-# The twelve placeholder names CHT-25 fixes as the template contract (the
-# listener leaf paths join DD-270's pair).
+# The thirteen placeholder names CHT-25 fixes as the template contract (the
+# listener leaf paths join DD-270's pair; HSTS_HEADER joined with CHT-99).
 PLACEHOLDERS = [
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM",
+    "AURELIUS_ATLAS_WEBAPP_HSTS_HEADER",
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME",
     "AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER",
     "AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS",
@@ -111,7 +112,7 @@ def test__configmap_ships_the_raw_template(webapp_docs: list[dict[str, Any]]) ->
 
 
 @pytest.mark.covers(rules=["CHT-24"])
-def test__init_container_resolves_the_twelve_placeholders(webapp_docs: list[dict[str, Any]]) -> None:
+def test__init_container_resolves_the_thirteen_placeholders(webapp_docs: list[dict[str, Any]]) -> None:
     """resolve-nginx-config: same image, sed per name, fail-loud guard."""
     init = _init(find(webapp_docs, "Deployment", "atlas-webapp"), "resolve-nginx-config")
     image_app = container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")
@@ -123,7 +124,7 @@ def test__init_container_resolves_the_twelve_placeholders(webapp_docs: list[dict
         # the shell expansion of the env var.
         assert f"s|\\${{{name}}}|${{{name}}}|g" in script, name
     assert "exit 1" in script  # the unresolved-placeholder guard
-    # The init's env is exactly the twelve names (CHT-25, DD-270).
+    # The init's env is exactly the thirteen names (CHT-25, DD-270).
     assert sorted(env_map(init)) == sorted(PLACEHOLDERS)
 
 
@@ -200,6 +201,53 @@ def _init(deployment: dict[str, Any], name: str) -> dict[str, Any]:
     inits = [c for c in pod_spec(deployment)["initContainers"] if c["name"] == name]
     assert len(inits) == 1
     return inits[0]
+
+
+@pytest.mark.covers(rules=["CHT-98"])
+def test__resolved_config_volume_is_tmpfs(webapp_docs: list[dict[str, Any]]) -> None:
+    """nginx-conf rides Memory, its secret-bearing content never on disk (CHT-98).
+
+    The resolved config carries the legacy bearer in its otel_exporter block;
+    the pid/temp/log emptyDirs beside it stay disk-backed — only this one
+    holds a credential.
+    """
+    volumes = {v["name"]: v for v in pod_spec(find(webapp_docs, "Deployment", "atlas-webapp"))["volumes"]}
+    assert volumes["nginx-conf"]["emptyDir"] == {"medium": "Memory"}
+    for name in ("nginx-run", "nginx-lib", "nginx-log"):
+        assert volumes[name]["emptyDir"] == {}, name
+
+
+@pytest.mark.covers(rules=["CHT-99"])
+def test__hsts_rides_the_listener_and_the_placeholder_gates_it() -> None:
+    """HSTS renders through the placeholder; disabled substitutes nothing (CHT-99).
+
+    Whole-directive placeholder like the realip block: the chart spells the
+    add_header, the ConfigMap keeps only the hole, and the enable switch
+    lands in the init's env — the compose/e2e shape is the empty side.
+    """
+    docs = helm_render(WEBAPP_CHART, value_files=TEST_VALUES)
+    init = _init(find(docs, "Deployment", "atlas-webapp"), "resolve-nginx-config")
+    hsts = env_value(env_map(init), "AURELIUS_ATLAS_WEBAPP_HSTS_HEADER")
+    assert hsts == 'add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;'
+    template = find(docs, "ConfigMap", "atlas-webapp-nginx")["data"]["nginx.conf.template"]
+    assert "${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}" in template
+    assert "Strict-Transport-Security" not in template  # substituted, not spelled
+    off = helm_render(WEBAPP_CHART, value_files=TEST_VALUES, sets=("nginx.hsts.enabled=false",))
+    off_init = _init(find(off, "Deployment", "atlas-webapp"), "resolve-nginx-config")
+    assert env_value(env_map(off_init), "AURELIUS_ATLAS_WEBAPP_HSTS_HEADER") == ""
+
+
+@pytest.mark.covers(rules=["CHT-100"])
+def test__otel_location_carries_its_own_limiter(webapp_docs: list[dict[str, Any]]) -> None:
+    """The browser-leg zone beside /api/'s, in the shipped asset and its e2e twin (CHT-100)."""
+    template = find(webapp_docs, "ConfigMap", "atlas-webapp-nginx")["data"]["nginx.conf.template"]
+    assert "limit_req_zone $atlas_api_limit_addr zone=atlas_otel:10m rate=600r/m;" in template
+    otel_body = template.split("location /otel/ {")[1].split("}")[0]
+    assert "limit_req zone=atlas_otel burst=100 nodelay;" in otel_body
+    e2e = (WEBAPP_CHART.parent / "e2e/config/nginx.conf").read_text()
+    assert "limit_req_zone $binary_remote_addr zone=atlas_otel:10m rate=600r/m;" in e2e
+    e2e_otel_body = e2e.split("location /otel/ {")[1].split("}")[0]
+    assert "limit_req zone=atlas_otel burst=100 nodelay;" in e2e_otel_body
 
 
 @pytest.mark.covers(rules=["CHT-92"])

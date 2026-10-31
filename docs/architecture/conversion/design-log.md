@@ -9144,3 +9144,79 @@ Aurelius-tag or committed-pin, so an unpinned new image fails CI without a
 registry call, and a pin that drifts from `conftest.PINNED` fails loudly.
 `digest: ""` fields in the six Aurelius blocks look like dead config to a
 newcomer; CHT-94 and the values comments carry the why. Next free DD: 279.
+
+### DD-279 — Edge hardening, two-stack loopback guard, CI fork posture
+
+- **Status:** Accepted
+- **Increment:** 10.11
+- **Date:** 2026-10-31
+
+**Context.** The pentest backlog's Low residue after 10.6–10.10: the webapp
+edge serves the SPA over TLS with no HSTS, keeps the resolved nginx config
+(which embeds the legacy ingest bearer) on disk, and proxies `/otel/`
+unthrottled; Prometheus/Loki/Tempo and the dev store still publish on
+`0.0.0.0`; and the CI queue treats the members-only-PR policy as a GitHub
+setting rather than code, with one `concurrency` group shared by public
+deploys and PR previews and ARC runner images floating on mutable tags.
+
+**Decision.** Four calls, the third's shape decided mid-increment at the
+user's direction:
+
+1. **The tmpfs is scoped to the secret.** Only `nginx-conf` gets
+   `emptyDir.medium: Memory` (CHT-98); the pid/temp/log emptyDirs stay
+   disk-backed. RAM is charged per pod and the threat is the bearer, not
+   emptyDirs in general. HSTS rides the same placeholder mechanism as the
+   realip block — the chart renders the _whole_ `add_header` directive into
+   `${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}` (CHT-99), so the e2e/compose
+   shapes resolve it to nothing and the fail-loud guard keeps the contract
+   closed at thirteen. The `/otel/` limiter is browser-sized deliberately
+   (`atlas_otel`, 600 r/m, burst 100) in both twins — a test-sized zone
+   would throttle the suite's own traffic (CHT-100).
+2. **The loopback guard enforces two stacks, not the world** (CHT-101).
+   `tests/test__dev_stack.py` scans only `dev/observability` and
+   `dev/elasticsearch` compose files. A first sketch swept all of `dev/*`;
+   the sweep surfaced Keycloak's issuer ports (e2e consumers dial
+   `keycloak.localhost` via `extra_hosts: host-gateway`, so a loopback bind
+   detaches every app e2e suite) and the template Postgres (its host port
+   is the examples' `serve` database — host processes, not containers).
+   Both need a compose-network rework, not a `127.0.0.1:` prefix: they are
+   **named deferrals** in the spec, and the guard's file set is the honest
+   enforceable set rather than an allowlist-shaped lie.
+3. **Fork posture lives in the workflows** (CHT-102). Every
+   `pull_request`-triggered job in `ci.yaml` and the PR-docs job gain the
+   same-repo guard (`head.repo.full_name == github.repository`, ORed with
+   `event_name != 'pull_request'` where a job also rides pushes). The
+   members-only policy is a repo setting a future settings-sync could
+   relax; the runners mount age keys, so the boundary is worth two lines
+   per job. Docs `concurrency` splits by scope: `docs-public` (main/tag/
+   delete) vs `docs-pr-<number>` per PR — no `cancel-in-progress` on the
+   PR group because `mike deploy --push` is a git transaction.
+   ARC: the third-party `actions-runner` cache-init image is digest-pinned
+   in values; `CI_SHAPEA_IMAGE_TAG` accepts a `sha256:` digest and
+   `install.sh` joins it with `@` (own images stay tags per DD-278).
+4. **The Trivy SARIF stays one-hopped** — declined at the user's direction:
+   the scan already feeds SonarQube, whose quality gate fails the build; a
+   second surface (GitHub code scanning) for identical findings splits the
+   triage queue instead of shortening it. CODEOWNERS declined the same way
+   (enforces nothing without org plan support). Both stay in the spec's
+   not-delivered list with the reasoning.
+
+**Alternatives.** (a) Whole-`dev/*` loopback sweep — rejected per 2; the
+deferrals are named and dated, not hidden. (b) `permissions: contents:
+read` on PR jobs instead of `if:` guards — insufficient: the age keys ride
+step env from decrypted `.env.enc`, and a fork PR would still exfiltrate
+via build output. (c) tmpfs for every emptyDir — rejected per 1. (d) A
+per-PR concurrency group with `cancel-in-progress: true` — rejected: two
+previews of one PR racing `mike deploy --push` corrupt the gh-pages
+branch; queueing (no cancel) is correct for a git transaction.
+
+**Consequences.** The webapp ConfigMap asset carries an
+`${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}` placeholder no render may leave
+unresolved — the chart suite pins the thirteen-name contract, and the
+twin byte-identity test keeps `helm/files/nginx.conf.template` honest.
+Dev hosts with tooling that reached 9090/3100/3200 or 9200 over a LAN
+interface must re-point at the box's address; contributor-guide ports
+table says so. The fork guard means external contributions run only the
+lint/render jobs until the policy question is settled — accepted. The
+Keycloak/Postgres loopback deferrals are open items with a named blocker
+(compose-network rework) for a future increment. Next free DD: 280.

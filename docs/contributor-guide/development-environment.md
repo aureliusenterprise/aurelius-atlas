@@ -129,15 +129,15 @@ verification, not connectivity. The server's e2e container attaches to the Elast
 observability networks and reaches the store as `https://elasticsearch:9200`. Certificate plumbing
 is in [TLS Certificates](tls-certificates.md).
 
-| Service                   | Host port                      | Slice           | Notes                                                                                                  |
-| ------------------------- | ------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------ |
-| Atlas server              | 21000                          | app             | Atlas's own port                                                                                       |
-| Elasticsearch             | `${ELASTICSEARCH_PORT}` → 9200 | `elasticsearch` | TLS only                                                                                               |
-| Postgres (examples)       | `${DATABASE_PORT}` → 5432      | `postgres`      | Keycloak keeps its own, on its network                                                                 |
-| Keycloak                  | 8080 / 8443                    | `keycloak`      | 8080 dev convenience; 8443 is the verified TLS path                                                    |
-| OTel collector            | 127.0.0.1:4317 / 4318 / 4319   | `observability` | OTLP: 4318 browser leg (user JWT), 4317/4319 service leg (shared token); TLS (DD-193), loopback-pinned |
-| Prometheus / Loki / Tempo | 9090 / 3100 / 3200             | `observability` | Consumed through the collector                                                                         |
-| Grafana                   | 127.0.0.1:3000                 | `observability` | Loopback only                                                                                          |
+| Service                   | Host port                              | Slice           | Notes                                                                                                  |
+| ------------------------- | -------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |
+| Atlas server              | 21000                                  | app             | Atlas's own port                                                                                       |
+| Elasticsearch             | 127.0.0.1:${ELASTICSEARCH_PORT} → 9200 | `elasticsearch` | TLS only; loopback-pinned (CHT-101)                                                                    |
+| Postgres (examples)       | `${DATABASE_PORT}` → 5432              | `postgres`      | Keycloak keeps its own, on its network                                                                 |
+| Keycloak                  | 8080 / 8443                            | `keycloak`      | 8080 dev convenience; 8443 is the verified TLS path                                                    |
+| OTel collector            | 127.0.0.1:4317 / 4318 / 4319           | `observability` | OTLP: 4318 browser leg (user JWT), 4317/4319 service leg (shared token); TLS (DD-193), loopback-pinned |
+| Prometheus / Loki / Tempo | 127.0.0.1:9090 / 3100 / 3200           | `observability` | Loopback-pinned (CHT-101); Grafana datasources ride the compose network                                |
+| Grafana                   | 127.0.0.1:3000                         | `observability` | Loopback only                                                                                          |
 
 Each slice documents its own services, images, and run commands in its colocated README:
 `dev/elasticsearch`, `dev/keycloak`, `dev/postgres`, `dev/observability`.
