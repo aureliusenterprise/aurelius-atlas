@@ -160,6 +160,11 @@
     "aliases": []
   },
   {
+    "version": "feat-chart-pentest-lows-hygiene",
+    "title": "feat-chart-pentest-lows-hygiene",
+    "aliases": []
+  },
+  {
     "version": "feat-chart-network-segmentation",
     "title": "feat-chart-network-segmentation",
     "aliases": []
