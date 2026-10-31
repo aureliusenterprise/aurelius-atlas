@@ -140,6 +140,9 @@ global:
             port: 21000
         grafana:
             # Off by default; `kubectl port-forward` reaches it (runbook).
+            # Safe to expose now that it is off: the login is the realm's
+            # (CHT-84, DD-275) and the host feeds the grafana client's
+            # redirect URIs (CHT-82).
             enabled: false
             # "" defaults to grafana.<domain>.
             host: ""
@@ -176,11 +179,16 @@ secrets:
     grafanaAdmin:
         # Grafana's admin identity (DD-267) → Secret <release>-grafana-admin,
         # joined into the observability chart's GF_SECURITY_ADMIN_USER/
-        # PASSWORD. The login form stays disabled (anonymous-Viewer read
-        # posture, R5); this is the API/account-recovery credential, not a
-        # daily login.
+        # PASSWORD. The daily door is the realm login (CHT-84); this is the
+        # API/account-recovery credential, not a daily login.
         user: admin
         password: ""
+    grafanaOauth:
+        # The grafana client's secret (CHT-83, DD-275) → Secret
+        # <release>-grafana-oauth, key client-secret. Read by both the realm
+        # import (${GRAFANA_CLIENT_SECRET}) and the observability chart's
+        # GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET.
+        clientSecret: ""
     keycloakUsers:
         # Demo account passwords the realm import fills (${DEV_USER_*}).
         writerPassword: ""

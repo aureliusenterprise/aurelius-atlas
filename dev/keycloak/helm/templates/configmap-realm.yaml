@@ -15,12 +15,13 @@ substitute credentials: a render must not produce a credential a later
 render would regenerate (the DD-244 preserve rule lives in the umbrella's
 lookup, not here).
 
-The __ATLAS_HOST__/__DASHBOARD_HOST__ tokens in the aurelius-atlas asset
-are a different substitution (CHT-77): browser hosts are deployment
-topology, not credentials, and Helm owns them — a literal replace over the
-asset text, so the JSON itself carries no templating. master.json has no
-tokens, which keeps its render byte-equal to the asset (DD-256's copy
-guard compares the asset to the dev import, not to this render).
+The __ATLAS_HOST__/__DASHBOARD_HOST__/__GRAFANA_HOST__ tokens in the
+aurelius-atlas asset are a different substitution (CHT-77, CHT-82): browser
+hosts are deployment topology, not credentials, and Helm owns them — a
+literal replace over the asset text, so the JSON itself carries no
+templating. master.json has no tokens, which keeps its render byte-equal
+to the asset (DD-256's copy guard compares the asset to the dev import, not
+to this render).
 */}}
 {{- if .Values.realm.import }}
 {{- $realm := include "atlas-keycloak.realmName" . -}}
@@ -28,6 +29,7 @@ guard compares the asset to the dev import, not to this render).
 {{- $json := required (printf "%s is not a shipped realm asset (files/ carries master.json and aurelius-atlas.json)" $asset) (.Files.Get $asset) -}}
 {{- $json = replace "__ATLAS_HOST__" (include "atlas-keycloak.atlasHost" .) $json -}}
 {{- $json = replace "__DASHBOARD_HOST__" (include "atlas-keycloak.dashboardHost" .) $json -}}
+{{- $json = replace "__GRAFANA_HOST__" (include "atlas-keycloak.grafanaHost" .) $json -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -108,8 +108,11 @@ nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
 ```
 
 > [!NOTE]
-> Grafana is anonymous-Viewer only (`GF_AUTH_DISABLE_LOGIN_FORM=true`; no admin
-> login exists). A browser showing "Unauthorized" while `127.0.0.1:3000` works
+> The **dev compose** Grafana is anonymous-Viewer only
+> (`GF_AUTH_DISABLE_LOGIN_FORM=true`; no admin login exists) — the cluster
+> chart's Grafana logs in through the `aurelius-atlas` realm (CHT-84, DD-275;
+> its own `helm/` section below). A browser showing "Unauthorized" while
+> `127.0.0.1:3000` works
 > has a stale `grafana_session` cookie on the `localhost` host (cookies are
 > per-host, not per-port) — Grafana validates it and 401s without falling back
 > to anonymous. Fix in the browser: visit `/logout` (clears the cookie) or
@@ -143,9 +146,18 @@ Differences from the compose shape are deliberate: the single `oidc` provider
 (the public issuer resolves in-cluster too, DD-265 — runbook split-horizon
 step), the health_check extension pinned to `0.0.0.0:13133` (the probes need
 it; the dev default is loopback), and Prometheus scraping chart Services with
-static configs (no Prometheus Operator, DD-266). The legacy-leg token and the
-Grafana admin arrive from the umbrella's generated Secrets
-(`<release>-collector-legacy`, `<release>-grafana-admin`), never values. 10.6
+static configs (no Prometheus Operator, DD-266). The legacy-leg token, the
+Grafana admin, and Grafana's OAuth client secret arrive from the umbrella's
+generated Secrets (`<release>-collector-legacy`, `<release>-grafana-admin`,
+`<release>-grafana-oauth`), never values. 10.8 swaps Grafana's anonymous env
+for the `generic_oauth` provider: anonymous off, login form on, auth/token/
+userinfo URLs derived from `global.issuer.url`/`global.domain` + `global.realm`
+(the collector's OIDC receiver's facts, CHT-74), client id `grafana`, and a
+`role_attribute_path` that maps the client's `editor`/`admin` roles over a
+Viewer default (CHT-84/85). `GF_SERVER_ROOT_URL` stays unset — request-derived
+so a port-forward completes the login against the client's localhost redirect
+(DD-276); the admin Secret env stays as account recovery. The client lives in
+the prod realm asset only (the dev compose stays anonymous, DV-89). 10.6
 adds the ingress allows (CHT-67/68): the collector's four rules per leg
 (4318 browser ← webapp, 4317/4319 per-service ← apps + pullers, 4320/4321
 legacy ← webapp + keycloak, 9464/8888 ← prometheus), and the

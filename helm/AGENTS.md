@@ -78,6 +78,11 @@ the atlas/dashboard/grafana hosts; the keycloak listener reuses
 re-issue another name for the same hostname, SAN duplication is not free).
 `atlas-collector-legacy` (CHT-31) is the webapp's browser-side OTLP token,
 generated like every other credential (DD-254) and gated on either consumer.
+`<release>-grafana-oauth` (CHT-83, 10.8) is the same two-consumer shape: the
+realm import's `${GRAFANA_CLIENT_SECRET}` placeholder (keycloak chart, non-
+master only) and the observability chart's `GF_AUTH_GENERIC_OAUTH_CLIENT_
+SECRET`; disabling observability alone keeps it (the import still needs it),
+master plus no-observability drops it.
 The chart **never renders a GatewayClass** — it is a runbook prerequisite
 (the cluster's Gateway API implementation is the deployment's choice).
 `global.gateway.enabled=false` must take the edge cert with it (a leaf with
