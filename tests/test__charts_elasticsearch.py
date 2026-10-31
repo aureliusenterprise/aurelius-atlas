@@ -297,6 +297,22 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     )
 
 
+@pytest.mark.covers(rules=["CHT-44"])
+def test__puller_containers_have_read_only_roots() -> None:
+    """Both puller containers pin a read-only root filesystem (DD-282 follow-up).
+
+    The puller reads its ConfigMap/Certificates and writes nothing (no
+    file_storage extension), and curl writes nothing — KSV-0014 stays closed
+    here even though the stateful workloads keep their own root decisions.
+    """
+    docs = helm_render(ES_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    deployment = find(docs, "Deployment", "atlas-elasticsearch-metrics-puller")
+    (init,) = pod_spec(deployment)["initContainers"]
+    assert init["securityContext"]["readOnlyRootFilesystem"] is True
+    app = container(deployment, "metrics-puller")
+    assert app["securityContext"]["readOnlyRootFilesystem"] is True
+
+
 @pytest.mark.covers(rules=["CHT-90", "CHT-91"])
 def test__puller_master_realm_join_falls_back_to_the_shared_key() -> None:
     """global.realm=master restores the shared ingest key on the puller join (CHT-90/91)."""

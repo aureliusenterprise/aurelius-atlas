@@ -217,6 +217,10 @@ def test__issuer_wait_polls_the_public_well_known(obs_docs: list[dict[str, Any]]
     assert "--retry" in command
     assert "--retry-connrefused" in command
     assert command[-1] == "https://keycloak.atlas.test/realms/aurelius-atlas/.well-known/openid-configuration"
+    # curl writes nothing: the boot gate carries a read-only root on top of
+    # the shared posture (DD-282 follow-up — KSV-0014; the collector itself
+    # keeps its own root decision).
+    assert init["securityContext"]["readOnlyRootFilesystem"] is True
 
 
 @pytest.mark.covers(rules=["CHT-37"])

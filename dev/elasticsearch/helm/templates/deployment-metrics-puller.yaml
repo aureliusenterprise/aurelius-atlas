@@ -82,6 +82,8 @@ spec:
                       runAsUser: 65532
                       runAsGroup: 65532
                       allowPrivilegeEscalation: false
+                      # curl writes nothing (DD-282 follow-up: KSV-0014).
+                      readOnlyRootFilesystem: true
                       capabilities:
                           drop:
                               - ALL
@@ -93,6 +95,10 @@ spec:
                   imagePullPolicy: IfNotPresent
                   securityContext:
                       allowPrivilegeEscalation: false
+                      # The puller reads its config/Certificates and writes no
+                      # file — no file_storage extension in its ConfigMap
+                      # (DD-282 follow-up: KSV-0014).
+                      readOnlyRootFilesystem: true
                       capabilities:
                           drop:
                               - ALL

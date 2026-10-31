@@ -22,6 +22,14 @@ export interface HelmPluginOptions {
 const SARIF_PROJECT_LEVEL_JQ =
     ".runs |= map(.results = ((.results // []) | map(del(.locations))) | del(.originalUriBaseIds))";
 
+/**
+ * Scoped Trivy ignore-policy (DD-282 follow-up): silences only the verified
+ * KSV-0109 false positives on the metrics-puller ConfigMaps (their secret
+ * slots hold `${env:…}` placeholders). Workspace-relative — the run-commands
+ * execute from the workspace root.
+ */
+const CONFIG_IGNORE_POLICY = "tools/trivy/helm-misconfig-ignore.rego";
+
 const glob = "**/Chart.yaml";
 
 /**
@@ -166,7 +174,7 @@ function createNodesInternal(
                     command:
                         `helm dep update ${chartDir} >/dev/null && ` +
                         `helm template atlas ${chartDir} --namespace atlas${renderValuesArg} > {args.renderPath} && ` +
-                        `trivy config --quiet --format json --output {args.reportPath} --exit-code {args.exitCode} {args.renderPath}`,
+                        `trivy config --quiet --ignore-policy ${CONFIG_IGNORE_POLICY} --format json --output {args.reportPath} --exit-code {args.exitCode} {args.renderPath}`,
                     exitCode: 0,
                     renderPath: "{projectRoot}/.helm-rendered.yaml",
                     reportPath: "{projectRoot}/helm-misconfigs.json",
@@ -175,7 +183,7 @@ function createNodesInternal(
                     command:
                         `helm dep update ${chartDir} >/dev/null && ` +
                         `helm template atlas ${chartDir} --namespace atlas${renderValuesArg} > {args.renderPath} && ` +
-                        `trivy config --quiet --severity HIGH,CRITICAL --format sarif --exit-code {args.exitCode} {args.renderPath} | ` +
+                        `trivy config --quiet --ignore-policy ${CONFIG_IGNORE_POLICY} --severity HIGH,CRITICAL --format sarif --exit-code {args.exitCode} {args.renderPath} | ` +
                         `jq '${SARIF_PROJECT_LEVEL_JQ}' > {args.reportPath}`,
                     exitCode: 0,
                     renderPath: "{projectRoot}/.helm-rendered.yaml",

@@ -71,8 +71,12 @@ spec:
                         - "5"
                         - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) (include "atlas-observability.realm" .)) | quote }}
                     {{- with .Values.securityContext }}
+                    # The shared posture plus a read-only root: curl writes
+                    # nothing, and the value stays chart-local so the Tier 3
+                    # workloads sharing .Values.securityContext keep their
+                    # per-workload root decision (DD-282 follow-up: KSV-0014).
                     securityContext:
-                        {{- toYaml . | nindent 24 }}
+                        {{- toYaml (merge (dict "readOnlyRootFilesystem" true) .) | nindent 24 }}
                     {{- end }}
             {{- end }}
             containers:
