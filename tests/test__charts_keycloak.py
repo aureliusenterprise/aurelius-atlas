@@ -14,6 +14,7 @@ import pytest
 import yaml
 from conftest import (
     KC_CHART,
+    OTEL_CLIENT_IDS,
     WORKSPACE,
     container,
     env_map,
@@ -82,13 +83,16 @@ def test__hostname_chain() -> None:
     assert hostname(("global.domain=atlas.example", "hostname=", "global.issuer.url=")) == "keycloak.atlas.example"
 
 
-@pytest.mark.covers(rules=["CHT-16", "CHT-80"])
+@pytest.mark.covers(rules=["CHT-16", "CHT-80", "CHT-89"])
 def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> None:
     """Every credential arrives via secretKeyRef, none inline (CHT-16/19).
 
     Admin, database, and otel-client credentials point at the
     <release>-<purpose> Secret names the umbrella generates; the demo-user
     pair rides the master realm only (CHT-80), asserted on the master render.
+    CHT-89 (DD-277): the prod import carries one placeholder per otel client
+    (CHT-87), so the pod feeds one env per client id joined on the client's
+    key; master's asset shares one placeholder and keeps the single env.
     """
     ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
     envs = env_map(container(ss, "keycloak"))
@@ -97,12 +101,16 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
         "KC_BOOTSTRAP_ADMIN_PASSWORD": ("atlas-keycloak-admin", "password"),
         "KC_DB_USERNAME": ("atlas-keycloak-database", "user"),
         "KC_DB_PASSWORD": ("atlas-keycloak-database", "password"),
-        "OTEL_INGEST_CLIENT_SECRET": ("atlas-otel-clients", "OTEL_INGEST_CLIENT_SECRET"),
     }
+    for client in OTEL_CLIENT_IDS:
+        envs_name = f"{client.upper().replace('-', '_')}_CLIENT_SECRET"
+        refs[envs_name] = ("atlas-otel-clients", client)
     for name, (secret, key) in refs.items():
         ref = envs[name]["valueFrom"]["secretKeyRef"]
         assert ref == {"name": secret, "key": key}, name
         assert "value" not in envs[name], name
+    # The prod asset spells no shared placeholder (CHT-87): no env feeds it.
+    assert "OTEL_INGEST_CLIENT_SECRET" not in envs
     # The hardened realm seeds no users, so its pod carries no DEV_USER env.
     assert not [n for n in envs if n.startswith("DEV_USER_")]
     # CHT-83: the grafana placeholder feeds the prod asset's client (CHT-81).
@@ -114,6 +122,10 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
     for name, key in (("DEV_USER_WRITER_PASSWORD", "writer-password"), ("DEV_USER_READER_PASSWORD", "reader-password")):
         ref = master_envs[name]["valueFrom"]["secretKeyRef"]
         assert ref == {"name": "atlas-keycloak-users", "key": key}, name
+    # master's asset shares one placeholder: the single shared env (CHT-89).
+    ref = master_envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
+    assert not [n for n in master_envs if n.endswith("_CLIENT_SECRET") and n != "OTEL_INGEST_CLIENT_SECRET"]
     # master's asset has no grafana client: no env, no credential (CHT-80's rule).
     assert "GRAFANA_CLIENT_SECRET" not in master_envs
 
@@ -234,6 +246,23 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
         "name": "atlas-keycloak-database",
         "key": "password",
     }
+    # CHT-90: the puller's join is its own client key on the prod realm; the
+    # container-facing env name (and the config's ${env:...} reference) stay.
+    assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-otel-clients",
+        "key": "otel-keycloak",
+    }
+
+
+@pytest.mark.covers(rules=["CHT-90", "CHT-91"])
+def test__puller_master_realm_join_falls_back_to_the_shared_key() -> None:
+    """global.realm=master restores the shared ingest key on the puller join (CHT-90/91)."""
+    docs = helm_render(
+        KC_CHART,
+        sets=("global.domain=atlas.test", "telemetry.enabled=true", "realm.name=master"),
+    )
+    app = container(find(docs, "Deployment", "atlas-keycloak-metrics-puller"), "metrics-puller")
+    envs = env_map(app)
     assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
         "name": "atlas-otel-clients",
         "key": "OTEL_INGEST_CLIENT_SECRET",
@@ -608,8 +637,9 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
     Realm flags: TLS everywhere, brute force on, self-service off, a real
     password policy, events on. The aurelius browser client stays public +
     standard-flow, loses ROPC, gains PKCE S256, and pins its post-logout
-    URIs; the otel-* accounts stay confidential service accounts sharing the
-    ${OTEL_INGEST_CLIENT_SECRET} placeholder (never a rendered secret).
+    URIs; the otel-* accounts stay confidential service accounts with one
+    per-client placeholder secret each (CHT-87, DD-277 — never a rendered
+    secret).
     """
     asset = _rendered_asset(kc_docs)
     assert asset["sslRequired"] == "all"
@@ -638,7 +668,9 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
         assert client["publicClient"] is False
         assert client["serviceAccountsEnabled"] is True
         assert client["standardFlowEnabled"] is False
-        assert client["secret"] == "${OTEL_INGEST_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
+        # CHT-87: one placeholder per client, derived from the client id.
+        env = client["clientId"].upper().replace("-", "_")
+        assert client["secret"] == f"${{{env}_CLIENT_SECRET}}"  # the placeholder rule, never a secret
 
 
 @pytest.mark.covers(rules=["CHT-77"])
@@ -683,7 +715,11 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
         assert not [u for u in uris if "localhost" in u or "127.0.0.1" in u or u == "+"], uris
         assert "127.0.0.1" not in text
         assert '"+"' not in text
-    assert "${OTEL_INGEST_CLIENT_SECRET}" in text  # placeholders survive
+    # CHT-87: every per-client placeholder survives substitution verbatim.
+    for client in OTEL_CLIENT_IDS:
+        env = client.upper().replace("-", "_")
+        assert f"${{{env}_CLIENT_SECRET}}" in text  # the placeholder, never a secret
+    assert "${OTEL_INGEST_CLIENT_SECRET}" not in text  # the shared spelling is gone
 
 
 @pytest.mark.covers(rules=["CHT-81", "CHT-82"])
@@ -755,6 +791,9 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     mirrored here nor named in its commit fails this test. CHT-81's grafana
     client is the one named exception: prod-only (the dev compose Grafana
     stays anonymous, DV-89), so the prod set is the dev set plus it.
+    CHT-87 (DD-277) amends the rule once more: the otel peers equal minus
+    id *and* secret — the prod secret is deliberately the per-client
+    placeholder where dev shares one, and the delta itself is pinned.
     """
     prod = json.loads((KC_CHART / "files/aurelius-atlas.json").read_text())
     dev = _dev_asset()
@@ -764,7 +803,14 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     assert set(prod_by_id) - {"aurelius", "grafana"} == {c for c in dev_by_id if c.startswith("otel-")}
     assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
     for name in set(prod_by_id) - {"aurelius", "grafana"}:
-        assert prod_by_id[name] == dev_by_id[name], name
+        prod_client, dev_client = prod_by_id[name], dev_by_id[name]
+        # CHT-87: the secret is the one allowed delta, spelled per client.
+        env = name.upper().replace("-", "_")
+        assert prod_client["secret"] == f"${{{env}_CLIENT_SECRET}}"
+        assert dev_client["secret"] == "${OTEL_INGEST_CLIENT_SECRET}"  # noqa: S105
+        assert {k: v for k, v in prod_client.items() if k != "secret"} == {
+            k: v for k, v in dev_client.items() if k != "secret"
+        }, name
 
     def strip_ids(obj: dict[str, Any]) -> dict[str, Any]:
         out = {k: v for k, v in obj.items() if k != "id"}
@@ -788,12 +834,20 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     assert strip_ids(prod_role) == {**strip_ids(dev_role), "containerId": prod_client["id"]}
 
 
-@pytest.mark.covers(rules=["CHT-80"])
+@pytest.mark.covers(rules=["CHT-80", "CHT-87"])
 def test__demo_user_placeholders_are_master_only() -> None:
-    """The prod asset carries only the otel placeholder (no user secrets)."""
+    """The prod asset carries only the otel placeholders (no user secrets).
+
+    CHT-87 (DD-277) amended the otel side: seven per-client placeholders
+    replace the single shared one; master's asset keeps the shared spelling.
+    """
     prod_text = (KC_CHART / "files/aurelius-atlas.json").read_text()
-    assert "${OTEL_INGEST_CLIENT_SECRET}" in prod_text  # the placeholder, never a secret
+    for client in OTEL_CLIENT_IDS:
+        env = client.upper().replace("-", "_")
+        assert f"${{{env}_CLIENT_SECRET}}" in prod_text  # placeholders, never secrets
+    assert "${OTEL_INGEST_CLIENT_SECRET}" not in prod_text  # the shared spelling is prod-free now
     assert "${DEV_USER_WRITER_PASSWORD}" not in prod_text
     assert "${DEV_USER_READER_PASSWORD}" not in prod_text
     master_text = (KC_CHART / "files/master.json").read_text()
     assert "${DEV_USER_WRITER_PASSWORD}" in master_text
+    assert "${OTEL_INGEST_CLIENT_SECRET}" in master_text  # master's asset shares one

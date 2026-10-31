@@ -167,10 +167,15 @@ secrets:
         user: keycloak
         password: ""
     otelClients:
-        # Client secret the realm's otel-* service accounts share (the
-        # collector's per-service leg verifies their JWTs) →
-        # Secret <release>-otel-clients, key OTEL_INGEST_CLIENT_SECRET.
+        # The realm's otel-* client secrets (the collector's per-service leg
+        # verifies their JWTs) → Secret <release>-otel-clients. The keys are
+        # realm-shaped (CHT-88, DD-277): the prod realm carries one key per
+        # client id (rotate one producer without touching the others);
+        # `master` keeps the single shared OTEL_INGEST_CLIENT_SECRET.
+        # Override per producer here: clients.<client-id>: "<secret>", or
+        # the whole shared value for master via `secret`.
         secret: ""
+        clients: {}
     collectorLegacy:
         # Static token on the collector's legacy leg — the webapp edge's
         # export credential. Browser-reachable by design (DD-239, DD-244):

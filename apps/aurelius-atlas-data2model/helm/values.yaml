@@ -115,7 +115,8 @@ config:
     OTEL_SEMCONV_STABILITY_OPT_IN: http
 
 # From Secrets (DD-244): 10.3 wires the ingest client secret
-# (OTEL_CLIENT_SECRET <- <release>-otel-clients/OTEL_INGEST_CLIENT_SECRET).
+# (OTEL_CLIENT_SECRET <- <release>-otel-clients/otel-data2model on the prod
+# realm, /OTEL_INGEST_CLIENT_SECRET on master — CHT-88/90).
 secretRefs: []
 extraEnv: []
 

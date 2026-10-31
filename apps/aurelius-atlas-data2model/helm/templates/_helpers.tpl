@@ -71,6 +71,13 @@ DD-247 — each chart duplicates the join it makes): "" derives
 
 {{/* The Keycloak realm the OTLP mint URL names (CHT-74): global.realm, whose
 chart default is the production realm. */}}
+{{/* This chart's otel ingest client (CHT-90): the <release>-otel-clients key
+this producer joins on a non-master realm; master shares
+OTEL_INGEST_CLIENT_SECRET (CHT-88). */}}
+{{- define "atlas-data2model.otelClientId" -}}
+otel-data2model
+{{- end -}}
+
 {{- define "atlas-data2model.realm" -}}
 {{- default "aurelius-atlas" .Values.global.realm -}}
 {{- end -}}

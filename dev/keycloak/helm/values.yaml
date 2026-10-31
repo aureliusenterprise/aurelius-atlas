@@ -80,9 +80,10 @@ realm:
     # writer-password/reader-password) feed the ${DEV_USER_*} import
     # placeholders (CHT-16).
     usersSecretName: ""
-    # The shared otel-* ingest secret: <release>-otel-clients (key
-    # OTEL_INGEST_CLIENT_SECRET) feeds the ${OTEL_INGEST_CLIENT_SECRET}
-    # import placeholders (CHT-16).
+    # The otel-* ingest client secrets: <release>-otel-clients feeds the
+    # import placeholders (CHT-16, CHT-88/89): one env per client id on the
+    # prod realm (CHT-87), the shared OTEL_INGEST_CLIENT_SECRET key/env on
+    # master.
     otelClientsSecretName: ""
     # Grafana's relying-party client secret: <release>-grafana-oauth (key
     # client-secret) feeds the ${GRAFANA_CLIENT_SECRET} import placeholder

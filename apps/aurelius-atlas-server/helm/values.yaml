@@ -132,8 +132,9 @@ config:
 
 # Settings that arrive from Secrets (DD-244) — the chart renders the joins
 # (CHT-21): ELASTICSEARCH_PASSWORD <- <release>-elasticsearch/elastic-password,
-# OTEL_CLIENT_SECRET <- <release>-otel-clients/OTEL_INGEST_CLIENT_SECRET
-# (telemetry.enabled only). Their names are the umbrella's credential contract.
+# OTEL_CLIENT_SECRET <- <release>-otel-clients/otel-atlas-server on the prod
+# realm, /OTEL_INGEST_CLIENT_SECRET on master (CHT-88/90; telemetry.enabled
+# only). Their names are the umbrella's credential contract.
 secretRefs: []
 configMapRefs: []
 extraEnv: []

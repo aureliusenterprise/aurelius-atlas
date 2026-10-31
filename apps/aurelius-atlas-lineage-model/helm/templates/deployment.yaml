@@ -73,7 +73,13 @@ spec:
                           valueFrom:
                               secretKeyRef:
                                   name: {{ printf "%s-otel-clients" .Release.Name }}
+                                  {{- /* CHT-90: own key on the prod realm, the
+                                  shared key on master (CHT-88). */}}
+                                  {{- if eq (include "atlas-lineage-model.realm" .) "master" }}
                                   key: OTEL_INGEST_CLIENT_SECRET
+                                  {{- else }}
+                                  key: {{ include "atlas-lineage-model.otelClientId" . | quote }}
+                                  {{- end }}
                         {{- end }}
                         # The upstream joins (CHT-28, DD-251): settings.py
                         # requires both URLs; each derives from the
