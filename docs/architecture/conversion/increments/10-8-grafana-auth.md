@@ -1,7 +1,7 @@
 # 10.8 Grafana login via the production realm
 
 - **Status:** in review
-- **Pull request:** #179 (stacked on #178)
+- **Pull request:** [#182](https://github.com/aureliusenterprise/aurelius-atlas/pull/182) (stacked on #178)
 - **Records:** DD-273/DD-274 (relies on, unchanged), DD-275 (adds; supersedes
   DD-267's login-form-stays-disabled clause), DD-276 (adds)
 
