@@ -62,8 +62,14 @@ convention the charts follow, not code they share.
 values file names. Unlike the app images (global.image), these are upstream
 hardened images and travel under their own repository (the store chart's
 rule). */}}
+{{/* A chart-pinned component image (CHT-92): repository + tag (or the
+helper's defaultTag), with the digest winning when set (CHT-93). */}}
 {{- define "atlas-observability.componentImage" -}}
+{{- if .digest -}}
+{{- printf "%s@%s" .repository .digest -}}
+{{- else -}}
 {{- printf "%s:%s" .repository (default .defaultTag .tag) -}}
+{{- end -}}
 {{- end -}}
 
 {{/* The browser host Keycloak answers on; mirrors the umbrella's helper so a

@@ -6,6 +6,8 @@ export interface HelmPluginOptions {
     readonly lintTargetName?: string;
     readonly templateTargetName?: string;
     readonly publishTargetName?: string;
+    readonly signTargetName?: string;
+    readonly verifyTargetName?: string;
 }
 
 const glob = "**/Chart.yaml";
@@ -64,6 +66,8 @@ function createNodesInternal(
         lintTargetName = "helm-lint",
         templateTargetName = "helm-template",
         publishTargetName = "helm-publish",
+        signTargetName = "helm-sign",
+        verifyTargetName = "helm-verify",
     }: HelmPluginOptions = {},
 ): CreateNodesResult {
     const chartDir = dirname(configFilePath);
@@ -72,7 +76,10 @@ function createNodesInternal(
     // workspace root merges onto the root project (`.`).
     const ownerRoot = chartDir === "helm" ? "." : dirname(chartDir);
     const chartYaml = readFileSync(configFilePath, "utf-8");
-    readChartName(chartYaml, configFilePath); // validates the file is a chart; identity lives in Chart.yaml
+    // Validates the file is a chart; identity lives in Chart.yaml. The chart
+    // name (not the owner's Nx project name) is the OCI repository suffix —
+    // it keys the sign/verify references too (CHT-95).
+    const chartName = readChartName(chartYaml, configFilePath);
     // The umbrella's dependencies list IS its component-chart edges: as
     // implicitDependencies it gives helm-publish its cascade (the
     // `{ dependencies: true }` dependsOn) and pulls every component chart
@@ -135,6 +142,36 @@ function createNodesInternal(
                 namespace: "ghcr.io/aureliusenterprise/charts",
                 outDir: "{tmpDir}",
                 version: "0.0.0-local",
+            },
+        },
+        // The cosign keyless pair on the OCI chart artifact (CHT-95, DD-278):
+        // the docker plugin's docker-sign/docker-verify shape, keyed on the
+        // chart name (the same reference helm push wrote). The publish
+        // workflow signs and verifies right after helm-publish, under the
+        // same id-token identity as the image chain.
+        [signTargetName]: {
+            command: `cosign sign --yes {args.namespace}/${chartName}:{args.version}`,
+            options: {
+                namespace: "ghcr.io/aureliusenterprise/charts",
+                version: "0.0.0-local",
+            },
+            metadata: {
+                description: "Sign the published chart OCI artifact with Cosign (CHT-95)",
+            },
+        },
+        [verifyTargetName]: {
+            command:
+                `cosign verify {args.namespace}/${chartName}:{args.version} ` +
+                `--certificate-identity-regex '{args.identity}' ` +
+                `--certificate-oidc-issuer-regexp '{args.issuer}'`,
+            options: {
+                identity: ".*",
+                issuer: ".*",
+                namespace: "ghcr.io/aureliusenterprise/charts",
+                version: "0.0.0-local",
+            },
+            metadata: {
+                description: "Verify Cosign signatures for the chart OCI artifact (CHT-95)",
             },
         },
     };

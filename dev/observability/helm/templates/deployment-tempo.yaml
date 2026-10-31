@@ -42,7 +42,7 @@ spec:
                 {{- toYaml .Values.podSecurityContext | nindent 16 }}
             containers:
                 -   name: tempo
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.tempo.image.repository "tag" .Values.tempo.image.tag "defaultTag" "3-debian13") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.tempo.image.repository "tag" .Values.tempo.image.tag "digest" .Values.tempo.image.digest "defaultTag" "3-debian13") | quote }}
                     imagePullPolicy: IfNotPresent
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}

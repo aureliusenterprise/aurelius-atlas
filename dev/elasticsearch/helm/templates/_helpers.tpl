@@ -117,21 +117,42 @@ app.kubernetes.io/name: {{ include "atlas-elasticsearch.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
-{{/* The store image (upstream dhi.io mirror, chart-pinned — not global.image). */}}
+{{/* The store image (upstream dhi.io mirror, chart-pinned — not global.image).
+Digest-pinned (CHT-92/93): a digest always wins over the tag. */}}
 {{- define "atlas-elasticsearch.image" -}}
 {{- $name := required "image.repository is required (the store image)" .Values.image.repository -}}
 {{- $tag := required "image.tag is required (the store image tag travels with the chart)" .Values.image.tag -}}
+{{- with .Values.image.digest -}}
+{{- printf "%s@%s" $name . -}}
+{{- else -}}
 {{- printf "%s:%s" $name $tag -}}
+{{- end -}}
 {{- end -}}
 
 {{/* The coredump-agent image (an Aurelius image: global.image registry/namespace,
-DD-255). tag "" takes the chart appVersion the release sets. */}}
+DD-255). tag "" takes the chart appVersion the release sets; the digest is an
+operator override (CHT-92) — the agent's release bytes ride the chart's
+signature (CHT-94). */}}
 {{- define "atlas-elasticsearch.agentImage" -}}
 {{- $registry := default "ghcr.io" .Values.global.image.registry -}}
 {{- $namespace := default "aureliusenterprise" .Values.global.image.namespace -}}
 {{- $name := required "agent.image.name is required" .Values.agent.image.name -}}
-{{- $tag := default .Chart.AppVersion .Values.agent.image.tag -}}
-{{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
+{{- $base := printf "%s/%s/%s" $registry $namespace $name -}}
+{{- with .Values.agent.image.digest -}}
+{{- printf "%s@%s" $base . -}}
+{{- else -}}
+{{- printf "%s:%s" $base (default .Chart.AppVersion .Values.agent.image.tag) -}}
+{{- end -}}
+{{- end -}}
+
+{{/* A chart-pinned component image (the puller/issuer-wait pair, CHT-92):
+repository + tag, with the digest winning when set (CHT-93). */}}
+{{- define "atlas-elasticsearch.componentImage" -}}
+{{- if .digest -}}
+{{- printf "%s@%s" .repository .digest -}}
+{{- else -}}
+{{- printf "%s:%s" .repository (default .defaultTag .tag) -}}
+{{- end -}}
 {{- end -}}
 
 {{/* ES_JAVA_OPTS (CHT-15): the heap flags, the coredump javaagent, then extras. */}}

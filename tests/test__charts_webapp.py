@@ -200,3 +200,19 @@ def _init(deployment: dict[str, Any], name: str) -> dict[str, Any]:
     inits = [c for c in pod_spec(deployment)["initContainers"] if c["name"] == name]
     assert len(inits) == 1
     return inits[0]
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__image_digest_override_replaces_the_tag() -> None:
+    """image.digest renders <base>@<digest> at both joins (CHT-92).
+
+    The app container and the resolve-nginx-config init share the one
+    reference, so an operator-set digest lands on both. The field ships
+    empty (CHT-94: own images ride the signed chart artifact), so this is
+    the override path — repo renders stay tag-shaped.
+    """
+    docs = helm_render(WEBAPP_CHART, value_files=TEST_VALUES, sets=(f"image.digest=sha256:{6:064d}",))
+    deployment = find(docs, "Deployment", "atlas-webapp")
+    expected = "ghcr.io/aureliusenterprise/aurelius-atlas-webapp@sha256:" + "0" * 63 + "6"
+    assert container(deployment, "webapp")["image"] == expected
+    assert _init(deployment, "resolve-nginx-config")["image"] == expected

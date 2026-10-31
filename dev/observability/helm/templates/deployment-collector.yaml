@@ -58,7 +58,7 @@ spec:
                 # curl image has no shell for a loop (DD-269; busybox's wget
                 # cannot handshake Keycloak's TLS at all).
                 -   name: issuer-wait
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.issuerWait.image.repository "tag" .Values.collector.issuerWait.image.tag "defaultTag" "8") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.issuerWait.image.repository "tag" .Values.collector.issuerWait.image.tag "digest" .Values.collector.issuerWait.image.digest "defaultTag" "8") | quote }}
                     imagePullPolicy: IfNotPresent
                     command:
                         - curl
@@ -77,7 +77,7 @@ spec:
             {{- end }}
             containers:
                 -   name: {{ .Values.component }}
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.image.repository "tag" .Values.collector.image.tag "defaultTag" "0-debian13-contrib") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.collector.image.repository "tag" .Values.collector.image.tag "digest" .Values.collector.image.digest "defaultTag" "0-debian13-contrib") | quote }}
                     imagePullPolicy: IfNotPresent
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}

@@ -21,6 +21,7 @@ from conftest import (
     helm_render_fails,
     names,
     peer_labels,
+    pinned_ref,
     pod_spec,
     policy_peers_by_port,
 )
@@ -167,7 +168,9 @@ def test__agent_init_and_javaopts(es_docs: list[dict[str, Any]]) -> None:
     """The coredump agent lands via an init container and the javaagent flag."""
     ss = find(es_docs, "StatefulSet", "atlas-elasticsearch")
     spec = pod_spec(ss)
+    assert container(ss, "elasticsearch")["image"] == pinned_ref("dhi.io/elasticsearch")  # CHT-93
     init = spec["initContainers"][0]
+    # The agent is an Aurelius image: tag-shaped in repo renders (CHT-94).
     assert init["image"].startswith("ghcr.io/aureliusenterprise/aurelius-atlas-elasticsearch-agent:")
     assert "coredump-noop.jar" in " ".join(init["command"])
     volumes = {v["name"]: v for v in spec["volumes"]}
@@ -177,6 +180,25 @@ def test__agent_init_and_javaopts(es_docs: list[dict[str, Any]]) -> None:
     assert "-javaagent:/agent/coredump-noop.jar" in java_opts
     assert "-Xms1g" in java_opts
     assert "-Xmx1g" in java_opts
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__digest_wins_over_tag_at_both_image_joins() -> None:
+    """image.digest / agent.image.digest render <base>@<digest> (CHT-92).
+
+    The digest always wins whatever produced the tag; the base is
+    untouched — the store's base is the dhi.io repository, the agent's the
+    Aurelius one (its digest field stays empty in the repo, CHT-94).
+    """
+    docs = helm_render(
+        ES_CHART,
+        sets=(f"image.digest=sha256:{1:064d}", f"agent.image.digest=sha256:{2:064d}"),
+    )
+    ss = find(docs, "StatefulSet", "atlas-elasticsearch")
+    assert container(ss, "elasticsearch")["image"] == "dhi.io/elasticsearch@sha256:" + "0" * 63 + "1"
+    assert pod_spec(ss)["initContainers"][0]["image"] == (
+        "ghcr.io/aureliusenterprise/aurelius-atlas-elasticsearch-agent@sha256:" + "0" * 63 + "2"
+    )
     agent_mount = next(vm for vm in container(ss, "elasticsearch")["volumeMounts"] if vm["name"] == "agent")
     assert agent_mount["mountPath"] == "/agent"
 
@@ -238,7 +260,7 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     docs = helm_render(ES_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
     deployment = find(docs, "Deployment", "atlas-elasticsearch-metrics-puller")
     app = container(deployment, "metrics-puller")
-    assert app["image"] == "dhi.io/opentelemetry-collector:0-debian13-contrib"
+    assert app["image"] == pinned_ref("dhi.io/opentelemetry-collector")  # CHT-93
     psc = pod_spec(deployment)["securityContext"]
     assert psc["runAsNonRoot"] is True
     assert psc["runAsUser"] == 65532

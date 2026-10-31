@@ -50,6 +50,30 @@ OTEL_CLIENT_IDS = (
     "otel-validate-entity",
 )
 
+# The committed third-party digests (CHT-93, DD-278): the nine distinct dhi.io
+# pins the chart values carry. Chart suites assert their own renders against
+# this map; ``tools/images/chart_digests.py --check`` is the registry-side
+# twin, and the umbrella guard (CHT-97) knows these repos as the legal
+# digest-pinned set. Keep in sync with the values files — the drift guard
+# workflow fails on divergence from the registry, these tests on divergence
+# from here.
+PINNED = {
+    "dhi.io/elasticsearch": "sha256:18afc55bce2fdae289c80580769dfc27161ce24d7dc9e6727f8124ee61d0c375",
+    "dhi.io/keycloak": "sha256:d585d342ea3b9b2aa5b8f3216e88fa04f2eb1846d6986caa4227a6a887296bf6",
+    "dhi.io/postgres": "sha256:c075241e0b60eca5cb40e61484feb582b17bd756e8c48a482d93321607a332ce",
+    "dhi.io/opentelemetry-collector": "sha256:79de5a3a0319b189dfb428d3fa36a39b8d83ee6605e106089ce78153f7f5ac6e",
+    "dhi.io/curl": "sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862",
+    "dhi.io/prometheus": "sha256:585a54e52b97d4400aaa4c7ef9470add072362b236cd7fb4e8aacdd371121109",
+    "dhi.io/loki": "sha256:4e7325c57c492c02e8944b22cf0c80299a49d657eced3ed9f56853a01f622a41",
+    "dhi.io/tempo": "sha256:e6355af759ed371adca5b1fc76303b9eb7db3da15739ba76def54a3f336734c8",
+    "dhi.io/grafana": "sha256:3524a4af20d6485671f0576084ee16b35a276fa2e7a490f02c95e46e18778384",
+}
+
+
+def pinned_ref(repository: str) -> str:
+    """The full immutable reference a stock render must carry (CHT-93)."""
+    return f"{repository}@{PINNED[repository]}"
+
 
 def _require_helm() -> None:
     if shutil.which("helm") is None:  # pragma: no cover - environment guard

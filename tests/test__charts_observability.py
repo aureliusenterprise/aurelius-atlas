@@ -24,6 +24,7 @@ from conftest import (
     helm_render,
     names,
     peer_labels,
+    pinned_ref,
     pod_spec,
     policy_peers_by_port,
 )
@@ -50,7 +51,7 @@ def test__collector_deployment_and_service_legs(obs_docs: list[dict[str, Any]]) 
     """
     deployment = find(obs_docs, "Deployment", FULLNAME)
     app = container(deployment, "observability")
-    assert app["image"] == "dhi.io/opentelemetry-collector:0-debian13-contrib"
+    assert app["image"] == pinned_ref("dhi.io/opentelemetry-collector")  # CHT-93
     assert {p["name"]: p["containerPort"] for p in app["ports"]} == {
         "otlp-browser": 4318,
         "otlp-svc-grpc": 4317,
@@ -209,7 +210,7 @@ def test__issuer_wait_polls_the_public_well_known(obs_docs: list[dict[str, Any]]
     """
     (init,) = pod_spec(find(obs_docs, "Deployment", FULLNAME))["initContainers"]
     assert init["name"] == "issuer-wait"
-    assert init["image"] == "dhi.io/curl:8"
+    assert init["image"] == pinned_ref("dhi.io/curl")  # CHT-93
     command = init["command"]
     assert command[0] == "curl"
     assert "--insecure" in command  # a boot gate, not a trust decision
@@ -574,3 +575,30 @@ def test__observability_network_policy_off_changes_nothing_else() -> None:
         return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
 
     assert rest(on) == rest(off)
+
+
+@pytest.mark.covers(rules=["CHT-93"])
+def test__backend_images_digest_pinned(obs_docs: list[dict[str, Any]]) -> None:
+    """Prometheus/Loki/Tempo/Grafana render <repo>@sha256:... (CHT-93).
+
+    The four dhi.io backends this chart owns carry committed digests, so a
+    stock install pulls immutable bytes; no third-party image renders by tag.
+    """
+    for component in ("prometheus", "loki", "tempo", "grafana"):
+        app = container(find(obs_docs, "Deployment", f"{FULLNAME}-{component}"), component)
+        assert app["image"] == pinned_ref(f"dhi.io/{component}"), component
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__component_image_digest_wins_over_tag() -> None:
+    """grafana.image.digest renders dhi.io/grafana@<digest> (CHT-92).
+
+    componentImage's digest branch: the digest wins over the repository's
+    tag, and the repository base is unchanged.
+    """
+    docs = helm_render(
+        OBS_CHART,
+        sets=("global.domain=atlas.test", f"grafana.image.digest=sha256:{7:064d}"),
+    )
+    app = container(find(docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
+    assert app["image"] == "dhi.io/grafana@sha256:" + "0" * 63 + "7"

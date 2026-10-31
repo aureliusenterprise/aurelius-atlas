@@ -41,7 +41,7 @@ spec:
                 {{- toYaml .Values.podSecurityContext | nindent 16 }}
             containers:
                 -   name: prometheus
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.prometheus.image.repository "tag" .Values.prometheus.image.tag "defaultTag" "3.13-debian13") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.prometheus.image.repository "tag" .Values.prometheus.image.tag "digest" .Values.prometheus.image.digest "defaultTag" "3.13-debian13") | quote }}
                     imagePullPolicy: IfNotPresent
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}

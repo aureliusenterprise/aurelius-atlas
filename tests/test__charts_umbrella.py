@@ -16,6 +16,7 @@ import pytest
 import yaml
 from conftest import (
     OTEL_CLIENT_IDS,
+    PINNED,
     UMBRELLA_CHART,
     container,
     env_map,
@@ -363,3 +364,58 @@ def test__every_consumer_names_the_imported_realm(umbrella_docs: list[dict[str, 
         for match in re.finditer(r"/realms/([^/\"'\s\\]+)", text):
             named.add(match.group(1))
     assert named == {realm}
+
+
+def _render_images(docs: list[dict[str, Any]]) -> set[str]:
+    """Every container/initContainer image across every workload document."""
+    images: set[str] = set()
+    for doc in docs:
+        spec = doc.get("spec") or {}
+        template = spec.get("template") if isinstance(spec, dict) else None
+        pod = template.get("spec") if isinstance(template, dict) else None
+        if not isinstance(pod, dict):
+            continue
+        for c in pod.get("containers", []) + pod.get("initContainers", []):
+            images.add(c["image"])
+    return images
+
+
+@pytest.mark.covers(rules=["CHT-97"])
+def test__every_image_is_tagged_aurelius_or_pinned_third_party(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The stock stack renders no unpinned image (CHT-97).
+
+    The CI-side twin of the scheduled registry check (CHT-96): each image is
+    either an Aurelius tag reference (``ghcr.io/aureliusenterprise/<name>:``
+    — the shape CHT-94 keeps for own images) or a pinned
+    third-party reference (``<known repo>@sha256:<64 hex>`` from the
+    committed set, CHT-93). A third-party image that lost its digest, or a
+    new repo nobody pinned, fails here.
+    """
+    aurelius = re.compile(r"^ghcr\.io/aureliusenterprise/[a-z0-9-]+:[A-Za-z0-9._-]+$")
+    pinned = re.compile(r"^([a-z0-9./-]+)@sha256:([0-9a-f]{64})$")
+    images = _render_images(umbrella_docs)
+    assert images, "the render carries no workload images"
+    seen_repos: set[str] = set()
+    for image in sorted(images):
+        if aurelius.match(image):
+            continue
+        match = pinned.match(image)
+        assert match, f"unpinned image reference: {image}"
+        repo, digest = match.groups()
+        assert PINNED.get(repo) == f"sha256:{digest}", f"digest does not match the committed pin: {image}"
+        seen_repos.add(repo)
+    assert seen_repos == set(PINNED), f"the stack stopped rendering: {set(PINNED) - seen_repos}"
+
+
+@pytest.mark.covers(rules=["CHT-94"])
+def test__aurelius_images_render_by_tag_in_the_repo(umbrella_docs: list[dict[str, Any]]) -> None:
+    """Aurelius images render tag-shaped, everywhere (CHT-94).
+
+    Own images are not digest-pinned: their tags are written only by the
+    signed publish chain and the chart artifact is itself immutable and
+    signed, so no render — committed or packaged — carries an ``@sha256:``
+    on a ghcr.io/aureliusenterprise image.
+    """
+    for image in sorted(_render_images(umbrella_docs)):
+        if image.startswith("ghcr.io/aureliusenterprise/"):
+            assert "@sha256:" not in image, image
