@@ -170,6 +170,11 @@
     "aliases": []
   },
   {
+    "version": "feat-chart-digest-pinning-chart-signing",
+    "title": "feat-chart-digest-pinning-chart-signing",
+    "aliases": []
+  },
+  {
     "version": "feat-aux-apis-validate-entity",
     "title": "feat-aux-apis-validate-entity",
     "aliases": []
