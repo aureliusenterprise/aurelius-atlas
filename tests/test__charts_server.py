@@ -67,9 +67,14 @@ def test__settings_are_joins_not_literals(server_docs: list[dict[str, Any]]) -> 
     assert tls_volume["secret"]["secretName"] == "atlas-server-tls"
 
 
-@pytest.mark.covers(rules=["CHT-21"])
+@pytest.mark.covers(rules=["CHT-21", "CHT-90"])
 def test__telemetry_join_names_collector_and_issuer() -> None:
-    """telemetry.enabled wires OTEL_ENDPOINT/OTEL_TOKEN_URL/OTEL_CLIENT_SECRET."""
+    """telemetry.enabled wires OTEL_ENDPOINT/OTEL_TOKEN_URL/OTEL_CLIENT_SECRET.
+
+    CHT-90: on the prod realm the secret join is the chart's own client key
+    (its own ingest credential, DD-277); the container-facing env name stays
+    OTEL_CLIENT_SECRET either way.
+    """
     docs = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=("telemetry.enabled=true",))
     envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT") == "https://atlas-observability:4319"
@@ -77,6 +82,25 @@ def test__telemetry_join_names_collector_and_issuer() -> None:
         env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL")
         == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
+    client_secret = envs["AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert client_secret == {"name": "atlas-otel-clients", "key": "otel-atlas-server"}
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID") == "otel-atlas-server"
+
+
+@pytest.mark.covers(rules=["CHT-90", "CHT-91"])
+def test__master_realm_join_falls_back_to_the_shared_key() -> None:
+    """global.realm=master restores the shared ingest key on the join (CHT-90/91).
+
+    The master hatch keeps the master asset's single shared placeholder, so
+    the join reverts to OTEL_INGEST_CLIENT_SECRET while the env name and
+    client id stay as on the prod realm.
+    """
+    docs = helm_render(
+        SERVER_CHART,
+        value_files=TEST_VALUES,
+        sets=("telemetry.enabled=true", "global.realm=master"),
+    )
+    envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
     client_secret = envs["AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert client_secret == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID") == "otel-atlas-server"

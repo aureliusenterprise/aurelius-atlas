@@ -83,7 +83,7 @@ the sequence to run.
     kubectl -n atlas run mint-probe --rm -i --restart=Never --image=curlimages/curl -- \
       -s -k "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token" \
       -d grant_type=client_credentials -d client_id=otel-atlas-server \
-      -d client_secret="$(kubectl -n atlas get secret atlas-otel-clients -o jsonpath='{.data.OTEL_INGEST_CLIENT_SECRET}' | base64 -d)" | tr ',' '\n' | grep -A1 '"iss"'
+      -d client_secret="$(kubectl -n atlas get secret atlas-otel-clients -o jsonpath='{.data.otel-atlas-server}' | base64 -d)" | tr ',' '\n' | grep -A1 '"iss"'
     ```
 
     The `iss` must be `https://keycloak.atlas.test/realms/aurelius-atlas` — no
@@ -108,8 +108,20 @@ helm install atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
 `helm dep update helm`.)
 
 The umbrella generates the credentials (Elasticsearch password, Keycloak
-admin/DB passwords, OTel ingest secret, legacy token) at first install and
-preserves them across upgrades; retrieve them with `kubectl get secret`.
+admin/DB passwords, the OTel ingest client secrets, legacy token) at first
+install and preserves them across upgrades; retrieve them with
+`kubectl get secret`. On the hardened realm, `<release>-otel-clients`
+carries **one key per ingest client** — `otel-atlas-server`,
+`otel-data2model`, `otel-elasticsearch`, `otel-keycloak`,
+`otel-lineage-model`, `otel-postgres`, `otel-validate-entity` (CHT-88,
+DD-277) — each generated and preserved independently; `master` keeps the
+single shared `OTEL_INGEST_CLIENT_SECRET` key. To rotate one leaked
+producer's credential, supply its new value and upgrade
+(`--set secrets.otelClients.clients.<client-id>=<secret>` or its
+`clients:` values entry), then re-import the realm or reset that one
+client's secret in the Keycloak console (the import applies at first boot
+only) and restart the producer — the other six clients are untouched
+either way, which is the point of the per-client shape.
 
 > [!WARNING]
 > With `--wait` (or `--atomic`), a workload that never reaches Ready — a

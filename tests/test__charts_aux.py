@@ -90,7 +90,7 @@ def test__lineage_upstreams_are_joins(lineage_docs: list[dict[str, Any]]) -> Non
     assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL") == "https://atlas-data2model:21001/"
 
 
-@pytest.mark.covers(rules=["CHT-42"])
+@pytest.mark.covers(rules=["CHT-42", "CHT-90"])
 @pytest.mark.parametrize("component", AUX)
 def test__telemetry_join_names_collector_and_public_issuer(component: str) -> None:
     """telemetry.enabled wires the per-service OTLP join (CHT-21's twin, CHT-42).
@@ -98,7 +98,10 @@ def test__telemetry_join_names_collector_and_public_issuer(component: str) -> No
     OTEL_ENDPOINT/OTEL_TOKEN_URL/OTEL_CLIENT_SECRET exactly as the server
     chart's join: the collector's HTTP+OIDC leg, the issuer's public realm
     token URL — the same URL the browser authenticates against, resolvable
-    in-cluster per DD-265 — and the shared ingest client secret.
+    in-cluster per DD-265 — and the ingest client secret. CHT-90 (DD-277):
+    on the prod realm the join is the chart's own client key in the
+    <release>-otel-clients Secret; the container-facing env name is
+    unchanged.
     """
     chart = AUX_CHARTS[component]
     docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=("telemetry.enabled=true",))
@@ -109,6 +112,26 @@ def test__telemetry_join_names_collector_and_public_issuer(component: str) -> No
         env_value(envs, f"{prefix}OTEL_TOKEN_URL")
         == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
+    secret = envs[f"{prefix}OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert secret == {"name": "atlas-otel-clients", "key": _OTEL_CLIENT_IDS[component]}
+
+
+@pytest.mark.covers(rules=["CHT-90", "CHT-91"])
+@pytest.mark.parametrize("component", AUX)
+def test__master_realm_join_falls_back_to_the_shared_key(component: str) -> None:
+    """global.realm=master restores the shared ingest key on the join (CHT-90/91).
+
+    The master hatch keeps the master asset's single shared placeholder, so
+    the join reverts to OTEL_INGEST_CLIENT_SECRET.
+    """
+    chart = AUX_CHARTS[component]
+    docs = helm_render(
+        chart,
+        value_files=(chart / "tests/values.test.yaml",),
+        sets=("telemetry.enabled=true", "global.realm=master"),
+    )
+    prefix = _PREFIXES[component]
+    envs = env_map(_app(docs))
     secret = envs[f"{prefix}OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert secret == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
 
@@ -132,6 +155,14 @@ _PREFIXES = {
     "data2model": "AURELIUS_ATLAS_DATA2MODEL_",
     "lineage-model": "AURELIUS_ATLAS_LINEAGE_MODEL_",
     "validate-entity": "AURELIUS_ATLAS_VALIDATE_ENTITY_",
+}
+
+# The ingest client each aux chart is (CHT-90): the key it joins on in the
+# <release>-otel-clients Secret on a non-master realm (DD-277).
+_OTEL_CLIENT_IDS = {
+    "data2model": "otel-data2model",
+    "lineage-model": "otel-lineage-model",
+    "validate-entity": "otel-validate-entity",
 }
 
 

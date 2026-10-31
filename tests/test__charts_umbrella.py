@@ -14,7 +14,16 @@ from typing import Any
 
 import pytest
 import yaml
-from conftest import UMBRELLA_CHART, container, find, find_all, helm_render, names
+from conftest import (
+    OTEL_CLIENT_IDS,
+    UMBRELLA_CHART,
+    container,
+    env_map,
+    find,
+    find_all,
+    helm_render,
+    names,
+)
 
 TEST_VALUES = (UMBRELLA_CHART / "tests/values.test.yaml",)
 
@@ -81,19 +90,22 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         assert cert["spec"]["issuerRef"]["kind"] == "Issuer"
 
 
-@pytest.mark.covers(rules=["CHT-19", "CHT-80"])
+@pytest.mark.covers(rules=["CHT-19", "CHT-80", "CHT-88"])
 def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any]]) -> None:
     """The secrets 10.2's workloads consume, with the keys they read.
 
     The demo-user Secret is the master realm's (CHT-80): the stock render —
     the hardened aurelius-atlas realm — generates no demo passwords.
+    CHT-88 (DD-277): the otel-clients Secret is realm-shaped — one key per
+    client id on the prod realm, each independently generated; master keeps
+    the single shared OTEL_INGEST_CLIENT_SECRET key.
     """
     secrets = {s["metadata"]["name"]: s for s in find_all(umbrella_docs, "Secret")}
     expected = {
         "atlas-elasticsearch": {"elastic-password"},
         "atlas-keycloak-admin": {"user", "password"},
         "atlas-keycloak-database": {"user", "password"},
-        "atlas-otel-clients": {"OTEL_INGEST_CLIENT_SECRET"},
+        "atlas-otel-clients": set(OTEL_CLIENT_IDS),  # CHT-88: realm-shaped keys
         "atlas-grafana-oauth": {"client-secret"},  # CHT-83: feeds the realm import and Grafana
     }
     assert "atlas-keycloak-users" not in secrets
@@ -106,6 +118,10 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         assert all(len(v) >= 44 for v in secrets[name]["data"].values()), name
     for name in ("atlas-keycloak-admin", "atlas-keycloak-database"):
         assert len(secrets[name]["data"]["password"]) >= 44, name
+    # The per-client values are independently random (DD-277's rotation rule):
+    # no two keys may share a generated value.
+    values = list(secrets["atlas-otel-clients"]["data"].values())
+    assert len(set(values)) == len(values)
 
     master_docs = helm_render(
         UMBRELLA_CHART,
@@ -116,11 +132,57 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
     users = master_secrets["atlas-keycloak-users"]
     assert set(users["data"]) == {"writer-password", "reader-password"}
     assert all(len(v) >= 44 for v in users["data"].values())
+    # master's asset shares one placeholder: the Secret keeps the one key.
+    assert set(master_secrets["atlas-otel-clients"]["data"]) == {"OTEL_INGEST_CLIENT_SECRET"}
     # The master realm has no grafana client (CHT-81); the stock render's
     # grafana-oauth rides the observability chart, so master keeps it (its
     # Grafana still logs in) — a master-only install with obs off is the
     # case with no consumer (test__grafana_oauth_secret_gates_on_consumers).
     assert "atlas-grafana-oauth" in master_secrets
+
+
+@pytest.mark.covers(rules=["CHT-88"])
+def test__otel_client_secret_keys_match_the_asset_roster(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The roster-drift guard (CHT-88): Secret keys == asset placeholders == KC envs.
+
+    The Secret, the imported asset's placeholders (CHT-87), and the
+    StatefulSet's import envs (CHT-89) are three copies of one roster; an
+    added or renamed otel client that misses one of them fails this test.
+    """
+    secret = find(umbrella_docs, "Secret", "atlas-otel-clients")
+    assert set(secret["data"]) == set(OTEL_CLIENT_IDS)
+
+    asset = json.loads(find(umbrella_docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"])
+    asset_ids = {c["clientId"] for c in asset["clients"] if c["clientId"].startswith("otel-")}
+    assert asset_ids == set(OTEL_CLIENT_IDS)
+
+    ss = find(umbrella_docs, "StatefulSet", "atlas-keycloak")
+    envs = env_map(container(ss, "keycloak"))
+    joined = set()
+    for name, env in envs.items():
+        ref = env.get("valueFrom", {}).get("secretKeyRef")
+        if name.endswith("_CLIENT_SECRET") and ref and ref["name"] == "atlas-otel-clients":
+            joined.add(ref["key"])
+    assert joined == set(OTEL_CLIENT_IDS)
+
+
+@pytest.mark.covers(rules=["CHT-88"])
+def test__per_client_values_override_leaves_the_others_generated() -> None:
+    """Supplying one client's secret changes only that key (CHT-88, DD-277).
+
+    The rotation story: rotate one leaked producer credential without
+    disturbing the other six.
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("secrets.otelClients.clients.otel-postgres=supplied-pg",),
+    )
+    secret = find(docs, "Secret", "atlas-otel-clients")
+    assert set(secret["data"]) == set(OTEL_CLIENT_IDS)
+    assert secret["data"]["otel-postgres"] == "c3VwcGxpZWQtcGc="  # b64("supplied-pg")
+    others = {k: v for k, v in secret["data"].items() if k != "otel-postgres"}
+    assert all(len(v) >= 44 for v in others.values())
 
 
 @pytest.mark.covers(rules=["CHT-83"])

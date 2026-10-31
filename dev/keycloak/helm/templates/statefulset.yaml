@@ -129,11 +129,28 @@ spec:
                                   name: {{ include "atlas-keycloak.usersSecretName" . }}
                                   key: reader-password
                         {{- end }}
+                        {{- /* The otel-* import placeholders (DD-277, CHT-89):
+                        the prod asset spells one placeholder per client
+                        (CHT-87), so a non-master import gets one env per
+                        client id; master's asset shares one placeholder and
+                        keeps the single env. */}}
+                        {{- $otelSecret := include "atlas-keycloak.otelClientsSecretName" . -}}
+                        {{- if eq (include "atlas-keycloak.realmName" .) "master" }}
                         - name: OTEL_INGEST_CLIENT_SECRET
                           valueFrom:
                               secretKeyRef:
-                                  name: {{ include "atlas-keycloak.otelClientsSecretName" . }}
+                                  name: {{ $otelSecret }}
                                   key: OTEL_INGEST_CLIENT_SECRET
+                        {{- else }}
+                        {{- range $client := (include "atlas-keycloak.otelClients" .) | fromJsonArray }}
+                        {{- $env := printf "%s_CLIENT_SECRET" (replace "-" "_" $client | upper) }}
+                        - name: {{ $env }}
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ $otelSecret }}
+                                  key: {{ $client | quote }}
+                        {{- end }}
+                        {{- end }}
                         {{- /* CHT-83: the grafana client's secret placeholder —
                         the aurelius-atlas asset's only (CHT-81), so the env
                         and the Secret behind it render for every realm but

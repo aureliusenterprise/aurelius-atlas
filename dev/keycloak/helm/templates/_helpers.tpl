@@ -211,6 +211,14 @@ derives what the umbrella's aurelius-atlas.grafanaHost would. */}}
 {{- default (printf "%s-otel-clients" .Release.Name) .Values.realm.otelClientsSecretName -}}
 {{- end -}}
 
+{{/* The otel-* ingest clients (CHT-87/89 roster) as a JSON array: each
+carries its own placeholder ${<ID upper, - → _>_CLIENT_SECRET} in the prod
+asset and its own Secret key/env. Chart-local copy (DD-247); the
+chart-contract suite pins it against files/aurelius-atlas.json. */}}
+{{- define "atlas-keycloak.otelClients" -}}
+{{- `["otel-atlas-server","otel-data2model","otel-elasticsearch","otel-keycloak","otel-lineage-model","otel-postgres","otel-validate-entity"]` -}}
+{{- end -}}
+
 {{- define "atlas-keycloak.grafanaOauthSecretName" -}}
 {{- default (printf "%s-grafana-oauth" .Release.Name) .Values.realm.grafanaOauthSecretName -}}
 {{- end -}}

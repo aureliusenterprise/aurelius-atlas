@@ -86,7 +86,9 @@ OTLP token-URL join), the CA/TLS file paths on the whole-Secret mount of the
 chart's own `Certificate` (SANs = Service name + FQDNs, which is exactly what
 the webapp's nginx pins with `proxy_ssl_name`). `telemetry.enabled` is off by
 default — with it on, the collector leg joins (`:4319`, client `otel-atlas-server`,
-Secret `atlas-otel-clients`). `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
+Secret `atlas-otel-clients`; the join key is the client id on the prod realm,
+the shared `OTEL_INGEST_CLIENT_SECRET` on `global.realm=master` — CHT-90,
+DD-277). `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
 — stock render is loopback-only; the environment overlays name the pod CIDRs
 (the two-hop client-IP trust, DD-261/CHT-32). The chart renders standalone
 (test values) and through the umbrella (`helm/`); the chart-contract tests are
