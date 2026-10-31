@@ -105,12 +105,17 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
         assert "value" not in envs[name], name
     # The hardened realm seeds no users, so its pod carries no DEV_USER env.
     assert not [n for n in envs if n.startswith("DEV_USER_")]
+    # CHT-83: the grafana placeholder feeds the prod asset's client (CHT-81).
+    ref = envs["GRAFANA_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-grafana-oauth", "key": "client-secret"}
 
     master = find(helm_render(KC_CHART, sets=("realm.name=master",)), "StatefulSet", "atlas-keycloak")
     master_envs = env_map(container(master, "keycloak"))
     for name, key in (("DEV_USER_WRITER_PASSWORD", "writer-password"), ("DEV_USER_READER_PASSWORD", "reader-password")):
         ref = master_envs[name]["valueFrom"]["secretKeyRef"]
         assert ref == {"name": "atlas-keycloak-users", "key": key}, name
+    # master's asset has no grafana client: no env, no credential (CHT-80's rule).
+    assert "GRAFANA_CLIENT_SECRET" not in master_envs
 
 
 @pytest.mark.covers(rules=["CHT-16", "CHT-78"])
@@ -426,7 +431,8 @@ def test__keycloak_admits_the_in_cluster_dialers(kc_docs: list[dict[str, Any]]) 
         for e in r["from"]
         if e["podSelector"]["matchLabels"]["app.kubernetes.io/name"] == "atlas-observability"
     ]
-    assert collector == [peer_labels("atlas-observability", component="observability")]
+    # CHT-86: Grafana's generic_oauth login (token exchange + JWKS) dials too.
+    assert sorted(c.get("app.kubernetes.io/component") or "" for c in collector) == ["grafana", "observability"]
     ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
     assert ports == {8443, 7800}  # CHT-71: no management 9000
 
@@ -570,7 +576,7 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         "otel-postgres",
         "otel-validate-entity",
     }
-    assert client_ids == {"aurelius"} | otel
+    assert client_ids == {"aurelius", "grafana"} | otel  # grafana: CHT-81, prod-only
     assert (
         not {
             "account",
@@ -591,7 +597,8 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
     assert not asset.get("authenticationFlows")
     roles = asset["roles"]["client"]
     assert {r["name"] for r in roles["aurelius"]} == {"aurelius-write"}
-    assert not set(roles) - {"aurelius"}
+    assert {r["name"] for r in roles["grafana"]} == {"admin", "editor"}  # CHT-81
+    assert set(roles) == {"aurelius", "grafana"}
 
 
 @pytest.mark.covers(rules=["CHT-76"])
@@ -626,7 +633,7 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
     assert aur["attributes"]["post.logout.redirect.uris"] != "*"  # dev's pin, replaced by hosts
 
     for client in asset["clients"]:
-        if client["clientId"] == "aurelius":
+        if not client["clientId"].startswith("otel-"):
             continue
         assert client["publicClient"] is False
         assert client["serviceAccountsEnabled"] is True
@@ -663,17 +670,78 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
     assert "https://dash.example" in text
     assert "atlas.atlas.example" not in text
 
-    # No cluster render of the prod asset carries a localhost origin or a +.
-    for text in (
-        find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"],
-        find(helm_render(KC_CHART, sets=("global.domain=atlas.example",)), "ConfigMap", "atlas-keycloak-realm")["data"][
-            "aurelius-atlas.json"
-        ],
+    # No cluster render of the prod asset carries a localhost browser origin
+    # or a + — the aurelius client's, checked per-client since the grafana
+    # client deliberately registers a localhost redirect (CHT-82, DD-276).
+    for rendered in (
+        docs,
+        helm_render(KC_CHART, sets=("global.domain=atlas.example",)),
     ):
-        assert "localhost" not in text
+        text = find(rendered, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+        (a,) = [c for c in json.loads(text)["clients"] if c["clientId"] == "aurelius"]
+        uris = a["redirectUris"] + a["webOrigins"] + a["attributes"]["post.logout.redirect.uris"].splitlines()
+        assert not [u for u in uris if "localhost" in u or "127.0.0.1" in u or u == "+"], uris
         assert "127.0.0.1" not in text
         assert '"+"' not in text
     assert "${OTEL_INGEST_CLIENT_SECRET}" in text  # placeholders survive
+
+
+@pytest.mark.covers(rules=["CHT-81", "CHT-82"])
+def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
+    """The grafana relying-party client: confidential, placeholder secret, host + localhost redirects.
+
+    CHT-81: the one client the dev asset lacks — publicClient off,
+    standard flow on, ROPC/device/CIBA off, ${GRAFANA_CLIENT_SECRET} as its
+    secret, PKCE S256, and the editor/admin client roles. CHT-82: its
+    redirects are the substituted grafana host plus the deliberate
+    localhost port-forward entry.
+    """
+    prod_text = (KC_CHART / "files/aurelius-atlas.json").read_text()
+    assert "${GRAFANA_CLIENT_SECRET}" in prod_text  # the placeholder, never a secret
+    assert "grafana" not in (KC_CHART / "files/master.json").read_text()
+    assert "grafana" not in (WORKSPACE / "dev/keycloak/import/master.json").read_text()
+
+    asset = _rendered_asset(helm_render(KC_CHART, sets=("global.domain=atlas.example",)))
+    (g,) = [c for c in asset["clients"] if c["clientId"] == "grafana"]
+    assert g["publicClient"] is False
+    assert g["standardFlowEnabled"] is True
+    assert g["implicitFlowEnabled"] is False
+    assert g["directAccessGrantsEnabled"] is False
+    assert g["serviceAccountsEnabled"] is False
+    assert g["clientAuthenticatorType"] == "client-secret"
+    assert g["secret"] == "${GRAFANA_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
+    assert g["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert g["redirectUris"] == [
+        "https://grafana.atlas.example/login/generic_oauth",
+        "http://localhost:3000/login/generic_oauth",
+    ]
+    assert g["webOrigins"] == ["https://grafana.atlas.example"]
+
+    roles = {r["name"]: r for r in asset["roles"]["client"]["grafana"]}
+    assert set(roles) == {"admin", "editor"}
+    for role in roles.values():
+        assert role["clientRole"] is True
+        assert role["containerId"] == g["id"]
+
+
+@pytest.mark.covers(rules=["CHT-82"])
+def test__grafana_host_token_follows_the_host_rule() -> None:
+    """__GRAFANA_HOST__ substitutes like the browser hosts (CHT-82).
+
+    Values override wins, else grafana.<domain>; the bare render falls back
+    to <release>.localhost so lint/template succeed.
+    """
+    docs = helm_render(
+        KC_CHART,
+        sets=("global.domain=atlas.example", "global.hosts.grafana.host=metrics.example"),
+    )
+    text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+    assert "https://metrics.example/login/generic_oauth" in text
+    assert "grafana.atlas.example" not in text
+
+    bare = helm_render(KC_CHART, release="foo")
+    text = find(bare, "ConfigMap", "foo-atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+    assert "https://foo.localhost/login/generic_oauth" in text
 
 
 @pytest.mark.covers(rules=["CHT-79"])
@@ -684,15 +752,18 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     the otel-* clients and the otel-ingest scope equal their dev peers
     exactly (modulo ids), and the aurelius client differs only in the
     hardening fields. An identity change in the dev realm that is neither
-    mirrored here nor named in its commit fails this test.
+    mirrored here nor named in its commit fails this test. CHT-81's grafana
+    client is the one named exception: prod-only (the dev compose Grafana
+    stays anonymous, DV-89), so the prod set is the dev set plus it.
     """
     prod = json.loads((KC_CHART / "files/aurelius-atlas.json").read_text())
     dev = _dev_asset()
     dev_by_id = {c["clientId"]: c for c in dev["clients"]}
     prod_by_id = {c["clientId"]: c for c in prod["clients"]}
 
-    assert set(prod_by_id) - {"aurelius"} == {c for c in dev_by_id if c.startswith("otel-")}
-    for name in set(prod_by_id) - {"aurelius"}:
+    assert set(prod_by_id) - {"aurelius", "grafana"} == {c for c in dev_by_id if c.startswith("otel-")}
+    assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
+    for name in set(prod_by_id) - {"aurelius", "grafana"}:
         assert prod_by_id[name] == dev_by_id[name], name
 
     def strip_ids(obj: dict[str, Any]) -> dict[str, Any]:

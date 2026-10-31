@@ -1,12 +1,20 @@
 {{/*
-Grafana (CHT-40, DD-267): Deployment + PVC, the compose's anonymous-Viewer env
-set (Viewer role, login form disabled — the deployed posture), admin
-credentials joined from <release>-grafana-admin (generated, never rendered;
-the login form stays disabled either way, so the credential exists only to
-keep the instance off ship-defaults). Provisioning (datasources + dashboard
-provider) and the dashboards ride ConfigMaps; the GF_PATHS_* pair keeps every
-writable path on the one PVC (a dhi-image convention, the compose's shape).
+Grafana (CHT-40, CHT-84/85, DD-275/276): Deployment + PVC, authenticated
+against the aurelius-atlas realm (10.8, supersedes DD-267's login-form-
+disabled clause). The generic_oauth provider is the daily door: any
+authenticated realm user lands as Viewer, and the grafana client's
+editor/admin roles escalate via the role-attribute path (CHT-85). The auth
+URLs derive from the same issuer/realm facts as the collector's OIDC
+receiver (CHT-74). GF_SERVER_ROOT_URL stays unset — request-derived, so a
+port-forward to the pod completes the login against the localhost redirect
+the client registers (DD-276). The admin credential joins from
+<release>-grafana-admin as before (CHT-40): with the login form back on it
+is account recovery, not the daily door. Provisioning (datasources +
+dashboard provider) and the dashboards ride ConfigMaps; the GF_PATHS_* pair
+keeps every writable path on the one PVC (a dhi-image convention, the
+compose's shape).
 */}}
+{{- $realmUrl := printf "%s/realms/%s/protocol/openid-connect" (include "atlas-observability.issuerUrl" .) (include "atlas-observability.realm" .) -}}
 {{- if .Values.grafana.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
 apiVersion: apps/v1
@@ -49,13 +57,28 @@ spec:
                         {{- toYaml .Values.securityContext | nindent 24 }}
                     env:
                         -   name: GF_AUTH_ANONYMOUS_ENABLED
-                            value: "true"
-                        -   name: GF_AUTH_ANONYMOUS_ORG_ROLE
-                            value: Viewer
+                            value: "false"
                         -   name: GF_AUTH_DISABLE_LOGIN_FORM
+                            value: "false"
+                        -   name: GF_AUTH_GENERIC_OAUTH_ENABLED
                             value: "true"
-                        -   name: GF_USERS_VIEWERS_CAN_EDIT
-                            value: "true"
+                        -   name: GF_AUTH_GENERIC_OAUTH_NAME
+                            value: Keycloak
+                        -   name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+                            value: grafana
+                        -   name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+                            valueFrom:
+                                secretKeyRef:
+                                    name: {{ include "atlas-observability.grafanaOauthSecretName" . }}
+                                    key: client-secret
+                        -   name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
+                            value: {{ printf "%s/auth" $realmUrl | quote }}
+                        -   name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
+                            value: {{ printf "%s/token" $realmUrl | quote }}
+                        -   name: GF_AUTH_GENERIC_OAUTH_API_URL
+                            value: {{ printf "%s/userinfo" $realmUrl | quote }}
+                        -   name: GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH
+                            value: {{ `contains(resource_access.grafana.roles[*], "admin") ? "Admin" : contains(resource_access.grafana.roles[*], "editor") ? "Editor" : "Viewer"` | quote }}
                         -   name: GF_PATHS_PROVISIONING
                             value: /etc/grafana/provisioning
                         -   name: GF_PATHS_DATA

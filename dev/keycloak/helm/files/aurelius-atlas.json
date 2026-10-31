@@ -100,6 +100,52 @@
             "webOrigins": ["https://__ATLAS_HOST__", "https://__DASHBOARD_HOST__"]
         },
         {
+            "adminUrl": "",
+            "alwaysDisplayInConsole": false,
+            "attributes": {
+                "backchannel.logout.revoke.offline.tokens": "false",
+                "backchannel.logout.session.required": "true",
+                "display.on.consent.screen": "false",
+                "frontchannel.logout.session.required": "true",
+                "oauth2.device.authorization.grant.enabled": "false",
+                "oidc.ciba.grant.enabled": "false",
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://__GRAFANA_HOST__/login/generic_oauth",
+                "realm_client": "false",
+                "standard.token.exchange.enabled": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "grafana",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "Grafana's relying-party client (10.8, CHT-81, DD-275): the confidential OIDC login Grafana itself presents; its editor/admin client roles escalate the Viewer default via GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH. Prod realm only — the dev compose Grafana stays anonymous (DV-89).",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": false,
+            "id": "acb6a3bc-54e8-5e5c-a529-ac68759271c2",
+            "implicitFlowEnabled": false,
+            "name": "grafana",
+            "nodeReRegistrationTimeout": -1,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [
+                "https://__GRAFANA_HOST__/login/generic_oauth",
+                "http://localhost:3000/login/generic_oauth"
+            ],
+            "rootUrl": "",
+            "secret": "${GRAFANA_CLIENT_SECRET}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": ["https://__GRAFANA_HOST__"]
+        },
+        {
             "authorizationServicesEnabled": false,
             "bearerOnly": false,
             "clientAuthenticatorType": "client-secret",
@@ -334,6 +380,26 @@
                     "containerId": "4d343b10-a5b5-5d29-a8d8-de22b2f14074",
                     "description": "Write access to the Aurelius example API (PUT/DELETE on /entities)",
                     "name": "aurelius-write"
+                }
+            ],
+            "grafana": [
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "containerId": "acb6a3bc-54e8-5e5c-a529-ac68759271c2",
+                    "description": "Grafana Editor: editing dashboards and data sources (CHT-85)",
+                    "id": "890dc165-752e-5f59-a408-94af88b0a680",
+                    "name": "editor"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "containerId": "acb6a3bc-54e8-5e5c-a529-ac68759271c2",
+                    "description": "Grafana Admin: server-side administration through the Grafana UI (CHT-85)",
+                    "id": "e8da6ccf-9432-5fcd-b536-8d1411b70a95",
+                    "name": "admin"
                 }
             ]
         }

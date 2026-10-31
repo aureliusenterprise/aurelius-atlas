@@ -15,7 +15,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 - `import/master.json` — the dev realm; the **single authored source** the
   chart's `files/master.json` byte-copies (a chart-contract test fails on drift — re-run the copy after editing)
 - `helm/files/aurelius-atlas.json` — the cluster realm asset (10.7): minimally
-  authored, hardened, no users (its own section below — not a master export)
+  authored, hardened, no users (its own section below — not a master export).
+  10.8 adds the `grafana` relying-party client here and **only** here — the
+  dev asset stays without it (DV-89, CHT-79's named parity exception)
 
 ## Wiring Checklist
 
@@ -141,15 +143,23 @@ model, DD-273: `global.realm` — or the chart's `realm.name` override — selec
 `files/<realm>.json`; the default `aurelius-atlas` is the hardened cluster
 realm (CHT-75/76: sslRequired all, brute force, no self-service, password
 policy, ROPC off + PKCE S256 on the `aurelius` client, the seven `otel-*`
-accounts, no seeded users), and `realm.name: master` loads `master.json`
+accounts, no seeded users; 10.8's `grafana` OIDC client — prod-only, its
+redirects carry `__GRAFANA_HOST__` plus the deliberate
+`http://localhost:3000/login/generic_oauth` port-forward entry, DD-276 —
+lives here too), and `realm.name: master` loads `master.json`
 byte-for-byte as the dev escape hatch (its byte-copy of `import/master.json`
 stays DD-256-guarded; a realm with no asset fails the render, CHT-78). The
-asset's `__ATLAS_HOST__`/`__DASHBOARD_HOST__` tokens are Helm-replaced from
-`global.hosts`/`global.domain` at render (CHT-77 — hosts are topology, unlike
-the `${DEV_USER_*}` / `${OTEL_INGEST_CLIENT_SECRET}` credential placeholders,
+asset's `__ATLAS_HOST__`/`__DASHBOARD_HOST__`/`__GRAFANA_HOST__` tokens are
+Helm-replaced from
+`global.hosts`/`global.domain` at render (CHT-77/82 — hosts are topology,
+unlike
+the `${DEV_USER_*}` / `${OTEL_INGEST_CLIENT_SECRET}` / `${GRAFANA_CLIENT_SECRET}`
+credential placeholders,
 which stay verbatim for Keycloak's own
 `-Dkeycloak.migration.replace-placeholders=true` resolver); the `DEV_USER_*`
-env and the umbrella's users Secret render for `master` only (CHT-80)), the
+env and the umbrella's users Secret render for `master` only (CHT-80), while
+`GRAFANA_CLIENT_SECRET` (from `<release>-grafana-oauth`) renders for every
+realm but `master` — the client is the prod asset's only (CHT-83)), the
 RSS headless Service JGroups
 discovers through, HTTPS management-port probes (prod mode puts TLS there
 too — DD-260), and the bundled Postgres section
@@ -160,7 +170,8 @@ Remember the
 issuer pin (runbook): Keycloak fixes its realm issuer at first boot, so the
 chart's `global.domain`/issuer URL is immutable for a volume. 10.6 adds the
 ingress allows (CHT-62/63): 8443 from the credential-holding pods (server,
-the aux APIs, the collector, both pullers) plus jgroups 7800 self, and the
+the aux APIs, the collector, both pullers; Grafana joins in 10.8 for its
+login's token exchange and JWKS fetch, CHT-86) plus jgroups 7800 self, and the
 bundled Postgres' 5432 from Keycloak and its puller only; the management
 port 9000 is rule-free (kubelet-exempt, CHT-71). Conventions:
 `helm/AGENTS.md`.

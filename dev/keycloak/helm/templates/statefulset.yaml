@@ -134,6 +134,19 @@ spec:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.otelClientsSecretName" . }}
                                   key: OTEL_INGEST_CLIENT_SECRET
+                        {{- /* CHT-83: the grafana client's secret placeholder —
+                        the aurelius-atlas asset's only (CHT-81), so the env
+                        and the Secret behind it render for every realm but
+                        master (CHT-80's rule inverted: an unused credential
+                        is not generated). master's asset has no grafana
+                        client; the placeholder there would never resolve. */}}
+                        {{- if ne (include "atlas-keycloak.realmName" .) "master" }}
+                        - name: GRAFANA_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.grafanaOauthSecretName" . }}
+                                  key: client-secret
+                        {{- end }}
                         {{- with (include "atlas-keycloak.telemetryEndpoint" .) }}
                         {{- /* Legacy-leg OTLP only, when telemetry resolves to
                         an endpoint (CHT-16/42): Keycloak is the issuer, so it

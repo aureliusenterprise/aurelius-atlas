@@ -39,6 +39,8 @@ global:
             host: ""
         dashboard:
             host: ""
+        grafana:
+            host: ""
     # The issuer signing this pod's certificates (DD-243). Namespaced by
     # default — the umbrella's chart-managed chain is an Issuer (DD-259).
     trust:
@@ -82,6 +84,11 @@ realm:
     # OTEL_INGEST_CLIENT_SECRET) feeds the ${OTEL_INGEST_CLIENT_SECRET}
     # import placeholders (CHT-16).
     otelClientsSecretName: ""
+    # Grafana's relying-party client secret: <release>-grafana-oauth (key
+    # client-secret) feeds the ${GRAFANA_CLIENT_SECRET} import placeholder
+    # (CHT-83, DD-275). The placeholder is inert when the imported realm
+    # has no grafana client (master), so this env is not realm-gated.
+    grafanaOauthSecretName: ""
 
 # Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so
 # its own OTLP cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on
