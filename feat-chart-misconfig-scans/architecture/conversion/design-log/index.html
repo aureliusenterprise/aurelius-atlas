@@ -23724,11 +23724,11 @@ API nobody intends to use.</p>
 <li><strong>Date:</strong> 2026-10-31</li>
 </ul>
 <p><strong>Context.</strong> The helm charts are in decent shape and the ask was to hunt
-for small misconfigurations. A Trivy <code>config</code> pass over all nine charts
-renders 141 findings (19 HIGH / 44 MED / 78 LOW), the HIGHs concentrated
-in the umbrella and the dev charts (KSV-0014 <code>runAsNonRoot</code> unset on
-sidecar/init containers, KSV-0109 secret-in-ConfigMap on the rendered
-puller configs). SonarCloud already ingests the per-app image-vuln SARIF
+for small misconfigurations. A Trivy <code>config</code> pass over the nine charts
+(their real renders, below) surfaces 206 findings (28 HIGH / 66 MED /
+112 LOW); every HIGH is a dev-only workload — the store, Keycloak + its
+Postgres, the observability stack, the metrics pullers — no Aurelius app
+chart. SonarCloud already ingests the per-app image-vuln SARIF
 (<code>docker-vuln-scan -c sarif</code> → <code>sonar.sarifReportPaths</code>, scan and sonar
 co-located in CI's <code>scan-sonar</code> job for exactly that handoff); the natural
 move is to give the chart findings the same hop instead of a new surface
@@ -23744,12 +23744,19 @@ move is to give the chart findings the same hop instead of a new surface
    explicit-executor form: Nx silently DROPS a <code>command:</code>-sugar target
    carrying <code>configurations</code> (verified against the graph — the target
    vanishes).</li>
-<li><strong><code>--helm-values tests/values.test.yaml</code>.</strong> Trivy renders charts with
-   DEFAULT values, and the CHT-02 required-guards fire there — a guarded
-   chart then scans zero targets, which reads as clean. Passing the
-   chart's own test values (the CHT-06 render inputs) makes all nine
-   charts render under the scan. This is the silent-skip trap: a naive
-   <code>trivy config &lt;dir&gt;</code> gate would have passed six of nine charts.</li>
+<li><strong>Scan the real <code>helm template</code> render, not Trivy's helm renderer.</strong>
+   Two silent-skip traps, both verified. Trivy renders charts with DEFAULT
+   values, and the CHT-02 required-guards fire there — a guarded chart then
+   scans zero targets, which reads as clean. Worse, Trivy's own renderer
+   cannot run <code>.Files.Get</code> (the keycloak chart's realm asset), so even with
+   test values passed it SKIPs that chart outright — the <code>--helm-values</code>
+   flag fixed six of nine but left keycloak invisible. The robust shape:
+   render with real <code>helm template</code> (test values when the chart ships
+   them, exactly as <code>helm-template</code> does — handles both guards and
+   <code>.Files.Get</code>), write the manifests to <code>{projectRoot}/.helm-rendered.yaml</code>,
+   and <code>trivy config</code> the file. Because the SARIF is project-level either
+   way (locations dropped), scanning the render costs nothing in
+   attribution.</li>
 <li><strong>Project-level issues, no scope change.</strong> The SARIF's jq filter drops
    every result's <code>locations</code> and the run's <code>originalUriBaseIds</code>, so
    Sonar imports findings as project-level issues (documented
@@ -23766,16 +23773,27 @@ move is to give the chart findings the same hop instead of a new surface
 </ol>
 <p><strong>Scope.</strong> Only the five app charts have Sonar projects; their
 <code>sonar-project.properties</code> gain the second comma-delimited SARIF path.
-The umbrella and the three dev charts (where 17 of the 19 HIGHs live)
-have no Sonar project yet — their scans run in CI and their SARIFs reach
-the artifact only; Sonar projects for them are a later decision.</p>
-<p><strong>Consequences.</strong> <code>helm-misconfigs.json</code> joins the gitignored scan-report
-set (<code>*.sarif</code> was already ignored). The plugin gained a sixth target;
-<code>helm/AGENTS.md</code>'s adding-a-chart list names it. The two KSV-0109
-secret-in-ConfigMap findings are the first real triage items the hop
-surfaces — they land project-level on the umbrella once it has a project,
-and the puller ConfigMaps deserve a look before anything gates wider.
-Next free DD: 283.</p>
+The umbrella and the three dev charts (where every HIGH lives) have no
+Sonar project yet — their scans run in CI and their SARIFs reach the
+artifact only; Sonar projects for them are a later decision.</p>
+<p><strong>HIGH baseline (render-scan, all nine).</strong> Five app charts: 0. Dev
+elasticsearch 2, keycloak 3, observability 6, umbrella 17 (the umbrella
+supersets the dev charts' workloads — its render is the deployed shape).
+Every HIGH is KSV-0014 (<code>readOnlyRootFilesystem</code> unset/false) on a
+dev-only workload — the store, Keycloak + its Postgres, the observability
+stack, the metrics pullers — or KSV-0109 (a puller ConfigMap holding a
+<code>${env:…}</code> password/secret slot). None touches an Aurelius app chart.</p>
+<p><strong>Consequences.</strong> <code>helm-misconfigs.json</code> and <code>.helm-rendered.yaml</code> join
+the gitignored scan-report set (<code>*.sarif</code> was already ignored). The
+plugin gained a sixth target; <code>helm/AGENTS.md</code>'s adding-a-chart list names
+it. The findings are triage items, not gate failures: KSV-0109's
+<code>${env:…}</code> references are placeholders (the real secret arrives as env
+from a Secret — R5), and KSV-0014's puller containers can likely take a
+read-only root with an emptyDir; the stateful workloads (store, Keycloak,
+Postgres, observability) write to their data dirs and a read-only root is
+a per-workload decision with a <code>tests/values.test.yaml</code> render guard. Both
+are follow-ups; nothing enters a quality gate today because the app charts
+are clean at HIGH. Next free DD: 283.</p>
 
 
 
