@@ -228,6 +228,8 @@ coverage/
 licenses.json
 vulnerabilities.json
 vulnerabilities.html
+helm-misconfigs.json
+.helm-rendered.yaml
 .trivy-cache/
 
 # devcontainers/ci userDataFolder (feature installer scratch, CI-cacheable)

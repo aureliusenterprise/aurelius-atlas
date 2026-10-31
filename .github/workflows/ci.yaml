@@ -402,8 +402,9 @@ jobs:
 
     # ─── scan-sonar: image scanning + SonarQube ────────────────────────────
     # The I/O-wait half of the old serial pipeline. Scan and sonar MUST stay
-    # in one job: sonar reads `**/vulnerabilities.sarif` from the work
-    # volume, and the fan-out jobs never share files. Sonar is ~85% server
+    # in one job: sonar reads `**/vulnerabilities.sarif` and
+    # `**/helm-misconfigs.sarif` from the work volume, and the fan-out jobs
+    # never share files. Sonar is ~85% server
     # queue-wait, so this pod's CPUs idle while SonarCloud digests — exactly
     # the half that now overlaps the e2e job. Coverage arrives as validate's
     # artifact; images rebuild here from the GHCR buildcache (near-instant
@@ -504,14 +505,22 @@ jobs:
             - name: Build app images
               run: npx nx affected -t docker-build
 
-            - name: Scan for vulnerabilities
-              run: npx nx affected -t docker-vuln-scan -c sarif
+            # Image vulns (SBOM of each app image) plus chart misconfigs
+            # (DD-282): both Trivy, both -c sarif. The helm SARIF is
+            # HIGH/CRITICAL-only and project-level (the plugin's jq filter) —
+            # the five app charts feed their Sonar projects; the umbrella and
+            # dev charts have no Sonar project yet, so their reports only
+            # reach this artifact.
+            - name: Scan for vulnerabilities and misconfigurations
+              run: npx nx affected -t docker-vuln-scan helm-config-scan -c sarif
 
             - name: Upload vulnerability reports
               uses: actions/upload-artifact@v7
               with:
                   name: vuln-reports
-                  path: "**/vulnerabilities.sarif"
+                  path: |
+                      **/vulnerabilities.sarif
+                      **/helm-misconfigs.sarif
                   if-no-files-found: ignore
 
             # SonarQube analysis requires the test and scan results to be

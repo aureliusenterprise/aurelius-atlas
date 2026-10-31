@@ -192,8 +192,10 @@ absent; read optional component blocks as`index .Values "x" | default dict`.
    OCI repository); quote the `description` (an em-dash + colon breaks YAML);
    `version: 0.1.0`, `appVersion: "latest"` (the release rewrites both). No
    `project.json` — the plugin merges `helm-lint`/`helm-template`/
-   `helm-publish`/`helm-sign`/`helm-verify` onto the owning project from the
-   `Chart.yaml` glob (DD-293).
+   `helm-config-scan`/`helm-publish`/`helm-sign`/`helm-verify` onto the
+   owning project from the `Chart.yaml` glob (DD-293). `helm-config-scan`
+   needs the explicit-executor form — Nx silently drops `command:`-sugar
+   targets that carry `configurations` (DD-282).
    The owner needs no release config when it has a `pyproject.toml` (python.ts
    wires the composite module); chart-only owners (no pyproject) set
    `release.version.versionActions: tools/plugins/chart-yaml-version-actions.ts`
@@ -220,6 +222,7 @@ umbrella — run `helm dep update helm` after.
 
 ```bash
 npx nx run-many -t helm-lint helm-template   # the CHT-06 gate
+npx nx run-many -t helm-config-scan          # Trivy misconfig scan (DD-282; CI runs -c sarif)
 npx nx run <owner-project>:helm-template     # one chart (on its owner, DD-293)
 helm template atlas helm -f helm/environments/minikube.yaml -n atlas
 helm dep update helm                         # refresh snapshots (gitignored)

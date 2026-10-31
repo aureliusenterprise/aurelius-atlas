@@ -5,10 +5,22 @@ import { dirname, posix } from "node:path";
 export interface HelmPluginOptions {
     readonly lintTargetName?: string;
     readonly templateTargetName?: string;
+    readonly configScanTargetName?: string;
     readonly publishTargetName?: string;
     readonly signTargetName?: string;
     readonly verifyTargetName?: string;
 }
+
+/**
+ * jq filter turning Trivy's config SARIF into Sonar's project-level shape
+ * (DD-282): every result's locations and the run's originalUriBaseIds are
+ * dropped, so SonarCloud imports the findings as project-level issues
+ * instead of trying to resolve chart-relative URIs (`templates/deployment.yaml`)
+ * against indexed files — the chart dir is out of the Sonar scope, and
+ * widening it would run the YAML analyzer over the Go templates.
+ */
+const SARIF_PROJECT_LEVEL_JQ =
+    ".runs |= map(.results = ((.results // []) | map(del(.locations))) | del(.originalUriBaseIds))";
 
 const glob = "**/Chart.yaml";
 
@@ -65,6 +77,7 @@ function createNodesInternal(
     {
         lintTargetName = "helm-lint",
         templateTargetName = "helm-template",
+        configScanTargetName = "helm-config-scan",
         publishTargetName = "helm-publish",
         signTargetName = "helm-sign",
         verifyTargetName = "helm-verify",
@@ -107,6 +120,16 @@ function createNodesInternal(
         valueFiles.length > 0
             ? valueFiles.map((f) => `helm template atlas ${chartDir} --namespace atlas -f ${f}`)
             : [`helm template atlas ${chartDir} --namespace atlas`];
+    // The scan feeds Trivy the REAL `helm template` render, not Trivy's own
+    // helm renderer: with default values the CHT-02 required-guards fire, and
+    // Trivy silently SKIPS charts it cannot render — verified on the keycloak
+    // chart, whose realm asset reads `.Files.Get` (a real render handles it,
+    // Trivy's does not): zero targets, which reads as clean (DD-282). Render
+    // first (test values when the chart ships them, like helm-template), scan
+    // the manifest file.
+    const renderValuesArg = existsSync(`${chartDir}/tests/values.test.yaml`)
+        ? ` -f ${chartDir}/tests/values.test.yaml`
+        : "";
 
     const targets: Record<string, unknown> = {
         [lintTargetName]: {
@@ -120,6 +143,48 @@ function createNodesInternal(
             dependsOn: [{ target: lintTargetName }],
             metadata: {
                 description: "Render the Helm chart with its test values and environment overlays (CHT-06)",
+            },
+        },
+        [configScanTargetName]: {
+            // The misconfig hop into SonarCloud (DD-282), mirroring the docker
+            // plugin's docker-vuln-scan: the json config is the local default
+            // (all severities, for humans), the sarif config is what CI runs
+            // and Sonar ingests. The sarif is HIGH/CRITICAL-only on purpose:
+            // the LOW/MED backlog (KSV-0011 CPU limits, KSV-0125 ghcr false
+            // positive, KSV-0013 :latest render artefact) would enter the
+            // new-issues-0 gate as project-level noise before the charts are
+            // triaged. exit-code 0 keeps the gate in the quality gate, not
+            // the task. The jq filter makes every finding project-level, so
+            // scanning the rendered file (not the chart tree) costs nothing
+            // in attribution — locations are dropped either way.
+            // NOTE: explicit executor, not command sugar — Nx silently DROPS
+            // a `command:`-sugar target that carries `configurations`
+            // (verified: the inferred target vanishes from the graph).
+            executor: "nx:run-commands",
+            configurations: {
+                json: {
+                    command:
+                        `helm dep update ${chartDir} >/dev/null && ` +
+                        `helm template atlas ${chartDir} --namespace atlas${renderValuesArg} > {args.renderPath} && ` +
+                        `trivy config --quiet --format json --output {args.reportPath} --exit-code {args.exitCode} {args.renderPath}`,
+                    exitCode: 0,
+                    renderPath: "{projectRoot}/.helm-rendered.yaml",
+                    reportPath: "{projectRoot}/helm-misconfigs.json",
+                },
+                sarif: {
+                    command:
+                        `helm dep update ${chartDir} >/dev/null && ` +
+                        `helm template atlas ${chartDir} --namespace atlas${renderValuesArg} > {args.renderPath} && ` +
+                        `trivy config --quiet --severity HIGH,CRITICAL --format sarif --exit-code {args.exitCode} {args.renderPath} | ` +
+                        `jq '${SARIF_PROJECT_LEVEL_JQ}' > {args.reportPath}`,
+                    exitCode: 0,
+                    renderPath: "{projectRoot}/.helm-rendered.yaml",
+                    reportPath: "{projectRoot}/helm-misconfigs.sarif",
+                },
+            },
+            defaultConfiguration: "json",
+            metadata: {
+                description: "Scan the rendered chart for Kubernetes misconfigurations with Trivy (DD-282)",
             },
         },
         [publishTargetName]: {

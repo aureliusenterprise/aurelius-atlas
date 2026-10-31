@@ -149,6 +149,10 @@
                 }
             ]
         },
+        "helm-config-scan": {
+            "cache": true,
+            "inputs": ["default", "^default"]
+        },
         "helm-lint": {
             "cache": true,
             "inputs": ["default", "^default"]
