@@ -5,8 +5,9 @@ image (its entrypoint already speaks --config /etc/otelcol-contrib/config.yaml)
 with the ConfigMap port of the slice's config/metrics-puller.yaml.
 
 Credentials arrive only as env from Secrets (R5): ELASTICSEARCH_PASSWORD from
-the store's own <release>-elasticsearch Secret, OTEL_INGEST_CLIENT_SECRET from
-<release>-otel-clients. The trust root for the store dial, the mint, and the
+the store's own <release>-elasticsearch Secret, the ingest client secret from
+<release>-otel-clients (key otel-elasticsearch on the prod realm, the shared
+name on master, CHT-88/90). The trust root for the store dial, the mint, and the
 collector dial is this chart's Certificate Secret (ca.crt key). The image's
 declared user (65532) with drop-ALL — CHT-44. The dev `restart: on-failure`
 boot-race pattern (DD-195/DD-226: the oauth2client extension mints at startup
@@ -103,11 +104,19 @@ spec:
                             secretKeyRef:
                                 name: {{ include "atlas-elasticsearch.authSecretName" . }}
                                 key: elastic-password
+                      {{- /* The env name stays OTEL_INGEST_CLIENT_SECRET — the
+                      puller ConfigMap's ${env:…} ref spells it (CHT-90); the
+                      join key is this client's on the prod realm, the shared
+                      one on master (CHT-88). */}}
                       - name: OTEL_INGEST_CLIENT_SECRET
                         valueFrom:
                             secretKeyRef:
                                 name: {{ printf "%s-otel-clients" .Release.Name }}
+                                {{- if eq (include "atlas-elasticsearch.realm" .) "master" }}
                                 key: OTEL_INGEST_CLIENT_SECRET
+                                {{- else }}
+                                key: "otel-elasticsearch"
+                                {{- end }}
                   {{- with .Values.telemetry.resources }}
                   resources:
                       {{- toYaml . | nindent 22 }}

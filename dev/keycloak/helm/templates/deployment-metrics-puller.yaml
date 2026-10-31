@@ -7,7 +7,8 @@ the external server's endpoint or trust, so there is nothing to watch.
 
 Credentials arrive only as env from Secrets (R5): the database role from
 <release>-keycloak-database (the same Secret both DB ends read, CHT-17),
-OTEL_INGEST_CLIENT_SECRET from <release>-otel-clients. The issuer-wait init
+the ingest client secret from <release>-otel-clients (key otel-keycloak on
+the prod realm, the shared name on master, CHT-88/90). The issuer-wait init
 container carries the boot race (DD-195/DD-226) exactly as the Elasticsearch
 chart's puller and the observability chart's collector (CHT-37). User 65532,
 drop-ALL — CHT-44.
@@ -102,11 +103,19 @@ spec:
                             secretKeyRef:
                                 name: {{ include "atlas-keycloak.dbSecretName" . }}
                                 key: password
+                      {{- /* The env name stays OTEL_INGEST_CLIENT_SECRET — the
+                      puller ConfigMap's ${env:…} ref spells it (CHT-90); the
+                      join key is this client's on the prod realm, the shared
+                      one on master (CHT-88). */}}
                       - name: OTEL_INGEST_CLIENT_SECRET
                         valueFrom:
                             secretKeyRef:
                                 name: {{ include "atlas-keycloak.otelClientsSecretName" . }}
+                                {{- if eq (include "atlas-keycloak.realmName" .) "master" }}
                                 key: OTEL_INGEST_CLIENT_SECRET
+                                {{- else }}
+                                key: "otel-keycloak"
+                                {{- end }}
                   {{- with .Values.telemetry.puller.resources }}
                   resources:
                       {{- toYaml . | nindent 22 }}

@@ -263,14 +263,31 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
         "name": "atlas-elasticsearch",
         "key": "elastic-password",
     }
+    # CHT-90: the puller's join is its own client key on the prod realm; the
+    # container-facing env name (and the config's ${env:...} reference) stay.
     assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
         "name": "atlas-otel-clients",
-        "key": "OTEL_INGEST_CLIENT_SECRET",
+        "key": "otel-elasticsearch",
     }
     # R5: no credential literal renders into the puller's ConfigMap.
     assert (
         "elastic-password" not in find(docs, "ConfigMap", "atlas-elasticsearch-metrics-puller")["data"]["config.yaml"]
     )
+
+
+@pytest.mark.covers(rules=["CHT-90", "CHT-91"])
+def test__puller_master_realm_join_falls_back_to_the_shared_key() -> None:
+    """global.realm=master restores the shared ingest key on the puller join (CHT-90/91)."""
+    docs = helm_render(
+        ES_CHART,
+        sets=("global.domain=atlas.test", "telemetry.enabled=true", "global.realm=master"),
+    )
+    app = container(find(docs, "Deployment", "atlas-elasticsearch-metrics-puller"), "metrics-puller")
+    envs = env_map(app)
+    assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-otel-clients",
+        "key": "OTEL_INGEST_CLIENT_SECRET",
+    }
 
 
 @pytest.mark.covers(rules=["CHT-43"])

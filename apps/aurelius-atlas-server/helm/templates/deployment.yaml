@@ -79,7 +79,13 @@ spec:
                           valueFrom:
                               secretKeyRef:
                                   name: {{ $otelSecret }}
+                                  {{- /* CHT-90: own key on the prod realm, the
+                                  shared key on master (CHT-88). */}}
+                                  {{- if eq (include "atlas-server.realm" .) "master" }}
                                   key: OTEL_INGEST_CLIENT_SECRET
+                                  {{- else }}
+                                  key: {{ include "atlas-server.otelClientId" . | quote }}
+                                  {{- end }}
                         {{- end }}
                         {{- with .Values.config }}
                         {{- range $key, $value := . }}

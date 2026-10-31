@@ -35,6 +35,21 @@ AUX_CHARTS = {
 OBS_CHART = WORKSPACE / "dev/observability/helm"
 UMBRELLA_CHART = WORKSPACE / "helm"
 
+# The ingest-client roster (CHT-87..90, DD-277): the otel-* clients the prod
+# realm asset spells one ${OTEL_<ID>_CLIENT_SECRET} placeholder for each,
+# mirrored by the KC chart's atlas-keycloak.otelClients helper and the
+# umbrella's per-client Secret keys. Both suites pin their copies against
+# this list (roster drift guard); the asset itself is the source of truth.
+OTEL_CLIENT_IDS = (
+    "otel-atlas-server",
+    "otel-data2model",
+    "otel-elasticsearch",
+    "otel-keycloak",
+    "otel-lineage-model",
+    "otel-postgres",
+    "otel-validate-entity",
+)
+
 
 def _require_helm() -> None:
     if shutil.which("helm") is None:  # pragma: no cover - environment guard

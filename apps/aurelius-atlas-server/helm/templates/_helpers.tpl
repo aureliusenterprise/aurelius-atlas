@@ -58,6 +58,13 @@ keycloak host. */}}
 
 {{/* The Keycloak realm the OTLP mint URL names (CHT-74): global.realm, whose
 chart default is the production realm. */}}
+{{/* This chart's otel ingest client (CHT-90): the <release>-otel-clients key
+this producer joins on a non-master realm; master's asset shares one
+placeholder and the charts join OTEL_INGEST_CLIENT_SECRET (CHT-88). */}}
+{{- define "atlas-server.otelClientId" -}}
+otel-atlas-server
+{{- end -}}
+
 {{- define "atlas-server.realm" -}}
 {{- default "aurelius-atlas" .Values.global.realm -}}
 {{- end -}}

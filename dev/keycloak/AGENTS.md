@@ -101,7 +101,10 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
   exactly like the browser leg's user tokens, `secret:
 "${OTEL_INGEST_CLIENT_SECRET}"` resolved by the same `replace-placeholders`
   flag as the dev-user passwords. One shared dev client secret (the clients
-  differ by id; per-producer secrets are a deployment concern). The collector's
+  differ by id; per-producer secrets are a deployment concern — and since
+  10.9/DD-277 the cluster shape **is** per-client: the prod realm asset
+  spells one `${OTEL_<ID>_CLIENT_SECRET}` placeholder each; `master.json`
+  deliberately keeps the shared one, CHT-91). The collector's
   per-service leg (4317/4319) accepts their client-credentials JWTs and stamps
   `azp` as `otel.ingest.client`. **Rotation**: bump
   `OTEL_INGEST_CLIENT_SECRET` in every consumer `.env` (the three slice pullers,
@@ -143,7 +146,10 @@ model, DD-273: `global.realm` — or the chart's `realm.name` override — selec
 `files/<realm>.json`; the default `aurelius-atlas` is the hardened cluster
 realm (CHT-75/76: sslRequired all, brute force, no self-service, password
 policy, ROPC off + PKCE S256 on the `aurelius` client, the seven `otel-*`
-accounts, no seeded users; 10.8's `grafana` OIDC client — prod-only, its
+accounts — each with its own `${OTEL_<ID>_CLIENT_SECRET}` placeholder since
+10.9 (CHT-87, DD-277): the id uppercased, `-` → `_`, suffixed
+`_CLIENT_SECRET` — no seeded users; 10.8's `grafana` OIDC client —
+prod-only, its
 redirects carry `__GRAFANA_HOST__` plus the deliberate
 `http://localhost:3000/login/generic_oauth` port-forward entry, DD-276 —
 lives here too), and `realm.name: master` loads `master.json`
@@ -153,13 +159,19 @@ asset's `__ATLAS_HOST__`/`__DASHBOARD_HOST__`/`__GRAFANA_HOST__` tokens are
 Helm-replaced from
 `global.hosts`/`global.domain` at render (CHT-77/82 — hosts are topology,
 unlike
-the `${DEV_USER_*}` / `${OTEL_INGEST_CLIENT_SECRET}` / `${GRAFANA_CLIENT_SECRET}`
+the `${DEV_USER_*}` / `${OTEL_*_CLIENT_SECRET}` / `${GRAFANA_CLIENT_SECRET}`
 credential placeholders,
 which stay verbatim for Keycloak's own
 `-Dkeycloak.migration.replace-placeholders=true` resolver); the `DEV_USER_*`
 env and the umbrella's users Secret render for `master` only (CHT-80), while
 `GRAFANA_CLIENT_SECRET` (from `<release>-grafana-oauth`) renders for every
-realm but `master` — the client is the prod asset's only (CHT-83)), the
+realm but `master` — the client is the prod asset's only (CHT-83). The
+import's otel placeholder envs are realm-shaped too (CHT-89): the StatefulSet
+carries one env per client id (`OTEL_ATLAS_SERVER_CLIENT_SECRET`, …, from
+`atlas-keycloak.otelClients`) on the prod realm, the single shared
+`OTEL_INGEST_CLIENT_SECRET` env on `master` — always equal to the asset's
+placeholder set; the umbrella's `<release>-otel-clients` Secret keys follow
+the same shape (CHT-88)), the
 RSS headless Service JGroups
 discovers through, HTTPS management-port probes (prod mode puts TLS there
 too — DD-260), and the bundled Postgres section

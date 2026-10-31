@@ -67,7 +67,13 @@ spec:
                           valueFrom:
                               secretKeyRef:
                                   name: {{ printf "%s-otel-clients" .Release.Name }}
+                                  {{- /* CHT-90: own key on the prod realm, the
+                                  shared key on master (CHT-88). */}}
+                                  {{- if eq (include "atlas-validate-entity.realm" .) "master" }}
                                   key: OTEL_INGEST_CLIENT_SECRET
+                                  {{- else }}
+                                  key: {{ include "atlas-validate-entity.otelClientId" . | quote }}
+                                  {{- end }}
                         {{- end }}
                         {{- with .Values.config }}
                         {{- range $key, $value := . }}

@@ -83,6 +83,19 @@ realm import's `${GRAFANA_CLIENT_SECRET}` placeholder (keycloak chart, non-
 master only) and the observability chart's `GF_AUTH_GENERIC_OAUTH_CLIENT_
 SECRET`; disabling observability alone keeps it (the import still needs it),
 master plus no-observability drops it.
+`<release>-otel-clients` is **realm-shaped** (CHT-88, DD-277, 10.9): the
+hardened realm gets one key per ingest client id (`otel-atlas-server`, …,
+each generated/preserved/overridden independently via
+`secrets.otelClients.clients.<client-id>`), `master` keeps the single
+`OTEL_INGEST_CLIENT_SECRET` key with `secrets.otelClients.secret` as its
+override. The keycloak StatefulSet's import envs and every producer's
+`OTEL_CLIENT_SECRET` join follow the same realm gate — keep the three
+spellings and the asset's placeholders derived from one roster (the
+umbrella suite pins them; `atlas-keycloak.otelClients` is the chart-local
+copy). `global.realm` is the one-value retarget for all of them (CHT-74):
+chart-local `atlas-keycloak.realm.name=master` alone flips the Secret but
+not the producers' joins, so a mixed render dangles — set `global.realm`
+when retargeting.
 The chart **never renders a GatewayClass** — it is a runbook prerequisite
 (the cluster's Gateway API implementation is the deployment's choice).
 `global.gateway.enabled=false` must take the edge cert with it (a leaf with
