@@ -57,8 +57,9 @@ and is inert until then, DD-141).
   client composes `${apiBaseUrl}/atlas/v2/...` — the Aurelius
   deployment-proxy coupling is not ported (APC-01, DD-139), so the dev proxy
   and the nginx image forward `/api` untouched (APC-08)
-- Keycloak dev origins for 4300/4301 (serve) and 18444 (e2e) on the shared
-  `aurelius` client (APC-09)
+- Keycloak dev origins for 4300/4301 (serve) on the shared `aurelius` client
+  (APC-09); the e2e browser rides the cluster's edge origin, which
+  `tools/cluster/install.sh realm-origins` registers on the live realm (CHT-107)
 
 ## Features (slice 7.5 — landing page / browse)
 
@@ -117,7 +118,7 @@ only).
 nx test aurelius-atlas-webapp -c ci       # Vitest; runs check-purity first, never without -c ci
 nx lint aurelius-atlas-webapp
 nx run aurelius-atlas-webapp:check-purity # the legacy-construct gate (WBP-02)
-nx e2e aurelius-atlas-webapp              # Playwright (chromium, firefox, webkit) against the image
+nx e2e aurelius-atlas-webapp              # Playwright (chromium, firefox, webkit) against the deployed umbrella
 nx extract-i18n aurelius-atlas-webapp     # refresh src/locale/messages.xlf (see below)
 ```
 
@@ -128,13 +129,14 @@ the completeness spec green. `nx extract-i18n` regenerates the template
 catalogue from templates only; the bridge files are the source of truth for
 dictionary keys (DD-128).
 
-The e2e stack runs the **real** Atlas server container behind the nginx `/api/`
-proxy on the dev Elasticsearch network (DD-142), with Keycloak on the host
-stack. Every page test signs in through the `authenticated` fixture
-(`AURELIUS_ATLAS_WEBAPP_USERNAME`/`_PASSWORD` from `.env.enc`, the
-`aurelius-writer` dev user); changing `dev/keycloak/import/master.json` needs a
-full keycloak recreation (`docker compose -f dev/keycloak/docker-compose.yaml
-down -v && up -d`) — Keycloak imports do not overwrite an existing realm.
+The e2e suite is k8s-only (DD-283/284): it drives the deployed umbrella — the
+**real** Atlas server behind the chart's nginx `/api/` proxy, the cluster's
+Keycloak and collector — through the Gateway at `atlas.atlas.test`. Every page
+test signs in through the `authenticated` fixture (the `aurelius-writer` smoke
+user, password read from the release's `atlas-keycloak-users` Secret); the
+collector legs and Tempo ride loopback port-forwards (CHT-104). Preconditions:
+`tools/cluster/install.sh up` (with `realm-origins`) and the `/etc/hosts`
+block for the browser legs (`install.sh hosts`, sudo — CHT-106).
 
 ## Features (slice 7.12 — theme, branding and layout)
 
@@ -180,9 +182,10 @@ The image serves each locale from its own directory with
 `${AURELIUS_ATLAS_WEBAPP_*}` placeholders (API/OTLP/Keycloak upstreams, TLS
 names, trust anchor, DNS resolver) are resolved by the deployment, which mounts
 a filled-in copy over that path. Unresolved placeholders make nginx fail at
-startup instead of serving with template values (same pattern as the example
-app; see its README for the envsubst/kustomize recipe). E2E ships such a
-filled-in copy at `e2e/config/nginx.conf` (TLS + verified proxies, ADR 039).
+startup instead of serving with template values. The Helm chart resolves them
+in an init container at pod start (DD-262); the e2e compose stack's static
+filled-in copy (`e2e/config/nginx.conf`) retired with it (DD-284) — the
+k8s suite rides the chart's own rendered ConfigMap.
 
 The shipped config carries the **browser rate limit** on the `/api/` proxy
 (SRV-09, DD-238): a `limit_req` leaky bucket keyed on the client address —
@@ -192,8 +195,7 @@ server directly are never limited and the server itself carries no limiter. A
 deployment with internal callers on public addresses extends the geo block
 (one `0` entry per range). The e2e override carried a test-sized twin of the
 bucket for the live-flood proof; DD-281 retired that proof and the twin with
-it (the e2e `/api/` proxy is unlimited, as the shipped geo block leaves
-suite traffic anyway).
+it, and the override itself retired with the compose stack (DD-284).
 
 Both configs also carry **native edge tracing** (SHL-15, DD-239). The image
 carries the OTel tracing module (`ngx_otel_module`, built in the Dockerfile's

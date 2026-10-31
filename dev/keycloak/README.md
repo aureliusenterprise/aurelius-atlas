@@ -30,8 +30,8 @@ Part of the template **spine**.
 `import/master.json` declares two realm users so RBAC works out of the box —
 no post-import scripting:
 
-- `aurelius-writer` — has the `aurelius-write` client role (the FastAPI
-  mutating endpoints require it as `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`)
+- `aurelius-writer` — has the `aurelius-write` client role (the write gate
+  `aurelius-atlas-auth` enforces when a service sets `write_role`)
 - `aurelius-reader` — authenticates but holds no roles (denied on writes)
 
 Their passwords are `${DEV_USER_WRITER_PASSWORD}` / `${DEV_USER_READER_PASSWORD}`

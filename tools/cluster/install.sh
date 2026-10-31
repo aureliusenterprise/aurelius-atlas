@@ -13,6 +13,7 @@
 #   images    build the Aurelius images and load them + the infra pins
 #   status    release state, pod table, Gateway address
 #   hosts     refresh the fenced /etc/hosts block from the live Gateway IP (CHT-106)
+#   realm-origins  register the edge host's browser origins on the realm client (CHT-107)
 #   down      helm uninstall (+ --cluster to also minikube delete)
 #
 # Flags (env-overridable): --domain, --realm, --cpus, --memory, --skip-build.
@@ -42,7 +43,7 @@ die() { printf '\033[1;31m[cluster] %s\033[0m\n' "$*" >&2; exit 1; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        up | images | status | hosts | down) ACTION="$1"; shift ;;
+        up | images | status | hosts | realm-origins | down) ACTION="$1"; shift ;;
         --domain) DOMAIN="$2"; shift 2 ;;
         --realm) REALM="$2"; shift 2 ;;
         --cpus) CPUS="$2"; shift 2 ;;
@@ -368,6 +369,71 @@ else:
 PY
 }
 
+ensure_realm_origins() {
+    # CHT-107: the realm's browser origins. Keycloak's --import-realm never
+    # updates a live realm, and the master asset (the install's realm, CHT-78)
+    # carries only the dev localhost origins — a browser on the edge hostname
+    # is refused at the sign-in redirect until the edge origin is registered
+    # on the client. Registering browser origins is deployment topology, not
+    # credentials (CHT-77's own rule), and this script owns the install's
+    # domain — so it converges the live realm after every install. The dial
+    # rides the lib's resolver shim: keycloak.<domain> over the Gateway,
+    # CA-verified — the same honest issuer origin the pods verify against
+    # (DD-265's split horizon makes the name real in-cluster too).
+    local gateway_ip
+    gateway_ip="$(gateway_address)"
+    [[ -n "$gateway_ip" ]] ||
+        die "the Gateway carries no address — is minikube tunnel running? (install.sh up starts it)"
+    ATLAS_CLUSTER_GATEWAY_IP="$gateway_ip" \
+        ATLAS_CLUSTER_REALM="$REALM" \
+        ATLAS_CLUSTER_ATLAS_HOST="${RELEASE}.${DOMAIN}" \
+        ATLAS_CLUSTER_KEYCLOAK_HOST="keycloak.${DOMAIN}" \
+        PYTHONPATH="$ROOT/libs/python/aurelius-atlas-cluster-lane${PYTHONPATH:+:$PYTHONPATH}" \
+        "$PY" - <<'PY'
+import os
+import sys
+
+import httpx2 as httpx
+from aurelius_atlas_cluster_lane import lane
+from aurelius_atlas_cluster_lane.origins import admin_client, ensure_browser_origins
+from aurelius_atlas_cluster_lane.secrets import SecretReader
+
+realm = os.environ["ATLAS_CLUSTER_REALM"]
+atlas_host = os.environ["ATLAS_CLUSTER_ATLAS_HOST"]
+issuer = f"https://{os.environ['ATLAS_CLUSTER_KEYCLOAK_HOST']}"
+
+lane._gateway_ip_cache = os.environ["ATLAS_CLUSTER_GATEWAY_IP"]  # the tunnel's address, already known
+ca_file = lane.read_chart_ca()
+
+# Admin token: the realm import's bootstrap admin through the admin-cli public
+# client — the same credentials the Keycloak pod boots with (chart Secret).
+reader = SecretReader("atlas")
+with lane.install_resolver_shim():
+    token_response = httpx.post(
+        f"{issuer}/realms/master/protocol/openid-connect/token",
+        data={
+            "client_id": "admin-cli",
+            "grant_type": "password",
+            "username": reader.read("atlas-keycloak-admin", "user"),
+            "password": reader.read("atlas-keycloak-admin", "password"),
+        },
+        verify=ca_file,
+        timeout=30,
+    )
+    token_response.raise_for_status()
+    token = token_response.json()["access_token"]
+
+    with admin_client(issuer, token=token, verify=ca_file) as client:
+        added = ensure_browser_origins(client, realm=realm, client_id="aurelius", host=atlas_host)
+print(
+    f"realm {realm!r}: https://{atlas_host} registered on the aurelius client"
+    if added
+    else f"realm {realm!r}: the aurelius client already covers https://{atlas_host}",
+    file=sys.stderr,
+)
+PY
+}
+
 # --- subcommands ---------------------------------------------------------------
 
 case "$ACTION" in
@@ -382,6 +448,8 @@ case "$ACTION" in
         # /etc/hosts (devcontainer users are often not root) must not fail an
         # otherwise-green install; the suites ride the resolver shim.
         ensure_hosts || warn "the hosts block was not written — the Python suites do not need it; for Playwright browsers run: sudo bash tools/cluster/install.sh hosts"
+        # CHT-107: the realm's edge browser origins converge after every install.
+        ensure_realm_origins
         kubectl -n "$NS" get gateway \
             -o jsonpath='{range .items[*]}{.metadata.name}{" -> "}{.status.addresses[0].value}{"\n"}{end}' 2>/dev/null || true
         ;;
@@ -391,6 +459,9 @@ case "$ACTION" in
         ;;
     hosts)
         ensure_hosts
+        ;;
+    realm-origins)
+        ensure_realm_origins
         ;;
     status)
         helm status "$RELEASE" -n "$NS" 2>/dev/null | head -6 || log "no release $RELEASE in $NS"

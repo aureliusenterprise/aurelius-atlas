@@ -239,15 +239,16 @@ def test__hsts_rides_the_listener_and_the_placeholder_gates_it() -> None:
 
 @pytest.mark.covers(rules=["CHT-100"])
 def test__otel_location_carries_its_own_limiter(webapp_docs: list[dict[str, Any]]) -> None:
-    """The browser-leg zone beside /api/'s, in the shipped asset and its e2e twin (CHT-100)."""
+    """The browser-leg zone beside /api/'s, in the shipped asset (CHT-100).
+
+    The e2e twin this test once compared against is gone with the compose
+    stack (DD-284): the k8s suite rides the chart's own rendered ConfigMap,
+    so the shipped asset is the single shape under test.
+    """
     template = find(webapp_docs, "ConfigMap", "atlas-webapp-nginx")["data"]["nginx.conf.template"]
     assert "limit_req_zone $atlas_api_limit_addr zone=atlas_otel:10m rate=600r/m;" in template
     otel_body = template.split("location /otel/ {")[1].split("}")[0]
     assert "limit_req zone=atlas_otel burst=100 nodelay;" in otel_body
-    e2e = (WEBAPP_CHART.parent / "e2e/config/nginx.conf").read_text()
-    assert "limit_req_zone $binary_remote_addr zone=atlas_otel:10m rate=600r/m;" in e2e
-    e2e_otel_body = e2e.split("location /otel/ {")[1].split("}")[0]
-    assert "limit_req zone=atlas_otel burst=100 nodelay;" in e2e_otel_body
 
 
 @pytest.mark.covers(rules=["CHT-92"])

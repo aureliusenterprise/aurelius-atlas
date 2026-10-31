@@ -12,18 +12,15 @@ workspace-wide rules live in the root `AGENTS.md`.
 
 ## Wiring Checklist
 
-- Exposes the external Docker network `aurelius-atlas-dev-postgres-network`; the
-  FastAPI example and the JDBC sink connector attach to it.
-- The FastAPI example's `serve` target starts this project via `dependsOn`.
+- Exposes the external Docker network `aurelius-atlas-dev-postgres-network` for
+  consumers that attach to it (the template's JDBC sink slice is gone, ADR 050).
 - The **`metrics-puller`** service scrapes
   this database with the Collector's `postgresql` receiver and pushes OTLP to
   the dev collector over the external `aurelius-atlas-dev-observability-network`
   (Postgres speaks no OTLP, so a puller sidecar is the only push option;
   dev/observability stays slice-agnostic). `implicitDependencies` on
-  `aurelius-atlas-dev-observability` make `nx up`/`serve` create that network first
-  — e2e fixtures inherit the guarantee through their dependents (the fastapi
-  and sink `postgres` fixtures take the `observability` fixture). Prometheus
-  series carry `exported_job="dev-postgres"`.
+  `aurelius-atlas-dev-observability` make `nx up`/`serve` create that network
+  first. Prometheus series carry `exported_job="dev-postgres"`.
 - The puller exports on the collector's **per-service leg** with its own
   identity (DD-196): the `oauth2client` extension mints client-credentials
   JWTs as the `otel-postgres` realm client (dev/keycloak import) and attaches
@@ -38,11 +35,10 @@ workspace-wide rules live in the root `AGENTS.md`.
   mint needs Keycloak up; DD-226 — an attempt count burns out before
   Keycloak is reliably up). The slice no longer carries the shared ingest
   token — its puller was the only consumer.
-- Database `aurelius`, credentials from `.env` dev defaults — the same values
-  the FastAPI example's settings model reads.
-- The `Entity` table is created by the application at startup in dev; there are
-  no migration files here. After an `Entity` model change, drop/recreate the
-  dev table (see `libs/python/aurelius-atlas-example/AGENTS.md`).
+- Database `aurelius`, credentials from `.env` dev defaults. Atlas persists in
+  Elasticsearch, so this database is on standby for Postgres-backed additions;
+  `dev/keycloak`'s compose borrows this slice's `pg_hba.conf` for its own
+  `postgres-keycloak` container.
 
 ## Commands
 
@@ -60,5 +56,7 @@ nx up aurelius-atlas-dev-postgres      # detached, waits for healthy
 
 ## Removal
 
-Part of the spine. Removing it means replacing persistence in the FastAPI
-example (and the JDBC sink's target table, if that slice is present).
+Part of the spine. Its template consumers (the example apps, the JDBC sink)
+are gone (ADR 050, DD-284); what still references it is `dev/keycloak`'s
+compose mount of `../postgres/pg_hba.conf` and the umbrella's
+`dev-postgres` image pin — unwire those together if the slice ever goes.

@@ -41,11 +41,16 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Test all projects
-              # `test`/`e2e` depend on `decrypt`; scope the key to the step
-              # instead of the job/workflow so third-party actions never see it.
+              # `test` depends on `decrypt`; scope the key to the step
+              # instead of the job/workflow so third-party actions never see
+              # it. The `e2e` target list retired here with the compose lane
+              # (DD-283): the suites are k8s-only now and run locally
+              # against tools/cluster/install.sh up (see
+              # docs/architecture/deployment/cluster-lane-rollout-plan.md)
+              # until a cluster-shaped runner exists.
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t test e2e -c ci
+              run: npx nx run-many -t test -c ci
 
             - name: Upload coverage reports
               uses: actions/upload-artifact@v7

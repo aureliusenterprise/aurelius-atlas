@@ -33,9 +33,9 @@ auth=None)` builds the verifier, mounts the routers and the 400 handler (the app
 - `aurelius_atlas_data2model/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, read from the Aurelius source (the lineage caller's
   fixed rules are the payload); run by `tests/`
-- `tests/` — unit tests (rules + engine + app wiring on a fake issuer); `e2e/` — the image
+- `tests/` — unit tests (rules + engine + app wiring on a fake issuer); `e2e/` —
+  the deployed app over HTTPS, Keycloak-minted tokens (k8s-only, DD-283)
 - `helm/` — the `atlas-data2model` chart (its own section below)
-  over HTTPS, Keycloak-minted tokens
 
 ## Rules the app keeps
 
@@ -49,7 +49,10 @@ the webapp's parser's input.
 ## Wiring Checklist
 
 - `project.json` — `serve` depends on dev Keycloak (tokens) + observability (the OTLP
-  leg); `test`/`e2e`/`build`/`docker-*`/`decrypt` are inferred by `tools/plugins/python.ts`.
+  leg); `test`/`build`/`docker-*`/`decrypt` are inferred by `tools/plugins/python.ts`.
+  `e2e` is declared explicitly with `"dependsOn": []` — the merge cancels the
+  plugin's inferred deps because the suite's precondition is the live cluster
+  (`tools/cluster/install.sh up`), not a task chain (DD-283).
 - Auth is the shared lib (`aurelius-atlas-auth`, DD-197): `auth.require_auth` on the
   route, audience `aurelius-atlas-data2model` (tokens minted for another client are
   rejected, AUX-04/AUX-05). `/extract` is read-only, so no write role.
@@ -60,11 +63,14 @@ the webapp's parser's input.
   so even the JWKS request appears as a client span in Tempo.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-data2model` after changing `.env`);
   `OTEL_INGEST_CLIENT_SECRET` mirrors `apps/aurelius-atlas-server/.env`.
-- `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`.
+- `tls.json` — the app's certificate (`nx certgen`), used by `serve`.
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled), nonroot,
   liveness healthcheck.
-- `e2e/docker-compose.yaml` — the app on the observability network (`otel-collector:4319`),
-  Keycloak reached through `keycloak.localhost:host-gateway` (the loopback-pinned mint).
+- `e2e/conftest.py` — the suite is k8s-only (DD-283): the app dialled at its
+  Service's real name through a port-forward (SAN-honest TLS, CHT-104), tokens
+  minted through `https://keycloak.atlas.test`, the writer password from the
+  `atlas-keycloak-users` Secret. The lane machinery is
+  `aurelius-atlas-cluster-lane`; the compose stack retired with the dual lane.
 
 ## Helm chart
 

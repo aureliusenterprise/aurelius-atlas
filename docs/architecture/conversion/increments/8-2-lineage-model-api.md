@@ -126,6 +126,9 @@ only the fields the flattening reads are declared (DD-198).
 - E2E: `e2e/` — real container, Keycloak-minted token, the **real**
   data2model container, and a canned-file fixture Atlas (dhi.io Python
   `http.server`, DD-200); 401 anonymous, 200 chain, 204 unknown guid.
+  _(DD-284: the suite and `e2e/docker-compose.yaml` are deleted — the chain's
+  canned-fixture shape has no counterpart in the k8s-only lane (DD-283), and
+  its rules stay unit- and scenario-covered.)_
 
 ## Acceptance criteria
 

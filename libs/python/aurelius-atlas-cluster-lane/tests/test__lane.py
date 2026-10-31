@@ -16,7 +16,6 @@ from aurelius_atlas_cluster_lane.lane import (
     ca_file_fixture,
     clear_rewrite,
     cluster_gate,
-    lane_target,
     read_gateway_ip,
     set_rewrite,
 )
@@ -31,20 +30,6 @@ def _fake_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, body: 
     cli.write_text(f"#!/usr/bin/env bash\n{body}\n")
     cli.chmod(cli.stat().st_mode | stat.S_IEXEC)
     monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
-
-
-@pytest.mark.covers("aurelius_atlas_cluster_lane.lane.lane_target", rules=["CHT-103"])
-def test__lane_target_defaults_to_compose(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No ATLAS_E2E_TARGET means compose: every existing invocation is unchanged."""
-    monkeypatch.delenv("ATLAS_E2E_TARGET", raising=False)
-    assert lane_target() == "compose"
-
-
-@pytest.mark.covers("aurelius_atlas_cluster_lane.lane.lane_target", rules=["CHT-103"])
-def test__lane_target_reads_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """ATLAS_E2E_TARGET=cluster selects the cluster lane (CHT-103)."""
-    monkeypatch.setenv("ATLAS_E2E_TARGET", "cluster")
-    assert lane_target() == "cluster"
 
 
 @pytest.mark.covers("aurelius_atlas_cluster_lane.lane.cluster_gate", rules=["CHT-103"])
@@ -142,11 +127,7 @@ def test__shim_rewrites_the_host_and_port_pair(monkeypatch: pytest.MonkeyPatch) 
 
 
 @pytest.mark.covers("aurelius_atlas_cluster_lane.lane.ca_file_fixture", rules=["CHT-103"])
-def test__ca_file_fixture_branches_on_the_lane(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cluster hands out the chart CA, compose the project's mkcert CA (CHT-103)."""
-    certs = tmp_path / "certs"
+def test__ca_file_fixture_hands_out_the_chart_ca(tmp_path: Path) -> None:
+    """The ``ca_file`` fixture is what the ``cluster`` mapping carries — nothing else (CHT-103)."""
     chart_ca = str(tmp_path / "chart-ca.crt")
-    monkeypatch.setenv("ATLAS_E2E_TARGET", "cluster")
-    assert ca_file_fixture({"ca_file": chart_ca}, certs) == chart_ca
-    monkeypatch.delenv("ATLAS_E2E_TARGET")
-    assert ca_file_fixture({}, certs) == str(certs / "ca.pem")
+    assert ca_file_fixture({"ca_file": chart_ca}) == chart_ca

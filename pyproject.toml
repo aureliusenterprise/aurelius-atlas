@@ -14,8 +14,6 @@ dev = [
     "aurelius-atlas-core",
     "aurelius-atlas-data2model",
     "aurelius-atlas-data2model-client",
-    "aurelius-atlas-example",
-    "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
     "aurelius-atlas-lineage-model-client",
@@ -81,13 +79,7 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-data2model-client]
 workspace = true
 
-[tool.uv.sources.aurelius-atlas-example]
-workspace = true
-
 [tool.uv.sources.aurelius-atlas-auth]
-workspace = true
-
-[tool.uv.sources.aurelius-atlas-fastapi-example]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-license-report]
@@ -140,13 +132,11 @@ members = [
     "apps/aurelius-atlas-data2model",
     "apps/aurelius-atlas-lineage-model",
     "apps/aurelius-atlas-validate-entity",
-    "apps/aurelius-atlas-fastapi-example",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
     "libs/python/aurelius-atlas-cluster-lane",
     "libs/python/aurelius-atlas-core",
     "libs/python/aurelius-atlas-data2model-client",
-    "libs/python/aurelius-atlas-example",
     "libs/python/aurelius-atlas-lineage-model-client",
     "libs/python/aurelius-atlas-model",
     "libs/python/aurelius-atlas-otel",
@@ -167,8 +157,6 @@ members = [
 deviations = "docs/architecture/conversion/deviations.md"
 enforce-from = "0.2"
 exclude-projects = [
-    "apps/aurelius-atlas-fastapi-example",
-    "libs/python/aurelius-atlas-example",
     "libs/python/aurelius-atlas-sdk",
     "reports/aurelius-atlas-license-report",
     "reports/aurelius-atlas-vulnerability-report",
@@ -259,6 +247,9 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 # the server lane gates on the deployment (CHT-104).
 "apps/aurelius-atlas-data2model/e2e/conftest.py" = ["INP001", "S101", "S105"]
 "apps/aurelius-atlas-validate-entity/e2e/conftest.py" = ["INP001", "S101", "S105"]
+# The webapp lane reads the sign-in password and Secret names the same way,
+# and its collectors shells out to kubectl port-forward (DD-284).
+"apps/aurelius-atlas-webapp/e2e/conftest.py" = ["INP001", "S101", "S105"]
 # The core lane's cluster branch reads the elastic Secret name (CHT-104).
 "libs/python/aurelius-atlas-core/e2e/conftest.py" = ["INP001", "S101", "S105"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]

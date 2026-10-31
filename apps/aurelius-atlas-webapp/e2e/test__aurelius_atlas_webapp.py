@@ -481,14 +481,22 @@ def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Pa
     expect(card_titles).to_have_text(["Business context", "Technische context", "Data governance organisatie"])
 
 
-def test__footer_shows_the_runtime_config_values(authenticated: Page) -> None:
-    """The footer renders copyright year, app name, and version from /config.json (SHC-06, SHC-09)."""
+def test__footer_shows_the_runtime_config_values(authenticated: Page, root_url: str) -> None:
+    """The footer renders copyright year, app name, and version from /config.json (SHC-06, SHC-09).
+
+    The expected strings are read from the deployed `/config.json` — the same
+    document the SPA bootstraps from (the chart ConfigMap on the cluster) —
+    rather than pinned literals: the footer's rule is that it mirrors the
+    runtime config, not any one deployment's values.
+    """
+    config = authenticated.request.get(urljoin(root_url, "/config.json")).json()
+
     footer = authenticated.locator("footer.footer")
 
     expect(footer).to_be_visible()
-    expect(footer.locator(".level-left")).to_have_text("Copyright 2022")
-    expect(footer.locator(".level > .level-item")).to_have_text("Aurelius Atlas Data Governance")
-    expect(footer.locator(".level-right")).to_have_text("0.0.0")
+    expect(footer.locator(".level-left")).to_have_text(f"Copyright {config['appCopyright']}")
+    expect(footer.locator(".level > .level-item")).to_have_text(config["appName"])
+    expect(footer.locator(".level-right")).to_have_text(config["appVersion"])
     expect(footer.locator(".level-left .icon svg")).to_be_visible()  # faCopyright
 
 

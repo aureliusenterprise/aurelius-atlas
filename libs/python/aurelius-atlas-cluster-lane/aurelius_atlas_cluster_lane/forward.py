@@ -60,6 +60,7 @@ class ServiceForward:
         insecure: bool = False,
         ca_file: str | None = None,
         ready_timeout: float = 30.0,
+        local_port: int | None = None,
     ) -> None:
         """Forward ``svc/<service>:<service-port>``; the dial name the shim maps is ``host``.
 
@@ -67,7 +68,9 @@ class ServiceForward:
         resolves to this forward (a host-only rewrite — the URL names the free
         port itself); the loopback dial name the browser legs use is
         ``host="127.0.0.1"``, which no SAN covers (hence ``insecure=True``,
-        ADR 039).
+        ADR 039). ``local_port`` pins the loopback port (a suite whose test
+        modules name the ports as module constants — the compose stacks' fixed
+        publishes, migrated unchanged); the default draws a free one.
         """
         self._service = service
         self._service_port = service_port
@@ -78,7 +81,7 @@ class ServiceForward:
         self._insecure = insecure
         self._ca_file = ca_file
         self._ready_timeout = ready_timeout
-        self._local_port = free_port()
+        self._local_port = local_port if local_port is not None else free_port()
         self._process: subprocess.Popen[bytes] | None = None
 
     @property

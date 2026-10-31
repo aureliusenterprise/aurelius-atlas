@@ -101,12 +101,16 @@ the six `CI_*` variables are deleted (git history has them).
   if that ever stops being acceptable is K8s-native e2e (no privileged
   daemon) — a bigger lift.
 - **Parallel pool (`maxRunners: 3`, per-pod emptyDir).** The fan-out
-  (DD-232) runs `validate` → {`e2e`, `scan-sonar`, `chromatic`} on up to
-  three pods; a preferred pod anti-affinity spreads them over the
+  (DD-232) runs `validate` → {`scan-sonar`, `chromatic`} on up to three
+  pods (since DD-283 the `e2e` branch is gone — the deployment suites are
+  k8s-only and run locally against `tools/cluster/install.sh up`; a
+  cluster-shaped pool member is the candidate to bring them back, and
+  `maxRunners: 3` stays for the spread); a preferred pod anti-affinity
+  spreads them over the
   cluster's three nodes, and packing two jobs on one node (4 CPU / 13.6 Gi
   allocatable) degrades to CPU contention — DD-229's measured failure
-  mode. The e2e job owns the dev-stack memory alone now (~8 Gi on its
-  pod), so no co-scheduled job pays it.
+  mode. The validate job's testcontainers suites own the dev-stack memory
+  on their pod, so no co-scheduled job pays it.
 - **Per-pod caches (emptyDir).** Caches are warm within a pod and cold
   across pods: a new pod re-pulls base layers (measured 48 s worst case,
   0.0 s once the node's image cache has the layers) — the toolchain

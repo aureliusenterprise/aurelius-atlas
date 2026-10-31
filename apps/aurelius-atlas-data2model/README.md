@@ -24,5 +24,6 @@ engine directly), and a thin composition root in `app.py`.
 ```bash
 npx nx serve aurelius-atlas-data2model   # https://localhost:21001, dev Keycloak + collector up
 npx nx test aurelius-atlas-data2model -c ci
-npx nx e2e aurelius-atlas-data2model
+tools/cluster/install.sh up   # precondition: the minikube umbrella
+npx nx e2e aurelius-atlas-data2model -c ci
 ```

@@ -33,8 +33,10 @@ root in `app.py`.
 ```bash
 npx nx serve aurelius-atlas-lineage-model   # https://localhost:21002, dev Keycloak + collector up
 npx nx test aurelius-atlas-lineage-model -c ci
-npx nx e2e aurelius-atlas-lineage-model     # the chain: app + real data2model + fixture Atlas
 ```
 
-The Atlas lineage feed is the server's (5.1, DV-69); until it lands, the e2e
-chain points the app at a canned-file fixture Atlas (DD-200).
+There is no `e2e` target: the 8.2 compose chain (this app + the real data2model
+
+- a canned-file fixture Atlas, DD-200) retired with the compose lanes (DD-284) —
+  its rules stay unit- and scenario-covered. The Atlas lineage feed is the
+  server's (5.1, DV-69).

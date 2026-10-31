@@ -47,7 +47,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   failures and crashes) for unit tests
 - `tests/` — TDS-01 to TDS-13 and MDL-01 to MDL-15 on the in-memory document and the fake client;
   `tests/fixtures/` holds Atlas's `0010-base_model.json`, unchanged and skipped by the hooks
-- `e2e/` — the store on the dev Elasticsearch, each test on an alias of its own
+- `e2e/` — the store on the cluster's Elasticsearch (k8s-only, DD-283), each
+  test on an alias of its own
 
 ## Conventions
 
@@ -66,7 +67,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 
 - Registered in root `pyproject.toml` (workspace members, dev group, `uv.sources`); depends on
   `aurelius-atlas-model`, `aurelius-atlas-typesystem` and `aurelius-atlas-store-es`.
-- `project.json` `implicitDependencies` on `aurelius-atlas-dev-elasticsearch`, so `nx e2e` starts it.
+- `project.json` — `e2e` is declared explicitly with `"dependsOn": []`: the suite
+  rides the live cluster umbrella (precondition `tools/cluster/install.sh up`),
+  not the dev store (DD-283). The shared-cluster rule still holds: never run two
+  e2e suites against one release in parallel.
 - `sonar-project.properties` and `.env.enc` (`SONAR_TOKEN`) for the CI Sonar job.
 - `docs/api-reference/libs/python/aurelius-atlas-core.md` and its `mkdocs.yaml` nav entry.
 
@@ -75,7 +79,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 ```bash
 uv run pytest libs/python/aurelius-atlas-core/tests
 npx nx test aurelius-atlas-core -c ci
-npx nx e2e aurelius-atlas-core -c ci      # starts dev/elasticsearch first
+tools/cluster/install.sh up && npx nx e2e aurelius-atlas-core -c ci  # the Helm umbrella on minikube
 uv run pyright libs/python/aurelius-atlas-core
 ```
 

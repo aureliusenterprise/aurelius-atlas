@@ -1,215 +1,169 @@
-import json
-import os
+"""E2E fixtures: the deployed shell at the edge, the collector legs, and the mints (DD-284).
+
+The suite's one target is the Helm umbrella of ``tools/cluster/install.sh up``:
+the browser and the API/OTel proxies ride the whole deployment — Gateway, the
+webapp chart's nginx (the shipped template, resolved by the chart's init
+container), backend TLS to the server — under the edge hostname whose HTTPRoute
+serves it, so SNI and certificate verification stay honest (the chart's edge
+leaf carries this SAN). The collector and Tempo legs are the cluster's own
+services, port-forwarded to the loopback ports the test modules name as
+constants (CHT-104's ``local_port`` pin, migrated from the compose stack's
+fixed publishes unchanged). The cluster machinery is
+aurelius-atlas-cluster-lane's (10.5b, DD-282/283); this conftest names only
+what is the webapp suite's own shape — which services it dials, which identity
+it signs in as.
+
+The browser legs need the hosts block (``tools/cluster/install.sh hosts``,
+CHT-106): Playwright's bundled browsers resolve names outside this process,
+so the in-process shim (CHT-104) cannot carry them — the fenced /etc/hosts
+entry is what makes ``atlas.atlas.test`` and ``keycloak.atlas.test`` dialable
+from a browser.
+"""
+
 import re
 import ssl
+import sys
 import time
-from collections.abc import Generator
-from pathlib import Path
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from collections.abc import Generator, Iterator
 
-import dotenv
+import httpx2 as httpx
 import pytest
+from aurelius_atlas_cluster_lane import SecretReader, ServiceForward, install_cluster_fixtures, mint_token
 from playwright.sync_api import Browser, Page
 from playwright.sync_api import Error as PlaywrightError
 from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from tenacity import RetryCallState, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
-from testcontainers.compose import DockerCompose
-from testcontainers.core.wait_strategies import HttpWaitStrategy
 
-CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
+# The cluster shapes (the umbrella install of tools/cluster/install.sh).
+RELEASE = "atlas"
+NAMESPACE = "atlas"
+EDGE_HOST = "atlas.atlas.test"
+"""The Gateway hostname whose HTTPRoute serves the webapp edge (CHT-50)."""
+ISSUER = "https://keycloak.atlas.test/realms/master"
+"""The edge-routed issuer: CoreDNS rewrites it in-cluster (DD-265), the
+resolver/hosts block map it here — the pods' own issuer origin."""
+KEYCLOAK_USERS_SECRET = "atlas-keycloak-users"
+"""The release Secret carrying the smoke users' passwords (CHT-78)."""
+OTEL_CLIENTS_SECRET = "atlas-otel-clients"
+"""The release Secret carrying the otel-atlas-server client secret (CHT-78)."""
+COLLECTOR_LEGACY_SECRET = "atlas-collector-legacy"
+"""The release Secret carrying the shared legacy ingest token (CHT-78)."""
 
-# The compose file publishes these fixed host ports; the readiness probes and
-# the URLs below are built from them (the strategy resolves containers as
-# 127.0.0.1 + the given port, so a fixed mapping is what makes a pre-start
-# strategy possible at all).
-WEBAPP_HOST_PORT = 18444
-ATLAS_SERVER_HOST_PORT = 18445
-
-# The dev collector (dev/observability, started by the observability fixture).
-# Its publishes are loopback-pinned (CIA-03), so the direct-ingest tests below
-# reach it on 127.0.0.1; the certificate carries the "otel-collector" SAN, so
-# that is the TLS server hostname. The shared ingest token (DD-193) is Nx's
-# injected dev default from the project .env.
+# The collector legs (the chart's Service, the compose stack's publishes): the
+# direct-ingest tests dial them on loopback through a port-forward pinned at
+# these ports (CHT-104's local_port). The legs serve TLS whose certificate
+# carries the "otel-collector" SAN; the dials here are the raw loopback
+# endpoints the test modules name, verified by the tokens they carry rather
+# than the transport (ADR 039's named relaxation, as under compose).
 COLLECTOR_HOST = "127.0.0.1"
 COLLECTOR_PORT = 4318
 SERVICE_PORT = 4319
 LEGACY_PORT = 4321
-COLLECTOR_TLS_NAME = "otel-collector"
+COLLECTOR_SERVICE = f"{RELEASE}-observability"
 
-# Tempo's query API on the same stack (compose publishes :3200): the
-# attribution probe reads back through it — TraceQL resource predicates
-# prove the collector stamped the user onto the telemetry (CIA-05, DD-194).
+# Tempo's query API on the same chart (Service port 3200, plain HTTP): the
+# attribution probe reads back through it — the resource predicates prove the
+# collector stamped the user onto the telemetry (CIA-05, DD-194).
 TEMPO_HOST = "127.0.0.1"
 TEMPO_PORT = 3200
-DEFAULT_INGEST_TOKEN = "otel-dev-ingest-token"  # noqa: S105  # the public dev default, not a secret (DD-193)
-DEFAULT_INGEST_CLIENT_SECRET = "kbTROtW6-P6ibQ7iAovsceJceRz39HpQ"  # noqa: S105  # the public dev default, not a secret (DD-196)
+TEMPO_SERVICE = f"{RELEASE}-observability-tempo"
 
-# The issuer this suite mints from (DD-193, DD-202): the e2e Keycloak serves
-# HTTPS on :8443 and stamps iss=.../realms/master from that listener — the
-# mint fixtures below and every per-service producer use it, and the
-# collector's oidc extension validates it (CA-pinned discovery, from the
-# collector's own certs/). Standardizing the mint on :8443 is what keeps
-# every suite in one issuer world (DD-202); the plaintext :8080 listener
-# stays validated in the collector, for the human dev browser only (ADR 039).
-KEYCLOAK_ISSUER = "https://keycloak.localhost:8443/realms/master"
+# The sign-in identity (APC-10): the realm's smoke writer, whose password the
+# release Secret carries. The username is what the navbar greets with
+# (SHC-09's pin), so it is a constant, not configuration.
+SIGN_IN_USER = "aurelius-writer"
 
-# The dev plaintext listener (ADR 039, the collector's second provider): the
-# mint the human dev browser does, and the mint the CIA-11 fixture below
-# reproduces, to prove the collector accepts that iss too (DD-202).
+MINT_TIMEOUT_SECONDS = 120.0
+"""How long to wait for the realm to serve tokens (a warming stack may be starting up)."""
+
+# The session `cluster` gate, the autouse resolver shim, and `ca_file` come
+# from the library (CHT-103).
+install_cluster_fixtures(sys.modules[__name__])
 
 
-class Settings(BaseSettings):
-    """Test configuration: the dev identity the browser signs in as (APC-10)."""
+class Settings:
+    """Test configuration: the dev identity the browser signs in as (APC-10).
+
+    Migrated from the pydantic-settings class: on the cluster the identity is
+    the release's own smoke user (the Secret is the source, not the Nx-
+    injected environment), so there is nothing left to load.
+    """
 
     auth_realm_name: str = "master"
     """The realm the tokens are minted from."""
 
-    password: SecretStr
-    """The dev user's password; never shown in logs."""
-
-    username: str
+    username: str = SIGN_IN_USER
     """The dev user the browser signs in as."""
 
-    model_config = SettingsConfigDict(
-        # Namespace this project's e2e config: the Nx-injected .env uses
-        # AURELIUS_ATLAS_WEBAPP_-prefixed names (the sign-in user, APC-10).
-        env_prefix="AURELIUS_ATLAS_WEBAPP_",
-        env_file=dotenv.find_dotenv(),
-        extra="ignore",
-    )
+    def __init__(self, password: SecretStr) -> None:
+        self.password = password
+        """The dev user's password; never shown in logs."""
 
 
 @pytest.fixture(scope="session")
 def settings() -> Settings:
-    """Return the test configuration."""
-    return Settings()  # type: ignore[values are loaded from the environment]
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _environment() -> None:
-    """Load the environment variables."""
-    dotenv.load_dotenv(dotenv.find_dotenv())
+    """The sign-in identity, with the password read from the release's Secret (CHT-103)."""
+    password = SecretReader(NAMESPACE).read(KEYCLOAK_USERS_SECRET, "writer-password")
+    return Settings(SecretStr(password))
 
 
 @pytest.fixture(scope="session")
-def observability() -> DockerCompose:
+def root_url(_cluster_dns: None) -> str:
+    """The origin root URL: the edge hostname through the installed umbrella.
+
+    Traffic rides the whole deployment — Gateway, the webapp's nginx, backend
+    TLS to the server — not a bypass (the server suite's rule, shared for the
+    shell's own scenarios: the guard's redirect, the locale tree, the proxies).
     """
-    Return a Docker Compose instance for the observability services.
-
-    No issuer env is set here (DD-202): the collector validates both dev
-    Keycloak listeners from its own config, and every producer — this
-    suite's minted tokens included — presents the TLS :8443 iss, so the
-    stack boots in exactly one world no matter who started it first.
-
-    Note: This fixture starts the observability services if they're not already running, but does not stop them after
-    the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
-    the services are no longer needed.
-    """
-    context = Path(__file__).parents[3].absolute() / "dev" / "observability"
-    compose = DockerCompose(context=context)
-
-    compose.start()
-
-    return compose
-
-
-@pytest.fixture(scope="session")
-def keycloak(observability: DockerCompose) -> DockerCompose:
-    """
-    Return a Docker Compose instance for the Keycloak service.
-
-    The 7.1 shell has no sign-in (auth is 7.3), but the e2e nginx config proxies
-    /api/ to Keycloak as the dev stack's standing backend, so the proxy-path
-    scenario (SHL-11) needs it running.
-
-    Note: This fixture starts the Keycloak service if it's not already running, but does not stop it after
-    the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
-    the services are no longer needed.
-    """
-    _ = observability  # Ensure that the observability services are started before starting Keycloak
-
-    context = Path(__file__).parents[3].absolute() / "dev" / "keycloak"
-    compose = DockerCompose(context=context)
-
-    # Readiness is compose's own: start() runs ``up --wait`` and the keycloak
-    # service carries a healthcheck, so the command returns when Keycloak is
-    # ready (DD-195: this is the gate that lets the collector's
-    # ``restart: on-failure`` cover its OIDC-discovery boot race). No
-    # testcontainers HealthcheckWaitStrategy here: the strategy reads
-    # docker-py ``attrs`` the ComposeContainer wrapper does not have, and a
-    # strategy must be registered before start() to run at all.
-    compose.start()
-
-    return compose
-
-
-@pytest.fixture(scope="session")
-def elasticsearch(observability: DockerCompose) -> DockerCompose:
-    """Return a Docker Compose instance for the dev Elasticsearch stack.
-
-    The e2e target's ``up`` dependency starts this stack before pytest runs;
-    this fixture guarantees it (and the observability network it attaches).
-    The slice's metrics-puller mints its ingest JWT at boot on the suite's
-    TLS :8443 issuer — the compose's literal, same issuer this suite mints
-    and the collector validates (DD-202), so no re-start with flipped env
-    is needed anymore.
-
-    Note: like the observability/keycloak fixtures, this starts the stack
-    and leaves it running for reuse across sessions.
-    """
-    _ = observability  # The stack external-attaches the observability network (metrics-puller): it must exist.
-
-    context = Path(__file__).parents[3].absolute() / "dev" / "elasticsearch"
-    compose = DockerCompose(context=context)
-
-    compose.start()
-
-    return compose
-
-
-@pytest.fixture(scope="session")
-def compose(
-    keycloak: DockerCompose, elasticsearch: DockerCompose, observability: DockerCompose
-) -> Generator[DockerCompose]:
-    """Return a Docker Compose instance."""
-    _ = keycloak, elasticsearch, observability  # Ensure that the proxy upstreams are up before starting the app
-
-    context = Path(__file__).parent.absolute()
-
-    compose = DockerCompose(context=context, env_file=dotenv.find_dotenv())
-    # Both host ports are fixed in the compose file, so the readiness probes
-    # are fully known before the stack starts: nginx serving the shell, and
-    # the Atlas server answering its version endpoint directly (DD-142 — the
-    # /api/ proxy test needs the server itself up, probing through nginx would
-    # race its own boot). Registered pre-start so start() runs them.
-    compose.waiting_for(
-        {
-            "aurelius-atlas-webapp": HttpWaitStrategy(port=WEBAPP_HOST_PORT, path="/en-US/")
-            .using_tls()
-            .for_status_code(200),
-            "atlas-server": HttpWaitStrategy(port=ATLAS_SERVER_HOST_PORT, path="/api/atlas/admin/version")
-            .using_tls()
-            .for_status_code(200),
-        },
-    )
-
-    with compose:
-        yield compose
-
-
-@pytest.fixture(scope="session")
-def root_url(compose: DockerCompose) -> str:
-    """Return the origin root URL for the application."""
-    _ = compose  # Ensure the stack is up (and ready) before any URL is used.
-    return f"https://localhost:{WEBAPP_HOST_PORT}/"
+    return f"https://{EDGE_HOST}/"
 
 
 @pytest.fixture(scope="session")
 def base_url(root_url: str) -> str:
-    """Return the en-US app URL for the application."""
+    """The en-US app URL for the application."""
     return f"{root_url}en-US/"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _collector_legs(_cluster_dns: None) -> Iterator[None]:
+    """Forward the collector's three HTTP legs and Tempo's query API to their pinned ports.
+
+    The test modules name these loopback endpoints as constants (the compose
+    stack's fixed publishes); the forwards pin the same ports (CHT-104's
+    ``local_port``). Readiness is curl exit 0 on the leg — a 401 answer is
+    ready (the receiver is up), a refused connection is not. Session-scoped
+    and autouse: the direct-ingest tests dial the raw ports with no fixture
+    of their own, and one process-wide set of forwards owns them.
+
+    These are the suite's only 127.0.0.1 dials (CHT-104's sanctioned shape,
+    like the server suite's baked-dashboard forward): the loopback URL is
+    what the migrated test modules speak, and the legs' credentials — not
+    the transport — are what those scenarios measure.
+    """
+    legs = [
+        ServiceForward(
+            COLLECTOR_SERVICE,
+            port,
+            COLLECTOR_HOST,
+            namespace=NAMESPACE,
+            probe_path="/v1/traces",
+            insecure=True,
+            local_port=port,
+        )
+        for port in (COLLECTOR_PORT, SERVICE_PORT, LEGACY_PORT)
+    ] + [
+        ServiceForward(
+            TEMPO_SERVICE,
+            TEMPO_PORT,
+            TEMPO_HOST,
+            namespace=NAMESPACE,
+            probe_path="/ready",
+            scheme="http",
+            local_port=TEMPO_PORT,
+        ),
+    ]
+    with legs[0], legs[1], legs[2], legs[3]:
+        yield
 
 
 def _clear_cookies(retry_state: RetryCallState) -> None:
@@ -227,7 +181,6 @@ def _sign_in(page: Page, base_url: str, settings: Settings) -> None:
     the page — and the context's cookies — as signed in (APC-05, APC-10).
     """
     page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
-
     page.locator("#username").fill(settings.username)
     page.locator("#password").fill(settings.password.get_secret_value())
     page.get_by_role("button", name="Sign in").click()
@@ -269,14 +222,14 @@ def _storage_state(
     Keycloak form login. What a login leaves behind is the realm's SSO session
     (``KEYCLOAK_IDENTITY``, a 30-minute idle window refreshed by every visit),
     and the SPA boots with ``check-sso`` and a silent-iframe redirect (APC-05):
-    a test context that starts from this state mints its own 60s access tokens
+    a test context that starts from this state mints its own access tokens
     from the stored SSO session, with no login form. The user's password never
     enters the state — it carries cookies, not credentials.
 
-    A navigation can be aborted mid-login when the e2e stack starts its
-    compose networks while tests run (net::ERR_NETWORK_CHANGED), so each
-    retry starts from a clean cookie jar: Keycloak may already have issued
-    the session on the failed pass.
+    A navigation can be aborted mid-boot when the edge is cold (its first TLS
+    handshakes, the SPA's first bundle through a cold Gateway), so each retry
+    starts from a clean cookie jar: Keycloak may already have issued the
+    session on the failed pass.
     """
     state_path = str(tmp_path_factory.mktemp("auth") / "state.json")
 
@@ -317,9 +270,9 @@ def authenticated(
     Every webapp route sits behind the auth guard (DD-141), so the page tests
     start from here. The Keycloak SSO session captured once per browser
     (``_storage_state``) rides the new context: the SPA's check-sso boot
-    mints the test's own 60s access tokens from it, and no login form runs.
-    The context is the test's own — cookies, storage and cache stay isolated
-    the way the per-test form login left them.
+    mints the test's own access tokens from it, and no login form runs. The
+    context is the test's own — cookies, storage and cache stay isolated the
+    way the per-test form login left them.
 
     Self-healing: when the page lands on the login form anyway — the shared
     session died (the resilience suite's logout test ends the realm session,
@@ -342,85 +295,71 @@ def authenticated(
 
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args: dict) -> dict:  # noqa: ARG001
-    """Trust the ephemeral local development CA in Playwright browsers.
+    """Trust the chart's self-signed chain in Playwright browsers.
 
-    Playwright's bundled browsers ship their own trust stores and cannot enroll
-    the mkcert root, so page navigation skips browser certificate verification.
-    This is the one named relaxation of the browser-facing path (ADR 039): the
-    certificate chain and hostname are verified against the CA by the explicit
-    ``test__browser_facing_tls_verifies_against_ca`` check instead, nginx still
-    verifies the proxies with ``proxy_ssl_verify`` (``config/nginx.conf``), and
-    non-browser E2E paths always verify.
+    Playwright's bundled browsers ship their own trust stores and cannot
+    enroll the cert-manager self-signed CA (cert-manager's CA injection is a
+    per-pod volume mount, not a browser profile), so page navigation skips
+    browser certificate verification. This is the one named relaxation of the
+    browser-facing path (ADR 039): every non-browser dial here verifies the
+    chain against the chart CA (the lane's ``ca_file``), nginx still verifies
+    its proxies with ``proxy_ssl_verify``, and the certificate wiring is the
+    chart contract suite's own ground.
     """
     return {"ignore_https_errors": True}
 
 
 @pytest.fixture(scope="session")
 def ingest_token() -> str:
-    """The shared collector ingest token the task environment carries (DD-193).
-
-    Nx injects the project ``.env`` into the e2e task (the ``decrypt``
-    dependency); the dev default is the fallback so a bare pytest run outside
-    the Nx target still speaks the dev stack's language.
-    """
-    return os.environ.get("OTEL_COLLECTOR_INGEST_TOKEN", DEFAULT_INGEST_TOKEN)
+    """The shared collector ingest token, read from the release Secret (DD-193, CHT-103)."""
+    return SecretReader(NAMESPACE).read(COLLECTOR_LEGACY_SECRET, "token")
 
 
 @pytest.fixture
-def user_token(keycloak: DockerCompose, settings: Settings) -> str:
-    """A real user access token minted by the e2e Keycloak (DD-193, CIA-01/02).
+def user_token(ca_file: str, settings: Settings) -> str:
+    """A real user access token minted by the cluster's Keycloak (DD-193, CIA-01/02).
 
     The password grant for the dev sign-in user (the same ``aurelius`` client
     the SPA rides, ``directAccessGrantsEnabled``): the token carries the
     ``otel-collector`` audience the realm's otel-ingest scope mints, which is
-    what the collector's OIDC receiver requires. ``keycloak`` guarantees the
-    issuer is up; the shared dev CA verifies the :8443 listener.
+    what the collector's OIDC receiver requires. Minted at
+    ``https://keycloak.atlas.test`` — the same issuer origin the deployed pods
+    verify against (DD-265) — verified against the chart CA.
 
-    Function-scoped on purpose: the dev realm mints 60s tokens, and the
-    suite runs each test once per browser (~7 minutes total) — a session-
-    scoped token is stale for the last browser.
+    Function-scoped on purpose: the suite runs each test once per browser and
+    the stamping probes ride late — a session-scoped token is stale by the
+    last browser (the dev realm's lifespan is what it is).
     """
-    _ = keycloak
-    body = urlencode(
-        {
-            "grant_type": "password",
-            "client_id": "aurelius",
-            "username": settings.username,
-            "password": settings.password.get_secret_value(),
-        }
-    ).encode()
-    request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # https constant issuer
-    context = ssl.create_default_context(cafile=str(CA_FILE))
-
-    with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
-        return json.load(response)["access_token"]
+    return mint_token(
+        ISSUER.rsplit("/realms/", 1)[0],
+        settings.password.get_secret_value(),
+        realm=settings.auth_realm_name,
+        username=settings.username,
+        ca_file=ca_file,
+        timeout=MINT_TIMEOUT_SECONDS,
+    )
 
 
 @pytest.fixture
-def service_token(keycloak: DockerCompose) -> str:
+def service_token(ca_file: str) -> str:
     """A client-credentials token for the otel-atlas-server ingest client (DD-196, CIA-06/07).
 
     The same grant the graduated producers present on the per-service leg:
-    the realm's confidential ``otel-atlas-server`` client (import/master.json,
-    service accounts only) with the shared dev client secret — the Nx-
-    injected ``OTEL_INGEST_CLIENT_SECRET`` (the dev default is the fallback,
-    like ``ingest_token``). ``keycloak`` guarantees the issuer is up; the
-    realm import must be live (see the dev-keycloak AGENTS note: import
-    applies on recreate, so a pre-existing stack needs a restart).
-
-    Function-scoped: the dev realm mints 60s tokens (the ``user_token``
-    fixture's rule, same for the browser loop).
+    the realm's confidential ``otel-atlas-server`` client (the realm asset's
+    service account) with the secret the release's ``atlas-otel-clients``
+    Secret carries. Function-scoped: the browser loop outlives any token
+    (the ``user_token`` fixture's rule, same for the client grant).
     """
-    _ = keycloak
-    body = urlencode(
-        {
+    secret = SecretReader(NAMESPACE).read(OTEL_CLIENTS_SECRET, "OTEL_INGEST_CLIENT_SECRET")
+    response = httpx.post(
+        f"{ISSUER}/protocol/openid-connect/token",
+        data={
             "grant_type": "client_credentials",
             "client_id": "otel-atlas-server",
-            "client_secret": os.environ.get("OTEL_INGEST_CLIENT_SECRET", DEFAULT_INGEST_CLIENT_SECRET),
-        }
-    ).encode()
-    request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # https constant issuer
-    context = ssl.create_default_context(cafile=str(CA_FILE))
-
-    with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
-        return json.load(response)["access_token"]
+            "client_secret": secret,
+        },
+        verify=ssl.create_default_context(cafile=ca_file),
+        timeout=30,
+    )
+    response.raise_for_status()
+    return str(response.json()["access_token"])

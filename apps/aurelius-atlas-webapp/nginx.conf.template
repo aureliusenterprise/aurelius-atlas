@@ -6,10 +6,10 @@
 # origins + TLS names, trust anchor path, listener leaf paths, DNS resolver,
 # the realip trust block)
 # are resolved by the deployment, which mounts its filled-in copy over that
-# path — see e2e/config/nginx.conf for a static resolved variant. The runtime
+# path. The runtime
 # image ships neither envsubst nor bash (the hardened base's contract), so a
-# deployment resolves the template with its own tooling: the compose stack at
-# compose time, the Helm chart at pod start in an init container running the
+# deployment resolves the template with its own tooling: the Helm chart at
+# pod start in an init container running the
 # same image's sh + sed (DD-262). An unresolved container fails at config
 # parse instead of serving with template defaults.
 # NOTE: the hardened image includes this file inside its *http* block (the

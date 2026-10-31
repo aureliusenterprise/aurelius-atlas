@@ -87,8 +87,6 @@ nav:
           - api-reference/index.md
           - Apps:
                 - api-reference/apps/index.md
-                - aurelius-atlas-fastapi-example: api-reference/apps/aurelius-atlas-fastapi-example.md
-                - aurelius-atlas-frontend-example: api-reference/apps/aurelius-atlas-frontend-example.md
                 - aurelius-atlas-server: api-reference/apps/aurelius-atlas-server.md
           - Libs:
                 - api-reference/libs/index.md
@@ -102,7 +100,6 @@ nav:
                       - aurelius-atlas-cluster-lane: api-reference/libs/python/aurelius-atlas-cluster-lane.md
                       - aurelius-atlas-core: api-reference/libs/python/aurelius-atlas-core.md
                       - aurelius-atlas-data2model-client: api-reference/libs/python/aurelius-atlas-data2model-client.md
-                      - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md
                       - aurelius-atlas-lineage-model-client: api-reference/libs/python/aurelius-atlas-lineage-model-client.md
                       - aurelius-atlas-model: api-reference/libs/python/aurelius-atlas-model.md
                       - aurelius-atlas-otel: api-reference/libs/python/aurelius-atlas-otel.md
@@ -249,7 +246,7 @@ nav:
                       - 10.3a App and edge charts: architecture/conversion/increments/10-3-app-edge-charts.md
                       - 10.3b Observability chart: architecture/conversion/increments/10-3b-observability-chart.md
                       - 10.5 Cluster validation POC: architecture/conversion/increments/10-5-cluster-validation.md
-                      - 10.5b Cluster lane rollout (aux + core): architecture/conversion/increments/10-5b-cluster-lane-rollout-aux-and-core.md
+                      - 10.5b Cluster lane rollout: architecture/conversion/increments/10-5b-cluster-lane-rollout-aux-and-core.md
                       - 10.6 Network segmentation: architecture/conversion/increments/10-6-network-segmentation.md
                       - 10.7 Production identity realm: architecture/conversion/increments/10-7-prod-realm.md
                       - 10.8 Grafana realm login: architecture/conversion/increments/10-8-grafana-auth.md

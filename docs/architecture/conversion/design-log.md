@@ -9223,7 +9223,8 @@ Keycloak/Postgres loopback deferrals are open items with a named blocker
 
 ### DD-280 — The deployment is the test environment: cluster e2e POC, compose lane kept
 
-- **Status:** Accepted
+- **Status:** Accepted; the "compose lane kept" clause (call 2, CHT-53) is
+  superseded by DD-283
 - **Increment:** 10.5
 - **Date:** 2026-10-31
 
@@ -9361,7 +9362,8 @@ API nobody intends to use.
 
 ### DD-282 — The cluster lane becomes a library; the aux twins and the core store suite join the deployment
 
-- **Status:** Accepted
+- **Status:** Accepted; its dual-lane (`lane_target`, compose-default) shapes
+  are superseded by DD-283
 - **Increment:** 10.5b (rollout step 1)
 - **Date:** 2026-10-31
 
@@ -9447,3 +9449,160 @@ Secret reads — are now single-sourced, so 10.5c/10.5d migrate by importing
 rather than copying, and the DD-280 watch-items (edge limiter bursts against
 suite traffic, minikube memory headroom) now apply to four suites on every
 cluster run. Next free DD: 283.
+
+### DD-283 — Migrated suites are k8s-only: the dual-lane gate collapses
+
+- **Status:** Accepted
+- **Increment:** 10.5b (rollout step 2)
+- **Date:** 2026-11-01
+
+**Context.** DD-280 kept the compose lane as CI's lane and made the cluster
+lane an opt-in (`ATLAS_E2E_TARGET=cluster`, a hand-named `e2e-cluster`
+target) purely so the POC stayed additive and revertible. DD-282 carried
+that gate into the library (`lane_target()`), because four suites had
+migrated while their compose stacks still stood. The verdict the POC asked
+for is now in: five suites (server, data2model, validate-entity, core,
+webapp) have run green against the deployed umbrella repeatedly, the compose
+stacks they drove are deleted, and no suite that remains has a compose stack
+left to drive. The user's review of the rollout cut the remaining
+ambiguity: "I think we're very much overcomplicating with the concept of
+lanes. Any migrated test suite shall only support kubernetes." A gate whose
+false branch points at deleted infrastructure is dead code with an env var
+attached.
+
+**Decision.** Four calls:
+
+1. **One target, one lane.** A migrated suite's `e2e` target is the cluster
+   suite: no `ATLAS_E2E_TARGET`, no `lane_target()`, no compose branch in
+   any conftest. The `e2e-cluster` targets are gone — the plugin's own
+   inference names the suite `e2e` again, which is what keeps
+   `nx affected -t e2e` addressing it (the hand-named-outside-inference
+   trick existed only to hide the POC lane from CI; with one lane there is
+   nothing to hide).
+2. **The plugin's inferred `dependsOn` is cancelled per project.** The
+   Python/Angular plugins infer e2e `dependsOn` (decrypt, serve-shaped deps,
+   compose up) from file globs; each migrated `project.json` declares its
+   `e2e` explicitly with `"dependsOn": []` so the merge cancels the
+   inherited edges — the cluster is a _precondition_ (`install.sh up`), not
+   a task dependency, and the gate's fail-fast message names it. `cache`
+   stays false; the `-c ci` config keeps its `junitxml`/`trace-json` shape.
+3. **The library keeps its opt-in shape.** `install_cluster_fixtures`
+   remains explicit (no `pytest11` entry point, CHT-103 unchanged) — the
+   rule it guarded (compose-mode consumers never importing kubectl code)
+   now guards plain `pytest` runs and unit suites in the same repos from
+   autoloading cluster code at collection time.
+4. **CI loses the ability to run these suites, on purpose, for now.** With
+   no compose lane, `nx affected -t e2e` reaches suites that need a live
+   minikube umbrella; CI has none. The workflows drop `e2e` from their
+   affected/run-many sets until a cluster-shaped runner exists (the DD-280
+   deferral, still standing). Proving the rollout is a local gate: every
+   migrated suite green against one live release before CI changes shape.
+
+**Alternatives.** (a) Keep the dual-lane gate until CI lands — rejected:
+the compose stacks are deleted, so the false branch is unrunnable, and a
+gate nobody can exercise is drift bait. (b) Delete the e2e targets entirely
+from migrated projects — rejected: it un-plugs them from `nx affected`
+visibility and from the trace/junit conventions; the targets are the
+documentation of how to run the suite. (c) Gate on the release being up
+rather than failing (skip) — rejected, unchanged from CHT-53: a silent skip
+is how a suite goes false-green.
+
+**Consequences.** `lane_target()` and the env gate leave the library; the
+lib's docstring records the collapse. The five migrated conftests lost their
+compose branches and their projects' compose files (`e2e/docker-compose.yaml`
+in server/data2model/validate-entity/core/webapp) are deleted, along with
+the webapp's `e2e/config/` overlay. The DD-280/282 "compose suites stay
+byte-identical regression bars" clauses are history: the cluster runs are
+now the only bar. The e2e-through-CI gap this opens is deliberate and
+bounded — CI still builds the images and runs unit/chart suites, and the
+next increment's CI work (a cluster runner, or a nightly job) closes it.
+Next free DD: 284.
+
+### DD-284 — The webapp joins the deployment; the lineage suite retires; the template examples leave
+
+- **Status:** Accepted
+- **Increment:** 10.5b (rollout step 3)
+- **Date:** 2026-11-01
+
+**Context.** The rollout's hardest migration (DD-280's ranking) is the
+webapp: 33 Playwright tests driving a browser through the Keycloak login
+loop, an authenticated-context storage state, three browser legs to the
+collector (browser :4318, per-service :4319, legacy :4321) plus Tempo's
+query API, and a footer test that read the _compose-injected_ `config.json`
+values back off the page. Two suites had no cluster-shaped future at all:
+the lineage-model chain suite was built around canned fixture files served
+by its compose stack (no deployed counterpart feeds those files), and the
+template's two example apps (FastAPI service, Angular screen) had survived
+in the workspace only as reference material (DD-019) — by now every pattern
+they demonstrated is ported into spine code, and they had become the single
+largest source of stale wiring (compose stacks, realm origins, dashboards,
+docs).
+
+**Decision.** Five calls:
+
+1. **The webapp rides the deployment through the edge** (CHT-107's
+   context). Playwright drives `https://atlas.atlas.test` — the real edge —
+   under the fenced `/etc/hosts` block (CHT-106), because a browser
+   resolves DNS out-of-process and no in-process shim can serve it. The
+   login uses the cluster Keycloak at `keycloak.atlas.test` with the writer
+   password read from `atlas-keycloak-users`; the collector legs and Tempo
+   ride `ServiceForward`s with pinned loopback ports (the port the browser
+   dials must be known to the page, so `local_port` joins the forward's
+   shape); the in-process exporters keep the SAN-honest dial shape
+   (CHT-104).
+2. **The realm's browser origins for the edge are registered by the
+   installer, not the chart asset** (CHT-107). The master import stays a
+   loopback-only asset (it is the compose/dev-world asset and the shipped
+   baseline); `install.sh realm-origins` (wired into `up`) reads the live
+   client through the Keycloak admin API and appends
+   `https://<edge-host>[/...]` to redirectUris, post-logout redirectUris,
+   and webOrigins — read-merge-write, idempotent, and it never appends to a
+   list already covered by a bare `*` (Keycloak rejects that with a 400).
+   The cluster's client ends up a superset of the asset; that drift is
+   acceptable _because_ the merge is convergent and owned by one script.
+3. **The footer test reads the deployed config, not a fixture.** The
+   compose overlay `e2e/config/config.json` is deleted; the test fetches
+   `/config.json` from the edge and asserts the footer echoes what the
+   deployment advertises (appName, appVersion, copyright) — a stronger
+   assertion than the fixture twin, since it covers the chart's own config
+   rendering.
+4. **The lineage-model e2e suite retires** rather than migrating. Its
+   compose fixtures have no deployed counterpart (the canned files are the
+   test), and its rules stay covered by the unit suite and the parity
+   scenarios; the 8-2 spec records the deletion. The project keeps no e2e
+   target at all — with no `e2e/` directory the plugin infers none, so
+   `nx affected -t e2e` simply stops visiting it.
+5. **The template examples leave now, ahead of DD-019's "after the plan"
+   trigger.** `apps/aurelius-atlas-fastapi-example`,
+   `apps/aurelius-atlas-frontend-example` and
+   `libs/python/aurelius-atlas-example` are deleted with their compose
+   stacks, realm origins (`:4200`/`:18443` in the `aurelius` client),
+   Grafana dashboards, api-reference pages, uv members, and the
+   `aurelius-atlas-data-access` example client (`entities.service.ts`,
+   `ngx-sse-client`). What DD-019 listed alongside them but is still in use
+   stays: the SDK, `libs/angular/*`, `libs/styles` (the webapp consumes the
+   brand tokens and the observability lib), and `dev/postgres` (Keycloak's
+   compose borrows its `pg_hba.conf`). The `adopting-the-template` guide's
+   rename targets re-point at the webapp.
+
+**Alternatives.** (a) Webapp suite port-forwarded around the edge —
+rejected for the POC's own reason (DD-280 call 1): the edge's auth gate,
+nginx proxy, and CSP are what the suite exists to guard. (b) Bake the edge
+origin into the chart's realm asset — rejected: the asset is also the
+compose/dev import and the shipped baseline; baking a `*.atlas.test` origin
+into every install teaches the product a minikube hostname. (c) Keep the
+examples "until the plan is done" (DD-019) — rejected: they were dead
+weight paid for in every rename, every realm-origin list, and every docs
+sweep, and the plan's remaining work never consults them.
+
+**Consequences.** Six suites now speak only to the deployment; the compose
+world in `apps/*/e2e/` is gone (the `dev/*` stacks stay up as the local dev
+world for `nx serve`). The webapp suite runs three browsers (105 tests)
+against the one live release. The byte-copy guards that pinned
+`e2e/config/nginx.conf` and the e2e `config.json` against shipped assets
+retire (the shipped templates remain guarded against the chart copies);
+`test__charts_webapp.py` and `test__charts_observability.py` shrink to the
+surviving assets. The `adopting-the-template` checklist's Keycloak item now
+names `apps/aurelius-atlas-webapp/dev/config.json` as the client's only
+consumer. CI's e2e wiring waits for a cluster runner (DD-283 call 4).
+Next free DD: 285.

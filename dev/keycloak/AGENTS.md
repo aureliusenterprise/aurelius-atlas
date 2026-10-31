@@ -39,9 +39,10 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   automated mint — E2E suites, all slice pullers, the apps' OTLP ingest — uses
   `:8443` (DD-202), so the listener a token's `iss` carries is uniform across
   producers; the collector validates both listeners. The
-  issuer each client uses must match the auth settings the FastAPI example
-  validates and the frontend's `/config.json` advertises — change them
-  together (`e2e/config/config.json` and the e2e compose use 8443).
+  issuer each client uses must match the auth settings the services validate
+  (their `AUTH_SERVER_URL`) and the webapp's `/config.json` advertises — the
+  app `.env` dev defaults use `:8080`, the OTLP mints use `:8443`; the
+  cluster's edge issuer (`https://keycloak.atlas.test`) is separate (10.5b).
 - The default network carries the `keycloak.localhost` **alias** so
   in-network OAuth clients (Kafka broker, e2e stacks) resolve it without
   `extra_hosts: host-gateway` — that mapping points at `docker0`, which is
@@ -53,7 +54,8 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   than mutating the running container (changes are lost on recreate otherwise).
     - `import/master.json` declares the dev identities: `aurelius-writer`
       (carries the `aurelius-write` client role on the `aurelius` client — the
-      FastAPI example's write gate, `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`) and
+      write gate `aurelius-atlas-auth` enforces when a service sets
+      `write_role`) and
       `aurelius-reader` (read-only), so the authorization model is declarative —
       no init sidecar. Passwords are `${DEV_USER_*_PASSWORD}` placeholders
       resolved from the container env (`.env.enc`, `${VAR:?}` guards) by the same
@@ -72,10 +74,14 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
       changed users and restart Keycloak — the boot import then recreates just
       the missing users with fresh placeholder resolution.
 - The `aurelius` client (frontend SPA, public) has explicit loopback redirect
-  URIs and web origins: `http(s)://localhost|127.0.0.1:4200` (example
-  `nx serve`), `http(s)://localhost|127.0.0.1:4300|4301` (webapp `nx serve`,
-  en-US/nl-NL), `https://localhost:18443` (example e2e) and
-  `https://localhost:18444` (webapp e2e's fixed host ports). Keep them in
+  URIs and web origins: `http(s)://localhost|127.0.0.1:4300|4301` (webapp
+  `nx serve`, en-US/nl-NL). The example apps' loopback origins
+  (`:4200` serve, `:18443` e2e) left with the apps themselves (DD-284), and
+  the webapp's e2e browser left the loopback world with the k8s-only
+  migration (DD-284): its edge origin (`https://atlas.atlas.test/*`) is
+  registered on the live realm
+  by `tools/cluster/install.sh realm-origins` (CHT-107), not by this asset.
+  Keep them in
   sync when ports change. The client's `defaultClientScopes` include the
   realm's `otel-ingest` scope (DD-193): its audience mapper stamps
   `aud: otel-collector` on user tokens, which is what the OTel collector's
@@ -194,5 +200,6 @@ npx nx run aurelius-atlas-dev-keycloak:helm-template
 
 ## Removal
 
-Part of the spine. Removing it means replacing auth in the FastAPI example and
-dropping the Keycloak config/interceptor wiring from the frontend.
+Part of the spine. Removing it means replacing auth in the FastAPI services
+(the `aurelius-atlas-auth` consumers) and dropping the Keycloak
+config/interceptor wiring from the webapp.

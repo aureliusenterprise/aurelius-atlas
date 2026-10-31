@@ -165,9 +165,12 @@ curl -k https://atlas.<domain>/api/atlas/admin/liveness
 curl -k https://keycloak.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
-(The 10.5 POC runs the server's own e2e suite against this install —
-`ATLAS_E2E_TARGET=cluster uv run pytest apps/aurelius-atlas-server/e2e`,
-after `tools/cluster/install.sh up`; see the [10.5 spec](../conversion/increments/10-5-cluster-validation.md).)
+(The e2e suites run against this install — it is their only target (DD-283):
+after `tools/cluster/install.sh up` (which registers the realm's edge origins
+and the `/etc/hosts` block), `npx nx e2e <project> -c ci` for each of the five
+migrated suites — server, data2model, validate-entity, core, webapp; see the
+[10.5b spec](../conversion/increments/10-5b-cluster-lane-rollout-aux-and-core.md)
+and the [rollout plan](./cluster-lane-rollout-plan.md).)
 
 ### Grafana
 

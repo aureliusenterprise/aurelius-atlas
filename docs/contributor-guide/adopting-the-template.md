@@ -110,8 +110,8 @@ until your projects exist there).
 ### 8. Keycloak realm and clients
 
 The development realm import (`dev/keycloak/import/master.json`) defines a client with id `aurelius`.
-Rename it there and in both consumers: `apps/aurelius-atlas-frontend-example/dev/config.json` and
-`apps/aurelius-atlas-frontend-example/e2e/config/config.json` (`clientId`).
+Rename it there and in the webapp's dev config (`apps/aurelius-atlas-webapp/dev/config.json`,
+`clientId`).
 
 ### 9. Documentation references
 

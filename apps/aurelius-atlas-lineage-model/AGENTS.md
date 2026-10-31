@@ -43,11 +43,13 @@ collaborators, routes serve, `app.py` composes.
   Atlas answer), `graph.extract.json` (the 8.1 engine's bytes for the same rows). The
   graph is the 8.1 scenario's rows inverted: a dataset → process → dataset lineage.
 - `tests/` — unit tests, one file per module (ADR 056 names every public
-- `helm/` — the `atlas-lineage-model` chart (its own section below)
   function): the flattener, the chain, the providers, the routes, the app
   wiring and breakers — all on a fake issuer and a recording fake upstream
-  (`tests/fake_upstream.py`); `e2e/` — the chain: this image + the real
-  data2model container + a canned-file fixture Atlas (DD-200), Keycloak-minted tokens
+  (`tests/fake_upstream.py`). The 8.2 compose e2e chain (this image + the real
+  data2model + a canned fixture Atlas, DD-200) retired with the compose lanes
+  (DD-284): its rules stay unit- and scenario-covered, and the deployed app is
+  the umbrella's chart-contract shape.
+- `helm/` — the `atlas-lineage-model` chart (its own section below)
 
 ## Rules the app keeps
 
@@ -64,8 +66,7 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
 
 - `project.json` — `serve` depends on dev Keycloak (tokens) + observability (the OTLP
   leg); `test`/`build`/`docker-*`/`decrypt` are inferred by `tools/plugins/python.ts`.
-  The `e2e` target overrides `dependsOn` to add the **data2model** project's `certgen`
-    - `docker-build` (its container runs in this suite).
+  There is no `e2e` target: the suite retired with the compose lanes (DD-284).
 - Auth is the shared lib (`aurelius-atlas-auth`, DD-197): `auth.require_auth` +
   `auth.require_bearer` on the route — the caller's **raw** token is forwarded to both
   upstreams (LM-04). Audience `aurelius` (the webapp's client id, AUX-04): the chain
@@ -82,19 +83,14 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
   client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-210).
 - The chain is one trace (DD-210): `HTTPX2ClientInstrumentor` carries the caller's W3C
   `traceparent` on the Atlas fetch and the `/extract` call (LM-04), so browser →
-  lineage-model → data2model share a trace id in Tempo. The e2e stitch probe reads
-  that trace back from Tempo (published loopback :3200, CIA-03).
+  lineage-model → data2model share a trace id in Tempo (the instrumentor wiring
+  is unit-pinned; the e2e stitch probe retired with the compose suite, DD-284).
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-lineage-model` after changing
   `.env`); `OTEL_CLIENT_SECRET` mirrors the server's `OTEL_INGEST_CLIENT_SECRET` (DD-196).
-- `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`. The SANs
-  cover the compose service names, so the in-network TLS calls verify (e2e).
+- `tls.json` — the app's certificate (`nx certgen`), used by `serve`. The SANs
+  cover the compose service names.
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled), nonroot,
   liveness healthcheck.
-- `e2e/docker-compose.yaml` — the 8.2 chain (DD-200): this app + the **real** data2model
-  image (certs mounted from its project) + a fixture Atlas (`python -m http.server` over
-  `e2e/fixtures/`, where `v2/lineage/<guid>` is the canned graph, named for the fixed
-  UUID guid the scenario fixtures carry (DV-78)); the collector on the observability network, Keycloak through
-  `keycloak.localhost:host-gateway`.
 
 ## Helm chart
 

@@ -33,5 +33,6 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-The frontend example exports through its dev proxy (`/otel` → OTLP collector on
-port 4318) so no CORS or collector host config is needed in development.
+The webapp exports through its dev proxy (`proxy.conf.json`: `/otel` → OTLP
+collector on port 4318) so no CORS or collector host config is needed in
+development.

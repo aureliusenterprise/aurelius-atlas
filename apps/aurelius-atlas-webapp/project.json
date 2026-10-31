@@ -85,30 +85,18 @@
             }
         },
         "e2e": {
-            "dependsOn": [
-                {
-                    "target": "decrypt"
-                },
-                {
-                    "target": "certgen"
-                },
-                {
-                    "target": "docker-build"
-                },
-                {
-                    "projects": ["aurelius-atlas-server"],
-                    "target": "docker-build"
-                },
-                {
-                    "projects": [
-                        "aurelius-atlas-dev-keycloak",
-                        "aurelius-atlas-dev-observability",
-                        "aurelius-atlas-dev-elasticsearch"
-                    ],
-                    "target": "up"
+            "cache": false,
+            "configurations": {
+                "ci": {
+                    "junitxml": "junit-e2e.xml",
+                    "trace-json": "trace-e2e.json"
                 }
-            ],
+            },
+            "dependsOn": [],
             "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Run this project's e2e suite against the Helm umbrella on minikube (k8s-only, DD-283/284). Precondition: tools/cluster/install.sh up (with the realm's edge browser origins, realm-origins) and the hosts block for the browser legs (install.sh hosts, sudo)."
+            },
             "options": {
                 "command": "uv run pytest e2e --browser chromium --browser firefox --browser webkit --tracing retain-on-failure",
                 "cwd": "{projectRoot}"

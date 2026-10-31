@@ -26,8 +26,8 @@ uv add "aurelius-atlas-sdk[postgresql]"   # example: depend on one extra
 ## Modules
 
 - `logger.py` — `setup_logger()`: consistent colored logging across services
-- `events.py` — `Broadcaster[T]`: fan-out async event distribution (used by the
-  FastAPI example's SSE pipeline)
+- `events.py` — `Broadcaster[T]`: fan-out async event distribution (the
+  example apps that used it are gone, DD-284)
 - `postgresql/` — `PostgresListener` (async `LISTEN`/`NOTIFY`) and
   `sanitize_tsquery()` for safe full-text search
 - `encoding.py` — zig-zag integer encoding helpers

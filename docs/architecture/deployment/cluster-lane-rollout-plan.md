@@ -1,11 +1,15 @@
-# E2E cluster-lane rollout plan (10.5b/c/d)
+# E2E cluster-lane rollout plan (10.5b)
 
-- **Status:** living plan — retires when 10.5d lands
+- **Status:** landed on the branch — retires when the PR merges
 - **Branch:** `feat/cluster-rollout-10-5b` (stacked on #189 ← #187)
 - **Records:** executes the DD-280 verdict; DD-281 (retirements), DD-282 (the
-  lane library) ride the per-suite PRs; specs:
+  lane library), DD-283 (the single-lane collapse — the user's 2026-10-31
+  pivot: "Any migrated test suite shall only support kubernetes"), DD-284
+  (webapp migration, lineage retirement, example-app drop) all ride this one
+  increment; spec:
   [10.5b](../conversion/increments/10-5b-cluster-lane-rollout-aux-and-core.md)
-  (written), 10.5c/d (to write per the increment rules)
+  (folded 10.5c/10.5d in — the webapp migration and the lineage-model
+  retirement)
 
 The 10.5 POC (DD-280, #187) proved one suite on the deployment. This plan
 carries the verdict to the remaining suites. The steps below are locked by
@@ -15,8 +19,9 @@ live so nothing has to be re-discovered.
 ## Locked decisions
 
 1. **Order:** 10.5b = data2model + validate-entity (the REST twins) +
-   `aurelius-atlas-core` (direct ES); 10.5c = webapp (Playwright);
-   10.5d = lineage-model.
+   `aurelius-atlas-core` (direct ES), then the webapp (Playwright), then the
+   lineage-model suite — the 10.5c/10.5d split folded into this increment
+   when the webapp proved out and lineage retired (DD-284).
 2. **Shared lane code = new pytest helper lib**
    (`libs/python/aurelius-atlas-cluster-lane`, parity-lib precedent: flat
    package, empty-targets `project.json`, dev-group member).
@@ -29,18 +34,25 @@ live so nothing has to be re-discovered.
 5. **Browser DNS:** `/etc/hosts` entries registered at devcontainer startup;
    `install.sh hosts` maintains the fenced block from the live Gateway IP
    (browsers and `page.request` bypass the Python resolver shim).
-6. **CI posture:** local-only. The `e2e-cluster` targets exist but no
-   `.github/workflows/` change; compose stays the CI lane until a dedicated
-   CI-shape increment.
+6. **CI posture:** local-only, widened by DD-283 — with the compose stacks
+   deleted, every migrated `e2e` target needs a live minikube umbrella, so
+   the workflows drop `e2e` from `affected`/`run-many` until a cluster-shaped
+   runner lands (the k3s-flavour note below is the candidate).
+7. **Single lane** (DD-283): no `ATLAS_E2E_TARGET`, no `lane_target()`, no
+   `e2e-cluster` targets — a migrated suite's `e2e` target IS the cluster
+   suite (`dependsOn: []` cancels the plugin's inferred compose-era deps).
 
 ## Steps
 
-| Step | Scope                                                                                                                                                                                                                                                          | Status          |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 0    | Retire RSL-01/RSL-02/SRV-09 (tests + rules, both lanes), DD-281                                                                                                                                                                                                | **done** — #189 |
-| 1    | 10.5b: lane lib, server conftest refactor (honesty check), twins + core conftests, `e2e-cluster` targets ×3, audience overlay + chart guard, `install.sh hosts` + devcontainer refresh, spec + DD-282                                                          | **in progress** |
-| 2    | 10.5c: webapp suite on the lane (realm redirectUris/webOrigins for `https://atlas.atlas.test/*` in BOTH `master.json` copies, password from Secret, footer test reads served `/config.json`, collector 4319/4321 port-forwards, browser leg via edge `/otel/`) | planned         |
-| 3    | 10.5d: lineage-model on the lane (seed real atlas-server via the API instead of the compose `fixture-atlas`; port-forwards 21002/21001)                                                                                                                        | planned         |
+| Step | Scope                                                                                                                                                                                                                                                                      | Status          |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 0    | Retire RSL-01/RSL-02/SRV-09 (tests + rules, both lanes), DD-281                                                                                                                                                                                                            | **done** — #189 |
+| 1    | 10.5b: lane lib, server conftest refactor (honesty check), twins + core conftests, audience overlay + chart guard, `install.sh hosts` + devcontainer refresh, spec + DD-282                                                                                                | **done**        |
+| 2    | Webapp suite on the lane: edge login, `install.sh realm-origins` (CHT-107, not the realm asset), password from Secret, footer test reads served `/config.json`, collector 4318/4319/4321 + Tempo forwards with pinned loopback ports. 105 tests × 3 browsers green. DD-284 | **done**        |
+| 3    | ~~lineage-model on the lane~~ — **retired** instead: its compose fixtures were the test (canned files, no deployed counterpart); rules stay unit/scenario-covered. `e2e/` deleted, no target. DD-284                                                                       | **done**        |
+| 4    | Single-lane collapse: `lane_target`/`ATLAS_E2E_TARGET`/`e2e-cluster` removed, `dependsOn: []` overrides, compose `e2e/docker-compose.yaml` files + webapp `e2e/config/` deleted, chart guards shrunk. DD-283                                                               | **done**        |
+| 5    | Template examples dropped (apps + lib, realm origins :4200/:18443, dashboards, uv members, data-access example client). DD-284                                                                                                                                             | **done**        |
+| 6    | CI: drop `e2e` from `affected`/`run-many` sets (cluster suites can't run there yet). DD-283                                                                                                                                                                                | last step       |
 
 ## Verified design facts (live-checked 2026-10-31, minikube release `atlas`/ns `atlas`)
 
@@ -112,16 +124,20 @@ live so nothing has to be re-discovered.
   both copies + guards in the same PR.
 - devcontainer CA rebuilds stale project certs (mkcert OU = container id):
   `npx nx certgen <project>` regenerates; seen once already (lineage TLS 401).
-- CHT space: 10.5b claims CHT-103..106; DD counter after #189: **next free
-  DD: 282**. The design-log top table ends at DD-272 — no new rows.
+- CHT space: 10.5b claims CHT-103..107; DDs landed: 282–284, **next free
+  DD: 285**. The design-log top table ends at DD-272 — no new rows.
 
 ## Verification (per PR)
 
-- Compose lane byte-identical: `uv run pytest <project>/e2e` (server 37,
-  data2model 7, validate-entity 7, core 23, webapp 105×3 browsers) — dev
-  stacks (`nx run aurelius-atlas-dev-*:up`), certs fresh.
-- Cluster lane: `tools/cluster/install.sh up` → `nx e2e-cluster <project>`
-  cold + warm; negative gate (release down → fail-fast naming `install.sh
-up`); `uv run pytest tests` (charts, 178 + new guards).
+- Single lane (the compose bar retired, DD-283): `tools/cluster/install.sh
+up` → `nx e2e <project> -c ci` cold + warm on all five migrated projects
+  (server 37, data2model 7, validate-entity 7, core 23, webapp 105×3
+  browsers); negative gate (release down → fail-fast naming `install.sh
+up`); `uv run pytest tests` (charts + shrunk guards).
+- Free pinned loopback ports before webapp runs: the dev compose
+  observability stack must be DOWN (its collector would answer the suite's
+  forwards — silent false-green).
 - kubectl/helm/docker/minikube/git-push commands need the unsandboxed flag;
-  pre-commit Prettier reflows md tables — `git add -u && git commit` retry.
+  `sudo -n -E bash tools/cluster/install.sh hosts` (the `-E` keeps the
+  kubeconfig); pre-commit Prettier reflows md tables — `git add -u &&
+git commit` retry.

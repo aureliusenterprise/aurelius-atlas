@@ -3,8 +3,7 @@
 # the deployment resolves it and mounts the result over
 # /etc/nginx/conf.d/default.conf, and serves /config.json for bootstrap
 # (SHL-02: the prod build bundles neither). This chart owns both ConfigMaps;
-# 10.3 renders them. The reference resolution is the e2e stack's
-# apps/aurelius-atlas-webapp/e2e/config/nginx.conf.
+# 10.3 renders them. The chart's init container (DD-262) is the resolution.
 
 # The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
 global:

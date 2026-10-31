@@ -7,4 +7,3 @@ export * from "./lib/atlas/atlas-search";
 export * from "./lib/atlas/atlas-typedef";
 export * from "./lib/atlas/search.service";
 export * from "./lib/atlas/type-defs.service";
-export * from "./lib/entities.service";

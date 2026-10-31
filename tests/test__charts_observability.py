@@ -384,9 +384,10 @@ def test__datasources_pin_uids_and_crosslinks(obs_docs: list[dict[str, Any]]) ->
 
 @pytest.mark.covers(rules=["CHT-40"])
 def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None:
-    """Provider + all seven dashboards byte-identical to dev (CHT-40, DD-256).
+    """Provider + all five dashboards byte-identical to dev (CHT-40, DD-256).
 
-    Their queries (the exported_job pins) are the contract.
+    Their queries (the exported_job pins) are the contract. The FastAPI and
+    frontend example dashboards retired with those apps (ADR 050, DD-019).
     """
     provider = find(obs_docs, "ConfigMap", f"{FULLNAME}-grafana-provisioning")
     assert provider["data"]["dashboards.yaml"].encode() == (OBS_CHART / "files/grafana-dashboards.yaml").read_bytes()
@@ -398,7 +399,7 @@ def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None
     dev_dir = DEV_CONFIG / "grafana/dashboards"
     expected = sorted(path.name for path in dev_dir.glob("*.json"))
     assert sorted(dashboards["data"]) == expected
-    assert len(expected) == 7
+    assert len(expected) == 5
     for name in expected:
         assert dashboards["data"][name].encode() == (dev_dir / name).read_bytes()
 

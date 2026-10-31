@@ -23,12 +23,16 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 - `proxy.conf.json` — dev-server proxy: `/api` → atlas-server :21000 (**no
   rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)
-- `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the built
+- `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the
+  deployed umbrella on minikube (k8s-only, DD-283/284): the browser and the
+  API/OTel proxies ride the Gateway at `atlas.atlas.test`, the collector legs
+  ride loopback port-forwards, Keycloak sign-in via the `authenticated`
+  fixture (APC-10), which replays a per-browser session state — one form
+  login per browser, silent check-sso for every test, form-login self-heal
+  when the shared session dies (DD-224). Preconditions: `tools/cluster/
+install.sh up` (+ `realm-origins`), and the `/etc/hosts` block for the
+  browser legs (`install.sh hosts`, sudo — CHT-106)
 - `helm/` — the `atlas-webapp` chart (its own section below)
-  image, with the real atlas-server container behind nginx `/api/` (DD-142) and
-  Keycloak sign-in via the `authenticated` fixture (APC-10), which replays a
-  per-browser session state — one form login per browser, silent check-sso for
-  every test, form-login self-heal when the shared session dies (DD-224)
 
 ## Porting rules (every slice)
 
@@ -52,13 +56,15 @@ nx serve aurelius-atlas-webapp          # 4300 (nl-NL: -c nl-NL → 4301); long-
 nx test aurelius-atlas-webapp -c ci     # never without -c ci (watch mode hangs)
 nx run aurelius-atlas-webapp:check-purity
 nx lint aurelius-atlas-webapp
-nx e2e aurelius-atlas-webapp            # builds webapp + atlas-server images; keycloak/observability/
-                                        # elasticsearch stacks up first (needs Docker + SOPS key)
+nx e2e aurelius-atlas-webapp            # Playwright against the deployed umbrella (k8s-only,
+                                        # DD-283/284) — preconditions: tools/cluster/install.sh up,
+                                        # realm-origins, and the hosts block (install.sh hosts, sudo)
 nx extract-i18n aurelius-atlas-webapp   # template catalogue refresh only (bridge files are source of truth)
 ```
 
 Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
-`docker-build`. Needs the SOPS key: `serve`, `e2e`. Needs Docker: `serve`, `e2e`.
+`docker-build`. Needs the SOPS key: `serve`. Needs Docker: `serve`. Needs the
+minikube umbrella (DD-283): `e2e`.
 
 ## Conventions
 
@@ -76,7 +82,8 @@ Offline-safe: `test -c ci`, `lint`, `check-purity`, `extract-i18n`,
 - Every new component gets a Storybook story (7.2 wires the ui library pattern);
   every new route gets an e2e scenario.
 - Template strings carry `i18n="@@legacy.key"` markers matching the catalogue ids.
-- The nginx configs (shipped template + `e2e/config/nginx.conf`) are
+- The nginx configs (the shipped template, and the chart's byte copy
+  resolved by the init container) are
   **http-context includes**: the hardened image loads `conf.d/*.conf` inside
   its `http{}` block, so http-scoped directives (`otel_exporter`, `map`,
   `geo`, limit zones) belong at file top. Tracing is opted in per location
@@ -140,9 +147,7 @@ reference in `docs/architecture/conversion/increments/7-0-webapp-foundation.md`.
 Auth removal: the `provideKeycloak`/`INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG`
 providers, `createAuthGuard` wrapper and `rootAuthGuard` in `routes.ts`,
 `public/silent-check-sso.html`, the Keycloak locations in the nginx configs, the
-webapp-port origins on the `aurelius` client in
-`dev/keycloak/import/master.json`, and the `authenticated` fixture in
-`e2e/conftest.py` (the example app shares the client, so the Keycloak import
-entry stays as long as the example lives).
-The example app (`aurelius-atlas-frontend-example`) stays — it is the pattern
-reference and spine member; the webapp only replaces it once 7.x completes.
+webapp origins on the `aurelius` client in
+`dev/keycloak/import/master.json` (and the installed realm — CHT-107's
+`install.sh realm-origins` converges the edge origin), and the `authenticated`
+fixture in `e2e/conftest.py`.

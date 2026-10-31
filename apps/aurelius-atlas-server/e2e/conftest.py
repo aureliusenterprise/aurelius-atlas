@@ -1,19 +1,23 @@
+"""E2E fixtures: the deployed server through the webapp edge, and clients (DD-283).
+
+The suite's one target is the Helm umbrella of ``tools/cluster/install.sh up``:
+the data path rides the whole deployment — Gateway, the webapp's nginx /api/
+proxy, backend TLS to the server — under the edge hostname whose HTTPRoute
+serves it, so SNI and certificate verification stay honest (the chart's edge
+leaf carries this SAN). The cluster machinery is aurelius-atlas-cluster-lane's
+(10.5b, DD-282; CHT-103/104); this conftest names only what is the server
+suite's own shape — which services it dials.
+"""
+
 import ssl
 import sys
 from collections.abc import AsyncIterator, Iterator
-from pathlib import Path
 
-import dotenv
 import httpx2 as httpx
 import pytest
 import pytest_asyncio
-from aurelius_atlas_cluster_lane import ServiceForward, install_cluster_fixtures, lane_target
+from aurelius_atlas_cluster_lane import ServiceForward, install_cluster_fixtures
 from aurelius_atlas_server_client import AtlasClient
-from testcontainers.compose import DockerCompose
-
-PROJECT = Path(__file__).resolve().parents[1]
-
-SERVICE = "aurelius-atlas-server"
 
 # The cluster shapes (the umbrella install of tools/cluster/install.sh).
 RELEASE = "atlas"
@@ -23,46 +27,33 @@ EDGE_HOST = "atlas.atlas.test"
 dials the data path by its real name so SNI and certificate verification stay
 honest (the chart's edge leaf carries this SAN)."""
 
-# The lane machinery is aurelius-atlas-cluster-lane's (10.5b, DD-282): the
-# session `cluster` gate (fail-fast on a missing install), the autouse resolver
-# shim, and the `ca_file` fixture. This conftest keeps only what is the server
-# suite's own lane shape — which services it dials.
-install_cluster_fixtures(sys.modules[__name__], PROJECT / "certs")
+# The session `cluster` gate (fail-fast on a missing install), the autouse
+# resolver shim, and the `ca_file` fixture (CHT-103).
+install_cluster_fixtures(sys.modules[__name__])
 
 
 @pytest.fixture(scope="session")
-def server(_cluster_dns: None) -> Iterator[str]:
-    """The server's base URL, from the lane ATLAS_E2E_TARGET picked.
+def server(_cluster_dns: None) -> str:
+    """The server's base URL: the edge hostname through the installed umbrella.
 
-    Compose (default): the e2e stack on the dev store, started here once
-    healthy — ``docker compose up --wait`` returns when the image's healthcheck
-    passes. Cluster (the 10.5 POC): the edge hostname through the installed
-    umbrella, so traffic rides the whole deployment — Gateway, the webapp's
-    nginx /api/ proxy, backend TLS to the server — not a bypass.
+    Traffic rides the whole deployment — Gateway, the webapp's nginx /api/
+    proxy, backend TLS to the server — not a bypass.
     """
-    if lane_target() == "cluster":
-        yield f"https://{EDGE_HOST}"
-        return
-    with DockerCompose(context=Path(__file__).parent, env_file=str(PROJECT / ".env")) as compose:
-        port = compose.get_service_port(SERVICE, 21000)
-        yield f"https://localhost:{port}"
+    return f"https://{EDGE_HOST}"
 
 
 @pytest.fixture(scope="session")
-def server_direct(_cluster_dns: None, server: str) -> Iterator[str]:
-    """The server pod's own URL, bypassing the edge, per lane.
+def server_direct(_cluster_dns: None) -> Iterator[str]:
+    """The server pod's own URL, bypassing the edge.
 
     The legacy dashboard is baked into the server image (DD-018) and served at
-    its own root; at the edge, `/` belongs to the SPA. The compose lane shares
-    the stack's one URL; the POC lane port-forwards the Service so the
-    dashboard tests still exercise the dashboard, not the webapp. The dial
-    stays the loopback URL Playwright opens under ``ignore_https_errors``
-    (ADR 039 — browsers bypass the shim), which is why its readiness probe is
-    the insecure check (CHT-104's one sanctioned 127.0.0.1).
+    its own root; at the edge, `/` belongs to the SPA. The dashboard tests
+    port-forward the Service so they exercise the dashboard, not the webapp.
+    The dial stays the loopback URL Playwright opens under
+    ``ignore_https_errors`` (ADR 039 — browsers bypass the shim), which is why
+    its readiness probe is the insecure check (CHT-104's one sanctioned
+    127.0.0.1).
     """
-    if lane_target() != "cluster":
-        yield server
-        return
     with ServiceForward(
         f"{RELEASE}-server",
         21000,
@@ -76,15 +67,10 @@ def server_direct(_cluster_dns: None, server: str) -> Iterator[str]:
 
 @pytest.fixture(scope="session")
 def tempo_url(_cluster_dns: None) -> Iterator[str]:
-    """Tempo's query API, per lane.
+    """Tempo's query API through a port-forward — the suite's own local ingress.
 
-    The dev stack's loopback publish (CIA-03), or a port-forward to the
-    cluster's Tempo Service — the suite's own local ingress, since the cluster
-    publishes nothing to the host.
+    The cluster publishes nothing to the host, so the suite brings its own.
     """
-    if lane_target() != "cluster":
-        yield "http://127.0.0.1:3200"
-        return
     with ServiceForward(
         f"{RELEASE}-observability-tempo",
         3200,
@@ -96,15 +82,9 @@ def tempo_url(_cluster_dns: None) -> Iterator[str]:
         yield f"http://127.0.0.1:{forward.local_port}"
 
 
-@pytest.fixture(scope="session", autouse=True)
-def _environment() -> None:
-    """Load the project's decrypted settings, which the compose file reads."""
-    dotenv.load_dotenv(PROJECT / ".env")
-
-
 @pytest_asyncio.fixture(loop_scope="function")
 async def client(server: str, ca_file: str) -> AsyncIterator[httpx.AsyncClient]:
-    """A client for the running server over HTTPS, verifying it against the lane's CA."""
+    """A client for the deployed server over HTTPS, verifying it against the chart CA."""
     async with httpx.AsyncClient(base_url=server, verify=ssl.create_default_context(cafile=ca_file)) as client:
         yield client
 
@@ -115,7 +95,7 @@ async def client(server: str, ca_file: str) -> AsyncIterator[httpx.AsyncClient]:
 # On the function loop, the client, its requests, and aclose share one loop.
 @pytest_asyncio.fixture(loop_scope="function")
 async def api(server: str, ca_file: str) -> AsyncIterator[AtlasClient]:
-    """The typed Atlas client for the running server over HTTPS (CL-11).
+    """The typed Atlas client for the deployed server over HTTPS (CL-11).
 
     The fixture builds the httpx pool and closes it (CL-02). The server's admin
     routes are open until 6.1, so the token source is empty — an empty source

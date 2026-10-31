@@ -51,4 +51,4 @@ nx build-storybook aurelius-atlas-ui -c ci  # compile all stories
 ## Removal
 
 Part of the spine. Removing it means removing the `aurelius-atlas-ui` alias, all
-imports in `aurelius-atlas-frontend-example`, and its `mkdocs.yaml` entries.
+imports in `aurelius-atlas-webapp`, and its `mkdocs.yaml` entries.

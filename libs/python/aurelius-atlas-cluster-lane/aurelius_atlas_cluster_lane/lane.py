@@ -1,9 +1,14 @@
-"""The lane gate, the resolver shim, the fixtures, and the token mint (CHT-103/104)."""
+"""The gate, the resolver shim, the fixtures, and the token mint (CHT-103/104).
+
+A migrated suite has one target: the Helm umbrella of ``tools/cluster/
+install.sh up`` (DD-283 supersedes the POC's env-gated dual lane — the compose
+twin of a migrated suite was migration scaffold, and scaffolding outlives its
+ladder). The cluster gate is what makes a missing install fail in seconds.
+"""
 
 import base64
 import contextlib
 import json
-import os
 import socket
 import ssl
 import subprocess
@@ -19,12 +24,6 @@ import httpx2 as httpx
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-TARGET_ENV = "ATLAS_E2E_TARGET"
-"""The environment variable naming the deployment a suite drives."""
-
-DEFAULT_TARGET = "compose"
-"""The default lane: the compose stack — CI's lane, every existing invocation."""
 
 DEFAULT_RELEASE = "atlas"
 DEFAULT_NAMESPACE = "atlas"
@@ -42,16 +41,6 @@ _GATE_MESSAGE = (
 """The fail-fast gate message (CHT-53/103): a cluster lane you cannot trust is not a lane."""
 
 _ClusterDict = dict[str, str]
-
-
-def lane_target() -> str:
-    """Which deployment the suite drives (CHT-103).
-
-    ``ATLAS_E2E_TARGET``: ``compose`` (the default — every existing invocation
-    stays byte-identical) or ``cluster`` (the Helm umbrella of
-    ``tools/cluster/install.sh up``).
-    """
-    return os.environ.get(TARGET_ENV, DEFAULT_TARGET)
 
 
 # --- the resolver shim -------------------------------------------------------
@@ -102,8 +91,8 @@ def install_resolver_shim(domain: str = DEFAULT_DOMAIN) -> Iterator[None]:
     host (a ``None``-port key, the URL carrying the forward's own port) for the
     life of the forward.
 
-    The no-op outside cluster mode is the caller's job — :func:`cluster_fixture`
-    and :func:`install_cluster_fixtures` skip the whole path on compose.
+    The life of the shim is the session's: :func:`install_cluster_fixtures`
+    installs it autouse, behind the install gate.
     """
     global _real_getaddrinfo  # noqa: PLW0603 - one process-wide patch, restored in finally.
     with _resolve_lock:
@@ -268,13 +257,8 @@ def cluster_fixture_dict(cluster: Cluster) -> _ClusterDict:
 def _cluster() -> Iterator[_ClusterDict]:
     """The session ``cluster`` fixture body: gate, Gateway address, and the chart CA.
 
-    The compose lane short-circuits to an empty mapping (the gate and the
-    kubectl reads are cluster-mode work). In cluster mode it fails fast — see
-    :func:`cluster_gate`.
+    The gate fails fast on a missing install — see :func:`cluster_gate`.
     """
-    if lane_target() != "cluster":
-        yield {}
-        return
     cluster_gate()
     yield cluster_fixture_dict(Cluster(read_gateway_ip(), read_chart_ca()))
 
@@ -286,34 +270,24 @@ def _cluster_dns(request: Any) -> Iterator[None]:  # noqa: ANN401 - pytest passe
     then maps ``*.atlas.test`` (and every :class:`~aurelius_atlas_cluster_lane.forward.ServiceForward`'s
     registered pair) onto loopback for this process only.
     """
-    if lane_target() != "cluster":
-        yield
-        return
     request.getfixturevalue("cluster")  # the install gate runs first
     with install_resolver_shim():
         yield
 
 
-def ca_file_fixture(cluster: _ClusterDict, project_certs: Path) -> str:
-    """The ``ca_file`` fixture body: the chart CA on cluster, the mkcert dev CA on compose.
-
-    Args:
-        cluster: The session ``cluster`` mapping (empty outside cluster mode).
-        project_certs: The project's ``certs/`` directory (``nx certgen`` output).
-    """
-    if lane_target() == "cluster":
-        return cluster["ca_file"]
-    return str(project_certs / "ca.pem")
+def ca_file_fixture(cluster: _ClusterDict) -> str:
+    """The ``ca_file`` fixture body: the chart CA the ``cluster`` mapping carries."""
+    return cluster["ca_file"]
 
 
-def install_cluster_fixtures(module: ModuleType, project_certs: Path) -> None:
+def install_cluster_fixtures(module: ModuleType) -> None:
     """Install the session-scoped ``cluster``, ``_cluster_dns``, and ``ca_file`` fixtures.
 
     The library keeps its kubectl-shaped code out of pytest11 plugin autoload
-    (CHT-103: a compose-mode consumer must never import cluster paths at call
-    time through every pytest run in the workspace); a conftest opts in with
-    this one call and keeps only what is *its* lane shape — which services,
-    which clients.
+    (CHT-103: suites that never run on the cluster must never import cluster
+    paths through every pytest run in the workspace); a conftest opts in with
+    this one call and keeps only what is *its* shape — which services, which
+    clients.
 
     ``module`` is the calling conftest module (``sys.modules[__name__]``):
     pytest collects a conftest's fixtures by scanning that module's own
@@ -325,7 +299,7 @@ def install_cluster_fixtures(module: ModuleType, project_certs: Path) -> None:
     ns = vars(module)
     ns["cluster"] = pytest.fixture(scope="session")(_cluster)
     ns["_cluster_dns"] = pytest.fixture(scope="session", autouse=True)(_cluster_dns)
-    ns["ca_file"] = pytest.fixture(scope="session")(lambda cluster: ca_file_fixture(cluster, project_certs))
+    ns["ca_file"] = pytest.fixture(scope="session")(ca_file_fixture)
 
 
 # --- the token mint ------------------------------------------------------------
@@ -343,12 +317,11 @@ def mint_token(
 ) -> str:
     """A bearer token from the realm's password grant, waited for (a warming realm retries).
 
-    One mint, two origins: the compose lane calls it with the dev realm's
-    loopback-published URL, the cluster lane with the edge's
-    ``https://keycloak.<domain>`` — the same issuer origin the deployed pods
-    themselves verify against (DD-265's split horizon makes it honest). The
-    public ``aurelius`` client's tokens carry ``azp=aurelius`` (CHT-79); the
-    aux charts' minikube audience override (CHT-105) is what accepts them.
+    The suite calls it with the edge's ``https://keycloak.<domain>`` — the
+    same issuer origin the deployed pods themselves verify against (DD-265's
+    split horizon makes it honest). The public ``aurelius`` client's tokens
+    carry ``azp=aurelius`` (CHT-79); the aux charts' minikube audience
+    override (CHT-105) is what accepts them.
     """
     deadline = time.monotonic() + timeout
     last_error: Exception | None = None

@@ -36,8 +36,8 @@ rather than to each backend.
 nx serve aurelius-atlas-dev-observability
 ```
 
-Grafana is on `http://localhost:3000`. The FastAPI example, Keycloak, the
-frontend (via its `/otel` dev proxy) all export here automatically when started
+Grafana is on `http://localhost:3000`. The Atlas server, Keycloak, and the
+webapp (via its `/otel` dev proxy) all export here automatically when started
 through `nx serve`/`nx up`. Components that speak no OTLP (databases) arrive
 via a slice-owned `metrics-puller` sidecar in postgres and keycloak. The OTLP
 receivers serve TLS only — exporters trust the local CA (each project's
@@ -48,14 +48,14 @@ Keycloak token (OIDC, audience `otel-collector`), the per-service leg
 (the pullers' `oauth2client` extension, the Atlas server's refresh shim), and
 the legacy leg (4320/4321) demands the shared ingest token
 (`OTEL_COLLECTOR_INGEST_TOKEN`, this project's `.env.enc`) for the producers
-that cannot present a Keycloak JWT (Keycloak's native OTLP, the FastAPI
-example). A bearer works on exactly one leg. The verified writer is stamped on
+that cannot present a Keycloak JWT (Keycloak's native OTLP, the webapp edge's
+nginx exporter). A bearer works on exactly one leg. The verified writer is stamped on
 the telemetry (`enduser.id` from `sub`, `otel.ingest.client` from `azp`,
 DD-194/DD-196). The browser-facing UI ports (Grafana, Prometheus) stay
 plaintext on a developer machine (ADR 039).
 
 Dashboards are file-provisioned from `config/grafana/dashboards/` — one per
-application/dev stack (FastAPI, frontend, webapp, Keycloak, Postgres, and
+application/dev stack (webapp, Keycloak, Postgres, Elasticsearch, and
 the observability stack itself), all in the **Aurelius** folder. Edit the
 JSON in the repo rather than the UI: provisioning overwrites UI edits.
 When copying a dashboard as a template, give the copy its own `uid`/`title` and

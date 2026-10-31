@@ -38,5 +38,6 @@ uv run pyright libs/python/aurelius-atlas-sdk
 
 ## Removal
 
-Part of the spine; removing it is not realistic while the FastAPI example
-exists. To drop a feature, remove the submodule, its extra, and its consumers.
+Part of the spine. The example apps that consumed it are gone (DD-284); it
+now stands ready for the services' shared helpers. To drop a feature, remove
+the submodule, its extra, and its consumers.

@@ -3,7 +3,8 @@
 Keycloak bearer-token authentication for the Aurelius Atlas services (8.0,
 DD-197): OIDC discovery, JWKS verification (RS256, kid, issuer, azp/aud
 audience) and the write-role gate. Ported from the template's FastAPI
-example, reshaped as a per-service object so each application owns one
+example (since removed, DD-284), reshaped as a per-service object so each
+application owns one
 `KeycloakAuth` built from its own settings. This file covers wiring specific
 to this lib; workspace-wide rules live in the root `AGENTS.md` and
 `libs/python/AGENTS.md`.

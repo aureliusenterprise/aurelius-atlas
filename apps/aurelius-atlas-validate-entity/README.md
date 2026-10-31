@@ -26,7 +26,8 @@ in `app.py`.
 ```bash
 npx nx serve aurelius-atlas-validate-entity   # https://localhost:21003, dev Keycloak + collector up
 npx nx test aurelius-atlas-validate-entity -c ci
-npx nx e2e aurelius-atlas-validate-entity     # the image, realm tokens, real TLS
+tools/cluster/install.sh up   # precondition: the minikube umbrella
+npx nx e2e aurelius-atlas-validate-entity -c ci   # the deployed app, realm tokens, real TLS
 ```
 
 The app has no upstreams: unlike the [lineage-model](../aurelius-atlas-lineage-model/README.md)

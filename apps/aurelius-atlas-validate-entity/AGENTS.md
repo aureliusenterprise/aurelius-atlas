@@ -31,8 +31,8 @@ auth=None)` builds the verifier, mounts the routers, and configures the telemetr
 - `scenarios/` — the parity scenario, read from the Aurelius source: the caller's
   entity in, the full mock document out (byte equality, no volatile fields)
 - `tests/` — unit tests (app wiring on a fake issuer, the mock document's shape);
+  `e2e/` — the deployed app, Keycloak-minted tokens, real TLS (k8s-only, DD-283)
 - `helm/` — the `atlas-validate-entity` chart (its own section below)
-  `e2e/` — this image on the dev Keycloak, Keycloak-minted tokens, real TLS
 
 ## Rules the app keeps
 
@@ -48,7 +48,9 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
 
 - `project.json` — `serve` depends on dev Keycloak (tokens) + observability (the OTLP
   leg); `test`/`build`/`docker-*`/`decrypt` are inferred by `tools/plugins/python.ts`.
-  No `e2e` override: the suite is this app alone (no upstream chain, unlike 8.2).
+  `e2e` is declared explicitly with `"dependsOn": []` — the merge cancels the
+  plugin's inferred deps because the suite's precondition is the live cluster
+  (`tools/cluster/install.sh up`), not a task chain (DD-283).
 - Auth is the shared lib (`aurelius-atlas-auth`, DD-197): `auth.require_auth` on the
   route; nothing is forwarded (the app has no upstreams). Audience `aurelius` (the
   webapp's client id, AUX-04): the browser calls this endpoint with its own token, so
@@ -60,12 +62,14 @@ cite the file in any behaviour change — the `output` dict's keys, `doc-…` id
   so even the JWKS request appears as a client span in Tempo.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-validate-entity` after changing
   `.env`); `OTEL_CLIENT_SECRET` mirrors the server's `OTEL_INGEST_CLIENT_SECRET` (DD-196).
-- `tls.json` — the app's certificate (`nx certgen`), used by `serve` and `e2e`. The SANs
-  cover the compose service name, so the in-network TLS calls verify (e2e).
+- `tls.json` — the app's certificate (`nx certgen`), used by `serve`.
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled), nonroot,
   liveness healthcheck.
-- `e2e/docker-compose.yaml` — this app alone: the collector on the observability
-  network, Keycloak through `keycloak.localhost:host-gateway`.
+- `e2e/conftest.py` — the suite is k8s-only (DD-283): the app dialled at its
+  Service's real name through a port-forward (SAN-honest TLS, CHT-104), tokens
+  minted through `https://keycloak.atlas.test`, the writer password from the
+  `atlas-keycloak-users` Secret. The lane machinery is
+  `aurelius-atlas-cluster-lane`; the compose stack retired with the dual lane.
 
 ## Helm chart
 

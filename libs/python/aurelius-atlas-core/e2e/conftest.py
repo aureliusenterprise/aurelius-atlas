@@ -1,28 +1,21 @@
-"""E2E fixtures: the Elasticsearch store, per lane (10.5b, DD-282).
+"""E2E fixtures: the Elasticsearch store on the cluster (DD-283).
 
-Compose (the default, CI's lane): the dev store started by
-``nx up aurelius-atlas-dev-elasticsearch``, its decrypted ``.env`` and mkcert
-CA. Cluster (``ATLAS_E2E_TARGET=cluster``): the release's own
-``svc/atlas-elasticsearch`` dialled at its Service FQDN through a port-forward
-(SAN-honest TLS, CHT-104), the ``elastic`` password read from the release's
-``atlas-elasticsearch`` Secret, the chart CA from the CA Secret. The tests
-talk to Elasticsearch and nothing else, so swapping this one fixture moves
-the whole suite — and the namespaced-alias discipline (DD-223) is what makes
-the shared cluster store safe for these writes.
+The suite's one target is the Helm umbrella of ``tools/cluster/install.sh up``:
+the release's own ``svc/atlas-elasticsearch`` dialled at its Service FQDN
+through a port-forward (SAN-honest TLS, CHT-104), the ``elastic`` password read
+from the release's ``atlas-elasticsearch`` Secret, the chart CA from the CA
+Secret. The tests talk to Elasticsearch and nothing else, so swapping this one
+fixture moves the whole suite — and the namespaced-alias discipline (DD-223) is
+what makes the shared cluster store safe for these writes.
 """
 
 import sys
 from collections.abc import AsyncGenerator, Iterator
-from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from aurelius_atlas_cluster_lane import SecretReader, ServiceForward, install_cluster_fixtures, lane_target
+from aurelius_atlas_cluster_lane import SecretReader, ServiceForward, install_cluster_fixtures
 from aurelius_atlas_store_es import ElasticsearchStore, StoreSettings
-from dotenv import dotenv_values
-
-WORKSPACE = Path(__file__).resolve().parents[4]
-DEV_ELASTICSEARCH = WORKSPACE / "dev" / "elasticsearch"
 
 # The cluster shapes (the umbrella install of tools/cluster/install.sh).
 SERVICE_CLUSTER = "atlas-elasticsearch"
@@ -33,27 +26,13 @@ ELASTICSEARCH_SECRET = "atlas-elasticsearch"
 """The release Secret carrying the elastic password (CHT-78's family)."""
 CLUSTER_NAMESPACE = "atlas"
 
-# The session `cluster` gate and the autouse resolver shim come from the lane
-# library (CHT-103). The certs path only feeds the lib's generic ca_file
-# fixture, which this suite does not use — dev_settings carries the CA.
-install_cluster_fixtures(sys.modules[__name__], DEV_ELASTICSEARCH / "certs")
+# The session `cluster` gate and the autouse resolver shim come from the
+# library (CHT-103).
+install_cluster_fixtures(sys.modules[__name__])
 
 
 @pytest.fixture(scope="session")
-def dev_dir() -> Path:
-    """The ``dev/elasticsearch`` project directory."""
-    return DEV_ELASTICSEARCH
-
-
-@pytest.fixture(scope="session")
-def dev_env() -> dict[str, str]:
-    """The dev store's decrypted ``.env``; the e2e target decrypts it before the run."""
-    values = dotenv_values(DEV_ELASTICSEARCH / ".env")
-    return {key: value for key, value in values.items() if value is not None}
-
-
-@pytest.fixture(scope="session")
-def cluster_store(_cluster_dns: None, cluster: dict[str, str]) -> Iterator[StoreSettings]:
+def store_settings(_cluster_dns: None, cluster: dict[str, str]) -> Iterator[StoreSettings]:
     """The release's store: the Service FQDN through a port-forward, SAN-honest (CHT-104).
 
     The forward lives for the session; the shim maps the
@@ -81,30 +60,10 @@ def cluster_store(_cluster_dns: None, cluster: dict[str, str]) -> Iterator[Store
         )
 
 
-@pytest.fixture(scope="session")
-def dev_settings(request: pytest.FixtureRequest, dev_env: dict[str, str]) -> StoreSettings:
-    """The store settings for the lane ATLAS_E2E_TARGET picked.
-
-    Compose: the dev store on its published port and mkcert CA —
-    ``nx up aurelius-atlas-dev-elasticsearch``. Cluster: :func:`cluster_store`
-    (requested lazily — a compose-mode run never imports a kubectl-shaped
-    call, CHT-103).
-    """
-    if lane_target() == "cluster":
-        return request.getfixturevalue("cluster_store")
-    return StoreSettings.model_validate(
-        {
-            "hosts": [f"https://localhost:{dev_env['ELASTICSEARCH_PORT']}"],
-            "password": dev_env["ELASTICSEARCH_PASSWORD"],
-            "ca_certs": DEV_ELASTICSEARCH / "certs" / "ca.pem",
-        },
-    )
-
-
 @pytest.fixture
-async def dev_store(dev_settings: StoreSettings) -> AsyncGenerator[ElasticsearchStore]:
-    """An open store on the lane's Elasticsearch."""
-    async with ElasticsearchStore(dev_settings) as store:
+async def dev_store(store_settings: StoreSettings) -> AsyncGenerator[ElasticsearchStore]:
+    """An open store on the release's Elasticsearch."""
+    async with ElasticsearchStore(store_settings) as store:
         yield store
 
 

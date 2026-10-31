@@ -39,10 +39,10 @@ nothing to install by hand beyond Docker and VS Code.
    a while; it also generates your personal secrets key into `secrets/keys.txt`.
 4. Register your secrets key (see [Secrets Management](docs/contributor-guide/secrets-management.md)) —
    until you do, test and serve commands fail at the decryption step.
-5. Run an example:
+5. Run an app:
 
     ```bash
-    npx nx serve aurelius-atlas-fastapi-example
+    npx nx serve aurelius-atlas-server
     ```
 
     Development infrastructure (Keycloak, Postgres, observability) starts automatically.
@@ -50,7 +50,7 @@ nothing to install by hand beyond Docker and VS Code.
 6. Verify your setup:
 
     ```bash
-    nx test aurelius-atlas-fastapi-example -c ci
+    nx test aurelius-atlas-server -c ci
     ```
 
 ??? WARNING "First-run expectations"

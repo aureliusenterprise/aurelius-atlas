@@ -26,13 +26,12 @@ rules live in the root `AGENTS.md`.
   The OTel **JS** SDK (browser web vitals) records with explicit buckets, so
   those histograms stay _classic_ — query `<metric>_bucket` with `sum by
 (le)` as usual; and since OTel pushes are last-value (no scrape per
-  interaction), the frontend dashboard reads the live cumulative `_bucket`
+  interaction), the webapp dashboard reads the live cumulative `_bucket`
   instead of `rate()` to avoid NaN between ticks.
 - `config/grafana/` — file-provisioned datasources and the **dashboards**
-  folder: one dashboard per app/dev stack (`aurelius-atlas-fastapi`,
-  `aurelius-atlas-frontend`, `aurelius-atlas-webapp`, `aurelius-atlas-keycloak`,
-  `aurelius-atlas-postgres`, `aurelius-atlas-elasticsearch`,
-  `aurelius-atlas-observability-stack`), all in the
+  folder: one dashboard per app/dev stack (`aurelius-atlas-webapp`,
+  `aurelius-atlas-keycloak`, `aurelius-atlas-postgres`,
+  `aurelius-atlas-elasticsearch`, `aurelius-atlas-observability-stack`), all in the
   "Aurelius" folder. They are plain JSON edited in the repo (Grafana's UI
   edits are lost on recreate), keyed by the telemetry identities the slices
   export (`exported_job` / `service_name` / `service.name` = the slice's
@@ -65,8 +64,9 @@ rules live in the root `AGENTS.md`.
   from the `otel-*` realm clients — the slice pullers' `oauth2client` extension,
   the Atlas server's in-app refresh shim; `azp` stamps `otel.ingest.client`), and
   the **legacy leg** is `otlp/legacy` gRPC :4320 + HTTP :4321 behind
-  `bearertokenauth` (shared `OTEL_COLLECTOR_INGEST_TOKEN`, Keycloak-native OTLP +
-  the FastAPI example only — producers that cannot present a Keycloak JWT). The
+  `bearertokenauth` (shared `OTEL_COLLECTOR_INGEST_TOKEN` — producers that
+  cannot present a Keycloak JWT: Keycloak's own Quarkus exporter (CHT-42) and
+  the webapp edge's nginx exporter (CHT-31)). The
   contrib image has **no `compositeauth` extension**, so one port carries exactly
   one authenticator — a bearer works on exactly one leg (401 elsewhere), which is
   what makes the legs credential-typed. All receivers serve TLS only
@@ -88,11 +88,12 @@ rules live in the root `AGENTS.md`.
   starve on shared stacks (ESD-06, DD-202). Discovery is a startup dependency
   on Keycloak, and the container gets `keycloak.localhost:host-gateway` since
   `:8443` is loopback-published.
-- Consumers started via `nx serve`: the FastAPI example (OTLP, legacy leg :4321),
-  Keycloak (`implicitDependencies` here; native OTLP on the legacy leg :4320,
-  its puller on the per-service leg :4317), the Atlas server (`nx serve` chains
-  dev-keycloak since DD-196 — its export mints ingest JWTs), and the frontend
-  (via its `/otel` dev proxy to the browser leg at `:4318`).
+- Consumers started via `nx serve`: Keycloak (`implicitDependencies` here;
+  native OTLP on the legacy leg :4320, its puller on the per-service leg :4317),
+  the Atlas server (`nx serve` chains dev-keycloak since DD-196 — its export
+  mints ingest JWTs), and the webapp (via its `/otel` dev proxy to the browser
+  leg at `:4318`). The template's FastAPI/frontend-example consumers left with
+  those apps (ADR 050, DD-019).
 - Slices that own components speaking no OTLP (databases) ship their own
   **`metrics-puller`** sidecar — a Collector that scrapes locally, next to the
   targets and credentials, and pushes OTLP here: `dev-postgres` (app PG) and
@@ -173,5 +174,5 @@ npx nx run aurelius-atlas-dev-observability:helm-template
 ## Removal
 
 Part of the spine (workflow reference architecture). Removing it means dropping
-the OTLP export wiring from the FastAPI example, Keycloak, and the frontend's
-`/otel` proxy and `aurelius-atlas-observability` usage.
+the OTLP export wiring from Keycloak and the webapp's `/otel` proxy and
+`aurelius-atlas-observability` usage.

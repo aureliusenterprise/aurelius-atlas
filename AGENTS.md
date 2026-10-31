@@ -24,9 +24,10 @@ there is no central index.
 
 > [!WARNING]
 > Fresh clones fail tests until a SOPS age key exists (`secrets/keys.txt`, generated on first
-> devcontainer start) AND the key is registered in `.sops.yaml`. Nearly every `test`/`serve`/`e2e`
+> devcontainer start) AND the key is registered in `.sops.yaml`. Nearly every `test`/`serve`
 > target `dependsOn` `decrypt`, which fails with a SOPS/age error otherwise — that is a setup gap,
-> not a code bug.
+> not a code bug. (The migrated `e2e` targets cancel their `dependsOn` — they gate on a live
+> cluster instead, DD-283.)
 >
 > [!NOTE]
 > This is a **template** — apps/libs are starting points, not production-ready as-is.
@@ -47,20 +48,20 @@ npx nx show project <project-name> --json
 
 ## Verification Levels (WIP reporting only)
 
-The acceptance gate is uniform: CI runs commit checks, unit tests, and e2e on
-every PR and all must pass — no level here substitutes for the gate. Use these
-levels to report what you have verified **so far** (while iterating, or when
-asking a question): pick the cheapest level that covers your change and state
-which you ran.
+The acceptance gate is commit checks + unit tests on every PR (CI). The
+deployment `e2e` suites are **not** in CI yet (DD-283): they are k8s-only and
+run locally against a live umbrella. Use these levels to report what you have
+verified **so far** (while iterating, or when asking a question): pick the
+cheapest level that covers your change and state which you ran.
 
-| Level | Requirement                 | Commands                                                                                  |
-| ----- | --------------------------- | ----------------------------------------------------------------------------------------- |
-| 0     | Offline (no key, no Docker) | `nx lint <project>`, `nx typecheck <project>` (Python), `uv run pytest <app>/tests`       |
-| 1     | SOPS key registered         | `nx test <project> -c ci` (unit tests; `dependsOn` decrypt)                               |
-| 2     | Docker runtime              | `nx e2e <project>` (builds image, starts real services), `nx serve <project>` (dev infra) |
+| Level | Requirement                 | Commands                                                                                                             |
+| ----- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 0     | Offline (no key, no Docker) | `nx lint <project>`, `nx typecheck <project>` (Python), `uv run pytest <app>/tests`                                  |
+| 1     | SOPS key registered         | `nx test <project> -c ci` (unit tests; `dependsOn` decrypt)                                                          |
+| 2     | Live cluster                | `tools/cluster/install.sh up` then `nx e2e <project> -c ci` (the deployment suite), `nx serve <project>` (dev infra) |
 
-CI runs `nx affected -t test e2e -c ci`, which covers levels 1 and 2 for every
-change.
+CI runs `nx affected -t test -c ci` (level 1) plus the image build/scan; the
+level-2 suites are a deliberate local gate until a cluster-shaped runner lands.
 
 ## Tech Stack
 
@@ -70,7 +71,7 @@ Versions live in `package.json`, `pyproject.toml`, and
 - **Monorepo tool**: Nx + uv (Python workspace)
 - **Languages**: Python, TypeScript (Angular)
 - **Frontend**: Angular, SCSS, Storybook, Vitest
-- **Backend**: FastAPI, SQLAlchemy/SQLModel (template examples)
+- **Backend**: FastAPI, Elasticsearch store (`aurelius-atlas-store-es`)
 - **Infra**: Docker, Postgres, Keycloak, observability stack (Prometheus/Grafana/Tempo)
 - **Quality**: ESLint, Ruff, Prettier, SonarQube, pre-commit hooks
 - **Docs**: Zensical (Material design) with mkdocstrings
@@ -83,14 +84,17 @@ how it is wired lives in its own `AGENTS.md`. It exists because slice
 boundaries are a workspace-wide rule — which projects may leave together, and
 what to unwire when they do.
 
-The **spine** (keep this): `aurelius-atlas-server`, `aurelius-atlas-frontend-example`,
-`aurelius-atlas-fastapi-example`, `libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`,
+The **spine** (keep this): `aurelius-atlas-server`, `aurelius-atlas-webapp`,
+`aurelius-atlas-dashboard`, `libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`,
 `libs/python/aurelius-atlas-trace`, `libs/python/aurelius-atlas-parity`, `libs/angular/*`,
 `dev/elasticsearch`, `dev/postgres`, `dev/keycloak`, `dev/observability`, `helm/`
 (ADR 057), plus the workflow (CI, pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
-slices and its Java tooling were removed when the template was adopted (ADR 050).
+slices and its Java tooling were removed when the template was adopted (ADR 050);
+the FastAPI and Angular example apps and their `aurelius-atlas-example` library
+went with them (ADR 009/050, DD-019 — the webapp and dashboard are the real
+front-ends now).
 
 When removing a slice, update all of: root `pyproject.toml` (uv members, dev groups, uv.sources),
 `implicitDependencies`/`dependsOn` in `project.json` files, `.env` keys,
@@ -176,17 +180,21 @@ do not add central lists of projects or libraries to this file.
 
 ### End-to-End Tests
 
-- **Frontend**: Playwright (configured via `@nx/playwright`).
-  Tests live in `e2e/` directory. Run with `nx run <project>:e2e`.
-- **Backend**: pytest-based E2E tests using `testcontainers` for
-  spinning up Elasticsearch, Keycloak, etc. Run with
-  `nx run <project>:e2e`.
-- **E2E suites must not restart the shared `dev/*` services** (DD-223). Taking a
-  shared store down/up (or cycling its containers) mid-suite races every other
-  suite riding it in CI's parallel `nx affected -t test e2e` — lost-connection
-  failures are on record. A rule that can only be exercised by a restart (e.g.
-  ESD-04's volume persistence) goes untested by choice, with a note in the spec.
-  Writes to shared dev stores are fine when namespaced and self-cleaned.
+- **The migrated suites are k8s-only** (DD-283): a project's `e2e` target
+  drives the deployed umbrella of `tools/cluster/install.sh up` (the
+  `aurelius-atlas-cluster-lane` library), not a compose stack. Run with
+  `nx run <project>:e2e -c ci` after `install.sh up`; the suite fails fast
+  without a deployed release. There is no compose fallback and CI does not
+  reach them yet (no cluster runner).
+- **Frontend**: Playwright (the webapp suite drives the edge through a real
+  browser; `nx run aurelius-atlas-webapp:e2e -c ci`).
+- **Backend**: pytest suites dialling the deployment (server, the aux twins,
+  the core store suite) via Service-FQDN port-forwards.
+- **E2E suites must not restart the shared cluster stores** (DD-223). Taking
+  a shared store down/up (or cycling its containers) mid-suite races every
+  other suite riding it. A rule that can only be exercised by a restart (e.g.
+  ESD-04's volume persistence) goes untested by choice, with a note in the
+  spec. Writes to shared stores are fine when namespaced and self-cleaned.
 - **E2E tests prove Aurelius behaviour, not framework defaults.** Probes that can
   only fail for framework reasons (a FastAPI `/docs` 200 check, an ES
   "the image starts" smoke) belong in unit tests or the compose healthcheck.

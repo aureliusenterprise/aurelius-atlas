@@ -1,12 +1,12 @@
 # aurelius-atlas-cluster-lane
 
-The shared e2e cluster lane (10.5b, DD-282). This file covers wiring specific
-to this lib; workspace-wide rules live in the root `AGENTS.md` and
-`libs/python/AGENTS.md`.
+The shared e2e cluster machinery (10.5b, DD-282; single-lane per DD-283). This
+file covers wiring specific to this lib; workspace-wide rules live in the root
+`AGENTS.md` and `libs/python/AGENTS.md`.
 
 ## Layout
 
-- `aurelius_atlas_cluster_lane/lane.py` — `lane_target`, the fail-fast gate,
+- `aurelius_atlas_cluster_lane/lane.py` — the fail-fast gate,
   the Gateway/CA reads, the resolver shim (a `(host, port)` rewrite table;
   exact keys win over `.suffix` rules), `install_cluster_fixtures`, `mint_token`
 - `aurelius_atlas_cluster_lane/forward.py` — `ServiceForward` /
@@ -14,8 +14,8 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
 - `aurelius_atlas_cluster_lane/secrets.py` — `SecretReader` (CHT-103)
 - `aurelius_atlas_cluster_lane/hosts.py` — `hosts_block`, the fenced
   `/etc/hosts` edit used by `install.sh hosts` (CHT-106)
-- `tests/` — unit tests only: **no test here needs a cluster** (the lane's
-  live proof is the suites' `e2e-cluster` targets)
+- `tests/` — unit tests only: **no test here needs a cluster** (the
+  machinery's live proof is the suites' `e2e` targets)
 
 ## Wiring Checklist
 
@@ -23,18 +23,17 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
   `uv.sources`). The dev group is what makes `uv run pytest` see it in every
   project — consumers import it in conftests, **not** in app `pyproject.toml`
   dependency lists (parity precedent).
-- Deliberately not a pytest11 plugin: `install_cluster_fixtures(pytest, ...)`
-  is an explicit opt-in so compose-mode pytest runs never autoload kubectl
-  paths (CHT-103).
+- Deliberately not a pytest11 plugin: `install_cluster_fixtures(module)` is an
+  explicit opt-in so plain pytest runs never autoload kubectl paths (CHT-103).
 - Ruff: the package shells out to fixed `helm`/`kubectl`/`curl` arguments —
   `S603`/`S607` per-file-ignores in root `pyproject.toml`, same harness shape
   as the chart suite.
 
 ## Conventions
 
-- The compose lane is the CI lane and the regression bar: a conftest refactor
-  onto this lib must keep compose behaviour byte-identical, and the gate's
-  fail-fast message keeps naming `install.sh up`.
+- A migrated suite is k8s-only (DD-283): there is no `ATLAS_E2E_TARGET` and no
+  compose fallback anywhere. The gate's fail-fast message keeps naming
+  `install.sh up`.
 - A cluster dial uses the Service's real name (the SAN-honest FQDN) over a
   `ServiceForward`; the dial URL carries the forward's own free port and the
   shim rewrites the host alone — a host+port rewrite is silently dropped by
@@ -47,7 +46,6 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
 
 ## Removal
 
-Removing the lane: delete the directory, remove it from root
-`pyproject.toml` (members, dev group, uv.sources), revert the four e2e
-conftests to standalone compose-only shapes, and delete the `e2e-cluster`
-targets from the four project.json files.
+Removing the library: delete the directory, remove it from root
+`pyproject.toml` (members, dev group, uv.sources), and revert the migrated
+e2e conftests to standalone cluster-only shapes.
