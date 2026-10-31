@@ -1,0 +1,71 @@
+# 034\. Signals meet at one replaceable collection point
+
+- **Status:** Accepted
+- **Date:** 2026-10-07
+- **Deciders:** Aurelius Enterprise
+
+Every part exports its three signals to one collection point over a standard protocol. The tools that store and display the picture live behind that seam and can be changed without touching a part.
+
+## Decision
+
+**One seam, one protocol.** Every part exports the same three signals — traces, metrics, and logs — to one collection point that is part of the system, over a standard protocol, and **never to a storage or visualisation backend directly.** The collection point is the single seam: the tools that store and display the picture live behind it and can be changed without touching the parts.
+
+This decision was in force before it was written down: the observability stack the development arrangement starts ([006](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/006-the-whole-system-runs-on-one-machine/index.md>)) includes a collection point that every instrumented part exports to, and the backends behind it are known to the parts only through it.
+
+Where the picture is allowed to live — inside the system, never with a vendor — is a separate decision ([016](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/016-the-system-observes-itself-internally/index.md>)); **this record covers the shape of the seam the signals pass through.**
+
+## Context
+
+The running picture is assembled from what every part emits, and the organisation has to decide how the emissions reach the tools. **The two failure shapes are known:** parts that point directly at their storage backends, so changing a backend means touching every part, and parts that each speak a different tool's protocol, so the picture cannot be assembled at all. Both are the absence of a seam.
+
+[016](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/016-the-system-observes-itself-internally/index.md>) decides the picture is produced and consumed inside the system. That is compatible with several internal shapes — every part wired to its own storage, one shared collector, a sidecar per part — and the shape is a real decision with its own consequences: it determines what it costs to change an observation tool, and what it costs to instrument a new part.
+
+**Separating the two records keeps each checkable on its own:** a system can keep its data inside the boundary and still have no seam, and the gap should be visible as exactly that.
+
+**A standard protocol at the seam is what makes the arrangement portable.** It is also the condition under which a future production arrangement could export elsewhere without re-instrumenting the parts — a step [016](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/016-the-system-observes-itself-internally/index.md>) does not allow without a new record, **but the seam is what keeps that door from being welded shut.**
+
+## Requirements
+
+Any acceptable arrangement must deliver:
+
+|  | Requirement |
+| --- | --- |
+| **R1** | **One seam.** Parts hand their signals to a single collection point; no part knows the address of a storage or visualisation backend. |
+| **R2** | **A standard protocol.** The handover uses a protocol the wider ecosystem speaks — neither parts nor backends tied to this organisation's tooling choices. |
+| **R3** | **The observer is replaceable.** Storage and visualisation tools behind the collection point can be changed, upgraded, or swapped without touching any part. |
+| **R4** | **Instrumenting a part is cheap.** A new part points at the collection point and exports; it gains the whole picture, not one backend's slice. |
+
+## Alternatives
+
+| Alternative | Why it fails |
+| --- | --- |
+| Each part exports to its own backend | R1: the backends become N dependencies instead of one seam; R3 with it — changing a backend is a change to every part. It can satisfy [016](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/016-the-system-observes-itself-internally/index.md>) perfectly, all data inside, which is exactly why it needs its own record to rule out. |
+| A seam speaking an in-house protocol | R2: every backend behind the seam must be written or adapted for it, so the observer is not replaceable in practice (R3) and a new part needs custom wiring (R4). |
+| A sidecar or agent per part | R2 and R4 kept; R1 strained — the picture is assembled from N agents whose configuration must agree — and a per-part mechanism to operate where one shared point suffices. |
+| Point at backends today, seam later | Cheapest at the start; R3 fails at the moment of decision — the first backend change touches every part — and R1 defers into a migration whose cost grows with every part added before it. |
+| Do nothing (leave the seam implicit) | The state this record corrects. Fails the organisation's: the next person to add a part or a backend would not know the seam exists, and wiring around it would not fail any check. |
+
+## Tradeoffs
+
+### What it buys
+
+- Changing an observation tool is a change behind the seam, not a change to the parts (R3).
+- A new part is instrumented once and gains every backend's view (R4).
+- The standard protocol keeps the door open to a future production arrangement without re-instrumentation — without committing to one.
+
+### What it costs
+
+- The collection point is one more running part to start, keep healthy, and reason about when signals go missing: **a failure at the seam blinds every backend at once.**
+- The seam's standard protocol is the lowest common denominator, so a backend's richer features are reachable only behind it, never through the parts.
+
+### Watch
+
+- The browser-rendered part sending its signals to an address fixed in its own build is a deviation from this record's single seam until the address arrives through the deployment channel ([018](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/018-settings-arrive-at-startup-through-one-channel/index.md>)). The example app now takes its exporter URL from the fetched runtime config — the deviation is closed there; the vendored dashboard remains out of scope ([030](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/030-interfaces-between-parts-are-verified-not-assumed/index.md>)).
+- **A deployment that names no collection point runs blind by choice** — a gap to name rather than tolerate; how the collection point deploys in a customer's environment follows [016](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/016-the-system-observes-itself-internally/index.md>)'s boundary rule.
+- How long the signals the collection point holds are kept is a lifetime question owned by [025](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/025-data-has-a-stated-lifetime/index.md>), not this record.
+
+> [!NOTE]
+>
+> **Why does a standard protocol matter if nothing ever exports?**
+>
+> Because the protocol is the cheap insurance. The picture lives inside ([016](<https://aureliusenterprise.github.io/feat-chart-per-producer-ingest-credentials/architecture/adr/016-the-system-observes-itself-internally/index.md>)) and no export is allowed without a new record — but an in-house seam protocol makes every future option a re-instrumentation project (R2, R3). The standard keeps the door unlocked at the cost of lowest-common-denominator features.

@@ -150,6 +150,11 @@
     "aliases": []
   },
   {
+    "version": "feat-chart-per-producer-ingest-credentials",
+    "title": "feat-chart-per-producer-ingest-credentials",
+    "aliases": []
+  },
+  {
     "version": "feat-chart-network-segmentation",
     "title": "feat-chart-network-segmentation",
     "aliases": []
