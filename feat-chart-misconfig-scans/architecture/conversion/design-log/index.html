@@ -23786,14 +23786,27 @@ stack, the metrics pullers — or KSV-0109 (a puller ConfigMap holding a
 <p><strong>Consequences.</strong> <code>helm-misconfigs.json</code> and <code>.helm-rendered.yaml</code> join
 the gitignored scan-report set (<code>*.sarif</code> was already ignored). The
 plugin gained a sixth target; <code>helm/AGENTS.md</code>'s adding-a-chart list names
-it. The findings are triage items, not gate failures: KSV-0109's
-<code>${env:…}</code> references are placeholders (the real secret arrives as env
-from a Secret — R5), and KSV-0014's puller containers can likely take a
-read-only root with an emptyDir; the stateful workloads (store, Keycloak,
-Postgres, observability) write to their data dirs and a read-only root is
-a per-workload decision with a <code>tests/values.test.yaml</code> render guard. Both
-are follow-ups; nothing enters a quality gate today because the app charts
-are clean at HIGH. Next free DD: 283.</p>
+it. Both HIGH families were follow-ups (below); nothing entered a quality
+gate because the app charts are clean at HIGH. Next free DD: 283.</p>
+<p><strong>Follow-up (same PR).</strong> The two HIGH families resolved as far as Tier
+1+2 reaches. KSV-0109: the puller ConfigMaps' secret slots are
+<code>${env:…}</code> placeholders (R5) — a scoped ignore-policy
+(<code>tools/trivy/helm-misconfig-ignore.rego</code>, wired via <code>--ignore-policy</code>
+into both scan configs) silences KSV-0109 only when the finding's message
+names a <code>-metrics-puller' ConfigMap</code>; the rule stays live everywhere
+else. (Field note: the finding's <code>ID</code> is <code>KSV-0109</code> but its Rego
+<code>Namespace</code> is <code>builtin.kubernetes.KSV0109</code> — no dot — so match on <code>ID</code>
+plus the message, not a dotted namespace.) KSV-0014: the five Tier 2
+workload containers — both pullers' <code>metrics-puller</code> and <code>issuer-wait</code>,
+and the collector's <code>issuer-wait</code> — now pin <code>readOnlyRootFilesystem: true</code>
+(they read mounted config/Certificates and write nothing; the puller
+configs carry no <code>file_storage</code> extension). The collector's init gets it
+as a chart-local merge over <code>.Values.securityContext</code>, since that value
+is shared with the Tier 3 workloads. Contract tests pin all five. The
+umbrella HIGH baseline drops 17 → 10; the remainder is the Tier 3 set
+(store, Keycloak + Postgres + its wait init, observability's five
+servers), where a read-only root is a per-workload decision with its own
+render guard — a later increment.</p>
 
 
 
