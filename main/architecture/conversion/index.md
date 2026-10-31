@@ -75,7 +75,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | in progress |
 | 5.2a | Glossaries and categories | Glossary and category CRUD, category hierarchy and qualified names | `GlossaryService`, `GlossaryCategoryUtils` | in progress |
 | 5.2b | Glossary terms | Term CRUD, related terms, term categorization | `GlossaryService`, `GlossaryTermUtils` | in progress |
-| 5.2c | Term assignment | Terms assigned to entities, meanings on headers, DSL `hasTerm` | `GlossaryService`, `GlossaryTermUtils` | planned |
+| 5.2c | Term assignment | Terms assigned to entities, meanings on headers, DSL `hasTerm` | `GlossaryService`, `GlossaryTermUtils` | in progress |
 | 5.2d | Glossary import | Glossary terms imported from CSV or Excel, and the import template | `GlossaryService#importGlossaryData`, `GlossaryTermUtils` | planned |
 | 5.3 | Business metadata and labels | Business metadata attributes, labels | `EntityREST` | planned |
 | 6.1 | Authentication | Keycloak OIDC, session endpoints | `AtlasKeycloakAuthenticationProvider` | planned |

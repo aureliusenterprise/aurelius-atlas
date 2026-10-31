@@ -6308,6 +6308,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-248. An entity's meanings are read from its listed relationships
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6387,6 +6398,8 @@
       
         
           
+        
+      
         
       
         
@@ -7615,6 +7628,33 @@
     
   
   5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
 
     
   </span>
@@ -12645,6 +12685,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-248. An entity's meanings are read from its listed relationships
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -14063,6 +14114,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-247-journal-writes-do-not-wait-for-a-refresh">DD-247</a></td>
 <td>Journal writes do not wait for a refresh</td>
 <td>cross-cutting</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships">DD-248</a></td>
+<td>An entity's meanings are read from its listed relationships</td>
+<td>5.2</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -20824,6 +20881,27 @@ entry's commit or delete cannot make recovery undo a write that finished. With t
 the glossary's writes: helps one feature, and departs from Atlas's sequence of writes.</p>
 <p><strong>Consequences.</strong> A journal entry may be missing from a search for up to the refresh interval after it is
 written; nothing but recovery searches it. ENS-11's text names the journal as unrefreshed.</p>
+<h3 id="dd-248-an-entitys-meanings-are-read-from-its-listed-relationships">DD-248. An entity's meanings are read from its listed relationships<a class="headerlink" href="#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 5.2c</li>
+<li><strong>Date:</strong> 2026-10-31</li>
+</ul>
+<p><strong>Decision.</strong> An entity header's <code>meanings</code> (GTA-05) are read from the relationships the entity lists
+(DD-061): those of type <code>AtlasGlossarySemanticAssignment</code> whose second end is the entity, in the order listed,
+with their terms read in one request. The relationships are read once per response, as the header's
+relationship attributes already read them. Basic search's <code>termName</code> and the DSL's <code>hasTerm</code> read the terms'
+listed relationships the same way and search the entities by GUID, as a DSL condition on referred entities
+does (DD-243).</p>
+<p><strong>Reason.</strong> Atlas reads the entity's incoming edges with the assignment's label. The listing is the one place
+an entity's relationships are known by real-time <code>get</code>s, so a header read right after an assignment shows it,
+as every other relationship attribute does.</p>
+<p><strong>Alternatives.</strong> A search of the relationship index by type and end: one request per page of headers, but it
+sees an assignment only after a refresh. A field of meanings on the entity document: every assignment would
+write the entity too.</p>
+<p><strong>Consequences.</strong> A header costs a read of all the entity's relationships, also for an entity with many and no
+meanings; a header that reads relationship attributes pays it once. A term assigned to more entities than one
+search window holds is not searched beyond it.</p>
 
 
 
