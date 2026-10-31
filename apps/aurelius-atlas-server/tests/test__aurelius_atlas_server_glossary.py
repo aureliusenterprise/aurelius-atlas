@@ -234,3 +234,30 @@ async def test__a_term_is_assigned_audited_searched_and_removed(client: httpx.As
     status, _ = await send(client, "DELETE", assigned_url, json=[assigned])
     assert status == 204
     assert (await send(client, "GET", assigned_url))[1] == []
+
+
+@pytest.mark.covers(f"{R}.produce_template", f"{R}.import_glossary_data", rules=["GIM-01", "GIM-02", "GIM-06"])
+async def test__a_file_of_terms_is_imported(client: httpx.AsyncClient) -> None:
+    """The template downloads; a CSV upload creates its glossary and terms; no file is no file type (DV-104)."""
+    template = await client.get(f"{GLOSSARY}/import/template")
+    assert (template.status_code, template.headers["content-type"]) == (200, "application/octet-stream")
+    assert template.text.startswith("GlossaryName, TermName, ShortDescription")
+    content = f"{template.text}\nimported,first,,,,,,,,,,,,,,,,,,,\nimported,second,,,,,,,,,,,,,imported:first,,,,,,\n"
+    status, answer = await send(
+        client, "POST", f"{GLOSSARY}/import", files={"file": ("terms.csv", content.encode(), "text/csv")}
+    )
+    assert status == 200, answer
+    assert [info["childObjectName"] for info in answer["successImportInfoList"]] == ["first", "second"]
+    assert "failedImportInfoList" not in answer
+    _, headers = await send(client, "GET", f"{GLOSSARY}", params={"limit": "1"})
+    _, terms = await send(client, "GET", f"{GLOSSARY}/{headers[0]['guid']}/terms")
+    assert {term["name"]: [h["displayText"] for h in term.get("seeAlso", [])] for term in terms} == {
+        "first": ["second"],
+        "second": ["first"],
+    }
+    status, again = await send(
+        client, "POST", f"{GLOSSARY}/import", files={"file": ("terms.csv", content.encode(), "text/csv")}
+    )
+    assert (status, again["errorCode"]) == (409, "ATLAS-409-00-011")
+    status, no_file = await send(client, "POST", f"{GLOSSARY}/import", files={"other": ("x.csv", b"x")})
+    assert (status, no_file["errorCode"]) == (400, "ATLAS-400-00-098")

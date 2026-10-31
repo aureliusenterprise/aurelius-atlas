@@ -1,14 +1,19 @@
-"""``GlossaryTermUtils``: a term's anchor, related terms, categories and assignments (GTM-03 to GTM-05, GTA-02).
+"""``GlossaryTermUtils``: a term's anchor, related terms, categories and assignments, and terms read from a file.
 
 A term's relationships are written apart from its entity, as Atlas's ``processTermRelations`` writes them; a change
-of anchor renames the term below its new glossary. A term is assigned to an entity by a semantic assignment from the
-term to the entity, and dissociated by removing it.
+of anchor renames the term below its new glossary (GTM-03 to GTM-05). A term is assigned to an entity by a semantic
+assignment from the term to the entity, and dissociated by removing it (GTA-02, GTA-03). An import reads the rows of
+a file twice: as terms without relations, then as their relations (GIM-03 to GIM-05).
 """
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass, field
 
-from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_model.bulk_import import BulkImportResponse, ImportInfo, ImportStatus
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
 from aurelius_atlas_model.glossary import (
+    AtlasGlossary,
+    AtlasGlossaryHeader,
     AtlasGlossaryTerm,
     AtlasRelatedTermHeader,
     AtlasTermCategorizationHeader,
@@ -16,17 +21,75 @@ from aurelius_atlas_model.glossary import (
 )
 from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelatedObjectId, AtlasRelationship
 
+from aurelius_atlas_core.file_utils import COLON_CHARACTER, PIPE_CHARACTER, Row, java_split
 from aurelius_atlas_core.glossary_utils import (
     GlossaryUtils,
     RelationshipOperation,
     glossary_skeleton,
     relationship,
     term_relation_attributes,
+    term_skeleton,
 )
 
 TERM_ANCHOR = "AtlasGlossaryTermAnchor"
 TERM_CATEGORIZATION = "AtlasGlossaryTermCategorization"
 TERM_ASSIGNMENT = "AtlasGlossarySemanticAssignment"
+INDEX_FOR_GLOSSARY_AT_RECORD = 0
+INDEX_FOR_TERM_AT_RECORD = 1
+GLOSSARY_TERM_HEADERS = (
+    "GlossaryName",
+    "TermName",
+    "ShortDescription",
+    "LongDescription",
+    "Examples",
+    "Abbreviation",
+    "Usage",
+    "AdditionalAttributes",
+    "TranslationTerms",
+    "ValidValuesFor",
+    "Synonyms",
+    "ReplacedBy",
+    "ValidValues",
+    "ReplacementTerms",
+    "SeeAlso",
+    "TranslatedTerms",
+    "IsA",
+    "Antonyms",
+    "Classifies",
+    "PreferredToTerms",
+    "PreferredTerms",
+)
+"""The template's columns (``getGlossaryTermHeaders``)."""
+IMPORT_RELATIONS = (
+    Relation.TRANSLATION_TERMS,
+    Relation.VALID_VALUES_FOR,
+    Relation.SYNONYMS,
+    Relation.REPLACED_BY,
+    Relation.VALID_VALUES,
+    Relation.REPLACEMENT_TERMS,
+    Relation.SEE_ALSO,
+    Relation.TRANSLATED_TERMS,
+    Relation.ISA,
+    Relation.ANTONYMS,
+    Relation.CLASSIFIES,
+    Relation.PREFERRED_TO_TERMS,
+    Relation.PREFERRED_TERMS,
+)
+"""The relations of the columns after ``AdditionalAttributes``, in their order."""
+
+
+def glossary_term_headers() -> str:
+    """``getGlossaryTermHeaders``: the template, its columns joined by ``, `` (GIM-06)."""
+    return ", ".join(GLOSSARY_TERM_HEADERS)
+
+
+@dataclass
+class ImportCache:
+    """An import's caches (``glossaryNameGuidCache``, ``glossaryTermOrderCache``, ``glossaryTermQNameGuidCache``)."""
+
+    glossary_guids: dict[str, str | None] = field(default_factory=dict)
+    term_order: dict[str, int] = field(default_factory=dict)
+    related_guids: dict[str, str] = field(default_factory=dict)
 
 
 class GlossaryTermUtils(GlossaryUtils):
@@ -167,6 +230,169 @@ class GlossaryTermUtils(GlossaryUtils):
             _categorization_attributes(created, category)
             await self._get_or_create(created)
 
+    async def glossary_term_data_without_relations(
+        self, rows: Sequence[Row], response: BulkImportResponse, cache: ImportCache
+    ) -> list[AtlasGlossaryTerm]:
+        """``getGlossaryTermDataWithoutRelations``: a term of each row, its glossary found or created (GIM-03).
+
+        A row without a glossary name, or with one no glossary can be named, is reported failed.
+        """
+        terms: list[AtlasGlossaryTerm] = []
+        for row_number, row in enumerate(rows, start=1):
+            failures: list[str] = []
+            term = AtlasGlossaryTerm()
+            glossary_name = ""
+            if not row or _is_blank(row[INDEX_FOR_GLOSSARY_AT_RECORD]):
+                failures.append(f"The GlossaryName is blank for the record : {_record(row)}")
+            else:
+                glossary_name = str(row[INDEX_FOR_GLOSSARY_AT_RECORD])
+                guid = cache.glossary_guids.get(glossary_name)
+                if not guid:
+                    guid = await self._glossary_guid(glossary_name) or await self._create_glossary(
+                        glossary_name, failures
+                    )
+                    cache.glossary_guids[glossary_name] = guid
+                if guid:
+                    term = await self._term_of(failures, row, guid, relations=False)
+                    term.qualified_name = f"{java_string(term.name)}@{glossary_name}"
+                    cache.term_order[term.qualified_name] = row_number
+                    terms.append(term)
+            if failures:
+                response.failed_import_info_list.append(
+                    ImportInfo(
+                        parent_object_name=glossary_name,
+                        child_object_name=term.name,
+                        import_status=ImportStatus.FAILED,
+                        remarks="\n".join(failures),
+                        row_number=row_number,
+                    )
+                )
+        return terms
+
+    async def glossary_term_data_with_relations(
+        self, rows: Sequence[Row], response: BulkImportResponse, cache: ImportCache
+    ) -> list[AtlasGlossaryTerm]:
+        """``getGlossaryTermDataWithRelations``: each row's term with its related terms, found by qualified name
+        (GIM-04).
+        """  # noqa: D205 - one sentence
+        terms: list[AtlasGlossaryTerm] = []
+        for row_number, row in enumerate(rows, start=1):
+            if not row or _is_blank(row[INDEX_FOR_GLOSSARY_AT_RECORD]):
+                continue
+            failures: list[str] = []
+            term = AtlasGlossaryTerm()
+            glossary_name = str(row[INDEX_FOR_GLOSSARY_AT_RECORD])
+            guid = cache.glossary_guids.get(glossary_name)
+            if guid:
+                term = await self._term_of(failures, row, guid, relations=True, cache=cache)
+                term.qualified_name = f"{java_string(term.name)}@{glossary_name}"
+                terms.append(term)
+            if failures:
+                response.failed_import_info_list.append(
+                    ImportInfo(
+                        parent_object_name=glossary_name,
+                        child_object_name=term.name,
+                        import_status=ImportStatus.FAILED,
+                        remarks="\n".join(failures),
+                        row_number=row_number,
+                    )
+                )
+        return terms
+
+    async def update_glossary_term_relations(self, term: AtlasGlossaryTerm, cache: ImportCache) -> None:
+        """``updateGlossaryTermRelations``: a term an earlier row relates to keeps the relations stored (GIM-05)."""
+        guid = cache.related_guids.get(str(term.qualified_name))
+        if guid is None:
+            return
+        try:
+            stored = await self._data_access.load(term_skeleton(guid))
+        except AtlasError:
+            return
+        for relation in Relation:
+            found = stored.relation_terms(relation)
+            if found:
+                setattr(term, relation.field, [*(term.relation_terms(relation) or []), *found])
+
+    async def _term_of(
+        self,
+        failures: list[str],
+        row: Row,
+        glossary_guid: str,
+        *,
+        relations: bool,
+        cache: ImportCache | None = None,
+    ) -> AtlasGlossaryTerm:
+        """``populateGlossaryTermObject``: the row's term, anchored to the glossary, its relations when asked."""
+        term = AtlasGlossaryTerm()
+        if len(row) > INDEX_FOR_TERM_AT_RECORD:
+            term.name = row[INDEX_FOR_TERM_AT_RECORD]
+        if _is_blank(term.name):
+            if not relations:
+                failures.append(f"The TermName is blank for provided record: {_record(row)}")
+            return term
+        values = [*row[INDEX_FOR_TERM_AT_RECORD + 1 :], *([None] * len(GLOSSARY_TERM_HEADERS))]
+        term.anchor = AtlasGlossaryHeader(glossary_guid=glossary_guid)
+        term.short_description, term.long_description = values[0], values[1]
+        term.examples = None if _is_blank(values[2]) else java_split(str(values[2]), PIPE_CHARACTER)
+        term.abbreviation, term.usage = values[3], values[4]
+        term.additional_attributes = _map_value(values[5], failures, relations=relations)
+        if relations and cache is not None:
+            glossary_name = str(row[INDEX_FOR_GLOSSARY_AT_RECORD])
+            for relation, value in zip(IMPORT_RELATIONS, values[6:], strict=False):
+                found = await self._related_term_headers(value, str(term.name), glossary_name, failures, cache)
+                setattr(term, relation.field, found)
+        return term
+
+    async def _related_term_headers(
+        self, value: str | None, term_name: str, glossary_name: str, failures: list[str], cache: ImportCache
+    ) -> list[AtlasRelatedTermHeader] | None:
+        """``getAtlasRelatedTermHeaderSet``: ``glossary:term`` pairs joined by ``|``, each an existing term."""
+        if _is_blank(value):
+            return None
+        found: dict[str, AtlasRelatedTermHeader] = {}
+        current = f"{term_name}@{glossary_name}"
+        for data in java_split(str(value), PIPE_CHARACTER):
+            parts = java_split(data, COLON_CHARACTER)
+            if len(parts) != 2:  # noqa: PLR2004 - a glossary and a term
+                failures.append(f"Incorrect relation data specified for the term : {current}")
+                continue
+            related = f"{parts[1]}@{parts[0]}"
+            if related.lower() == current.lower():
+                failures.append("Invalid relationship specified for Term. Term cannot have a relationship with self")
+                continue
+            guid = await self._term_guid(related)
+            if guid is None:
+                failures.append(
+                    f"The provided Reference {parts[1]}@{parts[0]} does not exist at Atlas referred at record with "
+                    f"TermName  : {term_name} and GlossaryName : {glossary_name}"
+                )
+                continue
+            _cache_related(cache, current, related, guid)
+            found.setdefault(guid, AtlasRelatedTermHeader(term_guid=guid))
+        return list(found.values())
+
+    async def _glossary_guid(self, name: str) -> str | None:
+        """``getGlossaryGUIDFromGraphDB``: the active glossary of the qualified name."""
+        return await self._guid_of("AtlasGlossary", name)
+
+    async def _term_guid(self, qualified_name: str) -> str | None:
+        return await self._guid_of("AtlasGlossaryTerm", qualified_name)
+
+    async def _guid_of(self, type_name: str, qualified_name: str) -> str | None:
+        entity_type = self._store.registry.entity_type(type_name)
+        if entity_type is None:  # pragma: no cover - the glossary model is loaded with the server
+            return None
+        found = await self._store.find_by_unique_attributes(entity_type, {"qualifiedName": qualified_name})
+        return None if found is None else found.entity.guid
+
+    async def _create_glossary(self, name: str, failures: list[str]) -> str | None:
+        """``createGlossary``: a glossary of the name, unless the name is invalid."""
+        if any(character in "@.<>" for character in name):
+            invalid = AtlasError(AtlasErrorCode.INVALID_DISPLAY_NAME).message
+            failures.append(f"The provided Glossary Name {{{name}}} is invalid : {invalid}")
+            return None
+        return (await self._data_access.save(AtlasGlossary(qualified_name=name, name=name))).guid
+
 
 def _categorization_attributes(found: AtlasRelationship, header: AtlasTermCategorizationHeader) -> None:
     """``updateRelationshipAttributes`` of a categorization."""
@@ -199,3 +425,37 @@ def _by_category(
         if known is None or (not known.relation_guid and header.relation_guid):
             found[header.category_guid] = header
     return found
+
+
+def _is_blank(value: str | None) -> bool:
+    """``StringUtils.isBlank``."""
+    return value is None or not value.strip()
+
+
+def _record(row: Row) -> str:
+    """``Arrays.toString`` of a row."""
+    return "[" + ", ".join(java_string(value) for value in row) + "]"
+
+
+def _map_value(value: str | None, failures: list[str], *, relations: bool) -> dict[str, object] | None:
+    """``getMapValue``: ``key:value`` pairs joined by ``|``; the first pass reports a pair that is none."""
+    if _is_blank(value):
+        return None
+    found: dict[str, object] = {}
+    for record in java_split(str(value), PIPE_CHARACTER):
+        parts = java_split(record, COLON_CHARACTER)
+        if parts and len(parts) % 2 == 0:
+            found[parts[0]] = parts[1]
+        elif not relations:
+            failures.append(
+                f"The Data in the uploaded file is incorrectly specified  : {value}\n"
+                "AdditionalAttributes needs to be a key:value pair"
+            )
+    return found
+
+
+def _cache_related(cache: ImportCache, current: str, related: str, guid: str) -> None:
+    """``cacheRelatedTermQNameGuid``: a related term of a later row, whose stored relations its update keeps."""
+    order = cache.term_order
+    if related not in cache.related_guids and current in order and related in order and order[current] < order[related]:
+        cache.related_guids[related] = guid
