@@ -185,14 +185,18 @@ async def test__unknown_fields_of_a_body_are_ignored(client: httpx.AsyncClient) 
 
 
 @pytest.mark.covers("aurelius_atlas_server.routes.types.typedef_store", rules=["TYR-12"])
-async def test__reads_see_what_another_server_stored(settings: ServerSettings, fake_es: FakeClient) -> None:
+async def test__reads_see_what_another_server_stored(
+    settings: ServerSettings, fake_es: FakeClient, auth_headers: dict[str, str]
+) -> None:
     """Each request refreshes the registry when due (TDS-13); errors and answers are Atlas JSON."""
     app = create_app(settings.model_copy(update={"typedef_refresh_seconds": 0.0}))
     other = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(cast("AsyncElasticsearch", fake_es)))
 
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+        ) as client:
             missing = await client.get(f"{TYPES}/typedef/name/t_elsewhere")
             await other.load()
             await other.create_types_def(types_def_of([AtlasEntityDef(name="t_elsewhere")]))

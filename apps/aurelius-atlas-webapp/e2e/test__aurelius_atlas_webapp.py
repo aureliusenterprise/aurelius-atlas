@@ -92,15 +92,15 @@ def test__unknown_path_falls_back_to_the_app(authenticated: Page, base_url: str)
 def test__api_proxy_forwards_to_the_atlas_server(page: Page, root_url: str) -> None:
     """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-139).
 
-    The real Aurelius server (DD-142) answers the admin version endpoint
-    through nginx -> TLS -> server -> Elasticsearch, so the response proves
-    the whole data path and that no proxy rewrites the /api prefix the client
-    composes into its URLs.
+    The real Aurelius server (DD-142) answers the admin status endpoint, which
+    needs no user (6.1a, AUT-01), through nginx -> TLS -> server, so the
+    response proves the proxy path and that no proxy rewrites the /api prefix
+    the client composes into its URLs.
     """
-    response = page.request.get(urljoin(root_url, "/api/atlas/admin/version"))
+    response = page.request.get(urljoin(root_url, "/api/atlas/admin/status"))
 
     assert response.status == 200
-    assert response.json()["Name"] == "aurelius-atlas"
+    assert response.json()["Status"] == "ACTIVE"
 
 
 def test__unauthenticated_visit_redirects_to_keycloak(page: Page, base_url: str) -> None:
@@ -549,11 +549,11 @@ def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: s
     expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Sleutel")
 
 
-def _seed_entities(page: Page, root_url: str, type_name: str, names: list[str]) -> dict[str, str]:
+def _seed_entities(page: Page, root_url: str, token: str, type_name: str, names: list[str]) -> dict[str, str]:
     """Seed entities through the proxy's bulk endpoint; return the guid assignments.
 
-    The server is open pre-6.1 (DV-54), so the proxy's ``/api`` leg answers
-    without a token. Names are **single tokens** carrying a unique ``run``
+    The calls carry the signed-in user's token, which the server verifies
+    (6.1a, AUT-02). Names are **single tokens** carrying a unique ``run``
     word: the free-text matcher is word-exact (FTX-01/SRC-06), and the shared
     dev stack is never cleaned between runs — hyphenated names would share
     their words with every earlier run's seeds and match them (term-OR).
@@ -571,7 +571,7 @@ def _seed_entities(page: Page, root_url: str, type_name: str, names: list[str]) 
     response = page.request.post(
         urljoin(root_url, "/api/atlas/v2/entity/bulk"),
         data=json.dumps(body),
-        headers={"content-type": "application/json"},
+        headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
     )
 
     assert response.status == 200, response.text()
@@ -579,7 +579,7 @@ def _seed_entities(page: Page, root_url: str, type_name: str, names: list[str]) 
     return response.json()["guidAssignments"]
 
 
-def _purge_type(page: Page, root_url: str, type_name: str) -> None:
+def _purge_type(page: Page, root_url: str, token: str, type_name: str) -> None:
     """Delete every entity of a type (the shared stack's determinism fix).
 
     The dev stack is never cleaned between runs, and the explore search is a
@@ -590,18 +590,22 @@ def _purge_type(page: Page, root_url: str, type_name: str) -> None:
     listing = page.request.post(
         urljoin(root_url, "/api/atlas/v2/search/basic"),
         data=json.dumps({"typeName": type_name, "limit": 1000, "offset": 0, "excludeDeletedEntities": True}),
-        headers={"content-type": "application/json"},
+        headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
     )
 
     assert listing.status == 200, listing.text()
 
     for entity in listing.json().get("entities", []):
-        deleted = page.request.delete(urljoin(root_url, "/api/atlas/v2/entity/bulk"), params={"guid": entity["guid"]})
+        deleted = page.request.delete(
+            urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+            params={"guid": entity["guid"]},
+            headers={"authorization": f"Bearer {token}"},
+        )
 
         assert deleted.status == 200, deleted.text()
 
 
-def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, root_url: str) -> None:
+def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, root_url: str, user_token: str) -> None:
     """The hero field searches: seeded hits, the count, the card → details link (SRH-01..SRH-05).
 
     A query submitted in the hero's search field runs POST
@@ -614,7 +618,7 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     run = secrets.token_hex(4)
     names = [f"zz{run}alpha", f"zz{run}beta", f"zz{run}gamma"]
     query = " ".join(names)
-    guids = _seed_entities(authenticated, root_url, "DataSet", names)
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", names)
 
     authenticated.goto(urljoin(root_url, "/en-US/search"))
     field = authenticated.locator(".hero aurelius-atlas-ui-search-field input")
@@ -648,7 +652,9 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+resultaten"))
 
 
-def test__business_explore_lists_glossary_entities_without_a_url_query(authenticated: Page, root_url: str) -> None:
+def test__business_explore_lists_glossary_entities_without_a_url_query(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
     """The business card's explore button lists glossary entities, type-filtered (SRH-08, DV-84).
 
     Explore is the legacy ``directToGlossary``: an empty query plus the
@@ -666,8 +672,8 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(authentic
     """
     run = secrets.token_hex(4)
     name = f"zz{run}domain"
-    _purge_type(authenticated, root_url, "AtlasGlossary")
-    _seed_entities(authenticated, root_url, "AtlasGlossary", [name])
+    _purge_type(authenticated, root_url, user_token, "AtlasGlossary")
+    _seed_entities(authenticated, root_url, user_token, "AtlasGlossary", [name])
 
     authenticated.goto(urljoin(root_url, "/en-US/search"))
     authenticated.get_by_role("button", name="Start browsing data domains").click()

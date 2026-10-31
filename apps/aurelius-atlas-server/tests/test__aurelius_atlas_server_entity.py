@@ -227,7 +227,9 @@ async def test__entities_are_read_in_bulk_by_sets_of_unique_attributes(seeded: h
 
 
 @pytest.mark.covers(f"{E}.entity_store", rules=["ERD-10"])
-async def test__reads_see_types_another_server_stored(settings: ServerSettings, fake_es: FakeClient) -> None:
+async def test__reads_see_types_another_server_stored(
+    settings: ServerSettings, fake_es: FakeClient, auth_headers: dict[str, str]
+) -> None:
     """Each request refreshes the registry when due (TDS-13): a type created elsewhere is known at once."""
     app = create_app(settings.model_copy(update={"typedef_refresh_seconds": 0.0}))
     other = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(cast("AsyncElasticsearch", fake_es)))
@@ -235,7 +237,9 @@ async def test__reads_see_types_another_server_stored(settings: ServerSettings, 
 
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+        ) as client:
             unknown = await client.get(path, params={"attr:qualifiedName": "t@cl"})
             await other.load()
             await other.create_types_def(sample_types())

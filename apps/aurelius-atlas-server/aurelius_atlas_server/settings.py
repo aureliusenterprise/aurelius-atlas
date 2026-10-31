@@ -122,6 +122,36 @@ class ServerSettings(BaseSettings):
     """PEM CA verifying the collector's TLS for the OTLP export; unset uses
     the system trust store (the dev stack's mkcert CA is not system-wide)."""
 
+    auth_server_url: HttpUrl
+    """The identity provider's root (Keycloak), which tokens are verified against and browsers sign in at
+    (AUT-02, AUT-05; ADR 007)."""
+
+    auth_realm: str = "master"
+    """The realm the tokens are issued from."""
+
+    auth_client_id: str = "aurelius-atlas-server"
+    """The server's confidential client: browsers sign in with it, and its tokens are accepted (AUT-05)."""
+
+    auth_client_secret: SecretStr
+    """The secret of ``auth_client_id``; never shown in logs."""
+
+    auth_audiences: list[str] = Field(default_factory=list)
+    """Further clients whose tokens the server accepts: the webapp's, which the auxiliary APIs forward
+    (AUT-02, AUT-10)."""
+
+    auth_principal_claim: str = "preferred_username"
+    """The claim a user's name is read from: Atlas's Keycloak ``principal-attribute`` (AUT-03, DD-250)."""
+
+    auth_groups_claim: str = "groups"
+    """The claim a user's groups are read from, else the realm roles: ``atlas.authentication.method.keycloak
+    .groups_claim`` (AUT-03)."""
+
+    auth_ca_file: FilePath | None = None
+    """PEM CA verifying the provider's TLS; unset uses the system trust store."""
+
+    session_timeout_seconds: int = Field(default=3600, gt=0)
+    """How long a browser session lasts unused: Atlas's ``web.xml`` session timeout, 60 minutes (AUT-06)."""
+
     @property
     def tls(self) -> tuple[Path, Path]:
         """The certificate and key to serve HTTPS with (SRV-03, SRV-06, DD-234)."""

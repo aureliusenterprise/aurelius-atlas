@@ -4,6 +4,7 @@ import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from fake_issuer import bearer_headers
 
 
 @pytest.fixture
@@ -28,7 +29,9 @@ async def get(settings: ServerSettings, path: str) -> httpx.Response:
     app = create_app(settings)
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=bearer_headers()
+        ) as client:
             return await client.get(path)
 
 

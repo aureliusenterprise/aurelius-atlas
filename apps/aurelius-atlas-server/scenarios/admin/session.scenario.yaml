@@ -7,7 +7,8 @@ source:
     - intg/src/main/java/org/apache/atlas/AtlasConfiguration.java#TASKS_USE_ENABLED (scenarios run with it false, DD-081)
     - distro/src/conf/users-credentials.properties (user admin in group ADMIN)
     - webapp/src/main/java/org/apache/atlas/web/dao/UserDao.java#loadUserByUsername (the group is the authority)
-rules: [ADM-05, SRV-05]
+    - webapp/src/main/java/org/apache/atlas/web/security/AtlasKeycloakAuthenticationProvider.java (the groups claim)
+rules: [ADM-05, SRV-05, AUT-09]
 covers: [aurelius_atlas_server.routes.admin.get_session]
 stages:
     - name: as the admin user of a default Atlas installation
@@ -37,12 +38,11 @@ stages:
               atlas.lineage.on.demand.default.node.count: 3
               atlas.relationship.search.enabled: false
               _csrfToken: "20 random letters and digits"
-          # A new token per session; its form is checked by the unit tests.
-          volatile: [$._csrfToken, $.timezones]
+          # A new token per session; its form is checked by the unit tests. The user and groups are the identity
+          # provider's user who asks (AUT-03, AUT-09), checked by the unit tests and the e2e sign-in.
+          volatile: [$._csrfToken, $.timezones, $.userName, $.groups]
           deviations:
-              - { id: DV-04, path: $.userName, value: null }
-              - { id: DV-04, path: $.groups, value: [] }
-              - { id: DV-04, path: "$['atlas.entity.update.allowed']", value: false }
-              - { id: DV-04, path: "$['atlas.entity.create.allowed']", value: false }
+              - { id: DV-105, path: "$['atlas.entity.update.allowed']", value: false }
+              - { id: DV-105, path: "$['atlas.entity.create.allowed']", value: false }
               # The ids differ (DV-05) and are compared as volatile; their content is checked by the unit tests.
               - { id: DV-05, path: $.timezones, value: "IANA time zone ids" }

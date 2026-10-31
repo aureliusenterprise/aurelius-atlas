@@ -95,7 +95,7 @@ def _poll_proxy_status(page: Page, root_url: str, expected: int, deadline_second
     while time.monotonic() < deadline:
         try:
             response = page.request.get(
-                urljoin(root_url, "/api/atlas/admin/version"), ignore_https_errors=True, timeout=5_000
+                urljoin(root_url, "/api/atlas/admin/status"), ignore_https_errors=True, timeout=5_000
             )
             status = response.status
         except PlaywrightTimeoutError:

@@ -77,8 +77,8 @@ export function keycloakInitOptions(): KeycloakInitOptions {
 
 /**
  * The bearer-token interceptor config (APC-06, DD-004): the token rides every
- * same-origin `/api` call — the Atlas API — and nothing else. The server ignores it
- * until 6.1; sending it from day one is the stated pre-6.1 condition (DD-141).
+ * same-origin `/api` call — the Atlas API — and nothing else. Since 6.1a the
+ * server verifies it (AUT-02); it was sent from day one (DD-141).
  */
 export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }];
 
@@ -163,9 +163,9 @@ export async function initialize(): Promise<ApplicationConfig> {
                 initOptions: keycloakInitOptions(),
             }),
             // Bearer token on every /api call (APC-06, DD-004). The server
-            // ignores it until 6.1; sending it from day one is the stated
-            // pre-6.1 condition (DD-141), and refresh is keycloak-angular's —
-            // the legacy updateToken loop is not ported (APC-07).
+            // verifies it since 6.1a (AUT-02; sent from day one, DD-141), and
+            // refresh is keycloak-angular's — the legacy updateToken loop is
+            // not ported (APC-07).
             {
                 provide: INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG,
                 useValue: bearerTokenConfig,

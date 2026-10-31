@@ -36,24 +36,28 @@ def dashboard_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-async def headed_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+async def headed_client(app: FastAPI, auth_headers: dict[str, str]) -> AsyncIterator[httpx.AsyncClient]:
     """The plain app (no dashboard) under the middleware."""
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+        ) as client:
             yield client
 
 
 @pytest.fixture
 async def dashboard_client(
-    settings: ServerSettings, fake_es: FakeClient, dashboard_dir: Path
+    settings: ServerSettings, fake_es: FakeClient, dashboard_dir: Path, auth_headers: dict[str, str]
 ) -> AsyncIterator[httpx.AsyncClient]:
     """An app with the dashboards mounted, under the middleware."""
     _ = fake_es
     app = create_app(settings.model_copy(update={"dashboard_dir": dashboard_dir}))
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+        ) as client:
             yield client
 
 
@@ -111,7 +115,9 @@ async def test__dashboard_answers_carry_a_serving_csp_and_busted_assets_cache(
 
 
 @pytest.mark.covers("aurelius_atlas_server.security_headers.SecurityHeadersMiddleware.__init__", rules=["SRV-08"])
-async def test__hsts_off_leaves_localhost_free(fake_es: FakeClient, settings: ServerSettings) -> None:
+async def test__hsts_off_leaves_localhost_free(
+    fake_es: FakeClient, settings: ServerSettings, auth_headers: dict[str, str]
+) -> None:
     """The dev arrangement turns HSTS off (ADR 039, DD-236).
 
     With hsts_enabled=False, a browser that visited the mkcert server is not pinned
@@ -121,7 +127,9 @@ async def test__hsts_off_leaves_localhost_free(fake_es: FakeClient, settings: Se
     app = create_app(settings.model_copy(update={"hsts_enabled": False}))
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+        ) as client:
             response = await client.get("/api/atlas/admin/status")
 
     assert "strict-transport-security" not in response.headers

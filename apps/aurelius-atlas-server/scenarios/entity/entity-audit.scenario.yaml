@@ -231,11 +231,11 @@ stages:
               - $[3].details
               - $[4].details
           deviations:
-              - { id: DV-04, path: "$[0].user", value: null }
-              - { id: DV-04, path: "$[1].user", value: null }
-              - { id: DV-04, path: "$[2].user", value: null }
-              - { id: DV-04, path: "$[3].user", value: null }
-              - { id: DV-04, path: "$[4].user", value: null }
+              - { id: DV-109, path: "$[0].user", value: null }
+              - { id: DV-109, path: "$[1].user", value: null }
+              - { id: DV-109, path: "$[2].user", value: null }
+              - { id: DV-109, path: "$[3].user", value: null }
+              - { id: DV-109, path: "$[4].user", value: null }
     - name: only its creation, by action
       request:
           method: GET
@@ -254,7 +254,7 @@ stages:
                 type: null
           volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
           deviations:
-              - { id: DV-04, path: "$[0].user", value: null }
+              - { id: DV-109, path: "$[0].user", value: null }
     - name: sorted by time, oldest first, two from the first
       request:
           method: GET
@@ -281,8 +281,8 @@ stages:
                 type: null
           volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
           deviations:
-              - { id: DV-04, path: "$[0].user", value: null }
-              - { id: DV-04, path: "$[1].user", value: null }
+              - { id: DV-109, path: "$[0].user", value: null }
+              - { id: DV-109, path: "$[1].user", value: null }
     - name: no audit for a GUID no entity had
       request: { method: GET, url: "/api/atlas/v2/entity/no-such-guid-{run}/audit" }
       response:

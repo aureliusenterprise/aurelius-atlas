@@ -40,6 +40,10 @@ services:
             # replace-placeholders flag, DD-196) — same mechanism as the dev
             # user passwords above.
             OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The Atlas server's confidential client (6.1a, DD-250): its
+            # ${ATLAS_SERVER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here, as the ingest clients' secret above does.
+            ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.

@@ -14,7 +14,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | --------------------------------- | --------------------------------------------------------------------- |
 | `GET /api/atlas/admin/version`    | Name, release and revision of the server                              |
 | `GET /api/atlas/admin/status`     | `{"Status": "ACTIVE"}` while the server runs                          |
-| `GET /api/atlas/admin/session`    | The dashboard's settings and the user (no login until 6.1)            |
+| `GET /api/atlas/admin/session`    | The dashboard's settings and the signed-in user                       |
 | `GET /api/atlas/admin/liveness`   | `Service is live` while the server runs                               |
 | `GET /api/atlas/admin/readiness`  | `Service is ready to accept requests` while Elasticsearch is healthy  |
 | `/api/atlas/v2/types/...`         | The type definitions: read, search, create, update and delete         |
@@ -35,6 +35,16 @@ The server also serves the Apache Atlas 2.4.0 dashboards from
 [`aurelius-atlas-dashboard`](../aurelius-atlas-dashboard/README.md): `dashboardv2` at `/` and
 `dashboardv3` at `/n/`. The API is matched first. The image contains them; outside the image,
 `AURELIUS_ATLAS_SERVER_DASHBOARD_DIR` names the built directory, and without it only the API is served.
+
+## Authentication
+
+Every request needs a user, as Apache Atlas with its Keycloak provider does
+([6.1a](../../docs/architecture/conversion/increments/6-1-authentication.md)), but the status, liveness and
+readiness endpoints and the dashboards' static files. A client sends a bearer token of the identity provider
+([ADR 007](../../docs/architecture/adr/007-one-shared-identity-provider.md)); a browser on the dashboards is sent
+to `login.jsp`, signs in at the provider and keeps the `ATLASSESSIONID` session, and `logout.html` signs it out.
+`AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL`, `_AUTH_REALM`, `_AUTH_CLIENT_ID`, `_AUTH_CLIENT_SECRET` and
+`_AUTH_AUDIENCES` name the provider, the server's client and the further clients whose tokens are accepted.
 
 ## Type definitions
 

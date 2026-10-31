@@ -30,7 +30,7 @@ DRAIN_SECONDS = 25
 
 def test__the_edge_bucket_serves_a_burst_then_refuses_429(page: Page, root_url: str) -> None:
     """The first burst passes, the flood past it is refused 429, and a drained bucket serves again (SRV-09)."""
-    version = urljoin(root_url, "/api/atlas/admin/version")
+    version = urljoin(root_url, "/api/atlas/admin/status")
     statuses: list[int] = []
     for _ in range(BURST):
         response = page.request.get(version, ignore_https_errors=True, timeout=10_000)

@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
 
+import httpx2 as httpx
+from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
@@ -22,8 +24,10 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
-from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, RELATIONSHIP, TYPES
+from aurelius_atlas_server.oidc_client import OidcClient
+from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, LOGIN, RELATIONSHIP, TYPES
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.task_worker import TaskWorker
@@ -47,13 +51,48 @@ def mount_dashboards(app: FastAPI, directory: Path) -> None:
     app.mount("/", StaticFiles(directory=directory, html=True), name="dashboardv2")
 
 
-def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None) -> FastAPI:
+def build_auth(settings: ServerSettings, http: httpx.Client | None = None) -> KeycloakAuth:
+    """The token verifier: the provider's tokens for the server's client and the further audiences (AUT-02)."""
+    return KeycloakAuth(
+        AuthConfig(
+            server_url=str(settings.auth_server_url),
+            realm=settings.auth_realm,
+            audience=settings.auth_client_id,
+            extra_audiences=tuple(settings.auth_audiences),
+            ca_file=None if settings.auth_ca_file is None else str(settings.auth_ca_file),
+        ),
+        http=http,
+    )
+
+
+def build_oidc(settings: ServerSettings, auth: KeycloakAuth, http: httpx.AsyncClient | None = None) -> OidcClient:
+    """The server's client at the provider, which browsers sign in with (AUT-05)."""
+    return OidcClient(
+        auth,
+        client_id=settings.auth_client_id,
+        client_secret=settings.auth_client_secret.get_secret_value(),
+        principal_claim=settings.auth_principal_claim,
+        groups_claim=settings.auth_groups_claim,
+        ca_file=None if settings.auth_ca_file is None else str(settings.auth_ca_file),
+        http=http,
+    )
+
+
+def create_app(
+    settings: ServerSettings,
+    store: ElasticsearchStore | None = None,
+    *,
+    auth: KeycloakAuth | None = None,
+    oidc_http: httpx.AsyncClient | None = None,
+) -> FastAPI:
     """Build the application.
 
     Args:
         settings: The server's settings.
         store: The store to use; by default one built from the settings. It is opened when the application
             starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
+        auth: The token verifier; by default one for the settings' provider (AUT-02).
+        oidc_http: The HTTP client the sign-in calls the provider with; by default one of its own (AUT-05).
 
     The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
     models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
@@ -62,6 +101,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
+    auth, oidc, sessions = _authentication(settings, auth, oidc_http)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
@@ -97,6 +137,7 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
             if worker is not None:
                 await worker.stop()
             await store.close()
+            await _close(auth, oidc)
             LOGGER.info("Stopped %s", app.title)
 
     app = FastAPI(
@@ -111,12 +152,16 @@ def create_app(settings: ServerSettings, store: ElasticsearchStore | None = None
     app.state.settings = settings
     app.state.store = store
     app.state.type_registry = registry
+    app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
+    # Every request's user, or its 401 or sign-in (AUT-01 to AUT-08); added first, so the security headers
+    # below wrap its answers too.
+    app.add_middleware(AuthenticationMiddleware)
     # Security response headers on every answer — the API and the dashboards
     # alike (SRV-08, DD-236). Added before the routers mount, so it wraps
     # them all; the instrumentor below wraps this middleware.
     app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
     app.add_exception_handler(AtlasError, atlas_error_handler)
-    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY):
+    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN):
         app.include_router(router)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
@@ -158,3 +203,17 @@ def _ingest_pipeline(settings: ServerSettings) -> IngestPipeline | None:
     )
     ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
     return build_otlp_pipeline(settings.otel_endpoint, ca_file, source)
+
+
+async def _close(auth: KeycloakAuth, oidc: OidcClient) -> None:
+    """Close the provider clients (the application's shutdown)."""
+    await oidc.close()
+    auth.close()
+
+
+def _authentication(
+    settings: ServerSettings, auth: KeycloakAuth | None, oidc_http: httpx.AsyncClient | None
+) -> tuple[KeycloakAuth, OidcClient, SessionStore]:
+    """The verifier, the sign-in client and the sessions (AUT-02 to AUT-06)."""
+    verifier = auth if auth is not None else build_auth(settings)
+    return verifier, build_oidc(settings, verifier, oidc_http), SessionStore(settings.session_timeout_seconds)

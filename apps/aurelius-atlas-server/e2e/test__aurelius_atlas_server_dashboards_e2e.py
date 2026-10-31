@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import re
 import secrets
 import time
 from collections.abc import AsyncIterator
@@ -12,6 +14,9 @@ from aurelius_atlas_server_client import AtlasClient
 from playwright.async_api import Browser, Response, async_playwright
 
 SESSION = "/api/atlas/admin/session"
+USERNAME = "aurelius-writer"
+"""The dev realm's writer the browser signs in as (6.1a)."""
+SIGN_IN_PAGE = re.compile(r"/realms/master/protocol/openid-connect/auth")
 
 TEMPO_HOST = "127.0.0.1"
 TEMPO_PORT = 3200
@@ -34,10 +39,12 @@ async def browser() -> AsyncIterator[Browser]:
 
 # The browser fixture lives on the module loop, so the test runs there too.
 @pytest.mark.asyncio(loop_scope="module")
-@pytest.mark.covers(rules=["DSH-01", "DSH-02", "DSH-05", "DSH-06"])
+@pytest.mark.covers(rules=["DSH-01", "DSH-02", "DSH-05", "DSH-06", "AUT-04", "AUT-05", "AUT-07", "AUT-09"])
 @pytest.mark.parametrize("path", ["/", "/n/"], ids=["dashboardv2", "dashboardv3"])
 async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Browser, server: str, path: str) -> None:
-    """The dashboard's page and all of its own files load from the image, and it asks for the session.
+    """The dashboard sends the browser to sign in at the dev Keycloak, then its page and own files load.
+
+    It asks for the session, which names the writer; signing out signs out at Keycloak and back to sign in.
 
     Playwright's bundled browsers have their own trust stores and cannot enroll the mkcert root, so page
     navigation skips certificate verification. This is the one named relaxation of the browser-facing path
@@ -53,12 +60,20 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
             broken.append(f"{response.status} {response.url}")
 
     page.on("response", record)
+    await page.goto(f"{server}{path}")
+    await page.wait_for_url(SIGN_IN_PAGE)
+    await page.locator("#username").fill(USERNAME)
+    await page.locator("#password").fill(os.environ["DEV_USER_WRITER_PASSWORD"])
     async with page.expect_response(lambda response: SESSION in response.url, timeout=30_000) as session:
-        await page.goto(f"{server}{path}")
+        await page.get_by_role("button", name="Sign in").click()
 
-    assert (await session.value).status == 200
+    answer = await session.value
+    assert (answer.status, (await answer.json())["userName"]) == (200, USERNAME)
+    assert page.url.startswith(f"{server}{path}")
     assert await page.title() == "Atlas"
     assert broken == []
+    await page.goto(f"{server}/logout.html")
+    await page.wait_for_url(SIGN_IN_PAGE)
     await context.close()
 
 
@@ -159,3 +174,11 @@ async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient)
         f"Tempo never showed a stable-semconv store span inside the request trace {trace_id} "
         "— ES not instrumented, or the ASGI span fell back to the old conventions (DD-222)"
     )
+
+
+@pytest.mark.covers(rules=["AUT-02", "AUT-04"])
+async def test__the_api_needs_a_token_of_the_dev_realm(anonymous: httpx.AsyncClient, client: httpx.AsyncClient) -> None:
+    """Without a token the API answers 401 with the bearer challenge; the writer's token names the writer."""
+    refused = await anonymous.get(SESSION)
+    assert (refused.status_code, refused.headers["www-authenticate"]) == (401, 'Bearer realm="atlas.com"')
+    assert (await client.get(SESSION)).json()["userName"] == USERNAME

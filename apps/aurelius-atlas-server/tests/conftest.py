@@ -5,10 +5,15 @@ from pathlib import Path
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings, create_app
+from aurelius_atlas_server import app as server_app
 from aurelius_atlas_server.settings import ENV_PREFIX
 from aurelius_atlas_store_es import store
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from fake_issuer import CLIENT_SECRET, SERVER_URL, WEBAPP, FakeIssuer
 from fastapi import FastAPI
+
+BASE_URL = "https://aurelius-atlas"
+"""The in-process server's address: HTTPS, so the session cookie (``Secure``) travels (AUT-05)."""
 
 
 @pytest.fixture(autouse=True)
@@ -67,8 +72,29 @@ def settings(ca_file: Path, tls_pair: tuple[Path, Path], models_dir: Path) -> Se
             "revision": "abc123",
             "models_dir": models_dir,
             "tasks_enabled": False,
+            "auth_server_url": SERVER_URL,
+            "auth_client_secret": CLIENT_SECRET,
+            "auth_audiences": [WEBAPP],
         }
     )
+
+
+@pytest.fixture(autouse=True)
+def issuer(monkeypatch: pytest.MonkeyPatch) -> FakeIssuer:
+    """The identity provider every application of a test verifies tokens with and signs browsers in at."""
+    fake = FakeIssuer()
+    build_auth, build_oidc = server_app.build_auth, server_app.build_oidc
+    monkeypatch.setattr(server_app, "build_auth", lambda settings, *_: build_auth(settings, fake.sync_client()))
+    monkeypatch.setattr(
+        server_app, "build_oidc", lambda settings, auth, *_: build_oidc(settings, auth, fake.async_client())
+    )
+    return fake
+
+
+@pytest.fixture
+def auth_headers(issuer: FakeIssuer) -> dict[str, str]:
+    """The bearer token of the webapp's user ``admin``, as the webapp sends it (AUT-02)."""
+    return {"Authorization": f"Bearer {issuer.token()}"}
 
 
 @pytest.fixture
@@ -92,9 +118,9 @@ def app(settings: ServerSettings, fake_es: FakeClient) -> FastAPI:
 
 
 @pytest.fixture
-async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
-    """A client talking to the started application in-process."""
+async def client(app: FastAPI, auth_headers: dict[str, str]) -> AsyncIterator[httpx.AsyncClient]:
+    """A client talking to the started application in-process, as the webapp's user ``admin``."""
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(transport=transport, base_url=BASE_URL, headers=auth_headers) as client:
             yield client

@@ -13,6 +13,7 @@ import pytest
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from fake_issuer import bearer_headers
 
 E = "aurelius_atlas_server.routes.entity"
 ENTITY = "/api/atlas/v2/entity"
@@ -24,7 +25,9 @@ async def started(settings: ServerSettings) -> AsyncIterator[httpx.AsyncClient]:
     app = create_app(settings)
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=bearer_headers()
+        ) as client:
             created = await client.post("/api/atlas/v2/types/typedefs", json=SAMPLE_TYPES)
             assert created.status_code == 200, created.text
             yield client

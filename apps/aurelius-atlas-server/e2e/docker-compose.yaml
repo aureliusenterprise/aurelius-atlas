@@ -34,6 +34,14 @@ services:
             AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+            # Authentication (6.1a, DD-250): tokens of the dev realm, verified
+            # against the same :8443 listener the mint above uses; the server's
+            # confidential client signs a browser in, and the webapp's tokens
+            # (the suite's password grant) are accepted.
+            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
             # The SDK's BatchSpanProcessor exports on a 5s cycle by default,
             # which is the floor under the suite's Tempo read-back probes.
             # Test containers export every second (DD-225); prod images keep
@@ -53,7 +61,10 @@ services:
             # (CIA-03), so a host-gateway extra_host would not reach it.
             - aurelius-atlas-dev-observability-network
         ports:
-            - 21000
+            # A fixed host port: the realm's aurelius-atlas-server client
+            # registers https://localhost:21001/login.jsp as the e2e sign-in's
+            # return (serve keeps 21000).
+            - 127.0.0.1:21001:21000
         volumes:
             - ../certs:/certs:ro
 

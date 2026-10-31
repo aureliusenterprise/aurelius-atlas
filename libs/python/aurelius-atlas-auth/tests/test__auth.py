@@ -314,3 +314,48 @@ def test__the_issuer_url_is_the_realm_path_of_the_server(base_url: str) -> None:
     assert instance.base_url == "https://kc:8443/realms/master"
     assert base_url.endswith("/realms/master")
     instance.close()
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_auth.auth.KeycloakAuth.verify",
+    "aurelius_atlas_auth.auth.AuthConfig.audiences",
+    rules=["AUT-10"],
+)
+def test__verify_takes_a_token_of_any_accepted_audience(
+    auth_config: AuthConfig, issuer_client_factory: Callable[..., httpx.Client], token: Callable[..., str]
+) -> None:
+    """A further audience is accepted besides the service's own; any other is refused (AUT-10)."""
+    config = AuthConfig(
+        server_url=auth_config.server_url,
+        realm=auth_config.realm,
+        audience=auth_config.audience,
+        extra_audiences=("webapp",),
+    )
+    auth = KeycloakAuth(config, http=issuer_client_factory())
+    assert config.audiences == frozenset({auth_config.audience, "webapp"})
+    assert auth.verify(token(audience=None, azp="webapp"))["azp"] == "webapp"
+    assert auth.verify(token())["sub"] == "user-1"
+    with pytest.raises(HTTPException) as refused:
+        auth.verify(token(audience=None, azp="other"))
+    assert refused.value.status_code == 401
+    auth.close()
+
+
+@pytest.mark.covers("aurelius_atlas_auth.auth.KeycloakAuth.discovery", rules=["AUT-10"])
+def test__discovery_is_fetched_once(
+    auth_config: AuthConfig, issuer_handler_factory: Callable[..., Any], token: Callable[..., str]
+) -> None:
+    """The issuer's OpenID configuration is read once and shared with the key lookup (AUT-10)."""
+    calls: list[str] = []
+    handler = issuer_handler_factory()
+
+    def counting(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        return handler(request)
+
+    auth = KeycloakAuth(auth_config, http=httpx.Client(transport=httpx.MockTransport(counting)))
+    assert auth.discovery()["jwks_uri"].endswith("/certs")
+    auth.verify(token())
+    auth.discovery()
+    assert [path.rsplit("/", 1)[-1] for path in calls] == ["openid-configuration", "certs"]
+    auth.close()

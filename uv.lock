@@ -698,14 +698,17 @@ name = "aurelius-atlas-server"
 version = "0.6.1"
 source = { editable = "apps/aurelius-atlas-server" }
 dependencies = [
+    { name = "aurelius-atlas-auth" },
     { name = "aurelius-atlas-core" },
     { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-otel" },
     { name = "aurelius-atlas-store-es" },
     { name = "fastapi" },
+    { name = "httpx2" },
     { name = "opentelemetry-instrumentation-fastapi" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "python-multipart" },
     { name = "tzdata" },
     { name = "uvicorn", extra = ["standard"] },
@@ -713,14 +716,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
     { name = "aurelius-atlas-core", editable = "libs/python/aurelius-atlas-core" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
     { name = "fastapi", specifier = ">=0.162.0" },
+    { name = "httpx2", specifier = ">=2.0.0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.65b0" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydantic-settings", specifier = ">=2.16.1" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15.1" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "tzdata", specifier = ">=2025.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
