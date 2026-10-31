@@ -1,7 +1,7 @@
 name: Delete Documentation
 
 concurrency:
-    group: "docs"
+    group: "docs-public"
 
 # Default-deny: mike delete --push writes the public-docs branch and needs
 # contents:write; nothing else in this workflow needs a scope.

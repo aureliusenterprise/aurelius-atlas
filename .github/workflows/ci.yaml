@@ -37,7 +37,15 @@ jobs:
     # the PR never touched), dependency install, and the unit `test` suites
     # with coverage. Its product is the green light + the coverage artifacts
     # the sonar job uploads.
+    # Same-repo PR guard (CHT-102, pentest L6a): the members-only push policy
+    # is a GitHub *setting*; these runners are privileged (dind) and carry
+    # age keys in step env, so the boundary is enforced in code too. A fork
+    # PR's jobs skip (the check stays red — a fork gets no secrets and no
+    # privileged pool, by design; a maintainer pushes the branch to a
+    # same-repo branch to run CI). Push events carry no pull_request context,
+    # so the event-name test keeps main's runs.
     validate:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         runs-on: atlas-ci-shapea
         timeout-minutes: 30
 
@@ -253,6 +261,7 @@ jobs:
     # serialize with the sonar queue-wait (DD-232). No sonar/scan/storybook
     # here — this job ends at teardown.
     e2e:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         needs: validate
         runs-on: atlas-ci-shapea
         timeout-minutes: 45
@@ -401,6 +410,7 @@ jobs:
     # on a warm node — spike probe-b: 48s for the two heaviest dev-stack
     # images cold, 0.0s once the node has seen the layers).
     scan-sonar:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         needs: validate
         runs-on: atlas-ci-shapea
         timeout-minutes: 45
@@ -539,6 +549,7 @@ jobs:
     # step. The --graph=stdout probe keeps the job a no-op (not a green
     # lie) when the UI is out of the affected set.
     chromatic:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         needs: validate
         runs-on: atlas-ci-shapea
         timeout-minutes: 30

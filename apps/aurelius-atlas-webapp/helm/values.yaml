@@ -86,6 +86,14 @@ nginx:
     # ["10.244.0.0/16"]). Rendered into the template's realip block, which
     # the init container substitutes as a contiguous nginx-directive string.
     trustedProxyCIDRs: []
+    # HSTS (CHT-99): the listener is TLS-only (DD-270), so the header's one
+    # job is the hop in front of it. The chart renders the whole add_header
+    # into the template's placeholder; false (or the compose/e2e shape)
+    # substitutes nothing — test posture, the server's dev HSTS_ENABLED=false
+    # twin. maxAge is the one-year browser default the server stamps too.
+    hsts:
+        enabled: true
+        maxAge: 31536000
 
 # /config.json (SHL-02): served at bootstrap, shape in src/app/config.ts.
 # "" values derive in 10.3: keycloak.url from the umbrella's issuer URL,

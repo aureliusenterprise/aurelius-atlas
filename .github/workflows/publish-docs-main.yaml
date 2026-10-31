@@ -1,7 +1,10 @@
 name: Publish Documentation (Main)
 
+# Scope-split (CHT-102, pentest L6b): the public-docs pushers (main, tag,
+# delete) serialize on one group; PR previews run per-PR elsewhere, so a
+# preview's queue slot can no longer displace a main deploy.
 concurrency:
-    group: "docs"
+    group: "docs-public"
 
 # Default-deny: mike deploy --push writes the public-docs branch and needs
 # contents:write; nothing else in this workflow needs a scope.
